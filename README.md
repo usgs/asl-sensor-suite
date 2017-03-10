@@ -7,14 +7,21 @@ This program is used to analyze various aspects of seismic sensor data in order 
 ###Requirements
 #####Software
 This program is designed to be used with Java 1.8, but should also be compatible with Java 1.7
-Apache Ant is used to generate builds. Jar compilation was successful using Ant 1.9.7. 
-Future releases plan to use Gradle as primary build tool; because Gradle is backward-compatible with Ant configurations, Gradle can be installed instead of Ant in order to create jar builds.
+This program also requires Gradle in order to be run. For instructions on installing Gradle, see https://gradle.org/install
+NOTE: because Gradle requires access to the maven repositories to download dependencies, there may be build issues when running the program on DOI-networked computers. The instructions for using DOI certificates for maven authentication can be found under the Java subheader at https://github.com/usgs/best-practices/blob/master/WorkingWithinSSLIntercept.md 
+For those using Mac computers, the last step for trusting the certificate in Java may be slightly different. If installing the certificate using the instructions above fails, try using this command instead (NOTE: requires administrative access due to the use of the sudo command) https://blog.alwold.com/2011/06/30/how-to-trust-a-certificate-in-java-on-mac-os-x/
 
 #####Hardware
 Because SEED files must be decompressed and stored in memory, the footprint of this application has the potential to be rather large. Running this program on OSX v. 10.11.15, the total memory usage was 76.6 MB compressed but 1.82 GB uncompressed. As a result, this program's performance may be dependent on the memory management systems used by the OS of the system it runs on.
 
 ###Compilation
-A jar file can be built from command line inside the code subfolder by using the command "ant jar". The intermediate files created during compilation can be removed with "ant clean". Running the program can be done by either opening the jar through a filebrowser or running the command "java -jar SensorTestSuite.jar".
+
+#####Command Line
+The program can be compiled by using the commands "gradle compileJava" which will compile the source code, or "gradle build" which will also run the unit tests.
+Running the program can be done by either opening the jar through a filebrowser or running either the command "java -jar SensorTestSuite.jar" or "gradle run".
+
+#####Eclipse
+For those who wish to compile and run this program with Eclipse, run the command "gradle eclipse" and then, inside eclipse, go to File>"Open projects from file system..." and direct Eclipse to the root folder of the test suite. Now the code will be available as an Eclipse project. For more information on using Eclipse, consult the Eclipse documentation.
 
 ###File Selection
 The program will default to looking for SEED files in the "data" subdirectory in the same folder the jar is, if it exists. It is possible to choose a different folder, which will become the new default folder when loading in additional files. It will not, however, persist after the program is closed.

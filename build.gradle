@@ -1,0 +1,88 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'application'
+
+version = '0.9.0'
+
+mainClassName = 'asl.sensor.SensorSuite'
+// applicationDefaultJvmArgs = ["-Xms64m", "-Xmx30g"]
+
+repositories {
+    mavenCentral()
+}
+dependencies {
+
+	// 
+	// https://mvnrepository.com/artifact/org.jfree/jfreechart
+compile group: 'org.jfree', name: 'jfreechart', version: '1.0.19'
+
+// https://mvnrepository.com/artifact/org.codehaus.jtstand/jtstand-core
+compile group: 'org.codehaus.jtstand', name: 'jtstand-core', version: '1.5.13'
+
+// https://mvnrepository.com/artifact/edu.sc.seis/seisFile
+compile group: 'edu.sc.seis', name: 'seisFile', version: '1.7.3'
+
+// https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox
+compile group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.0.4'
+
+// https://mvnrepository.com/artifact/edu.sc.seis/seedCodec
+compile group: 'edu.sc.seis', name: 'seedCodec', version: '1.0.11'
+
+// https://mvnrepository.com/artifact/org.apache.commons/commons-math3
+compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+
+// https://mvnrepository.com/artifact/commons-logging/commons-logging
+compile group: 'commons-logging', name: 'commons-logging', version: '1.2'
+
+        // testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
+        testCompile group: 'junit', name: 'junit', version: '4.+'
+
+}
+
+jar {
+    /* Adds all dependent libraries*/
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+        configurations.runtime.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+
+    manifest {
+        attributes 'Implementation-Title': 'ASL Sensor Test Suite',
+                   'Implementation-Version': version,
+                   'Main-Class': mainClassName
+    }
+}
+
+test {
+    maxParallelForks = 4;
+    testLogging {
+        events "skipped", "failed"
+        afterSuite { desc, result ->
+            if (!desc.parent) {
+                println "Result: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+            }
+        }
+    }
+}
+
+/*Turn off doclint since it is far too strict and breaks the javadoc everytime*/
+if (JavaVersion.current().isJava8Compatible()) {
+    allprojects {
+        tasks.withType(Javadoc) {
+            options.addStringOption('Xdoclint:none', '-quiet')
+        }
+    }
+}
+
+javadoc {
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+}
+
+compileJava {
+    options.incremental = true
+}
