@@ -113,7 +113,11 @@ public abstract class Experiment {
    */
   public void setData(final DataStore ds, final boolean freqSpace) {
     
-
+    if ( hasEnoughData(ds) && ds.numberOfBlocksSet() == 0) {
+      backend(ds, freqSpace);
+      return;
+    }
+    
     final DataBlock db = ds.getXthLoadedBlock(1);
 
     long interval = db.getInterval();
@@ -140,5 +144,7 @@ public abstract class Experiment {
     
     backend(ds, freqSpace);
   }
+  
+  public abstract boolean hasEnoughData(final DataStore ds);
   
 }

@@ -731,14 +731,12 @@ implements ActionListener, ChangeListener {
    */
   public DataStore getData() {
     
-    if ( zooms.numberOfBlocksSet() < 1 ) {
-      return new DataStore();
-    }
-    
-
     showRegionForGeneration();
-    zooms.matchIntervals(activeFiles);
-    zooms.trimToCommonTime(activeFiles);
+    if ( zooms.numberOfBlocksSet() > 1 ) {
+      zooms.matchIntervals(activeFiles);
+      zooms.trimToCommonTime(activeFiles);
+    }
+
     return zooms;
   }
 
@@ -1086,7 +1084,7 @@ implements ActionListener, ChangeListener {
   }
 
 
-  public void showDataNeeded(ExperimentEnum em) {
+  public void showDataNeeded(int panelsNeeded) {
     
     VScrollPanel cont = new VScrollPanel();
     cont.setLayout( new GridBagLayout() );
@@ -1097,12 +1095,12 @@ implements ActionListener, ChangeListener {
     contConstraints.anchor = GridBagConstraints.CENTER;
     contConstraints.fill = GridBagConstraints.BOTH;
     
-    activeFiles = Math.max( em.blocksNeeded(), em.fullDataNeeded() );
+    activeFiles = panelsNeeded;
     
     zooms = new DataStore(ds, activeFiles);
     zooms.trimToCommonTime(activeFiles);
-    
-    for (int i = 0; i < activeFiles; ++i) {
+    int i;
+    for (i = 0; i < activeFiles; ++i) {
       if ( zooms.blockIsSet(i) ){
         resetPlotZoom(i);
       }
@@ -1111,6 +1109,8 @@ implements ActionListener, ChangeListener {
       contConstraints.gridy += 1;
       // gbc.gridy += 1;
     }
+    
+
     
     leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
     setVerticalBars();

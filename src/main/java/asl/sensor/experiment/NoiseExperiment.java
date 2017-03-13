@@ -170,4 +170,14 @@ public class NoiseExperiment extends Experiment {
 
   }
 
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    for (int i = 0; i < 3; ++i) {
+      if ( !ds.bothComponentsSet(i) ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 }

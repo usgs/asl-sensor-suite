@@ -248,6 +248,16 @@ public class OrthogonalExperiment extends Experiment {
   public double getFitAngle() {
     return angle;
   }
+
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    for (int i = 0; i < 4; ++i) {
+      if ( !ds.blockIsSet(i) ) {
+        return false;
+      }
+    }
+    return true;
+  }
   
 
 }

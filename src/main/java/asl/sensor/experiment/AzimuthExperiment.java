@@ -1,7 +1,6 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
@@ -172,6 +171,16 @@ public class AzimuthExperiment extends Experiment {
   
   public double getFitAngle() {
     return angle;
+  }
+
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    for (int i = 0; i < 3; ++i) {
+      if ( !ds.blockIsSet(i) ) {
+        return false;
+      }
+    }
+    return true;
   }
   
 

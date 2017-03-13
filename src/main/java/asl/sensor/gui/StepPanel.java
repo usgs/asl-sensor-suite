@@ -5,8 +5,6 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 
-import javax.swing.BoxLayout;
-
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
@@ -129,6 +127,12 @@ public class StepPanel extends ExperimentPanel {
     xyp.addAnnotation(xyt);
     
     chartPanel.setChart(chart);
+  }
+
+
+  @Override
+  public int panelsNeeded() {
+    return 2;
   }
 
 }

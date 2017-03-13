@@ -242,44 +242,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     return yAxisTitle;
   }
 
-
-  /**
-   * Function check to make sure that the experiment has enough data to calc.
-   * Used to prevent the main window generate button from being active when
-   * there isn't enough data loaded in.
-   * @param ds DataStore holding read-in seed and resp data
-   * @return True if there is enough data to run this experiment
-   */
-  public boolean haveEnoughData(DataStore ds) {
-    int fullNeeded = expType.fullDataNeeded();
-    int blocksNeeded = expType.blocksNeeded();
-    
-    for (int i = 0; i < fullNeeded; ++i) {
-      if ( !ds.bothComponentsSet(i) ) {
-        return false;
-      }
-    }
-    
-    if (blocksNeeded > fullNeeded) {
-      for (int i = fullNeeded; i < blocksNeeded; ++i) {
-        if ( !ds.blockIsSet(i) ) {
-          return false;
-        }
-      }
-    }
-
-    
-    if ( ds.numberFullySet() < expType.fullDataNeeded() ) {
-      return false;
-    }
-    if ( ds.numberOfBlocksSet() < expType.blocksNeeded() ) {
-      return false;
-    }
-    
-    return true;
-    
-  }
-
   /**
    * Used to plot the results of a backend function from an experiment
    * using a collection of XYSeries mapped by strings.
@@ -360,6 +322,12 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * @param ds DataStore object containing seed and resp files
    */
   public abstract void updateData(final DataStore ds);
+  
+  public abstract int panelsNeeded();
+  
+  public boolean hasEnoughData(final DataStore ds) {
+    return expResult.hasEnoughData(ds);
+  }
   
   // details of how to run updateData are left up to the implementing panel
   // however, it is advised to wrap the code inside a swingworker,

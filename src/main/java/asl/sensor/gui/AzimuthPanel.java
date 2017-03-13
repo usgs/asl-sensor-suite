@@ -119,4 +119,9 @@ public class AzimuthPanel extends ExperimentPanel {
     
   }
 
+  @Override
+  public int panelsNeeded() {
+    return 3;
+  }
+
 }

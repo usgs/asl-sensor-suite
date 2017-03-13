@@ -29,6 +29,8 @@ public class ExperimentPanelFactory {
       return new StepPanel(exp);
     case AZMTH:
       return new AzimuthPanel(exp);
+    case RESPN:
+      return new ResponsePanel(exp);
     default:
       // this shouldn't happen unless someone added to the enum
       // and forgot to follow-through on implementation

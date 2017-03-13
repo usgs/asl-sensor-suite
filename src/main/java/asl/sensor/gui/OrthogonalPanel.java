@@ -93,4 +93,9 @@ public class OrthogonalPanel extends ExperimentPanel {
     
   }
 
+  @Override
+  public int panelsNeeded() {
+    return 4;
+  }
+
 }

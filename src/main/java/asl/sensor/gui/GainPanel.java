@@ -524,5 +524,10 @@ implements ChangeListener {
     worker.execute();
 
   }
+
+  @Override
+  public int panelsNeeded() {
+    return 2;
+  }
   
 }

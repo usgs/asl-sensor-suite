@@ -364,7 +364,15 @@ public class DataStore {
   }
   
   /**
-   
+   * Tests if a given response is loaded or not
+   * @param i Index of response to load in
+   * @return True if that index has a response loaded in
+   */
+  public boolean responseIsSet(int i) {
+    return thisResponseIsSet[i];
+  }
+  
+  /**
    * Returns the boolean array where each index shows if there is a response
    * loaded into this datastore object at that index
    * has had data loaded into it (see blockIsSet, dataIsSet methods)

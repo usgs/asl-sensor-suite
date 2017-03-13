@@ -316,4 +316,9 @@ public class GainExperiment extends Experiment {
     return getStatsFromFreqs(idx0, idx1, freq1, freq2);
   }
 
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    return ( ds.bothComponentsSet(0) && ds.bothComponentsSet(1) );
+  }
+
 }

@@ -375,5 +375,10 @@ public class StepExperiment extends Experiment{
     
     return new Pair<RealVector, RealMatrix>(fnc, jMat);
   }
+
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
+  }
   
 }

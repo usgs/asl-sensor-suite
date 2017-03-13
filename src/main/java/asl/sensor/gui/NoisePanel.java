@@ -218,6 +218,12 @@ public class NoisePanel extends ExperimentPanel {
     worker.execute();
     
   }
+
+  @Override
+  public int panelsNeeded() {
+    
+    return 3;
+  }
   
 
 }

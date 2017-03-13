@@ -187,8 +187,7 @@ public class SensorSuite extends JPanel
     fc = new JFileChooser();
     
     ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-    ExperimentEnum em = ep.expType;
-    inputPlots.showDataNeeded(em);
+    inputPlots.showDataNeeded( ep.panelsNeeded() );
 
     inputPlots.setChannelTypes( ep.getChannelTypes() );
     
@@ -352,7 +351,7 @@ public class SensorSuite extends JPanel
     if ( e.getSource() == inputPlots ){
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
       DataStore ds = inputPlots.getData();
-      boolean canGenerate = ep.haveEnoughData(ds);
+      boolean canGenerate = ep.hasEnoughData(ds);
       generate.setEnabled(canGenerate);
     } else if ( e.getSource() == tabbedPane ) {
       
@@ -360,10 +359,9 @@ public class SensorSuite extends JPanel
       
       inputPlots.setChannelTypes( ep.getChannelTypes() );
       
-      ExperimentEnum em = ep.expType;
-      inputPlots.showDataNeeded(em);
+      inputPlots.showDataNeeded( ep.panelsNeeded() );
       DataStore ds = inputPlots.getData();
-      boolean canGenerate = ep.haveEnoughData(ds);
+      boolean canGenerate = ep.hasEnoughData(ds);
       generate.setEnabled(canGenerate);
     }
   }
