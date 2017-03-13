@@ -9,6 +9,9 @@ import asl.sensor.input.InstrumentResponse;
 
 public class ResponseExperiment extends Experiment {
 
+  public static final String MAGNITUDE = "Response magnitude";
+  public static final String ARGUMENT = "Response argument (phi)";
+  
   @Override
   protected void backend(DataStore ds, final boolean freqSpace) {
     
@@ -19,28 +22,39 @@ public class ResponseExperiment extends Experiment {
     double highFreq = 10000;
     
     int pointCount = 100000;
-    double freqDelta = (highFreq - lowFreq) / pointCount;
+    double linearChange = (highFreq - lowFreq) / pointCount;
+    System.out.println(linearChange);
+    // find logarithmic parameters for linear components
+    double b = Math.log10(lowFreq / highFreq) / (lowFreq - highFreq);
+    double a = lowFreq / Math.pow(10, b * lowFreq);
     
     double[] freqArray = new double[pointCount];
     
     double currentFreq = lowFreq;
     for (int i = 0; i < freqArray.length; ++i) {
       freqArray[i] = currentFreq;
-      currentFreq += freqDelta;
+      // System.out.println(currentFreq);
+      currentFreq = a * Math.pow(10, b * (i * linearChange) );
     }
     
     Complex[] result = ir.applyResponseToInput(freqArray);
-    XYSeries magnitude = new XYSeries("Response magnitude");
+    XYSeries magnitude = new XYSeries(MAGNITUDE);
+    XYSeries argument = new XYSeries (ARGUMENT);
     for (int i = 0; i < freqArray.length; ++i) {
+      double phi = ( Math.toDegrees( result[i].getArgument() ) + 360 ) % 360;
       if (freqSpace) {
-        magnitude.add( freqArray[i], 10 * Math.log10( result[i].abs() ) );
+        double magAccel = result[i].abs() / (2*Math.PI*freqArray[i]);
+        magnitude.add( freqArray[i], 10 * Math.log10(magAccel) );
+        argument.add( freqArray[i], phi );
       } else {
         magnitude.add( 1/freqArray[i], 10 * Math.log10( result[i].abs() ) );
+        argument.add( 1/freqArray[i], phi );
       }
     }
     
     
     ((XYSeriesCollection) xySeriesData).addSeries(magnitude);
+    ((XYSeriesCollection) xySeriesData).addSeries(argument);
   }
 
   @Override

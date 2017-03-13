@@ -1,24 +1,32 @@
 package asl.sensor.gui;
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JPanel;
 
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
 
 public class ResponsePanel extends ExperimentPanel {
 
-  public ValueAxis freqAxis;
-  public String freqAxisTitle;
+  public ValueAxis freqAxis, degreeAxis;
+  public String freqAxisTitle, degreeAxisTitle;
   public JCheckBox freqSpaceBox;
+  public JComboBox<String> plotSelection;
+  
+  public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
+  public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   
   public ResponsePanel(ExperimentEnum exp) {
     super(exp);
@@ -28,10 +36,14 @@ public class ResponsePanel extends ExperimentPanel {
     xAxisTitle = "Period (s)";
     freqAxisTitle = "Frequency (Hz)";
     yAxisTitle = "10 * log10( RESP(f) )";
+    degreeAxisTitle = "phi(RESP(f))";
     xAxis = new LogarithmicAxis(xAxisTitle);
     freqAxis = new LogarithmicAxis(freqAxisTitle);
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
+    
+    degreeAxis = new NumberAxis(degreeAxisTitle);
+    
     ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
@@ -74,9 +86,13 @@ public class ResponsePanel extends ExperimentPanel {
     gbc.gridx += 1;
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;
-    JPanel spacer = new JPanel();
-    spacer.setPreferredSize( freqSpaceBox.getPreferredSize() );
-    this.add(spacer, gbc);
+    plotSelection = new JComboBox<String>();
+    plotSelection.addItem(MAGNITUDE);
+    plotSelection.addItem(ARGUMENT);
+    this.add(plotSelection, gbc);
+    
+    seriesColorMap.put(MAGNITUDE, Color.RED);
+    seriesColorMap.put(ARGUMENT, Color.BLUE);
     
   }
 
@@ -92,6 +108,20 @@ public class ResponsePanel extends ExperimentPanel {
     
   }
   
+  @Override
+  public ValueAxis getYAxis() {
+    
+    if ( null == plotSelection ) {
+      return yAxis;
+    }
+    
+    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
+      return yAxis;
+    } else {
+      return degreeAxis;
+    }
+  }
+  
   /**
    * 
    */
@@ -103,7 +133,16 @@ public class ResponsePanel extends ExperimentPanel {
     boolean freqSpace = freqSpaceBox.isEnabled();
     expResult.setData(ds, freqSpace);
     
-    populateChart( expResult.getData() );
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    XYSeriesCollection fromExp = (XYSeriesCollection) expResult.getData();
+    
+    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
+      xysc.addSeries( fromExp.getSeries(MAGNITUDE) );
+    } else {
+      xysc.addSeries( fromExp.getSeries(ARGUMENT) );
+    }
+    
+    populateChart( xysc );
 
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
@@ -112,7 +151,6 @@ public class ResponsePanel extends ExperimentPanel {
 
   @Override
   public int panelsNeeded() {
-    
     return 1;
   }
 

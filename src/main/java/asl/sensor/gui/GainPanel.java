@@ -55,6 +55,10 @@ implements ChangeListener {
   private JButton recalcButton;
   
   private double low, high;
+  /**
+   * Max value of slider (ranges from 0 to 1000, converted to log10 scale)
+   */
+  private static final int SLIDER_MAX = 1000;
   
   /**
    * Instantiate the panel, including sliders and stat calc button
@@ -83,10 +87,10 @@ implements ChangeListener {
     applyAxesToChart();
     
     // instantiate unique components
-    leftSlider = new JSlider(0, 1000, 0);
+    leftSlider = new JSlider(0, SLIDER_MAX, 0);
     leftSlider.addChangeListener(this);
     leftSlider.setEnabled(false);
-    rightSlider = new JSlider(0, 1000, 1000);
+    rightSlider = new JSlider(0, SLIDER_MAX, SLIDER_MAX);
     rightSlider.addChangeListener(this);
     rightSlider.setEnabled(false);
     
@@ -232,10 +236,10 @@ implements ChangeListener {
   /**
    * Converts x-axis value from log scale to linear, to get slider position
    * @param prd period value marking data window boundary
-   * @return value of slider (ranges from 0 to 1000)
+   * @return value of slider (ranges from 0 to SLIDER_MAX)
    */
   public int mapPeriodToSlider(double prd) {
-    double scale = (high - low)/1000; // recall slider range is 0 to 1000
+    double scale = (high - low)/SLIDER_MAX; // recall slider range is 0 to 1000
     return (int) ( ( Math.log10(prd) - low ) / scale );
   }
   
@@ -246,7 +250,7 @@ implements ChangeListener {
    * @return x-axis value corresponding to that position
    */
   public double mapSliderToPeriod(int position) {
-    double scale = (high - low)/1000; // slider range is 0 to 1000
+    double scale = (high - low)/SLIDER_MAX; // slider range is 0 to 1000
     return Math.pow(10, low + (scale * position) );
   }
   
@@ -345,9 +349,9 @@ implements ChangeListener {
     } else if ( e.getSource() == rightSlider ) {
       if ( leftSlider.getValue() + 10 > rightSlider.getValue() ) {
         rightSlider.setValue( leftSlider.getValue() + 10 );
-        if ( rightSlider.getValue() > 1000 ) {
-          rightSlider.setValue(1000);
-          leftSlider.setValue(990);
+        if ( rightSlider.getValue() > SLIDER_MAX ) {
+          rightSlider.setValue(SLIDER_MAX);
+          leftSlider.setValue(SLIDER_MAX - 10);
         }
       }
     }

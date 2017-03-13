@@ -272,7 +272,9 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
       
       for ( String series : seriesColorMap.keySet() ) {
         int seriesIdx = xysc.getSeriesIndex(series);
-        xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series) );
+        if (seriesIdx >= 0) {
+          xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series) );
+        }
         
         if ( seriesDashedSet.contains(series) ) {
           xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series).darker() );
