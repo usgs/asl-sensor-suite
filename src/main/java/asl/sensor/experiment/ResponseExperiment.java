@@ -1,5 +1,8 @@
 package asl.sensor.experiment;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -33,6 +36,8 @@ public class ResponseExperiment extends Experiment {
       currentFreq = a * Math.pow(10, b * (i * linearChange) );
     }
     
+    Set<String> respNames = new HashSet<String>();
+    
     xySeriesData = new XYSeriesCollection();
     for (int r = 0; r < 3; ++r) {
       if ( !ds.responseIsSet(r) ) {
@@ -41,6 +46,12 @@ public class ResponseExperiment extends Experiment {
       
       InstrumentResponse ir = ds.getResponse(r);
       
+      if ( respNames.contains( ir.getName() ) ) {
+        continue;
+      } else {
+        respNames.add( ir.getName() );
+      }
+       
       Complex[] result = ir.applyResponseToInput(freqArray);
       
       String name = ir.getName();
