@@ -40,6 +40,8 @@ public class ResponsePanel extends ExperimentPanel {
   private JCheckBox freqSpaceBox;
   private JComboBox<String> plotSelection;
   
+  private final static Color[] COLOR_LIST = 
+      new Color[]{Color.RED, Color.BLUE, Color.GREEN};
   
   private JFreeChart magChart, argChart;
   
@@ -53,7 +55,9 @@ public class ResponsePanel extends ExperimentPanel {
     
     set = false;
     
-    channelType[0] = "Response data (SEED data not used)";
+    for (int i = 0; i < 3; ++i) {
+      channelType[i] = "Response data (SEED data not used)";
+    }
     
     xAxisTitle = "Period (s)";
     freqAxisTitle = "Frequency (Hz)";
@@ -166,18 +170,30 @@ public class ResponsePanel extends ExperimentPanel {
     XYSeriesCollection argSeries = new XYSeriesCollection();
     XYSeriesCollection fromExp = (XYSeriesCollection) expResult.getData();
     
-    argSeries.addSeries( fromExp.getSeries(1) );
-    String argName = (String) argSeries.getSeriesKey(0);
-    magSeries.addSeries( fromExp.getSeries(0) );
-    String magName = (String) magSeries.getSeriesKey(0);
-    
-    seriesColorMap.put(argName, Color.BLUE);
-    seriesColorMap.put(magName, Color.RED);
+    for (int i = 0; i < fromExp.getSeriesCount(); ++i) {
+      if (i % 2 == 0) {
+        // 0, 2, 4 are the magnitude series
+        int idx = i / 2; // 1, 2, or 3
+        Color toColor = COLOR_LIST[idx];
+        magSeries.addSeries( fromExp.getSeries(i) );
+        String magName = (String) fromExp.getSeriesKey(i);
+        seriesColorMap.put(magName, toColor);
+      } else {
+        // 1, 3, 5 are the argument series
+        int idx = (i - 1) / 2;
+        Color toColor = COLOR_LIST[idx];
+        argSeries.addSeries( fromExp.getSeries(i) );
+        String argName = (String) fromExp.getSeriesKey(i);
+        seriesColorMap.put(argName, toColor);
+      }
+
+    }
     
     int idx = plotSelection.getSelectedIndex();
     
     argChart = buildChart(argSeries);
     argChart.getXYPlot().setRangeAxis(degreeAxis);
+    
     magChart = buildChart(magSeries);
     magChart.getXYPlot().setRangeAxis(yAxis);
 
@@ -282,7 +298,7 @@ public class ResponsePanel extends ExperimentPanel {
   
   @Override
   public int panelsNeeded() {
-    return 1;
+    return 3;
   }
 
 }

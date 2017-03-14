@@ -15,9 +15,6 @@ public class ResponseExperiment extends Experiment {
   @Override
   protected void backend(DataStore ds, final boolean freqSpace) {
     
-    xySeriesData = new XYSeriesCollection();
-    
-    InstrumentResponse ir = ds.getResponse(0);
     double lowFreq = .0001;
     double highFreq = 10000;
     
@@ -36,32 +33,49 @@ public class ResponseExperiment extends Experiment {
       currentFreq = a * Math.pow(10, b * (i * linearChange) );
     }
     
-    Complex[] result = ir.applyResponseToInput(freqArray);
-    
-    String name = ir.getName();
-    
-    XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
-    XYSeries argument = new XYSeries (name + " " + ARGUMENT);
-    for (int i = 0; i < freqArray.length; ++i) {
-      double phi = ( Math.toDegrees( result[i].getArgument() ) + 360 ) % 360;
-      if (freqSpace) {
-        double magAccel = result[i].abs() / (2*Math.PI*freqArray[i]);
-        magnitude.add( freqArray[i], 10 * Math.log10(magAccel) );
-        argument.add( freqArray[i], phi );
-      } else {
-        magnitude.add( 1/freqArray[i], 10 * Math.log10( result[i].abs() ) );
-        argument.add( 1/freqArray[i], phi );
+    xySeriesData = new XYSeriesCollection();
+    for (int r = 0; r < 3; ++r) {
+      if ( !ds.responseIsSet(r) ) {
+        continue;
       }
+      
+      InstrumentResponse ir = ds.getResponse(r);
+      
+      Complex[] result = ir.applyResponseToInput(freqArray);
+      
+      String name = ir.getName();
+      
+      XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
+      XYSeries argument = new XYSeries (name + " " + ARGUMENT);
+      for (int i = 0; i < freqArray.length; ++i) {
+        double phi = ( Math.toDegrees( result[i].getArgument() ) + 360 ) % 360;
+        if (freqSpace) {
+          double magAccel = result[i].abs() / (2*Math.PI*freqArray[i]);
+          magnitude.add( freqArray[i], 10 * Math.log10(magAccel) );
+          argument.add( freqArray[i], phi );
+        } else {
+          magnitude.add( 1/freqArray[i], 10 * Math.log10( result[i].abs() ) );
+          argument.add( 1/freqArray[i], phi );
+        }
+      }
+      
+      
+      ((XYSeriesCollection) xySeriesData).addSeries(magnitude);
+      ((XYSeriesCollection) xySeriesData).addSeries(argument);
+      
     }
-    
-    
-    ((XYSeriesCollection) xySeriesData).addSeries(magnitude);
-    ((XYSeriesCollection) xySeriesData).addSeries(argument);
+
   }
 
   @Override
   public boolean hasEnoughData(DataStore ds) {
-    return ds.responseIsSet(0);
+    for (int i = 0; i < 3; ++i) {
+      if ( ds.responseIsSet(i) ) {
+        return true;
+      }
+    }
+    
+    return false;
   }
 
 }

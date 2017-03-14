@@ -496,7 +496,7 @@ implements ActionListener, ChangeListener {
             InstrumentResponse ir = new InstrumentResponse(fr, resultStr);
             ds.setResponse(i, ir);
             zooms.setResponse(i, ir);
-            respFileNames[i].setText( resultStr );
+            respFileNames[i].setText(resultStr);
             clear.setEnabled(true);
             clearAll.setEnabled(true);
             
