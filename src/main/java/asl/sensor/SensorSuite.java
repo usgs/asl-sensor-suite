@@ -267,18 +267,30 @@ public class SensorSuite extends JPanel
    * @return BufferedImage that can be written to file
    */
   public BufferedImage getCompiledImage() {
-    // TODO: split this section into its own method (redundant with PNG save)
-    int inHeight = inputPlots.getImageHeight() * 2;
-    int width = 1280;
-    BufferedImage inPlot = inputPlots.getAsImage(width, inHeight);
+    
     ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-
+    int inPlotCount = ep.plotsToShow();
+    
+    int width = 1280;
     BufferedImage outPlot = ep.getAsImage(width, 960);
+    
+    width = outPlot.getWidth();
+    
+    // TODO: split this section into its own method (redundant with PNG save)
+    int inHeight = inputPlots.getImageHeight(inPlotCount) * 2;
+
+    int height = outPlot.getHeight();
+
+    BufferedImage inPlot = null; // unfortunate, but can't make an empty BI
+    if (inPlotCount > 0) {
+      inPlot = inputPlots.getAsImage(width, inHeight, inPlotCount);
+      height = inPlot.getHeight() + outPlot.getHeight();
+    }
 
     // int width = Math.max( inPlot.getWidth(), outPlot.getWidth() );
     // 5px tall buffer used to separate result plot from inputs
     // BufferedImage space = getSpace(width, 0);
-    int height = inPlot.getHeight() + outPlot.getHeight();
+
 
     // System.out.println(space.getHeight());
 
@@ -287,8 +299,11 @@ public class SensorSuite extends JPanel
 
     Graphics2D combined = returnedImage.createGraphics();
     combined.drawImage(outPlot, null, 0, 0);
-    combined.drawImage( inPlot, null, 0, 
-        outPlot.getHeight() );
+    if (null != inPlot) {
+      combined.drawImage( inPlot, null, 0, 
+          outPlot.getHeight() );
+    }
+
     combined.dispose();
     
     return returnedImage;

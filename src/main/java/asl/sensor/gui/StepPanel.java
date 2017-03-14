@@ -91,7 +91,7 @@ public class StepPanel extends ExperimentPanel {
     XYSeriesCollection xysc = (XYSeriesCollection) expResult.getData();
     
     // here's the stuff that needs to stay here, not moved to experiment class
-    populateChart(xysc);
+    setChart(xysc);
     XYPlot xyp = (XYPlot) chart.getPlot();
     StepExperiment sp = (StepExperiment) expResult;
     double[] rolloff = sp.getCornerAndDamping();

@@ -55,6 +55,8 @@ public class InstrumentResponse {
   
   private List<Complex> poles;
   
+  private String name;
+  
   private Unit unitType;
   private double normalization;
   
@@ -77,6 +79,7 @@ public class InstrumentResponse {
     normalization = Double.valueOf( responseIn.getNormalization() );
     normalFreq = Double.valueOf( responseIn.getNormalizationFrequency() );
     
+    name = responseIn.getName();
   }
   
   /**
@@ -85,11 +88,19 @@ public class InstrumentResponse {
    * @throws IOException
    */
   public InstrumentResponse(String filename) throws IOException {
+    name = filename;
     parseResponseFile(filename);
   }
   
-  public InstrumentResponse(BufferedReader br) throws IOException {
+  public InstrumentResponse(BufferedReader br, String name) throws IOException {
+    
+    this.name = name;
+    
     parserDriver(br);
+  }
+  
+  public String getName() {
+    return name;
   }
   
   /**

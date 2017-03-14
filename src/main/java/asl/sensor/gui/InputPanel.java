@@ -106,7 +106,7 @@ implements ActionListener, ChangeListener {
     return start + (sliderValue * len) / SLIDER_MAX;
   }
   
-  private int activeFiles = FILE_COUNT; // how much data is being displayed
+  private int activePlots = FILE_COUNT; // how much data is being displayed
   
   private DataStore ds;
   private DataStore zooms;
@@ -493,7 +493,7 @@ implements ActionListener, ChangeListener {
           InputStream is = cl.getResourceAsStream(fname);
           BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
           try {
-            InstrumentResponse ir = new InstrumentResponse(fr);
+            InstrumentResponse ir = new InstrumentResponse(fr, resultStr);
             ds.setResponse(i, ir);
             zooms.setResponse(i, ir);
             respFileNames[i].setText( resultStr );
@@ -553,7 +553,8 @@ implements ActionListener, ChangeListener {
           selFile = new File( selFile.toString() + ext);
         }
         try {
-          BufferedImage bi = getAsImage( 640, getImageHeight() );
+          int height = IMAGE_HEIGHT * activePlots;
+          BufferedImage bi = getAsImage( 640, height, activePlots );
           
           ImageIO.write(bi,"png",selFile);
         } catch (IOException e1) {
@@ -646,11 +647,11 @@ implements ActionListener, ChangeListener {
    * Return this panel's charts as a single buffered image
    * @return Buffered image of the plots, writeable to file
    */
-  public BufferedImage getAsImage() {
+  public BufferedImage getAsImage(int plotsToShow) {
     // if all 3 plots are set, height of panel is height of image
-    int height = getImageHeight();
+    int height = getImageHeight(plotsToShow);
     // otherwise, we only use the height of images actually set
-    return getAsImage( IMAGE_WIDTH, height );
+    return getAsImage( IMAGE_WIDTH, height, plotsToShow );
   }
   
   /**
@@ -660,17 +661,16 @@ implements ActionListener, ChangeListener {
    * @param height Height of returned image
    * @return Buffered image of the plots, writeable to file
    */
-  public BufferedImage getAsImage(int width, int height) {
+  public BufferedImage getAsImage(int width, int height, int plotsToShow) {
     
     // int shownHeight = allCharts.getHeight();
     
     // width = Math.min( width, chartPanels[0].getWidth() );
     // height = Math.max( height, shownHeight );
     
-    int loaded = zooms.numberOfBlocksSet();
+    int loaded = plotsToShow;
     // cheap way to make sure height is a multiple of the chart count
     height = (height*loaded)/loaded;
-    
     int chartHeight = height/loaded;
     
     Dimension outSize = new Dimension(width, height);
@@ -733,8 +733,8 @@ implements ActionListener, ChangeListener {
     
     showRegionForGeneration();
     if ( zooms.numberOfBlocksSet() > 1 ) {
-      zooms.matchIntervals(activeFiles);
-      zooms.trimToCommonTime(activeFiles);
+      zooms.matchIntervals(activePlots);
+      zooms.trimToCommonTime(activePlots);
     }
 
     return zooms;
@@ -745,8 +745,8 @@ implements ActionListener, ChangeListener {
    * so that it only needs to fit the plots that have data in them 
    * @return height of image to output
    */
-  public int getImageHeight() {
-    return IMAGE_HEIGHT * zooms.numberOfBlocksSet();
+  public int getImageHeight(int plotsToShow) {
+    return IMAGE_HEIGHT * plotsToShow;
   }
   
   /**
@@ -873,12 +873,12 @@ implements ActionListener, ChangeListener {
     if ( leftSlider.getValue() != 0 || rightSlider.getValue() != SLIDER_MAX ) {
       long start = getMarkerLocation(db, leftSlider.getValue() );
       long end = getMarkerLocation(db, rightSlider.getValue() );
-      zooms = new DataStore(ds, start, end, activeFiles);
+      zooms = new DataStore(ds, start, end, activePlots);
       leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
       zoomOut.setEnabled(true);
     }
     
-    for (int i = 0; i < activeFiles; ++i) {
+    for (int i = 0; i < activePlots; ++i) {
       if ( !zooms.blockIsSet(i) ) {
         continue;
       }
@@ -993,8 +993,8 @@ implements ActionListener, ChangeListener {
           }
 
           zooms = new DataStore(ds);
-          zooms.matchIntervals(activeFiles);
-          zooms.trimToCommonTime(activeFiles);
+          zooms.matchIntervals(activePlots);
+          zooms.trimToCommonTime(activePlots);
 
           XYSeries ts = zooms.getPlotSeries(idx);
           chart = ChartFactory.createXYLineChart(
@@ -1095,12 +1095,12 @@ implements ActionListener, ChangeListener {
     contConstraints.anchor = GridBagConstraints.CENTER;
     contConstraints.fill = GridBagConstraints.BOTH;
     
-    activeFiles = panelsNeeded;
+    activePlots = panelsNeeded;
     
-    zooms = new DataStore(ds, activeFiles);
-    zooms.trimToCommonTime(activeFiles);
+    zooms = new DataStore(ds, activePlots);
+    zooms.trimToCommonTime(activePlots);
     int i;
-    for (i = 0; i < activeFiles; ++i) {
+    for (i = 0; i < activePlots; ++i) {
       if ( zooms.blockIsSet(i) ){
         resetPlotZoom(i);
       }
@@ -1136,7 +1136,7 @@ implements ActionListener, ChangeListener {
     
     // using this test means the panel doesn't try to scroll when it's
     // only got a few inputs to deal with, when stuff is still pretty readable
-    cont.setScrollableTracksViewportHeight(activeFiles <= 4);
+    cont.setScrollableTracksViewportHeight(activePlots <= 4);
     
     inputScrollPane.getViewport().setView(cont);
     inputScrollPane.setPreferredSize( cont.getPreferredSize() );

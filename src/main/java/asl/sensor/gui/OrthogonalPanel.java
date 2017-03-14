@@ -68,7 +68,7 @@ public class OrthogonalPanel extends ExperimentPanel {
     expResult.setData(ds, false);
     XYSeriesCollection xysc = (XYSeriesCollection) expResult.getData();
     
-    populateChart(xysc);
+    setChart(xysc);
     XYPlot xyp = (XYPlot) chart.getPlot();
     
     double[] fit = ( (OrthogonalExperiment) expResult ).getSolutionParams();

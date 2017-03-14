@@ -495,7 +495,7 @@ implements ChangeListener {
         
         displayInfoMessage("Data loaded...drawing chart");
         
-        populateChart(xysc);
+        setChart(xysc);
         
         // obviously, set the chart
         chartPanel.setChart(chart);

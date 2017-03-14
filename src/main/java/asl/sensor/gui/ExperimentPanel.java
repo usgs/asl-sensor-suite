@@ -250,7 +250,13 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * displayed in the specified color or dashing, etc.
    * @param xyDataset collection of XYSeries to plot
    */
-  protected void populateChart(XYDataset xyDataset) {
+  protected void setChart(XYDataset xyDataset) {
+
+     this.chart = buildChart(xyDataset);
+
+  }
+  
+  public JFreeChart buildChart(XYDataset xyDataset) {
     
     JFreeChart chart = ChartFactory.createXYLineChart(
         expType.getName(),
@@ -315,7 +321,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     xyPlot.setDomainAxis( getXAxis() );
     xyPlot.setRangeAxis( getYAxis() );
     
-    this.chart = chart;
+    return chart;
   }
   
   /**
@@ -326,6 +332,14 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public abstract void updateData(final DataStore ds);
   
   public abstract int panelsNeeded();
+  
+  /**
+   * Number of plots to return in an output report
+   * @return
+   */
+  public int plotsToShow() {
+    return panelsNeeded();
+  }
   
   public boolean hasEnoughData(final DataStore ds) {
     return expResult.hasEnoughData(ds);

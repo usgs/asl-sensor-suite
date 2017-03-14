@@ -207,7 +207,7 @@ public class NoisePanel extends ExperimentPanel {
         
         displayInfoMessage("Data loaded...drawing chart");
         
-        populateChart( expResult.getData() );
+        setChart( expResult.getData() );
 
         chartPanel.setChart(chart);
         chartPanel.setMouseZoomable(true);

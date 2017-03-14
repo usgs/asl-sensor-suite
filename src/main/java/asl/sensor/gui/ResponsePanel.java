@@ -1,17 +1,32 @@
 package asl.sensor.gui;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.experiment.ExperimentEnum;
@@ -20,17 +35,24 @@ import asl.sensor.input.DataStore;
 
 public class ResponsePanel extends ExperimentPanel {
 
-  public ValueAxis freqAxis, degreeAxis;
-  public String freqAxisTitle, degreeAxisTitle;
-  public JCheckBox freqSpaceBox;
-  public JComboBox<String> plotSelection;
+  private ValueAxis freqAxis, degreeAxis;
+  private String freqAxisTitle, degreeAxisTitle;
+  private JCheckBox freqSpaceBox;
+  private JComboBox<String> plotSelection;
+  
+  
+  private JFreeChart magChart, argChart;
   
   public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   
+  private boolean set;
+  
   public ResponsePanel(ExperimentEnum exp) {
     super(exp);
-    // TODO Auto-generated constructor stub
+    
+    set = false;
+    
     channelType[0] = "Response data (SEED data not used)";
     
     xAxisTitle = "Period (s)";
@@ -90,12 +112,15 @@ public class ResponsePanel extends ExperimentPanel {
     plotSelection.addItem(MAGNITUDE);
     plotSelection.addItem(ARGUMENT);
     this.add(plotSelection, gbc);
-    
-    seriesColorMap.put(MAGNITUDE, Color.RED);
-    seriesColorMap.put(ARGUMENT, Color.BLUE);
+    plotSelection.addActionListener(this);
     
   }
 
+  @Override
+  public int plotsToShow() {
+    return 0;
+  }
+  
   @Override
   public ValueAxis getXAxis() {
     
@@ -129,26 +154,132 @@ public class ResponsePanel extends ExperimentPanel {
 
   @Override
   public void updateData(DataStore ds) {
-    // TODO Auto-generated method stub
+
+    seriesColorMap = new HashMap<String, Color>();
+    
     boolean freqSpace = freqSpaceBox.isEnabled();
     expResult.setData(ds, freqSpace);
     
-    XYSeriesCollection xysc = new XYSeriesCollection();
+    set = true;
+    
+    XYSeriesCollection magSeries = new XYSeriesCollection();
+    XYSeriesCollection argSeries = new XYSeriesCollection();
     XYSeriesCollection fromExp = (XYSeriesCollection) expResult.getData();
     
-    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
-      xysc.addSeries( fromExp.getSeries(MAGNITUDE) );
-    } else {
-      xysc.addSeries( fromExp.getSeries(ARGUMENT) );
-    }
+    argSeries.addSeries( fromExp.getSeries(1) );
+    String argName = (String) argSeries.getSeriesKey(0);
+    magSeries.addSeries( fromExp.getSeries(0) );
+    String magName = (String) magSeries.getSeriesKey(0);
     
-    populateChart( xysc );
+    seriesColorMap.put(argName, Color.BLUE);
+    seriesColorMap.put(magName, Color.RED);
+    
+    int idx = plotSelection.getSelectedIndex();
+    
+    argChart = buildChart(argSeries);
+    argChart.getXYPlot().setRangeAxis(degreeAxis);
+    magChart = buildChart(magSeries);
+    magChart.getXYPlot().setRangeAxis(yAxis);
 
+    if (idx == 0) {
+      chart = magChart;
+    } else {
+      chart = argChart;
+    }
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
     
   }
 
+  @Override
+  public BufferedImage getAsImage(int height, int width) {
+    
+    // TODO: fix this, need to assign chart and build chart in separate
+    // function in superclass to build this most easily imo
+    
+    if (!set) {
+      ChartPanel cp = new ChartPanel(chart);
+      BufferedImage bi =  
+          new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+      cp.setSize( new Dimension(width, height) );
+      Graphics2D g = bi.createGraphics();
+      cp.printAll(g);
+      g.dispose();
+      return bi;
+      
+    }
+    
+    height = (height * 2) / 2;
+    
+    // Dimension outSize = new Dimension(width, height);
+    Dimension chartSize = new Dimension(width, height / 2);
+    
+    ChartPanel outCPanel = new ChartPanel(magChart);
+    outCPanel.setSize(chartSize);
+    outCPanel.setPreferredSize(chartSize);
+    outCPanel.setMinimumSize(chartSize);
+    outCPanel.setMaximumSize(chartSize);
+    
+    ChartPanel outCPanel2 = new ChartPanel(argChart);
+    outCPanel2.setSize(chartSize);
+    outCPanel2.setPreferredSize(chartSize);
+    outCPanel2.setMinimumSize(chartSize);
+    outCPanel2.setMaximumSize(chartSize);    
+    
+    BufferedImage bi = new BufferedImage(
+        (int) outCPanel.getWidth(), 
+        (int) outCPanel.getHeight() + (int) outCPanel2.getHeight(), 
+        BufferedImage.TYPE_INT_ARGB);
+    
+    BufferedImage magBuff = new BufferedImage(
+        (int) outCPanel.getWidth(),
+        (int) outCPanel.getHeight(),
+        BufferedImage.TYPE_INT_ARGB);
+    
+    Graphics2D g = magBuff.createGraphics();
+    outCPanel.printAll(g);
+    g.dispose();
+    
+    BufferedImage argBuff = new BufferedImage(
+        (int) outCPanel2.getWidth(),
+        (int) outCPanel2.getHeight(),
+        BufferedImage.TYPE_INT_ARGB);
+
+    g = argBuff.createGraphics();
+    outCPanel2.printAll(g);
+    g.dispose();
+    
+    g = bi.createGraphics();
+    g.drawImage(magBuff, null, 0, 0);
+    g.drawImage( argBuff, null, 0, magBuff.getHeight() );
+    g.dispose();
+    
+    return bi;
+  }
+  
+  @Override
+  public void actionPerformed(ActionEvent e) {
+    
+    super.actionPerformed(e);
+    
+    if ( e.getSource() == plotSelection ) {
+      if (!set) {
+        return;
+      }
+      
+      int idx = plotSelection.getSelectedIndex();
+      if (idx == 0) {
+        chartPanel.setChart(magChart);
+      } else {
+        chartPanel.setChart(argChart);
+      }
+      
+      return;
+      
+    }
+    
+  }
+  
   @Override
   public int panelsNeeded() {
     return 1;

@@ -23,7 +23,6 @@ public class ResponseExperiment extends Experiment {
     
     int pointCount = 100000;
     double linearChange = (highFreq - lowFreq) / pointCount;
-    System.out.println(linearChange);
     // find logarithmic parameters for linear components
     double b = Math.log10(lowFreq / highFreq) / (lowFreq - highFreq);
     double a = lowFreq / Math.pow(10, b * lowFreq);
@@ -38,8 +37,11 @@ public class ResponseExperiment extends Experiment {
     }
     
     Complex[] result = ir.applyResponseToInput(freqArray);
-    XYSeries magnitude = new XYSeries(MAGNITUDE);
-    XYSeries argument = new XYSeries (ARGUMENT);
+    
+    String name = ir.getName();
+    
+    XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
+    XYSeries argument = new XYSeries (name + " " + ARGUMENT);
     for (int i = 0; i < freqArray.length; ++i) {
       double phi = ( Math.toDegrees( result[i].getArgument() ) + 360 ) % 360;
       if (freqSpace) {
