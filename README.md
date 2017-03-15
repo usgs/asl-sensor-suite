@@ -18,7 +18,7 @@ Because SEED files must be decompressed and stored in memory, the footprint of t
 
 #####Command Line
 The program can be compiled by using the commands "gradle compileJava" which will compile the source code, or "gradle build" which will also run the unit tests.
-Running the program can be done by either opening the jar through a filebrowser or running either the command "java -jar SensorTestSuite.jar" or "gradle run".
+Running the program can be done by either opening the jar through a filebrowser or running either "gradle run", which launches the jar file, or "java -jar build/libs/SensorTestSuite$version_number$.jar", with $version_number$ replaced with the current version, such as 0.9.0.
 
 #####Eclipse
 For those who wish to compile and run this program with Eclipse, run the command "gradle eclipse" and then, inside eclipse, go to File>"Open projects from file system..." and direct Eclipse to the root folder of the test suite. Now the code will be available as an Eclipse project. For more information on using Eclipse, consult the Eclipse documentation.
@@ -38,7 +38,7 @@ For more information on the specifics of certain tests, consult the javadoc.
 
 ####Self-noise
 
-Self-noise requires three components and an appropriate response file for each. The test computes the cross-power (power-spectral density) of each pair of files, and use that data to extract estimations of the inherent noise of each sensor. Plots of the seismic NLNM and NHNM are also included.
+Self-noise requires three components and an appropriate response file for each. The test computes the cross-power (power-spectral density) of each pair of files, and use that data to extract estimations of the inherent noise of each sensor. Plots of the seismic NLNM and NHNM are also included. Units of frequency (Hz) or period (seconds, default) can be selected using the checkmark in the bottom-left of the panel.
 
 The input files do not need to be in any particular order. They all must have responses specified.
 
@@ -46,7 +46,9 @@ The input files do not need to be in any particular order. They all must have re
 
 Relative gain computes the mean of the PSD of each of two sensors, and estimates the gain from the mean of the ratio of the values over a selected range of the output.
 
-The input files, again, do not need to be in any order (the panel allows for choosing which sensor to be used as reference), but they must both have responses specified.
+The input files, again, do not need to be in any order (the panel allows for choosing which sensor to be used as reference by way of the selection menus below the chart), but they must both have responses specified.
+
+The gain is initially calculated using the octave around the peak frequency, but a custom range can be specified using the sliders, same as the 
 
 ####Step Calibration
 
@@ -59,6 +61,10 @@ The input files have a specific order: the step input signal must be placed firs
 Orthogonality takes in four inputs, two each from sensors known or assumed to be orthogonal, and finds the true (interior) angle between the second two sensors if the first two sensors are truly orthogonal.
 
 The input files have a specific order: the first and third inputs are for north-facing sensors, and the second and fourth are for east-facing sensors. As noted above, the first two sensors are assumed to be 90 degrees apart for the purpose of the test; the second two sensors' orientation is what is solved for.
+
+####Response
+
+This plots 1-3 different response attenuation and phase curves (Bode plots) for given response files. The image generated from this plot will include both plots, though the program can only display one at a time (selectable with the drop-down menu in the bottom-left of the panel). Units of frequency (Hz, default) or period can be selected by the selection box on the bottom-right, much like with the self-noise plot.
 
 ### Further Work / Known Issues
 
