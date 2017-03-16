@@ -115,7 +115,7 @@ public class RandomizedPanel extends ExperimentPanel {
     seriesColorMap = new HashMap<String, Color>();
     
     RandomizedExperiment respExp = (RandomizedExperiment) expResult;
-    respExp.setLowFreq( lowFreqBox.isEnabled() );
+    respExp.setLowFreq( lowFreqBox.isSelected() );
     expResult.setData(ds);
     
     set = true;

@@ -30,7 +30,7 @@ public class RandomizedExperiment extends Experiment {
   private InstrumentResponse fitResponse;
   private double[] freqs;
   
-  private static double delta = 1 + Double.MIN_VALUE;
+  private static double delta = 1 + 0.1;
   
   public RandomizedExperiment() {
     super();
@@ -57,6 +57,7 @@ public class RandomizedExperiment extends Experiment {
     
     fitPoles = new ArrayList<Complex>( fitResponse.getPoles() );
     
+    // first, get the plots of the response
     DataStore irHolder = new DataStore();
     irHolder.setResponse(0, fitResponse);
     
@@ -67,36 +68,47 @@ public class RandomizedExperiment extends Experiment {
     XYSeries respMag = respPlots.getSeries(0);
     XYSeries respArg = respPlots.getSeries(1);
     
-    FFTResult calibFFTResult = FFTResult.singleSidedFFT(calib);
-    freqs = calibFFTResult.getFreqs();
-    Complex[] calibFFT = calibFFTResult.getFFT();
-    Complex[] outputFFT = FFTResult.singleSidedFFT(sensorOut).getFFT();
+    // second, get the plots of the calculated response from deconvolution
+    // PSD(out, in) / PSD(in, in) gives us PSD(out) / PSD(in) while removing
+    // imaginary terms from the denominator due to multiplication with the
+    // complex conjugate
+    // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
     
-    Complex[] estimatedResponse = new Complex[outputFFT.length];
+    FFTResult numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
+    FFTResult denominatorPSD = FFTResult.spectralCalc(calib, calib);
+    
+    freqs = numeratorPSD.getFreqs();
+    int len = numeratorPSD.getFFT().length;
+    
+    Complex[] estimatedResponse = new Complex[len];
     
     for (int i = 0; i < estimatedResponse.length; ++i) {
-      estimatedResponse[i] = outputFFT[i].divide(calibFFT[i]);
+      Complex numer = numeratorPSD.getFFT()[i];
+      double denom = denominatorPSD.getFFT()[i].getReal();
+      estimatedResponse[i] = numer.divide(denom);
     }
     
     XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. arg. [phi]");
     
+    double[] initResult = new double[estimatedResponse.length];
+    
     for (int i = 0; i < estimatedResponse.length; ++i) {
+      Complex estValue = estimatedResponse[i].multiply(2 * Math.PI * freqs[i]);
+     
+      double phi = Math.toDegrees( estValue.getArgument() );
+      phi = (phi + 360) % 360; // keeps angles positive
+      
       if (freqs[i] != 0) {
-        calcMag.add( freqs[i], 10 * Math.log10( estimatedResponse[i].abs() ) );
+        calcMag.add( freqs[i], 10 * Math.log10( estValue.abs() ) );
         
-        double phi = Math.toDegrees( estimatedResponse[i].getArgument() );
-        phi = (phi + 360) % 360; // keeps angles positive
+        
         calcArg.add(freqs[i], phi);
       }
-    }
-    
-    // magnitude and result of 
-    double[] initResult = new double[estimatedResponse.length * 2];
-    for (int i = 0; i < estimatedResponse.length; ++i) {
-      int argIdx = i + estimatedResponse.length;
-      initResult[i] = /*10 * Math.log10(*/ estimatedResponse[i].abs() /*)*/;
-      initResult[argIdx] = estimatedResponse[i].getArgument();
+      
+      // int argIdx = i + estimatedResponse.length;
+      initResult[i] = estValue.abs();
+      // initResult[argIdx] = phi;
     }
     
     // now to set up a solver for the params
@@ -120,6 +132,8 @@ public class RandomizedExperiment extends Experiment {
         responseVariables[imagIdx] = fitPoles.get(poleIdx).getImaginary();
       }
     }
+    
+    // now, solve for the response that gets us the best-fit response curve
     
     RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector observedComponents = MatrixUtils.createRealVector(initResult);
@@ -153,18 +167,48 @@ public class RandomizedExperiment extends Experiment {
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
+    double[] poleParams = optimum.getPoint().toArray();
+    List<Complex> poles = new ArrayList<Complex>(fitPoles);
+    List<Complex> builtPoles = new ArrayList<Complex>();
+    // time to populate the poles
+    for (int i = 0; i < poleParams.length; i += 2) {
+      Complex c = new Complex(poleParams[i], poleParams[i + 1]);
+      System.out.println(c);
+      builtPoles.add(c);
+    }
+    
+    System.out.println(fitPoles);
+    
+    if (lowFreq) {
+      for (int i = 0; i < 2; ++i) {
+        poles.set( i, builtPoles.get(i) );
+      }
+    } else {
+      for (int i = 0; i < builtPoles.size() - 2; ++i) {
+        poles.set( i + 2, builtPoles.get(i) );
+      }
+    }
+    
+    fitResponse.setPoles(poles);
+    fitPoles = poles;
+    
+    System.out.println(fitPoles);
+    
     // System.out.println("FIT PARAMS RESIDUAL: " +  optimum.getRMS() );
     
     // fitResid = optimum.getRMS() * 100;
     
-    double[] magArgFit = evaluateResponse( optimum.getPoint() );
+    Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
     XYSeries fitMag = new XYSeries("Fit resp. magnitude");
     XYSeries fitArg = new XYSeries("Fit resp. arg. [phi]");
     for (int i = 0; i < freqs.length; ++i) {
-      int argIdx = freqs.length + i;
+      // int argIdx = freqs.length + i;
       if (freqs[i] != 0) {
-        fitMag.add( freqs[i], 10 * Math.log10(magArgFit[i]) );
-        fitArg.add(freqs[i], magArgFit[argIdx]);
+        Complex fitRespInteg = fitRespCurve[i].multiply(  
+           2 * Math.PI * freqs[i]);
+        fitMag.add( freqs[i], 10 * Math.log10( fitRespInteg.abs() ) );
+        double argument = Math.toDegrees( fitRespCurve[i].getArgument() );
+        fitArg.add(freqs[i], ( argument + 360 ) % 360 );
       }
     }
     
@@ -188,6 +232,7 @@ public class RandomizedExperiment extends Experiment {
     
     List<Complex> poleList = new ArrayList<Complex>( fitResponse.getPoles() );
     List<Complex> builtPoles = new ArrayList<Complex>();
+    
     for (int i = 0; i < numVars; i += 2) {
       Complex c = new Complex(variables.getEntry(i), variables.getEntry(i+1));
       builtPoles.add(c);
@@ -208,42 +253,45 @@ public class RandomizedExperiment extends Experiment {
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     
     // array is magnitudes, then arguments of complex number
-    double[] magAndAngle = new double[2 * appliedCurve.length];
+    double[] mag = new double[appliedCurve.length];
     for (int i = 0; i < appliedCurve.length; ++i) {
       int argIdx = i + appliedCurve.length;
-      magAndAngle[i] = appliedCurve[i].abs();
-      magAndAngle[argIdx] = ( appliedCurve[i].getArgument() + 360 ) % 360;
+      Complex value = appliedCurve[i].multiply(2 * Math.PI * freqs[i]);
+      mag[i] = value.abs();
+      /*
+      double argument = Math.toDegrees( value.getArgument() );
+      magAndAngle[argIdx] = argument; // taking (% 360) bad for solver
+      */
     }
     
-    return magAndAngle;
+    return mag;
   }
   
   private Pair<RealVector, RealMatrix> jacobian(RealVector variables) {
     
-    System.out.println( variables.getDimension() );
-    
     int numVars = variables.getDimension();
     
-    double[] magAndAngle = evaluateResponse(variables);
+    double[] mag = evaluateResponse(variables);
     
-    double[][] jacobian = new double[magAndAngle.length][numVars];
+    double[][] jacobian = new double[mag.length][numVars];
+    double start, change;
     // now take the forward difference of each value 
     for (int i = 0; i < numVars; ++i) {
       RealVector dx = variables.copy();
-      double increment = dx.getEntry(i);
-      increment *= delta;
-      dx.setEntry(i, increment);
+      start = variables.getEntry(i);
+      change = start * delta;
+      dx.setEntry(i, change);
       
       double[] result = evaluateResponse(dx);
       
       for (int j = 0; j < result.length; ++j) {
-        double numerator = result[i] - magAndAngle[i];
-        double denominator = Double.MIN_VALUE;
+        double numerator = result[i] - mag[i];
+        double denominator = change - start;
         jacobian[j][i] = numerator / denominator;
       }
     }
     
-    RealVector result = MatrixUtils.createRealVector(magAndAngle);
+    RealVector result = MatrixUtils.createRealVector(mag);
     RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
     
     return new Pair<RealVector, RealMatrix>(result, jMat);

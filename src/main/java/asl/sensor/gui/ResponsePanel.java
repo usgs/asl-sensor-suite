@@ -152,7 +152,7 @@ public class ResponsePanel extends ExperimentPanel {
 
     seriesColorMap = new HashMap<String, Color>();
     
-    boolean freqSpace = freqSpaceBox.isEnabled();
+    boolean freqSpace = freqSpaceBox.isSelected();
     ResponseExperiment respExp = (ResponseExperiment) expResult;
     respExp.setFreqSpace(freqSpace);
     expResult.setData(ds);
