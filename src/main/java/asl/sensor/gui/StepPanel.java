@@ -87,8 +87,8 @@ public class StepPanel extends ExperimentPanel {
     
     displayInfoMessage("Running stepcal testing...");
     
-    expResult.setData(ds, false);
-    XYSeriesCollection xysc = (XYSeriesCollection) expResult.getData();
+    expResult.setData(ds);
+    XYSeriesCollection xysc = expResult.getData();
     
     // here's the stuff that needs to stay here, not moved to experiment class
     setChart(xysc);

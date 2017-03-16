@@ -37,7 +37,7 @@ public class AzimuthExperiment extends Experiment {
   }
 
   @Override
-  protected void backend(final DataStore ds, final boolean freqSpace) {
+  protected void backend(final DataStore ds) {
     
     // assume the first two are the reference and the second two are the test?
     
@@ -141,11 +141,11 @@ public class AzimuthExperiment extends Experiment {
     XYSeries fromNorth = new XYSeries (testName + " relative to ref. sensor");
     fromNorth.add(angle + offset, 1);
     fromNorth.add(angle + offset, 0);
-    
-    XYSeriesCollection xysc = (XYSeriesCollection) xySeriesData;
-    xysc.addSeries(ref);
-    xysc.addSeries(set);
-    xysc.addSeries(fromNorth);
+
+    xySeriesData = new XYSeriesCollection();
+    xySeriesData.addSeries(ref);
+    xySeriesData.addSeries(set);
+    xySeriesData.addSeries(fromNorth);
     
     /*
     XYSeries diffSrs = new XYSeries("Diff(" + testName + ", " + refName + ")");

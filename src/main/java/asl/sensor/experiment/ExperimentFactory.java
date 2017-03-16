@@ -26,6 +26,8 @@ public class ExperimentFactory {
       return new StepExperiment();
     case AZMTH:
       return new AzimuthExperiment();
+    case RANDM:
+      return new RandomizedExperiment();
     case RESPN:
       return new ResponseExperiment();
     default:

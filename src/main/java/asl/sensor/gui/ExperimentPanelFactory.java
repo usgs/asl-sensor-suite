@@ -29,6 +29,8 @@ public class ExperimentPanelFactory {
       return new StepPanel(exp);
     case AZMTH:
       return new AzimuthPanel(exp);
+    case RANDM:
+      return new RandomizedPanel(exp);
     case RESPN:
       return new ResponsePanel(exp);
     default:

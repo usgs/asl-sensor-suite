@@ -402,6 +402,10 @@ public class InstrumentResponse {
     zeros = Arrays.asList(zerosArr);
     poles = Arrays.asList(polesArr);
   }
+
+  public void setPoles(List<Complex> poleList) {
+    poles = poleList;
+  }
   
 }
 

@@ -1,7 +1,6 @@
 package asl.sensor.experiment;
 
 import org.apache.commons.math3.complex.Complex;
-import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
@@ -80,7 +79,7 @@ public abstract class Experiment {
     
   }
   
-  protected XYDataset xySeriesData;
+  protected XYSeriesCollection xySeriesData;
   
   /**
    * Abstract function that
@@ -89,8 +88,7 @@ public abstract class Experiment {
    * @param freqSpace True if the data should be plotted by frequency (False
    * if it should be plotted by period) for domain axis
    */
-  protected abstract void backend(
-      final DataStore ds, final boolean freqSpace);
+  protected abstract void backend(final DataStore ds);
   
   /**
    * Return the plottable data for this experiment, populated in the backend
@@ -98,7 +96,7 @@ public abstract class Experiment {
    * setData function / backend will produce initialization errors (NPE).
    * @return Plottable data 
    */
-  public XYDataset getData() {
+  public XYSeriesCollection getData() {
     return xySeriesData;
   }
   
@@ -111,10 +109,10 @@ public abstract class Experiment {
    * @param freqSpace True if the x-axis should be frequency units (False if it
    * should be units of time, for the period)
    */
-  public void setData(final DataStore ds, final boolean freqSpace) {
+  public void setData(final DataStore ds) {
     
     if ( hasEnoughData(ds) && ds.numberOfBlocksSet() == 0) {
-      backend(ds, freqSpace);
+      backend(ds);
       return;
     }
     
@@ -142,7 +140,7 @@ public abstract class Experiment {
       }
     }
     
-    backend(ds, freqSpace);
+    backend(ds);
   }
   
   public abstract boolean hasEnoughData(final DataStore ds);

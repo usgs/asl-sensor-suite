@@ -16,6 +16,7 @@ import org.jfree.chart.axis.ValueAxis;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.input.DataStore;
 
 public class NoisePanel extends ExperimentPanel {
@@ -185,9 +186,11 @@ public class NoisePanel extends ExperimentPanel {
     SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
       @Override
       public Integer doInBackground() {
-        expResult.setData(ds, freqSpaceImmutable);
+        NoiseExperiment noisExp = (NoiseExperiment) expResult;
+        noisExp.setFreqSpace(freqSpaceImmutable);
+        expResult.setData(ds);
         
-        XYSeriesCollection xysc = (XYSeriesCollection) expResult.getData();
+        XYSeriesCollection xysc = expResult.getData();
         
         for (int i = 0; i < NOISE_PLOT_COUNT; ++i) {
           String name = (String) xysc.getSeriesKey(i);

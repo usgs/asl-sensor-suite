@@ -36,7 +36,7 @@ public class OrthogonalExperiment extends Experiment {
   }
 
   @Override
-  protected void backend(final DataStore ds, final boolean freqSpace) {
+  protected void backend(final DataStore ds) {
     
     long interval = ds.getXthLoadedBlock(1).getInterval();
     
@@ -234,10 +234,9 @@ public class OrthogonalExperiment extends Experiment {
       timeAtPoint += tick;
     }
     
-    XYSeriesCollection xysc = (XYSeriesCollection) xySeriesData;
-    
-    xysc.addSeries(diffSrs);
-    xysc.addSeries(diffRotSrs);
+    xySeriesData = new XYSeriesCollection();
+    xySeriesData.addSeries(diffSrs);
+    xySeriesData.addSeries(diffRotSrs);
     
   }
 

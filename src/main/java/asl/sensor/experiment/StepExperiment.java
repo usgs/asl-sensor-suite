@@ -69,7 +69,7 @@ public class StepExperiment extends Experiment{
   }
   
   @Override
-  protected void backend(final DataStore ds, final boolean freqSpace) {
+  protected void backend(final DataStore ds) {
     
     // assume that the first block is the raw step calibration
     // the raw calibration is defined as not having an associated response
@@ -161,9 +161,9 @@ public class StepExperiment extends Experiment{
     
     // next we'll want to find the parameters to fit the plots
     // to the inputted data
-    XYSeriesCollection xysc = (XYSeriesCollection) xySeriesData;
-    xysc.addSeries(scs);
-    xysc.addSeries(xys);
+    xySeriesData = new XYSeriesCollection();
+    xySeriesData.addSeries(scs);
+    xySeriesData.addSeries(xys);
     
     // next step: curve fitting
     RealVector startVector = MatrixUtils.createRealVector(params);
@@ -214,7 +214,7 @@ public class StepExperiment extends Experiment{
       now += interval;
     }
     
-    xysc.addSeries(bfs);
+    xySeriesData.addSeries(bfs);
     
     
   }

@@ -15,6 +15,7 @@ public enum ExperimentEnum {
   STCAL ("Step calibration"),
   AZMTH ("Azimuth"),
   ORTHO ("Orthogonality"),
+  RANDM ("Randomized calibration"),
   RESPN ("Response");
 
   private String name;

@@ -30,7 +30,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
-import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
 
@@ -250,13 +249,13 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * displayed in the specified color or dashing, etc.
    * @param xyDataset collection of XYSeries to plot
    */
-  protected void setChart(XYDataset xyDataset) {
+  protected void setChart(XYSeriesCollection xyDataset) {
 
      this.chart = buildChart(xyDataset);
 
   }
   
-  public JFreeChart buildChart(XYDataset xyDataset) {
+  public JFreeChart buildChart(XYSeriesCollection xyDataset) {
     
     JFreeChart chart = ChartFactory.createXYLineChart(
         expType.getName(),
@@ -267,55 +266,53 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
         true, // include legend
         false, 
         false);
-    
+
     // apply effects to the components that require it (i.e., NLNM time series)
     XYPlot xyPlot = chart.getXYPlot();
     XYItemRenderer xyir = xyPlot.getRenderer();
-    
-    if (xyDataset instanceof XYSeriesCollection) {
-      // force certain colors and whether or not a line should be dashed
-      XYSeriesCollection xysc = (XYSeriesCollection) xyDataset;
-      
-      for ( String series : seriesColorMap.keySet() ) {
-        int seriesIdx = xysc.getSeriesIndex(series);
-        if (seriesIdx >= 0) {
-          xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series) );
-        }
-        
-        if ( seriesDashedSet.contains(series) ) {
-          xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series).darker() );
-          
-          BasicStroke stroke = (BasicStroke) xyir.getSeriesStroke(seriesIdx);
-          if (stroke == null) {
-            stroke = (BasicStroke) xyir.getBaseStroke();
-          }
-          float width = stroke.getLineWidth();
-          int join = stroke.getLineJoin();
-          int cap = stroke.getEndCap();
-          
-          float[] dashing = new float[]{1,4};
-          
-          stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
-          xyir.setSeriesStroke(seriesIdx, stroke);
-        }
-        
+
+
+    // force certain colors and whether or not a line should be dashed
+
+    for ( String series : seriesColorMap.keySet() ) {
+      int seriesIdx = xyDataset.getSeriesIndex(series);
+      if (seriesIdx >= 0) {
+        xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series) );
       }
 
-      if ( !(plotTheseInBold.length == 0) ) {
-        for (String series : plotTheseInBold) {
-          int seriesIdx = xysc.getSeriesIndex(series);
-          
-          BasicStroke stroke = (BasicStroke) xyir.getSeriesStroke(seriesIdx);
-          if (stroke == null) {
-            stroke = (BasicStroke) xyir.getBaseStroke();
-          }
-          stroke = new BasicStroke( stroke.getLineWidth()*2 );
-          xyir.setSeriesStroke(seriesIdx, stroke);
-          xyir.setSeriesPaint(seriesIdx, new Color(0,0,0) );
+      if ( seriesDashedSet.contains(series) ) {
+        xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series).darker() );
+
+        BasicStroke stroke = (BasicStroke) xyir.getSeriesStroke(seriesIdx);
+        if (stroke == null) {
+          stroke = (BasicStroke) xyir.getBaseStroke();
         }
+        float width = stroke.getLineWidth();
+        int join = stroke.getLineJoin();
+        int cap = stroke.getEndCap();
+
+        float[] dashing = new float[]{1,4};
+
+        stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
+        xyir.setSeriesStroke(seriesIdx, stroke);
+      }
+
+    }
+
+    if ( !(plotTheseInBold.length == 0) ) {
+      for (String series : plotTheseInBold) {
+        int seriesIdx = xyDataset.getSeriesIndex(series);
+
+        BasicStroke stroke = (BasicStroke) xyir.getSeriesStroke(seriesIdx);
+        if (stroke == null) {
+          stroke = (BasicStroke) xyir.getBaseStroke();
+        }
+        stroke = new BasicStroke( stroke.getLineWidth()*2 );
+        xyir.setSeriesStroke(seriesIdx, stroke);
+        xyir.setSeriesPaint(seriesIdx, new Color(0,0,0) );
       }
     }
-    
+
 
     
     xyPlot.setDomainAxis( getXAxis() );

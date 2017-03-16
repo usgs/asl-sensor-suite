@@ -398,7 +398,7 @@ implements ChangeListener {
       public Integer doInBackground() {
         
         try{
-          expResult.setData(ds, false);
+          expResult.setData(ds);
         } catch (IndexOutOfBoundsException e) {
           errorTriggered = true;
           return 1; // TODO: use return value to get error occurent
@@ -456,7 +456,7 @@ implements ChangeListener {
       public Integer doInBackground() {
 
         // plot has 3 components: source, destination, NLNM line plot
-        XYSeriesCollection xyscIn = (XYSeriesCollection) expResult.getData();
+        XYSeriesCollection xyscIn = expResult.getData();
         xysc = new XYSeriesCollection();
         xysc.addSeries( xyscIn.getSeries(idx0) );
         xysc.addSeries( xyscIn.getSeries(idx1) );

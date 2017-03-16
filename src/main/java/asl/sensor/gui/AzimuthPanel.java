@@ -101,7 +101,7 @@ public class AzimuthPanel extends ExperimentPanel {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     az.setOffset(value);
     
-    expResult.setData(ds, false);
+    expResult.setData(ds);
     
     chart = ChartFactory.createPolarChart( expType.getName(),
         expResult.getData(), true, true, false);

@@ -15,8 +15,19 @@ public class ResponseExperiment extends Experiment {
   public static final String MAGNITUDE = "Response magnitude";
   public static final String ARGUMENT = "Response argument (phi)";
   
+  private boolean freqSpace;
+  
+  public ResponseExperiment() {
+    super();
+    freqSpace = false;
+  }
+  
+  public void setFreqSpace(boolean freqSpace) {
+    this.freqSpace = freqSpace;
+  }
+  
   @Override
-  protected void backend(DataStore ds, final boolean freqSpace) {
+  protected void backend(DataStore ds) {
     
     double lowFreq = .0001;
     double highFreq = 10000;
@@ -37,8 +48,8 @@ public class ResponseExperiment extends Experiment {
     }
     
     Set<String> respNames = new HashSet<String>();
-    
     xySeriesData = new XYSeriesCollection();
+    
     for (int r = 0; r < 3; ++r) {
       if ( !ds.responseIsSet(r) ) {
         continue;
@@ -70,9 +81,8 @@ public class ResponseExperiment extends Experiment {
         }
       }
       
-      
-      ((XYSeriesCollection) xySeriesData).addSeries(magnitude);
-      ((XYSeriesCollection) xySeriesData).addSeries(argument);
+      xySeriesData.addSeries(magnitude);
+      xySeriesData.addSeries(argument);
       
     }
 

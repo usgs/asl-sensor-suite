@@ -21,13 +21,18 @@ import asl.sensor.utils.FFTResult;
 public class NoiseExperiment extends Experiment {
   
 
+  boolean freqSpace;
   
   /**
    * Instantiates a noise experiment -- axis titles and scales
    */
   public NoiseExperiment() {
     super();
-
+    freqSpace = false;
+  }
+  
+  public void setFreqSpace(boolean freqSpace) {
+    this.freqSpace = freqSpace;
   }
 
   /**
@@ -44,7 +49,7 @@ public class NoiseExperiment extends Experiment {
    * remaining terms for the formula for the self-noise results.
    */
   @Override
-  protected void backend(final DataStore ds, final boolean freqSpace) {
+  protected void backend(final DataStore ds) {
     
     int[] indices = new int[3]; // first 3 fully-loaded data sets
     
@@ -64,9 +69,9 @@ public class NoiseExperiment extends Experiment {
       responses[i] = ds.getResponse(indices[i]);
     }
     
-    XYSeriesCollection xysc = (XYSeriesCollection) xySeriesData;
+    xySeriesData = new XYSeriesCollection();
     
-    xysc.setAutoWidth(true);
+    xySeriesData.setAutoWidth(true);
     
     // TODO: make sure (i.e., when reading in data) that series lengths' match
     // rather than throwing the exceptions here
@@ -80,7 +85,7 @@ public class NoiseExperiment extends Experiment {
       freqs = ds.getPSD(indices[i]).getFreqs();
     }
     
-    addToPlot(ds, freqSpace, indices, xysc);
+    addToPlot(ds, freqSpace, indices, xySeriesData);
     
     // spectra[i] is crosspower pii, now to get pij terms for i!=j
     FFTResult fft = 
@@ -162,11 +167,11 @@ public class NoiseExperiment extends Experiment {
     }
     
     for (XYSeries noiseSeries : noiseSeriesArr) {
-      xysc.addSeries(noiseSeries);
+      xySeriesData.addSeries(noiseSeries);
     }
     
-    xysc.addSeries( FFTResult.getLowNoiseModel(freqSpace) );
-    xysc.addSeries( FFTResult.getHighNoiseModel(freqSpace) );
+    xySeriesData.addSeries( FFTResult.getLowNoiseModel(freqSpace) );
+    xySeriesData.addSeries( FFTResult.getHighNoiseModel(freqSpace) );
 
   }
 

@@ -145,7 +145,7 @@ public class GainExperiment extends Experiment {
    * calculate an estimation of gain from the second series.
    */
   @Override
-  protected void backend(final DataStore ds, final boolean freqSpace) {
+  protected void backend(final DataStore ds) {
     
     int numberToLoad = ds.numberFullySet();
     
@@ -181,14 +181,14 @@ public class GainExperiment extends Experiment {
       blocksPlotting.add( ds.getBlock(idx) );
     }
     
-    XYSeriesCollection xysc = (XYSeriesCollection) xySeriesData;
+    xySeriesData = new XYSeriesCollection();
     
-    xysc.setAutoWidth(true);
+    xySeriesData.setAutoWidth(true);
     
-    addToPlot(ds, false, indices, xysc); 
+    addToPlot(ds, false, indices, xySeriesData); 
     // false, because we don't want to plot in frequency space
     
-    xysc.addSeries( FFTResult.getLowNoiseModel(false) );
+    xySeriesData.addSeries( FFTResult.getLowNoiseModel(false) );
     
   }
   

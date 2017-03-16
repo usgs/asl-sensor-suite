@@ -12,6 +12,7 @@ import java.util.HashMap;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JPanel;
 
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -21,41 +22,35 @@ import org.jfree.chart.axis.ValueAxis;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
 
-public class ResponsePanel extends ExperimentPanel {
+public class RandomizedPanel extends ExperimentPanel {
 
-  private ValueAxis freqAxis, degreeAxis;
-  private String freqAxisTitle, degreeAxisTitle;
-  private JCheckBox freqSpaceBox;
-  private JComboBox<String> plotSelection;
-  
-  private final static Color[] COLOR_LIST = 
-      new Color[]{Color.RED, Color.BLUE, Color.GREEN};
-  
-  private JFreeChart magChart, argChart;
-  
+  private ValueAxis degreeAxis;
+  private String degreeAxisTitle;
   public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
+  private JComboBox<String> plotSelection;
+  JCheckBox lowFreqBox;
+  private JFreeChart magChart, argChart;
+  boolean set;
+  private static final Color[] COLOR_LIST = 
+      new Color[]{Color.RED, Color.BLUE, Color.GREEN};
   
-  private boolean set;
-  
-  public ResponsePanel(ExperimentEnum exp) {
+  public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
     
     set = false;
     
-    for (int i = 0; i < 3; ++i) {
-      channelType[i] = "Response data (SEED data not used)";
-    }
+    channelType[0] = "Calibration input";
+    channelType[1] = "Calibration output from sensor (RESP required)";
     
     xAxisTitle = "Period (s)";
-    freqAxisTitle = "Frequency (Hz)";
     yAxisTitle = "10 * log10( RESP(f) )";
     degreeAxisTitle = "phi(RESP(f))";
     xAxis = new LogarithmicAxis(xAxisTitle);
-    freqAxis = new LogarithmicAxis(freqAxisTitle);
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
     
@@ -65,10 +60,9 @@ public class ResponsePanel extends ExperimentPanel {
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
-    freqAxis.setLabelFont(bold);
     
-    freqSpaceBox = new JCheckBox("Use Hz units (requires regen)");
-    freqSpaceBox.setSelected(true);
+    lowFreqBox = new JCheckBox("Low frequency calibration");
+    lowFreqBox.setSelected(true);
     
     applyAxesToChart(); // now that we've got axes defined
     
@@ -89,7 +83,7 @@ public class ResponsePanel extends ExperimentPanel {
     gbc.anchor = GridBagConstraints.WEST;
     gbc.fill = GridBagConstraints.NONE;
     gbc.gridy += 1; gbc.gridx = 0;
-    this.add(freqSpaceBox, gbc);
+    this.add(lowFreqBox, gbc);
     
     gbc.gridx += 1;
     gbc.weightx = 1.0;
@@ -108,53 +102,20 @@ public class ResponsePanel extends ExperimentPanel {
     plotSelection.addItem(ARGUMENT);
     this.add(plotSelection, gbc);
     plotSelection.addActionListener(this);
-    
   }
 
-  @Override
-  public int plotsToShow() {
-    return 0;
-  }
-  
-  @Override
-  public ValueAxis getXAxis() {
-    
-    // true if using Hz units
-    if ( freqSpaceBox.isSelected() ) {
-        return freqAxis;
-    }
-    
-    return xAxis;
-    
-  }
-  
-  @Override
-  public ValueAxis getYAxis() {
-    
-    if ( null == plotSelection ) {
-      return yAxis;
-    }
-    
-    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
-      return yAxis;
-    } else {
-      return degreeAxis;
-    }
-  }
-  
   /**
    * 
    */
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = -1791709117080520178L;
 
   @Override
   public void updateData(DataStore ds) {
 
     seriesColorMap = new HashMap<String, Color>();
     
-    boolean freqSpace = freqSpaceBox.isEnabled();
-    ResponseExperiment respExp = (ResponseExperiment) expResult;
-    respExp.setFreqSpace(freqSpace);
+    RandomizedExperiment respExp = (RandomizedExperiment) expResult;
+    respExp.setLowFreq( lowFreqBox.isEnabled() );
     expResult.setData(ds);
     
     set = true;
@@ -163,23 +124,17 @@ public class ResponsePanel extends ExperimentPanel {
     XYSeriesCollection argSeries = new XYSeriesCollection();
     XYSeriesCollection fromExp = expResult.getData();
     
-    for (int i = 0; i < fromExp.getSeriesCount(); ++i) {
-      if (i % 2 == 0) {
-        // 0, 2, 4 are the magnitude series
-        int idx = i / 2; // 1, 2, or 3
-        Color toColor = COLOR_LIST[idx];
-        magSeries.addSeries( fromExp.getSeries(i) );
-        String magName = (String) fromExp.getSeriesKey(i);
-        seriesColorMap.put(magName, toColor);
-      } else {
-        // 1, 3, 5 are the argument series
-        int idx = (i - 1) / 2;
-        Color toColor = COLOR_LIST[idx];
-        argSeries.addSeries( fromExp.getSeries(i) );
-        String argName = (String) fromExp.getSeriesKey(i);
-        seriesColorMap.put(argName, toColor);
-      }
-
+    for (int i = 0; i < 3; ++i) {
+      magSeries.addSeries( fromExp.getSeries(i) );
+      argSeries.addSeries( fromExp.getSeries(i + 3) );
+      
+      Color toColor = COLOR_LIST[i];
+      String magName = (String) fromExp.getSeriesKey(i);
+      seriesColorMap.put(magName, toColor);
+      
+      String argName = (String) fromExp.getSeriesKey(i + 3);
+      seriesColorMap.put(argName, toColor);
+      
     }
     
     int idx = plotSelection.getSelectedIndex();
@@ -199,7 +154,7 @@ public class ResponsePanel extends ExperimentPanel {
     chartPanel.setMouseZoomable(true);
     
   }
-
+  
   @Override
   public BufferedImage getAsImage(int height, int width) {
     
@@ -290,8 +245,24 @@ public class ResponsePanel extends ExperimentPanel {
   }
   
   @Override
-  public int panelsNeeded() {
-    return 3;
+  public ValueAxis getYAxis() {
+    
+    if ( null == plotSelection ) {
+      return yAxis;
+    }
+    
+    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
+      return yAxis;
+    } else {
+      return degreeAxis;
+    }
   }
+
+  @Override
+  public int panelsNeeded() {
+    return 2;
+  }
+  
+
 
 }
