@@ -53,7 +53,7 @@ public class RandomizedExperiment extends Experiment {
     }
     
     DataBlock sensorOut = ds.getBlock(sensorOutIndex);
-    fitResponse = ds.getResponse(sensorOutIndex);
+    fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIndex) );
     
     fitPoles = new ArrayList<Complex>( fitResponse.getPoles() );
     
@@ -204,13 +204,15 @@ public class RandomizedExperiment extends Experiment {
     for (int i = 0; i < freqs.length; ++i) {
       // int argIdx = freqs.length + i;
       if (freqs[i] != 0) {
-        Complex fitRespInteg = fitRespCurve[i].multiply(  
+        Complex fitRespInteg = fitRespCurve[i].divide(  
            2 * Math.PI * freqs[i]);
         fitMag.add( freqs[i], 10 * Math.log10( fitRespInteg.abs() ) );
         double argument = Math.toDegrees( fitRespCurve[i].getArgument() );
         fitArg.add(freqs[i], ( argument + 360 ) % 360 );
       }
     }
+    
+    xySeriesData = new XYSeriesCollection();
     
     xySeriesData.addSeries(respMag);
     xySeriesData.addSeries(calcMag);

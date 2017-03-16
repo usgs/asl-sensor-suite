@@ -17,11 +17,11 @@ Because SEED files must be decompressed and stored in memory, the footprint of t
 ### Compilation
 
 ##### Command Line
-The program can be compiled by using the commands "gradle compileJava" which will compile the source code, or "gradle build" which will also run the unit tests.
-Running the program can be done by either opening the jar through a filebrowser or running either "gradle run", which launches the jar file, or "java -jar build/libs/SensorTestSuite$version_number$.jar", with $version_number$ replaced with the current version, such as 0.9.0.
+The program can be compiled by using the commands `gradle compileJava` which will compile the source code, or `gradle build` which will also run the unit tests.
+Running the program can be done by either opening the jar through a filebrowser or running either `gradle run`, which launches the jar file, or `java -jar build/libs/SensorTestSuite$version_number$.jar` after the program has been built, with $version_number$ replaced with the current version, such as 0.9.0.
 
 ##### Eclipse
-For those who wish to compile and run this program with Eclipse, run the command "gradle eclipse" and then, inside eclipse, go to File>"Open projects from file system..." and direct Eclipse to the root folder of the test suite. Now the code will be available as an Eclipse project. For more information on using Eclipse, consult the Eclipse documentation.
+For those who wish to compile and run this program with Eclipse, run the command `gradle eclipse` and then, inside eclipse, go to File>"Open projects from file system..." and direct Eclipse to the root folder of the test suite. Now the code will be available as an Eclipse project. For more information on using Eclipse, consult the Eclipse documentation.
 
 ### File Selection
 The program will default to looking for SEED files in the "data" subdirectory in the same folder the jar is, if it exists. It is possible to choose a different folder, which will become the new default folder when loading in additional files. It will not, however, persist after the program is closed.
@@ -56,11 +56,19 @@ Step calibration takes in a step input signal and the response to that signal fr
 
 The input files have a specific order: the step input signal must be placed first, though it does not use a response. The second input, then, is the output from the sensor of interest, and a response should be chosen to help guide the initial guess of the solver.
 
+#### Azimuth
+
+Azimuth takes in 3 inputs, the first two of which are sensors known to be at north and east, and a reference sensor the angle of which relative to the north sensor is to be determined. The produced result will be an angle; a visual representation of that angle will be plotted and also displayed as a number. The offset angle field can be used to produce an offset between the north and reference sensor; both the relative orientation of the reference sensor to the one set as north and the absolute orientation (assuming that the north sensor is offset that many degrees from north). 
+
 #### Orthogonality
 
 Orthogonality takes in four inputs, two each from sensors known or assumed to be orthogonal, and finds the true (interior) angle between the second two sensors if the first two sensors are truly orthogonal.
 
 The input files have a specific order: the first and third inputs are for north-facing sensors, and the second and fourth are for east-facing sensors. As noted above, the first two sensors are assumed to be 90 degrees apart for the purpose of the test; the second two sensors' orientation is what is solved for.
+
+#### Randomized calibration
+
+This function is WIP but similar to the step calculation, and (TODO: put more here once test is completed )
 
 #### Response
 
@@ -70,4 +78,4 @@ This plots 1-3 different response attenuation and phase curves (Bode plots) for 
 
 Currently the application does its best to show the complete range among all data, there are some issues in doing so. If there are three SEED files loaded and the first two SEED files have more data than the third, then when switching to a test using only two inputs, the entire range of the first two sensors should be visible. However, if there are loaded inputs not included in a test and a new file is loaded in one of the input slots, it must still have a time range in common with the unused inputs. While not ideal behavior, it prevents additional bugs from handling non-matching time ranges if a test using the non-active data is selected again.
 
-There are plans to include additional tests in this project. Azimuth and the 9-input self noise calculation are intended to be included.
+There are plans to include additional tests in this project. In particular, self-noise test using 9 inputs is intended to be included as one of those tests.
