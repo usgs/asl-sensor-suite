@@ -37,9 +37,10 @@ public class AzimuthPanel extends ExperimentPanel {
     
     plotTheseInBold = new String[]{}; // shouldn't be used anyway
     
-    channelType[0] = "North reference sensor";
-    channelType[1] = "East reference sensor";
-    channelType[2] = "Test sensor (unknown angle)";
+    channelType[0] = "North test sensor";
+    channelType[1] = "East test sensor";
+    channelType[2] = "Reference sensor " + 
+                     "(use offset to specify degrees from north)";
     
     
     JFreeChart chart = ChartFactory.createPolarChart( expType.getName(), 
@@ -107,10 +108,10 @@ public class AzimuthPanel extends ExperimentPanel {
         expResult.getData(), true, true, false);
     
     double angle = az.getFitAngle();
-    String angleStr = "FIT ANGLE: " + angle;
-    double result = (value + angle) % 360;
+    String angleStr = "FIT ANGLE: -" + angle;
+    double result = (value - angle) % 360;
     
-    angleStr += " + OFFSET (" + value + ") = " + result;
+    angleStr += " + " + value + " = " + result;
     
     PolarPlot plot = (PolarPlot) chart.getPlot();
     plot.addCornerTextItem(angleStr);

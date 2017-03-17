@@ -46,44 +46,45 @@ public class AzimuthExperiment extends Experiment {
     DataBlock refLH2Block = ds.getXthLoadedBlock(2);
     DataBlock testLH1Block = ds.getXthLoadedBlock(3);
     
-    List<Number> refLH1 = new ArrayList<Number>( refLH1Block.getData() );
-    String refName = refLH1Block.getName();
-    List<Number> refLH2 = new ArrayList<Number>( refLH2Block.getData() );
-    List<Number> testLH1 = new ArrayList<Number>( testLH1Block.getData() );
-    String testName = testLH1Block.getName();
+    List<Number> testNorth = new ArrayList<Number>( refLH1Block.getData() );
+    String northName = refLH1Block.getName();
+    List<Number> testEast = new ArrayList<Number>( refLH2Block.getData() );
+    String eastName = refLH2Block.getName();
+    List<Number> refNorth = new ArrayList<Number>( testLH1Block.getData() );
+    String refName = testLH1Block.getName();
     
-    FFTResult.detrend(refLH1);
-    FFTResult.detrend(refLH2);
-    FFTResult.detrend(testLH1);
+    FFTResult.detrend(testNorth);
+    FFTResult.detrend(testEast);
+    FFTResult.detrend(refNorth);
 
     
-    refLH1 = TimeSeriesUtils.normalize(refLH1);
-    refLH2 = TimeSeriesUtils.normalize(refLH2);
-    testLH1 = TimeSeriesUtils.normalize(testLH1);
+    testNorth = TimeSeriesUtils.normalize(testNorth);
+    testEast = TimeSeriesUtils.normalize(testEast);
+    refNorth = TimeSeriesUtils.normalize(refNorth);
     
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / refLH1Block.getInterval();
     double low = 1./8;
     double high = 1./4;
     
-    refLH1 = FFTResult.bandFilter(refLH1, sps, low, high);
-    refLH2 = FFTResult.bandFilter(refLH2, sps, low, high);
-    testLH1 = FFTResult.bandFilter(testLH1, sps, low, high);
+    testNorth = FFTResult.bandFilter(testNorth, sps, low, high);
+    testEast = FFTResult.bandFilter(testEast, sps, low, high);
+    refNorth = FFTResult.bandFilter(refNorth, sps, low, high);
     
-    int len = refLH1.size();
+    int len = testNorth.size();
     
-    double[] refYArr = new double[len];
-    double[] refXArr = new double[len];
     double[] testYArr = new double[len];
+    double[] testXArr = new double[len];
+    double[] refYArr = new double[len];
     
     for (int i = 0; i < len; ++i) {
-      refYArr[i] = refLH1.get(i).doubleValue();
-      refXArr[i] = refLH2.get(i).doubleValue();
-      testYArr[i] = testLH1.get(i).doubleValue();
+      testYArr[i] = testNorth.get(i).doubleValue();
+      testXArr[i] = testEast.get(i).doubleValue();
+      refYArr[i] = refNorth.get(i).doubleValue();
     }
     
-    RealVector refX = MatrixUtils.createRealVector(refXArr);
-    RealVector refY = MatrixUtils.createRealVector(refYArr);
+    RealVector testX = MatrixUtils.createRealVector(testXArr);
     RealVector testY = MatrixUtils.createRealVector(testYArr);
+    RealVector refY = MatrixUtils.createRealVector(refYArr);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
@@ -97,12 +98,12 @@ public class AzimuthExperiment extends Experiment {
         double cosTheta = Math.cos(theta);
         
         RealVector curValue = 
-            refX.mapMultiply(sinTheta).add( refY.mapMultiply(cosTheta) );
+            testX.mapMultiply(sinTheta).add( testY.mapMultiply(cosTheta) );
         
         // we have only 1 variable, so jacobian is a matrix w/ single column
         RealMatrix jbn = MatrixUtils.createRealMatrix(len, 1);
         RealVector jbnValue = 
-            refX.mapMultiply(cosTheta).add( refY.mapMultiply(-sinTheta) );
+            testX.mapMultiply(cosTheta).add( testY.mapMultiply(-sinTheta) );
         jbn.setColumnVector(0, jbnValue);
         
         return new Pair<RealVector, RealMatrix>(curValue, jbn);
@@ -112,7 +113,7 @@ public class AzimuthExperiment extends Experiment {
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
         model(jacobian).
-        target(testY).
+        target(refY).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
         lazyEvaluation(false).
@@ -127,20 +128,20 @@ public class AzimuthExperiment extends Experiment {
     
     angle = Math.toDegrees( angleVector.getEntry(0) );
     angle = ( (angle % 360) + 360 ) % 360;
-    // get the INTERNAL angle of the two components
+    // allows us to have 
     if (angle > 180) {
       angle = (360-angle) % 360;
     }
     
-    XYSeries ref = new XYSeries(refName);
-    ref.add(0 + offset, 0);
-    ref.add(0 + offset, 1);
-    XYSeries set = new XYSeries(testName + " relative to north");
-    set.add(angle, 1);
-    set.add(angle, 0);
-    XYSeries fromNorth = new XYSeries (testName + " relative to ref. sensor");
-    fromNorth.add(angle + offset, 1);
-    fromNorth.add(angle + offset, 0);
+    XYSeries ref = new XYSeries(northName + " rel. to reference");
+    ref.add(offset - angle, 0);
+    ref.add(offset - angle, 1);
+    XYSeries set = new XYSeries(eastName + " rel. to reference");
+    set.add(offset - angle + 90, 1);
+    set.add(offset - angle + 90, 0);
+    XYSeries fromNorth = new XYSeries (refName + " location");
+    fromNorth.add(offset, 1);
+    fromNorth.add(offset, 0);
 
     xySeriesData = new XYSeriesCollection();
     xySeriesData.addSeries(ref);
