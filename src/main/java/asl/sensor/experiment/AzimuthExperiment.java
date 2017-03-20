@@ -203,7 +203,8 @@ public class AzimuthExperiment extends Experiment {
     
     for (int i = 0; i < crossPowerSeries.length; ++i) {
       // 
-      Complex numerator = crossPowerSeries[i].pow(2);
+      Complex conj = crossPowerSeries[i].conjugate();
+      Complex numerator = crossPowerSeries[i].multiply(conj);
       Complex denom = rotatedSeries[i].multiply(refSeries[i]);
       coherence[i] = numerator.divide(denom).getReal();
     }
@@ -222,14 +223,13 @@ public class AzimuthExperiment extends Experiment {
     double[][] deltaCoherence = new double[crossPowerSeries.length][1];
     
     for (int i = 0; i < crossPowerSeries.length; ++i) {
-      Complex numerator = crossPowerSeries[i].pow(2);
+      Complex conj = crossPowerSeries[i].conjugate();
+      Complex numerator = crossPowerSeries[i].multiply(conj);
       Complex denom = rotatedSeries[i].multiply(refSeries[i]);
       deltaCoherence[i][0] = numerator.divide(denom).getReal();
       deltaCoherence[i][0] -= coherence[i]; // dF
       deltaCoherence[i][0] /= (Double.MIN_VALUE); // dTheta
     }
-    
-    System.out.println("Changes are implemented in program being run");
     
     // we have only 1 variable, so jacobian is a matrix w/ single column
     RealMatrix jbn = MatrixUtils.createRealMatrix(deltaCoherence);
