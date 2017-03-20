@@ -83,15 +83,18 @@ public class AzimuthExperiment extends Experiment {
       refYArr[i] = refNorth.get(i).doubleValue();
     }
     
-    final DataBlock finalTestNorthBlock = new DataBlock(testNorthBlock);
-    final DataBlock finalTestEastBlock = new DataBlock(testEastBlock);
-    final DataBlock finalRefNorthBlock = new DataBlock(refNorthBlock);
+    
     
     testNorthBlock.setData(testNorth);
     testEastBlock.setData(testEast);
     refNorthBlock.setData(refNorth);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
+      
+      final DataBlock finalTestNorthBlock = new DataBlock(testNorthBlock);
+      final DataBlock finalTestEastBlock = new DataBlock(testEastBlock);
+      final DataBlock finalRefNorthBlock = new DataBlock(refNorthBlock);
+      
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         
         return jacobian(point, 
@@ -190,6 +193,8 @@ public class AzimuthExperiment extends Experiment {
     
     double theta = ( point.getEntry(0) );
     
+    double diff = Double.MIN_VALUE;
+    
     DataBlock testRotated = TimeSeriesUtils.rotate(testNorth, testEast, theta);
         
     FFTResult crossPower = FFTResult.spectralCalc(refNorth, testRotated);
@@ -211,7 +216,7 @@ public class AzimuthExperiment extends Experiment {
     
     RealVector curValue = MatrixUtils.createRealVector(coherence);
     
-    double thetaDelta = theta * (1 + Double.MIN_VALUE);
+    double thetaDelta = theta * (1 + diff);
     DataBlock rotateDelta = 
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
     
@@ -228,7 +233,7 @@ public class AzimuthExperiment extends Experiment {
       Complex denom = rotatedSeries[i].multiply(refSeries[i]);
       deltaCoherence[i][0] = numerator.divide(denom).getReal();
       deltaCoherence[i][0] -= coherence[i]; // dF
-      deltaCoherence[i][0] /= (Double.MIN_VALUE); // dTheta
+      deltaCoherence[i][0] /= (diff); // dTheta
     }
     
     // we have only 1 variable, so jacobian is a matrix w/ single column
