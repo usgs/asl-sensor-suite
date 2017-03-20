@@ -194,13 +194,18 @@ public class AzimuthExperiment extends Experiment {
         
     FFTResult crossPower = FFTResult.spectralCalc(refNorth, testRotated);
     FFTResult rotatedPower = FFTResult.spectralCalc(testRotated, testRotated);
+    FFTResult refPower = FFTResult.spectralCalc(refNorth, refNorth);
     Complex[] crossPowerSeries = crossPower.getFFT();
     Complex[] rotatedSeries = rotatedPower.getFFT();
+    Complex[] refSeries = refPower.getFFT();
     
     double[] coherence = new double[crossPowerSeries.length];
     
     for (int i = 0; i < crossPowerSeries.length; ++i) {
-      coherence[i] = crossPowerSeries[i].abs() / rotatedSeries[i].abs();
+      // 
+      Complex numerator = crossPowerSeries[i].pow(2);
+      Complex denom = rotatedSeries[i].multiply(refSeries[i]);
+      coherence[i] = numerator.divide(denom).getReal();
     }
     
     RealVector curValue = MatrixUtils.createRealVector(coherence);
@@ -217,10 +222,14 @@ public class AzimuthExperiment extends Experiment {
     double[][] deltaCoherence = new double[crossPowerSeries.length][1];
     
     for (int i = 0; i < crossPowerSeries.length; ++i) {
-      deltaCoherence[i][0] = crossPowerSeries[i].abs() / rotatedSeries[i].abs();
+      Complex numerator = crossPowerSeries[i].pow(2);
+      Complex denom = rotatedSeries[i].multiply(refSeries[i]);
+      deltaCoherence[i][0] = numerator.divide(denom).getReal();
       deltaCoherence[i][0] -= coherence[i]; // dF
       deltaCoherence[i][0] /= (Double.MIN_VALUE); // dTheta
     }
+    
+    System.out.println("Changes are implemented in program being run");
     
     // we have only 1 variable, so jacobian is a matrix w/ single column
     RealMatrix jbn = MatrixUtils.createRealMatrix(deltaCoherence);
