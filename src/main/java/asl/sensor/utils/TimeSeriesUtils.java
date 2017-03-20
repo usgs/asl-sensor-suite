@@ -44,6 +44,35 @@ public class TimeSeriesUtils {
   public final static double ONE_HZ = 1.0;
   
   /**
+   * Rotates a north and east (known orthognal) set of data and produces a new
+   * DataBlock along the north axis in the rotated coordinate system from
+   * the given angle (y' = y cos theta + x sin theta)
+   * @param north
+   * @param east
+   * @param ang
+   * @return
+   */
+  public static DataBlock rotate(DataBlock north, DataBlock east, double ang) {
+    DataBlock rotated = new DataBlock(north);
+    List<Number> northData = rotated.getData();
+    List<Number> eastData = east.getData();
+    List<Number> rotatedData = new ArrayList<Number>();
+    
+    double sinTheta = Math.sin(ang);
+    double cosTheta = Math.cos(ang);
+    
+    for (int i = 0; i < northData.size(); ++i) {
+      rotatedData.add( 
+          northData.get(i).doubleValue() * cosTheta + 
+          eastData.get(i).doubleValue() * sinTheta );
+    }
+    
+    rotated.setData(rotatedData);
+    
+    return rotated;
+  }
+  
+  /**
    * Initial driver for the decimation utility
    * which takes a timeseries of unknown rate and
    * runs downsampling to convert it to a target

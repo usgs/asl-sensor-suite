@@ -112,6 +112,7 @@ public abstract class Experiment {
   public void setData(final DataStore ds) {
     
     if ( hasEnoughData(ds) && ds.numberOfBlocksSet() == 0) {
+      xySeriesData = new XYSeriesCollection();
       backend(ds);
       return;
     }
@@ -122,8 +123,6 @@ public abstract class Experiment {
     
     final DataBlock[] dataIn = ds.getData();
     
-    // most backend functions will use an xyseries collection
-    // (this can, of course, be overridden for the few that won't)
     xySeriesData = new XYSeriesCollection();
     
     // int length = dataIn[0].size();

@@ -3,6 +3,7 @@ package asl.sensor.experiment;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
@@ -42,16 +43,16 @@ public class AzimuthExperiment extends Experiment {
     // assume the first two are the reference and the second two are the test?
     
     // we just need four timeseries, don't actually care about response
-    DataBlock refLH1Block = ds.getXthLoadedBlock(1);
-    DataBlock refLH2Block = ds.getXthLoadedBlock(2);
-    DataBlock testLH1Block = ds.getXthLoadedBlock(3);
+    DataBlock testNorthBlock = ds.getXthLoadedBlock(1);
+    DataBlock testEastBlock = ds.getXthLoadedBlock(2);
+    DataBlock refNorthBlock = ds.getXthLoadedBlock(3);
     
-    List<Number> testNorth = new ArrayList<Number>( refLH1Block.getData() );
-    String northName = refLH1Block.getName();
-    List<Number> testEast = new ArrayList<Number>( refLH2Block.getData() );
-    String eastName = refLH2Block.getName();
-    List<Number> refNorth = new ArrayList<Number>( testLH1Block.getData() );
-    String refName = testLH1Block.getName();
+    List<Number> testNorth = new ArrayList<Number>( testNorthBlock.getData() );
+    String northName = testNorthBlock.getName();
+    List<Number> testEast = new ArrayList<Number>( testEastBlock.getData() );
+    String eastName = testEastBlock.getName();
+    List<Number> refNorth = new ArrayList<Number>( refNorthBlock.getData() );
+    String refName = refNorthBlock.getName();
     
     FFTResult.detrend(testNorth);
     FFTResult.detrend(testEast);
@@ -62,7 +63,7 @@ public class AzimuthExperiment extends Experiment {
     testEast = TimeSeriesUtils.normalize(testEast);
     refNorth = TimeSeriesUtils.normalize(refNorth);
     
-    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / refLH1Block.getInterval();
+    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / testNorthBlock.getInterval();
     double low = 1./8;
     double high = 1./4;
     
@@ -82,46 +83,55 @@ public class AzimuthExperiment extends Experiment {
       refYArr[i] = refNorth.get(i).doubleValue();
     }
     
-    RealVector testX = MatrixUtils.createRealVector(testXArr);
-    RealVector testY = MatrixUtils.createRealVector(testYArr);
-    RealVector refY = MatrixUtils.createRealVector(refYArr);
+    final DataBlock finalTestNorthBlock = new DataBlock(testNorthBlock);
+    final DataBlock finalTestEastBlock = new DataBlock(testEastBlock);
+    final DataBlock finalRefNorthBlock = new DataBlock(refNorthBlock);
+    
+    testNorthBlock.setData(testNorth);
+    testEastBlock.setData(testEast);
+    refNorthBlock.setData(refNorth);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
-        double theta = ( point.getEntry(0) % TAU );
         
-        if (theta < 0) {
-          theta += TAU; 
-        }
+        return jacobian(point, 
+            finalRefNorthBlock, 
+            finalTestNorthBlock, 
+            finalTestEastBlock, 
+            len);
         
-        double sinTheta = Math.sin(theta);
-        double cosTheta = Math.cos(theta);
-        
-        RealVector curValue = 
-            testX.mapMultiply(sinTheta).add( testY.mapMultiply(cosTheta) );
-        
-        // we have only 1 variable, so jacobian is a matrix w/ single column
-        RealMatrix jbn = MatrixUtils.createRealMatrix(len, 1);
-        RealVector jbnValue = 
-            testX.mapMultiply(cosTheta).add( testY.mapMultiply(-sinTheta) );
-        jbn.setColumnVector(0, jbnValue);
-        
-        return new Pair<RealVector, RealMatrix>(curValue, jbn);
       }
     };
+    
+    // how long is the FFT result going to be for the crosspower?
+    // recall the FFT is windowed, not the length of the input data
+    
+    int targetLength = 2;
+    while ( targetLength < testNorth.size() ) {
+      targetLength *= 2;
+    }
+    targetLength /= 4; // window size is 1/4 of data
+    targetLength /= 2; // get single side
+    ++targetLength;
+    
+    double[] targetArray = new double[targetLength];
+    for (int i = 0; i < targetArray.length; ++i) {
+      targetArray[i] = 1.;
+    }
+    RealVector target = MatrixUtils.createRealVector(targetArray);
     
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
         model(jacobian).
-        target(refY).
+        target(target).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
         lazyEvaluation(false).
         build();
         
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-15).
-        withParameterRelativeTolerance(1.0E-15);
+        withCostRelativeTolerance(1.0E-20).
+        withParameterRelativeTolerance(1.0E-20);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -170,10 +180,58 @@ public class AzimuthExperiment extends Experiment {
     */
   }
   
+  public Pair<RealVector, RealMatrix> jacobian(
+      final RealVector point, 
+      final DataBlock refNorth,
+      final DataBlock testNorth, 
+      final DataBlock testEast, 
+      int len) {
+    
+    
+    double theta = ( point.getEntry(0) );
+    
+    DataBlock testRotated = TimeSeriesUtils.rotate(testNorth, testEast, theta);
+        
+    FFTResult crossPower = FFTResult.spectralCalc(refNorth, testRotated);
+    FFTResult rotatedPower = FFTResult.spectralCalc(testRotated, testRotated);
+    Complex[] crossPowerSeries = crossPower.getFFT();
+    Complex[] rotatedSeries = rotatedPower.getFFT();
+    
+    double[] coherence = new double[crossPowerSeries.length];
+    
+    for (int i = 0; i < crossPowerSeries.length; ++i) {
+      coherence[i] = crossPowerSeries[i].abs() / rotatedSeries[i].abs();
+    }
+    
+    RealVector curValue = MatrixUtils.createRealVector(coherence);
+    
+    double thetaDelta = theta * (1 + Double.MIN_VALUE);
+    DataBlock rotateDelta = 
+        TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
+    
+    crossPower = FFTResult.spectralCalc(refNorth, rotateDelta);
+    rotatedPower = FFTResult.spectralCalc(rotateDelta, rotateDelta);
+    crossPowerSeries = crossPower.getFFT();
+    rotatedSeries = rotatedPower.getFFT();
+    
+    double[][] deltaCoherence = new double[crossPowerSeries.length][1];
+    
+    for (int i = 0; i < crossPowerSeries.length; ++i) {
+      deltaCoherence[i][0] = crossPowerSeries[i].abs() / rotatedSeries[i].abs();
+      deltaCoherence[i][0] -= coherence[i]; // dF
+      deltaCoherence[i][0] /= (Double.MIN_VALUE); // dTheta
+    }
+    
+    // we have only 1 variable, so jacobian is a matrix w/ single column
+    RealMatrix jbn = MatrixUtils.createRealMatrix(deltaCoherence);
+    
+    return new Pair<RealVector, RealMatrix>(curValue, jbn);
+  }
+  
   public double getFitAngle() {
     return angle;
   }
-
+  
   @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < 3; ++i) {
