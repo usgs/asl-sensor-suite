@@ -59,7 +59,7 @@ public class StepExperiment extends Experiment{
   Complex[] sensorFFTSeries; // FFT of step cal from sensor
   double[] stepCalSeries; // time series of raw step cal function
   
-  final double STEP_FACTOR = Math.nextUp( Math.nextUp(1.0) );
+  final double STEP_FACTOR = 1E-16;
   
   /**
    * Calls superconstructor; all other fields are created at runtime
@@ -358,8 +358,8 @@ public class StepExperiment extends Experiment{
     
     double f1 = variables.getEntry(0);
     double h1 = variables.getEntry(1);
-    double f2 = f1 * STEP_FACTOR;
-    double h2 = h1 * STEP_FACTOR;
+    double f2 = f1 + STEP_FACTOR;
+    double h2 = h1 + STEP_FACTOR;
     
     double[] fInit = calculate(new double[]{f1, h1});
     double[] diffOnF = calculate(new double[]{f2, h1});

@@ -104,22 +104,8 @@ public class AzimuthExperiment extends Experiment {
       }
     };
     
-    // how long is the FFT result going to be for the crosspower?
-    // recall the FFT is windowed, not the length of the input data
-    
-    int targetLength = 2;
-    while ( targetLength < testNorth.size() ) {
-      targetLength *= 2;
-    }
-    targetLength /= 4; // window size is 1/4 of data
-    targetLength /= 2; // get single side
-    ++targetLength;
-    
-    double[] targetArray = new double[targetLength];
-    for (int i = 0; i < targetArray.length; ++i) {
-      targetArray[i] = 1.;
-    }
-    RealVector target = MatrixUtils.createRealVector(targetArray);
+    // want mean coherence to be as close to 1 as possible
+    RealVector target = MatrixUtils.createRealVector(new double[]{1.});
     
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
@@ -131,8 +117,8 @@ public class AzimuthExperiment extends Experiment {
         build();
         
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-14).
-        withParameterRelativeTolerance(1.0E-14);
+        withCostRelativeTolerance(1.0E-10).
+        withParameterRelativeTolerance(1.0E-10);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -191,13 +177,19 @@ public class AzimuthExperiment extends Experiment {
     
     double theta = ( point.getEntry(0) );
     
-    double diff = 1E-15;
+    double diff = 1E-12;
+    
+    double lowFreq = 1./18.;
+    double highFreq = 1./3.;
     
     DataBlock testRotated = TimeSeriesUtils.rotate(testNorth, testEast, theta);
         
     FFTResult crossPower = FFTResult.spectralCalc(refNorth, testRotated);
     FFTResult rotatedPower = FFTResult.spectralCalc(testRotated, testRotated);
     FFTResult refPower = FFTResult.spectralCalc(refNorth, refNorth);
+    
+    double[] freqs = crossPower.getFreqs();
+    
     Complex[] crossPowerSeries = crossPower.getFFT();
     Complex[] rotatedSeries = rotatedPower.getFFT();
     Complex[] refSeries = refPower.getFFT();
@@ -212,7 +204,37 @@ public class AzimuthExperiment extends Experiment {
       coherence[i] = numerator.divide(denom).getReal();
     }
     
-    RealVector curValue = MatrixUtils.createRealVector(coherence);
+    double peakVal = Double.NEGATIVE_INFINITY;
+    double peakFreq = 0;
+    
+    for (int i = 0; i < freqs.length; ++i) {
+      if (peakVal < coherence[i]) {
+        peakVal = coherence[i];
+        peakFreq = freqs[i];
+      }
+    }
+    
+    if (peakFreq / 2 > lowFreq) {
+      lowFreq = peakFreq / 2.;
+    }
+    
+    if (peakFreq * 2 < highFreq) {
+      highFreq = peakFreq * 2.;
+    }
+    
+    double meanCoherence = 0.;
+    int samples = 0;
+    
+    for (int i = 0; i < freqs.length; ++i) {
+      if (freqs[i] < highFreq && freqs[i] > lowFreq) {
+        meanCoherence += coherence[i];
+        ++samples;
+      }
+    }
+    
+    
+    RealVector curValue = 
+        MatrixUtils.createRealVector(new double[]{meanCoherence});
     
     double thetaDelta = theta + diff;
     DataBlock rotateDelta = 
@@ -223,19 +245,30 @@ public class AzimuthExperiment extends Experiment {
     crossPowerSeries = crossPower.getFFT();
     rotatedSeries = rotatedPower.getFFT();
     
-    double[][] deltaCoherence = new double[crossPowerSeries.length][1];
+    double fwdMeanCoherence = 0.;
+    double[] fwdCoherence = new double[crossPowerSeries.length];
     
     for (int i = 0; i < crossPowerSeries.length; ++i) {
       Complex conj = crossPowerSeries[i].conjugate();
       Complex numerator = crossPowerSeries[i].multiply(conj);
       Complex denom = rotatedSeries[i].multiply(refSeries[i]);
-      deltaCoherence[i][0] = numerator.divide(denom).getReal();
-      deltaCoherence[i][0] -= coherence[i]; // dF
-      deltaCoherence[i][0] /= (thetaDelta - theta); // dTheta
+      fwdCoherence[i] = numerator.divide(denom).getReal();
+      
+      if (freqs[i] < highFreq && freqs[i] > lowFreq) {
+        fwdMeanCoherence += fwdCoherence[i];
+      }
+      
     }
     
+    fwdMeanCoherence /= (double) samples;
+    double deltaMean = 0.;
+    deltaMean = (fwdMeanCoherence - meanCoherence) / (thetaDelta - theta);
+    
+    double[][] jacobianArray = new double[1][1];
+    jacobianArray[0][0] = deltaMean;
+    
     // we have only 1 variable, so jacobian is a matrix w/ single column
-    RealMatrix jbn = MatrixUtils.createRealMatrix(deltaCoherence);
+    RealMatrix jbn = MatrixUtils.createRealMatrix(jacobianArray);
     
     return new Pair<RealVector, RealMatrix>(curValue, jbn);
   }

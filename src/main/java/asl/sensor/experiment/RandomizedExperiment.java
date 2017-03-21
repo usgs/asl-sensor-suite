@@ -31,7 +31,7 @@ public class RandomizedExperiment extends Experiment {
   private InstrumentResponse fitResponse;
   private double[] freqs;
   
-  private static final double delta = 1E-5;
+  private static final double DELTA = 1E-17;
   
   public RandomizedExperiment() {
     super();
@@ -173,13 +173,13 @@ public class RandomizedExperiment extends Experiment {
     }
     
     // now, solve for the response that gets us the best-fit response curve
-    
+    /*
     RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector observedComponents = 
         MatrixUtils.createRealVector(observedResult);
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
-        new EvaluationRmsChecker(1E-20, 1E-20);
+        new EvaluationRmsChecker(1E-15, 1E-15);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       int iterator = 0;
@@ -205,8 +205,8 @@ public class RandomizedExperiment extends Experiment {
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
 
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-20).
-        withParameterRelativeTolerance(1.0E-20);
+        withCostRelativeTolerance(1.0E-15).
+        withParameterRelativeTolerance(1.0E-15);
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
@@ -253,6 +253,10 @@ public class RandomizedExperiment extends Experiment {
         fitArg.add(freqs[i], ( argument + 360 ) % 360 );
       }
     }
+    */
+    
+    XYSeries fitMag = new XYSeries("Dummy plot a");
+    XYSeries fitArg = new XYSeries("Dummy plot b");
     
     xySeriesData.addSeries(respMag);
     xySeriesData.addSeries(calcMag);
@@ -329,7 +333,7 @@ public class RandomizedExperiment extends Experiment {
     for (int i = 0; i < numVars; ++i) {
       RealVector dx = variables.copy();
       start = variables.getEntry(i);
-      change = start * (1 + delta);
+      change = start + DELTA;
       dx.setEntry(i, change);
       
       double[] diffY = evaluateResponse(dx);
