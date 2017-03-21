@@ -31,7 +31,7 @@ public class RandomizedExperiment extends Experiment {
   private InstrumentResponse fitResponse;
   private double[] freqs;
   
-  private static double delta = 0.1;
+  private static double delta = Double.MIN_VALUE;
   
   public RandomizedExperiment() {
     super();
@@ -141,7 +141,12 @@ public class RandomizedExperiment extends Experiment {
       }
       
       // int argIdx = i + estimatedResponse.length;
-      observedResult[i] = estValMag;
+      if ( Double.isNaN(estValMag) ) {
+        observedResult[i] = 0;
+      } else {
+        observedResult[i] = estValMag;
+
+      }
       // initResult[argIdx] = phi;
     }
     
@@ -242,8 +247,7 @@ public class RandomizedExperiment extends Experiment {
     for (int i = 0; i < freqs.length; ++i) {
       // int argIdx = freqs.length + i;
       if (freqs[i] != 0) {
-        Complex fitRespInteg = fitRespCurve[i].divide(  
-           Math.pow(2 * Math.PI * freqs[i], 2) );
+        Complex fitRespInteg = fitRespCurve[i].divide(2 * Math.PI * freqs[i]);
         fitMag.add( freqs[i], 10 * Math.log10( fitRespInteg.abs() ) );
         double argument = Math.toDegrees( fitRespCurve[i].getArgument() );
         fitArg.add(freqs[i], ( argument + 360 ) % 360 );
@@ -292,11 +296,18 @@ public class RandomizedExperiment extends Experiment {
     
     // array is magnitudes, then arguments of complex number
     double[] mag = new double[appliedCurve.length];
+    // System.out.println(appliedCurve[0]);
     for (int i = 0; i < appliedCurve.length; ++i) {
       int argIdx = i + appliedCurve.length;
       Complex value = appliedCurve[i];
-      value = value.divide(2 * Math.PI * freqs[i]);
-      mag[i] = value.abs();
+      if ( value.equals(Complex.NaN) ) {
+        // System.out.println("It's NaN");
+        mag[i] = 0;
+      } else {
+        value = value.divide(2 * Math.PI * freqs[i]);
+        mag[i] = value.abs();
+      }
+
       /*
       double argument = Math.toDegrees( value.getArgument() );
       magAndAngle[argIdx] = argument; // taking (% 360) bad for solver
@@ -327,7 +338,11 @@ public class RandomizedExperiment extends Experiment {
         double numerator = diffY[j] - mag[j];
         double denominator = change - start;
         jacobian[j][i] = numerator / denominator;
-        System.out.println(jacobian[j][i]+"\n");
+        if ( Double.isNaN(jacobian[j][i]) ) {
+          jacobian[j][i] = 0;
+        } else if (Math.abs(jacobian[j][i]) == Double.POSITIVE_INFINITY) {
+          System.out.println("This would mean the change is zero?!");
+        }
       }
     }
     
