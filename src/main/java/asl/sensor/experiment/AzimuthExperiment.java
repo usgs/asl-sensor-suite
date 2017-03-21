@@ -133,8 +133,8 @@ public class AzimuthExperiment extends Experiment {
         build();
         
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-20).
-        withParameterRelativeTolerance(1.0E-20);
+        withCostRelativeTolerance(1.0E-50).
+        withParameterRelativeTolerance(1.0E-50);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();

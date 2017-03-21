@@ -124,15 +124,17 @@ public class RandomizedPanel extends ExperimentPanel {
     XYSeriesCollection argSeries = new XYSeriesCollection();
     XYSeriesCollection fromExp = expResult.getData();
     
-    for (int i = 0; i < 3; ++i) {
+    int upperBound = fromExp.getSeriesCount() / 2;
+    
+    for (int i = 0; i < upperBound; ++i) {
       magSeries.addSeries( fromExp.getSeries(i) );
-      argSeries.addSeries( fromExp.getSeries(i + 3) );
+      argSeries.addSeries( fromExp.getSeries(i + upperBound) );
       
       Color toColor = COLOR_LIST[i];
       String magName = (String) fromExp.getSeriesKey(i);
       seriesColorMap.put(magName, toColor);
       
-      String argName = (String) fromExp.getSeriesKey(i + 3);
+      String argName = (String) fromExp.getSeriesKey(i + upperBound);
       seriesColorMap.put(argName, toColor);
       
     }

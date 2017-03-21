@@ -22,6 +22,7 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.TimeSeriesUtils;
 
 public class RandomizedExperiment extends Experiment {
 
@@ -57,57 +58,92 @@ public class RandomizedExperiment extends Experiment {
     
     fitPoles = new ArrayList<Complex>( fitResponse.getPoles() );
     
-    // first, get the plots of the response
-    DataStore irHolder = new DataStore();
-    irHolder.setResponse(0, fitResponse);
-    
-    ResponseExperiment respExp = new ResponseExperiment();
-    respExp.setFreqSpace(true);
-    respExp.setData(irHolder);
-    XYSeriesCollection respPlots = (XYSeriesCollection) respExp.getData();
-    XYSeries respMag = respPlots.getSeries(0);
-    XYSeries respArg = respPlots.getSeries(1);
-    
-    // second, get the plots of the calculated response from deconvolution
+    // get the plots of the calculated response from deconvolution
     // PSD(out, in) / PSD(in, in) gives us PSD(out) / PSD(in) while removing
     // imaginary terms from the denominator due to multiplication with the
     // complex conjugate
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
     
+    // also, use those frequencies to get the applied response to input
+    
     FFTResult numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
     FFTResult denominatorPSD = FFTResult.spectralCalc(calib, calib);
     
+    double nyquistFreq = 
+        TimeSeriesUtils.ONE_HZ_INTERVAL / ( sensorOut.getInterval() * 2);
+    double proportion = 0.8;
+    
     freqs = numeratorPSD.getFreqs();
-    int len = numeratorPSD.getFFT().length;
+    // int len = nyquistIdx + 1;
+    //int len = numeratorPSD.getFFT().length;
+    int len = (int)  ( ( (freqs.length / 2.) + 1. ) * proportion);
+    
+    double[] resizedFreqs = new double[len];
+    for (int i = 0; i < resizedFreqs.length; ++i) {
+      resizedFreqs[i] = freqs[i];
+    }
+    
+    freqs = resizedFreqs;
+    
+    Complex[] appResponse = fitResponse.applyResponseToInput(freqs);
+    double maxScaled = Double.NEGATIVE_INFINITY;
+    double minScaled = Double.POSITIVE_INFINITY;
+    for (int i = 0; i < appResponse.length; ++i) {
+      appResponse[i] = appResponse[i].divide( 2 * Math.PI * freqs[i] );
+      if ( minScaled > appResponse[i].abs() ) {
+        minScaled = appResponse[i].abs();
+      }
+      if ( maxScaled < appResponse[i].abs() ) {
+        maxScaled = appResponse[i].abs();
+      }
+    }
     
     Complex[] estimatedResponse = new Complex[len];
-    
+    double maxVal = Double.NEGATIVE_INFINITY;
+    double minVal = Double.POSITIVE_INFINITY;
     for (int i = 0; i < estimatedResponse.length; ++i) {
       Complex numer = numeratorPSD.getFFT()[i];
       double denom = denominatorPSD.getFFT()[i].getReal();
       estimatedResponse[i] = numer.divide(denom);
+      estimatedResponse[i].multiply(2 * Math.PI * freqs[i]);
+      if (estimatedResponse[i].abs() > maxVal) {
+        maxVal = estimatedResponse[i].abs();
+      }
+      if (estimatedResponse[i].abs() < minVal) {
+        minVal = estimatedResponse[i].abs();
+      }
     }
     
+    // next, normalize estimated response
+    
+    XYSeries respMag = new XYSeries(fitResponse.getName() + " magnitude");
+    XYSeries respArg = new XYSeries(fitResponse.getName() + " arg. [phi]");
     XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. arg. [phi]");
     
     double[] initResult = new double[estimatedResponse.length];
     
     for (int i = 0; i < estimatedResponse.length; ++i) {
-      Complex estValue = estimatedResponse[i].multiply(2 * Math.PI * freqs[i]);
+      Complex estValue = estimatedResponse[i];
+      double estValMag = ( estValue.abs() - minVal ) / (maxVal - minVal);
+      estValMag *= (maxScaled - minScaled);
+      estValMag += minScaled;
      
       double phi = Math.toDegrees( estValue.getArgument() );
       phi = (phi + 360) % 360; // keeps angles positive
       
+      double respPhi = Math.toDegrees( appResponse[i].getArgument() );
+      respPhi = (respPhi + 360) % 360;
+      
       if (freqs[i] != 0) {
-        calcMag.add( freqs[i], 10 * Math.log10( estValue.abs() ) );
-        
-        
+        respMag.add( freqs[i], 10 * Math.log10( appResponse[i].abs() ) );
+        calcMag.add( freqs[i], 10 * Math.log10( estValMag ) );
+        respArg.add(freqs[i], respPhi);
         calcArg.add(freqs[i], phi);
       }
       
       // int argIdx = i + estimatedResponse.length;
-      initResult[i] = estValue.abs();
+      initResult[i] = estValMag;
       // initResult[argIdx] = phi;
     }
     
@@ -160,7 +196,8 @@ public class RandomizedExperiment extends Experiment {
     // LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     // initResid = initEval.getRMS() * 100;
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
-    
+
+    /*
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(1.0E-15).
         withParameterRelativeTolerance(1.0E-15);
@@ -211,16 +248,15 @@ public class RandomizedExperiment extends Experiment {
         fitArg.add(freqs[i], ( argument + 360 ) % 360 );
       }
     }
-    
-    xySeriesData = new XYSeriesCollection();
+    */
     
     xySeriesData.addSeries(respMag);
     xySeriesData.addSeries(calcMag);
-    xySeriesData.addSeries(fitMag);
+    // xySeriesData.addSeries(fitMag);
     
     xySeriesData.addSeries(respArg);
     xySeriesData.addSeries(calcArg);
-    xySeriesData.addSeries(fitArg);
+    // xySeriesData.addSeries(fitArg);
     
     System.out.println("Done!");
     
@@ -258,7 +294,8 @@ public class RandomizedExperiment extends Experiment {
     double[] mag = new double[appliedCurve.length];
     for (int i = 0; i < appliedCurve.length; ++i) {
       int argIdx = i + appliedCurve.length;
-      Complex value = appliedCurve[i].multiply(2 * Math.PI * freqs[i]);
+      Complex value = appliedCurve[i];
+      value = value.divide(2 * Math.PI * freqs[i]);
       mag[i] = value.abs();
       /*
       double argument = Math.toDegrees( value.getArgument() );
