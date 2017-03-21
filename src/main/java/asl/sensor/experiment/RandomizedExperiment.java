@@ -31,7 +31,7 @@ public class RandomizedExperiment extends Experiment {
   private InstrumentResponse fitResponse;
   private double[] freqs;
   
-  private static double delta = 1 + 0.1;
+  private static double delta = 0.1;
   
   public RandomizedExperiment() {
     super();
@@ -90,13 +90,11 @@ public class RandomizedExperiment extends Experiment {
     double minScaled = Double.POSITIVE_INFINITY;
     for (int i = 0; i < appResponse.length; ++i) {
       appResponse[i] = appResponse[i].divide( 2 * Math.PI * freqs[i] );
-      if ( minScaled > appResponse[i].abs() ) {
-        minScaled = appResponse[i].abs();
-      }
-      if ( maxScaled < appResponse[i].abs() ) {
-        maxScaled = appResponse[i].abs();
-      }
+      
     }
+    
+    maxScaled = appResponse[1].abs();
+    minScaled = appResponse[appResponse.length - 1].abs();
     
     Complex[] estimatedResponse = new Complex[len];
     double maxVal = Double.NEGATIVE_INFINITY;
@@ -121,7 +119,7 @@ public class RandomizedExperiment extends Experiment {
     XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. arg. [phi]");
     
-    double[] initResult = new double[estimatedResponse.length];
+    double[] observedResult = new double[estimatedResponse.length];
     
     for (int i = 0; i < estimatedResponse.length; ++i) {
       Complex estValue = estimatedResponse[i];
@@ -137,20 +135,20 @@ public class RandomizedExperiment extends Experiment {
       
       if (freqs[i] != 0) {
         respMag.add( freqs[i], 10 * Math.log10( appResponse[i].abs() ) );
-        calcMag.add( freqs[i], 10 * Math.log10( estValMag ) );
+        calcMag.add( freqs[i], 10 * Math.log10(estValMag) );
         respArg.add(freqs[i], respPhi);
         calcArg.add(freqs[i], phi);
       }
       
       // int argIdx = i + estimatedResponse.length;
-      initResult[i] = estValMag;
+      observedResult[i] = estValMag;
       // initResult[argIdx] = phi;
     }
     
     // now to set up a solver for the params
     double[] responseVariables;
     if (lowFreq) {
-      responseVariables = new double[4];
+      responseVariables = new double[2 * 2];
       for (int i = 0; i < responseVariables.length; i += 2) {
         int realIdx = i;
         int imagIdx = realIdx + 1;
@@ -172,13 +170,17 @@ public class RandomizedExperiment extends Experiment {
     // now, solve for the response that gets us the best-fit response curve
     
     RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
-    RealVector observedComponents = MatrixUtils.createRealVector(initResult);
+    RealVector observedComponents = 
+        MatrixUtils.createRealVector(observedResult);
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
         new EvaluationRmsChecker(1E-50, 1E-50);
-        
+    
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
+      int iterator = 0;
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
+        ++iterator;
+        System.out.print("ITERS: " + iterator + "\n");
         return jacobian(point);
       }
     };
@@ -197,7 +199,6 @@ public class RandomizedExperiment extends Experiment {
     // initResid = initEval.getRMS() * 100;
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
 
-    /*
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(1.0E-15).
         withParameterRelativeTolerance(1.0E-15);
@@ -242,21 +243,20 @@ public class RandomizedExperiment extends Experiment {
       // int argIdx = freqs.length + i;
       if (freqs[i] != 0) {
         Complex fitRespInteg = fitRespCurve[i].divide(  
-           2 * Math.PI * freqs[i]);
+           Math.pow(2 * Math.PI * freqs[i], 2) );
         fitMag.add( freqs[i], 10 * Math.log10( fitRespInteg.abs() ) );
         double argument = Math.toDegrees( fitRespCurve[i].getArgument() );
         fitArg.add(freqs[i], ( argument + 360 ) % 360 );
       }
     }
-    */
     
     xySeriesData.addSeries(respMag);
     xySeriesData.addSeries(calcMag);
-    // xySeriesData.addSeries(fitMag);
+    xySeriesData.addSeries(fitMag);
     
     xySeriesData.addSeries(respArg);
     xySeriesData.addSeries(calcArg);
-    // xySeriesData.addSeries(fitArg);
+    xySeriesData.addSeries(fitArg);
     
     System.out.println("Done!");
     
@@ -318,15 +318,16 @@ public class RandomizedExperiment extends Experiment {
     for (int i = 0; i < numVars; ++i) {
       RealVector dx = variables.copy();
       start = variables.getEntry(i);
-      change = start * delta;
+      change = start * (1 + delta);
       dx.setEntry(i, change);
       
-      double[] result = evaluateResponse(dx);
+      double[] diffY = evaluateResponse(dx);
       
-      for (int j = 0; j < result.length; ++j) {
-        double numerator = result[i] - mag[i];
+      for (int j = 0; j < diffY.length; ++j) {
+        double numerator = diffY[j] - mag[j];
         double denominator = change - start;
         jacobian[j][i] = numerator / denominator;
+        System.out.println(jacobian[j][i]+"\n");
       }
     }
     
