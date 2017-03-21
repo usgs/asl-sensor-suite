@@ -43,9 +43,9 @@ public class AzimuthExperiment extends Experiment {
     // assume the first two are the reference and the second two are the test?
     
     // we just need four timeseries, don't actually care about response
-    DataBlock testNorthBlock = ds.getXthLoadedBlock(1);
-    DataBlock testEastBlock = ds.getXthLoadedBlock(2);
-    DataBlock refNorthBlock = ds.getXthLoadedBlock(3);
+    DataBlock testNorthBlock = new DataBlock( ds.getXthLoadedBlock(1) );
+    DataBlock testEastBlock = new DataBlock( ds.getXthLoadedBlock(2) );
+    DataBlock refNorthBlock = new DataBlock( ds.getXthLoadedBlock(3) );
     
     List<Number> testNorth = new ArrayList<Number>( testNorthBlock.getData() );
     String northName = testNorthBlock.getName();
@@ -82,8 +82,6 @@ public class AzimuthExperiment extends Experiment {
       testXArr[i] = testEast.get(i).doubleValue();
       refYArr[i] = refNorth.get(i).doubleValue();
     }
-    
-    
     
     testNorthBlock.setData(testNorth);
     testEastBlock.setData(testEast);
@@ -133,8 +131,8 @@ public class AzimuthExperiment extends Experiment {
         build();
         
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-50).
-        withParameterRelativeTolerance(1.0E-50);
+        withCostRelativeTolerance(1.0E-14).
+        withParameterRelativeTolerance(1.0E-14);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -193,7 +191,7 @@ public class AzimuthExperiment extends Experiment {
     
     double theta = ( point.getEntry(0) );
     
-    double diff = Double.MIN_VALUE;
+    double diff = 1E-15;
     
     DataBlock testRotated = TimeSeriesUtils.rotate(testNorth, testEast, theta);
         
@@ -216,7 +214,7 @@ public class AzimuthExperiment extends Experiment {
     
     RealVector curValue = MatrixUtils.createRealVector(coherence);
     
-    double thetaDelta = theta * (1 + diff);
+    double thetaDelta = theta + diff;
     DataBlock rotateDelta = 
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
     
@@ -233,7 +231,7 @@ public class AzimuthExperiment extends Experiment {
       Complex denom = rotatedSeries[i].multiply(refSeries[i]);
       deltaCoherence[i][0] = numerator.divide(denom).getReal();
       deltaCoherence[i][0] -= coherence[i]; // dF
-      deltaCoherence[i][0] /= (diff); // dTheta
+      deltaCoherence[i][0] /= (thetaDelta - theta); // dTheta
     }
     
     // we have only 1 variable, so jacobian is a matrix w/ single column

@@ -31,7 +31,7 @@ public class RandomizedExperiment extends Experiment {
   private InstrumentResponse fitResponse;
   private double[] freqs;
   
-  private static double delta = Double.MIN_VALUE;
+  private static final double delta = 1E-5;
   
   public RandomizedExperiment() {
     super();
@@ -179,7 +179,7 @@ public class RandomizedExperiment extends Experiment {
         MatrixUtils.createRealVector(observedResult);
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
-        new EvaluationRmsChecker(1E-50, 1E-50);
+        new EvaluationRmsChecker(1E-20, 1E-20);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       int iterator = 0;
@@ -205,8 +205,8 @@ public class RandomizedExperiment extends Experiment {
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
 
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-15).
-        withParameterRelativeTolerance(1.0E-15);
+        withCostRelativeTolerance(1.0E-20).
+        withParameterRelativeTolerance(1.0E-20);
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
