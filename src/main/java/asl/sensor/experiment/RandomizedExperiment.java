@@ -31,7 +31,7 @@ public class RandomizedExperiment extends Experiment {
   private InstrumentResponse fitResponse;
   private double[] freqs;
   
-  private static final double DELTA = 1E-17;
+  private static final double DELTA = 1E-12;
   
   public RandomizedExperiment() {
     super();
@@ -77,40 +77,40 @@ public class RandomizedExperiment extends Experiment {
     // int len = nyquistIdx + 1;
     //int len = numeratorPSD.getFFT().length;
     int len = (int)  ( ( (freqs.length / 2.) + 1. ) * proportion);
+      // (go to 80% of nyquist)
+    
+    int oneHzIdx = 0;
     
     double[] resizedFreqs = new double[len];
     for (int i = 0; i < resizedFreqs.length; ++i) {
       resizedFreqs[i] = freqs[i];
+      if ( freqs[i] == 1.0 || (freqs[i] > 1.0 && freqs[i-1] < 1.0) ) {
+        oneHzIdx = i;
+      }
     }
     
     freqs = resizedFreqs;
     
     Complex[] appResponse = fitResponse.applyResponseToInput(freqs);
-    double maxScaled = Double.NEGATIVE_INFINITY;
-    double minScaled = Double.POSITIVE_INFINITY;
     for (int i = 0; i < appResponse.length; ++i) {
       appResponse[i] = appResponse[i].divide( 2 * Math.PI * freqs[i] );
       
     }
     
-    maxScaled = appResponse[1].abs();
-    minScaled = appResponse[appResponse.length - 1].abs();
+    double scaleBy = appResponse[oneHzIdx].abs();
     
     Complex[] estimatedResponse = new Complex[len];
-    double maxVal = Double.NEGATIVE_INFINITY;
-    double minVal = Double.POSITIVE_INFINITY;
     for (int i = 0; i < estimatedResponse.length; ++i) {
       Complex numer = numeratorPSD.getFFT()[i];
-      double denom = denominatorPSD.getFFT()[i].getReal();
+      Complex denom = denominatorPSD.getFFT()[i];
       estimatedResponse[i] = numer.divide(denom);
-      estimatedResponse[i].multiply(2 * Math.PI * freqs[i]);
-      if (estimatedResponse[i].abs() > maxVal) {
-        maxVal = estimatedResponse[i].abs();
-      }
-      if (estimatedResponse[i].abs() < minVal) {
-        minVal = estimatedResponse[i].abs();
-      }
+      estimatedResponse[i] = 
+          estimatedResponse[i].multiply(2 * Math.PI * freqs[i]);
+      
     }
+    
+    double scaleDenom = estimatedResponse[oneHzIdx].abs();
+    scaleBy /= scaleDenom;
     
     // next, normalize estimated response
     
@@ -123,9 +123,7 @@ public class RandomizedExperiment extends Experiment {
     
     for (int i = 0; i < estimatedResponse.length; ++i) {
       Complex estValue = estimatedResponse[i];
-      double estValMag = ( estValue.abs() - minVal ) / (maxVal - minVal);
-      estValMag *= (maxScaled - minScaled);
-      estValMag += minScaled;
+      double estValMag = estValue.abs() * scaleBy;
      
       double phi = Math.toDegrees( estValue.getArgument() );
       phi = (phi + 360) % 360; // keeps angles positive
@@ -173,13 +171,14 @@ public class RandomizedExperiment extends Experiment {
     }
     
     // now, solve for the response that gets us the best-fit response curve
-    /*
+    
+    
     RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector observedComponents = 
         MatrixUtils.createRealVector(observedResult);
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
-        new EvaluationRmsChecker(1E-15, 1E-15);
+        new EvaluationRmsChecker(1E-10, 1E-10);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       int iterator = 0;
@@ -205,8 +204,8 @@ public class RandomizedExperiment extends Experiment {
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
 
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-15).
-        withParameterRelativeTolerance(1.0E-15);
+        withCostRelativeTolerance(1.0E-10).
+        withParameterRelativeTolerance(1.0E-10);
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
@@ -253,10 +252,10 @@ public class RandomizedExperiment extends Experiment {
         fitArg.add(freqs[i], ( argument + 360 ) % 360 );
       }
     }
-    */
     
-    XYSeries fitMag = new XYSeries("Dummy plot a");
-    XYSeries fitArg = new XYSeries("Dummy plot b");
+    
+    // XYSeries fitMag = new XYSeries("Dummy plot a");
+    // XYSeries fitArg = new XYSeries("Dummy plot b");
     
     xySeriesData.addSeries(respMag);
     xySeriesData.addSeries(calcMag);
@@ -276,7 +275,7 @@ public class RandomizedExperiment extends Experiment {
     
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
     
-    List<Complex> poleList = new ArrayList<Complex>( fitResponse.getPoles() );
+    List<Complex> poleList = new ArrayList<Complex>( testResp.getPoles() );
     List<Complex> builtPoles = new ArrayList<Complex>();
     
     for (int i = 0; i < numVars; i += 2) {
@@ -302,7 +301,6 @@ public class RandomizedExperiment extends Experiment {
     double[] mag = new double[appliedCurve.length];
     // System.out.println(appliedCurve[0]);
     for (int i = 0; i < appliedCurve.length; ++i) {
-      int argIdx = i + appliedCurve.length;
       Complex value = appliedCurve[i];
       if ( value.equals(Complex.NaN) ) {
         // System.out.println("It's NaN");
@@ -340,9 +338,10 @@ public class RandomizedExperiment extends Experiment {
       
       for (int j = 0; j < diffY.length; ++j) {
         double numerator = diffY[j] - mag[j];
-        double denominator = change - start;
+        double denominator = DELTA;
         jacobian[j][i] = numerator / denominator;
         if ( Double.isNaN(jacobian[j][i]) ) {
+          System.out.println(j);
           jacobian[j][i] = 0;
         } else if (Math.abs(jacobian[j][i]) == Double.POSITIVE_INFINITY) {
           System.out.println("This would mean the change is zero?!");
