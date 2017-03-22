@@ -1,6 +1,8 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.math3.complex.Complex;
@@ -10,9 +12,11 @@ import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
+import org.apache.commons.math3.geometry.VectorFormat;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.linear.RealVectorFormat;
 import org.apache.commons.math3.optim.ConvergenceChecker;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
@@ -31,7 +35,7 @@ public class RandomizedExperiment extends Experiment {
   private InstrumentResponse fitResponse;
   private double[] freqs;
   
-  private static final double DELTA = 1E-12;
+  private static final double DELTA = 1E-7;
   
   public RandomizedExperiment() {
     super();
@@ -69,27 +73,32 @@ public class RandomizedExperiment extends Experiment {
     FFTResult numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
     FFTResult denominatorPSD = FFTResult.spectralCalc(calib, calib);
     
-    double nyquistFreq = 
-        TimeSeriesUtils.ONE_HZ_INTERVAL / ( sensorOut.getInterval() * 2);
-    double proportion = 0.8;
+    double proportion = 0.8; // get up to .8 of Nyquist freq due to noise
+    double minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
     
-    freqs = numeratorPSD.getFreqs();
-    // int len = nyquistIdx + 1;
-    //int len = numeratorPSD.getFFT().length;
-    int len = (int)  ( ( (freqs.length / 2.) + 1. ) * proportion);
-      // (go to 80% of nyquist)
+    freqs = numeratorPSD.getFreqs();    
+
+    int len = (int) (freqs.length * proportion); // index of peak freq to check
     
+    // trim down the frequency array to the specified range
+    // we use a list because the lower bound is not fixed by index
     int oneHzIdx = 0;
-    
-    double[] resizedFreqs = new double[len];
-    for (int i = 0; i < resizedFreqs.length; ++i) {
-      resizedFreqs[i] = freqs[i];
-      if ( freqs[i] == 1.0 || (freqs[i] > 1.0 && freqs[i-1] < 1.0) ) {
-        oneHzIdx = i;
+    List<Double> freqList = new LinkedList<Double>();
+    for (int i = 0; i < len; ++i) {
+      if (freqs[i] >= minFreq) {
+        freqList.add(freqs[i]);
       }
     }
     
-    freqs = resizedFreqs;
+    len = freqList.size();
+    freqs = new double[len];
+    
+    for (int i = 0; i < len; ++i) {
+      freqs[i] = freqList.get(i);
+      if ( freqs[i] == 1.0 || (freqs[i] > 1.0 && freqs[i - 1] < 1.0) ) {
+        oneHzIdx = freqList.size() - 1;
+      }
+    }
     
     Complex[] appResponse = fitResponse.applyResponseToInput(freqs);
     for (int i = 0; i < appResponse.length; ++i) {
@@ -142,7 +151,7 @@ public class RandomizedExperiment extends Experiment {
       if ( Double.isNaN(estValMag) ) {
         observedResult[i] = 0;
       } else {
-        observedResult[i] = estValMag;
+        observedResult[i] = 10 * Math.log10(estValMag);
 
       }
       // initResult[argIdx] = phi;
@@ -170,28 +179,29 @@ public class RandomizedExperiment extends Experiment {
       }
     }
     
+    
     // now, solve for the response that gets us the best-fit response curve
     
-    
     RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
-    RealVector observedComponents = 
-        MatrixUtils.createRealVector(observedResult);
-    
-    ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
-        new EvaluationRmsChecker(1E-10, 1E-10);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
-      int iterator = 0;
+      double[] observed = observedResult; // used for difference evaluation
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
-        ++iterator;
-        System.out.print("ITERS: " + iterator + "\n");
-        return jacobian(point);
+        Pair<RealVector, RealMatrix> pair = jacobian(point, observed);
+        return pair;
       }
     };
     
+    ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
+        new EvaluationRmsChecker(1.0E-7, 1.0E-7);
+    
+    LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
+        withCostRelativeTolerance(1.0E-7).
+        withParameterRelativeTolerance(1.0E-7);
+    
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(initialGuess).
-        target(observedComponents).
+        target(new double[]{0.}).
         model(jacobian).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
@@ -202,10 +212,6 @@ public class RandomizedExperiment extends Experiment {
     // LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     // initResid = initEval.getRMS() * 100;
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
-
-    LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-10).
-        withParameterRelativeTolerance(1.0E-10);
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
@@ -215,7 +221,6 @@ public class RandomizedExperiment extends Experiment {
     // time to populate the poles
     for (int i = 0; i < poleParams.length; i += 2) {
       Complex c = new Complex(poleParams[i], poleParams[i + 1]);
-      System.out.println(c);
       builtPoles.add(c);
     }
     
@@ -269,9 +274,9 @@ public class RandomizedExperiment extends Experiment {
     
   }
   
-  private double[] evaluateResponse(RealVector variables) {
+  private double[] evaluateResponse(double[] variables, double[] observed) {
     
-    int numVars = variables.getDimension();
+    int numVars = variables.length;
     
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
     
@@ -279,7 +284,8 @@ public class RandomizedExperiment extends Experiment {
     List<Complex> builtPoles = new ArrayList<Complex>();
     
     for (int i = 0; i < numVars; i += 2) {
-      Complex c = new Complex(variables.getEntry(i), variables.getEntry(i+1));
+      // System.out.println(variables[i]+","+variables[i+1]);
+      Complex c = new Complex(variables[i], variables[i+1]);
       builtPoles.add(c);
     }
     
@@ -293,21 +299,29 @@ public class RandomizedExperiment extends Experiment {
       }
     }
     
+    // System.out.println(poleList);
+    
     // get the result for the input value
     testResp.setPoles(poleList);
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     
     // array is magnitudes, then arguments of complex number
-    double[] mag = new double[appliedCurve.length];
+    double[] mag = new double[1];
+    mag[0] = 0.;
     // System.out.println(appliedCurve[0]);
     for (int i = 0; i < appliedCurve.length; ++i) {
+      if (freqs[i] == 0.) {
+        continue; // this would cause a div by 0 error, don't use it 
+      }
       Complex value = appliedCurve[i];
+      value = value.divide(2 * Math.PI * freqs[i]);
       if ( value.equals(Complex.NaN) ) {
-        // System.out.println("It's NaN");
-        mag[i] = 0;
+        System.out.println("It's NaN: " + i+"; freq: "+freqs[i]);
+        mag[0] += 0;
       } else {
-        value = value.divide(2 * Math.PI * freqs[i]);
-        mag[i] = value.abs();
+        // System.out.println(value);
+        double temp = 10 * Math.log10( value.abs() );
+        mag[0] += Math.pow(temp - observed[i], 2);
       }
 
       /*
@@ -319,34 +333,54 @@ public class RandomizedExperiment extends Experiment {
     return mag;
   }
   
-  private Pair<RealVector, RealMatrix> jacobian(RealVector variables) {
+  private Pair<RealVector, RealMatrix> 
+  jacobian(RealVector variables, double[] observed) {
     
     int numVars = variables.getDimension();
     
-    double[] mag = evaluateResponse(variables);
+    double[] currentVars = new double[numVars];
+    
+    for (int i = 0; i < numVars; ++i) {
+      currentVars[i] = variables.getEntry(i);
+    }
+    
+    double[] mag = evaluateResponse(currentVars, observed);
     
     double[][] jacobian = new double[mag.length][numVars];
     double start, change;
     // now take the forward difference of each value 
     for (int i = 0; i < numVars; ++i) {
-      RealVector dx = variables.copy();
-      start = variables.getEntry(i);
-      change = start + DELTA;
-      dx.setEntry(i, change);
       
-      double[] diffY = evaluateResponse(dx);
+      // RealVector dx = variables.copy();
+      // dx.setEntry(i, change);
+      
+      double[] deltaVars = new double[numVars];
+      for (int j = 0; j < numVars; ++j) {
+        deltaVars[j] = variables.getEntry(j);
+      }
+      start = deltaVars[i];
+      change = start + DELTA;
+      deltaVars[i] = change;
+      
+      double[] diffY = evaluateResponse(deltaVars, observed);
       
       for (int j = 0; j < diffY.length; ++j) {
         double numerator = diffY[j] - mag[j];
-        double denominator = DELTA;
+        double denominator = change - start;
         jacobian[j][i] = numerator / denominator;
+        // System.out.println( numerator );
+        /*
         if ( Double.isNaN(jacobian[j][i]) ) {
-          System.out.println(j);
+          // shouldn't happen
+          System.out.println("NaN??: " + j);
           jacobian[j][i] = 0;
         } else if (Math.abs(jacobian[j][i]) == Double.POSITIVE_INFINITY) {
+          // ALSO shouldn't happen
           System.out.println("This would mean the change is zero?!");
         }
+        */
       }
+      
     }
     
     RealVector result = MatrixUtils.createRealVector(mag);
