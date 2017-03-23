@@ -1,6 +1,7 @@
 package asl.sensor.input;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -88,7 +89,7 @@ public class InstrumentResponse {
    * @throws IOException
    */
   public InstrumentResponse(String filename) throws IOException {
-    name = filename;
+    name = new File(filename).getName();
     parseResponseFile(filename);
   }
   
@@ -183,7 +184,7 @@ public class InstrumentResponse {
   }
   
   /**
-   * Get the 3 gain stages of the RESP file. Stage x is at index x. That is,
+   * Get the gain stages of the RESP file. Stage x is at index x. That is,
    * the sensitivity is at 0, the sensor gain is at 1, and the digitizer
    * gain is at 2.
    * @return

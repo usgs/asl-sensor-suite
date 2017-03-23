@@ -13,23 +13,21 @@ import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
-import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
-import org.apache.commons.math3.geometry.VectorFormat;
+import 
+org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
+import 
+org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.linear.RealVectorFormat;
 import org.apache.commons.math3.optim.ConvergenceChecker;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.TimeSeriesUtils;
 
 public class RandomizedExperiment extends Experiment {
 
@@ -86,18 +84,16 @@ public class RandomizedExperiment extends Experiment {
     // trim down the frequency array to the specified range
     // we use a list because the lower bound is not fixed by index
     int oneHzIdx = 0;
-    int startFreqIdx = 0; // where to start iterating from
-    boolean startingFreqIndexSet = false;
+    // use variable-size data structures to prevent issues with rounding
+    // based on calculation of where minimum index should exist
     List<Double> freqList = new LinkedList<Double>();
     Map<Double, Complex> numPSDMap = new HashMap<Double, Complex>();
     Map<Double, Complex> denomPSDMap = new HashMap<Double, Complex>();
     for (int i = 0; i < len; ++i) {
       if (freqs[i] < minFreq) {
         continue;
-      } else if (!startingFreqIndexSet) {
-        startFreqIdx = i;
-        startingFreqIndexSet = true;
       }
+      
       freqList.add(freqs[i]);
       numPSDMap.put(freqs[i], numeratorPSD.getFFT()[i]);
       denomPSDMap.put(freqs[i], denominatorPSD.getFFT()[i]);
@@ -129,8 +125,6 @@ public class RandomizedExperiment extends Experiment {
     }
     
     double scaleBy = appResponse[oneHzIdx].abs(); // value at 1Hz, to normalize
-    
-    System.out.println(scaleBy);
     
     Complex[] estimatedResponse = new Complex[len];
     for (int i = 0; i < estimatedResponse.length; ++i) {
@@ -209,6 +203,7 @@ public class RandomizedExperiment extends Experiment {
     // now, solve for the response that gets us the best-fit response curve
     
     RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
+    RealVector obsResVector = MatrixUtils.createRealVector(observedResult);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       double[] observed = observedResult; // used for difference evaluation
@@ -227,7 +222,7 @@ public class RandomizedExperiment extends Experiment {
     
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(initialGuess).
-        target(new double[]{0.}).
+        target(obsResVector).
         model(jacobian).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
@@ -332,7 +327,7 @@ public class RandomizedExperiment extends Experiment {
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     
     // array is magnitudes, then arguments of complex number
-    double[] mag = new double[1];
+    double[] mag = new double[appliedCurve.length];
     mag[0] = 0.;
     // System.out.println(appliedCurve[0]);
     for (int i = 0; i < appliedCurve.length; ++i) {
@@ -347,7 +342,7 @@ public class RandomizedExperiment extends Experiment {
       } else {
         // System.out.println(value);
         double temp = 10 * Math.log10( value.abs() );
-        mag[0] += Math.pow(temp - observed[i], 2);
+        mag[i] = temp;
       }
 
       /*
@@ -385,10 +380,16 @@ public class RandomizedExperiment extends Experiment {
         deltaVars[j] = variables.getEntry(j);
       }
       start = deltaVars[i];
-      change = start + DELTA;
+      change = start * (1 + DELTA);
       deltaVars[i] = change;
       
       double[] diffY = evaluateResponse(deltaVars, observed);
+      
+      /*
+      System.out.println( Arrays.toString(mag) + "," + Arrays.toString(diffY) );
+      */
+      
+      System.out.println(start + "," + change);
       
       for (int j = 0; j < diffY.length; ++j) {
         double numerator = diffY[j] - mag[j];
