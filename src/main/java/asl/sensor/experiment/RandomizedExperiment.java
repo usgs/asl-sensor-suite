@@ -2,8 +2,11 @@ package asl.sensor.experiment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
@@ -83,20 +86,39 @@ public class RandomizedExperiment extends Experiment {
     // trim down the frequency array to the specified range
     // we use a list because the lower bound is not fixed by index
     int oneHzIdx = 0;
+    int startFreqIdx = 0; // where to start iterating from
+    boolean startingFreqIndexSet = false;
     List<Double> freqList = new LinkedList<Double>();
+    Map<Double, Complex> numPSDMap = new HashMap<Double, Complex>();
+    Map<Double, Complex> denomPSDMap = new HashMap<Double, Complex>();
     for (int i = 0; i < len; ++i) {
-      if (freqs[i] >= minFreq) {
-        freqList.add(freqs[i]);
+      if (freqs[i] < minFreq) {
+        continue;
+      } else if (!startingFreqIndexSet) {
+        startFreqIdx = i;
+        startingFreqIndexSet = true;
       }
+      freqList.add(freqs[i]);
+      numPSDMap.put(freqs[i], numeratorPSD.getFFT()[i]);
+      denomPSDMap.put(freqs[i], denominatorPSD.getFFT()[i]);
     }
     
-    len = freqList.size();
+    Collections.sort(freqList); // probably not necessay, but for peace of mind
+    
+    len = freqList.size(); // now len is length of trimmed frequencies
     freqs = new double[len];
+    // trim the PSDs to the data in the trimmed frequency range
+    Complex[] numeratorPSDVals = new Complex[len];
+    Complex[] denominatorPSDVals = new Complex[len];
     
     for (int i = 0; i < len; ++i) {
       freqs[i] = freqList.get(i);
+      
+      numeratorPSDVals[i] = numPSDMap.get(freqs[i]);
+      denominatorPSDVals[i] = denomPSDMap.get(freqs[i]);
+      
       if ( freqs[i] == 1.0 || (freqs[i] > 1.0 && freqs[i - 1] < 1.0) ) {
-        oneHzIdx = freqList.size() - 1;
+        oneHzIdx = i;
       }
     }
     
@@ -106,20 +128,24 @@ public class RandomizedExperiment extends Experiment {
       
     }
     
-    double scaleBy = appResponse[oneHzIdx].abs();
+    double scaleBy = appResponse[oneHzIdx].abs(); // value at 1Hz, to normalize
+    
+    System.out.println(scaleBy);
     
     Complex[] estimatedResponse = new Complex[len];
     for (int i = 0; i < estimatedResponse.length; ++i) {
-      Complex numer = numeratorPSD.getFFT()[i];
-      Complex denom = denominatorPSD.getFFT()[i];
+      Complex numer = numeratorPSDVals[i];
+      Complex denom = denominatorPSDVals[i];
       estimatedResponse[i] = numer.divide(denom);
       estimatedResponse[i] = 
           estimatedResponse[i].multiply(2 * Math.PI * freqs[i]);
       
+      if (i == oneHzIdx) {
+        double scaleDenom = estimatedResponse[oneHzIdx].abs();
+        scaleBy /= scaleDenom;
+      }
+      
     }
-    
-    double scaleDenom = estimatedResponse[oneHzIdx].abs();
-    scaleBy /= scaleDenom;
     
     // next, normalize estimated response
     
