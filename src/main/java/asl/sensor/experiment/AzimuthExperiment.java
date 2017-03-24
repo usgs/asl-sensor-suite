@@ -119,8 +119,8 @@ public class AzimuthExperiment extends Experiment {
         build();
         
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-10).
-        withParameterRelativeTolerance(1.0E-10);
+        withCostRelativeTolerance(1.0E-5).
+        withParameterRelativeTolerance(1.0E-5);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -179,7 +179,7 @@ public class AzimuthExperiment extends Experiment {
     
     double theta = ( point.getEntry(0) );
     
-    double diff = 1E-12;
+    double diff = 0.5;
     
     double lowFreq = 1./18.;
     double highFreq = 1./3.;
@@ -234,7 +234,6 @@ public class AzimuthExperiment extends Experiment {
       }
     }
     
-    
     RealVector curValue = 
         MatrixUtils.createRealVector(new double[]{meanCoherence});
     
@@ -264,10 +263,10 @@ public class AzimuthExperiment extends Experiment {
     
     fwdMeanCoherence /= (double) samples;
     double deltaMean = 0.;
-    deltaMean = (fwdMeanCoherence - meanCoherence) / (thetaDelta - theta);
+    deltaMean = (fwdMeanCoherence - meanCoherence) / diff;
     
     double[][] jacobianArray = new double[1][1];
-    jacobianArray[0][0] = deltaMean;
+    jacobianArray[0][0] = Math.signum(deltaMean);
     
     // we have only 1 variable, so jacobian is a matrix w/ single column
     RealMatrix jbn = MatrixUtils.createRealMatrix(jacobianArray);
