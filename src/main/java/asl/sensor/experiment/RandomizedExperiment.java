@@ -295,10 +295,9 @@ public class RandomizedExperiment extends Experiment {
     
   }
   
-  private double[] evaluateResponse(double[] variables, double[] observed) {
+  private InstrumentResponse polesToResponse(double[] variables) {
     
     int numVars = variables.length;
-    
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
     
     List<Complex> poleList = new ArrayList<Complex>( testResp.getPoles() );
@@ -324,6 +323,15 @@ public class RandomizedExperiment extends Experiment {
     
     // get the result for the input value
     testResp.setPoles(poleList);
+    return testResp;
+  }
+  
+  private double[] evaluateResponse(double[] variables, double[] observed) {
+    
+    int numVars = variables.length;
+    
+    InstrumentResponse testResp = polesToResponse(variables);
+    
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     
     // array is magnitudes, then arguments of complex number
@@ -368,44 +376,31 @@ public class RandomizedExperiment extends Experiment {
     double[] mag = evaluateResponse(currentVars, observed);
     
     double[][] jacobian = new double[mag.length][numVars];
-    double start, change;
     // now take the forward difference of each value 
     for (int i = 0; i < numVars; ++i) {
       
+      double[] changedVars = new double[currentVars.length];
+      for (int j = 0; j < currentVars.length; ++j) {
+        changedVars[j] = currentVars[j];
+      }
       // RealVector dx = variables.copy();
       // dx.setEntry(i, change);
       
-      double[] deltaVars = new double[numVars];
-      for (int j = 0; j < numVars; ++j) {
-        deltaVars[j] = variables.getEntry(j);
-      }
-      start = deltaVars[i];
-      change = start * (1 + DELTA);
-      deltaVars[i] = change;
+      double diffX = Math.pow(changedVars[i], 10);
+      changedVars[i] = diffX;
       
-      double[] diffY = evaluateResponse(deltaVars, observed);
+      double[] diffY = evaluateResponse(changedVars, observed);
       
       /*
       System.out.println( Arrays.toString(mag) + "," + Arrays.toString(diffY) );
       */
       
-      System.out.println(start + "," + change);
-      
       for (int j = 0; j < diffY.length; ++j) {
-        double numerator = diffY[j] - mag[j];
-        double denominator = change - start;
-        jacobian[j][i] = numerator / denominator;
-        // System.out.println( numerator );
-        /*
-        if ( Double.isNaN(jacobian[j][i]) ) {
-          // shouldn't happen
-          System.out.println("NaN??: " + j);
-          jacobian[j][i] = 0;
-        } else if (Math.abs(jacobian[j][i]) == Double.POSITIVE_INFINITY) {
-          // ALSO shouldn't happen
-          System.out.println("This would mean the change is zero?!");
+        jacobian[j][i] = diffY[j] - mag[j];
+        if (jacobian[j][i] != 0.) {
+          System.out.println("It's NOT zero!!");
         }
-        */
+        jacobian[j][i] /= changedVars[i] - currentVars[i];
       }
       
     }
