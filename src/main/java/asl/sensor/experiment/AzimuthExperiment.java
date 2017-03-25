@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
+import org.apache.commons.math3.fitting.leastsquares.GaussNewtonOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresFactory;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 import 
@@ -14,6 +17,10 @@ org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.optim.ConvergenceChecker;
+import org.apache.commons.math3.optim.SimpleValueChecker;
+import org.apache.commons.math3.optim.univariate.SimpleUnivariateValueChecker;
+import org.apache.commons.math3.optim.univariate.UnivariatePointValuePair;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -97,6 +104,8 @@ public class AzimuthExperiment extends Experiment {
       
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         
+        System.out.println("iterating...");
+        
         return jacobian(point, 
             finalRefNorthBlock, 
             finalTestNorthBlock, 
@@ -108,6 +117,8 @@ public class AzimuthExperiment extends Experiment {
     
     // want mean coherence to be as close to 1 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
+    ConvergenceChecker<LeastSquaresProblem.Evaluation> cv = 
+        new EvaluationRmsChecker(1E-3, 1E-5);
     
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
@@ -116,11 +127,13 @@ public class AzimuthExperiment extends Experiment {
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
         lazyEvaluation(false).
+        checker(cv).
         build();
-        
-    LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-5).
-        withParameterRelativeTolerance(1.0E-5);
+    
+    System.out.println("It's built!");
+    
+    LeastSquaresOptimizer optimizer = 
+        new GaussNewtonOptimizer(GaussNewtonOptimizer.Decomposition.LU);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -179,7 +192,7 @@ public class AzimuthExperiment extends Experiment {
     
     double theta = ( point.getEntry(0) );
     
-    double diff = 0.5;
+    double diff = 1E-7;
     
     double lowFreq = 1./18.;
     double highFreq = 1./3.;

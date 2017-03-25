@@ -386,8 +386,10 @@ public class RandomizedExperiment extends Experiment {
       // RealVector dx = variables.copy();
       // dx.setEntry(i, change);
       
-      double diffX = Math.pow(changedVars[i], 10);
+      double diffX = Math.pow(changedVars[i], 9);
       changedVars[i] = diffX;
+      
+      System.out.println(changedVars[i]);
       
       double[] diffY = evaluateResponse(changedVars, observed);
       
