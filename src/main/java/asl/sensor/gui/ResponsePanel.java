@@ -54,12 +54,15 @@ public class ResponsePanel extends ExperimentPanel {
     freqAxisTitle = "Frequency (Hz)";
     yAxisTitle = "10 * log10( RESP(f) )";
     degreeAxisTitle = "phi(RESP(f))";
+    
     xAxis = new LogarithmicAxis(xAxisTitle);
     freqAxis = new LogarithmicAxis(freqAxisTitle);
+    
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
     
     degreeAxis = new NumberAxis(degreeAxisTitle);
+    degreeAxis.setAutoRange(true);
     
     ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);

@@ -18,6 +18,7 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.data.Range;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.experiment.ExperimentEnum;
@@ -46,14 +47,17 @@ public class RandomizedPanel extends ExperimentPanel {
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
     
-    xAxisTitle = "Frequency (f)";
     yAxisTitle = "10 * log10( RESP(f) )";
+    xAxisTitle = "Frequency (f)";
     degreeAxisTitle = "phi(RESP(f))";
+    
     xAxis = new LogarithmicAxis(xAxisTitle);
+    
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
     
     degreeAxis = new NumberAxis(degreeAxisTitle);
+    degreeAxis.setAutoRange(true);
     
     ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
@@ -138,18 +142,23 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
+    Range argRange = argSeries.getRangeBounds(true);
+    
     int idx = plotSelection.getSelectedIndex();
     
     argChart = buildChart(argSeries);
     argChart.getXYPlot().setRangeAxis(degreeAxis);
+    argChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
     magChart = buildChart(magSeries);
     magChart.getXYPlot().setRangeAxis(yAxis);
+    magChart.getXYPlot().getRangeAxis().setAutoRange(true);
 
     if (idx == 0) {
       chart = magChart;
     } else {
       chart = argChart;
+      chart.getXYPlot().getRangeAxis().setRange(argRange); 
     }
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);

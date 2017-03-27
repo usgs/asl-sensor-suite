@@ -7,20 +7,14 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
 import org.apache.commons.math3.fitting.leastsquares.GaussNewtonOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
-import org.apache.commons.math3.fitting.leastsquares.LeastSquaresFactory;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
-import 
-org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import 
 org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.optim.ConvergenceChecker;
-import org.apache.commons.math3.optim.SimpleValueChecker;
-import org.apache.commons.math3.optim.univariate.SimpleUnivariateValueChecker;
-import org.apache.commons.math3.optim.univariate.UnivariatePointValuePair;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -104,8 +98,6 @@ public class AzimuthExperiment extends Experiment {
       
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         
-        System.out.println("iterating...");
-        
         return jacobian(point, 
             finalRefNorthBlock, 
             finalTestNorthBlock, 
@@ -129,8 +121,6 @@ public class AzimuthExperiment extends Experiment {
         lazyEvaluation(false).
         checker(cv).
         build();
-    
-    System.out.println("It's built!");
     
     LeastSquaresOptimizer optimizer = 
         new GaussNewtonOptimizer(GaussNewtonOptimizer.Decomposition.LU);
@@ -192,7 +182,7 @@ public class AzimuthExperiment extends Experiment {
     
     double theta = ( point.getEntry(0) );
     
-    double diff = 1E-7;
+    double diff = 1E-5;
     
     double lowFreq = 1./18.;
     double highFreq = 1./3.;

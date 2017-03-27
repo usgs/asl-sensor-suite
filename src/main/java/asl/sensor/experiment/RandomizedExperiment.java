@@ -1,7 +1,6 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -148,9 +147,12 @@ public class RandomizedExperiment extends Experiment {
     XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. arg. [phi]");
     
-    double[] observedResult = new double[estimatedResponse.length];
+    double[] observedResult = new double[2 * estimatedResponse.length];
     
     for (int i = 0; i < estimatedResponse.length; ++i) {
+      
+      int argIdx = estimatedResponse.length + i;
+      
       Complex estValue = estimatedResponse[i];
       double estValMag = estValue.abs() * scaleBy;
      
@@ -170,9 +172,10 @@ public class RandomizedExperiment extends Experiment {
       // int argIdx = i + estimatedResponse.length;
       if ( Double.isNaN(estValMag) ) {
         observedResult[i] = 0;
+        observedResult[argIdx] = 0;
       } else {
         observedResult[i] = 10 * Math.log10(estValMag);
-
+        observedResult[argIdx] = estValue.getArgument();
       }
       // initResult[argIdx] = phi;
     }
@@ -247,12 +250,14 @@ public class RandomizedExperiment extends Experiment {
     
     System.out.println(fitPoles);
     
+    // TODO: remove redundancy, replace with call to polesToResponse
+    
     if (lowFreq) {
       for (int i = 0; i < 2; ++i) {
         poles.set( i, builtPoles.get(i) );
       }
     } else {
-      for (int i = 0; i < builtPoles.size() - 2; ++i) {
+      for (int i = 0; i < poles.size() - 2; ++i) {
         poles.set( i + 2, builtPoles.get(i) );
       }
     }
@@ -314,7 +319,7 @@ public class RandomizedExperiment extends Experiment {
         poleList.set( i, builtPoles.get(i) );
       }
     } else {
-      for (int i = 0; i < builtPoles.size() - 2; ++i) {
+      for (int i = 0; i < poleList.size() - 2; ++i) {
         poleList.set( i + 2, builtPoles.get(i) );
       }
     }
@@ -328,35 +333,37 @@ public class RandomizedExperiment extends Experiment {
   
   private double[] evaluateResponse(double[] variables, double[] observed) {
     
-    int numVars = variables.length;
-    
     InstrumentResponse testResp = polesToResponse(variables);
     
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     
     // array is magnitudes, then arguments of complex number
-    double[] mag = new double[appliedCurve.length];
+    double[] mag = new double[appliedCurve.length * 2];
     mag[0] = 0.;
+    mag[appliedCurve.length] = 0.;
     // System.out.println(appliedCurve[0]);
     for (int i = 0; i < appliedCurve.length; ++i) {
+      
+      int argIdx = appliedCurve.length + i;
+      
       if (freqs[i] == 0.) {
+        mag[i] = 0.;
         continue; // this would cause a div by 0 error, don't use it 
       }
       Complex value = appliedCurve[i];
       value = value.divide(2 * Math.PI * freqs[i]);
       if ( value.equals(Complex.NaN) ) {
         System.out.println("It's NaN: " + i+"; freq: "+freqs[i]);
-        mag[0] += 0;
+        mag[i] += 0;
+        mag[argIdx] = 0;
       } else {
         // System.out.println(value);
         double temp = 10 * Math.log10( value.abs() );
         mag[i] = temp;
+        double argument = value.getArgument();
+        mag[argIdx] = argument;
       }
-
-      /*
-      double argument = Math.toDegrees( value.getArgument() );
-      magAndAngle[argIdx] = argument; // taking (% 360) bad for solver
-      */
+      
     }
     
     return mag;
@@ -383,25 +390,15 @@ public class RandomizedExperiment extends Experiment {
       for (int j = 0; j < currentVars.length; ++j) {
         changedVars[j] = currentVars[j];
       }
-      // RealVector dx = variables.copy();
-      // dx.setEntry(i, change);
       
-      double diffX = Math.pow(changedVars[i], 9);
+      double diffX = changedVars[i] * (1 + DELTA);
       changedVars[i] = diffX;
-      
-      System.out.println(changedVars[i]);
       
       double[] diffY = evaluateResponse(changedVars, observed);
       
-      /*
-      System.out.println( Arrays.toString(mag) + "," + Arrays.toString(diffY) );
-      */
       
       for (int j = 0; j < diffY.length; ++j) {
         jacobian[j][i] = diffY[j] - mag[j];
-        if (jacobian[j][i] != 0.) {
-          System.out.println("It's NOT zero!!");
-        }
         jacobian[j][i] /= changedVars[i] - currentVars[i];
       }
       
