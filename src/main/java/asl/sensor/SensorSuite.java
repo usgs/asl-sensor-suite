@@ -208,11 +208,7 @@ public class SensorSuite extends JPanel
         
         @Override
         public Integer doInBackground() {
-          try{
-            resetTabPlots();
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
+          resetTabPlots();
           return 0;
         }
         

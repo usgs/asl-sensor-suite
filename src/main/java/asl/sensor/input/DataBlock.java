@@ -27,10 +27,27 @@ public class DataBlock {
    * @param in The datablock to be copied
    */
   public DataBlock(DataBlock in) {
-    setInterval(in.getInterval());
+    setInterval( in.getInterval() );
     setData( new ArrayList<Number>( in.getData() ) );
     name = in.getName();
     setStartTime(in.getStartTime());
+  }
+  
+  public DataBlock(DataBlock in, long start, long end) {
+    setInterval( in.getInterval() );
+    int startIdx = in.getTrimStartIndex(start);
+    int endIdx = in.getTrimEndIndex(end);
+    
+    data = in.getData();
+    setData( new ArrayList<Number>( data.subList(startIdx, endIdx) ) );
+    
+    name = in.getName();
+    if (startIdx == 0) {
+      setStartTime( in.getStartTime() );
+    } else {
+      setStartTime(start);
+    }
+    
   }
   
   /**
@@ -192,19 +209,18 @@ public class DataBlock {
     return Math.signum( data.get(idx).doubleValue() ) < 0;
     
   }
-
-  /**
-   * Trim data to a given range (start time, end time)
-   * @param start Start time to trim to in nanoseconds from epoch
-   * @param end End time to trim to in nanoseconds from epoch
-   */
-  public void trim(long start, long end) {
-    int startIdx = 0, endIdx = data.size();
+  
+  public int getTrimStartIndex(long start) {
+    int startIdx = 0;
     if (startTime < start) {
       long diff = start - startTime;
-      // how many data points in the time range we're removing? 
-      startIdx = (int) (diff / interval); // (start offset = 0)
+      startIdx = (int) (diff / interval);
     }
+    return startIdx;
+  }
+  
+  public int getTrimEndIndex(long end) {
+    int endIdx = data.size();
     long endTime = getEndTime();
     if ( end < endTime ) {
       long diff = endTime - end;
@@ -212,9 +228,24 @@ public class DataBlock {
       // (quick reminder that upper index of sublist method is exclusive)
       endIdx = endIdx - (int) (diff / interval); // (end offset = size)
     }
+    return endIdx;
+  }
+
+  /**
+   * Trim data to a given range (start time, end time)
+   * @param start Start time to trim to in milliseconds from epoch
+   * @param end End time to trim to in milliseconds from epoch
+   */
+  public void trim(long start, long end) {
+    
+    int startIdx = getTrimStartIndex(start);
+    int endIdx = getTrimEndIndex(end);
+    
+    
     if ( startIdx == 0 && endIdx >= data.size() ){
       return;
     }
+    
     data = new ArrayList<Number>( data.subList(startIdx, endIdx) );
     startTime = start;
     

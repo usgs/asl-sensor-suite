@@ -987,6 +987,7 @@ implements ActionListener, ChangeListener {
           try {
             ds.setData(idx, filePath, immutableFilter);
           } catch (RuntimeException e) {
+            e.printStackTrace();
             caughtException = true;
             return 1;
           }

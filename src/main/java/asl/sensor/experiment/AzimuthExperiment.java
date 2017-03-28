@@ -1,7 +1,10 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
@@ -101,8 +104,7 @@ public class AzimuthExperiment extends Experiment {
         return jacobian(point, 
             finalRefNorthBlock, 
             finalTestNorthBlock, 
-            finalTestEastBlock, 
-            len);
+            finalTestEastBlock);
         
       }
     };
@@ -110,7 +112,7 @@ public class AzimuthExperiment extends Experiment {
     // want mean coherence to be as close to 1 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
     ConvergenceChecker<LeastSquaresProblem.Evaluation> cv = 
-        new EvaluationRmsChecker(1E-3, 1E-5);
+        new EvaluationRmsChecker(1E-2, 1E-2);
     
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
@@ -127,13 +129,106 @@ public class AzimuthExperiment extends Experiment {
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
+    double tempAngle = angleVector.getEntry(0);
     
-    angle = Math.toDegrees( angleVector.getEntry(0) );
-    angle = ( (angle % 360) + 360 ) % 360;
-    // allows us to have 
-    if (angle > 180) {
-      angle = (360-angle) % 360;
+    // angleVector is our new best guess for the azimuth
+    // now let's cut the data into 2000-sec windows with 500-sec overlap
+    // store the angle and resulting correlation of each window
+    // and then take the best-correlation angles and average them
+    long start = testNorthBlock.getStartTime();
+    long end = testNorthBlock.getEndTime();
+    long timeRange = end - start;
+    
+    // first double -- angle estimate over window
+    // second double -- coherence from that estimate over the window
+    List<Pair<Double,Double>> angleCoherenceList = 
+        new ArrayList<Pair<Double, Double>> ();
+    List<Double> sortedCoherence = new ArrayList<Double>();
+    
+    final long twoThouSecs = 2000L * TimeSeriesUtils.ONE_HZ_INTERVAL; 
+    // 1000 ms per second, range length
+    final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
+    int numWindows = (int) ( (timeRange - twoThouSecs) / fiveHundSecs);
+    
+    System.out.println(numWindows);
+    
+    for (int i = 0; i < numWindows; ++i) {
+      
+      if (timeRange < 2 * twoThouSecs) {
+        break;
+      }
+      
+      long wdStart = fiveHundSecs * i + start; // start of 500s-sliding window
+      long wdEnd = wdStart + twoThouSecs; // end of window (2000s long)
+      
+      DataBlock testNorthWindow = new DataBlock(testNorthBlock, wdStart, wdEnd);
+      DataBlock testEastWindow = new DataBlock(testEastBlock, wdStart, wdEnd);
+      DataBlock refNorthWindow = new DataBlock(refNorthBlock, wdStart, wdEnd);
+      
+      MultivariateJacobianFunction jbn2 = new MultivariateJacobianFunction() {
+
+        final DataBlock finalTestNorthBlock = testNorthWindow;
+        final DataBlock finalTestEastBlock = testEastWindow;
+        final DataBlock finalRefNorthBlock = refNorthWindow;
+
+        public Pair<RealVector, RealMatrix> value(final RealVector point) {
+
+          return jacobian(point, 
+              finalRefNorthBlock, 
+              finalTestNorthBlock, 
+              finalTestEastBlock);
+
+        }
+      };
+      
+      LeastSquaresProblem findAngleWindow = new LeastSquaresBuilder().
+          start(new double[]{tempAngle}).
+          model(jbn2).
+          target(target).
+          maxEvaluations(Integer.MAX_VALUE).
+          maxIterations(Integer.MAX_VALUE).
+          lazyEvaluation(false).
+          checker(cv).
+          build();
+            
+      optimumY = optimizer.optimize(findAngleWindow);
+      
+      RealVector angleVectorWindow = optimumY.getPoint();
+      double angleTemp = angleVectorWindow.getEntry(0);
+      RealVector resi = optimumY.getResiduals();
+      double errorEst = resi.getEntry(0);
+      angleCoherenceList.add( new Pair<Double, Double>(angleTemp, errorEst) );
+      sortedCoherence.add(errorEst);
     }
+    
+    if (angleCoherenceList.size() < 1) {
+      System.out.println("Too little data for good angle estimation...");
+      angle = Math.toDegrees( angleVector.getEntry(0) );
+    } else {
+      // get the best-coherence estimations of angle and average them
+      Collections.sort(sortedCoherence);
+      int maxBoundary = Math.max(5, sortedCoherence.size() / 3);
+      sortedCoherence = sortedCoherence.subList(0, maxBoundary);
+      Set<Double> acceptableCoherences = new HashSet<Double>(sortedCoherence);
+      
+      double averageAngle = 0.;
+      int coherenceCount = 0;
+      
+      for (Pair<Double, Double> angCoherePair : angleCoherenceList) {
+        double angleTemp = angCoherePair.getFirst();
+        double coherence = angCoherePair.getSecond();
+        if ( acceptableCoherences.contains(coherence) ) {
+          averageAngle += angleTemp;
+          ++coherenceCount;
+        }
+      }
+      
+      angle = averageAngle / coherenceCount;
+      
+    }
+
+    
+    angle = ( (angle % 360) + 360 ) % 360;
     
     XYSeries ref = new XYSeries(northName + " rel. to reference");
     ref.add(offset - angle, 0);
@@ -150,45 +245,23 @@ public class AzimuthExperiment extends Experiment {
     xySeriesData.addSeries(set);
     xySeriesData.addSeries(fromNorth);
     
-    /*
-    XYSeries diffSrs = new XYSeries("Diff(" + testName + ", " + refName + ")");
-    XYSeries diffRotSrs = new XYSeries("Diff(" + testName + ", Rotated Ref.)");
-    
-    
-    RealVector diffLH1 = testY.subtract(refY);
-    RealVector diffComponents = jacobian.value(angleVector).getFirst();
-    
-    for (int i = 0; i < len; ++i) {
-      diffSrs.add (timeAtPoint, diffLH1.getEntry(i) );
-      diffRotSrs.add( timeAtPoint, diffComponents.getEntry(i) );
-      
-      timeAtPoint += tick;
-    }
-    
-    XYSeriesCollection xysc = (XYSeriesCollection) xySeriesData;
-    
-    xysc.addSeries(diffSrs);
-    xysc.addSeries(diffRotSrs);
-    */
   }
   
   public Pair<RealVector, RealMatrix> jacobian(
       final RealVector point, 
       final DataBlock refNorth,
       final DataBlock testNorth, 
-      final DataBlock testEast, 
-      int len) {
-    
+      final DataBlock testEast) {
     
     double theta = ( point.getEntry(0) );
     
-    double diff = 1E-5;
+    double diff = 1E-2;
     
     double lowFreq = 1./18.;
     double highFreq = 1./3.;
     
     DataBlock testRotated = TimeSeriesUtils.rotate(testNorth, testEast, theta);
-        
+    
     FFTResult crossPower = FFTResult.spectralCalc(refNorth, testRotated);
     FFTResult rotatedPower = FFTResult.spectralCalc(testRotated, testRotated);
     FFTResult refPower = FFTResult.spectralCalc(refNorth, refNorth);

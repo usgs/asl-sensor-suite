@@ -58,8 +58,8 @@ public class TimeSeriesUtils {
     List<Number> eastData = east.getData();
     List<Number> rotatedData = new ArrayList<Number>();
     
-    double sinTheta = Math.sin(ang);
-    double cosTheta = Math.cos(ang);
+    double sinTheta = Math.sin(-ang);
+    double cosTheta = Math.cos(-ang);
     
     for (int i = 0; i < northData.size(); ++i) {
       rotatedData.add( 
