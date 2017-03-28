@@ -209,9 +209,8 @@ public class RandomizedExperiment extends Experiment {
     RealVector obsResVector = MatrixUtils.createRealVector(observedResult);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
-      double[] observed = observedResult; // used for difference evaluation
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
-        Pair<RealVector, RealMatrix> pair = jacobian(point, observed);
+        Pair<RealVector, RealMatrix> pair = jacobian(point, fitResponse);
         return pair;
       }
     };
@@ -250,20 +249,8 @@ public class RandomizedExperiment extends Experiment {
     
     System.out.println(fitPoles);
     
-    // TODO: remove redundancy, replace with call to polesToResponse
-    
-    if (lowFreq) {
-      for (int i = 0; i < 2; ++i) {
-        poles.set( i, builtPoles.get(i) );
-      }
-    } else {
-      for (int i = 0; i < poles.size() - 2; ++i) {
-        poles.set( i + 2, builtPoles.get(i) );
-      }
-    }
-    
-    fitResponse.setPoles(poles);
-    fitPoles = poles;
+    fitResponse = polesToResp(poleParams, fitResponse, lowFreq);
+    fitPoles = fitResponse.getPoles();
     
     System.out.println(fitPoles);
     
@@ -300,10 +287,11 @@ public class RandomizedExperiment extends Experiment {
     
   }
   
-  private InstrumentResponse polesToResponse(double[] variables) {
+  public static InstrumentResponse polesToResp(double[] variables, 
+      InstrumentResponse ir, boolean lowFreq) {
     
     int numVars = variables.length;
-    InstrumentResponse testResp = new InstrumentResponse(fitResponse);
+    InstrumentResponse testResp = new InstrumentResponse(ir);
     
     List<Complex> poleList = new ArrayList<Complex>( testResp.getPoles() );
     List<Complex> builtPoles = new ArrayList<Complex>();
@@ -331,9 +319,9 @@ public class RandomizedExperiment extends Experiment {
     return testResp;
   }
   
-  private double[] evaluateResponse(double[] variables, double[] observed) {
+  private double[] evaluateResponse(double[] variables, InstrumentResponse ir) {
     
-    InstrumentResponse testResp = polesToResponse(variables);
+    InstrumentResponse testResp = polesToResp(variables, ir, lowFreq);
     
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     
@@ -370,7 +358,7 @@ public class RandomizedExperiment extends Experiment {
   }
   
   private Pair<RealVector, RealMatrix> 
-  jacobian(RealVector variables, double[] observed) {
+  jacobian(RealVector variables, InstrumentResponse ir) {
     
     int numVars = variables.getDimension();
     
@@ -380,7 +368,7 @@ public class RandomizedExperiment extends Experiment {
       currentVars[i] = variables.getEntry(i);
     }
     
-    double[] mag = evaluateResponse(currentVars, observed);
+    double[] mag = evaluateResponse(currentVars, ir);
     
     double[][] jacobian = new double[mag.length][numVars];
     // now take the forward difference of each value 
@@ -394,7 +382,7 @@ public class RandomizedExperiment extends Experiment {
       double diffX = changedVars[i] * (1 + DELTA);
       changedVars[i] = diffX;
       
-      double[] diffY = evaluateResponse(changedVars, observed);
+      double[] diffY = evaluateResponse(changedVars, ir);
       
       
       for (int j = 0; j < diffY.length; ++j) {
