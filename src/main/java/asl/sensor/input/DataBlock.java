@@ -233,8 +233,8 @@ public class DataBlock {
 
   /**
    * Trim data to a given range (start time, end time)
-   * @param start Start time to trim to in milliseconds from epoch
-   * @param end End time to trim to in milliseconds from epoch
+   * @param start Start time to trim to in microseconds from epoch
+   * @param end End time to trim to in microseconds from epoch
    */
   public void trim(long start, long end) {
     

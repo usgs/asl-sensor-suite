@@ -150,7 +150,7 @@ public class AzimuthExperiment extends Experiment {
     final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
     int numWindows = (int) ( (timeRange - twoThouSecs) / fiveHundSecs);
     
-    System.out.println(numWindows);
+    System.out.println("Num. windows: "+numWindows);
     
     for (int i = 0; i < numWindows; ++i) {
       
@@ -310,6 +310,10 @@ public class AzimuthExperiment extends Experiment {
       }
     }
     
+    meanCoherence /= samples;
+    
+    System.out.println(meanCoherence);
+    
     RealVector curValue = 
         MatrixUtils.createRealVector(new double[]{meanCoherence});
     
@@ -323,6 +327,7 @@ public class AzimuthExperiment extends Experiment {
     rotatedSeries = rotatedPower.getFFT();
     
     double fwdMeanCoherence = 0.;
+    samples = 0;
     double[] fwdCoherence = new double[crossPowerSeries.length];
     
     for (int i = 0; i < crossPowerSeries.length; ++i) {
@@ -333,6 +338,7 @@ public class AzimuthExperiment extends Experiment {
       
       if (freqs[i] < highFreq && freqs[i] > lowFreq) {
         fwdMeanCoherence += fwdCoherence[i];
+        ++ samples;
       }
       
     }
@@ -340,6 +346,8 @@ public class AzimuthExperiment extends Experiment {
     fwdMeanCoherence /= (double) samples;
     double deltaMean = 0.;
     deltaMean = (fwdMeanCoherence - meanCoherence) / diff;
+    
+    // System.out.println(deltaMean);
     
     double[][] jacobianArray = new double[1][1];
     jacobianArray[0][0] = Math.signum(deltaMean);

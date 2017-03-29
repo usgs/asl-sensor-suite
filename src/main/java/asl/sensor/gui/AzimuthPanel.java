@@ -109,7 +109,7 @@ public class AzimuthPanel extends ExperimentPanel {
     
     double angle = az.getFitAngle();
     String angleStr = "FIT ANGLE: " + angle;
-    double result = (value - angle) % 360;
+    double result = ( (value - angle) % 360 + 360) % 360;
     
     angleStr += " + " + value + " = " + result;
     
