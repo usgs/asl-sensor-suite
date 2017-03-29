@@ -111,8 +111,9 @@ public class AzimuthExperiment extends Experiment {
     
     // want mean coherence to be as close to 1 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
+    // first is rel. tolerance, second is abs. tolerance
     ConvergenceChecker<LeastSquaresProblem.Evaluation> cv = 
-        new EvaluationRmsChecker(1E-2, 1E-2);
+        new EvaluationRmsChecker(1E-3, 1E-3);
     
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
@@ -255,7 +256,7 @@ public class AzimuthExperiment extends Experiment {
     
     double theta = ( point.getEntry(0) );
     
-    double diff = 1E-2;
+    double diff = 1E-4;
     
     double lowFreq = 1./18.;
     double highFreq = 1./3.;
@@ -310,9 +311,10 @@ public class AzimuthExperiment extends Experiment {
       }
     }
     
-    meanCoherence /= samples;
+    System.out.println(meanCoherence+","+samples+
+        " [" + meanCoherence/samples+"]");
     
-    System.out.println(meanCoherence);
+    meanCoherence /= samples;
     
     RealVector curValue = 
         MatrixUtils.createRealVector(new double[]{meanCoherence});
