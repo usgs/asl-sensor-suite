@@ -102,7 +102,7 @@ public class ResponsePanel extends ExperimentPanel {
     this.add(save, gbc);
     
     // add an empty panel as a spacer to keep the save button in the center
-    gbc.fill = GridBagConstraints.NONE;
+    gbc.fill = GridBagConstraints.HORIZONTAL;
     gbc.gridx += 1;
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;

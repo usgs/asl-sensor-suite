@@ -12,6 +12,7 @@ import org.apache.commons.math3.fitting.leastsquares.GaussNewtonOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
+import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import 
 org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
@@ -33,6 +34,9 @@ public class AzimuthExperiment extends Experiment {
   
   double offset = 0.;
   double angle;
+  
+  double[] freqs;
+  double[] coherence;
   
   public AzimuthExperiment() {
     super();
@@ -63,7 +67,6 @@ public class AzimuthExperiment extends Experiment {
     FFTResult.detrend(testNorth);
     FFTResult.detrend(testEast);
     FFTResult.detrend(refNorth);
-
     
     testNorth = TimeSeriesUtils.normalize(testNorth);
     testEast = TimeSeriesUtils.normalize(testEast);
@@ -77,8 +80,8 @@ public class AzimuthExperiment extends Experiment {
     testEast = FFTResult.bandFilter(testEast, sps, low, high);
     refNorth = FFTResult.bandFilter(refNorth, sps, low, high);
     
+    /*
     int len = testNorth.size();
-    
     double[] testYArr = new double[len];
     double[] testXArr = new double[len];
     double[] refYArr = new double[len];
@@ -88,6 +91,7 @@ public class AzimuthExperiment extends Experiment {
       testXArr[i] = testEast.get(i).doubleValue();
       refYArr[i] = refNorth.get(i).doubleValue();
     }
+    */
     
     testNorthBlock.setData(testNorth);
     testEastBlock.setData(testEast);
@@ -111,9 +115,13 @@ public class AzimuthExperiment extends Experiment {
     
     // want mean coherence to be as close to 1 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
+    
+    
+    /*
     // first is rel. tolerance, second is abs. tolerance
     ConvergenceChecker<LeastSquaresProblem.Evaluation> cv = 
         new EvaluationRmsChecker(1E-3, 1E-3);
+    */
     
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
@@ -122,11 +130,12 @@ public class AzimuthExperiment extends Experiment {
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
         lazyEvaluation(false).
-        checker(cv).
+        //checker(cv).
         build();
     
-    LeastSquaresOptimizer optimizer = 
-        new GaussNewtonOptimizer(GaussNewtonOptimizer.Decomposition.LU);
+    LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
+        withCostRelativeTolerance(1E-15).
+        withParameterRelativeTolerance(1E-15);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -189,7 +198,7 @@ public class AzimuthExperiment extends Experiment {
           maxEvaluations(Integer.MAX_VALUE).
           maxIterations(Integer.MAX_VALUE).
           lazyEvaluation(false).
-          checker(cv).
+          // checker(cv).
           build();
             
       optimumY = optimizer.optimize(findAngleWindow);
@@ -224,7 +233,12 @@ public class AzimuthExperiment extends Experiment {
         }
       }
       
-      angle = averageAngle / coherenceCount;
+      averageAngle /= coherenceCount;
+      RealVector angleVec = 
+          MatrixUtils.createRealVector(new double[]{averageAngle});
+      findAngleY.evaluate(angleVec);
+      
+      angle = Math.toDegrees( averageAngle );
       
     }
 
@@ -241,10 +255,15 @@ public class AzimuthExperiment extends Experiment {
     fromNorth.add(offset, 1);
     fromNorth.add(offset, 0);
 
-    xySeriesData = new XYSeriesCollection();
+    // xySeriesData = new XYSeriesCollection();
     xySeriesData.addSeries(ref);
     xySeriesData.addSeries(set);
     xySeriesData.addSeries(fromNorth);
+    XYSeries coherenceSeries = new XYSeries("COHERENCE");
+    for (int i = 0; i < freqs.length; ++i) {
+      coherenceSeries.add(freqs[i], coherence[i]);
+    }
+    xySeriesData.addSeries(coherenceSeries);
     
   }
   
@@ -256,7 +275,7 @@ public class AzimuthExperiment extends Experiment {
     
     double theta = ( point.getEntry(0) );
     
-    double diff = 1E-4;
+    double diff = 1E-2;
     
     double lowFreq = 1./18.;
     double highFreq = 1./3.;
@@ -267,13 +286,13 @@ public class AzimuthExperiment extends Experiment {
     FFTResult rotatedPower = FFTResult.spectralCalc(testRotated, testRotated);
     FFTResult refPower = FFTResult.spectralCalc(refNorth, refNorth);
     
-    double[] freqs = crossPower.getFreqs();
+    freqs = crossPower.getFreqs();
     
     Complex[] crossPowerSeries = crossPower.getFFT();
     Complex[] rotatedSeries = rotatedPower.getFFT();
     Complex[] refSeries = refPower.getFFT();
     
-    double[] coherence = new double[crossPowerSeries.length];
+    coherence = new double[crossPowerSeries.length];
     
     for (int i = 0; i < crossPowerSeries.length; ++i) {
       // 
@@ -297,12 +316,14 @@ public class AzimuthExperiment extends Experiment {
       lowFreq = peakFreq / 2.;
     }
     
-    if (peakFreq * 2 < highFreq) {
+    if (peakFreq * 2 < highFreq && peakFreq * 2 > lowFreq) {
       highFreq = peakFreq * 2.;
     }
     
     double meanCoherence = 0.;
     int samples = 0;
+    
+    System.out.println("FRQ BOUNDS: "+highFreq+","+lowFreq);
     
     for (int i = 0; i < freqs.length; ++i) {
       if (freqs[i] < highFreq && freqs[i] > lowFreq) {
@@ -352,7 +373,7 @@ public class AzimuthExperiment extends Experiment {
     // System.out.println(deltaMean);
     
     double[][] jacobianArray = new double[1][1];
-    jacobianArray[0][0] = Math.signum(deltaMean);
+    jacobianArray[0][0] = deltaMean;
     
     // we have only 1 variable, so jacobian is a matrix w/ single column
     RealMatrix jbn = MatrixUtils.createRealMatrix(jacobianArray);

@@ -95,8 +95,8 @@ public class RandomizedPanel extends ExperimentPanel {
     // gbc.gridwidth = GridBagConstraints.REMAINDER;
     this.add(save, gbc);
     
-    // add an empty panel as a spacer to keep the save button in the center
-    gbc.fill = GridBagConstraints.NONE;
+    // plot selection combo box
+    gbc.fill = GridBagConstraints.HORIZONTAL;
     gbc.gridx += 1;
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;

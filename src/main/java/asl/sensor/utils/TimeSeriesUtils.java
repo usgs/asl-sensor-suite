@@ -438,23 +438,7 @@ public class TimeSeriesUtils {
         
         currentTime += interval;
       }
-      
-      
-      
-      /*
-      Long[] timeList = times.toArray(new Long[times.size()]);
-      // the rest of the code assumes a sorted list, so we sort by timestamp
-      Arrays.sort(timeList);
-      // lowest time that data exists for is here
-      long startTime = timeList[0];
-      Number[] sampleList = new Number[timeList.length];
-      for (int i = 0; i < timeList.length; ++i ) {
-        // TODO: add discontinuity detection here?
-        // (is point i+1's time difference from point i greater than interval?)
-        sampleList[i] = timeMap.get(timeList[i]);
-      }
-      */
-      
+            
       // demean the input to remove DC offset before adding it to the data
       List<Number> listOut = FFTResult.demean( timeList );
       db = new DataBlock(listOut, interval, filter, startTime);
