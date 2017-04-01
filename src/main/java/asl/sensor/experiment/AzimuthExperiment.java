@@ -333,7 +333,7 @@ public class AzimuthExperiment extends Experiment {
     }
     
     System.out.println(meanCoherence+","+samples+
-        " [" + meanCoherence/samples+"]");
+        " [" + meanCoherence/samples+"]" + " (" + theta + " rad)");
     
     meanCoherence /= samples;
     
