@@ -58,7 +58,7 @@ The input files have a specific order: the step input signal must be placed firs
 
 #### Azimuth
 
-Azimuth takes in 3 inputs, the first two of which are sensors known to be at north and east, and a reference sensor the angle of which relative to the north sensor is to be determined. The produced result will be an angle; a visual representation of that angle will be plotted and also displayed as a number. The offset angle field can be used to produce an offset between the north and reference sensor; both the relative orientation of the reference sensor to the one set as north and the absolute orientation (assuming that the north sensor is offset that many degrees from north). 
+Azimuth takes in 3 inputs. The first two are orthogonal sensors assumed to be respectively facing near north and east. The third is a reference sensor assumed to point north, though the offset angle field can be used to specify a clockwise offset from north. The code will try to find a clockwise rotation angle that maximizes the coherence estimation between the rotated unknown-angle sensor data and the reference angle. This angle is added to the offset to produce the (clockwise) azimuth estimation. A value of the coherence estimations per-frequency for the found angle is also given as a separate plot. 
 
 #### Orthogonality
 
@@ -68,7 +68,7 @@ The input files have a specific order: the first and third inputs are for north-
 
 #### Randomized calibration
 
-This function is WIP but similar to the step calculation, and (TODO: put more here once test is completed )
+This function solves for poles to attempt to fit the response curve calculated from deconvolving the given calibration input from the sensor output. Low-frequency (the two lowest poles) and high-frequency (all other poles) are fitted to minimize the difference between the estimated response, based on the response specified for the sensor. The inputs follow the same structure as step calculation, though what response parameters are solved for is dependent on whether a high or low frequency calculation is chosen. Both the magnitude and argument (angle of the response curve along the real axis) of the response curve are displayed in plots, and saving the plot to an image will include both such plots.
 
 #### Response
 
