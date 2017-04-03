@@ -28,6 +28,22 @@ import asl.sensor.input.DataStore;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.TimeSeriesUtils;
 
+/**
+ * More specific javadoc will be incoming, but for now a brief explanation
+ * of the angle conventions used
+ * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
+ * reference sensor assumed to be north. The rotation angle between the
+ * reference sensor and the unknown components is solved for via least-squares
+ * The resulting angle, then, is the clockwise rotation from the reference.
+ * If the angle of the reference is zero (i.e., pointing directly north),
+ * the result of this calculation SHOULD be the value of the azimuth, using
+ * a clockwise rotation convention.
+ * If the rerference sensor is itself offset X degrees clockwise from
+ * north, the azimuth is the sum of the estimated angle difference between
+ * the sensors plus the offset from north.
+ * @author akearns
+ *
+ */
 public class AzimuthExperiment extends Experiment {
 
   final static double TAU = Math.PI * 2;
@@ -68,9 +84,11 @@ public class AzimuthExperiment extends Experiment {
     FFTResult.detrend(testEast);
     FFTResult.detrend(refNorth);
     
+    /*
     testNorth = TimeSeriesUtils.normalize(testNorth);
     testEast = TimeSeriesUtils.normalize(testEast);
     refNorth = TimeSeriesUtils.normalize(refNorth);
+    */
     
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / testNorthBlock.getInterval();
     double low = 1./8;
@@ -217,7 +235,7 @@ public class AzimuthExperiment extends Experiment {
     } else {
       // get the best-coherence estimations of angle and average them
       Collections.sort(sortedCoherence);
-      int maxBoundary = Math.max(5, sortedCoherence.size() / 3);
+      int maxBoundary = Math.max(5, sortedCoherence.size() * 3 / 20);
       sortedCoherence = sortedCoherence.subList(0, maxBoundary);
       Set<Double> acceptableCoherences = new HashSet<Double>(sortedCoherence);
       
@@ -246,11 +264,11 @@ public class AzimuthExperiment extends Experiment {
     angle = ( (angle % 360) + 360 ) % 360;
     
     XYSeries ref = new XYSeries(northName + " rel. to reference");
-    ref.add(offset - angle, 0);
-    ref.add(offset - angle, 1);
+    ref.add(offset + angle, 0);
+    ref.add(offset + angle, 1);
     XYSeries set = new XYSeries(eastName + " rel. to reference");
-    set.add(offset - angle + 90, 1);
-    set.add(offset - angle + 90, 0);
+    set.add(offset + angle + 90, 1);
+    set.add(offset + angle + 90, 0);
     XYSeries fromNorth = new XYSeries (refName + " location");
     fromNorth.add(offset, 1);
     fromNorth.add(offset, 0);

@@ -1,5 +1,6 @@
 package asl.sensor.gui;
 
+import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -169,12 +170,13 @@ public class AzimuthPanel extends ExperimentPanel {
     
     double angle = az.getFitAngle();
     String angleStr = "FIT ANGLE: " + angle;
-    double result = ( (value - angle) % 360 + 360) % 360;
+    double result = ( (value + angle) % 360 + 360) % 360;
     
     angleStr += " + " + value + " = " + result;
     
     XYPlot xyp = (XYPlot) coherenceChart.getPlot();
-    Title title = new TextTitle(angleStr);
+    TextTitle title = new TextTitle(angleStr);
+    title.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.02, title,
         RectangleAnchor.BOTTOM_RIGHT);
     xyp.clearAnnotations();
