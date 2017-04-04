@@ -26,14 +26,14 @@ public class NoisePanel extends ExperimentPanel {
    */
   private static final long serialVersionUID = 9018553361096758354L;
   
-  private JCheckBox freqSpaceBox;
-  private NumberAxis freqAxis;
+  protected JCheckBox freqSpaceBox;
   
-  private final int NOISE_PLOT_COUNT = 6;
+  protected final int NOISE_PLOT_COUNT = 6;
   // three PSDs, three self-noise calcs
   
-  private final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
+  protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
   
+  private NumberAxis freqAxis;
   private String freqAxisTitle; // name to use when plotting in units of Hz
   
   /**
@@ -177,7 +177,7 @@ public class NoisePanel extends ExperimentPanel {
    * @param freqSpace Boolean matching whether or not to plot in units of
    * frequency if true (Hz) or in units of interval if false (s) 
    */
-  private void updateDriver(final DataStore ds, boolean freqSpace) {
+  protected void updateDriver(final DataStore ds, boolean freqSpace) {
     
     final boolean freqSpaceImmutable = freqSpace;
     

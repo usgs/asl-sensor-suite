@@ -251,7 +251,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    */
   protected void setChart(XYSeriesCollection xyDataset) {
 
-     this.chart = buildChart(xyDataset);
+     chart = buildChart(xyDataset);
 
   }
   
@@ -336,10 +336,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    */
   public int plotsToShow() {
     return panelsNeeded();
-  }
-  
-  public int blocksNeeded() {
-    return expResult.blocksNeeded();
   }
   
   public boolean hasEnoughData(final DataStore ds) {

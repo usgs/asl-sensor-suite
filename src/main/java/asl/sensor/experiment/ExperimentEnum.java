@@ -13,10 +13,11 @@ public enum ExperimentEnum {
   NOISE ("Self-noise"),
   RGAIN ("Relative gain"),
   STCAL ("Step calibration"),
+  RANDM ("Randomized calibration"),
   AZMTH ("Azimuth"),
   ORTHO ("Orthogonality"),
-  RANDM ("Randomized calibration"),
-  RESPN ("Response");
+  RESPN ("Response"),
+  NOIS9 ("Self-noise (9-Component)");
 
   private String name;
   

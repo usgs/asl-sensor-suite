@@ -33,6 +33,8 @@ public class ExperimentPanelFactory {
       return new RandomizedPanel(exp);
     case RESPN:
       return new ResponsePanel(exp);
+    case NOIS9:
+      return new NoiseNinePanel(exp);
     default:
       // this shouldn't happen unless someone added to the enum
       // and forgot to follow-through on implementation

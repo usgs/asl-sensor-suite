@@ -30,6 +30,8 @@ public class ExperimentFactory {
       return new RandomizedExperiment();
     case RESPN:
       return new ResponseExperiment();
+    case NOIS9:
+      return new NoiseNineExperiment();
     default:
       // this shouldn't happen unless someone added to the enum
       // and forgot to follow-through on implementation
