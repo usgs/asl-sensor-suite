@@ -130,9 +130,10 @@ public class OrthogonalExperiment extends Experiment {
       timeAtPoint += tick;
     }
     
-    xySeriesData = new XYSeriesCollection();
-    xySeriesData.addSeries(diffSrs);
-    xySeriesData.addSeries(diffRotSrs);
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    xysc.addSeries(diffSrs);
+    xysc.addSeries(diffRotSrs);
+    xySeriesData.add(xysc);
     
   }
 
@@ -162,12 +163,17 @@ public class OrthogonalExperiment extends Experiment {
 
   @Override
   public boolean hasEnoughData(DataStore ds) {
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < blocksNeeded(); ++i) {
       if ( !ds.blockIsSet(i) ) {
         return false;
       }
     }
     return true;
+  }
+
+  @Override
+  public int blocksNeeded() {
+    return 4;
   }
   
 

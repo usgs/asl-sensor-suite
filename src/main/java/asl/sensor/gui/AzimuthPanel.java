@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.util.List;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -153,14 +154,10 @@ public class AzimuthPanel extends ExperimentPanel {
     
     expResult.setData(ds);
     
-    XYSeriesCollection allData = expResult.getData();
+    List<XYSeriesCollection> allData = expResult.getData();
     
-    XYSeries xys = allData.getSeries("COHERENCE");
-    XYSeriesCollection xysc = new XYSeriesCollection();
-    xysc.addSeries(xys);
-    
-    XYSeriesCollection polars = allData;
-    polars.removeSeries( allData.getSeriesIndex("COHERENCE") );
+    XYSeriesCollection polars = allData.get(0);
+    XYSeriesCollection xysc = allData.get(1);
     
     coherenceChart = ChartFactory.createXYLineChart( 
         expType.getName() + " Coherence", "Frequency (Hz)", "Coherence", xysc);

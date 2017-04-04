@@ -66,7 +66,7 @@ public class OrthogonalPanel extends ExperimentPanel {
     // TODO Auto-generated method stub
     
     expResult.setData(ds);
-    XYSeriesCollection xysc = expResult.getData();
+    XYSeriesCollection xysc = expResult.getData().get(0);
     
     setChart(xysc);
     XYPlot xyp = (XYPlot) chart.getPlot();

@@ -48,7 +48,6 @@ public class ResponseExperiment extends Experiment {
     }
     
     Set<String> respNames = new HashSet<String>();
-    xySeriesData = new XYSeriesCollection();
     
     for (int r = 0; r < 3; ++r) {
       if ( !ds.responseIsSet(r) ) {
@@ -81,8 +80,8 @@ public class ResponseExperiment extends Experiment {
         }
       }
       
-      xySeriesData.addSeries(magnitude);
-      xySeriesData.addSeries(argument);
+      xySeriesData.add( new XYSeriesCollection(magnitude) );
+      xySeriesData.add( new XYSeriesCollection(argument) );
       
     }
 
@@ -97,6 +96,12 @@ public class ResponseExperiment extends Experiment {
     }
     
     return false;
+  }
+
+  @Override
+  public int blocksNeeded() {
+    // TODO Auto-generated method stub
+    return 0;
   }
 
 }

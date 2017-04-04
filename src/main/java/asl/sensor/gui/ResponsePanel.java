@@ -9,6 +9,7 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -161,28 +162,16 @@ public class ResponsePanel extends ExperimentPanel {
     expResult.setData(ds);
     
     set = true;
+    List<XYSeriesCollection> xysc = expResult.getData();
+    XYSeriesCollection magSeries = xysc.get(0);
+    XYSeriesCollection argSeries = xysc.get(1);
     
-    XYSeriesCollection magSeries = new XYSeriesCollection();
-    XYSeriesCollection argSeries = new XYSeriesCollection();
-    XYSeriesCollection fromExp = expResult.getData();
-    
-    for (int i = 0; i < fromExp.getSeriesCount(); ++i) {
-      if (i % 2 == 0) {
-        // 0, 2, 4 are the magnitude series
-        int idx = i / 2; // 1, 2, or 3
-        Color toColor = COLOR_LIST[idx];
-        magSeries.addSeries( fromExp.getSeries(i) );
-        String magName = (String) fromExp.getSeriesKey(i);
+    for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
+        Color toColor = COLOR_LIST[i % COLOR_LIST.length];
+        String magName = (String) magSeries.getSeriesKey(i);
+        String argName = (String) argSeries.getSeriesKey(i);
         seriesColorMap.put(magName, toColor);
-      } else {
-        // 1, 3, 5 are the argument series
-        int idx = (i - 1) / 2;
-        Color toColor = COLOR_LIST[idx];
-        argSeries.addSeries( fromExp.getSeries(i) );
-        String argName = (String) fromExp.getSeriesKey(i);
         seriesColorMap.put(argName, toColor);
-      }
-
     }
     
     int idx = plotSelection.getSelectedIndex();

@@ -1,5 +1,8 @@
 package asl.sensor.experiment;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -79,7 +82,7 @@ public abstract class Experiment {
     
   }
   
-  protected XYSeriesCollection xySeriesData;
+  protected List<XYSeriesCollection> xySeriesData;
   
   /**
    * Abstract function that
@@ -96,7 +99,7 @@ public abstract class Experiment {
    * setData function / backend will produce initialization errors (NPE).
    * @return Plottable data 
    */
-  public XYSeriesCollection getData() {
+  public List<XYSeriesCollection> getData() {
     return xySeriesData;
   }
   
@@ -111,8 +114,9 @@ public abstract class Experiment {
    */
   public void setData(final DataStore ds) {
     
-    if ( hasEnoughData(ds) && ds.numberOfBlocksSet() == 0) {
-      xySeriesData = new XYSeriesCollection();
+    if ( hasEnoughData(ds) && ( blocksNeeded() == 0 ) ) {
+      // prevent null issue 
+      xySeriesData = new ArrayList<XYSeriesCollection>();
       backend(ds);
       return;
     }
@@ -123,7 +127,7 @@ public abstract class Experiment {
     
     final DataBlock[] dataIn = ds.getData();
     
-    xySeriesData = new XYSeriesCollection();
+    xySeriesData = new ArrayList<XYSeriesCollection>();
     
     // int length = dataIn[0].size();
     for (final DataBlock data : dataIn) {
@@ -134,13 +138,15 @@ public abstract class Experiment {
       }
       
       if ( data.getInterval() != interval ) {
-        System.out.println( interval+","+data.getInterval() );
+        // System.out.println( interval+","+data.getInterval() );
         ds.matchIntervals();
       }
     }
     
     backend(ds);
   }
+  
+  public abstract int blocksNeeded();
   
   public abstract boolean hasEnoughData(final DataStore ds);
   

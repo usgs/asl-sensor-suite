@@ -51,6 +51,9 @@ public class NoiseExperiment extends Experiment {
   @Override
   protected void backend(final DataStore ds) {
     
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    xysc.setAutoWidth(true);
+    
     int[] indices = new int[3]; // first 3 fully-loaded data sets
     
     // get the first (index.length) seed/resp pairs. while we expect to
@@ -69,12 +72,6 @@ public class NoiseExperiment extends Experiment {
       responses[i] = ds.getResponse(indices[i]);
     }
     
-    xySeriesData = new XYSeriesCollection();
-    
-    xySeriesData.setAutoWidth(true);
-    
-    // TODO: make sure (i.e., when reading in data) that series lengths' match
-    // rather than throwing the exceptions here
     Complex[][] spectra = new Complex[3][];
     double[] freqs = new double[1]; // initialize to prevent later errors
     
@@ -85,7 +82,7 @@ public class NoiseExperiment extends Experiment {
       freqs = ds.getPSD(indices[i]).getFreqs();
     }
     
-    addToPlot(ds, freqSpace, indices, xySeriesData);
+    addToPlot(ds, freqSpace, indices, xysc);
     
     // spectra[i] is crosspower pii, now to get pij terms for i!=j
     FFTResult fft = 
@@ -167,22 +164,29 @@ public class NoiseExperiment extends Experiment {
     }
     
     for (XYSeries noiseSeries : noiseSeriesArr) {
-      xySeriesData.addSeries(noiseSeries);
+      xysc.addSeries(noiseSeries);
     }
     
-    xySeriesData.addSeries( FFTResult.getLowNoiseModel(freqSpace) );
-    xySeriesData.addSeries( FFTResult.getHighNoiseModel(freqSpace) );
+    xysc.addSeries( FFTResult.getLowNoiseModel(freqSpace) );
+    xysc.addSeries( FFTResult.getHighNoiseModel(freqSpace) );
+    
+    xySeriesData.add(xysc);
 
   }
 
   @Override
   public boolean hasEnoughData(DataStore ds) {
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < blocksNeeded(); ++i) {
       if ( !ds.bothComponentsSet(i) ) {
         return false;
       }
     }
     return true;
+  }
+
+  @Override
+  public int blocksNeeded() {
+    return 3;
   }
 
 }

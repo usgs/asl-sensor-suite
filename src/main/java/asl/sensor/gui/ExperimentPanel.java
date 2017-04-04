@@ -338,6 +338,10 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     return panelsNeeded();
   }
   
+  public int blocksNeeded() {
+    return expResult.blocksNeeded();
+  }
+  
   public boolean hasEnoughData(final DataStore ds) {
     return expResult.hasEnoughData(ds);
   }

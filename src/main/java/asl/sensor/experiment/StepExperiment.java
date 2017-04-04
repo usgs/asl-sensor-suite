@@ -161,9 +161,9 @@ public class StepExperiment extends Experiment{
     
     // next we'll want to find the parameters to fit the plots
     // to the inputted data
-    xySeriesData = new XYSeriesCollection();
-    xySeriesData.addSeries(scs);
-    xySeriesData.addSeries(xys);
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    xysc.addSeries(scs);
+    xysc.addSeries(xys);
     
     // next step: curve fitting
     RealVector startVector = MatrixUtils.createRealVector(params);
@@ -214,7 +214,9 @@ public class StepExperiment extends Experiment{
       now += interval;
     }
     
-    xySeriesData.addSeries(bfs);
+    xysc.addSeries(bfs);
+    
+    xySeriesData.add(xysc);
     
     
   }
@@ -379,6 +381,11 @@ public class StepExperiment extends Experiment{
   @Override
   public boolean hasEnoughData(DataStore ds) {
     return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
+  }
+
+  @Override
+  public int blocksNeeded() {
+    return 2;
   }
   
 }

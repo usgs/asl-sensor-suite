@@ -9,6 +9,7 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -123,21 +124,18 @@ public class RandomizedPanel extends ExperimentPanel {
     
     set = true;
     
-    XYSeriesCollection magSeries = new XYSeriesCollection();
-    XYSeriesCollection argSeries = new XYSeriesCollection();
-    XYSeriesCollection fromExp = expResult.getData();
+    List<XYSeriesCollection> xysc = expResult.getData();
     
-    int upperBound = fromExp.getSeriesCount() / 2;
+    XYSeriesCollection magSeries = xysc.get(0);
+    XYSeriesCollection argSeries = xysc.get(1);
     
-    for (int i = 0; i < upperBound; ++i) {
-      magSeries.addSeries( fromExp.getSeries(i) );
-      argSeries.addSeries( fromExp.getSeries(i + upperBound) );
+    for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
       
       Color toColor = COLOR_LIST[i];
-      String magName = (String) fromExp.getSeriesKey(i);
+      String magName = (String) magSeries.getSeriesKey(i);
       seriesColorMap.put(magName, toColor);
       
-      String argName = (String) fromExp.getSeriesKey(i + upperBound);
+      String argName = (String) argSeries.getSeriesKey(i);
       seriesColorMap.put(argName, toColor);
       
     }

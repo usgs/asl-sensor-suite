@@ -256,32 +256,37 @@ public class AzimuthExperiment extends Experiment {
           MatrixUtils.createRealVector(new double[]{averageAngle});
       findAngleY.evaluate(angleVec);
       
-      angle = Math.toDegrees( averageAngle );
+      angle = averageAngle;
       
     }
 
-    
-    angle = ( (angle % 360) + 360 ) % 360;
+    double angleDeg = Math.toDegrees(angle);
+    angleDeg = ( (angleDeg % 360) + 360 ) % 360;
     
     XYSeries ref = new XYSeries(northName + " rel. to reference");
-    ref.add(offset + angle, 0);
-    ref.add(offset + angle, 1);
+    ref.add(offset + angleDeg, 0);
+    ref.add(offset + angleDeg, 1);
     XYSeries set = new XYSeries(eastName + " rel. to reference");
-    set.add(offset + angle + 90, 1);
-    set.add(offset + angle + 90, 0);
+    set.add(offset + angleDeg + 90, 1);
+    set.add(offset + angleDeg + 90, 0);
     XYSeries fromNorth = new XYSeries (refName + " location");
     fromNorth.add(offset, 1);
     fromNorth.add(offset, 0);
 
     // xySeriesData = new XYSeriesCollection();
-    xySeriesData.addSeries(ref);
-    xySeriesData.addSeries(set);
-    xySeriesData.addSeries(fromNorth);
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    xysc.addSeries(ref);
+    xysc.addSeries(set);
+    xysc.addSeries(fromNorth);
+    xySeriesData.add(xysc);
+    
     XYSeries coherenceSeries = new XYSeries("COHERENCE");
     for (int i = 0; i < freqs.length; ++i) {
       coherenceSeries.add(freqs[i], coherence[i]);
     }
-    xySeriesData.addSeries(coherenceSeries);
+    
+    xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
+    
     
   }
   
@@ -400,17 +405,26 @@ public class AzimuthExperiment extends Experiment {
   }
   
   public double getFitAngle() {
+    return Math.toDegrees(angle);
+  }
+  
+  public double getFitAngleRad() {
     return angle;
   }
   
   @Override
   public boolean hasEnoughData(DataStore ds) {
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < blocksNeeded(); ++i) {
       if ( !ds.blockIsSet(i) ) {
         return false;
       }
     }
     return true;
+  }
+
+  @Override
+  public int blocksNeeded() {
+    return 3;
   }
   
 

@@ -22,6 +22,7 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.optim.ConvergenceChecker;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
@@ -274,14 +275,17 @@ public class RandomizedExperiment extends Experiment {
     
     // XYSeries fitMag = new XYSeries("Dummy plot a");
     // XYSeries fitArg = new XYSeries("Dummy plot b");
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    xysc.addSeries(respMag);
+    xysc.addSeries(calcMag);
+    xysc.addSeries(fitMag);
+    xySeriesData.add(xysc);
     
-    xySeriesData.addSeries(respMag);
-    xySeriesData.addSeries(calcMag);
-    xySeriesData.addSeries(fitMag);
-    
-    xySeriesData.addSeries(respArg);
-    xySeriesData.addSeries(calcArg);
-    xySeriesData.addSeries(fitArg);
+    xysc = new XYSeriesCollection();
+    xysc.addSeries(respArg);
+    xysc.addSeries(calcArg);
+    xysc.addSeries(fitArg);
+    xySeriesData.add(xysc);
     
     System.out.println("Done!");
     
@@ -402,6 +406,12 @@ public class RandomizedExperiment extends Experiment {
   @Override
   public boolean hasEnoughData(DataStore ds) {
     return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
+  }
+
+  @Override
+  public int blocksNeeded() {
+    // TODO Auto-generated method stub
+    return 2;
   }
 
 }

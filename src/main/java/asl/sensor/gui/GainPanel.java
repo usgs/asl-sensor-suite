@@ -456,7 +456,7 @@ implements ChangeListener {
       public Integer doInBackground() {
 
         // plot has 3 components: source, destination, NLNM line plot
-        XYSeriesCollection xyscIn = expResult.getData();
+        XYSeriesCollection xyscIn = expResult.getData().get(0);
         xysc = new XYSeriesCollection();
         xysc.addSeries( xyscIn.getSeries(idx0) );
         xysc.addSeries( xyscIn.getSeries(idx1) );

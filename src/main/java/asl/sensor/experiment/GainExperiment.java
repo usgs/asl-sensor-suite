@@ -181,14 +181,16 @@ public class GainExperiment extends Experiment {
       blocksPlotting.add( ds.getBlock(idx) );
     }
     
-    xySeriesData = new XYSeriesCollection();
+    XYSeriesCollection xysc = new XYSeriesCollection();
     
-    xySeriesData.setAutoWidth(true);
+    xysc.setAutoWidth(true);
     
-    addToPlot(ds, false, indices, xySeriesData); 
+    addToPlot(ds, false, indices, xysc); 
     // false, because we don't want to plot in frequency space
     
-    xySeriesData.addSeries( FFTResult.getLowNoiseModel(false) );
+    xysc.addSeries( FFTResult.getLowNoiseModel(false) );
+    
+    xySeriesData.add(xysc);
     
   }
   
@@ -319,6 +321,11 @@ public class GainExperiment extends Experiment {
   @Override
   public boolean hasEnoughData(DataStore ds) {
     return ( ds.bothComponentsSet(0) && ds.bothComponentsSet(1) );
+  }
+
+  @Override
+  public int blocksNeeded() {
+    return 2;
   }
 
 }
