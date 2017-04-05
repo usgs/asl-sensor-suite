@@ -69,6 +69,10 @@ import asl.sensor.utils.TimeSeriesUtils;
  * Panel used to hold the plots for the files taken in as input
  * Handles the UI for loading SEED and RESP files, plotting their data
  * and selecting regions of that data, as well as outputting the plots to PNG
+ * The data exists in two forms: one is an otherwise-hidden DataStore object
+ * that is used to hold in the loaded data directly, and the other one is also
+ * a DataStore object but has its data passed to the panel's input plots and
+ * to experiment calculations.
  * @author akearns
  *
  */

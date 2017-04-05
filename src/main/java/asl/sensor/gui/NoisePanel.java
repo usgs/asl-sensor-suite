@@ -19,6 +19,14 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.input.DataStore;
 
+/**
+ * Panel for displaying the results of the self-noise experiment (3-input).
+ * In addition to general requirements of output panels, also includes
+ * a checkbox to choose between frequency and interval x-axis and
+ * the variant axes for when that box is checked.
+ * @author akearns
+ *
+ */
 public class NoisePanel extends ExperimentPanel {
 
   /**
@@ -183,42 +191,29 @@ public class NoisePanel extends ExperimentPanel {
     
     displayInfoMessage("Calculating data...");
     
-    SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
-      @Override
-      public Integer doInBackground() {
-        NoiseExperiment noisExp = (NoiseExperiment) expResult;
-        noisExp.setFreqSpace(freqSpaceImmutable);
-        expResult.setData(ds);
-        
-        XYSeriesCollection xysc = expResult.getData().get(0);
-        
-        for (int i = 0; i < NOISE_PLOT_COUNT; ++i) {
-          String name = (String) xysc.getSeriesKey(i);
-          Color plotColor = COLORS[i % 3];
-          seriesColorMap.put(name, plotColor);
-          if (i >= 3) {
-            seriesDashedSet.add(name);
-          }
+    NoiseExperiment noisExp = (NoiseExperiment) expResult;
+    noisExp.setFreqSpace(freqSpaceImmutable);
+    expResult.setData(ds);
 
-        }
-        
-        return 0;
+    XYSeriesCollection xysc = expResult.getData().get(0);
+
+    for (int i = 0; i < NOISE_PLOT_COUNT; ++i) {
+      String name = (String) xysc.getSeriesKey(i);
+      Color plotColor = COLORS[i % 3];
+      seriesColorMap.put(name, plotColor);
+      if (i >= 3) {
+        seriesDashedSet.add(name);
       }
 
-      @Override
-      public void done() {
-        
-        displayInfoMessage("Data loaded...drawing chart");
-        
-        setChart( expResult.getData().get(0) );
+    }
 
-        chartPanel.setChart(chart);
-        chartPanel.setMouseZoomable(true);
-      }
+    displayInfoMessage("Data loaded...drawing chart");
 
-    };
-    
-    worker.execute();
+    setChart( expResult.getData().get(0) );
+
+    chartPanel.setChart(chart);
+    chartPanel.setMouseZoomable(true);
+
     
   }
 

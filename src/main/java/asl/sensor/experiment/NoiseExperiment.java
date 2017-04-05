@@ -31,6 +31,11 @@ public class NoiseExperiment extends Experiment {
     freqSpace = false;
   }
   
+  /**
+   * Used to set the x-axis over which the PSDs / cross-powers are plotted,
+   * either frequency (Hz) units or sample-interval (s) units
+   * @param freqSpace True if the plot should use units of Hz
+   */
   public void setFreqSpace(boolean freqSpace) {
     this.freqSpace = freqSpace;
   }

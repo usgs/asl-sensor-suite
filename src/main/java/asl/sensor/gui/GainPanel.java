@@ -380,52 +380,24 @@ implements ChangeListener {
     }
   }
   
-  /**
-   * Sets the data and then calls functions to produce backend calculations
-   * when data is loaded in
-   */
   @Override
   public void updateData(final DataStore ds) {
     
     setDataNames(ds);
-    
-    // TODO: this is going to require a refactoring, I know already
-    
-    SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
-      
-      boolean errorTriggered;
-      
-      public Integer doInBackground() {
-        
-        try{
-          expResult.setData(ds);
-        } catch (IndexOutOfBoundsException e) {
-          errorTriggered = true;
-          return 1; // TODO: use return value to get error occurent
-        }
-        
-        // need to have 2 series for relative gain
-        firstSeries.setEnabled(true);
-        secondSeries.setEnabled(true);
-        int idx0 = firstSeries.getSelectedIndex();
-        int idx1 = secondSeries.getSelectedIndex();
-        updateDataDriver(idx0, idx1);
-        
-        return 0;
-      }
-      
-      public void done() {
-        
-        if (errorTriggered) {
-          displayErrorMessage("INSUFFICIENT DATA LOADED");
-          return;
-        }
-        
-      }
-      
-    };
-    
-    new Thread(worker).run();
+
+    try{
+      expResult.setData(ds);
+    } catch (IndexOutOfBoundsException e) {
+      displayErrorMessage("INSUFFICIENT DATA LOADED");
+      return;
+    }
+
+    // need to have 2 series for relative gain
+    firstSeries.setEnabled(true);
+    secondSeries.setEnabled(true);
+    int idx0 = firstSeries.getSelectedIndex();
+    int idx1 = secondSeries.getSelectedIndex();
+    updateDataDriver(idx0, idx1);
 
   }
 
@@ -441,91 +413,79 @@ implements ChangeListener {
     
     final int idx0 = index0;
     final int idx1 = index1;
-    
+
     displayInfoMessage("Calculating data...");
-    
-    SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
-      
-      double lowPrd, highPrd;
-      double[] freqRange;
-      double[] gainStatistics;
-      
-      int leftSliderValue, rightSliderValue;
-      XYSeriesCollection xysc;
-      
-      public Integer doInBackground() {
 
-        // plot has 3 components: source, destination, NLNM line plot
-        XYSeriesCollection xyscIn = expResult.getData().get(0);
-        xysc = new XYSeriesCollection();
-        xysc.addSeries( xyscIn.getSeries(idx0) );
-        xysc.addSeries( xyscIn.getSeries(idx1) );
-        xysc.addSeries( xyscIn.getSeries("NLNM") );
-        
-        XYSeries xys = xysc.getSeries(0);
-        if ( xysc.getSeriesKey(0).equals("NLNM") ) {
-          xys = xysc.getSeries(1);
-        }
-        
-        GainExperiment gn = (GainExperiment) expResult;
 
-        // want to default to octave centered at highest value of fixed freq
-        freqRange = gn.getOctaveCenteredAtPeak(idx0);
-        
-        // get the locations (x-axis values) of frequency range as intervals
-        lowPrd = Math.min(1/freqRange[0], 1/freqRange[1]);
-        highPrd = Math.max(1/freqRange[0], 1/freqRange[1]);
-        
-        // since intervals of incoming data match, so too limits of plot
-        // this is used in mapping scale of slider to x-axis values
-        low = Math.log10( xys.getMinX() ); // value when slider is 0
-        high = Math.log10( xys.getMaxX() ); // value when slider is 1000
-        leftSliderValue = mapPeriodToSlider(lowPrd);
-        rightSliderValue = mapPeriodToSlider(highPrd);
-        
-        
-        // get statistics from frequency (convert from period)
-        gainStatistics = gn.getStatsFromFreqs(idx0, idx1, 
-            freqRange[0], freqRange[1]);
-        
-        return 0;
-      }
-      
-      public void done() {
-        
-        displayInfoMessage("Data loaded...drawing chart");
-        
-        setChart(xysc);
-        
-        // obviously, set the chart
-        chartPanel.setChart(chart);
-        chartPanel.setMouseZoomable(false);
-        
-        // set vertical bars and enable sliders
-        XYPlot xyp = chartPanel.getChart().getXYPlot();
+    double lowPrd, highPrd;
+    double[] freqRange;
+    double[] gainStatistics;
 
-        leftSlider.setValue(leftSliderValue);
-        rightSlider.setValue(rightSliderValue);
-        
-        // set the domain to match the boundaries of the octave centered at peak
-        setDomainMarkers(lowPrd, highPrd, xyp);
-        
-        // and now set the sliders to match where that window is
-        leftSlider.setEnabled(true);
-        rightSlider.setEnabled(true);
-        
-        // lastly, display the calculated statistics in a textbox in the corner
-        double mean = gainStatistics[0];
-        double sDev = gainStatistics[1];
-        double refGain = gainStatistics[2];
-        double calcGain = gainStatistics[3];
-        
-        setTitle(mean, sDev, refGain, calcGain);
-      }
-      
-    };
-    
-    worker.execute();
+    int leftSliderValue, rightSliderValue;
+    XYSeriesCollection xysc;
+
+    // plot has 3 components: source, destination, NLNM line plot
+    XYSeriesCollection xyscIn = expResult.getData().get(0);
+    xysc = new XYSeriesCollection();
+    xysc.addSeries( xyscIn.getSeries(idx0) );
+    xysc.addSeries( xyscIn.getSeries(idx1) );
+    xysc.addSeries( xyscIn.getSeries("NLNM") );
+
+    XYSeries xys = xysc.getSeries(0);
+    if ( xysc.getSeriesKey(0).equals("NLNM") ) {
+      xys = xysc.getSeries(1);
+    }
+
+    GainExperiment gn = (GainExperiment) expResult;
+
+    // want to default to octave centered at highest value of fixed freq
+    freqRange = gn.getOctaveCenteredAtPeak(idx0);
+
+    // get the locations (x-axis values) of frequency range as intervals
+    lowPrd = Math.min(1/freqRange[0], 1/freqRange[1]);
+    highPrd = Math.max(1/freqRange[0], 1/freqRange[1]);
+
+    // since intervals of incoming data match, so too limits of plot
+    // this is used in mapping scale of slider to x-axis values
+    low = Math.log10( xys.getMinX() ); // value when slider is 0
+    high = Math.log10( xys.getMaxX() ); // value when slider is 1000
+    leftSliderValue = mapPeriodToSlider(lowPrd);
+    rightSliderValue = mapPeriodToSlider(highPrd);
+
+
+    // get statistics from frequency (convert from period)
+    gainStatistics = gn.getStatsFromFreqs(idx0, idx1, 
+        freqRange[0], freqRange[1]);
+
+
+    displayInfoMessage("Data loaded...drawing chart");
+
+    setChart(xysc);
+
+    // obviously, set the chart
+    chartPanel.setChart(chart);
+    chartPanel.setMouseZoomable(false);
+
+    // set vertical bars and enable sliders
+    XYPlot xyp = chartPanel.getChart().getXYPlot();
+
+    leftSlider.setValue(leftSliderValue);
+    rightSlider.setValue(rightSliderValue);
+
+    // set the domain to match the boundaries of the octave centered at peak
+    setDomainMarkers(lowPrd, highPrd, xyp);
+
+    // and now set the sliders to match where that window is
+    leftSlider.setEnabled(true);
+    rightSlider.setEnabled(true);
+
+    // lastly, display the calculated statistics in a textbox in the corner
+    double mean = gainStatistics[0];
+    double sDev = gainStatistics[1];
+    double refGain = gainStatistics[2];
+    double calcGain = gainStatistics[3];
+
+    setTitle(mean, sDev, refGain, calcGain);
 
   }
 

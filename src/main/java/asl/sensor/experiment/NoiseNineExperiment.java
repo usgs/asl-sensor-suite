@@ -7,12 +7,40 @@ import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.TimeSeriesUtils;
 
+/**
+ * Enhanced version of the self-noise experiment using 9 inputs. These inputs
+ * are the north, east, and vertical sensors from a seismometer setup.
+ * While the first sensor is assumed facing in the correct directions and
+ * thus orthogonal, the experiment solves for the azimuth for the remaining
+ * sensors, which may not face north or have orthogonal orientations.
+ * Once the sensors have been properly oriented (the vertical sensors are
+ * assumed to be close enough that no rotation is necessary), then each
+ * direction has its corresponding self-noise calculation performed. That is,
+ * there is a self noise calculation for the north-aligned signals, for the
+ * east-aligned signals, and for the vertical signals.
+ * @author akearns
+ *
+ */
 public class NoiseNineExperiment extends Experiment {
 
+  boolean freqSpace;
+  
+  public NoiseNineExperiment() {
+    super();
+    freqSpace = false;
+  }
+  
   @Override
   protected void backend(DataStore ds) {
-    // get the components
     
+    System.out.println("Beginning 9-input self noise test");
+    
+    // get the components
+    // why unroll the datastore's contents like this?
+    // since we need to do the azimuth calculations with subsets of the data
+    // and then rotate some of those sensors to get new datablocks
+    // we can only compact the code so hard, and this is an easier arrangement
+    // than, say, using the data from a 
     DataBlock north1Sensor = ds.getBlock(0);
     InstrumentResponse north1Resp = ds.getResponse(0);
     DataBlock east1Sensor = ds.getBlock(1);
@@ -34,6 +62,8 @@ public class NoiseNineExperiment extends Experiment {
     DataBlock vert3Sensor = ds.getBlock(8);
     InstrumentResponse vert3Resp = ds.getResponse(8);
     
+    System.out.println("Got data, now doing rotations...");
+    
     // set angles and then rotate data 
     // (calling 'setData' includes internal call to azimuth backend)
     AzimuthExperiment azi = new AzimuthExperiment();
@@ -41,23 +71,31 @@ public class NoiseNineExperiment extends Experiment {
     aziStore.setData(0, north1Sensor);
     aziStore.setData(1, east1Sensor);
     
+    System.out.println("Initial azimuth reference setup constructed...");
+    
     // angle should be set negative -- rotate third sensor, not the opposite
     aziStore.setData(2, north2Sensor);
     azi.setData(aziStore);
     double north2Angle = -azi.getFitAngleRad();
+    System.out.println("2nd north sensor orientation found!");
+    
     
     aziStore.setData(2, east2Sensor);
     azi.setData(aziStore);
     double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
+    System.out.println("2nd east sensor orientation found!");
     // need to offset rotation by 90 degrees -- don't want it facing north
+    // TODO: be sure that this is the correct sign for the 90-deg rotation
     
     aziStore.setData(2, north3Sensor);
     azi.setData(aziStore);
     double north3Angle = -azi.getFitAngleRad();
+    System.out.println("3rd north sensor orientation found!");
     
     aziStore.setData(2, east2Sensor);
     azi.setData(aziStore);
     double east3Angle = -azi.getFitAngleRad() - (Math.PI / 2);
+    System.out.println("3rd east sensor orientation found!");
     
     // now to rotate the data according to these angles
     DataBlock north2Rotated =
@@ -68,6 +106,7 @@ public class NoiseNineExperiment extends Experiment {
         TimeSeriesUtils.rotate(north3Sensor, east3Sensor, north3Angle);
     DataBlock east3Rotated =
         TimeSeriesUtils.rotate(east3Sensor, north3Sensor, east3Angle);
+    System.out.println("Data rotated!");
     
     // set components into N,E,Z directional subcomponents
     
@@ -96,14 +135,17 @@ public class NoiseNineExperiment extends Experiment {
     vertComponents.setResponse(2, vert3Resp);
     
     // get noise from each axis's data
-    NoiseExperiment nse = new NoiseExperiment();
-    nse.setData(northComponents);
-    XYSeriesCollection northXYS = nse.getData().get(0);
-    nse.setData(eastComponents);
-    XYSeriesCollection eastXYS = nse.getData().get(0);
-    nse.setData(vertComponents);
-    XYSeriesCollection vertXYS = nse.getData().get(0);
-    
+    NoiseExperiment noiseExp = new NoiseExperiment();
+    noiseExp.setFreqSpace(freqSpace);
+    noiseExp.setData(northComponents);
+    XYSeriesCollection northXYS = noiseExp.getData().get(0);
+    System.out.println("North noise done!");
+    noiseExp.setData(eastComponents);
+    XYSeriesCollection eastXYS = noiseExp.getData().get(0);
+    System.out.println("East noise done!");
+    noiseExp.setData(vertComponents);
+    XYSeriesCollection vertXYS = noiseExp.getData().get(0);
+    System.out.println("Vertical noise done!");
 
     xySeriesData.add(northXYS);
     xySeriesData.add(eastXYS);
@@ -124,6 +166,10 @@ public class NoiseNineExperiment extends Experiment {
   @Override
   public int blocksNeeded() {
     return 9;
+  }
+
+  public void setFreqSpace(boolean freq) {
+    freqSpace = freq;    
   }
 
 }

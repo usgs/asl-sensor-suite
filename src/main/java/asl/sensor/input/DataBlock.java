@@ -8,8 +8,9 @@ import org.jfree.data.xy.XYSeries;
 import asl.sensor.utils.TimeSeriesUtils;
 
 /**
- * Holds the time series and metadata for a miniSEED file loaded in by the user
- * as well response files for the sensor associated with that miniseed
+ * Holds the time series and metadata for a miniSEED file loaded in by the user.
+ * Includes methods for resampling data (backed by the TimeSeriesUtils decimate
+ * function) and for trimming to specific time regions. 
  * @author akearns
  *
  */
@@ -33,6 +34,12 @@ public class DataBlock {
     setStartTime(in.getStartTime());
   }
   
+  /**
+   * Creates a trimmed copy of a given DataBlock, with same metadata
+   * @param in The datablock to be copied
+   * @param start Start time to trim data to
+   * @param end End time to trim data to
+   */
   public DataBlock(DataBlock in, long start, long end) {
     setInterval( in.getInterval() );
     int startIdx = in.getTrimStartIndex(start);
@@ -210,6 +217,12 @@ public class DataBlock {
     
   }
   
+  /**
+   * Converts a start time to the first index of data to include in a trimmed
+   * data series
+   * @param start Initial cutoff point for data
+   * @return Index of first data point to include in trimmed subset
+   */
   public int getTrimStartIndex(long start) {
     int startIdx = 0;
     if (startTime < start) {
@@ -219,6 +232,12 @@ public class DataBlock {
     return startIdx;
   }
   
+  /**
+   * Converts an end time to the last index of data to include in a trimmed
+   * data series  
+   * @param end Terminal cutoff point for data
+   * @return Index of last data point to include in trimmed subset
+   */
   public int getTrimEndIndex(long end) {
     int endIdx = data.size();
     long endTime = getEndTime();

@@ -34,13 +34,18 @@ import asl.sensor.utils.TimeSeriesUtils;
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
  * reference sensor assumed to be north. The rotation angle between the
  * reference sensor and the unknown components is solved for via least-squares
+ * using the coherence calculation of the rotated and reference signal.
  * The resulting angle, then, is the clockwise rotation from the reference.
  * If the angle of the reference is zero (i.e., pointing directly north),
  * the result of this calculation SHOULD be the value of the azimuth, using
  * a clockwise rotation convention.
- * If the rerference sensor is itself offset X degrees clockwise from
+ * If the reference sensor is itself offset X degrees clockwise from
  * north, the azimuth is the sum of the estimated angle difference between
  * the sensors plus the offset from north.
+ * This calculation is mostly based on Ringler, Edwards, et al. (2012)
+ * 'Relative azimuth inversion by way of damped maximum correlation estimates'
+ * but using coherence maximization rather than correlation to find optimized
+ * angles.
  * @author akearns
  *
  */
@@ -84,11 +89,7 @@ public class AzimuthExperiment extends Experiment {
     FFTResult.detrend(testEast);
     FFTResult.detrend(refNorth);
     
-    /*
-    testNorth = TimeSeriesUtils.normalize(testNorth);
-    testEast = TimeSeriesUtils.normalize(testEast);
-    refNorth = TimeSeriesUtils.normalize(refNorth);
-    */
+    // originally had normalization step here, but that harmed the estimates
     
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / testNorthBlock.getInterval();
     double low = 1./8;
@@ -97,19 +98,6 @@ public class AzimuthExperiment extends Experiment {
     testNorth = FFTResult.bandFilter(testNorth, sps, low, high);
     testEast = FFTResult.bandFilter(testEast, sps, low, high);
     refNorth = FFTResult.bandFilter(refNorth, sps, low, high);
-    
-    /*
-    int len = testNorth.size();
-    double[] testYArr = new double[len];
-    double[] testXArr = new double[len];
-    double[] refYArr = new double[len];
-    
-    for (int i = 0; i < len; ++i) {
-      testYArr[i] = testNorth.get(i).doubleValue();
-      testXArr[i] = testEast.get(i).doubleValue();
-      refYArr[i] = refNorth.get(i).doubleValue();
-    }
-    */
     
     testNorthBlock.setData(testNorth);
     testEastBlock.setData(testEast);
@@ -290,6 +278,18 @@ public class AzimuthExperiment extends Experiment {
     
   }
   
+  /**
+   * Jacobian function for the azimuth solver. Takes in the directional
+   * signal components (DataBlocks) and the angle to evaluate at and produces
+   * the coherence at that point and the forward difference
+   * @param point Current angle
+   * @param refNorth Reference sensor, facing north
+   * @param testNorth Test sensor, facing approximately north
+   * @param testEast Test sensor, facing approximately east and orthogonal to
+   * testNorth
+   * @return Coherence (RealVector) and forward difference 
+   * approximation of the Jacobian (RealMatrix) at the current angle
+   */
   public Pair<RealVector, RealMatrix> jacobian(
       final RealVector point, 
       final DataBlock refNorth,
@@ -318,7 +318,6 @@ public class AzimuthExperiment extends Experiment {
     coherence = new double[crossPowerSeries.length];
     
     for (int i = 0; i < crossPowerSeries.length; ++i) {
-      // 
       Complex conj = crossPowerSeries[i].conjugate();
       Complex numerator = crossPowerSeries[i].multiply(conj);
       Complex denom = rotatedSeries[i].multiply(refSeries[i]);
@@ -329,6 +328,11 @@ public class AzimuthExperiment extends Experiment {
     double peakFreq = 0;
     
     for (int i = 0; i < freqs.length; ++i) {
+      if (freqs[i] < lowFreq) {
+        continue;
+      } else if (freqs[i] > highFreq) {
+        break;
+      }
       if (peakVal < coherence[i]) {
         peakVal = coherence[i];
         peakFreq = freqs[i];
@@ -339,7 +343,7 @@ public class AzimuthExperiment extends Experiment {
       lowFreq = peakFreq / 2.;
     }
     
-    if (peakFreq * 2 < highFreq && peakFreq * 2 > lowFreq) {
+    if (peakFreq * 2 < highFreq) {
       highFreq = peakFreq * 2.;
     }
     
@@ -404,10 +408,18 @@ public class AzimuthExperiment extends Experiment {
     return new Pair<RealVector, RealMatrix>(curValue, jbn);
   }
   
+  /**
+   * Return the fit angle calculated by the backend in degrees
+   * @return angle result in degrees
+   */
   public double getFitAngle() {
     return Math.toDegrees(angle);
   }
   
+  /**
+   * Return the fit angle calculated by the backend in radians
+   * @return angle result in radians
+   */
   public double getFitAngleRad() {
     return angle;
   }

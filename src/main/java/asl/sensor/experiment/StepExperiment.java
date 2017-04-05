@@ -61,9 +61,6 @@ public class StepExperiment extends Experiment{
   
   final double STEP_FACTOR = 1E-16;
   
-  /**
-   * Calls superconstructor; all other fields are created at runtime
-   */
   public StepExperiment() {
     super();
   }
@@ -322,8 +319,8 @@ public class StepExperiment extends Experiment{
   }
   
   /**
-   * Returns the corner, damping, and residual values 
-   * @return
+   * Returns the corner, damping, and residual values from fit in that order
+   * @return Double array with fit values of f, h, and residual
    */
   public double[] getFitCornerAndDamping() {
     return new double[]{fCorr, hCorr, fitResid};

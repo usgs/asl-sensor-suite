@@ -27,6 +27,16 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
 
+/**
+ * Panel to display results from a randomized calibration experiment.
+ * This includes plots of response magnitude and argument, selectable from a
+ * drop-down combo box on the panel.
+ * The inclusion of two selectable plots means that overrides are necessary
+ * to produce output of both plots when creating a report of the results,
+ * and that the typical means of assigning the visible chart cannot be used.
+ * @author akearns
+ *
+ */
 public class RandomizedPanel extends ExperimentPanel {
 
   private ValueAxis degreeAxis;

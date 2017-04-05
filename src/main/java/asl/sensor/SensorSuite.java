@@ -41,8 +41,9 @@ import asl.sensor.input.DataStore;
 
 /**
  * Main window of the sensor test program and the program's launcher
- * Mainly used for handling the input (inputpanel) and output (experimentpanel)
- * GUI frames and making sure they fit togther and cooperate
+ * Mainly used for handling the input (InputPanel) 
+ * and output (ExperimentPanel)
+ * GUI frames and making sure they fit togther and cooperate.
  * @author akearns
  *
  */
@@ -194,10 +195,11 @@ public class SensorSuite extends JPanel
   }
 
   /**
-   * Handles actions when a side-panel button is clicked; loading SEED and RESP
-   * files and writing the combined set of plots to a file. Because SEED files
-   * can be large and take a long time to read in, that operation runs on a
-   * separate thread.
+   * Handles actions when the buttons are clicked -- either the 'save PDF'
+   * button, which compiles the input and output plots into a single PDF, or
+   * the 'generate result' button.
+   * Because generating results of an experiment can be slow, the operation
+   * is set to run in a separate thread.
    */
   @Override
   public void actionPerformed(ActionEvent e) {

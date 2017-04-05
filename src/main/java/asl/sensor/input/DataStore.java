@@ -28,6 +28,16 @@ import asl.sensor.utils.TimeSeriesUtils;
  * for index i, the DataBlock at index i will be associated with a response
  * at i. Both of these will be used to calculate the power-spectral
  * density at i.
+ * 
+ * This structure also includes functions to get the Xth (i.e., first, second)
+ * set of valid data. While other code in this program expects data to be
+ * loaded in sequentially from index 0 to whatever the maximum needed input is,
+ * this allows the datastore to remain somewhat flexible about the means in
+ * which the data it lays out is stored.
+ * 
+ * This class also has means with which to check that data is properly trimmed
+ * to the same range and has the same sample rate, which is necessary for most
+ * experiments.
  *  
  * @author akearns
  *
@@ -68,10 +78,19 @@ public class DataStore {
    }
   }
   
+  /**
+   * Create a full copy of the current datastore
+   * @param ds datastore to copy
+   */
   public DataStore(DataStore ds) {
     this(ds, FILE_COUNT);
   }
   
+  /**
+   * Create a copy of only some of the current datastore, up to upperBound
+   * @param ds datastore to copy
+   * @param upperBound max index to copy data from
+   */
   public DataStore(DataStore ds, int upperBound) {
     dataBlockArray = new DataBlock[FILE_COUNT];
     responses = new InstrumentResponse[FILE_COUNT];
@@ -383,6 +402,12 @@ public class DataStore {
     return thisResponseIsSet;
   }
   
+  /**
+   * Adds a pre-constructed datablock to this data store object at the 
+   * specified index
+   * @param idx Index to place the data into
+   * @param db Datablock to place into idx
+   */
   public void setData(int idx, DataBlock db) {
     thisBlockIsSet[idx] = true;
     dataBlockArray[idx] = db;
@@ -453,6 +478,11 @@ public class DataStore {
     }
   }
   
+  /**
+   * Place an already-constructed instrument response at the index idx 
+   * @param idx index in this object to place the response at
+   * @param ir InstrumentResponse to have placed into this object
+   */
   public void setResponse(int idx, InstrumentResponse ir) {
     responses[idx] = ir;
     thisResponseIsSet[idx] = true;
@@ -490,6 +520,11 @@ public class DataStore {
     matchIntervals(FILE_COUNT);
   }
   
+  /**
+   * Math the first [limit] inputs' intervals to the lowest-frequency used by
+   * any of the blocks within that range
+   * @param limit Index of last block to match intervals to
+   */
   public void matchIntervals(int limit){
     long interval = 0;
     // first loop to get lowest-frequency data
@@ -513,11 +548,14 @@ public class DataStore {
    * Trims this object's data blocks to hold only points in their common range
    * WARNING: assumes each plot has its data taken at the same point in time
    */
-  
   public void trimToCommonTime() {
     trimToCommonTime(FILE_COUNT);
   }
   
+  /**
+   * Trim the first [limit] blocks of data to a common time range
+   * @param limit upper bound of blocks to do trimming on
+   */
   public void trimToCommonTime(int limit) {
     // trims the data to only plot the overlapping time of each input set
     

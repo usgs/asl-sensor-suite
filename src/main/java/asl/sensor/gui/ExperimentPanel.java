@@ -84,6 +84,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     
     channelType = new String[DataStore.FILE_COUNT];
     
+    // default initialization for channel type string
     for (int i = 0; i < channelType.length; ++i) {
       channelType[i] = "NOT USED";
     }
@@ -211,7 +212,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * types for the x-axis (i.e., for units of seconds vs. Hz); accessing
    * the x-axis object through this function allows for overrides allowing for
    * more flexibility.
-   * @return
+   * @return ValueAxis to be applied to chart
    */
   public ValueAxis getXAxis() {
     return xAxis;
@@ -221,32 +222,37 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   /**
    * Default x-axis title return. Displays the string used for the x-axis, 
    * which is set when the panel's chart is constructed.
-   * @return
+   * As with the getXAxis function 
+   * @return String with axis title
    */
   public String getXTitle() {
     return xAxisTitle;
   }
 
   /**
-   * Default y-axis return function. As with x-axis, designed to be overridden
-   * for charts that may use multiple scales
-   * @return
+   * Default y-axis return function. As with getXAxis, designed to be overridden
+   * for charts that may use multiple scales.
+   * @return ValueAxis to be applied to chart
    */
   public ValueAxis getYAxis() {
     return yAxis;
   }
 
 
+  /**
+   * Default y-axis title return. Displays the string used for the y-axis,
+   * which is set when the panel's chart is constructed. Designed to be
+   * overriden for charts that may use multiple scales
+   * @return String with axis title
+   */
   public String getYTitle() {
     return yAxisTitle;
   }
 
   /**
    * Used to plot the results of a backend function from an experiment
-   * using a collection of XYSeries mapped by strings.
-   * If the color and dashed maps have been updated by the concrete class
-   * extending this one, the corresponding XYSeries will have their data
-   * displayed in the specified color or dashing, etc.
+   * using a collection of XYSeries mapped by strings. This will be set to
+   * the default chart object held by the panel.
    * @param xyDataset collection of XYSeries to plot
    */
   protected void setChart(XYSeriesCollection xyDataset) {
@@ -255,6 +261,13 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
 
   }
   
+  /**
+   * Function to construct a chart from the XYSeriesCollection produced
+   * from this panel's backend. Any data that requires a specific plot color,
+   * dashed line, or bold line have their corresponding properties applied
+   * @param xyDataset Data to be plotted
+   * @return XY Line Chart with the corresponding data in it
+   */
   public JFreeChart buildChart(XYSeriesCollection xyDataset) {
     
     JFreeChart chart = ChartFactory.createXYLineChart(
@@ -312,8 +325,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
         xyir.setSeriesPaint(seriesIdx, new Color(0,0,0) );
       }
     }
-
-
     
     xyPlot.setDomainAxis( getXAxis() );
     xyPlot.setRangeAxis( getYAxis() );
@@ -328,16 +339,29 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    */
   public abstract void updateData(final DataStore ds);
   
+  /**
+   * Function template for informing main window of number of panels to display
+   * to fit all data needed by the program
+   * @return Number of plots to show in the input panel
+   */
   public abstract int panelsNeeded();
   
   /**
-   * Number of plots to return in an output report
-   * @return
+   * Number of panels to return in an output report
+   * @return number of panels to include 
    */
   public int plotsToShow() {
     return panelsNeeded();
   }
   
+  /**
+   * Function used to query backend on whether or not a datastore has all the
+   * data that a backend needs to calculate. This is used mainly to inform
+   * the main window (see SensorSuite class) that the generate result button
+   * can be set active
+   * @param ds Datastore to run data check on
+   * @return True if the backend can run with the data provided
+   */
   public boolean hasEnoughData(final DataStore ds) {
     return expResult.hasEnoughData(ds);
   }

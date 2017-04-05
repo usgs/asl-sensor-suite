@@ -13,6 +13,14 @@ import asl.sensor.input.DataStore;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.TimeSeriesUtils;
 
+/**
+ * Finds the interior angle between two sensors of unknown orientation using
+ * input from two sensors known to be orthogonal and at north and east
+ * orientation. The result returns the relative orientation between angles
+ * using the azimuth calculation as an intermediate step.
+ * @author akearns
+ *
+ */
 public class OrthogonalExperiment extends Experiment {
 
   final static double TAU = Math.PI * 2;
@@ -137,15 +145,33 @@ public class OrthogonalExperiment extends Experiment {
     
   }
 
+  /**
+   * Returns the intermediate result of the calculation, 
+   * the azimuth angles of the unknown sensors 
+   * @return Array of doubles (size 2), with the north and east azimuth
+   * respectively
+   */
   public double[] getSolutionParams() {
     return diffs;
   }
   
+  /**
+   * Returns the difference of the best-fit angles for the unknown sensors
+   * @return Angle, in degrees
+   */
   public double getFitAngle() {
     return angle;
   }
   
-  public RealVector value(RealVector refX, RealVector refY, double point) {
+  /**
+   * Return the rotated signal given an angle and orthogonal components
+   * @param refX reference signal along the x-axis
+   * @param refY reference signal along the y-axis
+   * @param point angle (radians) to get as rotated signal
+   * @return signal rotated in the direction of the given angle
+   */
+  public 
+  static RealVector value(RealVector refX, RealVector refY, double point) {
     double theta = point % TAU;
     
     if (theta < 0) {

@@ -33,6 +33,16 @@ public class FFTResult {
    */
   private static final double TAPER_WIDTH = 0.10;
   
+  /**
+   * Filter out data outside of the range between the low and high frequencies;
+   * can be used for a low-pass filter if low frequency is set to 0
+   * and high-pass if higher frequency is set to sample rate
+   * @param toFilt series of data to do a band-pass filter on
+   * @param sps sample rate of the current data (samples / sec)
+   * @param low low corner frequency of band-pass filter
+   * @param high high corner frequency of band-pass filter
+   * @return timeseries with band-pass filter applied
+   */
   public static double[] 
   bandFilter(double[] toFilt, double sps, double low, double high) {
     
@@ -60,6 +70,15 @@ public class FFTResult {
     
   }
   
+  /**
+   * Wrapper to do band filter on a list of data rather than an array.
+   * For more details see other definition of bandFilter
+   * @param toFilt timeseries data to be filtered
+   * @param sps samples per second of input data
+   * @param low low corner frequency for trim
+   * @param high higher corner frequency for trim
+   * @return timeseries data (list) that has gone through band-pass filter
+   */
   public static List<Number> 
   bandFilter(List<Number> toFilt, double sps, double low, double high) {
     
@@ -164,6 +183,11 @@ public class FFTResult {
     
   }
   
+  /**
+   * Remove mean (constant value) from a dataset and include
+   * @param dataSet
+   * @return
+   */
   public static List<Number> demean(List<Number> dataSet) {
     List<Number> dataOut = new ArrayList<Number>(dataSet);
     demeanInPlace(dataOut);

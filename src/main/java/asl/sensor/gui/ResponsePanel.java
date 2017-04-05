@@ -25,6 +25,16 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
 
+/**
+ * Panel used to display response curves. Includes plots of response magnitude
+ * and argument (rotation in complex space). Because this includes two charts
+ * and also does not require any input timeseries, there are more overridden
+ * methods in this class than in most other panels, including the image output.
+ * The chart to be displayed at any moment is selected with a combobox.
+ * 
+ * @author akearns
+ *
+ */
 public class ResponsePanel extends ExperimentPanel {
 
   private ValueAxis freqAxis, degreeAxis;
@@ -37,6 +47,7 @@ public class ResponsePanel extends ExperimentPanel {
   
   private JFreeChart magChart, argChart;
   
+  // values
   public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   

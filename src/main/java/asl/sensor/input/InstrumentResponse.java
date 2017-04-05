@@ -93,6 +93,13 @@ public class InstrumentResponse {
     parseResponseFile(filename);
   }
   
+  /**
+   * Reads in a response from an already-accessed bufferedreader handle
+   * and assigns it to the name given
+   * @param br Handle to a buffered reader of a given RESP file
+   * @param name Name of RESP file to be used internally 
+   * @throws IOException
+   */
   public InstrumentResponse(BufferedReader br, String name) throws IOException {
     
     this.name = name;
@@ -100,6 +107,11 @@ public class InstrumentResponse {
     parserDriver(br);
   }
   
+  /**
+   * Return the name of this response file (i.e., STS-1Q330 or similar)
+   * Used primarily for identifying response curve on plots
+   * @return String containing ID of current response
+   */
   public String getName() {
     return name;
   }
@@ -130,7 +142,7 @@ public class InstrumentResponse {
     double integConstant = 2*Math.PI;
     
     for (int i = 0; i < frequencies.length; ++i) {
-      // TODO: check this is right (Adam seemed to be saying so)
+     
       double deltaFrq = frequencies[i];
       
       // pole-zero expansion

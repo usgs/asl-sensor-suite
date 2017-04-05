@@ -97,6 +97,8 @@ public abstract class Experiment {
    * Return the plottable data for this experiment, populated in the backend
    * function of an implementing class; calling this class before running the
    * setData function / backend will produce initialization errors (NPE).
+   * The results are returned as a list, where each list is the data to be
+   * placed into a separate chart.
    * @return Plottable data 
    */
   public List<XYSeriesCollection> getData() {
@@ -146,8 +148,17 @@ public abstract class Experiment {
     backend(ds);
   }
   
+  /**
+   * Return the number of data blocks needed by the experiment
+   * @return
+   */
   public abstract int blocksNeeded();
   
+  /**
+   * Used to check if the current input has enough data to do the calculation
+   * @param ds DataStore to be fed into experiment calculation
+   * @return True if there is enough data to be run
+   */
   public abstract boolean hasEnoughData(final DataStore ds);
   
 }

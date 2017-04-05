@@ -29,6 +29,13 @@ import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.input.DataStore;
 
+/**
+ * Wrapper class to display result from Azimuth. Overrides some parent
+ * functions because the main plot uses polar orientation rather than typical
+ * x-y plotting. 
+ * @author akearns
+ *
+ */
 public class AzimuthPanel extends ExperimentPanel {
 
   JSpinner offsetSpinner;

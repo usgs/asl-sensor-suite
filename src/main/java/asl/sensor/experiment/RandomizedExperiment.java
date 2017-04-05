@@ -29,6 +29,23 @@ import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 
+/**
+ * This experiment takes in a randomized calibration signal and the
+ * corresponding output from a seismic sensor. It calculates the implicit
+ * response by deconvolving the calibration signal from the sensor output, and
+ * then finds the best-fit poles (lowest 2 for low-frequency calibrations,
+ * all remaining poles for high-frequency calibrations) to
+ * match the magnitude and rotation angle of the calculated response curve
+ * produced from the deconvolution.
+ * Plottable data includes the sensor's response curve
+ * (Bode plot), the calculated response from deconvolution, and the plot
+ * of the response from the best-fit parameters.
+ * These plots are returned in a list of two datasets: the first holds
+ * the absolute values per-frequency of those curves, and the second holds
+ * the angle of each such point in complex space.
+ * @author akearns
+ *
+ */
 public class RandomizedExperiment extends Experiment {
 
   private List<Complex> fitPoles;
@@ -43,6 +60,12 @@ public class RandomizedExperiment extends Experiment {
     lowFreq = false;
   }
   
+  /**
+   * Determines which poles to fit when doing the response curve fitting;
+   * low frequency calibrations set the first two poles; high frequency
+   * calibrations set the remaining poles
+   * @param lowFreq True if a low frequency calibration is to be used
+   */
   public void setLowFreq(boolean lowFreq) {
     this.lowFreq = lowFreq;
   }
@@ -291,6 +314,27 @@ public class RandomizedExperiment extends Experiment {
     
   }
   
+  /**
+   * Convert a list of variables to a set of poles to be applied to an
+   * instrument response file. This variable must have an even number of
+   * entries or the function will return an out-of-bounds exception.
+   * Variable pairs are combined to create complex numbers, with the first
+   * entry representing the real component of the complex number and the second
+   * representing the imaginary component. If this is a low-frequency
+   * calibration, there should be 4 variables; the lowest two poles are the
+   * ones which will be modified. If this is a high-frequency calibration,
+   * then there should be 2*(pole.size() - 2) variables as all but the lowest
+   * two poles will be modified.
+   * Note that the passed response file is not changed or modified by this
+   * process; a deep copy of the response is made, then that is modified and 
+   * returned.
+   * @param variables List of doubles representing complex number real and
+   * imaginary components of poles
+   * @param ir Response file which the list of pole variables will modify.
+   * @param lowFreq True if the bottom 2 poles should be modified, false if
+   * all other poles should be modified
+   * @return New response file with the altered poles
+   */
   public static InstrumentResponse polesToResp(double[] variables, 
       InstrumentResponse ir, boolean lowFreq) {
     
@@ -323,6 +367,16 @@ public class RandomizedExperiment extends Experiment {
     return testResp;
   }
   
+  /**
+   * Backend function to set instrument response according to current
+   * test variables (for best-fit calculation / forward difference) and
+   * produce a response from that result. The passed response is copied on
+   * start and is not modified directly. Which values (poles) are modified
+   * depends on high or low frequency calibration setting.
+   * @param variables values to set the instrument response to 
+   * @param ir InstrumentResponse that will be copied 
+   * @return Doubles representing new response curve evaluation
+   */
   private double[] evaluateResponse(double[] variables, InstrumentResponse ir) {
     
     InstrumentResponse testResp = polesToResp(variables, ir, lowFreq);
@@ -361,6 +415,15 @@ public class RandomizedExperiment extends Experiment {
     return mag;
   }
   
+  /**
+   * Function to run evaluation and forward difference for Jacobian 
+   * approximation given a set of points to set as response. 
+   * Mainly a wrapper for the evaluateResponse function.
+   * @param variables Values to set the response's poles to
+   * @param ir Response whose poles will be modified
+   * @return RealVector with evaluation at current response value and 
+   * RealMatrix with forward difference of that response (Jacobian)
+   */
   private Pair<RealVector, RealMatrix> 
   jacobian(RealVector variables, InstrumentResponse ir) {
     

@@ -19,7 +19,8 @@ import asl.sensor.input.DataStore;
 /**
  * Holds the plot results of a step experiment. Gets the timeseries data from it
  * as well as the corner and damping values gotten in the process of its
- * calculations. See the step experiment class for more details.
+ * calculations. Aside from common elements to ExperimentPanels, also sets an
+ * inset displaying parameters derived from backend fit calculation
  * @author akearns
  *
  */
@@ -30,12 +31,6 @@ public class StepPanel extends ExperimentPanel {
    */
   private static final long serialVersionUID = 3693391540945130688L;
 
-  /**
-   * StepPanel does not have any extra components beyond the abstract panel it
-   * is derived from. The constructor initializes its axes and lays out the
-   * components derived from the superconstructor
-   * @param exp
-   */
   public StepPanel(ExperimentEnum exp) {
     super(exp);
     

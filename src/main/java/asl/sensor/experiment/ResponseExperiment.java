@@ -10,6 +10,15 @@ import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 
+/**
+ * Produces plots of response curves' magnitudes (Bode plot) and angle of
+ * rotation in complex space. 1-3 responses can be plotted at a time.
+ * No timeseries data (that is, miniSEED) is used in this calculation.
+ * Response curves can be plotted in either frequency or interval space
+ * (units of Hz or seconds respectively).
+ * @author akearns
+ *
+ */
 public class ResponseExperiment extends Experiment {
 
   public static final String MAGNITUDE = "Response magnitude";
@@ -22,6 +31,10 @@ public class ResponseExperiment extends Experiment {
     freqSpace = false;
   }
   
+  /**
+   * True if the plot should use x-axis units of Hz or seconds
+   * @param freqSpace True if x-axis should use Hz units
+   */
   public void setFreqSpace(boolean freqSpace) {
     this.freqSpace = freqSpace;
   }

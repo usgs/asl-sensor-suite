@@ -17,6 +17,14 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.input.DataStore;
 
+/**
+ * Panel to display results of Orthogonal Experiment.
+ * This plots the difference between reference and rotated sensor signals
+ * and also displays the azimuth angles in an inset box.
+ * No additional interface components are created for this panel.
+ * @author akearns
+ *
+ */
 public class OrthogonalPanel extends ExperimentPanel {
 
   /**

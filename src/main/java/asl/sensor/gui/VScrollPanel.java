@@ -8,7 +8,9 @@ import javax.swing.Scrollable;
 
 /**
  * Simple class to create a composable JPanel that is scrollable only
- * in the vertical direction, as necessary.
+ * in the vertical direction, as necessary. Used to create an input panel that
+ * doesn't get shrunk when too many inputs are needed for an experiment
+ * such as for 9-component self-noise.
  * @author akearns
  *
  */
