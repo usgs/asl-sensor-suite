@@ -85,6 +85,9 @@ implements ActionListener, ChangeListener {
    */
   private static final long serialVersionUID = -7302813951637543526L;
   
+  public static final SimpleDateFormat SDF = 
+      new SimpleDateFormat("Y.DDD.HH:mm");
+  
   /**
    * Default height of image produced by the save-as-image function
    * (each chart is 240 pixels tall)
@@ -1011,13 +1014,13 @@ implements ActionListener, ChangeListener {
 
           XYPlot xyp = (XYPlot) chart.getPlot();
           DateAxis da = new DateAxis();
-          SimpleDateFormat sdf = new SimpleDateFormat("Y.DDD.HH:mm");
-          sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+
+          SDF.setTimeZone( TimeZone.getTimeZone("UTC") );
           da.setLabel("UTC Time (Year.Day.Hour:Minute)");
           Font bold = da.getLabelFont();
           bold = bold.deriveFont(Font.BOLD);
           da.setLabelFont(bold);
-          da.setDateFormatOverride(sdf);
+          da.setDateFormatOverride(SDF);
           xyp.setDomainAxis(da);
           int colorIdx = idx % defaultColor.length;
           xyp.getRenderer().setSeriesPaint(0, defaultColor[colorIdx]);

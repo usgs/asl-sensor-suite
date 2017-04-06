@@ -288,9 +288,12 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     // force certain colors and whether or not a line should be dashed
 
     for ( String series : seriesColorMap.keySet() ) {
+      
       int seriesIdx = xyDataset.getSeriesIndex(series);
       if (seriesIdx >= 0) {
         xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series) );
+      } else {
+        continue;
       }
 
       if ( seriesDashedSet.contains(series) ) {
@@ -315,6 +318,9 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     if ( !(plotTheseInBold.length == 0) ) {
       for (String series : plotTheseInBold) {
         int seriesIdx = xyDataset.getSeriesIndex(series);
+        if (seriesIdx < 0) {
+          continue;
+        }
 
         BasicStroke stroke = (BasicStroke) xyir.getSeriesStroke(seriesIdx);
         if (stroke == null) {

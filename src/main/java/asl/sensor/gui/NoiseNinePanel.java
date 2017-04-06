@@ -17,7 +17,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
-import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.experiment.NoiseNineExperiment;
 import asl.sensor.input.DataStore;
 
@@ -139,7 +138,7 @@ public class NoiseNinePanel extends NoisePanel {
   @Override
   public void updateData(final DataStore ds) {
     
-    // TODO: replace with try-catch, put this check in the experiment backend?
+
     if (ds.numberFullySet() < 9) {
       displayErrorMessage("INSUFFICIENT DATA LOADED");
       return;
@@ -168,9 +167,12 @@ public class NoiseNinePanel extends NoisePanel {
 
       for (int i = 0; i < NOISE_PLOT_COUNT; ++i) {
         String name = (String) xysc.getSeriesKey(i);
+        System.out.println(name);
         Color plotColor = COLORS[i % 3];
         seriesColorMap.put(name, plotColor);
+        System.out.println(name+","+plotColor);
         if (i >= 3) {
+          System.out.println(name+","+i);
           seriesDashedSet.add(name);
         }
 
@@ -178,18 +180,20 @@ public class NoiseNinePanel extends NoisePanel {
     }
 
     set = true;
-    displayInfoMessage("Data loaded...drawing chart");
 
     System.out.println("Charts being set!");
     
     northChart = buildChart( expResult.getData().get(0) );
     northChart.setTitle("Self-noise (NORTH)");
+    System.out.println("North chart set!");
+    
     eastChart = buildChart( expResult.getData().get(1) );
     eastChart.setTitle("Self-noise (EAST)");
+    System.out.println("East chart set!");
+    
     vertChart = buildChart( expResult.getData().get(2) );
     vertChart.setTitle("Self-noise (VERTICAL)");
-
-    System.out.println("Charts set!");
+    System.out.println("Vert chart set!");
     
     int idx = plotSelection.getSelectedIndex();
     if (idx == 0) {
@@ -207,7 +211,7 @@ public class NoiseNinePanel extends NoisePanel {
   }
   
   @Override
-  public BufferedImage getAsImage(int height, int width) {
+  public BufferedImage getAsImage(int width, int height) {
     
     // TODO: fix this, need to assign chart and build chart in separate
     // function in superclass to build this most easily imo
