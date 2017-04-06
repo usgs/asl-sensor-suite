@@ -174,21 +174,26 @@ implements ActionListener, ChangeListener {
     
     seedLoaders[i] = new JButton( "Load SEED file " + (i+1) );
     seedLoaders[i].addActionListener(this);
+    seedLoaders[i].setMaximumSize( seedLoaders[i].getMinimumSize() );
     
     JTextField text = new JTextField( "NO FILE LOADED" );
     text.setHorizontalAlignment(SwingConstants.CENTER);
+    text.setMaximumSize( text.getPreferredSize() );
     seedFileNames[i] = text;
     seedFileNames[i].setEditable(false);
    
     respLoaders[i] = new JButton( "Load RESP file " + (i+1) );
     respLoaders[i].addActionListener(this);
+    respLoaders[i].setMaximumSize( respLoaders[i].getMinimumSize() );
     
     text = new JTextField( "NO FILE LOADED" );
     text.setHorizontalAlignment(SwingConstants.CENTER);
+    text.setMaximumSize( text.getPreferredSize() );
     respFileNames[i] = text;
     respFileNames[i].setEditable(false);
     
     clearButton[i] = new JButton( "Clear data " + (i+1) );
+    clearButton[i].setMaximumSize( clearButton[i].getMinimumSize() );
     
     gbc.gridx = 0; gbc.gridy = 0;
 
@@ -218,6 +223,7 @@ implements ActionListener, ChangeListener {
     gbc.weighty = 1;
     gbc.gridy += 1;
     JScrollPane jsp = new JScrollPane();
+    jsp.setMaximumSize( jsp.getMinimumSize() );
     jsp.setViewportView(seedFileNames[i]);
     jsp.setVerticalScrollBarPolicy(
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
@@ -235,6 +241,7 @@ implements ActionListener, ChangeListener {
     gbc.weighty = 1;
     gbc.gridy += 1;
     jsp = new JScrollPane();
+    jsp.setMaximumSize( jsp.getMinimumSize() );
     jsp.setViewportView(respFileNames[i]);
     jsp.setVerticalScrollBarPolicy(
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
@@ -1125,21 +1132,6 @@ implements ActionListener, ChangeListener {
     zoomIn.setEnabled( zooms.numberOfBlocksSet() > 0 );
     
     zoomOut.setEnabled(false);
-    
-
-    
-    /* commented out because 4 or fewer inputs look ok without needing scroll
-    // can we hold the data in the frame without shrinking it too far?
-    // we create this jframe to make sure the holding panel size is defined
-    JFrame holder = new JFrame();
-    holder.add(cont);
-    holder.pack();
-    
-    double heightScrollPane = inputScrollPane.getSize().getHeight();
-    double heightContainer = cont.getSize().getHeight();
-    
-    cont.setScrollableTracksViewportHeight(heightScrollPane > heightContainer);
-    */
     
     // using this test means the panel doesn't try to scroll when it's
     // only got a few inputs to deal with, when stuff is still pretty readable
