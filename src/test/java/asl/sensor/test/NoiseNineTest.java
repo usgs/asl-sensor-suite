@@ -93,6 +93,7 @@ public class NoiseNineTest {
       }
       String testResult = testResultFolder + "Nine-Noise-Test.png";
       ImageIO.write(bi,"png", new File(testResult) );
+      System.out.println("Image has been written");
     } catch (IOException e) {
       // TODO Auto-generated catch block
       fail();

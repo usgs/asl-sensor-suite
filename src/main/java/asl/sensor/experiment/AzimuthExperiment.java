@@ -147,6 +147,8 @@ public class AzimuthExperiment extends Experiment {
     RealVector angleVector = optimumY.getPoint();
     double tempAngle = angleVector.getEntry(0);
     
+    System.out.println("Found initial guess for angle");
+    
     // angleVector is our new best guess for the azimuth
     // now let's cut the data into 2000-sec windows with 500-sec overlap
     // store the angle and resulting correlation of each window
@@ -166,9 +168,11 @@ public class AzimuthExperiment extends Experiment {
     final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
     int numWindows = (int) ( (timeRange - twoThouSecs) / fiveHundSecs);
     
-    System.out.println("Num. windows: "+numWindows);
+    System.out.println("Num. windows for better fit: " + numWindows);
     
     for (int i = 0; i < numWindows; ++i) {
+      
+      System.out.println("Fitting angle over data in window " + i);
       
       if (timeRange < 2 * twoThouSecs) {
         break;
@@ -248,6 +252,8 @@ public class AzimuthExperiment extends Experiment {
       
     }
 
+    System.out.println("Found angle");
+    
     double angleDeg = Math.toDegrees(angle);
     angleDeg = ( (angleDeg % 360) + 360 ) % 360;
     
@@ -350,17 +356,12 @@ public class AzimuthExperiment extends Experiment {
     double meanCoherence = 0.;
     int samples = 0;
     
-    System.out.println("FRQ BOUNDS: "+highFreq+","+lowFreq);
-    
     for (int i = 0; i < freqs.length; ++i) {
       if (freqs[i] < highFreq && freqs[i] > lowFreq) {
         meanCoherence += coherence[i];
         ++samples;
       }
     }
-    
-    System.out.println(meanCoherence+","+samples+
-        " [" + meanCoherence/samples+"]" + " (" + theta + " rad)");
     
     meanCoherence /= samples;
     
