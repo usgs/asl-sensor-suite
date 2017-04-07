@@ -1124,8 +1124,6 @@ implements ActionListener, ChangeListener {
       // gbc.gridy += 1;
     }
     
-
-    
     leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
     setVerticalBars();
     
