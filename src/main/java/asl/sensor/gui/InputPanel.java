@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -460,6 +461,7 @@ implements ActionListener, ChangeListener {
         Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
         
         List<String> names = new ArrayList<String>(respFilenames);
+        Collections.sort(names);
         
         String custom = "Load custom response...";
         

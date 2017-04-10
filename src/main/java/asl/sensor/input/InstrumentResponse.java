@@ -472,6 +472,7 @@ public class InstrumentResponse {
    */
   public static InstrumentResponse loadEmbeddedResponse(String fname) 
       throws IOException {
+    
     ClassLoader cl = InputPanel.class.getClassLoader();
     InputStream is = cl.getResourceAsStream(fname);
     BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
