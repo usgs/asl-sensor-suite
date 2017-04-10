@@ -9,8 +9,10 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,6 +22,14 @@ import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
@@ -73,6 +83,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   
   public String[] channelType;
   
+  protected boolean set;
+  
   protected String[] plotTheseInBold; // given in the implementing function
   // this is a String because bolded names are intended to be fixed
   
@@ -86,6 +98,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * instantiation
    */
   public ExperimentPanel(ExperimentEnum exp) {
+    
+    set = false;
     
     channelType = new String[DataStore.FILE_COUNT];
     
@@ -349,6 +363,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * @param ds DataStore object containing seed and resp files
    */
   public abstract void updateData(final DataStore ds);
+  // details of how to run updateData are left up to the implementing panel
+  // however, the boolean "set" should be set to true to enable PDF saving
   
   /**
    * Function template for informing main window of number of panels to display
@@ -377,9 +393,119 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     return expResult.hasEnoughData(ds);
   }
   
-  // details of how to run updateData are left up to the implementing panel
-  // however, it is advised to wrap the code inside a swingworker,
-  // using doInBackground() to make calls to the experiment backend to
-  // compute the data and then using the done() method to update chartPanel
+  public PDDocument savePDFResults(PDDocument pdf) {
+    
+    int width = 1280;
+    BufferedImage outPlot = getAsImage(width, 960);
+    
+    PDRectangle rec = 
+        new PDRectangle( (float) outPlot.getWidth(), 
+                         (float) outPlot.getHeight() );
+    PDPage page = new PDPage(rec);
+    
+    try {
+      PDImageXObject  pdImageXObject = 
+          LosslessFactory.createFromImage(pdf, outPlot);
+      pdf.addPage(page);
+      PDPageContentStream contentStream = 
+          new PDPageContentStream(pdf, page, 
+                                  PDPageContentStream.AppendMode.OVERWRITE, 
+                                  true, false);
+
+      contentStream.drawImage( pdImageXObject, 0, 0, 
+          outPlot.getWidth(), outPlot.getHeight() );
+      contentStream.close();
+      
+      pdf = saveInsetDataText(pdf);
+      
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+    return pdf;
+    
+  }
+  
+  public boolean hasRun() {
+    return set;
+  }
+  
+  public PDDocument saveInsetDataText(PDDocument pdf) throws IOException {
+
+    String toWrite = getInsetString();
+    if ( toWrite.length() > 0 ) {
+      PDPage page = new PDPage();
+      pdf.addPage(page);
+      PDPageContentStream contentStream = new PDPageContentStream(pdf, page);
+
+      PDFont pdfFont = PDType1Font.COURIER;
+      float fontSize = 14;
+      float leading = 1.5f * fontSize;
+
+      PDRectangle mediabox = page.getMediaBox();
+      float margin = 72;
+      float width = mediabox.getWidth() - 2*margin;
+      float startX = mediabox.getLowerLeftX() + margin;
+      float startY = mediabox.getUpperRightY() - margin;
+
+      List<String> lines = new ArrayList<String>();
+      
+      for (String text : toWrite.split("\n") ) {
+
+        int lastSpace = -1;
+        while (text.length() > 0) {
+
+          int spaceIndex = text.indexOf(' ', lastSpace + 1);
+          if (spaceIndex < 0) {
+            spaceIndex = text.length();
+
+          }
+          String subString = text.substring(0, spaceIndex);
+          float size = fontSize * pdfFont.getStringWidth(subString) / 1000;
+          System.out.printf("'%s' - %f of %f\n", subString, size, width);
+          if (size > width) {
+            if (lastSpace < 0) {
+              lastSpace = spaceIndex;
+            }
+            subString = text.substring(0, lastSpace);
+            lines.add(subString);
+            text = text.substring(lastSpace).trim();
+            System.out.printf("'%s' is line\n", subString);
+            lastSpace = -1;
+          } else if ( spaceIndex == text.length() ) {
+            lines.add(text);
+            System.out.printf("'%s' is line\n", text);
+            text = "";
+          } else {
+            lastSpace = spaceIndex;
+          }
+        }
+      }
+
+      contentStream.beginText();
+      contentStream.setFont(pdfFont, fontSize);
+      contentStream.newLineAtOffset(startX, startY);
+      for (String line : lines) {
+        System.out.println(line);
+        contentStream.showText(line);
+        contentStream.newLineAtOffset(0, -leading);
+      }
+      contentStream.endText(); 
+      contentStream.close();
+    }
+
+    return pdf;
+  }
+  
+  /**
+   * Used to return any title insets as text format for saving in PDF,
+   * to be overridden by any panel that uses an inset
+   * @return
+   */
+  public String getInsetString() {
+    return "";
+  }
+
 
 }

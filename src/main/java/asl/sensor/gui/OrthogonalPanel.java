@@ -4,8 +4,12 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
@@ -72,24 +76,17 @@ public class OrthogonalPanel extends ExperimentPanel {
   @Override
   public void updateData(final DataStore ds) {
     
+    set = true;
+    
     expResult.setData(ds);
     XYSeriesCollection xysc = expResult.getData().get(0);
     
     setChart(xysc);
     XYPlot xyp = (XYPlot) chart.getPlot();
     
-    double[] fit = ( (OrthogonalExperiment) expResult ).getSolutionParams();
-    double angle = ( (OrthogonalExperiment) expResult ).getFitAngle();
-    
-    StringBuilder sb = new StringBuilder();
-    sb.append("Calculated angle between non-reference sensors:\n");
-    sb.append(angle);
-    sb.append('\n');
-    sb.append("Offset angles for LH1 and LH2 sensor outputs:\n");
-    sb.append( Arrays.toString(fit) );
     
     TextTitle result = new TextTitle();
-    result.setText( sb.toString() );
+    result.setText( getInsetString() );
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
@@ -103,6 +100,23 @@ public class OrthogonalPanel extends ExperimentPanel {
   @Override
   public int panelsNeeded() {
     return 4;
+  }
+  
+  @Override
+  public String getInsetString() {
+    OrthogonalExperiment ort = (OrthogonalExperiment) expResult;
+    
+    double[] fit = ort.getSolutionParams();
+    double angle = ort.getFitAngle();
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append("Calculated angle between non-reference sensors:\n");
+    sb.append(angle);
+    sb.append('\n');
+    sb.append("Offset angles for LH1 and LH2 sensor outputs:\n");
+    sb.append( Arrays.toString(fit) );
+    
+    return sb.toString();
   }
 
 }

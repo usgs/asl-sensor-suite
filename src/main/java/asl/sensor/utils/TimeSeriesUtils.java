@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -336,10 +337,11 @@ public class TimeSeriesUtils {
             // convert Btime to microseconds first as milliseconds
             long start = bt.convertToCalendar().getTimeInMillis();
 
-            start += correction;
+
             // .1 ms = 100 microseconds
             start *= 1000;
 
+            // start += correction;
 
             int fact = dh.getSampleRateFactor();
             int mult = dh.getSampleRateMultiplier();
@@ -403,36 +405,43 @@ public class TimeSeriesUtils {
       
       // now we have all the data in a convenient map timestamp -> value
       // which we can then convert into an easy array
-      Set<Long> times = timeMap.keySet();
+      List<Long> times = new ArrayList<Long>( timeMap.keySet() );
+      Collections.sort(times);
       
       // get the min value in the set, the start time for the series
-      long startTime = Long.MAX_VALUE;
+      long startTime = times.get(0);
       // when can we stop trying to read in data?
-      long endTime = Long.MIN_VALUE;
-      for (long time : times) {
-        if (time < startTime) {
-         startTime = time;
-        }
-        if (time > endTime) {
-          endTime = time;
-        }
-      }
+      // long endTime = times.get( times.size() - 1 );
       
       // read in data from the records as long as they exist
       // if no data exists (there's a gap in the record), set value to 0
       
       // this is done to handle cases where multiplexed files have non-matching
       // gaps and similar issues that previous code was not able to handle
+      
+      // TODO: iterate over list of times and add zeros only if distance
+      // between samples is larger than, say, 2*interval, and add that many 0s
       List<Number> timeList = new ArrayList<Number>();
-      long currentTime = startTime;
-      while (currentTime <= endTime) {
-        if ( timeMap.containsKey(currentTime) ) {
-          timeList.add( timeMap.get(currentTime) );
-        } else {
-          timeList.add(0.);
+      // long currentTime = startTime;
+      
+      for (int i = 0; i < times.size(); ++i) {
+        long timeNow = times.get(i);
+        timeList.add( timeMap.get(timeNow) );
+        
+        if ( (i + 1) < times.size() ) {
+          long timeNext = times.get(i + 1);
+          // is there a discrepancy, and is it big enough for us to care?
+          if (timeNext - timeNow != interval) {
+            // long gap = timeNext - timeNow;
+            // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
+            // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
+            while (timeNext - timeNow > interval * 2) {
+              timeList.add(0.);
+              timeNow += interval;
+            }
+          }
         }
         
-        currentTime += interval;
       }
             
       // demean the input to remove DC offset before adding it to the data

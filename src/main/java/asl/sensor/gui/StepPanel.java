@@ -4,7 +4,11 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.io.IOException;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
@@ -69,23 +73,13 @@ public class StepPanel extends ExperimentPanel {
     
   }
 
-
   /**
-   * Pass in and retrieve data from the step experiment backend, to plot;
-   * this is both the timeseries data as well as a title inset displaying
-   * the parameters used in the plot calculations
+   * Used to get the text that will populate the inset box for the plots
+   * @return String to place in TextTitle
    */
   @Override
-  public void updateData(final DataStore ds) {
+  public String getInsetString() {
     
-    displayInfoMessage("Running stepcal testing...");
-    
-    expResult.setData(ds);
-    XYSeriesCollection xysc = expResult.getData().get(0);
-    
-    // here's the stuff that needs to stay here, not moved to experiment class
-    setChart(xysc);
-    XYPlot xyp = (XYPlot) chart.getPlot();
     StepExperiment sp = (StepExperiment) expResult;
     double[] rolloff = sp.getCornerAndDamping();
     double[] fit = sp.getFitCornerAndDamping();
@@ -94,8 +88,7 @@ public class StepPanel extends ExperimentPanel {
     double fitCorner = fit[0];
     double fitDamping = fit[1];
     
-    // TODO: may want to relocate some of this to its own method
-    TextTitle result = new TextTitle();
+    
     StringBuilder sb = new StringBuilder();
     sb.append("RESP parameters\n");
     sb.append("corner frequency: ");
@@ -111,11 +104,34 @@ public class StepPanel extends ExperimentPanel {
     sb.append("damping: ");
     sb.append(fitDamping);
     sb.append("\n");
-    String temp = sb.toString();
-    result.setText(temp);
+    return sb.toString();
+    
+  }
+  
+  /**
+   * Pass in and retrieve data from the step experiment backend, to plot;
+   * this is both the timeseries data as well as a title inset displaying
+   * the parameters used in the plot calculations
+   */
+  @Override
+  public void updateData(final DataStore ds) {
+    
+    set = true;
+    
+    displayInfoMessage("Running stepcal testing...");
+    
+    expResult.setData(ds);
+    XYSeriesCollection xysc = expResult.getData().get(0);
+    
+    // here's the stuff that needs to stay here, not moved to experiment class
+    setChart(xysc);
+
+    TextTitle result = new TextTitle();
+    result.setText( getInsetString() );
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.5, result,
         RectangleAnchor.RIGHT);
+    XYPlot xyp = (XYPlot) chart.getPlot();
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
     

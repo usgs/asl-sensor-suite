@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 import java.util.List;
 
 import javax.swing.JComboBox;
@@ -14,6 +15,9 @@ import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
@@ -147,6 +151,8 @@ public class AzimuthPanel extends ExperimentPanel {
   @Override
   public void updateData(DataStore ds) {
     
+    set = true;
+    
     double value = (double) offsetSpinner.getValue();
     
     if (value < 0) {
@@ -201,4 +207,21 @@ public class AzimuthPanel extends ExperimentPanel {
     return 3;
   }
 
+  @Override
+  public String getInsetString() {
+    double value = (double) offsetSpinner.getValue();
+
+    if (value < 0) {
+      value += 360;
+    }
+    
+    AzimuthExperiment az = (AzimuthExperiment) expResult;
+    double angle = az.getFitAngle();
+    String angleStr = "FIT ANGLE: " + angle;
+    double result = ( (value + angle) % 360 + 360) % 360;
+
+    angleStr += " + " + value + " = " + result;
+    return angleStr;
+  }
+  
 }

@@ -8,19 +8,28 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 
+import org.apache.commons.math3.complex.Complex;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.Range;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.RectangleAnchor;
 
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.RandomizedExperiment;
@@ -46,14 +55,11 @@ public class RandomizedPanel extends ExperimentPanel {
   private JComboBox<String> plotSelection;
   JCheckBox lowFreqBox;
   private JFreeChart magChart, argChart;
-  boolean set;
   private static final Color[] COLOR_LIST = 
       new Color[]{Color.RED, Color.BLUE, Color.GREEN};
   
   public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
-    
-    set = false;
     
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
@@ -123,6 +129,43 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   private static final long serialVersionUID = -1791709117080520178L;
 
+  /**
+   * Used to get the text that will populate the inset box for the plots
+   * @return String to place in TextTitle
+   */
+  @Override
+  public String getInsetString() {
+    RandomizedExperiment rnd = (RandomizedExperiment) expResult;
+    
+    List<Complex> fitP = rnd.getFitPoles();
+    List<Complex> initP = rnd.getInitialPoles();
+    
+    StringBuilder sbInit = new StringBuilder();
+    StringBuilder sbFit = new StringBuilder();
+    sbInit.append("INITIAL POLES: \n");
+    sbFit.append("FIT POLES: \n");
+    for (int i = 0; i < fitP.size(); ++i) {
+      sbInit.append( initP.get(i) );
+      sbInit.append("  ");
+      sbFit.append( fitP.get(i) );
+      sbFit.append("  ");
+      // want to fit two to a line
+      ++i;
+      if ( i < fitP.size() ) {
+        sbInit.append( initP.get(i) );
+        sbInit.append("  ");
+        sbFit.append( fitP.get(i) );
+        sbFit.append("  ");
+      }
+      sbInit.append("\n");
+      sbFit.append("\n");
+    }
+    // remove last newline character
+    sbFit.deleteCharAt( sbFit.length() - 1 );
+    sbInit.append(sbFit);
+    return sbInit.toString();
+  }
+  
   @Override
   public void updateData(DataStore ds) {
 
@@ -154,13 +197,29 @@ public class RandomizedPanel extends ExperimentPanel {
     
     int idx = plotSelection.getSelectedIndex();
     
+    String inset = getInsetString();
+    TextTitle result = new TextTitle();
+    result.setText( inset );
+    result.setBackgroundPaint(Color.white);
+    XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.02, result,
+        RectangleAnchor.BOTTOM_RIGHT);
+    
+    
     argChart = buildChart(argSeries);
     argChart.getXYPlot().setRangeAxis(degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
+    XYPlot xyp = argChart.getXYPlot();
+    xyp.clearAnnotations();
+    xyp.addAnnotation(xyt);
+    
     magChart = buildChart(magSeries);
     magChart.getXYPlot().setRangeAxis(yAxis);
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    
+    xyp = magChart.getXYPlot();
+    xyp.clearAnnotations();
+    xyp.addAnnotation(xyt);
 
     if (idx == 0) {
       chart = magChart;
@@ -277,7 +336,5 @@ public class RandomizedPanel extends ExperimentPanel {
   public int panelsNeeded() {
     return 2;
   }
-  
-
 
 }

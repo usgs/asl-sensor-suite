@@ -26,6 +26,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import org.apache.log4j.BasicConfigurator;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -97,6 +98,7 @@ public class SensorSuite extends JPanel
     //creating and showing this application's GUI.
     SwingUtilities.invokeLater(new Runnable() {
       public void run() {
+        BasicConfigurator.configure();
         //Turn off metal's use of bold fonts
         // UIManager.put("swing.boldMetal", Boolean.FALSE); 
         createAndShowGUI();
@@ -172,7 +174,7 @@ public class SensorSuite extends JPanel
     
     // now add the buttons
     savePDF = new JButton("Save input and output plots (PDF)");
-    savePDF.setEnabled(true);
+    savePDF.setEnabled(false);
     savePDF.addActionListener(this);
     this.add(savePDF, c);
     c.gridx += 1;
@@ -313,24 +315,38 @@ public class SensorSuite extends JPanel
    */
   public void plotsToPDF(File file) throws IOException {
     
-    BufferedImage toFile = getCompiledImage();
+    ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+    int inPlotCount = ep.plotsToShow();
+    
+    // BufferedImage toFile = getCompiledImage();
     
     // START OF UNIQUE CODE FOR PDF CREATION HERE
-    PDDocument pdf = new PDDocument();
-    PDRectangle rec = 
-        new PDRectangle( (float) toFile.getWidth(), 
-                         (float) toFile.getHeight() );
-    PDPage page = new PDPage(rec);
-    pdf.addPage(page);
-    PDImageXObject  pdImageXObject = 
-        LosslessFactory.createFromImage(pdf, toFile);
-    PDPageContentStream contentStream = 
-        new PDPageContentStream(pdf, page, 
-                                PDPageContentStream.AppendMode.OVERWRITE, 
-                                true, false);
-    contentStream.drawImage( pdImageXObject, 0, 0, 
-        toFile.getWidth(), toFile.getHeight() );
-    contentStream.close();
+    PDDocument pdf = ep.savePDFResults( new PDDocument() );
+    
+    if (inPlotCount > 0) {
+      
+      int inHeight = inputPlots.getImageHeight(inPlotCount) * 2;
+      int width = 960; // TODO: set as global static variable somewhere
+      
+      BufferedImage toFile = 
+          inputPlots.getAsImage(width, inHeight, inPlotCount);
+      
+      PDRectangle rec = 
+          new PDRectangle( (float) toFile.getWidth(), 
+                           (float) toFile.getHeight() );
+      PDPage page = new PDPage(rec);
+      pdf.addPage(page);
+      PDImageXObject  pdImageXObject = 
+          LosslessFactory.createFromImage(pdf, toFile);
+      PDPageContentStream contentStream = 
+          new PDPageContentStream(pdf, page, 
+                                  PDPageContentStream.AppendMode.OVERWRITE, 
+                                  true, false);
+      contentStream.drawImage( pdImageXObject, 0, 0, 
+          toFile.getWidth(), toFile.getHeight() );
+      contentStream.close();
+    }
+
     pdf.save( file );
     pdf.close();
   }
@@ -374,7 +390,9 @@ public class SensorSuite extends JPanel
       inputPlots.showDataNeeded( ep.panelsNeeded() );
       DataStore ds = inputPlots.getData();
       boolean canGenerate = ep.hasEnoughData(ds);
+      boolean isSet = ep.hasRun();
       generate.setEnabled(canGenerate);
+      savePDF.setEnabled(canGenerate && isSet);
     }
   }
 

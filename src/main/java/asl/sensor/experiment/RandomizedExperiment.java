@@ -48,6 +48,7 @@ import asl.sensor.utils.FFTResult;
  */
 public class RandomizedExperiment extends Experiment {
 
+  private List<Complex> inputPoles;
   private List<Complex> fitPoles;
   private boolean lowFreq; // fit the low- or high-frequency poles?
   private InstrumentResponse fitResponse;
@@ -83,6 +84,7 @@ public class RandomizedExperiment extends Experiment {
     DataBlock sensorOut = ds.getBlock(sensorOutIndex);
     fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIndex) );
     
+    inputPoles = new ArrayList<Complex>( fitResponse.getPoles() );
     fitPoles = new ArrayList<Complex>( fitResponse.getPoles() );
     
     // get the plots of the calculated response from deconvolution
@@ -463,6 +465,26 @@ public class RandomizedExperiment extends Experiment {
     
     return new Pair<RealVector, RealMatrix>(result, jMat);
     
+  }
+  
+  /**
+   * Get poles used in input response, for output in plot or 
+   * @return
+   */
+  public List<Complex> getInitialPoles() {
+    if (lowFreq) {
+      return inputPoles.subList(0, 2);
+    } else {
+      return inputPoles.subList( 2, inputPoles.size() );
+    }
+  }
+  
+  public List<Complex> getFitPoles() {
+    if (lowFreq) {
+      return fitPoles.subList(0, 2);
+    } else {
+      return fitPoles.subList( 2, inputPoles.size() );
+    }
   }
 
   @Override

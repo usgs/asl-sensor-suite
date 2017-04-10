@@ -51,12 +51,8 @@ public class ResponsePanel extends ExperimentPanel {
   public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   
-  private boolean set;
-  
   public ResponsePanel(ExperimentEnum exp) {
     super(exp);
-    
-    set = false;
     
     for (int i = 0; i < 3; ++i) {
       channelType[i] = "Response data (SEED data not used)";
@@ -173,6 +169,7 @@ public class ResponsePanel extends ExperimentPanel {
     expResult.setData(ds);
     
     set = true;
+    
     List<XYSeriesCollection> xysc = expResult.getData();
     XYSeriesCollection magSeries = xysc.get(0);
     XYSeriesCollection argSeries = xysc.get(1);

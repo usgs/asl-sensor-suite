@@ -157,6 +157,8 @@ public class NoisePanel extends ExperimentPanel {
   @Override
   public void updateData(final DataStore ds) {
     
+    set = true;
+    
     boolean freqSpace = freqSpaceBox.isSelected();
     
     updateDriver(ds, freqSpace);

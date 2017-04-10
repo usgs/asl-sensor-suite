@@ -138,11 +138,7 @@ public class NoiseNinePanel extends NoisePanel {
   @Override
   public void updateData(final DataStore ds) {
     
-
-    if (ds.numberFullySet() < 9) {
-      displayErrorMessage("INSUFFICIENT DATA LOADED");
-      return;
-    }
+    set = true;
     
     boolean freqSpace = freqSpaceBox.isSelected();
     

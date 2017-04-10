@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,6 +16,9 @@ import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -164,22 +168,7 @@ implements ChangeListener {
     
     if ( e.getSource() == recalcButton ) {
       
-      // we need to get the values of the sliders again, convert to frequency
-      int leftPos = leftSlider.getValue();
-      double lowPrd = mapSliderToPeriod(leftPos);
-      int rightPos = rightSlider.getValue();
-      double highPrd = mapSliderToPeriod(rightPos);
-      
-      double[] meanAndStdDev = 
-          ((GainExperiment) expResult).getStatsFromFreqs(
-              idx0, idx1, 1/lowPrd, 1/highPrd);
-      
-      double mean = meanAndStdDev[0];
-      double sDev = meanAndStdDev[1];
-      double refGain = meanAndStdDev[2];
-      double calcGain = meanAndStdDev[3];
-      
-      setTitle(mean, sDev, refGain, calcGain);
+      setTitle();
       
       recalcButton.setEnabled(false);
       
@@ -301,23 +290,10 @@ implements ChangeListener {
    * @param mean Calculated mean value
    * @param sDev Calculated standard deviation value
    */
-  private void 
-  setTitle(double mean, double sDev, double refGain, double calcGain) {
+  private void setTitle() {
     XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
     TextTitle result = new TextTitle();
-    StringBuilder sb = new StringBuilder();
-    sb.append("ratio: ");
-    sb.append(mean);
-    sb.append("\n");
-    sb.append("sigma: ");
-    sb.append(sDev);
-    sb.append("\n");
-    sb.append("ref. gain: ");
-    sb.append(refGain);
-    sb.append("\n");
-    sb.append("** CALCULATED GAIN: ");
-    sb.append(calcGain);
-    String temp = sb.toString();
+    String temp = getInsetString();
     result.setText(temp);
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
@@ -375,6 +351,8 @@ implements ChangeListener {
   
   @Override
   public void updateData(final DataStore ds) {
+    
+    set = true;
     
     setDataNames(ds);
 
@@ -473,18 +451,50 @@ implements ChangeListener {
     rightSlider.setEnabled(true);
 
     // lastly, display the calculated statistics in a textbox in the corner
-    double mean = gainStatistics[0];
-    double sDev = gainStatistics[1];
-    double refGain = gainStatistics[2];
-    double calcGain = gainStatistics[3];
-
-    setTitle(mean, sDev, refGain, calcGain);
+    setTitle();
 
   }
 
   @Override
   public int panelsNeeded() {
     return 2;
+  }
+  
+  @Override
+  public String getInsetString() {
+    int leftPos = leftSlider.getValue();
+    double lowPrd = mapSliderToPeriod(leftPos);
+    int rightPos = rightSlider.getValue();
+    double highPrd = mapSliderToPeriod(rightPos);
+    
+    // remove old bars and draw the new ones
+    // setDomainMarkers(lowPrd, highPrd, xyp);
+    
+    int idx0 = firstSeries.getSelectedIndex();
+    int idx1 = secondSeries.getSelectedIndex();
+    
+    double[] meanAndStdDev = 
+        ((GainExperiment) expResult).getStatsFromFreqs(
+            idx0, idx1, 1/lowPrd, 1/highPrd);
+    
+    double mean = meanAndStdDev[0];
+    double sDev = meanAndStdDev[1];
+    double refGain = meanAndStdDev[2];
+    double calcGain = meanAndStdDev[3];
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append("ratio: ");
+    sb.append(mean);
+    sb.append("\n");
+    sb.append("sigma: ");
+    sb.append(sDev);
+    sb.append("\n");
+    sb.append("ref. gain: ");
+    sb.append(refGain);
+    sb.append("\n");
+    sb.append("** CALCULATED GAIN: ");
+    sb.append(calcGain);
+    return sb.toString();
   }
   
 }
