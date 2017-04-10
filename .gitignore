@@ -1,5 +1,6 @@
 # temporary data file created by program
 out.csv
+testResultImages/
 
 # Mac
 .DS_Store
@@ -153,3 +154,4 @@ local.properties
 
 # Code Recommenders
 .recommenders/
+/.gradle/
