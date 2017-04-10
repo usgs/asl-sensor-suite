@@ -206,9 +206,6 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public BufferedImage getAsImage(int height, int width) {
     
-    // TODO: fix this, need to assign chart and build chart in separate
-    // function in superclass to build this most easily imo
-    
     if (!set) {
       ChartPanel cp = new ChartPanel(chart);
       BufferedImage bi =  

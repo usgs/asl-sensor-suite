@@ -12,7 +12,6 @@ import java.util.Set;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JSlider;
-import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -44,9 +43,6 @@ public class GainPanel extends ExperimentPanel
 implements ChangeListener {
 
   
-  /**
-   * 
-   */
   private static final long serialVersionUID = 6697458429989867529L;
   private JSlider leftSlider;
   private JSlider rightSlider;
@@ -330,10 +326,7 @@ implements ChangeListener {
     xyp.addAnnotation(xyt);
   }
   
-  /**
-   * Called when one of the sliders has been adjusted, used to
-   * 
-   */
+
   @Override
   public void stateChanged(ChangeEvent e) {
     

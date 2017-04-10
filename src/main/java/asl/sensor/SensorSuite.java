@@ -172,7 +172,7 @@ public class SensorSuite extends JPanel
     
     // now add the buttons
     savePDF = new JButton("Save input and output plots (PDF)");
-    savePDF.setEnabled(true); // TODO: change this back?
+    savePDF.setEnabled(true);
     savePDF.addActionListener(this);
     this.add(savePDF, c);
     c.gridx += 1;
@@ -274,7 +274,6 @@ public class SensorSuite extends JPanel
     
     width = outPlot.getWidth();
     
-    // TODO: split this section into its own method (redundant with PNG save)
     int inHeight = inputPlots.getImageHeight(inPlotCount) * 2;
 
     int height = outPlot.getHeight();

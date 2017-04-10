@@ -8,7 +8,6 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
-import javax.swing.SwingWorker;
 
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -157,12 +156,6 @@ public class NoisePanel extends ExperimentPanel {
    */
   @Override
   public void updateData(final DataStore ds) {
-    
-    // TODO: replace with try-catch, put this check in the experiment backend?
-    if (ds.numberFullySet() < 3) {
-      displayErrorMessage("INSUFFICIENT DATA LOADED");
-      return;
-    }
     
     boolean freqSpace = freqSpaceBox.isSelected();
     

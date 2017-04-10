@@ -80,6 +80,11 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   protected Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
   
+  /**
+   * Construct a new panel, using a backend defined by the passed-in enum
+   * @param exp Experiment enum with corresponding backend for factory
+   * instantiation
+   */
   public ExperimentPanel(ExperimentEnum exp) {
     
     channelType = new String[DataStore.FILE_COUNT];

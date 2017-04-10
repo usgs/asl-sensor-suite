@@ -85,7 +85,6 @@ public class NoiseNineExperiment extends Experiment {
     double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
     System.out.println("2nd east sensor orientation found!");
     // need to offset rotation by 90 degrees -- don't want it facing north
-    // TODO: be sure that this is the correct sign for the 90-deg rotation
     
     aziStore.setData(2, north3Sensor);
     azi.setData(aziStore);
@@ -168,6 +167,11 @@ public class NoiseNineExperiment extends Experiment {
     return 9;
   }
 
+  /**
+   * Used to set the x-axis over which the PSDs / cross-powers are plotted,
+   * either frequency (Hz) units or sample-interval (s) units
+   * @param freqSpace True if the plot should use units of Hz
+   */
   public void setFreqSpace(boolean freq) {
     freqSpace = freq;    
   }

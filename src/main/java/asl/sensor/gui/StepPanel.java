@@ -78,8 +78,6 @@ public class StepPanel extends ExperimentPanel {
   @Override
   public void updateData(final DataStore ds) {
     
-    // TODO: threading?
-    
     displayInfoMessage("Running stepcal testing...");
     
     expResult.setData(ds);
@@ -96,7 +94,7 @@ public class StepPanel extends ExperimentPanel {
     double fitCorner = fit[0];
     double fitDamping = fit[1];
     
-    // TODO: will probably need to relocate some of this to its own method
+    // TODO: may want to relocate some of this to its own method
     TextTitle result = new TextTitle();
     StringBuilder sb = new StringBuilder();
     sb.append("RESP parameters\n");

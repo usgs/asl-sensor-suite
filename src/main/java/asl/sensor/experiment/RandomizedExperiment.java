@@ -72,7 +72,6 @@ public class RandomizedExperiment extends Experiment {
   
   @Override
   protected void backend(DataStore ds) {
-    // TODO Auto-generated method stub
     
     // construct response plot
     DataBlock calib = ds.getXthLoadedBlock(1);
@@ -263,7 +262,7 @@ public class RandomizedExperiment extends Experiment {
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
     double[] poleParams = optimum.getPoint().toArray();
-    List<Complex> poles = new ArrayList<Complex>(fitPoles);
+    // List<Complex> poles = new ArrayList<Complex>(fitPoles);
     List<Complex> builtPoles = new ArrayList<Complex>();
     // time to populate the poles
     for (int i = 0; i < poleParams.length; i += 2) {
@@ -473,7 +472,6 @@ public class RandomizedExperiment extends Experiment {
 
   @Override
   public int blocksNeeded() {
-    // TODO Auto-generated method stub
     return 2;
   }
 

@@ -101,7 +101,7 @@ public class TimeSeriesUtils {
     int upf = (int)(src/gcd);
     int dnf = (int)(tgt/gcd);
     
-    double higherFreq = (1. / src) * upf * ONE_HZ_INTERVAL; // TODO: check this
+    double higherFreq = (1. / src) * upf * ONE_HZ_INTERVAL;
     double lowerFreq = (1. / tgt) * ONE_HZ_INTERVAL / 2; 
       // nyquist rate of downsampled data
     
@@ -203,10 +203,8 @@ public class TimeSeriesUtils {
           } // end of loop over blockettes
           
         } catch (SeedFormatException e) {
-          // TODO Auto-generated catch block
           e.printStackTrace();
         } catch (IOException e) {
-          // TODO Auto-generated catch block
           e.printStackTrace();
         } // end of try-catch blocks for parsing an individual record
         
@@ -292,8 +290,6 @@ public class TimeSeriesUtils {
    */
   public static DataBlock getTimeSeries(String filename, String filter)
       throws FileNotFoundException {
-
-    // TODO: add gathering of data from step cal blockette (sep. function?)
     
     DataInputStream dis;
     // XYSeries xys = null;

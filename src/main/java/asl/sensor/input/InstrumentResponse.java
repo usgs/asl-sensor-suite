@@ -287,12 +287,17 @@ public class InstrumentResponse {
       parserDriver(br);
       br.close();
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
     
   }
   
+  /**
+   * Read in each line of a response and parse and store relevant lines
+   * according to the hex value at the start of the line
+   * @param br reader of a given file to be parse
+   * @throws IOException if the reader cannot read the given file
+   */
   private void parserDriver(BufferedReader br) throws IOException {
     
     String line = br.readLine();
@@ -332,15 +337,14 @@ public class InstrumentResponse {
             transferType = TransferFunction.LINEAR;
             break;
           default:
-            // TODO: want to make sure that we're setting this right
-            // because if a Fourier is specified, we should set to LAPLACIAN
+            // defaulting to LAPLACIAN if type is different from a or b
+            // which is likely to be more correct
             transferType = TransferFunction.LAPLACIAN;
           }
           break;
         case "B053F05":
           // parse the units of the transfer function (usually velocity)
           // first *word* of the third component of words
-          // TODO support more unit types
           String[] unitString = words[2].split("\\s");
           String unit = unitString[0];
           switch (unit.toLowerCase()) {
@@ -456,7 +460,6 @@ public class InstrumentResponse {
       }
       respBuff.close();
     } catch (IOException e2) {
-      // TODO Auto-generated catch block
       e2.printStackTrace();
     }
     

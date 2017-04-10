@@ -32,8 +32,9 @@ public class ResponseExperiment extends Experiment {
   }
   
   /**
-   * True if the plot should use x-axis units of Hz or seconds
-   * @param freqSpace True if x-axis should use Hz units
+   * Used to set the x-axis over which the response curve is plotted,
+   * either frequency (Hz) units or sample-interval (s) units
+   * @param freqSpace True if the plot should use units of Hz
    */
   public void setFreqSpace(boolean freqSpace) {
     this.freqSpace = freqSpace;
@@ -113,7 +114,6 @@ public class ResponseExperiment extends Experiment {
 
   @Override
   public int blocksNeeded() {
-    // TODO Auto-generated method stub
     return 0;
   }
 

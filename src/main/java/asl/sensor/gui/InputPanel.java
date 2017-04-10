@@ -10,17 +10,13 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -153,6 +149,13 @@ implements ActionListener, ChangeListener {
   
   private String saveDirectory = System.getProperty("user.home");
   
+  /**
+   * Used to construct the panels for loading and displaying SEED data
+   * (as well as the corresponding response file)
+   * @param i Index of panel to be created, for getting references to the chart
+   * panel and the appropriate actionlisteners for the loaders
+   * @return composite panel of chart, loaders, and clear button
+   */
   private JPanel makeChartSubpanel(int i) {
     
     JPanel chartSubpanel = new JPanel();
@@ -496,7 +499,6 @@ implements ActionListener, ChangeListener {
             
             fireStateChanged();
           } catch (IOException e1) {
-            // TODO Auto-generated catch block
             e1.printStackTrace();
           }
         } else {
@@ -922,6 +924,12 @@ implements ActionListener, ChangeListener {
     
   }
   
+  /**
+   * Load in data for a specified SEED file, to be run in a specific thread.
+   * Because loading can be a slow operation, this runs in a background thread
+   * @param idx Index into datastore/plots this data should be loaded
+   * @param seed The JButton to passed into the fileloader
+   */
   private void loadData(final int idx, final JButton seed) {
 
     fc.setCurrentDirectory( new File(seedDirectory) );
@@ -1078,7 +1086,10 @@ implements ActionListener, ChangeListener {
     }
   }
 
-
+  /**
+   * Show the number of panels needed to load in data for a specific experiment
+   * @param panelsNeeded Number of panels to show
+   */
   public void showDataNeeded(int panelsNeeded) {
     
     VScrollPanel cont = new VScrollPanel();
@@ -1120,6 +1131,11 @@ implements ActionListener, ChangeListener {
     inputScrollPane.setPreferredSize( cont.getPreferredSize() );
   }
   
+  /**
+   * Used to get labels for each plot to idenitify what data they need to
+   * contain in order for an experiment to have enough data to run
+   * @param channels List of strings to be used as panel title
+   */
   public void setChannelTypes(String[] channels) {
     
     int len = Math.min(channels.length, channelType.length);

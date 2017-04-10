@@ -254,8 +254,6 @@ public class GainExperiment extends Experiment {
   public double[] getStatsFromFreqs(int idx0, int idx1, 
       double lowFreq, double highFreq) {
     
-    // TODO: check indices are valid
-    
     FFTResult plot0 = fftResults.get(idx0);
     
     double[] freqBoundaries = new double[2];

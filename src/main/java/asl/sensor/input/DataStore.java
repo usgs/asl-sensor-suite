@@ -8,11 +8,6 @@ import org.jfree.data.xy.XYSeries;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.TimeSeriesUtils;
 
-// TODO (BIG, BIG IMPORTANT TODO) implement locking for file loading and
-// for PSD calculation
-// need to lock for file read-in to prevent race conditions on time boundary
-// need to lock on PSD to prevent redundant calculation thereof
-
 /**
  * Holds the inputted data from miniSEED files both as a simple struct
  * (see DataBlock) and as a plottable format for the DataPanel.
@@ -51,12 +46,10 @@ public class DataStore {
   private DataBlock[] dataBlockArray;
   private InstrumentResponse[] responses;
   private XYSeries[] outToPlots; // used to cache graph data
-  FFTResult[] powerSpectra; // used to cache PSD results to speed up calculation
   
   // these are used to check to make sure data has been loaded
   private boolean[] thisBlockIsSet;
   private boolean[] thisResponseIsSet;
-  private boolean[] thisPSDIsCalculated;
   
   /**
    * Instantiate the collections, including empty datasets to be sent to
@@ -66,15 +59,12 @@ public class DataStore {
    dataBlockArray = new DataBlock[FILE_COUNT];
    responses = new InstrumentResponse[FILE_COUNT];
    outToPlots = new XYSeries[FILE_COUNT];
-   powerSpectra = new FFTResult[FILE_COUNT];
    thisBlockIsSet = new boolean[FILE_COUNT];
    thisResponseIsSet = new boolean[FILE_COUNT];
-   thisPSDIsCalculated = new boolean[FILE_COUNT];
    for (int i = 0; i < FILE_COUNT; ++i) {
      outToPlots[i] = new XYSeries("(EMPTY) " + i);
      thisBlockIsSet[i] = false;
      thisResponseIsSet[i] = false;
-     thisPSDIsCalculated[i] = false;
    }
   }
   
@@ -94,10 +84,8 @@ public class DataStore {
   public DataStore(DataStore ds, int upperBound) {
     dataBlockArray = new DataBlock[FILE_COUNT];
     responses = new InstrumentResponse[FILE_COUNT];
-    powerSpectra = new FFTResult[FILE_COUNT];
     thisBlockIsSet = new boolean[FILE_COUNT];
     thisResponseIsSet = new boolean[FILE_COUNT];
-    thisPSDIsCalculated = new boolean[FILE_COUNT];
     outToPlots = new XYSeries[FILE_COUNT];
     boolean[] setBlocks = ds.dataIsSet();
     boolean[] setResps = ds.responsesAreSet();
@@ -111,14 +99,6 @@ public class DataStore {
         responses[i] = ds.getResponse(i);
         thisResponseIsSet[i] = true;
       }
-      if (setBlocks[i] && setResps[i]) {
-        thisPSDIsCalculated[i] = ds.isPSDSet(i);
-          if (thisPSDIsCalculated[i]) {
-            powerSpectra[i] = ds.getPSD(i);
-          }
-      } else {
-        thisPSDIsCalculated[i] = false;
-      }
     }
   }
   
@@ -131,18 +111,6 @@ public class DataStore {
    */
   public DataStore(DataStore ds, long start, long end, int upperBound) {
     this(ds);
-    for (int i = 0; i < upperBound; ++i) {
-      if (thisPSDIsCalculated[i]) {
-        DataBlock db = dataBlockArray[i];
-        long blockStart = db.getStartTime();
-        long blockEnd = db.getEndTime();
-        if (start == blockStart && end == blockEnd) {
-          powerSpectra[i] = ds.getPSD(i);
-        }
-      } else {
-        thisPSDIsCalculated[i] = false;
-      }
-    }
     
     this.trimAll(start, end);
   }
@@ -175,21 +143,6 @@ public class DataStore {
    */
   public boolean[] dataIsSet() {
     return thisBlockIsSet;
-  }
-  
-  /**
-   * Returns the power-spectral density for each data set loaded in this object
-   * @return Array of PSD results, each an object holding a complex array of
-   * frequency values and a double arrays of the frequency at each index in that
-   * complex array
-   */
-  public FFTResult[] getAllPSDs() {
-    for (int i = 0; i < FILE_COUNT; ++i) {
-      if (thisBlockIsSet[i] && thisResponseIsSet[i]) {
-        getPSD(i); // calc psd if it's not yet done (but we need data in first)
-      }
-    }
-    return powerSpectra;
   }
   
   /**
@@ -228,20 +181,9 @@ public class DataStore {
    * double array of the frequencies
    */
   public synchronized FFTResult getPSD(int idx) {
-    if (!thisPSDIsCalculated[idx]) {
-      // need both a response and source data
-      if (!thisBlockIsSet[idx] || !thisResponseIsSet[idx]) {
-        throw new RuntimeException("Not enough data loaded in");
-      } else {
-        // have enough data but need to calculate before returning
-        DataBlock db = dataBlockArray[idx];
-        InstrumentResponse ir = responses[idx];
-        powerSpectra[idx] = FFTResult.crossPower(db, db, ir, ir);
-        thisPSDIsCalculated[idx] = true;
-      }
-    }
-
-    return powerSpectra[idx];
+    DataBlock db = dataBlockArray[idx];
+    InstrumentResponse ir = responses[idx];
+    return FFTResult.crossPower(db, db, ir, ir);
   }
   
   /**
@@ -330,17 +272,6 @@ public class DataStore {
   }
   
   /**
-   * Checks if a PSD has been calculated for the object at this index
-   * used mainly to see if a PSD still needs to be calculated or if a
-   * cached result can be returned
-   * @param idx Index of the data to see if the PSD has been calculated
-   * @return True if there is a PSD calculated in an 
-   */
-  public boolean isPSDSet(int idx) {
-    return thisPSDIsCalculated[idx];
-  }
-  
-  /**
    * Gives the count of indices where both a miniseed and response are loaded
    * @return the number of entries of miniseeds with a matching response
    */
@@ -378,7 +309,6 @@ public class DataStore {
     responses[idx] = null;
     outToPlots[idx] = null;
     thisBlockIsSet[idx] = false;
-    thisPSDIsCalculated[idx] = false;
     thisResponseIsSet[idx] = false;
   }
   
@@ -411,8 +341,6 @@ public class DataStore {
   public void setData(int idx, DataBlock db) {
     thisBlockIsSet[idx] = true;
     dataBlockArray[idx] = db;
-    thisPSDIsCalculated[idx] = false;
-    powerSpectra[idx] = null;
     outToPlots[idx] = db.toXYSeries();
   }
   
@@ -428,11 +356,8 @@ public class DataStore {
       DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
       thisBlockIsSet[idx] = true;
       dataBlockArray[idx] = xy;
-      thisPSDIsCalculated[idx] = false;
-      powerSpectra[idx] = null;
       outToPlots[idx] = xy.toXYSeries();
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
 
@@ -470,10 +395,7 @@ public class DataStore {
     try {
       responses[idx] = new InstrumentResponse(filepath);
       thisResponseIsSet[idx] = true;
-      thisPSDIsCalculated[idx] = false;
-      powerSpectra[idx] = null;
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
@@ -486,8 +408,6 @@ public class DataStore {
   public void setResponse(int idx, InstrumentResponse ir) {
     responses[idx] = ir;
     thisResponseIsSet[idx] = true;
-    thisPSDIsCalculated[idx] = false;
-    powerSpectra[idx] = null;
   }
   
   /**
@@ -547,6 +467,7 @@ public class DataStore {
   /**
    * Trims this object's data blocks to hold only points in their common range
    * WARNING: assumes each plot has its data taken at the same point in time
+   * (that is, that a common time range exists to be trimmed to)
    */
   public void trimToCommonTime() {
     trimToCommonTime(FILE_COUNT);

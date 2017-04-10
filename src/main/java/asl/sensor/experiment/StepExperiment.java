@@ -169,11 +169,20 @@ public class StepExperiment extends Experiment{
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
         new EvaluationRmsChecker(1E-50, 1E-50);
-        
+    
+    // used to fit parameters
+    MultivariateJacobianFunction jbn = new MultivariateJacobianFunction() {
+      
+      public Pair<RealVector, RealMatrix> value(RealVector point) {
+          return jacobian(point);
+      }
+      
+    };
+    
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(startVector).
         target(observedComponents).
-        model( getJacobianFunction() ).
+        model( jbn ).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
@@ -325,22 +334,6 @@ public class StepExperiment extends Experiment{
   public double[] getFitCornerAndDamping() {
     return new double[]{fCorr, hCorr, fitResid};
   }
-  
-  /**
-   * Passes a handle to this object's jacobian function, used to get the
-   * partial-differential values and current solution at a given point
-   * for the Commons curve-fitting functions
-   * @return jacobian function according to the Apache Commons fitting library
-   */
-  public MultivariateJacobianFunction getJacobianFunction() {
-    return new MultivariateJacobianFunction() {
-      private static final long serialVersionUID = -8673650298627399464L;
-      public Pair<RealVector, RealMatrix> value(RealVector point) {
-          return jacobian(point);
-      }
-    };
-  }
-  
   
   /**
    * Computes the forward change in value of the calculations for response

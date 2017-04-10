@@ -30,9 +30,6 @@ public abstract class Experiment {
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
   
-  // TODO: include axis scale definitions constructed along with axis titles
-  // (i.e., logarithmic, etc.)
-  
   /**
    * Helper function to add data from a datastore object (the PSD calculation)
    * into an XYSeriesCollection to eventually be plotted
@@ -66,7 +63,7 @@ public abstract class Experiment {
           continue;
         }
 
-        // TODO: is this right (seems to be)
+        // unit conversion with response
         Complex temp = resultPSD[j].multiply(Math.pow(2*Math.PI*freqs[j],4));
 
         if (freqSpace) {

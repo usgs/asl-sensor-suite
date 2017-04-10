@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
-import org.apache.commons.math3.fitting.leastsquares.GaussNewtonOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
@@ -18,7 +16,6 @@ org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.optim.ConvergenceChecker;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -64,6 +61,10 @@ public class AzimuthExperiment extends Experiment {
 
   }
   
+  /**
+   * Set the angle offset for the reference sensor (degrees from north)
+   * @param newOffset Degrees from north that the reference sensor points
+   */
   public void setOffset(double newOffset) {
     offset = newOffset;
   }

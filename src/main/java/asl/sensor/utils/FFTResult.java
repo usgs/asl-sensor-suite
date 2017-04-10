@@ -547,7 +547,7 @@ public class FFTResult {
     }
     
     int singleSide = padding / 2 + 1;
-    double deltaFreq = 1. / (padding * period); // TODO: check this line
+    double deltaFreq = 1. / (padding * period);
     
     Complex[] powSpectDens = new Complex[singleSide];
     double wss = 0;
@@ -590,7 +590,7 @@ public class FFTResult {
       demeanInPlace(data1Range);
       detrend(data1Range);
       wss = cosineTaper(data1Range, TAPER_WIDTH);
-      // TODO: check that we only need the last value of wss
+      // presumably we only need the last value of wss
       
       if (!sameData) {
         demeanInPlace(data2Range);
@@ -646,7 +646,7 @@ public class FFTResult {
     
     // normalization time!
     
-    double psdNormalization = 2.0 * period / padding; // TODO: check this line
+    double psdNormalization = 2.0 * period / padding;
     double windowCorrection = wss / (double) range;
     // it only uses the last value of wss, but that was how the original
     // code was
