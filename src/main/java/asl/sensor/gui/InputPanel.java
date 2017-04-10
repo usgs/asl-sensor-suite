@@ -95,6 +95,8 @@ implements ActionListener, ChangeListener {
   public static final int IMAGE_HEIGHT = 240;
   public static final int IMAGE_WIDTH = 480;
   
+  public static final int MAX_UNSCROLLED = 4;
+  
   public static final int FILE_COUNT = DataStore.FILE_COUNT;
   
   private static final int MARGIN = 10; // min space of the two sliders
@@ -209,9 +211,12 @@ implements ActionListener, ChangeListener {
     gbc.gridy += 1;
     chartSubpanel.add(chartPanels[i], gbc);
     
-    Dimension d = chartPanels[i].getPreferredSize();
-    d.setSize( d.getWidth() / 1.5, d.getHeight() / 1.5 );
-    chartPanels[i].setPreferredSize(d);
+
+    // Temoved a line to resize the chartpanels
+    // This made sense before switching to gridbaglayout, but since that
+    // tries to fill space with whatever panels it can, we can just get rid
+    // of the code to do that. This also fixes the issue with the text boxes
+    // resizing -- just let the charts fill as much space as they can instead
     
     gbc.fill = GridBagConstraints.BOTH;
     gbc.gridx = 1;
@@ -451,35 +456,10 @@ implements ActionListener, ChangeListener {
       
       if ( e.getSource() == resp ) {
         // don't need a new thread because resp loading is pretty prompt
-        Set<String> respFilenames = new HashSet<String>();
-        ClassLoader cl = InputPanel.class.getClassLoader();
         
-        // there's no elegant way to extract responses other than to
-        // load in their names from a list and then grab them as available
-        // correspondingly, this means adding response files to this program
-        // requires us to add their names to this file
-        // There may be other possibilities but they are more complex and
-        // tend not to work the same way between IDE and launching a jar
+        Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
         
-        InputStream respRead = cl.getResourceAsStream("responses.txt");
-        BufferedReader respBuff = 
-            new BufferedReader( new InputStreamReader(respRead) );
-
-        try {
-          String name;
-          name = respBuff.readLine();
-          while (name != null) {
-            respFilenames.add(name);
-            name = respBuff.readLine();
-          }
-          respBuff.close();
-        } catch (IOException e2) {
-          // TODO Auto-generated catch block
-          e2.printStackTrace();
-        }
-        
-        List<String> names = 
-            new ArrayList<String>(respFilenames);
+        List<String> names = new ArrayList<String>(respFilenames);
         
         String custom = "Load custom response...";
         
@@ -501,15 +481,14 @@ implements ActionListener, ChangeListener {
         }
         
         if ( respFilenames.contains(resultStr) ) {
-          // TODO: load response mappings (need responses first)
+          // final used here in the event of thread weirdness
           final String fname = resultStr;
-          InputStream is = cl.getResourceAsStream(fname);
-          BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
           try {
-            InstrumentResponse ir = new InstrumentResponse(fr, resultStr);
+            InstrumentResponse ir = 
+                InstrumentResponse.loadEmbeddedResponse(fname);
             ds.setResponse(i, ir);
             zooms.setResponse(i, ir);
-            respFileNames[i].setText(resultStr);
+            respFileNames[i].setText( ir.getName() );
             clear.setEnabled(true);
             clearAll.setEnabled(true);
             
@@ -1133,7 +1112,7 @@ implements ActionListener, ChangeListener {
     
     // using this test means the panel doesn't try to scroll when it's
     // only got a few inputs to deal with, when stuff is still pretty readable
-    cont.setScrollableTracksViewportHeight(activePlots <= 4);
+    cont.setScrollableTracksViewportHeight(activePlots <= MAX_UNSCROLLED);
     
     inputScrollPane.getViewport().setView(cont);
     inputScrollPane.setPreferredSize( cont.getPreferredSize() );

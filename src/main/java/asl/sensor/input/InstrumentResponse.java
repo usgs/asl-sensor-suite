@@ -5,14 +5,20 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
+
+import asl.sensor.gui.InputPanel;
 
 /**
  * This class is used to read in and store data from instrument response files
@@ -418,6 +424,58 @@ public class InstrumentResponse {
 
   public void setPoles(List<Complex> poleList) {
     poles = poleList;
+  }
+  
+  /**
+   * Get list of all responses embedded into the program, derived from the
+   * responses.txt file in the resources folder
+   * @return Set of strings representing response filenames
+   */
+  public static Set<String> parseInstrumentList() {
+    
+    Set<String> respFilenames = new HashSet<String>();
+    ClassLoader cl = InstrumentResponse.class.getClassLoader();
+    
+    // there's no elegant way to extract responses other than to
+    // load in their names from a list and then grab them as available
+    // correspondingly, this means adding response files to this program
+    // requires us to add their names to this file
+    // There may be other possibilities but they are more complex and
+    // tend not to work the same way between IDE and launching a jar
+    
+    InputStream respRead = cl.getResourceAsStream("responses.txt");
+    BufferedReader respBuff = 
+        new BufferedReader( new InputStreamReader(respRead) );
+
+    try {
+      String name;
+      name = respBuff.readLine();
+      while (name != null) {
+        respFilenames.add(name);
+        name = respBuff.readLine();
+      }
+      respBuff.close();
+    } catch (IOException e2) {
+      // TODO Auto-generated catch block
+      e2.printStackTrace();
+    }
+    
+    return respFilenames;
+  }
+  
+  /**
+   * Get one of the response files embedded in the program
+   * @return response file embedded into the program
+   * @throws IOException If no file with the given name exists (this may happen
+   * if a file listed in the responses.txt file does not exist in that location
+   * which means it was likely improperly modified or a response file deleted)
+   */
+  public static InstrumentResponse loadEmbeddedResponse(String fname) 
+      throws IOException {
+    ClassLoader cl = InputPanel.class.getClassLoader();
+    InputStream is = cl.getResourceAsStream(fname);
+    BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
+    return new InstrumentResponse(fr, fname);
   }
   
 }
