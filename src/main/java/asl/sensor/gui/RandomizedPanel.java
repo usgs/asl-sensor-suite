@@ -201,13 +201,13 @@ public class RandomizedPanel extends ExperimentPanel {
     TextTitle result = new TextTitle();
     result.setText( inset );
     result.setBackgroundPaint(Color.white);
-    XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.02, result,
-        RectangleAnchor.BOTTOM_RIGHT);
-    
-    
+
     argChart = buildChart(argSeries);
     argChart.getXYPlot().setRangeAxis(degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    
+    XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
+            RectangleAnchor.TOP_RIGHT);
     
     XYPlot xyp = argChart.getXYPlot();
     xyp.clearAnnotations();
@@ -216,6 +216,9 @@ public class RandomizedPanel extends ExperimentPanel {
     magChart = buildChart(magSeries);
     magChart.getXYPlot().setRangeAxis(yAxis);
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    
+    xyt = new XYTitleAnnotation(0.98, 0.02, result,
+        RectangleAnchor.BOTTOM_RIGHT);
     
     xyp = magChart.getXYPlot();
     xyp.clearAnnotations();
