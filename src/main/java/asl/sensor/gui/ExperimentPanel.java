@@ -9,12 +9,15 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -434,6 +437,37 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public PDDocument saveInsetDataText(PDDocument pdf) throws IOException {
 
     String toWrite = getInsetString();
+    
+    StringBuilder sb = new StringBuilder(toWrite);
+    sb.append('\n');
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("Y.DDD.HH:mm:ss");
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    
+    sb.append("Time of report generation:\n");
+    sb.append( sdf.format( cCal.getTime() ) );
+    sb.append('\n');
+    
+    long startTime = expResult.getStart();
+    long endTime = expResult.getEnd();
+    if ( !(startTime == 0L && endTime == 0L) ) {
+      cCal.setTimeInMillis( startTime / 1000 );
+      
+      sb.append("Data start time:\n");
+      sb.append( sdf.format( cCal.getTime() ) );
+      sb.append('\n');
+      
+      cCal.setTimeInMillis( endTime / 1000 );
+      
+      sb.append("Data end time:\n");
+      sb.append( sdf.format( cCal.getTime() ) );
+      sb.append('\n');
+    }
+    
+    toWrite = sb.toString();
+    
     if ( toWrite.length() > 0 ) {
       PDPage page = new PDPage();
       pdf.addPage(page);
@@ -487,7 +521,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
       contentStream.setFont(pdfFont, fontSize);
       contentStream.newLineAtOffset(startX, startY);
       for (String line : lines) {
-        System.out.println(line);
         contentStream.showText(line);
         contentStream.newLineAtOffset(0, -leading);
       }

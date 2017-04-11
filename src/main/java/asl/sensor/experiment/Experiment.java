@@ -30,6 +30,29 @@ public abstract class Experiment {
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
   
+  long start;
+  long end;
+  
+  public Experiment() {
+    start = 0L; end = 0L;
+  }
+  
+  /**
+   * Get the start time of the data sent into this experiment
+   * @return Start time, in microseconds
+   */
+  public long getStart() {
+    return start;
+  }
+  
+  /**
+   * Get the end time of the data sent into this experiment
+   * @return End time, in microseconds
+   */
+  public long getEnd() {
+    return end;
+  }
+  
   /**
    * Helper function to add data from a datastore object (the PSD calculation)
    * into an XYSeriesCollection to eventually be plotted
@@ -116,11 +139,16 @@ public abstract class Experiment {
     if ( hasEnoughData(ds) && ( blocksNeeded() == 0 ) ) {
       // prevent null issue 
       xySeriesData = new ArrayList<XYSeriesCollection>();
+      start = 0L;
+      end = 0L;
       backend(ds);
       return;
     }
     
     final DataBlock db = ds.getXthLoadedBlock(1);
+    
+    start = db.getStartTime();
+    end = db.getEndTime();
 
     long interval = db.getInterval();
     
