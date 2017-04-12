@@ -53,12 +53,14 @@ public class RandomizedExperiment extends Experiment {
   private boolean lowFreq; // fit the low- or high-frequency poles?
   private InstrumentResponse fitResponse;
   private double[] freqs;
+  private int oneHzIdx;
   
   private static final double DELTA = 1E-7;
   
   public RandomizedExperiment() {
     super();
     lowFreq = false;
+    oneHzIdx = 0;
   }
   
   /**
@@ -107,7 +109,7 @@ public class RandomizedExperiment extends Experiment {
     
     // trim down the frequency array to the specified range
     // we use a list because the lower bound is not fixed by index
-    int oneHzIdx = 0;
+    
     // use variable-size data structures to prevent issues with rounding
     // based on calculation of where minimum index should exist
     List<Double> freqList = new LinkedList<Double>();
@@ -151,6 +153,7 @@ public class RandomizedExperiment extends Experiment {
     double scaleBy = appResponse[oneHzIdx].abs(); // value at 1Hz, to normalize
     double angle = 0.; // angle at 1Hz, also used as a sort of normalization
     
+    // do precalculation / scaling of data
     Complex[] estimatedResponse = new Complex[len];
     for (int i = 0; i < estimatedResponse.length; ++i) {
       Complex numer = numeratorPSDVals[i];
@@ -175,6 +178,8 @@ public class RandomizedExperiment extends Experiment {
     XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. arg. [phi]");
     
+    // curve to fit poles to; first half of data is magnitudes of resp
+    // second half of data is angles of resp
     double[] observedResult = new double[2 * estimatedResponse.length];
     
     for (int i = 0; i < estimatedResponse.length; ++i) {
@@ -187,8 +192,8 @@ public class RandomizedExperiment extends Experiment {
       double phi = estValue.getArgument() - angle;
       
       double respPhi = appResponse[i].getArgument();
-
       
+      // conditional to avoid NaNs, but it's not too important
       if (freqs[i] != 0) {
         respMag.add( freqs[i], 10 * Math.log10( appResponse[i].abs() ) );
         calcMag.add( freqs[i], 10 * Math.log10(estValMag) );
@@ -197,11 +202,17 @@ public class RandomizedExperiment extends Experiment {
       }
       
       // int argIdx = i + estimatedResponse.length;
+      
+      // TODO: check that the scaling parameters, etc. are correct here
+      // this is where the target function is actually defined
       if ( Double.isNaN(estValMag) ) {
         observedResult[i] = 0;
         observedResult[argIdx] = 0;
       } else {
         observedResult[i] = 10 * Math.log10(estValMag);
+        // do scaling to make sure value is 0 at 1Hz
+        observedResult[i] -= 
+            10 * Math.log10( estimatedResponse[oneHzIdx].abs() );
         observedResult[argIdx] = phi;
       }
       // initResult[argIdx] = phi;
@@ -450,24 +461,33 @@ public class RandomizedExperiment extends Experiment {
     double[] curValue = new double[appliedCurve.length * 2];
     curValue[0] = 0.;
     curValue[appliedCurve.length] = 0.;
+    
     // System.out.println(appliedCurve[0]);
     for (int i = 0; i < appliedCurve.length; ++i) {
       
       int argIdx = appliedCurve.length + i;
       
       if (freqs[i] == 0.) {
+        // this would be a divide by 0 error, let's just call the result 0;
         curValue[i] = 0.;
-        continue; // this would cause a div by 0 error, don't use it 
+        curValue[argIdx] = 0.;
+        continue;
       }
+      
       Complex value = appliedCurve[i];
       value = value.divide(2 * Math.PI * freqs[i]);
       if ( value.equals(Complex.NaN) ) {
+        // this shouldn't happen, but just in case, make sure it's 0;
         System.out.println("It's NaN: " + i+"; freq: "+freqs[i]);
         curValue[i] += 0;
         curValue[argIdx] = 0;
       } else {
+        // TODO: again, make sure scaling is correct 
+        // (same scaling as fit curve)
+        
         // System.out.println(value);
         double temp = 10 * Math.log10( value.abs() );
+        temp -= 10 * Math.log10( appliedCurve[oneHzIdx].abs() );
         curValue[i] = temp / magMax;
         double argument = ( value.getArgument() - rotate ) / angMax;
         curValue[argIdx] = argument;

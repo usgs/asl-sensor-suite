@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.io.IOException;
+import java.text.DecimalFormat;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -87,6 +88,8 @@ public class StepPanel extends ExperimentPanel {
     double damping = rolloff[1];
     double fitCorner = fit[0];
     double fitDamping = fit[1];
+    
+    DecimalFormat df = new DecimalFormat("#.######");
     
     
     StringBuilder sb = new StringBuilder();
