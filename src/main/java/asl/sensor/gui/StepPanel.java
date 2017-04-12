@@ -89,23 +89,32 @@ public class StepPanel extends ExperimentPanel {
     double fitCorner = fit[0];
     double fitDamping = fit[1];
     
+    double cornerPrd = 1. / corner; 
+    double fitCornerPrd = 1. / corner;
+    
     DecimalFormat df = new DecimalFormat("#.######");
     
     
     StringBuilder sb = new StringBuilder();
     sb.append("RESP parameters\n");
-    sb.append("corner frequency: ");
-    sb.append(corner);
+    sb.append("corner frequency (Hz): ");
+    sb.append( df.format(corner) );
+    sb.append(" (");
+    sb.append(cornerPrd);
+    sb.append( " secs)");
     sb.append("\n");
     sb.append("damping: ");
-    sb.append(damping);
+    sb.append( df.format(damping) );
     sb.append("\n");
     sb.append("Best-fit parameters\n");
-    sb.append("corner frequency: ");
-    sb.append(fitCorner);
+    sb.append("corner frequency (Hz): ");
+    sb.append( df.format(fitCorner) );
+    sb.append(" (");
+    sb.append( df.format(fitCornerPrd) );
+    sb.append( " secs)");
     sb.append("\n");
     sb.append("damping: ");
-    sb.append(fitDamping);
+    sb.append( df.format(fitDamping) );
     sb.append("\n");
     return sb.toString();
     
