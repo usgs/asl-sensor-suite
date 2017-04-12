@@ -410,10 +410,9 @@ public class RandomizedExperiment extends Experiment {
     List<Complex> builtPoles = new ArrayList<Complex>();
     
     for (int i = 0; i < numVars; i += 2) {
-      // System.out.println(variables[i]+","+variables[i+1]);
       Complex c = new Complex(variables[i], variables[i+1]);
       builtPoles.add(c);
-      if ( variables[i+i] != 0. ) {
+      if ( variables[i+1] != 0. ) {
         builtPoles.add( c.conjugate() );
       }
     }
