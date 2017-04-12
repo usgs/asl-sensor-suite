@@ -339,8 +339,10 @@ public class RandomizedExperiment extends Experiment {
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
     double[] poleParams = optimum.getPoint().toArray();
+    double[] initialValues =
+        jacobian.value( initialGuess).getFirst().toArray();
     double[] fitValues = 
-        jacobian.value( initialGuess ).getFirst().toArray();
+        jacobian.value( optimum.getPoint() ).getFirst().toArray();
     
     
     System.out.println(fitPoles);
@@ -355,12 +357,17 @@ public class RandomizedExperiment extends Experiment {
     // fitResid = optimum.getRMS() * 100;
     
     Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
+    
+    XYSeries initMag = new XYSeries("Initial param (RESP in) magnitude");
+    XYSeries initArg = new XYSeries("Initial param (RESP in) arg. [phi]");
+    
     XYSeries fitMag = new XYSeries("Fit resp. magnitude");
     XYSeries fitArg = new XYSeries("Fit resp. arg. [phi]");
     
-    
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = freqs.length + i;
+      initMag.add(freqs[i], initialValues[i]);
+      initArg.add(freqs[i], initialValues[argIdx]);
       fitMag.add(freqs[i], fitValues[i]);
       fitArg.add(freqs[i], fitValues[argIdx]);
     }
@@ -382,12 +389,14 @@ public class RandomizedExperiment extends Experiment {
     // XYSeries fitMag = new XYSeries("Dummy plot a");
     // XYSeries fitArg = new XYSeries("Dummy plot b");
     XYSeriesCollection xysc = new XYSeriesCollection();
+    xysc.addSeries(initMag);
     // xysc.addSeries(respMag);
     xysc.addSeries(calcMag);
     xysc.addSeries(fitMag);
     xySeriesData.add(xysc);
     
     xysc = new XYSeriesCollection();
+    xysc.addSeries(initArg);
     // xysc.addSeries(respArg);
     xysc.addSeries(calcArg);
     xysc.addSeries(fitArg);
@@ -512,8 +521,8 @@ public class RandomizedExperiment extends Experiment {
         double temp = 10 * Math.log10( value.abs() );
         temp -= 10 * Math.log10( scaleBy.abs() );
         curValue[i] = temp;
-        if ( curValue[i] > magMax) {
-          magMax = curValue[i];
+        if ( Math.abs(curValue[i]) > magMax ) {
+          magMax = Math.abs(curValue[i]);
         }
         double argument = ( value.getArgument() - rotate );
         curValue[argIdx] = argument;
