@@ -12,6 +12,7 @@ import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem.Evaluation;
 import 
 org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import 
@@ -196,9 +197,9 @@ public class RandomizedExperiment extends Experiment {
       // conditional to avoid NaNs, but it's not too important
       if (freqs[i] != 0) {
         respMag.add( freqs[i], 10 * Math.log10( appResponse[i].abs() ) );
-        calcMag.add( freqs[i], 10 * Math.log10(estValMag) );
+        //calcMag.add( freqs[i], 10 * Math.log10(estValMag) );
         respArg.add(freqs[i], Math.toDegrees(respPhi) );
-        calcArg.add(freqs[i], Math.toDegrees(phi) );
+        //calcArg.add(freqs[i], Math.toDegrees(phi) );
       }
       
       // int argIdx = i + estimatedResponse.length;
@@ -214,6 +215,7 @@ public class RandomizedExperiment extends Experiment {
         observedResult[i] -= 
             10 * Math.log10( estimatedResponse[oneHzIdx].abs() );
         observedResult[argIdx] = phi;
+        
       }
       // initResult[argIdx] = phi;
     }
@@ -223,6 +225,7 @@ public class RandomizedExperiment extends Experiment {
     // then scale mag to [0,1] and arg to [-1, 1]
     double magMax = Double.NEGATIVE_INFINITY;
     double angMax = Double.NEGATIVE_INFINITY;
+    
     for (int i = 0; i < observedResult.length / 2; ++i) {
       int argIdx = i + (observedResult.length / 2);
       double tempMag = observedResult[i];
@@ -234,13 +237,19 @@ public class RandomizedExperiment extends Experiment {
       if (tempAng > angMax) {
         angMax = Math.abs(tempMag);
       }
+      
     }
+    
     
     for (int i = 0; i < observedResult.length / 2; ++i) {
       int argIdx = i + (observedResult.length / 2);
       observedResult[i] /= magMax;
       observedResult[argIdx] /= angMax;
+      
+      calcMag.add( freqs[i], observedResult[i]);
+      calcArg.add( freqs[i], observedResult[argIdx]);
     }
+    
     
     // now to set up a solver for the params
     double[] responseVariables;
@@ -327,6 +336,8 @@ public class RandomizedExperiment extends Experiment {
         checker(svc).
         build();
     
+    System.out.println("lsp built");
+    
     // LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     // initResid = initEval.getRMS() * 100;
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
@@ -334,6 +345,9 @@ public class RandomizedExperiment extends Experiment {
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
     double[] poleParams = optimum.getPoint().toArray();
+    double[] fitValues = 
+        jacobian.value( optimum.getPoint() ).getFirst().toArray();
+    
     
     System.out.println(fitPoles);
     
@@ -349,6 +363,15 @@ public class RandomizedExperiment extends Experiment {
     Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
     XYSeries fitMag = new XYSeries("Fit resp. magnitude");
     XYSeries fitArg = new XYSeries("Fit resp. arg. [phi]");
+    
+    for (int i = 0; i < freqs.length; ++i) {
+      int argIdx = freqs.length + i;
+      System.out.println(fitValues[i]+","+fitValues[argIdx]);
+      fitMag.add(freqs[i], fitValues[i]);
+      fitArg.add(freqs[i], fitValues[argIdx]);
+    }
+    
+    /*
     for (int i = 0; i < freqs.length; ++i) {
       // int argIdx = freqs.length + i;
       if (freqs[i] != 0) {
@@ -359,18 +382,19 @@ public class RandomizedExperiment extends Experiment {
         fitArg.add(freqs[i], argument);
       }
     }
+    */
     
     
     // XYSeries fitMag = new XYSeries("Dummy plot a");
     // XYSeries fitArg = new XYSeries("Dummy plot b");
     XYSeriesCollection xysc = new XYSeriesCollection();
-    xysc.addSeries(respMag);
+    // xysc.addSeries(respMag);
     xysc.addSeries(calcMag);
     xysc.addSeries(fitMag);
     xySeriesData.add(xysc);
     
     xysc = new XYSeriesCollection();
-    xysc.addSeries(respArg);
+    // xysc.addSeries(respArg);
     xysc.addSeries(calcArg);
     xysc.addSeries(fitArg);
     xySeriesData.add(xysc);

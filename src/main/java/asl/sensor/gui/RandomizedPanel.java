@@ -65,7 +65,7 @@ public class RandomizedPanel extends ExperimentPanel {
     channelType[1] = "Calibration output from sensor (RESP required)";
     
     yAxisTitle = "10 * log10( RESP(f) )";
-    xAxisTitle = "Frequency (f)";
+    xAxisTitle = "Frequency (Hz)";
     degreeAxisTitle = "phi(RESP(f))";
     
     xAxis = new LogarithmicAxis(xAxisTitle);
