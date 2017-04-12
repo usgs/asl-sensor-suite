@@ -234,22 +234,49 @@ public class RandomizedExperiment extends Experiment {
     // now to set up a solver for the params
     double[] responseVariables;
     if (lowFreq) {
-      responseVariables = new double[2 * 2];
-      for (int i = 0; i < responseVariables.length; i += 2) {
-        int realIdx = i;
-        int imagIdx = realIdx + 1;
-        int poleIdx = i / 2;
-        responseVariables[realIdx] = fitPoles.get(poleIdx).getReal();
-        responseVariables[imagIdx] = fitPoles.get(poleIdx).getImaginary();
-      }
+      responseVariables = new double[2];
+
+      // we only need to get one pole because the second is the complex conj.
+      // or else (unlikely) the imaginary part is zero and we have an issue
+      Complex cpx = fitPoles.get(0);
+      responseVariables[0] = cpx.getReal();
+      responseVariables[1] = cpx.getImaginary();
+      // cell [2] would be same as [0]
+      // and cell[3] would be [-1] 
     } else {
-      responseVariables = new double[( fitPoles.size() - 2 ) * 2];
+
+      int idx = 2; // starting index for non-conjugate pole counting
+      if ( fitPoles.get(0).getImaginary() == 0. ) {
+        // start at 1 if the 0th pole has no conjugate
+        idx = 1;
+      }
+      
+      // how many poles are NOT the complex conjugate of another pole?
+      // i.e., assume the following are poles in a response file
+      // 2 + 3i, 2 - 3i, 4 + 0i
+      // then this would be 2, because 2 - 3i is complex conj of 2 + 3i
+      int nonPairPoles = 0;
+      for (int i = idx ; i < fitPoles.size(); ++i) {
+        ++nonPairPoles;
+        if ( fitPoles.get(i).getImaginary() != 0. ) {
+          // if nonzero, next value is the complex conjugate of this pole
+          // so we can skip it
+          ++i;
+        }
+      }
+
+      
+      responseVariables = new double[nonPairPoles * 2];
       for (int i = 0; i < responseVariables.length; i += 2) {
         int realIdx = i;
         int imagIdx = realIdx + 1;
         int poleIdx = (i / 2) + 2; // don't include first two poles
         responseVariables[realIdx] = fitPoles.get(poleIdx).getReal();
         responseVariables[imagIdx] = fitPoles.get(poleIdx).getImaginary();
+        if (responseVariables[imagIdx] != 0) {
+          // next pole is the complex conjugate, skip it
+          i += 2;
+        }
       }
     }
     
@@ -296,13 +323,6 @@ public class RandomizedExperiment extends Experiment {
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
     double[] poleParams = optimum.getPoint().toArray();
-    // List<Complex> poles = new ArrayList<Complex>(fitPoles);
-    List<Complex> builtPoles = new ArrayList<Complex>();
-    // time to populate the poles
-    for (int i = 0; i < poleParams.length; i += 2) {
-      Complex c = new Complex(poleParams[i], poleParams[i + 1]);
-      builtPoles.add(c);
-    }
     
     System.out.println(fitPoles);
     
@@ -382,15 +402,23 @@ public class RandomizedExperiment extends Experiment {
       // System.out.println(variables[i]+","+variables[i+1]);
       Complex c = new Complex(variables[i], variables[i+1]);
       builtPoles.add(c);
+      if ( variables[i+i] != 0. ) {
+        builtPoles.add( c.conjugate() );
+      }
     }
     
     if (lowFreq) {
-      for (int i = 0; i < 2; ++i) {
+      for (int i = 0; i < builtPoles.size(); ++i) {
         poleList.set( i, builtPoles.get(i) );
       }
     } else {
-      for (int i = 0; i < poleList.size() - 2; ++i) {
-        poleList.set( i + 2, builtPoles.get(i) );
+      int offset = 2; // assume first two poles are complex conjugates
+      if ( poleList.get(0).getImaginary() == 0. ) {
+        // the first two poles are not complex conjugates
+        offset = 1;
+      }
+      for (int i = 0; i < poleList.size() - offset; ++i) {
+        poleList.set( i + offset, builtPoles.get(i) );
       }
     }
     
@@ -419,35 +447,35 @@ public class RandomizedExperiment extends Experiment {
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     
     // array is magnitudes, then arguments of complex number
-    double[] mag = new double[appliedCurve.length * 2];
-    mag[0] = 0.;
-    mag[appliedCurve.length] = 0.;
+    double[] curValue = new double[appliedCurve.length * 2];
+    curValue[0] = 0.;
+    curValue[appliedCurve.length] = 0.;
     // System.out.println(appliedCurve[0]);
     for (int i = 0; i < appliedCurve.length; ++i) {
       
       int argIdx = appliedCurve.length + i;
       
       if (freqs[i] == 0.) {
-        mag[i] = 0.;
+        curValue[i] = 0.;
         continue; // this would cause a div by 0 error, don't use it 
       }
       Complex value = appliedCurve[i];
       value = value.divide(2 * Math.PI * freqs[i]);
       if ( value.equals(Complex.NaN) ) {
         System.out.println("It's NaN: " + i+"; freq: "+freqs[i]);
-        mag[i] += 0;
-        mag[argIdx] = 0;
+        curValue[i] += 0;
+        curValue[argIdx] = 0;
       } else {
         // System.out.println(value);
         double temp = 10 * Math.log10( value.abs() );
-        mag[i] = temp / magMax;
+        curValue[i] = temp / magMax;
         double argument = ( value.getArgument() - rotate ) / angMax;
-        mag[argIdx] = argument;
+        curValue[argIdx] = argument;
       }
       
     }
     
-    return mag;
+    return curValue;
   }
   
   /**
@@ -476,6 +504,14 @@ public class RandomizedExperiment extends Experiment {
     double[][] jacobian = new double[mag.length][numVars];
     // now take the forward difference of each value 
     for (int i = 0; i < numVars; ++i) {
+      
+      if (i % 2 == 1 && currentVars[i] == 0.) {
+        // this is a zero pole. don't bother changing it
+        for (int j = 0; j < mag.length; j++) {
+          jacobian[j][i] = 0.;
+        }
+        continue;
+      }
       
       double[] changedVars = new double[currentVars.length];
       for (int j = 0; j < currentVars.length; ++j) {
