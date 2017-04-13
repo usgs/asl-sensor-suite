@@ -236,11 +236,25 @@ public class RandomizedExperiment extends Experiment {
     
     // now, scale the values of observed result
     // scale mag to [0,1] and arg to [-1, 1]
-    
     for (int i = 0; i < observedResult.length / 2; ++i) {
       int argIdx = i + (observedResult.length / 2);
       observedResult[i] /= magMax;
       observedResult[argIdx] /= angMax;
+
+    }
+    
+
+    
+    // try yet another scaling operaation to get value at 1Hz to 0 in
+    // scaled target function for solver (solver returns 0 at that point)
+    double subtractBy = observedResult[oneHzIdx];
+    
+    for (int i = 0; i < observedResult.length / 2; ++i) {
+      int argIdx = i + (observedResult.length / 2);
+      observedResult[i] -= subtractBy;
+      
+      // TODO: get rid of this line when fitting angle and magnitude again
+      observedResult[argIdx] = 0;
       
       calcMag.add(freqs[i], observedResult[i]);
       calcArg.add(freqs[i], observedResult[argIdx]);
@@ -539,6 +553,16 @@ public class RandomizedExperiment extends Experiment {
       int argIdx = appliedCurve.length + i;
       curValue[i] /= magMax;
       curValue[argIdx] /= angMax;
+      
+      
+      // TODO: remove this line because it's just for debugging for now
+      curValue[argIdx] = 0.;
+    }
+    
+    // now make sure the one hz value is 0
+    double subtractBy = curValue[oneHzIdx];
+    for (int i = 0; i < appliedCurve.length; ++i) {
+      curValue[i] -= subtractBy;
     }
     
     return curValue;
