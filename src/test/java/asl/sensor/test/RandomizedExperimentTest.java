@@ -132,7 +132,7 @@ public class RandomizedExperimentTest {
       StringBuilder sb = new StringBuilder();
       sb.append( RandomizedPanel.getInsetString(rCal) );
       sb.append('\n');
-      sb.append( ExperimentPanel.getTimeStampString(rCal) );
+      sb.append( RandomizedPanel.getTimeStampString(rCal) );
       sb.append('\n');
       sb.append("RESPONSE USED:");
       sb.append('\n');

@@ -183,7 +183,7 @@ public class NoiseExperiment extends Experiment {
   public String getResponseNames() {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < responseNames.length; ++i) {
-      sb.append(i);
+      sb.append(i + 1);
       sb.append(": ");
       sb.append( responseNames[i] );
       sb.append('\n');
