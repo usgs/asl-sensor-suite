@@ -253,8 +253,10 @@ public class GainExperiment extends Experiment {
   
   public String getResponseNames(int idx0, int idx1) {
     StringBuilder sb = new StringBuilder();
+    sb.append("1: ");
     sb.append( responseNames.get(idx0) );
     sb.append('\n');
+    sb.append("2: ");
     sb.append( responseNames.get(idx1) );
     return sb.toString();
   }

@@ -78,11 +78,11 @@ public class RandomizedExperimentTest {
       cCal.set(Calendar.MINUTE, 36);
       cCal.set(Calendar.SECOND, 0);
       // cCal.set(Calendar.MILLISECOND, 0);
-      System.out.println( "start: " + sdf.format( cCal.getTime() ) );
+      // System.out.println( "start: " + sdf.format( cCal.getTime() ) );
       long start = cCal.getTime().getTime() * 1000L;
       
       cCal.set(Calendar.MINUTE, 41);
-      System.out.println( "end: " + sdf.format( cCal.getTime() ) );
+      // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
       long end = cCal.getTime().getTime() * 1000L;
       
       ds.trimAll(start, end);
@@ -171,8 +171,6 @@ public class RandomizedExperimentTest {
         boolean lowFreq = false;
         
         List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
-        System.out.println(poles);
-        
         List<Complex> replacements = new ArrayList<Complex>();
         
         int start = 2;

@@ -182,8 +182,10 @@ public class NoiseExperiment extends Experiment {
 
   public String getResponseNames() {
     StringBuilder sb = new StringBuilder();
-    for (String name : responseNames) {
-      sb.append(name);
+    for (int i = 0; i < responseNames.length; ++i) {
+      sb.append(i);
+      sb.append(": ");
+      sb.append( responseNames[i] );
       sb.append('\n');
     }
     // remove trailing whitespace character
