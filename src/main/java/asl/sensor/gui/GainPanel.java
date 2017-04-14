@@ -390,7 +390,6 @@ implements ChangeListener {
 
     double lowPrd, highPrd;
     double[] freqRange;
-    double[] gainStatistics;
 
     int leftSliderValue, rightSliderValue;
     XYSeriesCollection xysc;
@@ -422,12 +421,6 @@ implements ChangeListener {
     high = Math.log10( xys.getMaxX() ); // value when slider is 1000
     leftSliderValue = mapPeriodToSlider(lowPrd);
     rightSliderValue = mapPeriodToSlider(highPrd);
-
-
-    // get statistics from frequency (convert from period)
-    gainStatistics = gn.getStatsFromFreqs(idx0, idx1, 
-        freqRange[0], freqRange[1]);
-
 
     displayInfoMessage("Data loaded...drawing chart");
 
@@ -473,10 +466,29 @@ implements ChangeListener {
     int idx0 = firstSeries.getSelectedIndex();
     int idx1 = secondSeries.getSelectedIndex();
     
+    GainExperiment gn = (GainExperiment) expResult;
+ 
+    return getInsetString(gn, idx0, idx1, lowPrd, highPrd);
+  }
+  
+  /**
+   * Static helper method for getting the formatted inset string directly
+   * from a GainExperiment
+   * @param gn GainExperiment with data to be extracted
+   * @param idx0 Index of first data to be loaded (i.e., 0)
+   * @param idx1 Index of second data to be loaded (i.e., 1)
+   * @param lowPrd low period boundary to take stats over
+   * @param highPrd high period boundary to take stats over
+   * @return
+   */
+  public static String 
+  getInsetString(GainExperiment gn, int idx0, int idx1, double lowPrd, 
+      double highPrd) {
+
     double[] meanAndStdDev = 
-        ((GainExperiment) expResult).getStatsFromFreqs(
+        gn.getStatsFromFreqs(
             idx0, idx1, 1/lowPrd, 1/highPrd);
-    
+
     double mean = meanAndStdDev[0];
     double sDev = meanAndStdDev[1];
     double refGain = meanAndStdDev[2];

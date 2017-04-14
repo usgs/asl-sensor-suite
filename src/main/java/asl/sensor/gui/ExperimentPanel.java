@@ -2,19 +2,15 @@ package asl.sensor.gui;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
@@ -26,13 +22,6 @@ import javax.swing.JPanel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
@@ -50,6 +39,7 @@ import asl.sensor.experiment.Experiment;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.ReportingUtils;
 
 /**
  * Panel used to display the data produced from a specified sensor test.
@@ -205,27 +195,17 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
-   * Return image of this chart with specified dimensions
-   * Used to compile PNG image of all currently-displayed charts
+   * Return image of panel's plots with specified dimensions
+   * Used to compile PNG image of all charts contained in this panel
    * @param width Width of output image in pixels
    * @param height Height of output image in pixels
    * @return buffered image of this panel's chart
    */
   public BufferedImage getAsImage(int width, int height) {
     
-    ChartPanel outPanel = new ChartPanel(chart);
-    outPanel.setSize( new Dimension(width, height) );
+    JFreeChart[] jfcs = getCharts();
+    return ReportingUtils.chartsToImage(width, height, jfcs);
     
-    BufferedImage bi = new BufferedImage(
-        width, 
-        height, 
-        BufferedImage.TYPE_INT_ARGB);
-
-    Graphics2D g = bi.createGraphics();
-    outPanel.printAll(g);
-    g.dispose();
-
-    return bi;
   }
 
   /**
@@ -396,52 +376,70 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     return expResult.hasEnoughData(ds);
   }
   
+  /**
+   * Return all chart panels used in this object;
+   * to be overridden by implementing experiment panels that contain multiple
+   * charts.
+   * Primary use of this function is to enumerate charts to save as images/PDF
+   * @return All chartpanels used in this object
+   */
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{chart};
+  }
+  
+  /**
+   * Loads in charts used in this panel and prints them out in a PDF document
+   * and includes any relevant metadata / analysis results as plain text
+   * @param pdf Document to load in data from
+   * @return PDF with new pages corresponding to charts and analysis results
+   */
   public PDDocument savePDFResults(PDDocument pdf) {
 
     int width = 1280;
-    BufferedImage outPlot = getAsImage(width, 960);
-   
-    PDRectangle rec = 
-        new PDRectangle( (float) outPlot.getWidth(), 
-                         (float) outPlot.getHeight() );
-    PDPage page = new PDPage(rec);
+    int height = 960;
+    JFreeChart[] cps = getCharts();
     
-    try {
-      PDImageXObject  pdImageXObject = 
-          LosslessFactory.createFromImage(pdf, outPlot);
-      pdf.addPage(page);
-      PDPageContentStream contentStream = 
-          new PDPageContentStream(pdf, page, 
-                                  PDPageContentStream.AppendMode.OVERWRITE, 
-                                  true, false);
+    pdf = ReportingUtils.chartsToPDFPage(width, height, pdf, cps);
 
-      contentStream.drawImage( pdImageXObject, 0, 0, 
-          outPlot.getWidth(), outPlot.getHeight() );
-      contentStream.close();
-      
-      pdf = saveInsetDataText(pdf);
-      
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+    pdf = saveInsetDataText(pdf);
 
     return pdf;
     
   }
   
+  /**
+   * True if data has been loaded into the experiment backend yet
+   * @return True if there is data to process
+   */
   public boolean hasRun() {
     return set;
   }
   
-  public PDDocument 
-  saveInsetDataText(PDDocument pdf) throws IOException {
-
-    String toWrite = getInsetString();
+  /**
+   * Returns a PDF with a page dedicated to string data related to the
+   * data that has been passed into the experiment backend,
+   * including any text that might be included in chart title insets and
+   * the input data start and end timestamps
+   * @param pdf PDF document to append data to
+   * @return PDF document with page of text added
+   */
+  public PDDocument saveInsetDataText(PDDocument pdf) {
     
-    StringBuilder sb = new StringBuilder(toWrite);
+    StringBuilder sb = new StringBuilder( getInsetString() );
     sb.append('\n');
+    sb.append( getTimeStampString(expResult) );
     
+    return ReportingUtils.textToPDFPage(sb.toString(), pdf);
+  }
+  
+  /**
+   * Get start and end times of data for experiments that use time series data
+   * @param expResult experiment with data already added
+   * @return string representing the start and end of the 
+   * experiment's data range
+   */
+  public static String getTimeStampString(Experiment expResult) {
+    StringBuilder sb = new StringBuilder();
     SimpleDateFormat sdf = new SimpleDateFormat("Y.DDD.HH:mm:ss");
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     
@@ -466,70 +464,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
       sb.append( sdf.format( cCal.getTime() ) );
       sb.append('\n');
     }
-    
-    toWrite = sb.toString();
-    
-    if ( toWrite.length() > 0 ) {
-      PDPage page = new PDPage();
-      pdf.addPage(page);
-      PDPageContentStream contentStream = new PDPageContentStream(pdf, page);
-
-      PDFont pdfFont = PDType1Font.COURIER;
-      float fontSize = 14;
-      float leading = 1.5f * fontSize;
-
-      PDRectangle mediabox = page.getMediaBox();
-      float margin = 72;
-      float width = mediabox.getWidth() - 2*margin;
-      float startX = mediabox.getLowerLeftX() + margin;
-      float startY = mediabox.getUpperRightY() - margin;
-
-      List<String> lines = new ArrayList<String>();
-      
-      for (String text : toWrite.split("\n") ) {
-
-        int lastSpace = -1;
-        while (text.length() > 0) {
-
-          int spaceIndex = text.indexOf(' ', lastSpace + 1);
-          if (spaceIndex < 0) {
-            spaceIndex = text.length();
-
-          }
-          String subString = text.substring(0, spaceIndex);
-          float size = fontSize * pdfFont.getStringWidth(subString) / 1000;
-          System.out.printf("'%s' - %f of %f\n", subString, size, width);
-          if (size > width) {
-            if (lastSpace < 0) {
-              lastSpace = spaceIndex;
-            }
-            subString = text.substring(0, lastSpace);
-            lines.add(subString);
-            text = text.substring(lastSpace).trim();
-            System.out.printf("'%s' is line\n", subString);
-            lastSpace = -1;
-          } else if ( spaceIndex == text.length() ) {
-            lines.add(text);
-            System.out.printf("'%s' is line\n", text);
-            text = "";
-          } else {
-            lastSpace = spaceIndex;
-          }
-        }
-      }
-
-      contentStream.beginText();
-      contentStream.setFont(pdfFont, fontSize);
-      contentStream.newLineAtOffset(startX, startY);
-      for (String line : lines) {
-        contentStream.showText(line);
-        contentStream.newLineAtOffset(0, -leading);
-      }
-      contentStream.endText(); 
-      contentStream.close();
-    }
-
-    return pdf;
+    return sb.toString();
   }
   
   /**

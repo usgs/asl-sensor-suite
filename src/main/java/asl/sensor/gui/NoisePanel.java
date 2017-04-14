@@ -161,27 +161,6 @@ public class NoisePanel extends ExperimentPanel {
     
     boolean freqSpace = freqSpaceBox.isSelected();
     
-    updateDriver(ds, freqSpace);
-    // setting the new chart is enough to update the plots
-    
-    
-  }
-  
-
-  /**
-   * Uses a threaded call to run the self-noise calculations in the background,
-   * to be plotted. In the process of getting these, the names of the data
-   * are used to populate the color of the input data, as well as whether or not
-   * data should be dashed or solid (the color choices are designed to
-   * match the first three input plots, where the data is expected from, and
-   * the dashes are used to distinguish the PSD from the self-noise plot)
-   * @param ds 
-   *  DataStore object that contains the seed and resp files to calculate
-   * @param freqSpace Boolean matching whether or not to plot in units of
-   * frequency if true (Hz) or in units of interval if false (s) 
-   */
-  protected void updateDriver(final DataStore ds, boolean freqSpace) {
-    
     final boolean freqSpaceImmutable = freqSpace;
     
     displayInfoMessage("Calculating data...");
@@ -208,7 +187,6 @@ public class NoisePanel extends ExperimentPanel {
 
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
-
     
   }
 

@@ -28,17 +28,13 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.ExperimentPanelFactory;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.ReportingUtils;
 
 /**
  * Main window of the sensor test program and the program's launcher
@@ -254,7 +250,9 @@ public class SensorSuite extends JPanel
    * (active experiment and read-in time series data)
    * @param file File (PNG) that image will be saved to
    * @throws IOException
+   * @deprecated Use PDF output (plotstoPDF) instead
    */
+  @Deprecated
   public void plotsToPNG(File file) throws IOException {
 
     // just write the bufferedimage to file
@@ -266,7 +264,7 @@ public class SensorSuite extends JPanel
    * Produces a buffered image of all active charts
    * @return BufferedImage that can be written to file
    */
-  public BufferedImage getCompiledImage() {
+  private BufferedImage getCompiledImage() {
     
     ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
     int inPlotCount = ep.plotsToShow();
@@ -337,29 +335,17 @@ public class SensorSuite extends JPanel
 
     // START OF UNIQUE CODE FOR PDF CREATION HERE
     PDDocument pdf = ep.savePDFResults( new PDDocument() );
-
+    
     if (inPlotCount > 0) {
 
       int inHeight = ip.getImageHeight(inPlotCount) * 2;
-      int width = 960; // TODO: set as global static variable somewhere
+      int width = 1280; // TODO: set as global static variable somewhere?
 
       BufferedImage toFile = 
           ip.getAsImage(width, inHeight, inPlotCount);
+      
+      pdf = ReportingUtils.bufferedImageToPDFPage(toFile, pdf);
 
-      PDRectangle rec = 
-          new PDRectangle( (float) toFile.getWidth(), 
-              (float) toFile.getHeight() );
-      PDPage page = new PDPage(rec);
-      pdf.addPage(page);
-      PDImageXObject  pdImageXObject = 
-          LosslessFactory.createFromImage(pdf, toFile);
-      PDPageContentStream contentStream = 
-          new PDPageContentStream(pdf, page, 
-              PDPageContentStream.AppendMode.OVERWRITE, 
-              true, false);
-      contentStream.drawImage( pdImageXObject, 0, 0, 
-          toFile.getWidth(), toFile.getHeight() );
-      contentStream.close();
     }
 
     pdf.save( file );

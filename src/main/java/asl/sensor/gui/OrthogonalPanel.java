@@ -104,8 +104,11 @@ public class OrthogonalPanel extends ExperimentPanel {
   
   @Override
   public String getInsetString() {
-    OrthogonalExperiment ort = (OrthogonalExperiment) expResult;
+    return getInsetString( (OrthogonalExperiment) expResult );
+  }
     
+    
+  public static String getInsetString(OrthogonalExperiment ort) {  
     double[] fit = ort.getSolutionParams();
     double angle = ort.getFitAngle();
     

@@ -116,5 +116,17 @@ public class ResponseExperiment extends Experiment {
   public int blocksNeeded() {
     return 0;
   }
+  
+  @Override
+  public long getStart() {
+    // there is no actual timeseries data used in this experiment
+    // only response data, so start and end times are not defined
+    return 0L;
+  }
+  
+  @Override
+  public long getEnd() {
+    return 0L;
+  }
 
 }

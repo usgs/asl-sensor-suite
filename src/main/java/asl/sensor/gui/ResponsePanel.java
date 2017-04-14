@@ -201,66 +201,8 @@ public class ResponsePanel extends ExperimentPanel {
   }
 
   @Override
-  public BufferedImage getAsImage(int height, int width) {
-    
-    if (!set) {
-      ChartPanel cp = new ChartPanel(chart);
-      BufferedImage bi =  
-          new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-      cp.setSize( new Dimension(width, height) );
-      Graphics2D g = bi.createGraphics();
-      cp.printAll(g);
-      g.dispose();
-      return bi;
-      
-    }
-    
-    height = (height * 2) / 2;
-    
-    // Dimension outSize = new Dimension(width, height);
-    Dimension chartSize = new Dimension(width, height / 2);
-    
-    ChartPanel outCPanel = new ChartPanel(magChart);
-    outCPanel.setSize(chartSize);
-    outCPanel.setPreferredSize(chartSize);
-    outCPanel.setMinimumSize(chartSize);
-    outCPanel.setMaximumSize(chartSize);
-    
-    ChartPanel outCPanel2 = new ChartPanel(argChart);
-    outCPanel2.setSize(chartSize);
-    outCPanel2.setPreferredSize(chartSize);
-    outCPanel2.setMinimumSize(chartSize);
-    outCPanel2.setMaximumSize(chartSize);    
-    
-    BufferedImage bi = new BufferedImage(
-        (int) outCPanel.getWidth(), 
-        (int) outCPanel.getHeight() + (int) outCPanel2.getHeight(), 
-        BufferedImage.TYPE_INT_ARGB);
-    
-    BufferedImage magBuff = new BufferedImage(
-        (int) outCPanel.getWidth(),
-        (int) outCPanel.getHeight(),
-        BufferedImage.TYPE_INT_ARGB);
-    
-    Graphics2D g = magBuff.createGraphics();
-    outCPanel.printAll(g);
-    g.dispose();
-    
-    BufferedImage argBuff = new BufferedImage(
-        (int) outCPanel2.getWidth(),
-        (int) outCPanel2.getHeight(),
-        BufferedImage.TYPE_INT_ARGB);
-
-    g = argBuff.createGraphics();
-    outCPanel2.printAll(g);
-    g.dispose();
-    
-    g = bi.createGraphics();
-    g.drawImage(magBuff, null, 0, 0);
-    g.drawImage( argBuff, null, 0, magBuff.getHeight() );
-    g.dispose();
-    
-    return bi;
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{magChart, argChart};
   }
   
   @Override

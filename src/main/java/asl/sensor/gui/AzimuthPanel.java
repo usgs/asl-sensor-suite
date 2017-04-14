@@ -19,6 +19,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.plot.PolarPlot;
@@ -207,6 +208,7 @@ public class AzimuthPanel extends ExperimentPanel {
     return 3;
   }
 
+  @Override
   public String getInsetString() {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     double value = az.getOffset();
@@ -218,5 +220,9 @@ public class AzimuthPanel extends ExperimentPanel {
     return angleStr;
   }
   
+  @Override
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{angleChart, coherenceChart};
+  }
   
 }

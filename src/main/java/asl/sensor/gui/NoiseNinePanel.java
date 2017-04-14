@@ -142,14 +142,6 @@ public class NoiseNinePanel extends NoisePanel {
     
     boolean freqSpace = freqSpaceBox.isSelected();
     
-    updateDriver(ds, freqSpace);
-    // setting the new chart is enough to update the plots
-    
-  }
-  
-  @Override
-  protected void updateDriver(final DataStore ds, boolean freqSpace) {
-    
     final boolean freqSpaceImmutable = freqSpace;
 
     displayInfoMessage("Calculating data...");
@@ -207,88 +199,11 @@ public class NoiseNinePanel extends NoisePanel {
   }
   
   @Override
-  public BufferedImage getAsImage(int width, int height) {
-    
-    if (!set) {
-      ChartPanel cp = new ChartPanel(chart);
-      BufferedImage bi =  
-          new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-      cp.setSize( new Dimension(width, height) );
-      Graphics2D g = bi.createGraphics();
-      cp.printAll(g);
-      g.dispose();
-      return bi;
-      
-    }
-    
-    height = (height * 3) / 3;
-    
-    // Dimension outSize = new Dimension(width, height);
-    Dimension chartSize = new Dimension(width, height / 3);
-    
-    ChartPanel outCPanel = new ChartPanel(northChart);
-    outCPanel.setSize(chartSize);
-    outCPanel.setPreferredSize(chartSize);
-    outCPanel.setMinimumSize(chartSize);
-    outCPanel.setMaximumSize(chartSize);
-    
-    ChartPanel outCPanel2 = new ChartPanel(eastChart);
-    outCPanel2.setSize(chartSize);
-    outCPanel2.setPreferredSize(chartSize);
-    outCPanel2.setMinimumSize(chartSize);
-    outCPanel2.setMaximumSize(chartSize);
-    
-    ChartPanel outCPanel3 = new ChartPanel(vertChart);
-    outCPanel3.setSize(chartSize);
-    outCPanel3.setPreferredSize(chartSize);
-    outCPanel3.setMinimumSize(chartSize);
-    outCPanel3.setMaximumSize(chartSize);
-    
-    int totalHeight = 
-        outCPanel.getHeight() + outCPanel2.getHeight() + outCPanel3.getHeight();
-    
-    BufferedImage bi = new BufferedImage(
-        (int) outCPanel.getWidth(), 
-        totalHeight, 
-        BufferedImage.TYPE_INT_ARGB);
-    
-    BufferedImage northBuff = new BufferedImage(
-        (int) outCPanel.getWidth(),
-        (int) outCPanel.getHeight(),
-        BufferedImage.TYPE_INT_ARGB);
-    
-    Graphics2D g = northBuff.createGraphics();
-    outCPanel.printAll(g);
-    g.dispose();
-    
-    BufferedImage eastBuff = new BufferedImage(
-        (int) outCPanel2.getWidth(),
-        (int) outCPanel2.getHeight(),
-        BufferedImage.TYPE_INT_ARGB);
-
-    g = eastBuff.createGraphics();
-    outCPanel2.printAll(g);
-    g.dispose();
-    
-    BufferedImage vertBuff = new BufferedImage(
-        (int) outCPanel3.getWidth(),
-        (int) outCPanel3.getHeight(),
-        BufferedImage.TYPE_INT_ARGB);
-
-    g = vertBuff.createGraphics();
-    outCPanel3.printAll(g);
-    g.dispose();
-    
-    int vertHeight = northBuff.getHeight() + eastBuff.getHeight();
-    
-    g = bi.createGraphics();
-    g.drawImage(northBuff, null, 0, 0);
-    g.drawImage( eastBuff, null, 0, northBuff.getHeight() );
-    g.drawImage(vertBuff, null, 0, vertHeight);
-    g.dispose();
-    
-    return bi;
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{northChart, eastChart, vertChart};
   }
+  
+  
   
   @Override
   public int panelsNeeded() {

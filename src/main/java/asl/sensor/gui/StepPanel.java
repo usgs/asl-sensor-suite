@@ -81,7 +81,17 @@ public class StepPanel extends ExperimentPanel {
   @Override
   public String getInsetString() {
     
-    StepExperiment sp = (StepExperiment) expResult;
+    return getInsetString( (StepExperiment) expResult );
+  
+  }
+   
+  /**
+   * Static helper method for getting the formatted inset string directly
+   * from a StepExperiment
+   * @param sp StepExperiment with data to be extracted
+   * @return String format representation of data from the experiment
+   */
+  public static String getInsetString(StepExperiment sp) {  
     double[] rolloff = sp.getCornerAndDamping();
     double[] fit = sp.getFitCornerAndDamping();
     double corner = rolloff[0];

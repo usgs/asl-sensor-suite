@@ -59,6 +59,7 @@ import org.jfree.ui.RectangleAnchor;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
 
@@ -681,6 +682,12 @@ implements ActionListener, ChangeListener {
    */
   public BufferedImage getAsImage(int width, int height, int plotsToShow) {
     
+    if (plotsToShow <= 0) {
+      // should never be called like this but just in case
+      // return an empty image
+      return new BufferedImage(0, 0, BufferedImage.TYPE_INT_RGB);
+    }
+    
     // int shownHeight = allCharts.getHeight();
     
     // width = Math.min( width, chartPanels[0].getWidth() );
@@ -691,51 +698,13 @@ implements ActionListener, ChangeListener {
     height = (height*loaded)/loaded;
     int chartHeight = height/loaded;
     
-    Dimension outSize = new Dimension(width, height);
-
-    JPanel toDraw = new JPanel(); // what we're going to draw to image
-    toDraw.setSize(outSize);
-    toDraw.setPreferredSize(outSize);
-    toDraw.setMinimumSize(outSize);
-    toDraw.setMaximumSize(outSize);
-    
-    toDraw.setLayout( new BoxLayout(toDraw, BoxLayout.Y_AXIS) );
-
-    for (int i = 0; i < FILE_COUNT; ++i) {
-      if ( !zooms.blockIsSet(i) ) {
-        continue;
-      }
-      ChartPanel cp = chartPanels[i];
-      // toDraw.add( Box.createVerticalStrut(5) );
-      Dimension chartSize = new Dimension(width, chartHeight);
-      ChartPanel outPanel = new ChartPanel( cp.getChart() );
-      outPanel.setSize(chartSize);
-      outPanel.setPreferredSize(chartSize);
-      outPanel.setMinimumSize(chartSize);
-      outPanel.setMaximumSize(chartSize);
-      outPanel.setMinimumDrawHeight(chartHeight);
-      toDraw.add(outPanel);
+    JFreeChart[] chartsToPrint = new JFreeChart[plotsToShow];
+    for (int i = 0; i < plotsToShow; ++i) {
+      chartsToPrint[i] = chartPanels[i].getChart();
     }
     
-    // used to make sure that everything is laid out correctly when we save
-    // (forces the Java windowing tools to respect the specified layout above)
-    // we do this since the panel is instantiated here, not displayed, and
-    // is built from multiple subcomponents, unlike experimentpanel
-    // Before the frame exists, Java tends to ignore any layout instructions
-    JFrame jw = new JFrame();
-    jw.add(toDraw);
-    jw.pack();
-    
-    BufferedImage bi = new BufferedImage(
-        width, 
-        height, 
-        BufferedImage.TYPE_INT_ARGB);
+    return ReportingUtils.chartsToImage(width, chartHeight, chartsToPrint);
 
-    Graphics2D g = bi.createGraphics();
-    toDraw.printAll(g);
-    g.dispose();
-    
-    return bi;
   }
   
   
