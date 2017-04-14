@@ -440,6 +440,11 @@ public class AzimuthExperiment extends Experiment {
   public int blocksNeeded() {
     return 3;
   }
+
+  public double getOffset() {
+    // TODO Auto-generated method stub
+    return ( (offset % 360) + 360 ) % 360;
+  }
   
 
 }

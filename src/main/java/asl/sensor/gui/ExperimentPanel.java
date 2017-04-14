@@ -397,10 +397,10 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   public PDDocument savePDFResults(PDDocument pdf) {
-    
+
     int width = 1280;
     BufferedImage outPlot = getAsImage(width, 960);
-    
+   
     PDRectangle rec = 
         new PDRectangle( (float) outPlot.getWidth(), 
                          (float) outPlot.getHeight() );
@@ -434,7 +434,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     return set;
   }
   
-  public PDDocument saveInsetDataText(PDDocument pdf) throws IOException {
+  public PDDocument 
+  saveInsetDataText(PDDocument pdf) throws IOException {
 
     String toWrite = getInsetString();
     
@@ -534,7 +535,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   /**
    * Used to return any title insets as text format for saving in PDF,
    * to be overridden by any panel that uses an inset
-   * @return
+   * @return String with any relevant parameters in it
    */
   public String getInsetString() {
     return "";

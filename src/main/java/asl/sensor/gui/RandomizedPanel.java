@@ -136,6 +136,10 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   public String getInsetString() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
+    return getInsetString(rnd);
+  }
+  
+  public static String getInsetString(RandomizedExperiment rnd) {
     
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();

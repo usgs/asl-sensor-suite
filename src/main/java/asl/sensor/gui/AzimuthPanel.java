@@ -207,15 +207,9 @@ public class AzimuthPanel extends ExperimentPanel {
     return 3;
   }
 
-  @Override
   public String getInsetString() {
-    double value = (double) offsetSpinner.getValue();
-
-    if (value < 0) {
-      value += 360;
-    }
-    
     AzimuthExperiment az = (AzimuthExperiment) expResult;
+    double value = az.getOffset();
     double angle = az.getFitAngle();
     String angleStr = "FIT ANGLE: " + angle;
     double result = ( (value + angle) % 360 + 360) % 360;
@@ -223,5 +217,6 @@ public class AzimuthPanel extends ExperimentPanel {
     angleStr += " + " + value + " = " + result;
     return angleStr;
   }
+  
   
 }

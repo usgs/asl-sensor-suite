@@ -415,6 +415,28 @@ implements ActionListener, ChangeListener {
     
   }
   
+  public InputPanel(DataStore ds, int panelsNeeded) {
+    this();
+    for (int i = 0; i < panelsNeeded; ++i) {
+      if ( ds.blockIsSet(i) ) {
+        seedFileNames[i].setText( ds.getBlock(i).getName() );
+        XYSeries ts = ds.getPlotSeries(i);
+        JFreeChart chart = ChartFactory.createXYLineChart(
+            ts.getKey().toString(),
+            "Time",
+            "Counts",
+            new XYSeriesCollection(ts),
+            PlotOrientation.VERTICAL,
+            false, false, false);
+        chartPanels[i].setChart(chart);
+      }
+      if ( ds.responseIsSet(i) ) {
+        respFileNames[i].setText( ds.getResponse(i).getName() );
+      }
+    }
+    showDataNeeded(panelsNeeded);
+  }
+  
   /**
    * Dispatches commands when interface buttons are clicked.
    * When the save button is clicked, dispatches the command to save plots as

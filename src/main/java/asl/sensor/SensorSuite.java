@@ -314,34 +314,49 @@ public class SensorSuite extends JPanel
    * @throws IOException If the file cannot be written
    */
   public void plotsToPDF(File file) throws IOException {
-    
+
     ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+    InputPanel ip = inputPlots;
+
+    plotsToPDF(file, ep, ip);
+  }
+
+
+  /**
+   * Plots the data from an output panel and its associated input
+   * @param file Filename to write to
+   * @param ep Experiment panel with data to be plotted
+   * @param ip Input panel holding data associated with the experiment
+   * @throws IOException If the file cannot be written to
+   */
+  public static void plotsToPDF(File file, ExperimentPanel ep, InputPanel ip)
+      throws IOException{
+
     int inPlotCount = ep.plotsToShow();
-    
     // BufferedImage toFile = getCompiledImage();
-    
+
     // START OF UNIQUE CODE FOR PDF CREATION HERE
     PDDocument pdf = ep.savePDFResults( new PDDocument() );
-    
+
     if (inPlotCount > 0) {
-      
-      int inHeight = inputPlots.getImageHeight(inPlotCount) * 2;
+
+      int inHeight = ip.getImageHeight(inPlotCount) * 2;
       int width = 960; // TODO: set as global static variable somewhere
-      
+
       BufferedImage toFile = 
-          inputPlots.getAsImage(width, inHeight, inPlotCount);
-      
+          ip.getAsImage(width, inHeight, inPlotCount);
+
       PDRectangle rec = 
           new PDRectangle( (float) toFile.getWidth(), 
-                           (float) toFile.getHeight() );
+              (float) toFile.getHeight() );
       PDPage page = new PDPage(rec);
       pdf.addPage(page);
       PDImageXObject  pdImageXObject = 
           LosslessFactory.createFromImage(pdf, toFile);
       PDPageContentStream contentStream = 
           new PDPageContentStream(pdf, page, 
-                                  PDPageContentStream.AppendMode.OVERWRITE, 
-                                  true, false);
+              PDPageContentStream.AppendMode.OVERWRITE, 
+              true, false);
       contentStream.drawImage( pdImageXObject, 0, 0, 
           toFile.getWidth(), toFile.getHeight() );
       contentStream.close();
@@ -367,7 +382,7 @@ public class SensorSuite extends JPanel
 
     ep.updateData(ds);
     
-    savePDF.setEnabled(true);
+    savePDF.setEnabled( ep.hasRun() );
   }
 
   /**

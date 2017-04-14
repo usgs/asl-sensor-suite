@@ -218,6 +218,22 @@ public class TimeSeriesUtils {
   }
 
   /**
+   * Get the set of available data series in a multiplexed miniseed file.
+   * Because the list is derived from the set, the result of this function
+   * should have no duplicate entries.
+   * Because Java Sets do not specify ordering, this allows for indexing
+   * operations to be performed on the returned data more easily.
+   * @param filename Name of file to read in
+   * @return List of strings corresponding to metadata of each data series
+   * in the given miniseed file
+   * @throws FileNotFoundException If given file from filename cannot be read
+   */
+  public static List<String> getMplexNameList(String filename)
+    throws FileNotFoundException {
+    return new ArrayList<String>( getMplexNameSet(filename) );
+  }
+  
+  /**
    * Returns list of SNCL (station, network, channel, location) data for
    * a multiplexed miniseed file as a set of strings
    * @param filename miniseed file to be read in
