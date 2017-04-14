@@ -38,7 +38,7 @@ public class DataPanelTest {
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename1, name);
       long start = db.getStartTime();
       long interval = db.getInterval();
-      long end = db.getEndTime();
+      // long end = db.getEndTime();
       int size = db.size();
       
       long timeRange = interval*size;

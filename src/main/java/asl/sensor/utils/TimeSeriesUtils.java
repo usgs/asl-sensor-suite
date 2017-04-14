@@ -309,13 +309,12 @@ public class TimeSeriesUtils {
               continue; // skip to next seedRecord
             }
 
-
-            byte af = dh.getActivityFlags();
-            byte correctionFlag = 0b00000010; // is there a time correction?
-            int correction = 0;
-            if ( (af & correctionFlag) != 0 ) {
-              correction = dh.getTimeCorrection();
-            }
+            // byte af = dh.getActivityFlags();
+            // byte correctionFlag = 0b00000010; // is there a time correction?
+            // int correction = 0;
+            // if ( (af & correctionFlag) != 0 ) {
+            //   correction = dh.getTimeCorrection();
+            // }
 
             Btime bt = dh.getStartBtime();
             

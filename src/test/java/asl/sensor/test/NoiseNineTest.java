@@ -4,7 +4,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.awt.Font;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -13,8 +12,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
-
-import javax.imageio.ImageIO;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
@@ -26,15 +23,10 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
-import asl.sensor.experiment.Experiment;
 import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.NoiseNineExperiment;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.ExperimentPanelFactory;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.NoiseNinePanel;
-import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
@@ -147,7 +139,7 @@ public class NoiseNineTest {
       dir.mkdir();
     }
 
-    String testResult = testResultFolder + "Random-Calib-Test.pdf";
+    String testResult = testResultFolder + "Nine-Noise-Test.pdf";
     try {
       pdf.save( new File(testResult) );
       pdf.close();
