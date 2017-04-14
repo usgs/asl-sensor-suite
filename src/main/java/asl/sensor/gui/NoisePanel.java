@@ -119,6 +119,15 @@ public class NoisePanel extends ExperimentPanel {
     super.actionPerformed(e); // only actionlistener here
   }
   
+  @Override
+  public String getMetadataString() {
+    NoiseExperiment nex = (NoiseExperiment) expResult;
+    StringBuilder sb = new StringBuilder("LOADED RESPONSES:");
+    sb.append("\n");
+    sb.append( nex.getResponseNames() );
+    return sb.toString();
+  }
+  
   /**
    * Gets the x-axis for this panel based on whether or not the
    * selection box to plot in units of Hz is selected. If it is, this

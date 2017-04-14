@@ -48,9 +48,10 @@ public class OrthogonalExperiment extends Experiment {
     
     return curValue;
   }
-  double[] diffs;
   
-  double angle;
+  private double[] diffs;
+  
+  private double angle;
 
   public OrthogonalExperiment() {
     super();

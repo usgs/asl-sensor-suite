@@ -101,13 +101,13 @@ public class RandomizedExperiment extends Experiment {
         poleList.set( i + offset, builtPoles.get(i) );
       }
     }
-    
     // System.out.println(poleList);
-    
     // get the result for the input value
     testResp.setPoles(poleList);
     return testResp;
+    
   }
+  
   private List<Complex> inputPoles;
   private List<Complex> fitPoles;
   private boolean lowFreq; // fit the low- or high-frequency poles?
@@ -116,6 +116,8 @@ public class RandomizedExperiment extends Experiment {
   private double[] freqs;
   
   private int oneHzIdx;
+  
+  private String responseName;
   
   public RandomizedExperiment() {
     super();
@@ -129,12 +131,14 @@ public class RandomizedExperiment extends Experiment {
     // construct response plot
     DataBlock calib = ds.getXthLoadedBlock(1);
     int sensorOutIndex = ds.getXthFullyLoadedIndex(1);
+    
     if ( ds.getBlock(sensorOutIndex).getName().equals( calib.getName() ) ) {
       sensorOutIndex = ds.getXthFullyLoadedIndex(2);
     }
     
     DataBlock sensorOut = ds.getBlock(sensorOutIndex);
     fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIndex) );
+    responseName = fitResponse.getName();
     
     inputPoles = new ArrayList<Complex>( fitResponse.getPoles() );
     fitPoles = new ArrayList<Complex>( fitResponse.getPoles() );
@@ -175,7 +179,7 @@ public class RandomizedExperiment extends Experiment {
       denomPSDMap.put(freqs[i], denominatorPSD.getFFT()[i]);
     }
     
-    Collections.sort(freqList); // probably not necessay, but for peace of mind
+    Collections.sort(freqList); // done mostly for peace of mind
     
     len = freqList.size(); // now len is length of trimmed frequencies
     freqs = new double[len];
@@ -194,6 +198,7 @@ public class RandomizedExperiment extends Experiment {
       }
     }
     
+    // applied response. make sure to use the correct units (velocity)
     Complex[] appResponse = fitResponse.applyResponseToInput(freqs);
     for (int i = 0; i < appResponse.length; ++i) {
       appResponse[i] = appResponse[i].divide( 2 * Math.PI * freqs[i] );
@@ -203,7 +208,7 @@ public class RandomizedExperiment extends Experiment {
     double scaleBy = appResponse[oneHzIdx].abs(); // value at 1Hz, to normalize
     double angle = 0.; // angle at 1Hz, also used as a sort of normalization
     
-    // do precalculation / scaling of data
+    // calculated response from deconvolving calibration from signal
     Complex[] estimatedResponse = new Complex[len];
     for (int i = 0; i < estimatedResponse.length; ++i) {
       Complex numer = numeratorPSDVals[i];
@@ -211,7 +216,6 @@ public class RandomizedExperiment extends Experiment {
       estimatedResponse[i] = numer.divide(denom);
       estimatedResponse[i] = 
           estimatedResponse[i].multiply(2 * Math.PI * freqs[i]);
-      
     }
     
     double scaleDenom = estimatedResponse[oneHzIdx].abs();
@@ -583,6 +587,13 @@ public class RandomizedExperiment extends Experiment {
     }
   }
   
+  /**
+   * Get name of response file used in the calculation
+   */
+  public String getResponseName() {
+    return responseName;
+  }
+
   @Override
   public boolean hasEnoughData(DataStore ds) {
     return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
@@ -657,5 +668,4 @@ public class RandomizedExperiment extends Experiment {
   public void setLowFreq(boolean lowFreq) {
     this.lowFreq = lowFreq;
   }
-
 }

@@ -121,6 +121,8 @@ public class GainExperiment extends Experiment {
   
   private List<FFTResult> fftResults;
   
+  private List<String> responseNames;
+  
   private double ratio, sigma;
   
   /**
@@ -157,12 +159,14 @@ public class GainExperiment extends Experiment {
     
     gainStage1 = new ArrayList<Double>();
     otherGainStages = new ArrayList<Double>();
+    responseNames = new ArrayList<String>();
     
     InstrumentResponse[] resps = ds.getResponses();
     for (int i = 0; i < 2; ++i) {
       if (resps[i] == null) {
         continue;
       }
+      responseNames.add( resps[i].getName() );
       List<Double> gains = resps[i].getGain();
       gainStage1.add( gains.get(1) );
       double accumulator = 1.0;
@@ -245,6 +249,14 @@ public class GainExperiment extends Experiment {
       }
     }
     return index;
+  }
+  
+  public String getResponseNames(int idx0, int idx1) {
+    StringBuilder sb = new StringBuilder();
+    sb.append( responseNames.get(idx0) );
+    sb.append('\n');
+    sb.append( responseNames.get(idx1) );
+    return sb.toString();
   }
   
   /**

@@ -316,7 +316,11 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     
   }
   
-
+  /**
+   * Returns the identifiers of each input plot being used, such as 
+   * "calibration input" for the calibration tests.
+   * @return
+   */
   public String[] getChannelTypes() {
     return channelType;
   }
@@ -339,6 +343,17 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * @return String with any relevant parameters in it
    */
   public String getInsetString() {
+    return "";
+  }
+  
+  /**
+   * Used to return any metadata from the experiment to be saved in PDF
+   * to be overridden by panels with data that should be included in the report
+   * that it would not make sense to display in the inset, such as response
+   * filenames
+   * @return A string with any additional data to be included in the PDF report
+   */
+  public String getMetadataString() {
     return "";
   }
 
@@ -429,7 +444,14 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public void saveInsetDataText(PDDocument pdf) {
     
     StringBuilder sb = new StringBuilder( getInsetString() );
-    sb.append('\n');
+    if ( sb.length() > 0 ) {
+      sb.append('\n');
+    }
+    String metadata = getMetadataString();
+    if ( metadata.length() > 0 ) {
+      sb.append(metadata);
+      sb.append('\n');
+    }
     sb.append( getTimeStampString(expResult) );
     ReportingUtils.textToPDFPage(sb.toString(), pdf);
     return;

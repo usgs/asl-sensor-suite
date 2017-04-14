@@ -50,14 +50,16 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class StepExperiment extends Experiment{
 
-  double f, h; //corner and damping of output (uncorrected)
-  double fCorr, hCorr; // fit parameters to turn output into cal input
-  double initResid, fitResid;
+  private double f, h; //corner and damping of output (uncorrected)
+  private double fCorr, hCorr; // fit parameters to turn output into cal input
+  private double initResid, fitResid;
   
-  int trimmedLength, cutAmount;
-  double[] freqs;
-  Complex[] sensorFFTSeries; // FFT of step cal from sensor
-  double[] stepCalSeries; // time series of raw step cal function
+  private int trimmedLength, cutAmount;
+  private double[] freqs;
+  private Complex[] sensorFFTSeries; // FFT of step cal from sensor
+  private double[] stepCalSeries; // time series of raw step cal function
+  
+  private String responseName;
   
   final double STEP_FACTOR = 1E-16;
   
@@ -120,6 +122,7 @@ public class StepExperiment extends Experiment{
     DataBlock sensorOutput = ds.getBlock(outIdx);
     // long interval = sensorOutput.getInterval();
     InstrumentResponse ir = ds.getResponse(outIdx);
+    responseName = ir.getName();
     Complex pole = ir.getPoles().get(0);
     
     f = 1. / (2 * Math.PI / pole.abs() ); // corner frequency
@@ -340,11 +343,15 @@ public class StepExperiment extends Experiment{
     return new double[]{fCorr, hCorr, fitResid};
   }
 
+  public String getResponseName() {
+    return responseName;
+  }
+
   @Override
   public boolean hasEnoughData(DataStore ds) {
     return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
   }
-
+  
   /**
    * Computes the forward change in value of the calculations for response
    * formed from a given corner and damping value

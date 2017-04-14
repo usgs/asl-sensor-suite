@@ -50,11 +50,11 @@ public class AzimuthExperiment extends Experiment {
 
   final static double TAU = Math.PI * 2;
   
-  double offset = 0.;
-  double angle;
+  private double offset = 0.;
+  private double angle;
   
-  double[] freqs;
-  double[] coherence;
+  private double[] freqs;
+  private double[] coherence;
   
   public AzimuthExperiment() {
     super();

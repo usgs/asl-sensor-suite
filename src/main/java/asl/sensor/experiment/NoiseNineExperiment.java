@@ -21,13 +21,12 @@ import asl.sensor.utils.TimeSeriesUtils;
  * @author akearns
  *
  */
-public class NoiseNineExperiment extends Experiment {
+public class NoiseNineExperiment extends NoiseExperiment {
 
-  boolean freqSpace;
   
   public NoiseNineExperiment() {
     super();
-    freqSpace = false;
+    responseNames = new String[9];
   }
   
   @Override
@@ -61,6 +60,10 @@ public class NoiseNineExperiment extends Experiment {
     InstrumentResponse east3Resp = ds.getResponse(7);
     DataBlock vert3Sensor = ds.getBlock(8);
     InstrumentResponse vert3Resp = ds.getResponse(8);
+    
+    for (int i = 0; i < responseNames.length; ++i) {
+      responseNames[i] = ds.getResponse(i).getName();
+    }
     
     System.out.println("Got data, now doing rotations...");
     
@@ -167,13 +170,5 @@ public class NoiseNineExperiment extends Experiment {
     return true;
   }
 
-  /**
-   * Used to set the x-axis over which the PSDs / cross-powers are plotted,
-   * either frequency (Hz) units or sample-interval (s) units
-   * @param freqSpace True if the plot should use units of Hz
-   */
-  public void setFreqSpace(boolean freq) {
-    freqSpace = freq;    
-  }
 
 }

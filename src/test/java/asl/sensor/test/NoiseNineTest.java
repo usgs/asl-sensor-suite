@@ -84,6 +84,8 @@ public class NoiseNineTest {
     assertTrue( nnp.hasEnoughData(ds) );
     nnp.updateData(ds);
     
+    // TODO: replace with PDF report generation
+    
     BufferedImage bi = nnp.getAsImage(640,480 * 3);
     try {
       String testResultFolder = currentDir + "/testResultImages/";

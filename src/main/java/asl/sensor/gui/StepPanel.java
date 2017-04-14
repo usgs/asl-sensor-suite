@@ -127,6 +127,16 @@ public class StepPanel extends ExperimentPanel {
   }
   
   @Override
+  public String getMetadataString() {
+    StepExperiment stex = (StepExperiment) expResult;
+    StringBuilder sb = new StringBuilder();
+    sb.append("LOADED RESPONSE:");
+    sb.append('\n');
+    sb.append( stex.getResponseName() );
+    return sb.toString();
+  }
+  
+  @Override
   public int panelsNeeded() {
     return 2;
   }

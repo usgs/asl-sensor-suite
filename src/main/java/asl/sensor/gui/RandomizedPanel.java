@@ -197,6 +197,16 @@ public class RandomizedPanel extends ExperimentPanel {
   }
   
   @Override
+  public String getMetadataString() {
+    RandomizedExperiment rnd = (RandomizedExperiment) expResult;
+    StringBuilder sb = new StringBuilder();
+    sb.append("LOADED RESPONSE:");
+    sb.append('\n');
+    sb.append( rnd.getResponseName() );
+    return sb.toString();
+  }
+  
+  @Override
   public ValueAxis getYAxis() {
     
     if ( null == plotSelection ) {

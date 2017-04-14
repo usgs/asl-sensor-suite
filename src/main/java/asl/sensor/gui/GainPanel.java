@@ -270,6 +270,19 @@ implements ChangeListener {
     return getInsetString(gn, idx0, idx1, lowPrd, highPrd);
   }
   
+  @Override
+  public String getMetadataString() {
+    int idx0 = firstSeries.getSelectedIndex();
+    int idx1 = secondSeries.getSelectedIndex();
+    
+    GainExperiment gn = (GainExperiment) expResult;
+    StringBuilder sb = new StringBuilder();
+    sb.append("LOADED RESPONSES:");
+    sb.append('\n');
+    sb.append( gn.getResponseNames(idx0, idx1) );
+    return sb.toString();
+  }
+  
   /**
    * Converts x-axis value from log scale to linear, to get slider position
    * @param prd period value marking data window boundary
