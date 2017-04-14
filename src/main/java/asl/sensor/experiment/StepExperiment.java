@@ -227,6 +227,11 @@ public class StepExperiment extends Experiment{
     
   }
   
+  @Override
+  public int blocksNeeded() {
+    return 2;
+  }
+  
   /**
    * Does the deconvolution of the response calculated from the corner freq. (f)
    * and damping (h) parameters passed in
@@ -334,7 +339,12 @@ public class StepExperiment extends Experiment{
   public double[] getFitCornerAndDamping() {
     return new double[]{fCorr, hCorr, fitResid};
   }
-  
+
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
+  }
+
   /**
    * Computes the forward change in value of the calculations for response
    * formed from a given corner and damping value
@@ -366,16 +376,6 @@ public class StepExperiment extends Experiment{
     RealVector fnc = MatrixUtils.createRealVector(fInit);
     
     return new Pair<RealVector, RealMatrix>(fnc, jMat);
-  }
-
-  @Override
-  public boolean hasEnoughData(DataStore ds) {
-    return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
-  }
-
-  @Override
-  public int blocksNeeded() {
-    return 2;
   }
   
 }

@@ -224,44 +224,6 @@ public class FFTResult {
   }
   
   /**
-   * In-place subtraction of trend from each point in an incoming data set.
-   * This is a necessary step in calculating the power-spectral density.
-   * @param dataSet The data to have the trend removed from.
-   */
-  public static void detrend(List<Number> dataSet) {
-    
-    double sumX = 0.0;
-    double sumY = 0.0;
-    double sumXSqd = 0.0;
-    double sumXY = 0.0;
-    
-    for (int i = 0; i < dataSet.size(); ++i) {
-      sumX += (double) i;
-      sumXSqd += (double) i * (double) i;
-      double value = dataSet.get(i).doubleValue();
-      sumXY += value * (double) i;
-      sumY += value;
-    }
-    
-    // brackets here so you don't get confused thinking this should be
-    // algebraic division (in which case we'd just factor out the size term)
-    // 
-    
-    double del = sumXSqd - ( sumX * sumX / dataSet.size() );
-    
-    double slope = sumXY - ( sumX * sumY / dataSet.size() );
-    slope /= del;
-    
-    double yOffset = (sumXSqd * sumY) - (sumX * sumXY);
-    yOffset /= del * dataSet.size();
-    
-    for (int i = 0; i < dataSet.size(); ++i) {
-      dataSet.set(i, dataSet.get(i).doubleValue() - ( (slope * i) + yOffset) );
-    }
-    
-  }
-  
-  /**
    * Linear detrend applied to an array of doubles rather than a list.
    * This operation is not done in-place.
    * @param dataSet The double array to be detrended
@@ -300,6 +262,44 @@ public class FFTResult {
     }
     
     return detrended;
+  }
+  
+  /**
+   * In-place subtraction of trend from each point in an incoming data set.
+   * This is a necessary step in calculating the power-spectral density.
+   * @param dataSet The data to have the trend removed from.
+   */
+  public static void detrend(List<Number> dataSet) {
+    
+    double sumX = 0.0;
+    double sumY = 0.0;
+    double sumXSqd = 0.0;
+    double sumXY = 0.0;
+    
+    for (int i = 0; i < dataSet.size(); ++i) {
+      sumX += (double) i;
+      sumXSqd += (double) i * (double) i;
+      double value = dataSet.get(i).doubleValue();
+      sumXY += value * (double) i;
+      sumY += value;
+    }
+    
+    // brackets here so you don't get confused thinking this should be
+    // algebraic division (in which case we'd just factor out the size term)
+    // 
+    
+    double del = sumXSqd - ( sumX * sumX / dataSet.size() );
+    
+    double slope = sumXY - ( sumX * sumY / dataSet.size() );
+    slope /= del;
+    
+    double yOffset = (sumXSqd * sumY) - (sumX * sumXY);
+    yOffset /= del * dataSet.size();
+    
+    for (int i = 0; i < dataSet.size(); ++i) {
+      dataSet.set(i, dataSet.get(i).doubleValue() - ( (slope * i) + yOffset) );
+    }
+    
   }
   
   /**
@@ -388,40 +388,6 @@ public class FFTResult {
   }
   
   /**
-   * Do the inverse FFT on the result of a single-sided FFT operation.
-   * The negative frequencies are reconstructed as the complex conjugates of
-   * the positive corresponding frequencies
-   * @param freqDomn Complex array (i.e., the result of a previous FFT calc)
-   * @param trim How long the original input data was
-   * @return A list of doubles representing the original timeseries of the FFT
-   */
-  public static double[] singleSidedInverseFFT(Complex[] freqDomn, int trim) {
-    FastFourierTransformer fft = 
-        new FastFourierTransformer(DftNormalization.UNITARY);
-     
-    int padding = (freqDomn.length - 1) * 2;
-    
-    Complex[] padded = new Complex[padding];
-    for (int i = 0; i < freqDomn.length; ++i) {
-      padded[i] = freqDomn[i];
-    }
-    for (int i = 1; i < padding/2; ++i) {
-      // System.out.println(freqDomn.length+","+i);
-      padded[padded.length - i] = padded[i].conjugate();
-    }
-    
-    Complex[] timeSeriesCpx = 
-        fft.transform(padded, TransformType.INVERSE);
-    
-    double[] timeSeries = new double[trim];
-    for (int i = 0; i < trim; ++i) {
-      timeSeries[i] = timeSeriesCpx[i].getReal();
-    }
-    
-    return timeSeries;
-  }
-  
-  /**
    * Function for padding and returning the result of a forward FFT.
    * This does not trim the negative frequencies of the result; it returns
    * the full FFT result as an array of Complex numbers
@@ -499,6 +465,40 @@ public class FFTResult {
     
     return new FFTResult(fftOut, frequencies);
     
+  }
+  
+  /**
+   * Do the inverse FFT on the result of a single-sided FFT operation.
+   * The negative frequencies are reconstructed as the complex conjugates of
+   * the positive corresponding frequencies
+   * @param freqDomn Complex array (i.e., the result of a previous FFT calc)
+   * @param trim How long the original input data was
+   * @return A list of doubles representing the original timeseries of the FFT
+   */
+  public static double[] singleSidedInverseFFT(Complex[] freqDomn, int trim) {
+    FastFourierTransformer fft = 
+        new FastFourierTransformer(DftNormalization.UNITARY);
+     
+    int padding = (freqDomn.length - 1) * 2;
+    
+    Complex[] padded = new Complex[padding];
+    for (int i = 0; i < freqDomn.length; ++i) {
+      padded[i] = freqDomn[i];
+    }
+    for (int i = 1; i < padding/2; ++i) {
+      // System.out.println(freqDomn.length+","+i);
+      padded[padded.length - i] = padded[i].conjugate();
+    }
+    
+    Complex[] timeSeriesCpx = 
+        fft.transform(padded, TransformType.INVERSE);
+    
+    double[] timeSeries = new double[trim];
+    for (int i = 0; i < trim; ++i) {
+      timeSeries[i] = timeSeriesCpx[i].getReal();
+    }
+    
+    return timeSeries;
   }
   
   /**

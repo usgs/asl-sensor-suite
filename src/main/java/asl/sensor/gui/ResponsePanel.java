@@ -1,20 +1,16 @@
 package asl.sensor.gui;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 
-import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -37,20 +33,25 @@ import asl.sensor.input.DataStore;
  */
 public class ResponsePanel extends ExperimentPanel {
 
-  private ValueAxis freqAxis, degreeAxis;
-  private String freqAxisTitle, degreeAxisTitle;
-  private JCheckBox freqSpaceBox;
-  private JComboBox<String> plotSelection;
-  
   private final static Color[] COLOR_LIST = 
       new Color[]{Color.RED, Color.BLUE, Color.GREEN};
-  
-  private JFreeChart magChart, argChart;
-  
   // values
   public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
   
+  private ValueAxis freqAxis, degreeAxis;
+  
+  private String freqAxisTitle, degreeAxisTitle;
+  
+  private JCheckBox freqSpaceBox;
+  private JComboBox<String> plotSelection;
+  
+  private JFreeChart magChart, argChart;
+
   public ResponsePanel(ExperimentEnum exp) {
     super(exp);
     
@@ -121,10 +122,33 @@ public class ResponsePanel extends ExperimentPanel {
     plotSelection.addActionListener(this);
     
   }
-
+  
   @Override
-  public int plotsToShow() {
-    return 0;
+  public void actionPerformed(ActionEvent e) {
+    
+    super.actionPerformed(e);
+    
+    if ( e.getSource() == plotSelection ) {
+      if (!set) {
+        return;
+      }
+      
+      int idx = plotSelection.getSelectedIndex();
+      if (idx == 0) {
+        chartPanel.setChart(magChart);
+      } else {
+        chartPanel.setChart(argChart);
+      }
+      
+      return;
+      
+    }
+    
+  }
+  
+  @Override
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{magChart, argChart};
   }
   
   @Override
@@ -138,7 +162,7 @@ public class ResponsePanel extends ExperimentPanel {
     return xAxis;
     
   }
-  
+
   @Override
   public ValueAxis getYAxis() {
     
@@ -152,12 +176,17 @@ public class ResponsePanel extends ExperimentPanel {
       return degreeAxis;
     }
   }
-  
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
 
+  @Override
+  public int panelsNeeded() {
+    return 3;
+  }
+  
+  @Override
+  public int plotsToShow() {
+    return 0;
+  }
+  
   @Override
   public void updateData(DataStore ds) {
 
@@ -198,39 +227,6 @@ public class ResponsePanel extends ExperimentPanel {
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
     
-  }
-
-  @Override
-  public JFreeChart[] getCharts() {
-    return new JFreeChart[]{magChart, argChart};
-  }
-  
-  @Override
-  public void actionPerformed(ActionEvent e) {
-    
-    super.actionPerformed(e);
-    
-    if ( e.getSource() == plotSelection ) {
-      if (!set) {
-        return;
-      }
-      
-      int idx = plotSelection.getSelectedIndex();
-      if (idx == 0) {
-        chartPanel.setChart(magChart);
-      } else {
-        chartPanel.setChart(argChart);
-      }
-      
-      return;
-      
-    }
-    
-  }
-  
-  @Override
-  public int panelsNeeded() {
-    return 3;
   }
 
 }

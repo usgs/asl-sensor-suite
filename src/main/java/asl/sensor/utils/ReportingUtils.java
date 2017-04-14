@@ -30,38 +30,36 @@ import org.jfree.chart.JFreeChart;
 public class ReportingUtils {
 
   /**
-   * Utility function to combine a series of buffered images into a single
-   * buffered image. Images are concatenated vertically and centered 
-   * horizontally into an image as wide as the widest passed-in image
-   * @param bis Buffered images to send in
-   * @return Single concatenated buffered image
+   * Add a buffered image to a PDDocument page
+   * @param bi BufferedImage to be added to PDF
+   * @param pdf PDF to have BufferedImage appended to
    */
-  public static BufferedImage mergeBufferedImages(BufferedImage... bis) {
-   
-    int maxWidth = 0;
-    int totalHeight = 0;
-    for (BufferedImage bi : bis) {
-      if ( maxWidth < bi.getWidth() ) {
-        maxWidth = bi.getWidth();
-      }
-      totalHeight += bi.getHeight();
+  public static void 
+  bufferedImageToPDFPage(BufferedImage bi, PDDocument pdf) {
+    
+    PDRectangle rec = 
+        new PDRectangle( (float) bi.getWidth(), 
+                         (float) bi.getHeight() );
+    PDPage page = new PDPage(rec);
+    
+    try {
+      PDImageXObject  pdImageXObject = 
+          LosslessFactory.createFromImage(pdf, bi);
+      pdf.addPage(page);
+      PDPageContentStream contentStream = 
+          new PDPageContentStream(pdf, page, 
+                                  PDPageContentStream.AppendMode.OVERWRITE, 
+                                  true, false);
+
+      contentStream.drawImage( pdImageXObject, 0, 0, 
+          bi.getWidth(), bi.getHeight() );
+      contentStream.close();
+      
+    } catch (IOException e) {
+      e.printStackTrace();
     }
-    
-    BufferedImage out = 
-        new BufferedImage(maxWidth, totalHeight, BufferedImage.TYPE_INT_RGB);
-    Graphics2D g = out.createGraphics();
-    
-    int heightIndex = 0;
-    for (BufferedImage bi : bis) {
-      int centeringOffset = 0; // need to center the component?
-      if (bi.getWidth() < maxWidth) {
-        centeringOffset = ( maxWidth - bi.getWidth() ) / 2;
-      }
-      g.drawImage(bi, null, centeringOffset, heightIndex);
-      heightIndex += bi.getHeight();
-    }
-    
-    return out;
+
+    return;
     
   }
   
@@ -99,37 +97,56 @@ public class ReportingUtils {
   }
   
   /**
-   * Add a buffered image to a PDDocument page
-   * @param bi BufferedImage to be added to PDF
-   * @param pdf PDF to have BufferedImage appended to
-   * @return PDF with the image included on the page
+   * Takes in a series of charts and produces a PDF page of those charts.
+   * For more details on this method, see the chartsToImage function, which
+   * this method uses to produce the image to be added to the PDF
+   * @param width Width of each chart to be added to the PDF
+   * @param height Height of each chart to be added to the PDF
+   * @param pdf PDF document to have the data appended to
+   * @param jfcs series of charts to place in the PDF
    */
-  public static PDDocument 
-  bufferedImageToPDFPage(BufferedImage bi, PDDocument pdf) {
+  public static void 
+  chartsToPDFPage(int width, int height, PDDocument pdf, JFreeChart... jfcs) {
     
-    PDRectangle rec = 
-        new PDRectangle( (float) bi.getWidth(), 
-                         (float) bi.getHeight() );
-    PDPage page = new PDPage(rec);
+    BufferedImage bi = chartsToImage(width, height, jfcs);
+    bufferedImageToPDFPage(bi, pdf);
+    return;
     
-    try {
-      PDImageXObject  pdImageXObject = 
-          LosslessFactory.createFromImage(pdf, bi);
-      pdf.addPage(page);
-      PDPageContentStream contentStream = 
-          new PDPageContentStream(pdf, page, 
-                                  PDPageContentStream.AppendMode.OVERWRITE, 
-                                  true, false);
-
-      contentStream.drawImage( pdImageXObject, 0, 0, 
-          bi.getWidth(), bi.getHeight() );
-      contentStream.close();
-      
-    } catch (IOException e) {
-      e.printStackTrace();
+  }
+  
+  /**
+   * Utility function to combine a series of buffered images into a single
+   * buffered image. Images are concatenated vertically and centered 
+   * horizontally into an image as wide as the widest passed-in image
+   * @param bis Buffered images to send in
+   * @return Single concatenated buffered image
+   */
+  public static BufferedImage mergeBufferedImages(BufferedImage... bis) {
+   
+    int maxWidth = 0;
+    int totalHeight = 0;
+    for (BufferedImage bi : bis) {
+      if ( maxWidth < bi.getWidth() ) {
+        maxWidth = bi.getWidth();
+      }
+      totalHeight += bi.getHeight();
     }
-
-    return pdf;
+    
+    BufferedImage out = 
+        new BufferedImage(maxWidth, totalHeight, BufferedImage.TYPE_INT_RGB);
+    Graphics2D g = out.createGraphics();
+    
+    int heightIndex = 0;
+    for (BufferedImage bi : bis) {
+      int centeringOffset = 0; // need to center the component?
+      if (bi.getWidth() < maxWidth) {
+        centeringOffset = ( maxWidth - bi.getWidth() ) / 2;
+      }
+      g.drawImage(bi, null, centeringOffset, heightIndex);
+      heightIndex += bi.getHeight();
+    }
+    
+    return out;
     
   }
   
@@ -137,12 +154,12 @@ public class ReportingUtils {
    * Add a page to a PDF document consisting of textual data
    * @param toWrite String to add to a new PDF page
    * @param pdf Document to append the page to
-   * @return PDF with text page appended
    */
-  public static PDDocument
+  public static void
   textToPDFPage(String toWrite, PDDocument pdf) {
+    
     if ( toWrite.length() == 0 ) {
-      return pdf;
+      return;
     }
     
       PDPage page = new PDPage();
@@ -212,25 +229,7 @@ public class ReportingUtils {
       }
 
 
-      return pdf;
-  }
-  
-  /**
-   * Takes in a series of charts and produces a PDF page of those charts.
-   * For more details on this method, see the chartsToImage function, which
-   * this method uses to produce the image to be added to the PDF
-   * @param width Width of each chart to be added to the PDF
-   * @param height Height of each chart to be added to the PDF
-   * @param pdf PDF document to have the data appended to
-   * @param jfcs series of charts to place in the PDF
-   * @return PDF document with new page added consisting of the included charts
-   */
-  public static PDDocument 
-  chartsToPDFPage(int width, int height, PDDocument pdf, JFreeChart... jfcs) {
-    
-    BufferedImage bi = chartsToImage(width, height, jfcs);
-    return bufferedImageToPDFPage(bi, pdf);
-    
+      return;
   }
 
 }

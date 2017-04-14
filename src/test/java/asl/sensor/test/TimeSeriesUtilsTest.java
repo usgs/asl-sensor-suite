@@ -41,27 +41,6 @@ public class TimeSeriesUtilsTest {
   public String filename1 = "./data/"+fileID+".512.seed";
   
   @Test
-  public void decimationTest() {
-    
-    long interval40Hz = (TimeSeriesUtils.ONE_HZ_INTERVAL / 40);
-    long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
-    
-    List<Number> timeSeries = new ArrayList<Number>();
-    
-    for (int i = 0; i < 160; ++i) {
-      timeSeries.add(i);
-    }
-    
-    timeSeries = TimeSeriesUtils.decimate(timeSeries, interval40Hz, interval);
-    
-    assertEquals(timeSeries.size(), 4);
-    for (int i = 0; i < timeSeries.size(); ++i) {
-      assertEquals(timeSeries.get(i).doubleValue(), 40*i, 0.5);
-    }
-  }
-  
-  
-  @Test
   public void canGetFile() {
     try{
       FileInputStream fis = new FileInputStream(filename1);
@@ -70,6 +49,7 @@ public class TimeSeriesUtilsTest {
       assertNull(e);
     }
   }
+  
   
   @Test
   public void canGetMultiplexDataNames() {
@@ -88,81 +68,22 @@ public class TimeSeriesUtilsTest {
   }
   
   @Test
-  public void seisFileCanParseFile() {
+  public void decimationTest() {
     
-    try {
-      DataInput dis = new DataInputStream( new BufferedInputStream( 
-          new FileInputStream(filename1) ) ); 
-      try{
-        while(true) {
-          SeedRecord sr = SeedRecord.read(dis,4096);
-          if (sr instanceof DataRecord) {
-            DataRecord dr = (DataRecord)sr;
-
-            String loc = dr.getHeader().getLocationIdentifier();
-            assertTrue( loc.equals(location) );
-            String stat = dr.getHeader().getStationIdentifier().trim();
-            assertTrue( stat.equals(station) );
-
-            String chan = dr.getHeader().getChannelIdentifier();
-            assertTrue( chan.equals(channel) );
-          }
-        }
-      } catch (EOFException e) {
-        assertNotNull(e); // I haaates it! I haaaaaaaaaates it!
-      } catch (SeedFormatException e) {
-        assertNull(e);
-      } catch (IOException e) {
-        assertNull(e);
-      }
-      
-    } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
-      assertNull(e);
+    long interval40Hz = (TimeSeriesUtils.ONE_HZ_INTERVAL / 40);
+    long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
+    
+    List<Number> timeSeries = new ArrayList<Number>();
+    
+    for (int i = 0; i < 160; ++i) {
+      timeSeries.add(i);
     }
     
-  }
-  
-  @Test
-  public void seisFileGivesCorrectSampleRateAndInterval() {
-    DataInput dis;
-    try {
-      while (true) {
-        
-        dis = new DataInputStream( new BufferedInputStream( 
-            new FileInputStream(filename1) ) );
-        SeedRecord sr = SeedRecord.read(dis,4096);
-        if(sr instanceof DataRecord) {
-          DataRecord dr = (DataRecord)sr;
-          
-          int fact = dr.getHeader().getSampleRateFactor();
-          int mult = dr.getHeader().getSampleRateMultiplier();
-          
-          //System.out.println(fact+","+mult);
-          
-          double rate = dr.getHeader().getSampleRate();
-          assertTrue((double)fact/mult == rate);
-          
-          // checking the correct values for the intervals
-          
-          double multOf1Hz = rate/TimeSeriesUtils.ONE_HZ;
-          long inverse = TimeSeriesUtils.ONE_HZ_INTERVAL/(long)multOf1Hz;
-          
-          long interval = TimeSeriesUtils.ONE_HZ_INTERVAL*mult/fact;
-          
-          assertEquals( inverse, interval);
-          // System.out.println(interval);
-          
-          break;
-          
-        }
-      }
-    } catch (FileNotFoundException e) {
-      assertNull(e); // only reading one record;
-    } catch (SeedFormatException e) {
-      assertNull(e);
-    } catch (IOException e) {
-      assertNull(e);
+    timeSeries = TimeSeriesUtils.decimate(timeSeries, interval40Hz, interval);
+    
+    assertEquals(timeSeries.size(), 4);
+    for (int i = 0; i < timeSeries.size(); ++i) {
+      assertEquals(timeSeries.get(i).doubleValue(), 40*i, 0.5);
     }
   }
   
@@ -290,6 +211,85 @@ public class TimeSeriesUtilsTest {
       assertNull(e);
     } catch (CodecException e) {
       // TODO Auto-generated catch block
+      assertNull(e);
+    }
+  }
+  
+  @Test
+  public void seisFileCanParseFile() {
+    
+    try {
+      DataInput dis = new DataInputStream( new BufferedInputStream( 
+          new FileInputStream(filename1) ) ); 
+      try{
+        while(true) {
+          SeedRecord sr = SeedRecord.read(dis,4096);
+          if (sr instanceof DataRecord) {
+            DataRecord dr = (DataRecord)sr;
+
+            String loc = dr.getHeader().getLocationIdentifier();
+            assertTrue( loc.equals(location) );
+            String stat = dr.getHeader().getStationIdentifier().trim();
+            assertTrue( stat.equals(station) );
+
+            String chan = dr.getHeader().getChannelIdentifier();
+            assertTrue( chan.equals(channel) );
+          }
+        }
+      } catch (EOFException e) {
+        assertNotNull(e); // I haaates it! I haaaaaaaaaates it!
+      } catch (SeedFormatException e) {
+        assertNull(e);
+      } catch (IOException e) {
+        assertNull(e);
+      }
+      
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      assertNull(e);
+    }
+    
+  }
+  
+  @Test
+  public void seisFileGivesCorrectSampleRateAndInterval() {
+    DataInput dis;
+    try {
+      while (true) {
+        
+        dis = new DataInputStream( new BufferedInputStream( 
+            new FileInputStream(filename1) ) );
+        SeedRecord sr = SeedRecord.read(dis,4096);
+        if(sr instanceof DataRecord) {
+          DataRecord dr = (DataRecord)sr;
+          
+          int fact = dr.getHeader().getSampleRateFactor();
+          int mult = dr.getHeader().getSampleRateMultiplier();
+          
+          //System.out.println(fact+","+mult);
+          
+          double rate = dr.getHeader().getSampleRate();
+          assertTrue((double)fact/mult == rate);
+          
+          // checking the correct values for the intervals
+          
+          double multOf1Hz = rate/TimeSeriesUtils.ONE_HZ;
+          long inverse = TimeSeriesUtils.ONE_HZ_INTERVAL/(long)multOf1Hz;
+          
+          long interval = TimeSeriesUtils.ONE_HZ_INTERVAL*mult/fact;
+          
+          assertEquals( inverse, interval);
+          // System.out.println(interval);
+          
+          break;
+          
+        }
+      }
+    } catch (FileNotFoundException e) {
+      assertNull(e); // only reading one record;
+    } catch (SeedFormatException e) {
+      assertNull(e);
+    } catch (IOException e) {
       assertNull(e);
     }
   }

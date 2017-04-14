@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.io.IOException;
 import java.util.List;
 
 import javax.swing.JComboBox;
@@ -15,11 +14,7 @@ import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.plot.PolarPlot;
@@ -41,10 +36,15 @@ import asl.sensor.input.DataStore;
  */
 public class AzimuthPanel extends ExperimentPanel {
 
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 4088024342809622854L;
   JSpinner offsetSpinner;
   JFreeChart angleChart, coherenceChart;
-  JComboBox<String> chartSelector;
   
+  JComboBox<String> chartSelector;
+
   public AzimuthPanel(ExperimentEnum exp) {
     super(exp);
     
@@ -128,11 +128,6 @@ public class AzimuthPanel extends ExperimentPanel {
     this.add(save, gbc);
   }
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 4088024342809622854L;
-
   @Override
   public void actionPerformed(ActionEvent e) {
     
@@ -147,6 +142,28 @@ public class AzimuthPanel extends ExperimentPanel {
     }
     
     super.actionPerformed(e);
+  }
+  
+  @Override
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{angleChart, coherenceChart};
+  }
+
+  @Override
+  public String getInsetString() {
+    AzimuthExperiment az = (AzimuthExperiment) expResult;
+    double value = az.getOffset();
+    double angle = az.getFitAngle();
+    String angleStr = "FIT ANGLE: " + angle;
+    double result = ( (value + angle) % 360 + 360) % 360;
+
+    angleStr += " + " + value + " = " + result;
+    return angleStr;
+  }
+
+  @Override
+  public int panelsNeeded() {
+    return 3;
   }
   
   @Override
@@ -201,28 +218,6 @@ public class AzimuthPanel extends ExperimentPanel {
     }
     
     chartPanel.setChart(chart);
-  }
-
-  @Override
-  public int panelsNeeded() {
-    return 3;
-  }
-
-  @Override
-  public String getInsetString() {
-    AzimuthExperiment az = (AzimuthExperiment) expResult;
-    double value = az.getOffset();
-    double angle = az.getFitAngle();
-    String angleStr = "FIT ANGLE: " + angle;
-    double result = ( (value + angle) % 360 + 360) % 360;
-
-    angleStr += " + " + value + " = " + result;
-    return angleStr;
-  }
-  
-  @Override
-  public JFreeChart[] getCharts() {
-    return new JFreeChart[]{angleChart, coherenceChart};
   }
   
 }

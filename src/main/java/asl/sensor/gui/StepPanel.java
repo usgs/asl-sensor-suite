@@ -4,12 +4,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.io.IOException;
 import java.text.DecimalFormat;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
@@ -36,55 +32,6 @@ public class StepPanel extends ExperimentPanel {
    */
   private static final long serialVersionUID = 3693391540945130688L;
 
-  public StepPanel(ExperimentEnum exp) {
-    super(exp);
-    
-    channelType[0] = "Calibration input";
-    channelType[1] = "Calibration output from sensor (RESP required)";
-    
-    xAxisTitle = "Time (s)";
-    yAxisTitle = "Normalized counts";
-    xAxis = new NumberAxis(xAxisTitle);
-    xAxis.setAutoRange(true);
-    //SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-    //sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    //xAxis.setLabel("UTC Time");
-    yAxis = new NumberAxis(yAxisTitle);
-    // yAxis.setAutoRange(true);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
-    xAxis.setLabelFont(bold);
-    yAxis.setLabelFont(bold);
-    
-    applyAxesToChart();
-    
-    this.setLayout( new GridBagLayout() );
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(chartPanel, gbc);
-    gbc.weighty = 0.0;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.gridy += 1;
-    this.add(save, gbc);
-    
-    plotTheseInBold = new String[]{};
-    
-    
-  }
-
-  /**
-   * Used to get the text that will populate the inset box for the plots
-   * @return String to place in TextTitle
-   */
-  @Override
-  public String getInsetString() {
-    
-    return getInsetString( (StepExperiment) expResult );
-  
-  }
-   
   /**
    * Static helper method for getting the formatted inset string directly
    * from a StepExperiment
@@ -129,7 +76,62 @@ public class StepPanel extends ExperimentPanel {
     return sb.toString();
     
   }
+
+  public StepPanel(ExperimentEnum exp) {
+    super(exp);
+    
+    channelType[0] = "Calibration input";
+    channelType[1] = "Calibration output from sensor (RESP required)";
+    
+    xAxisTitle = "Time (s)";
+    yAxisTitle = "Normalized counts";
+    xAxis = new NumberAxis(xAxisTitle);
+    xAxis.setAutoRange(true);
+    //SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+    //sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    //xAxis.setLabel("UTC Time");
+    yAxis = new NumberAxis(yAxisTitle);
+    // yAxis.setAutoRange(true);
+    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    xAxis.setLabelFont(bold);
+    yAxis.setLabelFont(bold);
+    
+    applyAxesToChart();
+    
+    this.setLayout( new GridBagLayout() );
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.gridx = 0; gbc.gridy = 0;
+    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.fill = GridBagConstraints.BOTH;
+    gbc.anchor = GridBagConstraints.CENTER;
+    this.add(chartPanel, gbc);
+    gbc.weighty = 0.0;
+    gbc.fill = GridBagConstraints.NONE;
+    gbc.gridy += 1;
+    this.add(save, gbc);
+    
+    plotTheseInBold = new String[]{};
+    
+    
+  }
+   
+  /**
+   * Used to get the text that will populate the inset box for the plots
+   * @return String to place in TextTitle
+   */
+  @Override
+  public String getInsetString() {
+    
+    return getInsetString( (StepExperiment) expResult );
   
+  }
+  
+  @Override
+  public int panelsNeeded() {
+    return 2;
+  }
+
+
   /**
    * Pass in and retrieve data from the step experiment backend, to plot;
    * this is both the timeseries data as well as a title inset displaying
@@ -158,12 +160,6 @@ public class StepPanel extends ExperimentPanel {
     xyp.addAnnotation(xyt);
     
     chartPanel.setChart(chart);
-  }
-
-
-  @Override
-  public int panelsNeeded() {
-    return 2;
   }
 
 }

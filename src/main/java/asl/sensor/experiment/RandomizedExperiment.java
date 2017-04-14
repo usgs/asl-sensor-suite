@@ -12,7 +12,6 @@ import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
-import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem.Evaluation;
 import 
 org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import 
@@ -49,29 +48,79 @@ import asl.sensor.utils.FFTResult;
  */
 public class RandomizedExperiment extends Experiment {
 
+  private static final double DELTA = 1E-7;
+  /**
+   * Convert a list of variables to a set of poles to be applied to an
+   * instrument response file. This variable must have an even number of
+   * entries or the function will return an out-of-bounds exception.
+   * Variable pairs are combined to create complex numbers, with the first
+   * entry representing the real component of the complex number and the second
+   * representing the imaginary component. If this is a low-frequency
+   * calibration, there should be 4 variables; the lowest two poles are the
+   * ones which will be modified. If this is a high-frequency calibration,
+   * then there should be 2*(pole.size() - 2) variables as all but the lowest
+   * two poles will be modified.
+   * Note that the passed response file is not changed or modified by this
+   * process; a deep copy of the response is made, then that is modified and 
+   * returned.
+   * @param variables List of doubles representing complex number real and
+   * imaginary components of poles
+   * @param ir Response file which the list of pole variables will modify.
+   * @param lowFreq True if the bottom 2 poles should be modified, false if
+   * all other poles should be modified
+   * @return New response file with the altered poles
+   */
+  public static InstrumentResponse polesToResp(double[] variables, 
+      InstrumentResponse ir, boolean lowFreq) {
+    
+    int numVars = variables.length;
+    InstrumentResponse testResp = new InstrumentResponse(ir);
+    
+    List<Complex> poleList = new ArrayList<Complex>( testResp.getPoles() );
+    List<Complex> builtPoles = new ArrayList<Complex>();
+    
+    for (int i = 0; i < numVars; i += 2) {
+      Complex c = new Complex(variables[i], variables[i+1]);
+      builtPoles.add(c);
+      if ( variables[i+1] != 0. ) {
+        builtPoles.add( c.conjugate() );
+      }
+    }
+    
+    if (lowFreq) {
+      for (int i = 0; i < builtPoles.size(); ++i) {
+        poleList.set( i, builtPoles.get(i) );
+      }
+    } else {
+      int offset = 2; // assume first two poles are complex conjugates
+      if ( poleList.get(0).getImaginary() == 0. ) {
+        // the first two poles are not complex conjugates
+        offset = 1;
+      }
+      for (int i = 0; i < poleList.size() - offset; ++i) {
+        poleList.set( i + offset, builtPoles.get(i) );
+      }
+    }
+    
+    // System.out.println(poleList);
+    
+    // get the result for the input value
+    testResp.setPoles(poleList);
+    return testResp;
+  }
   private List<Complex> inputPoles;
   private List<Complex> fitPoles;
   private boolean lowFreq; // fit the low- or high-frequency poles?
   private InstrumentResponse fitResponse;
-  private double[] freqs;
-  private int oneHzIdx;
   
-  private static final double DELTA = 1E-7;
+  private double[] freqs;
+  
+  private int oneHzIdx;
   
   public RandomizedExperiment() {
     super();
     lowFreq = false;
     oneHzIdx = 0;
-  }
-  
-  /**
-   * Determines which poles to fit when doing the response curve fitting;
-   * low frequency calibrations set the first two poles; high frequency
-   * calibrations set the remaining poles
-   * @param lowFreq True if a low frequency calibration is to be used
-   */
-  public void setLowFreq(boolean lowFreq) {
-    this.lowFreq = lowFreq;
   }
   
   @Override
@@ -372,8 +421,9 @@ public class RandomizedExperiment extends Experiment {
     
     Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
     
-    XYSeries initMag = new XYSeries("Initial param (RESP in) magnitude");
-    XYSeries initArg = new XYSeries("Initial param (RESP in) arg. [phi]");
+    String name = fitResponse.getName();
+    XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
+    XYSeries initArg = new XYSeries("Initial param (" + name + ") arg. [phi]");
     
     XYSeries fitMag = new XYSeries("Fit resp. magnitude");
     XYSeries fitArg = new XYSeries("Fit resp. arg. [phi]");
@@ -420,64 +470,9 @@ public class RandomizedExperiment extends Experiment {
     
   }
   
-  /**
-   * Convert a list of variables to a set of poles to be applied to an
-   * instrument response file. This variable must have an even number of
-   * entries or the function will return an out-of-bounds exception.
-   * Variable pairs are combined to create complex numbers, with the first
-   * entry representing the real component of the complex number and the second
-   * representing the imaginary component. If this is a low-frequency
-   * calibration, there should be 4 variables; the lowest two poles are the
-   * ones which will be modified. If this is a high-frequency calibration,
-   * then there should be 2*(pole.size() - 2) variables as all but the lowest
-   * two poles will be modified.
-   * Note that the passed response file is not changed or modified by this
-   * process; a deep copy of the response is made, then that is modified and 
-   * returned.
-   * @param variables List of doubles representing complex number real and
-   * imaginary components of poles
-   * @param ir Response file which the list of pole variables will modify.
-   * @param lowFreq True if the bottom 2 poles should be modified, false if
-   * all other poles should be modified
-   * @return New response file with the altered poles
-   */
-  public static InstrumentResponse polesToResp(double[] variables, 
-      InstrumentResponse ir, boolean lowFreq) {
-    
-    int numVars = variables.length;
-    InstrumentResponse testResp = new InstrumentResponse(ir);
-    
-    List<Complex> poleList = new ArrayList<Complex>( testResp.getPoles() );
-    List<Complex> builtPoles = new ArrayList<Complex>();
-    
-    for (int i = 0; i < numVars; i += 2) {
-      Complex c = new Complex(variables[i], variables[i+1]);
-      builtPoles.add(c);
-      if ( variables[i+1] != 0. ) {
-        builtPoles.add( c.conjugate() );
-      }
-    }
-    
-    if (lowFreq) {
-      for (int i = 0; i < builtPoles.size(); ++i) {
-        poleList.set( i, builtPoles.get(i) );
-      }
-    } else {
-      int offset = 2; // assume first two poles are complex conjugates
-      if ( poleList.get(0).getImaginary() == 0. ) {
-        // the first two poles are not complex conjugates
-        offset = 1;
-      }
-      for (int i = 0; i < poleList.size() - offset; ++i) {
-        poleList.set( i + offset, builtPoles.get(i) );
-      }
-    }
-    
-    // System.out.println(poleList);
-    
-    // get the result for the input value
-    testResp.setPoles(poleList);
-    return testResp;
+  @Override
+  public int blocksNeeded() {
+    return 2;
   }
   
   /**
@@ -568,6 +563,31 @@ public class RandomizedExperiment extends Experiment {
     return curValue;
   }
   
+  public List<Complex> getFitPoles() {
+    if (lowFreq) {
+      return fitPoles.subList(0, 2);
+    } else {
+      return fitPoles.subList( 2, inputPoles.size() );
+    }
+  }
+  
+  /**
+   * Get poles used in input response, for output in plot or 
+   * @return
+   */
+  public List<Complex> getInitialPoles() {
+    if (lowFreq) {
+      return inputPoles.subList(0, 2);
+    } else {
+      return inputPoles.subList( 2, inputPoles.size() );
+    }
+  }
+  
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
+  }
+
   /**
    * Function to run evaluation and forward difference for Jacobian 
    * approximation given a set of points to set as response. 
@@ -627,35 +647,15 @@ public class RandomizedExperiment extends Experiment {
     return new Pair<RealVector, RealMatrix>(result, jMat);
     
   }
-  
+
   /**
-   * Get poles used in input response, for output in plot or 
-   * @return
+   * Determines which poles to fit when doing the response curve fitting;
+   * low frequency calibrations set the first two poles; high frequency
+   * calibrations set the remaining poles
+   * @param lowFreq True if a low frequency calibration is to be used
    */
-  public List<Complex> getInitialPoles() {
-    if (lowFreq) {
-      return inputPoles.subList(0, 2);
-    } else {
-      return inputPoles.subList( 2, inputPoles.size() );
-    }
-  }
-  
-  public List<Complex> getFitPoles() {
-    if (lowFreq) {
-      return fitPoles.subList(0, 2);
-    } else {
-      return fitPoles.subList( 2, inputPoles.size() );
-    }
-  }
-
-  @Override
-  public boolean hasEnoughData(DataStore ds) {
-    return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
-  }
-
-  @Override
-  public int blocksNeeded() {
-    return 2;
+  public void setLowFreq(boolean lowFreq) {
+    this.lowFreq = lowFreq;
   }
 
 }

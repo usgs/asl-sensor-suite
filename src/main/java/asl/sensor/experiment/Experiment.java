@@ -30,29 +30,6 @@ public abstract class Experiment {
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
   
-  long start;
-  long end;
-  
-  public Experiment() {
-    start = 0L; end = 0L;
-  }
-  
-  /**
-   * Get the start time of the data sent into this experiment
-   * @return Start time, in microseconds
-   */
-  public long getStart() {
-    return start;
-  }
-  
-  /**
-   * Get the end time of the data sent into this experiment
-   * @return End time, in microseconds
-   */
-  public long getEnd() {
-    return end;
-  }
-  
   /**
    * Helper function to add data from a datastore object (the PSD calculation)
    * into an XYSeriesCollection to eventually be plotted
@@ -101,8 +78,15 @@ public abstract class Experiment {
     }
     
   }
+  long start;
+  
+  long end;
   
   protected List<XYSeriesCollection> xySeriesData;
+  
+  public Experiment() {
+    start = 0L; end = 0L;
+  }
   
   /**
    * Abstract function that
@@ -112,6 +96,12 @@ public abstract class Experiment {
    * if it should be plotted by period) for domain axis
    */
   protected abstract void backend(final DataStore ds);
+  
+  /**
+   * Return the number of data blocks needed by the experiment
+   * @return
+   */
+  public abstract int blocksNeeded();
   
   /**
    * Return the plottable data for this experiment, populated in the backend
@@ -124,6 +114,29 @@ public abstract class Experiment {
   public List<XYSeriesCollection> getData() {
     return xySeriesData;
   }
+  
+  /**
+   * Get the end time of the data sent into this experiment
+   * @return End time, in microseconds
+   */
+  public long getEnd() {
+    return end;
+  }
+  
+  /**
+   * Get the start time of the data sent into this experiment
+   * @return Start time, in microseconds
+   */
+  public long getStart() {
+    return start;
+  }
+  
+  /**
+   * Used to check if the current input has enough data to do the calculation
+   * @param ds DataStore to be fed into experiment calculation
+   * @return True if there is enough data to be run
+   */
+  public abstract boolean hasEnoughData(final DataStore ds);
   
   /**
    * Driver to do data processing on inputted data (calls a concrete backend
@@ -172,18 +185,5 @@ public abstract class Experiment {
     
     backend(ds);
   }
-  
-  /**
-   * Return the number of data blocks needed by the experiment
-   * @return
-   */
-  public abstract int blocksNeeded();
-  
-  /**
-   * Used to check if the current input has enough data to do the calculation
-   * @param ds DataStore to be fed into experiment calculation
-   * @return True if there is enough data to be run
-   */
-  public abstract boolean hasEnoughData(final DataStore ds);
   
 }

@@ -30,15 +30,14 @@ public class VScrollPanel extends JPanel implements Scrollable {
   }
 
   @Override
-  public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation,
+  public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation,
       int direction) {
     return 1;
   }
 
   @Override
-  public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation,
-      int direction) {
-    return 1;
+  public boolean getScrollableTracksViewportHeight() {
+    return scaleVerticallyNotScroll;
   }
 
   @Override
@@ -47,8 +46,9 @@ public class VScrollPanel extends JPanel implements Scrollable {
   }
 
   @Override
-  public boolean getScrollableTracksViewportHeight() {
-    return scaleVerticallyNotScroll;
+  public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation,
+      int direction) {
+    return 1;
   }
 
   public void setScrollableTracksViewportHeight(boolean bool) {

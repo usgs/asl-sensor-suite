@@ -153,6 +153,11 @@ public class NoiseNineExperiment extends Experiment {
   }
 
   @Override
+  public int blocksNeeded() {
+    return 9;
+  }
+
+  @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < blocksNeeded(); ++i) {
       if ( !ds.bothComponentsSet(i) ) {
@@ -160,11 +165,6 @@ public class NoiseNineExperiment extends Experiment {
       }
     }
     return true;
-  }
-
-  @Override
-  public int blocksNeeded() {
-    return 9;
   }
 
   /**

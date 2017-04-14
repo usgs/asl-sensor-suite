@@ -1,17 +1,13 @@
 package asl.sensor.gui;
 
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.awt.image.BufferedImage;
 
 import javax.swing.JComboBox;
 
 import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYSeriesCollection;
 
@@ -29,10 +25,15 @@ import asl.sensor.input.DataStore;
  */
 public class NoiseNinePanel extends NoisePanel {
   
+  /**
+   * 
+   */
+  private static final long serialVersionUID = -8049021432657749975L;
   JComboBox<String> plotSelection;
   boolean set;
-  JFreeChart northChart, eastChart, vertChart;
   
+  JFreeChart northChart, eastChart, vertChart;
+
   public NoiseNinePanel(ExperimentEnum exp) {
     super(exp);
     
@@ -105,11 +106,6 @@ public class NoiseNinePanel extends NoisePanel {
     
   }
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = -8049021432657749975L;
-
   @Override
   public void actionPerformed(ActionEvent e) {
     
@@ -134,6 +130,18 @@ public class NoiseNinePanel extends NoisePanel {
     }
     
   }
+  
+  @Override
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{northChart, eastChart, vertChart};
+  }
+  
+  @Override
+  public int panelsNeeded() {
+    return 9;
+  }
+  
+  
   
   @Override
   public void updateData(final DataStore ds) {
@@ -196,18 +204,6 @@ public class NoiseNinePanel extends NoisePanel {
     chartPanel.setMouseZoomable(true);
 
 
-  }
-  
-  @Override
-  public JFreeChart[] getCharts() {
-    return new JFreeChart[]{northChart, eastChart, vertChart};
-  }
-  
-  
-  
-  @Override
-  public int panelsNeeded() {
-    return 9;
   }
   
 }

@@ -57,9 +57,44 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
  
   private static final long serialVersionUID = -5591522915365766604L;
 
-  protected JButton save;
+  /**
+   * Get start and end times of data for experiments that use time series data
+   * @param expResult experiment with data already added
+   * @return string representing the start and end of the 
+   * experiment's data range
+   */
+  public static String getTimeStampString(Experiment expResult) {
+    StringBuilder sb = new StringBuilder();
+    SimpleDateFormat sdf = new SimpleDateFormat("Y.DDD.HH:mm:ss");
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    
+    sb.append("Time of report generation:\n");
+    sb.append( sdf.format( cCal.getTime() ) );
+    sb.append('\n');
+    
+    long startTime = expResult.getStart();
+    long endTime = expResult.getEnd();
+    if ( !(startTime == 0L && endTime == 0L) ) {
+      cCal.setTimeInMillis( startTime / 1000 );
+      
+      sb.append("Data start time:\n");
+      sb.append( sdf.format( cCal.getTime() ) );
+      sb.append('\n');
+      
+      cCal.setTimeInMillis( endTime / 1000 );
+      
+      sb.append("Data end time:\n");
+      sb.append( sdf.format( cCal.getTime() ) );
+      sb.append('\n');
+    }
+    return sb.toString();
+  }
   
+  protected JButton save;
   protected JFreeChart chart; // replace with plot object
+  
   protected ChartPanel chartPanel;
   
   protected JFileChooser fc; // save image when image save button clicked
@@ -69,9 +104,9 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   
   protected Experiment expResult;
           // used to get the actual data from loaded-in files
-  
   // axes and titles must be instantiated in implementing functino
   protected String xAxisTitle, yAxisTitle;
+  
   protected ValueAxis xAxis, yAxis;
   
   public String[] channelType;
@@ -80,8 +115,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   
   protected String[] plotTheseInBold; // given in the implementing function
   // this is a String because bolded names are intended to be fixed
-  
   protected Map<String, Color> seriesColorMap;
+  
   protected Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
   
@@ -124,10 +159,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     this.add(save);
   }
   
-  public String[] getChannelTypes() {
-    return channelType;
-  }
-  
   /**
    * Handle's saving this plot's chart to file (PNG image) 
    * when the save button is clicked.
@@ -162,105 +193,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     XYPlot xyp = chart.getXYPlot();
     xyp.setDomainAxis( getXAxis() );
     xyp.setRangeAxis( getYAxis() );
-  }
-  
-  /**
-   * Overlay an error message in the event of an exception or other issue
-   * @param errMsg Text of the message to be displayed
-   */
-  public void displayErrorMessage(String errMsg) {
-    XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
-    TextTitle result = new TextTitle();
-    result.setText(errMsg);
-    result.setBackgroundPaint(Color.red);
-    result.setPaint(Color.white);
-    XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
-        RectangleAnchor.CENTER);
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
-  }
-  
-  /**
-   * Overlay informational text, such as extra results and statistics for plots
-   * @param infoMsg
-   */
-  public void displayInfoMessage(String infoMsg) {
-    XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
-    TextTitle result = new TextTitle();
-    result.setText(infoMsg);
-    XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
-        RectangleAnchor.CENTER);
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
-  }
-  
-  /**
-   * Return image of panel's plots with specified dimensions
-   * Used to compile PNG image of all charts contained in this panel
-   * @param width Width of output image in pixels
-   * @param height Height of output image in pixels
-   * @return buffered image of this panel's chart
-   */
-  public BufferedImage getAsImage(int width, int height) {
-    
-    JFreeChart[] jfcs = getCharts();
-    return ReportingUtils.chartsToImage(width, height, jfcs);
-    
-  }
-
-  /**
-   * Default x-axis return function.
-   * Though the x-axis is a local variable, some panels may have multiple unit
-   * types for the x-axis (i.e., for units of seconds vs. Hz); accessing
-   * the x-axis object through this function allows for overrides allowing for
-   * more flexibility.
-   * @return ValueAxis to be applied to chart
-   */
-  public ValueAxis getXAxis() {
-    return xAxis;
-  }
-  
-
-  /**
-   * Default x-axis title return. Displays the string used for the x-axis, 
-   * which is set when the panel's chart is constructed.
-   * As with the getXAxis function 
-   * @return String with axis title
-   */
-  public String getXTitle() {
-    return xAxisTitle;
-  }
-
-  /**
-   * Default y-axis return function. As with getXAxis, designed to be overridden
-   * for charts that may use multiple scales.
-   * @return ValueAxis to be applied to chart
-   */
-  public ValueAxis getYAxis() {
-    return yAxis;
-  }
-
-
-  /**
-   * Default y-axis title return. Displays the string used for the y-axis,
-   * which is set when the panel's chart is constructed. Designed to be
-   * overriden for charts that may use multiple scales
-   * @return String with axis title
-   */
-  public String getYTitle() {
-    return yAxisTitle;
-  }
-
-  /**
-   * Used to plot the results of a backend function from an experiment
-   * using a collection of XYSeries mapped by strings. This will be set to
-   * the default chart object held by the panel.
-   * @param xyDataset collection of XYSeries to plot
-   */
-  protected void setChart(XYSeriesCollection xyDataset) {
-
-     chart = buildChart(xyDataset);
-
   }
   
   /**
@@ -341,13 +273,135 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
-   * Function template for sending input to a backend fucntion and collecting
-   * the corresponding data
-   * @param ds DataStore object containing seed and resp files
+   * Overlay an error message in the event of an exception or other issue
+   * @param errMsg Text of the message to be displayed
    */
-  public abstract void updateData(final DataStore ds);
-  // details of how to run updateData are left up to the implementing panel
-  // however, the boolean "set" should be set to true to enable PDF saving
+  public void displayErrorMessage(String errMsg) {
+    XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
+    TextTitle result = new TextTitle();
+    result.setText(errMsg);
+    result.setBackgroundPaint(Color.red);
+    result.setPaint(Color.white);
+    XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
+        RectangleAnchor.CENTER);
+    xyp.clearAnnotations();
+    xyp.addAnnotation(xyt);
+  }
+  
+  /**
+   * Overlay informational text, such as extra results and statistics for plots
+   * @param infoMsg
+   */
+  public void displayInfoMessage(String infoMsg) {
+    XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
+    TextTitle result = new TextTitle();
+    result.setText(infoMsg);
+    XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
+        RectangleAnchor.CENTER);
+    xyp.clearAnnotations();
+    xyp.addAnnotation(xyt);
+  }
+
+  /**
+   * Return image of panel's plots with specified dimensions
+   * Used to compile PNG image of all charts contained in this panel
+   * @param width Width of output image in pixels
+   * @param height Height of output image in pixels
+   * @return buffered image of this panel's chart
+   */
+  public BufferedImage getAsImage(int width, int height) {
+    
+    JFreeChart[] jfcs = getCharts();
+    return ReportingUtils.chartsToImage(width, height, jfcs);
+    
+  }
+  
+
+  public String[] getChannelTypes() {
+    return channelType;
+  }
+
+  /**
+   * Return all chart panels used in this object;
+   * to be overridden by implementing experiment panels that contain multiple
+   * charts.
+   * Primary use of this function is to enumerate charts to save as images/PDF
+   * @return All chartpanels used in this object
+   */
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{chart};
+  }
+
+
+  /**
+   * Used to return any title insets as text format for saving in PDF,
+   * to be overridden by any panel that uses an inset
+   * @return String with any relevant parameters in it
+   */
+  public String getInsetString() {
+    return "";
+  }
+
+  /**
+   * Default x-axis return function.
+   * Though the x-axis is a local variable, some panels may have multiple unit
+   * types for the x-axis (i.e., for units of seconds vs. Hz); accessing
+   * the x-axis object through this function allows for overrides allowing for
+   * more flexibility.
+   * @return ValueAxis to be applied to chart
+   */
+  public ValueAxis getXAxis() {
+    return xAxis;
+  }
+  
+  /**
+   * Default x-axis title return. Displays the string used for the x-axis, 
+   * which is set when the panel's chart is constructed.
+   * As with the getXAxis function 
+   * @return String with axis title
+   */
+  public String getXTitle() {
+    return xAxisTitle;
+  }
+  
+  /**
+   * Default y-axis return function. As with getXAxis, designed to be overridden
+   * for charts that may use multiple scales.
+   * @return ValueAxis to be applied to chart
+   */
+  public ValueAxis getYAxis() {
+    return yAxis;
+  }
+  
+  /**
+   * Default y-axis title return. Displays the string used for the y-axis,
+   * which is set when the panel's chart is constructed. Designed to be
+   * overriden for charts that may use multiple scales
+   * @return String with axis title
+   */
+  public String getYTitle() {
+    return yAxisTitle;
+  }
+  
+  /**
+   * Function used to query backend on whether or not a datastore has all the
+   * data that a backend needs to calculate. This is used mainly to inform
+   * the main window (see SensorSuite class) that the generate result button
+   * can be set active
+   * @param ds Datastore to run data check on
+   * @return True if the backend can run with the data provided
+   */
+  public boolean hasEnoughData(final DataStore ds) {
+    return expResult.hasEnoughData(ds);
+  }
+  
+  /**
+   * True if data has been loaded into the experiment backend yet
+   * @return True if there is data to process
+   */
+  public boolean hasRun() {
+    return set;
+  }
   
   /**
    * Function template for informing main window of number of panels to display
@@ -365,26 +419,20 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
-   * Function used to query backend on whether or not a datastore has all the
-   * data that a backend needs to calculate. This is used mainly to inform
-   * the main window (see SensorSuite class) that the generate result button
-   * can be set active
-   * @param ds Datastore to run data check on
-   * @return True if the backend can run with the data provided
+   * Returns a PDF with a page dedicated to string data related to the
+   * data that has been passed into the experiment backend,
+   * including any text that might be included in chart title insets and
+   * the input data start and end timestamps
+   * @param pdf PDF document to append data to
+   * @return PDF document with page of text added
    */
-  public boolean hasEnoughData(final DataStore ds) {
-    return expResult.hasEnoughData(ds);
-  }
-  
-  /**
-   * Return all chart panels used in this object;
-   * to be overridden by implementing experiment panels that contain multiple
-   * charts.
-   * Primary use of this function is to enumerate charts to save as images/PDF
-   * @return All chartpanels used in this object
-   */
-  public JFreeChart[] getCharts() {
-    return new JFreeChart[]{chart};
+  public void saveInsetDataText(PDDocument pdf) {
+    
+    StringBuilder sb = new StringBuilder( getInsetString() );
+    sb.append('\n');
+    sb.append( getTimeStampString(expResult) );
+    ReportingUtils.textToPDFPage(sb.toString(), pdf);
+    return;
   }
   
   /**
@@ -399,82 +447,34 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     int height = 960;
     JFreeChart[] cps = getCharts();
     
-    pdf = ReportingUtils.chartsToPDFPage(width, height, pdf, cps);
+    ReportingUtils.chartsToPDFPage(width, height, pdf, cps);
 
-    pdf = saveInsetDataText(pdf);
+    saveInsetDataText(pdf);
 
     return pdf;
     
   }
   
   /**
-   * True if data has been loaded into the experiment backend yet
-   * @return True if there is data to process
+   * Used to plot the results of a backend function from an experiment
+   * using a collection of XYSeries mapped by strings. This will be set to
+   * the default chart object held by the panel.
+   * @param xyDataset collection of XYSeries to plot
    */
-  public boolean hasRun() {
-    return set;
+  protected void setChart(XYSeriesCollection xyDataset) {
+
+     chart = buildChart(xyDataset);
+
   }
   
   /**
-   * Returns a PDF with a page dedicated to string data related to the
-   * data that has been passed into the experiment backend,
-   * including any text that might be included in chart title insets and
-   * the input data start and end timestamps
-   * @param pdf PDF document to append data to
-   * @return PDF document with page of text added
+   * Function template for sending input to a backend fucntion and collecting
+   * the corresponding data
+   * @param ds DataStore object containing seed and resp files
    */
-  public PDDocument saveInsetDataText(PDDocument pdf) {
-    
-    StringBuilder sb = new StringBuilder( getInsetString() );
-    sb.append('\n');
-    sb.append( getTimeStampString(expResult) );
-    
-    return ReportingUtils.textToPDFPage(sb.toString(), pdf);
-  }
-  
-  /**
-   * Get start and end times of data for experiments that use time series data
-   * @param expResult experiment with data already added
-   * @return string representing the start and end of the 
-   * experiment's data range
-   */
-  public static String getTimeStampString(Experiment expResult) {
-    StringBuilder sb = new StringBuilder();
-    SimpleDateFormat sdf = new SimpleDateFormat("Y.DDD.HH:mm:ss");
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    
-    sb.append("Time of report generation:\n");
-    sb.append( sdf.format( cCal.getTime() ) );
-    sb.append('\n');
-    
-    long startTime = expResult.getStart();
-    long endTime = expResult.getEnd();
-    if ( !(startTime == 0L && endTime == 0L) ) {
-      cCal.setTimeInMillis( startTime / 1000 );
-      
-      sb.append("Data start time:\n");
-      sb.append( sdf.format( cCal.getTime() ) );
-      sb.append('\n');
-      
-      cCal.setTimeInMillis( endTime / 1000 );
-      
-      sb.append("Data end time:\n");
-      sb.append( sdf.format( cCal.getTime() ) );
-      sb.append('\n');
-    }
-    return sb.toString();
-  }
-  
-  /**
-   * Used to return any title insets as text format for saving in PDF,
-   * to be overridden by any panel that uses an inset
-   * @return String with any relevant parameters in it
-   */
-  public String getInsetString() {
-    return "";
-  }
+  public abstract void updateData(final DataStore ds);
+  // details of how to run updateData are left up to the implementing panel
+  // however, the boolean "set" should be set to true to enable PDF saving
 
 
 }

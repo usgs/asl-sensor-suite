@@ -6,7 +6,6 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,9 +15,6 @@ import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -48,18 +44,56 @@ implements ChangeListener {
 
   
   private static final long serialVersionUID = 6697458429989867529L;
-  private JSlider leftSlider;
-  private JSlider rightSlider;
-  private JComboBox<String> firstSeries;
-  private JComboBox<String> secondSeries;
-  private JButton recalcButton;
-  
-  private double low, high;
   /**
    * Max value of slider (ranges from 0 to 1000, converted to log10 scale)
    */
   private static final int SLIDER_MAX = 1000;
+  /**
+   * Static helper method for getting the formatted inset string directly
+   * from a GainExperiment
+   * @param gn GainExperiment with data to be extracted
+   * @param idx0 Index of first data to be loaded (i.e., 0)
+   * @param idx1 Index of second data to be loaded (i.e., 1)
+   * @param lowPrd low period boundary to take stats over
+   * @param highPrd high period boundary to take stats over
+   * @return
+   */
+  public static String 
+  getInsetString(GainExperiment gn, int idx0, int idx1, double lowPrd, 
+      double highPrd) {
+
+    double[] meanAndStdDev = 
+        gn.getStatsFromFreqs(
+            idx0, idx1, 1/lowPrd, 1/highPrd);
+
+    double mean = meanAndStdDev[0];
+    double sDev = meanAndStdDev[1];
+    double refGain = meanAndStdDev[2];
+    double calcGain = meanAndStdDev[3];
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append("ratio: ");
+    sb.append(mean);
+    sb.append("\n");
+    sb.append("sigma: ");
+    sb.append(sDev);
+    sb.append("\n");
+    sb.append("ref. gain: ");
+    sb.append(refGain);
+    sb.append("\n");
+    sb.append("** CALCULATED GAIN: ");
+    sb.append(calcGain);
+    return sb.toString();
+  }
+  private JSlider leftSlider;
+  private JSlider rightSlider;
+  private JComboBox<String> firstSeries;
   
+  private JComboBox<String> secondSeries;
+  private JButton recalcButton;
+  
+  private double low, high;
+
   /**
    * Instantiate the panel, including sliders and stat calc button
    * @param exp
@@ -217,7 +251,25 @@ implements ChangeListener {
     }
     
   }
-
+  
+  @Override
+  public String getInsetString() {
+    int leftPos = leftSlider.getValue();
+    double lowPrd = mapSliderToPeriod(leftPos);
+    int rightPos = rightSlider.getValue();
+    double highPrd = mapSliderToPeriod(rightPos);
+    
+    // remove old bars and draw the new ones
+    // setDomainMarkers(lowPrd, highPrd, xyp);
+    
+    int idx0 = firstSeries.getSelectedIndex();
+    int idx1 = secondSeries.getSelectedIndex();
+    
+    GainExperiment gn = (GainExperiment) expResult;
+ 
+    return getInsetString(gn, idx0, idx1, lowPrd, highPrd);
+  }
+  
   /**
    * Converts x-axis value from log scale to linear, to get slider position
    * @param prd period value marking data window boundary
@@ -228,6 +280,7 @@ implements ChangeListener {
     return (int) ( ( Math.log10(prd) - low ) / scale );
   }
   
+    
   /**
    * Converts the slider position to a logarithmic scale matching x-axis values
    * which is the period given in a rate of seconds
@@ -238,7 +291,13 @@ implements ChangeListener {
     double scale = (high - low)/SLIDER_MAX; // slider range is 0 to 1000
     return Math.pow(10, low + (scale * position) );
   }
+
+  @Override
+  public int panelsNeeded() {
+    return 2;
+  }
   
+
   /**
    * Used to populate the comboboxes with the incoming data
    * @param ds DataStore object being processed 
@@ -267,7 +326,6 @@ implements ChangeListener {
     secondSeries.setSelectedIndex(1);
   }
   
-    
   /**
    * Draws the lines marking the boundaries of the current window
    * @param lowPrd lower x-axis value (period, in seconds)
@@ -301,7 +359,6 @@ implements ChangeListener {
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
   }
-  
 
   @Override
   public void stateChanged(ChangeEvent e) {
@@ -371,7 +428,7 @@ implements ChangeListener {
     updateDataDriver(idx0, idx1);
 
   }
-
+  
   /**
    * Given input data (including time series collection), get only the relevant
    * ones to display based on combo boxes and then do the statistics on those.
@@ -446,67 +503,6 @@ implements ChangeListener {
     // lastly, display the calculated statistics in a textbox in the corner
     setTitle();
 
-  }
-
-  @Override
-  public int panelsNeeded() {
-    return 2;
-  }
-  
-  @Override
-  public String getInsetString() {
-    int leftPos = leftSlider.getValue();
-    double lowPrd = mapSliderToPeriod(leftPos);
-    int rightPos = rightSlider.getValue();
-    double highPrd = mapSliderToPeriod(rightPos);
-    
-    // remove old bars and draw the new ones
-    // setDomainMarkers(lowPrd, highPrd, xyp);
-    
-    int idx0 = firstSeries.getSelectedIndex();
-    int idx1 = secondSeries.getSelectedIndex();
-    
-    GainExperiment gn = (GainExperiment) expResult;
- 
-    return getInsetString(gn, idx0, idx1, lowPrd, highPrd);
-  }
-  
-  /**
-   * Static helper method for getting the formatted inset string directly
-   * from a GainExperiment
-   * @param gn GainExperiment with data to be extracted
-   * @param idx0 Index of first data to be loaded (i.e., 0)
-   * @param idx1 Index of second data to be loaded (i.e., 1)
-   * @param lowPrd low period boundary to take stats over
-   * @param highPrd high period boundary to take stats over
-   * @return
-   */
-  public static String 
-  getInsetString(GainExperiment gn, int idx0, int idx1, double lowPrd, 
-      double highPrd) {
-
-    double[] meanAndStdDev = 
-        gn.getStatsFromFreqs(
-            idx0, idx1, 1/lowPrd, 1/highPrd);
-
-    double mean = meanAndStdDev[0];
-    double sDev = meanAndStdDev[1];
-    double refGain = meanAndStdDev[2];
-    double calcGain = meanAndStdDev[3];
-    
-    StringBuilder sb = new StringBuilder();
-    sb.append("ratio: ");
-    sb.append(mean);
-    sb.append("\n");
-    sb.append("sigma: ");
-    sb.append(sDev);
-    sb.append("\n");
-    sb.append("ref. gain: ");
-    sb.append(refGain);
-    sb.append("\n");
-    sb.append("** CALCULATED GAIN: ");
-    sb.append(calcGain);
-    return sb.toString();
   }
   
 }

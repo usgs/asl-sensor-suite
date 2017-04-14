@@ -4,12 +4,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
@@ -35,6 +31,20 @@ public class OrthogonalPanel extends ExperimentPanel {
    * 
    */
   private static final long serialVersionUID = -2749224338484110043L;
+
+  public static String getInsetString(OrthogonalExperiment ort) {  
+    double[] fit = ort.getSolutionParams();
+    double angle = ort.getFitAngle();
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append("Calculated angle between non-reference sensors:\n");
+    sb.append(angle);
+    sb.append('\n');
+    sb.append("Offset angles for LH1 and LH2 sensor outputs:\n");
+    sb.append( Arrays.toString(fit) );
+    
+    return sb.toString();
+  }
 
   public OrthogonalPanel(ExperimentEnum exp) {
     super(exp);
@@ -74,6 +84,17 @@ public class OrthogonalPanel extends ExperimentPanel {
   }
 
   @Override
+  public String getInsetString() {
+    return getInsetString( (OrthogonalExperiment) expResult );
+  }
+  
+  @Override
+  public int panelsNeeded() {
+    return 4;
+  }
+    
+    
+  @Override
   public void updateData(final DataStore ds) {
     
     set = true;
@@ -95,31 +116,6 @@ public class OrthogonalPanel extends ExperimentPanel {
     
     chartPanel.setChart(chart);
     
-  }
-
-  @Override
-  public int panelsNeeded() {
-    return 4;
-  }
-  
-  @Override
-  public String getInsetString() {
-    return getInsetString( (OrthogonalExperiment) expResult );
-  }
-    
-    
-  public static String getInsetString(OrthogonalExperiment ort) {  
-    double[] fit = ort.getSolutionParams();
-    double angle = ort.getFitAngle();
-    
-    StringBuilder sb = new StringBuilder();
-    sb.append("Calculated angle between non-reference sensors:\n");
-    sb.append(angle);
-    sb.append('\n');
-    sb.append("Offset angles for LH1 and LH2 sensor outputs:\n");
-    sb.append( Arrays.toString(fit) );
-    
-    return sb.toString();
   }
 
 }

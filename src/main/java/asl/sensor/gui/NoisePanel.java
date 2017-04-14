@@ -151,6 +151,12 @@ public class NoisePanel extends ExperimentPanel {
     return xAxisTitle;
   }
 
+  @Override
+  public int panelsNeeded() {
+    
+    return 3;
+  }
+
   /**
    * Initially called function to calculate self-noise when data is passed in
    */
@@ -188,12 +194,6 @@ public class NoisePanel extends ExperimentPanel {
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
     
-  }
-
-  @Override
-  public int panelsNeeded() {
-    
-    return 3;
   }
   
 

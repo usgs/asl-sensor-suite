@@ -1,14 +1,10 @@
 package asl.sensor.gui;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
@@ -16,10 +12,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 
 import org.apache.commons.math3.complex.Complex;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -48,16 +40,58 @@ import asl.sensor.input.DataStore;
  */
 public class RandomizedPanel extends ExperimentPanel {
 
-  private ValueAxis degreeAxis;
-  private String degreeAxisTitle;
   public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
-  private JComboBox<String> plotSelection;
-  private JCheckBox lowFreqBox;
-  private JFreeChart magChart, argChart;
   private static final Color[] COLOR_LIST = 
       new Color[]{Color.RED, Color.BLUE, Color.GREEN};
+  /**
+   * 
+   */
+  private static final long serialVersionUID = -1791709117080520178L;
+  /**
+   * Static helper method for getting the formatted inset string directly
+   * from a RandomizedExperiment
+   * @param rnd RandomizedExperiment with data to be extracted
+   * @return String format representation of data from the experiment
+   */
+  public static String getInsetString(RandomizedExperiment rnd) {
+    
+    List<Complex> fitP = rnd.getFitPoles();
+    List<Complex> initP = rnd.getInitialPoles();
+    
+    StringBuilder sbInit = new StringBuilder();
+    StringBuilder sbFit = new StringBuilder();
+    sbInit.append("INITIAL POLES: \n");
+    sbFit.append("FIT POLES: \n");
+    for (int i = 0; i < fitP.size(); ++i) {
+      sbInit.append( initP.get(i) );
+      sbInit.append("  ");
+      sbFit.append( fitP.get(i) );
+      sbFit.append("  ");
+      // want to fit two to a line
+      ++i;
+      if ( i < fitP.size() ) {
+        sbInit.append( initP.get(i) );
+        sbInit.append("  ");
+        sbFit.append( fitP.get(i) );
+        sbFit.append("  ");
+      }
+      sbInit.append("\n");
+      sbFit.append("\n");
+    }
+    // remove last newline character
+    sbFit.deleteCharAt( sbFit.length() - 1 );
+    sbInit.append(sbFit);
+    return sbInit.toString();
+  }
+  private ValueAxis degreeAxis;
+  private String degreeAxisTitle;
+  private JComboBox<String> plotSelection;
   
+  private JCheckBox lowFreqBox;
+
+  private JFreeChart magChart, argChart;
+
   public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
     
@@ -123,12 +157,35 @@ public class RandomizedPanel extends ExperimentPanel {
     this.add(plotSelection, gbc);
     plotSelection.addActionListener(this);
   }
-
-  /**
-   * 
-   */
-  private static final long serialVersionUID = -1791709117080520178L;
-
+  
+  @Override
+  public void actionPerformed(ActionEvent e) {
+    
+    super.actionPerformed(e);
+    
+    if ( e.getSource() == plotSelection ) {
+      if (!set) {
+        return;
+      }
+      
+      int idx = plotSelection.getSelectedIndex();
+      if (idx == 0) {
+        chartPanel.setChart(magChart);
+      } else {
+        chartPanel.setChart(argChart);
+      }
+      
+      return;
+      
+    }
+    
+  }
+  
+  @Override
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{magChart, argChart};
+  }
+  
   /**
    * Used to get the text that will populate the inset box for the plots
    * @return String to place in TextTitle
@@ -139,43 +196,25 @@ public class RandomizedPanel extends ExperimentPanel {
     return getInsetString(rnd);
   }
   
-  /**
-   * Static helper method for getting the formatted inset string directly
-   * from a RandomizedExperiment
-   * @param rnd RandomizedExperiment with data to be extracted
-   * @return String format representation of data from the experiment
-   */
-  public static String getInsetString(RandomizedExperiment rnd) {
+  @Override
+  public ValueAxis getYAxis() {
     
-    List<Complex> fitP = rnd.getFitPoles();
-    List<Complex> initP = rnd.getInitialPoles();
-    
-    StringBuilder sbInit = new StringBuilder();
-    StringBuilder sbFit = new StringBuilder();
-    sbInit.append("INITIAL POLES: \n");
-    sbFit.append("FIT POLES: \n");
-    for (int i = 0; i < fitP.size(); ++i) {
-      sbInit.append( initP.get(i) );
-      sbInit.append("  ");
-      sbFit.append( fitP.get(i) );
-      sbFit.append("  ");
-      // want to fit two to a line
-      ++i;
-      if ( i < fitP.size() ) {
-        sbInit.append( initP.get(i) );
-        sbInit.append("  ");
-        sbFit.append( fitP.get(i) );
-        sbFit.append("  ");
-      }
-      sbInit.append("\n");
-      sbFit.append("\n");
+    if ( null == plotSelection ) {
+      return yAxis;
     }
-    // remove last newline character
-    sbFit.deleteCharAt( sbFit.length() - 1 );
-    sbInit.append(sbFit);
-    return sbInit.toString();
+    
+    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
+      return yAxis;
+    } else {
+      return degreeAxis;
+    }
   }
   
+  @Override
+  public int panelsNeeded() {
+    return 2;
+  }
+
   @Override
   public void updateData(DataStore ds) {
 
@@ -243,53 +282,6 @@ public class RandomizedPanel extends ExperimentPanel {
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
     
-  }
-  
-  @Override
-  public JFreeChart[] getCharts() {
-    return new JFreeChart[]{magChart, argChart};
-  }
-  
-  @Override
-  public void actionPerformed(ActionEvent e) {
-    
-    super.actionPerformed(e);
-    
-    if ( e.getSource() == plotSelection ) {
-      if (!set) {
-        return;
-      }
-      
-      int idx = plotSelection.getSelectedIndex();
-      if (idx == 0) {
-        chartPanel.setChart(magChart);
-      } else {
-        chartPanel.setChart(argChart);
-      }
-      
-      return;
-      
-    }
-    
-  }
-  
-  @Override
-  public ValueAxis getYAxis() {
-    
-    if ( null == plotSelection ) {
-      return yAxis;
-    }
-    
-    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
-      return yAxis;
-    } else {
-      return degreeAxis;
-    }
-  }
-
-  @Override
-  public int panelsNeeded() {
-    return 2;
   }
 
 }

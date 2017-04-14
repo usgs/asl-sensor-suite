@@ -61,14 +61,6 @@ public class AzimuthExperiment extends Experiment {
 
   }
   
-  /**
-   * Set the angle offset for the reference sensor (degrees from north)
-   * @param newOffset Degrees from north that the reference sensor points
-   */
-  public void setOffset(double newOffset) {
-    offset = newOffset;
-  }
-
   @Override
   protected void backend(final DataStore ds) {
     
@@ -284,7 +276,43 @@ public class AzimuthExperiment extends Experiment {
     
     
   }
+
+  @Override
+  public int blocksNeeded() {
+    return 3;
+  }
   
+  /**
+   * Return the fit angle calculated by the backend in degrees
+   * @return angle result in degrees
+   */
+  public double getFitAngle() {
+    return Math.toDegrees(angle);
+  }
+  
+  /**
+   * Return the fit angle calculated by the backend in radians
+   * @return angle result in radians
+   */
+  public double getFitAngleRad() {
+    return angle;
+  }
+  
+  public double getOffset() {
+    // TODO Auto-generated method stub
+    return ( (offset % 360) + 360 ) % 360;
+  }
+  
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    for (int i = 0; i < blocksNeeded(); ++i) {
+      if ( !ds.blockIsSet(i) ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
    * Jacobian function for the azimuth solver. Takes in the directional
    * signal components (DataBlocks) and the angle to evaluate at and produces
@@ -409,41 +437,13 @@ public class AzimuthExperiment extends Experiment {
     
     return new Pair<RealVector, RealMatrix>(curValue, jbn);
   }
-  
-  /**
-   * Return the fit angle calculated by the backend in degrees
-   * @return angle result in degrees
-   */
-  public double getFitAngle() {
-    return Math.toDegrees(angle);
-  }
-  
-  /**
-   * Return the fit angle calculated by the backend in radians
-   * @return angle result in radians
-   */
-  public double getFitAngleRad() {
-    return angle;
-  }
-  
-  @Override
-  public boolean hasEnoughData(DataStore ds) {
-    for (int i = 0; i < blocksNeeded(); ++i) {
-      if ( !ds.blockIsSet(i) ) {
-        return false;
-      }
-    }
-    return true;
-  }
 
-  @Override
-  public int blocksNeeded() {
-    return 3;
-  }
-
-  public double getOffset() {
-    // TODO Auto-generated method stub
-    return ( (offset % 360) + 360 ) % 360;
+  /**
+   * Set the angle offset for the reference sensor (degrees from north)
+   * @param newOffset Degrees from north that the reference sensor points
+   */
+  public void setOffset(double newOffset) {
+    offset = newOffset;
   }
   
 

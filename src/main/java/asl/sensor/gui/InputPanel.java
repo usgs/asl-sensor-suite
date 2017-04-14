@@ -4,7 +4,6 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -22,11 +21,9 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import javax.imageio.ImageIO;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -149,129 +146,6 @@ implements ActionListener, ChangeListener {
 
   
   private String saveDirectory = System.getProperty("user.home");
-  
-  /**
-   * Used to construct the panels for loading and displaying SEED data
-   * (as well as the corresponding response file)
-   * @param i Index of panel to be created, for getting references to the chart
-   * panel and the appropriate actionlisteners for the loaders
-   * @return composite panel of chart, loaders, and clear button
-   */
-  private JPanel makeChartSubpanel(int i) {
-    
-    JPanel chartSubpanel = new JPanel();
-    chartSubpanel.setLayout( new GridBagLayout() );
-    GridBagConstraints gbc = new GridBagConstraints();
-    
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.gridy = 0;
-    gbc.anchor = GridBagConstraints.CENTER;
-    
-    instantiateChart(i);
-    
-    /*
-    chartPanels[i].setMaximumSize(
-        new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE) );
-    */
-    
-    channelType[i] = new JLabel("");
-    
-    chartPanels[i].setMouseZoomable(true);
-    
-    seedLoaders[i] = new JButton( "Load SEED file " + (i+1) );
-    seedLoaders[i].addActionListener(this);
-    seedLoaders[i].setMaximumSize( seedLoaders[i].getMinimumSize() );
-    
-    JTextField text = new JTextField( "NO FILE LOADED" );
-    text.setHorizontalAlignment(SwingConstants.CENTER);
-    text.setMaximumSize( text.getPreferredSize() );
-    seedFileNames[i] = text;
-    seedFileNames[i].setEditable(false);
-   
-    respLoaders[i] = new JButton( "Load RESP file " + (i+1) );
-    respLoaders[i].addActionListener(this);
-    respLoaders[i].setMaximumSize( respLoaders[i].getMinimumSize() );
-    
-    text = new JTextField( "NO FILE LOADED" );
-    text.setHorizontalAlignment(SwingConstants.CENTER);
-    text.setMaximumSize( text.getPreferredSize() );
-    respFileNames[i] = text;
-    respFileNames[i].setEditable(false);
-    
-    clearButton[i] = new JButton( "Clear data " + (i+1) );
-    clearButton[i].setMaximumSize( clearButton[i].getMinimumSize() );
-    
-    gbc.gridx = 0; gbc.gridy = 0;
-
-    gbc.weightx = 0; gbc.weighty = 0;
-    gbc.fill = GridBagConstraints.BOTH;
-    
-    gbc.fill = GridBagConstraints.NONE;
-    chartSubpanel.add(channelType[i], gbc);
-    
-    gbc.weightx = 1; gbc.weighty = 1;
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridwidth = 1; gbc.gridheight = 5;
-    gbc.gridy += 1;
-    chartSubpanel.add(chartPanels[i], gbc);
-    
-
-    // Temoved a line to resize the chartpanels
-    // This made sense before switching to gridbaglayout, but since that
-    // tries to fill space with whatever panels it can, we can just get rid
-    // of the code to do that. This also fixes the issue with the text boxes
-    // resizing -- just let the charts fill as much space as they can instead
-    
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 1;
-    gbc.gridwidth = 1; gbc.gridheight = 1;
-    gbc.weightx = 0; gbc.weighty = 0.25;
-    chartSubpanel.add(seedLoaders[i], gbc);
-    
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.weighty = 1;
-    gbc.gridy += 1;
-    JScrollPane jsp = new JScrollPane();
-    jsp.setMaximumSize( jsp.getMinimumSize() );
-    jsp.setViewportView(seedFileNames[i]);
-    jsp.setVerticalScrollBarPolicy(
-        ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
-    jsp.setHorizontalScrollBarPolicy(
-        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
-    chartSubpanel.add(jsp, gbc);
-    
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.weighty = 0.25;
-    gbc.gridy += 1;
-    chartSubpanel.add(respLoaders[i], gbc);
-
-    
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.weighty = 1;
-    gbc.gridy += 1;
-    jsp = new JScrollPane();
-    jsp.setMaximumSize( jsp.getMinimumSize() );
-    jsp.setViewportView(respFileNames[i]);
-    jsp.setVerticalScrollBarPolicy(
-        ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
-    jsp.setHorizontalScrollBarPolicy(
-        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
-    chartSubpanel.add(jsp, gbc);
-    
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.weighty = 0;
-    gbc.gridy += 1;
-    clearButton[i] = new JButton( "Clear data " + (i+1) );
-    clearButton[i].setOpaque(true);
-    clearButton[i].setBackground( Color.RED.darker() );
-    clearButton[i].addActionListener(this);
-    clearButton[i].setEnabled(false);
-    chartSubpanel.add(clearButton[i], gbc);
-    
-    return chartSubpanel;
-  }
-  
   
   /**
    * Creates a new data panel -- instantiates each chart, to be populated with
@@ -415,6 +289,7 @@ implements ActionListener, ChangeListener {
     fc = new JFileChooser();
     
   }
+  
   
   public InputPanel(DataStore ds, int panelsNeeded) {
     this();
@@ -707,7 +582,6 @@ implements ActionListener, ChangeListener {
 
   }
   
-  
   /**
    * Returns the selected region of underlying DataStore, to be fed 
    * into experiments for processing (the results of which will be plotted)
@@ -726,7 +600,8 @@ implements ActionListener, ChangeListener {
 
     return zooms;
   }
-
+  
+  
   /**
    * Gets the height of resulting image of plots given default parameters,
    * so that it only needs to fit the plots that have data in them 
@@ -735,7 +610,7 @@ implements ActionListener, ChangeListener {
   public int getImageHeight(int plotsToShow) {
     return IMAGE_HEIGHT * plotsToShow;
   }
-  
+
   /**
    * Returns a default image width for writing plots to file
    * @return width of image to output
@@ -764,155 +639,6 @@ implements ActionListener, ChangeListener {
 
     }
     chartPanels[idx].setMouseZoomable(true);
-  }
-  
-  /**
-   * Used to remove an object from the list of those informed when
-   * data is loaded in or cleared out
-   * @param listener
-   */
-  public void removeChangeListener(ChangeListener listener) {
-    listenerList.remove(ChangeListener.class, listener);
-  }
-  
-  /**
-   * Does the work to reset the zoom of a chart when the zoom button is hit
-   * @param idx Index of appropriate chart/panel
-   */
-  private void resetPlotZoom(int idx) {
-    XYPlot xyp = chartPanels[idx].getChart().getXYPlot();
-    XYSeriesCollection xys = new XYSeriesCollection();
-    xys.addSeries( zooms.getBlock(idx).toXYSeries() );
-    xyp.setDataset( xys );
-    xyp.getRenderer().setSeriesPaint(0,
-        defaultColor[idx % defaultColor.length]);
-    if ( xyp.getSeriesCount() > 1 ) {
-      throw new RuntimeException("TOO MUCH DATA");
-    }
-    chartPanels[idx].repaint();
-  }
-  
-  /**
-   * Parent function to load in a response file to this panel's
-   * DataStore object
-   * @param idx Index of the file/chart this response corresponds to
-   * @param filepath Full address of the file to be loaded in
-   */
-  public void setResponse(int idx, String filepath) {
-    
-    ds.setResponse(idx, filepath);
-    zooms.setResponse(idx, filepath);
-  }
-  
-  /**
-   * Displays the range set by the sliders using
-   * vertical bars at the min and max values
-   */
-  public void setVerticalBars() {
-    
-    // zooms.trimToCommonTime();
-    
-    for (int i = 0; i < FILE_COUNT; ++i) {
-      if ( !zooms.blockIsSet(i) ) {
-        continue;
-      }
-      
-      int leftValue = leftSlider.getValue();
-      int rightValue = rightSlider.getValue();
-      
-      XYPlot xyp = (XYPlot) chartPanels[i].getChart().getPlot();
-      xyp.clearDomainMarkers();
-      
-      DataBlock db = zooms.getBlock(i);
-      
-      long startMarkerLocation = getMarkerLocation(db, leftValue);
-      long endMarkerLocation = getMarkerLocation(db, rightValue);
-      
-      // divide by 1000 here to get time value in ms
-      Marker startMarker = new ValueMarker(startMarkerLocation/1000);
-      startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
-      Marker endMarker = new ValueMarker(endMarkerLocation/1000);
-      endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
-      
-      xyp.addDomainMarker(startMarker);
-      xyp.addDomainMarker(endMarker);
-      
-      chartPanels[i].repaint();
-    }
-    
-    
-  }
-
-  /**
-   * Zooms in on the current range of data, which will be passed into
-   * backend functions for experiment calculations
-   */
-  public void showRegionForGeneration() {
-    
-    if ( zooms.numberOfBlocksSet() < 1 ) {
-      return;
-    }
-    
-    // get (any) loaded data block to map slider to domain boundary
-    // all data should have the same range
-    DataBlock db = zooms.getXthLoadedBlock(1);
-
-    if ( leftSlider.getValue() != 0 || rightSlider.getValue() != SLIDER_MAX ) {
-      long start = getMarkerLocation(db, leftSlider.getValue() );
-      long end = getMarkerLocation(db, rightSlider.getValue() );
-      zooms = new DataStore(ds, start, end, activePlots);
-      leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
-      zoomOut.setEnabled(true);
-    }
-    
-    for (int i = 0; i < activePlots; ++i) {
-      if ( !zooms.blockIsSet(i) ) {
-        continue;
-      }
-      resetPlotZoom(i);
-    }
-
-    setVerticalBars();
-    
-  }
-
-  @Override
-  /**
-   * Handles changes in value by the sliders below the charts
-   */
-  public void stateChanged(ChangeEvent e) {
-    
-    int leftSliderValue = leftSlider.getValue();
-    int rightSliderValue = rightSlider.getValue();
-    
-    // probably can refactor this
-    // the conditionals are effectively the same
-    
-    if ( e.getSource() == leftSlider ) {
-      if (leftSliderValue > rightSliderValue || 
-          leftSliderValue + MARGIN > rightSliderValue) {
-        leftSliderValue = rightSliderValue - MARGIN;
-        if (leftSliderValue < 0) {
-          leftSliderValue = 0;
-          rightSliderValue = MARGIN;
-        }
-      }
-    } else if ( e.getSource() == rightSlider ) {
-      if (rightSliderValue < leftSliderValue ||
-          rightSliderValue - MARGIN < leftSliderValue) {
-        rightSliderValue = leftSliderValue + MARGIN;
-        if (rightSliderValue > SLIDER_MAX) {
-          rightSliderValue = SLIDER_MAX;
-          leftSliderValue = SLIDER_MAX - MARGIN;
-        }
-      }
-    }
-    
-    leftSlider.setValue(leftSliderValue);
-    rightSlider.setValue(rightSliderValue);
-    
-    setVerticalBars();
-    
   }
   
   /**
@@ -1076,7 +802,221 @@ implements ActionListener, ChangeListener {
       return;
     }
   }
+  
+  /**
+   * Used to construct the panels for loading and displaying SEED data
+   * (as well as the corresponding response file)
+   * @param i Index of panel to be created, for getting references to the chart
+   * panel and the appropriate actionlisteners for the loaders
+   * @return composite panel of chart, loaders, and clear button
+   */
+  private JPanel makeChartSubpanel(int i) {
+    
+    JPanel chartSubpanel = new JPanel();
+    chartSubpanel.setLayout( new GridBagLayout() );
+    GridBagConstraints gbc = new GridBagConstraints();
+    
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
+    gbc.gridy = 0;
+    gbc.anchor = GridBagConstraints.CENTER;
+    
+    instantiateChart(i);
+    
+    /*
+    chartPanels[i].setMaximumSize(
+        new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE) );
+    */
+    
+    channelType[i] = new JLabel("");
+    
+    chartPanels[i].setMouseZoomable(true);
+    
+    seedLoaders[i] = new JButton( "Load SEED file " + (i+1) );
+    seedLoaders[i].addActionListener(this);
+    seedLoaders[i].setMaximumSize( seedLoaders[i].getMinimumSize() );
+    
+    JTextField text = new JTextField( "NO FILE LOADED" );
+    text.setHorizontalAlignment(SwingConstants.CENTER);
+    text.setMaximumSize( text.getPreferredSize() );
+    seedFileNames[i] = text;
+    seedFileNames[i].setEditable(false);
+   
+    respLoaders[i] = new JButton( "Load RESP file " + (i+1) );
+    respLoaders[i].addActionListener(this);
+    respLoaders[i].setMaximumSize( respLoaders[i].getMinimumSize() );
+    
+    text = new JTextField( "NO FILE LOADED" );
+    text.setHorizontalAlignment(SwingConstants.CENTER);
+    text.setMaximumSize( text.getPreferredSize() );
+    respFileNames[i] = text;
+    respFileNames[i].setEditable(false);
+    
+    clearButton[i] = new JButton( "Clear data " + (i+1) );
+    clearButton[i].setMaximumSize( clearButton[i].getMinimumSize() );
+    
+    gbc.gridx = 0; gbc.gridy = 0;
 
+    gbc.weightx = 0; gbc.weighty = 0;
+    gbc.fill = GridBagConstraints.BOTH;
+    
+    gbc.fill = GridBagConstraints.NONE;
+    chartSubpanel.add(channelType[i], gbc);
+    
+    gbc.weightx = 1; gbc.weighty = 1;
+    gbc.fill = GridBagConstraints.BOTH;
+    gbc.gridwidth = 1; gbc.gridheight = 5;
+    gbc.gridy += 1;
+    chartSubpanel.add(chartPanels[i], gbc);
+    
+
+    // Temoved a line to resize the chartpanels
+    // This made sense before switching to gridbaglayout, but since that
+    // tries to fill space with whatever panels it can, we can just get rid
+    // of the code to do that. This also fixes the issue with the text boxes
+    // resizing -- just let the charts fill as much space as they can instead
+    
+    gbc.fill = GridBagConstraints.BOTH;
+    gbc.gridx = 1;
+    gbc.gridwidth = 1; gbc.gridheight = 1;
+    gbc.weightx = 0; gbc.weighty = 0.25;
+    chartSubpanel.add(seedLoaders[i], gbc);
+    
+    gbc.fill = GridBagConstraints.BOTH;
+    gbc.weighty = 1;
+    gbc.gridy += 1;
+    JScrollPane jsp = new JScrollPane();
+    jsp.setMaximumSize( jsp.getMinimumSize() );
+    jsp.setViewportView(seedFileNames[i]);
+    jsp.setVerticalScrollBarPolicy(
+        ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+    jsp.setHorizontalScrollBarPolicy(
+        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+    chartSubpanel.add(jsp, gbc);
+    
+    gbc.fill = GridBagConstraints.BOTH;
+    gbc.weighty = 0.25;
+    gbc.gridy += 1;
+    chartSubpanel.add(respLoaders[i], gbc);
+
+    
+    gbc.fill = GridBagConstraints.BOTH;
+    gbc.weighty = 1;
+    gbc.gridy += 1;
+    jsp = new JScrollPane();
+    jsp.setMaximumSize( jsp.getMinimumSize() );
+    jsp.setViewportView(respFileNames[i]);
+    jsp.setVerticalScrollBarPolicy(
+        ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+    jsp.setHorizontalScrollBarPolicy(
+        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+    chartSubpanel.add(jsp, gbc);
+    
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.weighty = 0;
+    gbc.gridy += 1;
+    clearButton[i] = new JButton( "Clear data " + (i+1) );
+    clearButton[i].setOpaque(true);
+    clearButton[i].setBackground( Color.RED.darker() );
+    clearButton[i].addActionListener(this);
+    clearButton[i].setEnabled(false);
+    chartSubpanel.add(clearButton[i], gbc);
+    
+    return chartSubpanel;
+  }
+  
+  /**
+   * Used to remove an object from the list of those informed when
+   * data is loaded in or cleared out
+   * @param listener
+   */
+  public void removeChangeListener(ChangeListener listener) {
+    listenerList.remove(ChangeListener.class, listener);
+  }
+  
+  /**
+   * Does the work to reset the zoom of a chart when the zoom button is hit
+   * @param idx Index of appropriate chart/panel
+   */
+  private void resetPlotZoom(int idx) {
+    XYPlot xyp = chartPanels[idx].getChart().getXYPlot();
+    XYSeriesCollection xys = new XYSeriesCollection();
+    xys.addSeries( zooms.getBlock(idx).toXYSeries() );
+    xyp.setDataset( xys );
+    xyp.getRenderer().setSeriesPaint(0,
+        defaultColor[idx % defaultColor.length]);
+    if ( xyp.getSeriesCount() > 1 ) {
+      throw new RuntimeException("TOO MUCH DATA");
+    }
+    chartPanels[idx].repaint();
+  }
+  
+  /**
+   * Used to get labels for each plot to idenitify what data they need to
+   * contain in order for an experiment to have enough data to run
+   * @param channels List of strings to be used as panel title
+   */
+  public void setChannelTypes(String[] channels) {
+    
+    int len = Math.min(channels.length, channelType.length);
+    
+    for (int i = 0; i < len; ++i) {
+      channelType[i].setText(channels[i]);
+      channelType[i].setHorizontalAlignment(SwingConstants.CENTER);
+    }
+  }
+
+  /**
+   * Parent function to load in a response file to this panel's
+   * DataStore object
+   * @param idx Index of the file/chart this response corresponds to
+   * @param filepath Full address of the file to be loaded in
+   */
+  public void setResponse(int idx, String filepath) {
+    
+    ds.setResponse(idx, filepath);
+    zooms.setResponse(idx, filepath);
+  }
+
+  /**
+   * Displays the range set by the sliders using
+   * vertical bars at the min and max values
+   */
+  public void setVerticalBars() {
+    
+    // zooms.trimToCommonTime();
+    
+    for (int i = 0; i < FILE_COUNT; ++i) {
+      if ( !zooms.blockIsSet(i) ) {
+        continue;
+      }
+      
+      int leftValue = leftSlider.getValue();
+      int rightValue = rightSlider.getValue();
+      
+      XYPlot xyp = (XYPlot) chartPanels[i].getChart().getPlot();
+      xyp.clearDomainMarkers();
+      
+      DataBlock db = zooms.getBlock(i);
+      
+      long startMarkerLocation = getMarkerLocation(db, leftValue);
+      long endMarkerLocation = getMarkerLocation(db, rightValue);
+      
+      // divide by 1000 here to get time value in ms
+      Marker startMarker = new ValueMarker(startMarkerLocation/1000);
+      startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      Marker endMarker = new ValueMarker(endMarkerLocation/1000);
+      endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      
+      xyp.addDomainMarker(startMarker);
+      xyp.addDomainMarker(endMarker);
+      
+      chartPanels[i].repaint();
+    }
+    
+    
+  }
+  
   /**
    * Show the number of panels needed to load in data for a specific experiment
    * @param panelsNeeded Number of panels to show
@@ -1121,20 +1061,77 @@ implements ActionListener, ChangeListener {
     inputScrollPane.getViewport().setView(cont);
     inputScrollPane.setPreferredSize( cont.getPreferredSize() );
   }
-  
+
   /**
-   * Used to get labels for each plot to idenitify what data they need to
-   * contain in order for an experiment to have enough data to run
-   * @param channels List of strings to be used as panel title
+   * Zooms in on the current range of data, which will be passed into
+   * backend functions for experiment calculations
    */
-  public void setChannelTypes(String[] channels) {
+  public void showRegionForGeneration() {
     
-    int len = Math.min(channels.length, channelType.length);
-    
-    for (int i = 0; i < len; ++i) {
-      channelType[i].setText(channels[i]);
-      channelType[i].setHorizontalAlignment(SwingConstants.CENTER);
+    if ( zooms.numberOfBlocksSet() < 1 ) {
+      return;
     }
+    
+    // get (any) loaded data block to map slider to domain boundary
+    // all data should have the same range
+    DataBlock db = zooms.getXthLoadedBlock(1);
+
+    if ( leftSlider.getValue() != 0 || rightSlider.getValue() != SLIDER_MAX ) {
+      long start = getMarkerLocation(db, leftSlider.getValue() );
+      long end = getMarkerLocation(db, rightSlider.getValue() );
+      zooms = new DataStore(ds, start, end, activePlots);
+      leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
+      zoomOut.setEnabled(true);
+    }
+    
+    for (int i = 0; i < activePlots; ++i) {
+      if ( !zooms.blockIsSet(i) ) {
+        continue;
+      }
+      resetPlotZoom(i);
+    }
+
+    setVerticalBars();
+    
+  }
+  
+  @Override
+  /**
+   * Handles changes in value by the sliders below the charts
+   */
+  public void stateChanged(ChangeEvent e) {
+    
+    int leftSliderValue = leftSlider.getValue();
+    int rightSliderValue = rightSlider.getValue();
+    
+    // probably can refactor this
+    // the conditionals are effectively the same
+    
+    if ( e.getSource() == leftSlider ) {
+      if (leftSliderValue > rightSliderValue || 
+          leftSliderValue + MARGIN > rightSliderValue) {
+        leftSliderValue = rightSliderValue - MARGIN;
+        if (leftSliderValue < 0) {
+          leftSliderValue = 0;
+          rightSliderValue = MARGIN;
+        }
+      }
+    } else if ( e.getSource() == rightSlider ) {
+      if (rightSliderValue < leftSliderValue ||
+          rightSliderValue - MARGIN < leftSliderValue) {
+        rightSliderValue = leftSliderValue + MARGIN;
+        if (rightSliderValue > SLIDER_MAX) {
+          rightSliderValue = SLIDER_MAX;
+          leftSliderValue = SLIDER_MAX - MARGIN;
+        }
+      }
+    }
+    
+    leftSlider.setValue(leftSliderValue);
+    rightSlider.setValue(rightSliderValue);
+    
+    setVerticalBars();
+    
   }
   
 }

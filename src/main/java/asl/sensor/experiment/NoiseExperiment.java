@@ -32,15 +32,6 @@ public class NoiseExperiment extends Experiment {
   }
   
   /**
-   * Used to set the x-axis over which the PSDs / cross-powers are plotted,
-   * either frequency (Hz) units or sample-interval (s) units
-   * @param freqSpace True if the plot should use units of Hz
-   */
-  public void setFreqSpace(boolean freqSpace) {
-    this.freqSpace = freqSpace;
-  }
-
-  /**
    * Generates power spectral density of each inputted file, and calculates
    * self-noise based on that result.
    * The overhead view is as follows: 
@@ -180,6 +171,11 @@ public class NoiseExperiment extends Experiment {
   }
 
   @Override
+  public int blocksNeeded() {
+    return 3;
+  }
+
+  @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < blocksNeeded(); ++i) {
       if ( !ds.bothComponentsSet(i) ) {
@@ -189,9 +185,13 @@ public class NoiseExperiment extends Experiment {
     return true;
   }
 
-  @Override
-  public int blocksNeeded() {
-    return 3;
+  /**
+   * Used to set the x-axis over which the PSDs / cross-powers are plotted,
+   * either frequency (Hz) units or sample-interval (s) units
+   * @param freqSpace True if the plot should use units of Hz
+   */
+  public void setFreqSpace(boolean freqSpace) {
+    this.freqSpace = freqSpace;
   }
 
 }

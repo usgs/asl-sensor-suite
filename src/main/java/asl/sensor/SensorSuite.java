@@ -103,18 +103,50 @@ public class SensorSuite extends JPanel
 
   }
 
-  private JFileChooser fc; // loads in files based on parameter
-  
-  private InputPanel inputPlots;
+  /**
+   * Plots the data from an output panel and its associated input
+   * @param file Filename to write to
+   * @param ep Experiment panel with data to be plotted
+   * @param ip Input panel holding data associated with the experiment
+   * @throws IOException If the file cannot be written to
+   */
+  public static void plotsToPDF(File file, ExperimentPanel ep, InputPanel ip)
+      throws IOException{
 
+    int inPlotCount = ep.plotsToShow();
+    // BufferedImage toFile = getCompiledImage();
+
+    // START OF UNIQUE CODE FOR PDF CREATION HERE
+    PDDocument pdf = ep.savePDFResults( new PDDocument() );
+    
+    if (inPlotCount > 0) {
+
+      int inHeight = ip.getImageHeight(inPlotCount) * 2;
+      int width = 1280; // TODO: set as global static variable somewhere?
+
+      BufferedImage toFile = 
+          ip.getAsImage(width, inHeight, inPlotCount);
+      
+      ReportingUtils.bufferedImageToPDFPage(toFile, pdf);
+
+    }
+
+    pdf.save( file );
+    pdf.close();
+  }
+  
+  private JFileChooser fc; // loads in files based on parameter
+
+
+  private InputPanel inputPlots;
 
   private JTabbedPane tabbedPane; // holds set of experiment panels
 
   private JButton generate, savePDF; // run all calculations
 
+
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
-
 
   /**
    * Creates the main window of the program when called
@@ -191,7 +223,7 @@ public class SensorSuite extends JPanel
     inputPlots.setChannelTypes( ep.getChannelTypes() );
     
   }
-
+  
   /**
    * Handles actions when the buttons are clicked -- either the 'save PDF'
    * button, which compiles the input and output plots into a single PDF, or
@@ -242,21 +274,6 @@ public class SensorSuite extends JPanel
       return;
     }
 
-
-  }
-  
-  /**
-   * Handles function to create a PNG image with all currently-displayed plots
-   * (active experiment and read-in time series data)
-   * @param file File (PNG) that image will be saved to
-   * @throws IOException
-   * @deprecated Use PDF output (plotstoPDF) instead
-   */
-  @Deprecated
-  public void plotsToPNG(File file) throws IOException {
-
-    // just write the bufferedimage to file
-    ImageIO.write( getCompiledImage(), "png", file );
 
   }
   
@@ -321,35 +338,18 @@ public class SensorSuite extends JPanel
 
 
   /**
-   * Plots the data from an output panel and its associated input
-   * @param file Filename to write to
-   * @param ep Experiment panel with data to be plotted
-   * @param ip Input panel holding data associated with the experiment
-   * @throws IOException If the file cannot be written to
+   * Handles function to create a PNG image with all currently-displayed plots
+   * (active experiment and read-in time series data)
+   * @param file File (PNG) that image will be saved to
+   * @throws IOException
+   * @deprecated Use PDF output (plotstoPDF) instead
    */
-  public static void plotsToPDF(File file, ExperimentPanel ep, InputPanel ip)
-      throws IOException{
+  @Deprecated
+  public void plotsToPNG(File file) throws IOException {
 
-    int inPlotCount = ep.plotsToShow();
-    // BufferedImage toFile = getCompiledImage();
+    // just write the bufferedimage to file
+    ImageIO.write( getCompiledImage(), "png", file );
 
-    // START OF UNIQUE CODE FOR PDF CREATION HERE
-    PDDocument pdf = ep.savePDFResults( new PDDocument() );
-    
-    if (inPlotCount > 0) {
-
-      int inHeight = ip.getImageHeight(inPlotCount) * 2;
-      int width = 1280; // TODO: set as global static variable somewhere?
-
-      BufferedImage toFile = 
-          ip.getAsImage(width, inHeight, inPlotCount);
-      
-      pdf = ReportingUtils.bufferedImageToPDFPage(toFile, pdf);
-
-    }
-
-    pdf.save( file );
-    pdf.close();
   }
 
   /**

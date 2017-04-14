@@ -33,6 +33,58 @@ public class InstrumentResponse {
 
   
   /**
+   * Get one of the response files embedded in the program
+   * @return response file embedded into the program
+   * @throws IOException If no file with the given name exists (this may happen
+   * if a file listed in the responses.txt file does not exist in that location
+   * which means it was likely improperly modified or a response file deleted)
+   */
+  public static InstrumentResponse loadEmbeddedResponse(String fname) 
+      throws IOException {
+    
+    ClassLoader cl = InputPanel.class.getClassLoader();
+    InputStream is = cl.getResourceAsStream(fname);
+    BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
+    return new InstrumentResponse(fr, fname);
+  }
+  
+  /**
+   * Get list of all responses embedded into the program, derived from the
+   * responses.txt file in the resources folder
+   * @return Set of strings representing response filenames
+   */
+  public static Set<String> parseInstrumentList() {
+    
+    Set<String> respFilenames = new HashSet<String>();
+    ClassLoader cl = InstrumentResponse.class.getClassLoader();
+    
+    // there's no elegant way to extract responses other than to
+    // load in their names from a list and then grab them as available
+    // correspondingly, this means adding response files to this program
+    // requires us to add their names to this file
+    // There may be other possibilities but they are more complex and
+    // tend not to work the same way between IDE and launching a jar
+    
+    InputStream respRead = cl.getResourceAsStream("responses.txt");
+    BufferedReader respBuff = 
+        new BufferedReader( new InputStreamReader(respRead) );
+
+    try {
+      String name;
+      name = respBuff.readLine();
+      while (name != null) {
+        respFilenames.add(name);
+        name = respBuff.readLine();
+      }
+      respBuff.close();
+    } catch (IOException e2) {
+      e2.printStackTrace();
+    }
+    
+    return respFilenames;
+  }
+  
+  /**
    * Extract the real and imaginary terms from a pole or zero in a RESP file
    * @param line the line the zero or pole is found on in the file
    * @param array the array of zeros and poles the term will be added to
@@ -53,21 +105,35 @@ public class InstrumentResponse {
     double imagPart = Double.parseDouble(words[3]);
     array[index] = new Complex(realPart, imagPart);
   }
-  
   private TransferFunction transferType;
   
   // gain values, indexed by stage
   private List<Double> gain;
+  
   private List<Complex> zeros;
   
   private List<Complex> poles;
-  
   private String name;
   
   private Unit unitType;
+  
   private double normalization;
   
   private double normalFreq; // ♫ cuz she's a normalFreq, normalFreq 
+  
+  /**
+   * Reads in a response from an already-accessed bufferedreader handle
+   * and assigns it to the name given
+   * @param br Handle to a buffered reader of a given RESP file
+   * @param name Name of RESP file to be used internally 
+   * @throws IOException
+   */
+  public InstrumentResponse(BufferedReader br, String name) throws IOException {
+    
+    this.name = name;
+    
+    parserDriver(br);
+  }
   
   /**
    * Create a copy of an existing response object
@@ -97,29 +163,6 @@ public class InstrumentResponse {
   public InstrumentResponse(String filename) throws IOException {
     name = new File(filename).getName();
     parseResponseFile(filename);
-  }
-  
-  /**
-   * Reads in a response from an already-accessed bufferedreader handle
-   * and assigns it to the name given
-   * @param br Handle to a buffered reader of a given RESP file
-   * @param name Name of RESP file to be used internally 
-   * @throws IOException
-   */
-  public InstrumentResponse(BufferedReader br, String name) throws IOException {
-    
-    this.name = name;
-    
-    parserDriver(br);
-  }
-  
-  /**
-   * Return the name of this response file (i.e., STS-1Q330 or similar)
-   * Used primarily for identifying response curve on plots
-   * @return String containing ID of current response
-   */
-  public String getName() {
-    return name;
   }
   
   /**
@@ -212,6 +255,15 @@ public class InstrumentResponse {
   }
   
   /**
+   * Return the name of this response file (i.e., STS-1Q330 or similar)
+   * Used primarily for identifying response curve on plots
+   * @return String containing ID of current response
+   */
+  public String getName() {
+    return name;
+  }
+  
+  /**
    * Get the normalization of the response
    * @return
    */
@@ -258,40 +310,7 @@ public class InstrumentResponse {
   public List<Complex> getZeros() {
     return zeros;
   }
-  
-  /**
-   * Parses a response file of the sort found on the Iris Nominal Response
-   * Library. These files can be found at http://ds.iris.edu/NRL/
-   * This function currently does not parse a full response file, but instead
-   * only examines fields relevant to self-noise calculations.
-   * @param filename Full path to the response file
-   */
-  private void parseResponseFile(String filename) throws IOException {
-    
-    // response files have a very nice format that is not so nice as something
-    // like JSON but still quite easy to parse
-    // lines either begin with a hex value or a '#'
-    // '#' marks comments while the hex value is used to interpret values
-    // each line with a hex value appears to have the following format
-    // [hex value] [whitespace] [name] [whitespace] [value]
-    // where name is the human-readable explanation of what a value represents
-    // in some cases, 'value' may not be just a raw value but also include
-    // some information about the value, such as verbose unit specifications
-    
-    // there is one exception, the actual pole/zero fields, which have 5
-    // components after the hex identifier
-    
-    BufferedReader br;
-    try {
-      br = new BufferedReader( new FileReader(filename) );
-      parserDriver(br);
-      br.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
-    
-  }
-  
+
   /**
    * Read in each line of a response and parse and store relevant lines
    * according to the hex value at the start of the line
@@ -425,61 +444,42 @@ public class InstrumentResponse {
     zeros = Arrays.asList(zerosArr);
     poles = Arrays.asList(polesArr);
   }
-
-  public void setPoles(List<Complex> poleList) {
-    poles = poleList;
-  }
   
   /**
-   * Get list of all responses embedded into the program, derived from the
-   * responses.txt file in the resources folder
-   * @return Set of strings representing response filenames
+   * Parses a response file of the sort found on the Iris Nominal Response
+   * Library. These files can be found at http://ds.iris.edu/NRL/
+   * This function currently does not parse a full response file, but instead
+   * only examines fields relevant to self-noise calculations.
+   * @param filename Full path to the response file
    */
-  public static Set<String> parseInstrumentList() {
+  private void parseResponseFile(String filename) throws IOException {
     
-    Set<String> respFilenames = new HashSet<String>();
-    ClassLoader cl = InstrumentResponse.class.getClassLoader();
+    // response files have a very nice format that is not so nice as something
+    // like JSON but still quite easy to parse
+    // lines either begin with a hex value or a '#'
+    // '#' marks comments while the hex value is used to interpret values
+    // each line with a hex value appears to have the following format
+    // [hex value] [whitespace] [name] [whitespace] [value]
+    // where name is the human-readable explanation of what a value represents
+    // in some cases, 'value' may not be just a raw value but also include
+    // some information about the value, such as verbose unit specifications
     
-    // there's no elegant way to extract responses other than to
-    // load in their names from a list and then grab them as available
-    // correspondingly, this means adding response files to this program
-    // requires us to add their names to this file
-    // There may be other possibilities but they are more complex and
-    // tend not to work the same way between IDE and launching a jar
+    // there is one exception, the actual pole/zero fields, which have 5
+    // components after the hex identifier
     
-    InputStream respRead = cl.getResourceAsStream("responses.txt");
-    BufferedReader respBuff = 
-        new BufferedReader( new InputStreamReader(respRead) );
-
+    BufferedReader br;
     try {
-      String name;
-      name = respBuff.readLine();
-      while (name != null) {
-        respFilenames.add(name);
-        name = respBuff.readLine();
-      }
-      respBuff.close();
-    } catch (IOException e2) {
-      e2.printStackTrace();
+      br = new BufferedReader( new FileReader(filename) );
+      parserDriver(br);
+      br.close();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
     }
     
-    return respFilenames;
   }
   
-  /**
-   * Get one of the response files embedded in the program
-   * @return response file embedded into the program
-   * @throws IOException If no file with the given name exists (this may happen
-   * if a file listed in the responses.txt file does not exist in that location
-   * which means it was likely improperly modified or a response file deleted)
-   */
-  public static InstrumentResponse loadEmbeddedResponse(String fname) 
-      throws IOException {
-    
-    ClassLoader cl = InputPanel.class.getClassLoader();
-    InputStream is = cl.getResourceAsStream(fname);
-    BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
-    return new InstrumentResponse(fr, fname);
+  public void setPoles(List<Complex> poleList) {
+    poles = poleList;
   }
   
 }

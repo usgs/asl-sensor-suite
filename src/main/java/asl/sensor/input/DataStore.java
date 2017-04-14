@@ -272,6 +272,37 @@ public class DataStore {
   }
   
   /**
+   * Get lowest-frequency data and downsample all data to it
+   */
+  public void matchIntervals() {
+    matchIntervals(FILE_COUNT);
+  }
+
+  /**
+   * Math the first [limit] inputs' intervals to the lowest-frequency used by
+   * any of the blocks within that range
+   * @param limit Index of last block to match intervals to
+   */
+  public void matchIntervals(int limit){
+    long interval = 0;
+    // first loop to get lowest-frequency data
+    for (int i = 0; i < limit; ++i) {
+      if ( thisBlockIsSet[i] && getBlock(i).getInterval() > interval ) {
+        interval = getBlock(i).getInterval();
+      }
+    }
+    // second loop to downsample
+    for (int i = 0; i < limit; ++i) {
+      if ( thisBlockIsSet[i] && getBlock(i).getInterval() != interval ) {
+        getBlock(i).resample(interval);
+      }
+    }
+    
+    trimToCommonTime();
+    
+  }
+
+  /**
    * Gives the count of indices where both a miniseed and response are loaded
    * @return the number of entries of miniseeds with a matching response
    */
@@ -284,7 +315,7 @@ public class DataStore {
     }
     return loaded;
   }
-
+  
   /**
    * Gives the number of DataBlocks (miniseed files) read in to this object
    * @return number of files read in
@@ -298,7 +329,7 @@ public class DataStore {
     }
     return loaded;
   }
-
+  
   /**
    * Removes all data at a specific index -- miniseed, response, and any
    * data generated from them
@@ -387,6 +418,16 @@ public class DataStore {
   }
   
   /**
+   * Place an already-constructed instrument response at the index idx 
+   * @param idx index in this object to place the response at
+   * @param ir InstrumentResponse to have placed into this object
+   */
+  public void setResponse(int idx, InstrumentResponse ir) {
+    responses[idx] = ir;
+    thisResponseIsSet[idx] = true;
+  }
+
+  /**
    * Sets the response of a sensor's dataseries matched by index
    * @param idx Index of plot for which response file matches
    * @param filepath Full address of file to be loaded in
@@ -401,16 +442,6 @@ public class DataStore {
   }
   
   /**
-   * Place an already-constructed instrument response at the index idx 
-   * @param idx index in this object to place the response at
-   * @param ir InstrumentResponse to have placed into this object
-   */
-  public void setResponse(int idx, InstrumentResponse ir) {
-    responses[idx] = ir;
-    thisResponseIsSet[idx] = true;
-  }
-  
-  /**
    * Alias to blockIsSet function
    * @param idx Index of a datablock to check
    * @return True if a seed file has been loaded in there
@@ -418,7 +449,7 @@ public class DataStore {
   public boolean timeSeriesSet(int idx) {
     return thisBlockIsSet[idx];
   }
-
+  
   /**
    * Trims all data blocks to be within a certain time range.
    * Used for getting a sub-range specified by sliding-bar window.
@@ -431,37 +462,6 @@ public class DataStore {
         getBlock(i).trim(start, end);
       }
     }
-  }
-  
-  /**
-   * Get lowest-frequency data and downsample all data to it
-   */
-  public void matchIntervals() {
-    matchIntervals(FILE_COUNT);
-  }
-  
-  /**
-   * Math the first [limit] inputs' intervals to the lowest-frequency used by
-   * any of the blocks within that range
-   * @param limit Index of last block to match intervals to
-   */
-  public void matchIntervals(int limit){
-    long interval = 0;
-    // first loop to get lowest-frequency data
-    for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInterval() > interval ) {
-        interval = getBlock(i).getInterval();
-      }
-    }
-    // second loop to downsample
-    for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInterval() != interval ) {
-        getBlock(i).resample(interval);
-      }
-    }
-    
-    trimToCommonTime();
-    
   }
   
   /**

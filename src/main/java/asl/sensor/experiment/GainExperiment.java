@@ -194,6 +194,11 @@ public class GainExperiment extends Experiment {
     
   }
   
+  @Override
+  public int blocksNeeded() {
+    return 2;
+  }
+  
   /**
    * Gets the octave centered around the frequency at the plotted PSD peak
    * @param idx Index of inputted data to get the peak of
@@ -212,7 +217,7 @@ public class GainExperiment extends Experiment {
     
     return new double[]{lowFreq, highFreq};
   }
-  
+
   /**
    * Finds the maximum value of PSD plot curve, by its index in the array
    * @param fft PSD calculation, including both FFT function and matching
@@ -241,7 +246,7 @@ public class GainExperiment extends Experiment {
     }
     return index;
   }
-
+  
   /**
    * Given indices to specific PSD data sets and frequency boundaries, gets
    * the mean and standard deviation ratios 
@@ -301,7 +306,7 @@ public class GainExperiment extends Experiment {
     
     return new double[]{Math.sqrt(ratio), sigma, gain1, gain2};
   }
-  
+
   /**
    * Find the peak frequency of the reference series and use it to get the
    * gain statistics
@@ -319,11 +324,6 @@ public class GainExperiment extends Experiment {
   @Override
   public boolean hasEnoughData(DataStore ds) {
     return ( ds.bothComponentsSet(0) && ds.bothComponentsSet(1) );
-  }
-
-  @Override
-  public int blocksNeeded() {
-    return 2;
   }
 
 }
