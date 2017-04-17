@@ -7,8 +7,10 @@ import java.util.Arrays;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
-import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
+import 
+org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
+import 
+org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
@@ -22,6 +24,7 @@ public class SolverTest {
 
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       
+      // evaluate the result at a specific point
       private double[] doCalculation(double[] point) {
         
         double[] result = new double[point.length];
@@ -36,6 +39,7 @@ public class SolverTest {
         
       }
       
+      // computes value by direct evaluation, jacobian by forward difference
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         
         double[] pointArr = point.toArray();
@@ -48,18 +52,17 @@ public class SolverTest {
         double[][] jacobianArr = new double[resultArr.length][pointArr.length];
 
         for (int i = 0; i < pointArr.length; ++i) {
+          // create a new array, change the relevant variable, return
           double change = 1E-5;
-          double initVal = pointArr[i];
-          pointArr[i] += change;
-          double[] forwardDiff = doCalculation(pointArr);
+          double[] fwdDiffArr = point.toArray();
+          fwdDiffArr[i] += change;
+          // System.out.println( Arrays.toString(fwdDiffArr) );
+          double[] forwardDiffRes = doCalculation(fwdDiffArr);
           
-          for (int j = 0; j < forwardDiff.length; ++j) {
-            jacobianArr[j][i] = (forwardDiff[j] - resultArr[j]) / change;
+          for (int j = 0; j < forwardDiffRes.length; ++j) {
+            jacobianArr[j][i] = (forwardDiffRes[j] - resultArr[j]) / change;
           }
-          
-          // set value back to what it initially was
-          pointArr[i] = initVal;
-          
+
         }
         
         RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArr);
@@ -68,10 +71,13 @@ public class SolverTest {
       }
     };
     
-    RealVector initialGuess1 = MatrixUtils.createRealVector(new double[]{-10});
-    RealVector initialGuess2 = MatrixUtils.createRealVector(new double[]{20});
+    RealVector initialGuess1 = 
+        MatrixUtils.createRealVector(new double[]{-10, -10});
+    RealVector initialGuess2 = 
+        MatrixUtils.createRealVector(new double[]{20, 20});
     
-    RealVector obsResVector = MatrixUtils.createRealVector(new double[]{0});
+    RealVector obsResVector = 
+        MatrixUtils.createRealVector(new double[]{0, 0});
     
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(initialGuess1).
@@ -86,7 +92,7 @@ public class SolverTest {
    
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
-    double firstOptimum = optimum.getPoint().toArray()[0];
+    double[] firstOptimum = optimum.getPoint().toArray();
     
     // System.out.println( Arrays.toString( optimum.getPoint().toArray() ) );
     
@@ -101,13 +107,17 @@ public class SolverTest {
     
     optimum = optimizer.optimize(lsp);
     
-    double secondOptimum = optimum.getPoint().toArray()[0];
+    double secondOptimum[] = optimum.getPoint().toArray();
     
     // System.out.println( Arrays.toString( optimum.getPoint().toArray() ) );
     
-    assertEquals(firstOptimum, -4, 0.1);
-    assertEquals(secondOptimum, 3, 0.1);
+    assertEquals(firstOptimum[0], -4, 0.1);
+    assertEquals(secondOptimum[0], 3, 0.1);
     
+    for (int i = 0; i < firstOptimum.length; ++i) {
+      assertEquals(firstOptimum[0], firstOptimum[i], 0.1);
+      assertEquals(secondOptimum[0], secondOptimum[i], 0.1);
+    }
   }
   
 }
