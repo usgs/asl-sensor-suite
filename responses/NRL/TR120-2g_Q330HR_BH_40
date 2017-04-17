@@ -78,7 +78,7 @@ B057F08     Correction applied (seconds):          0.00000E+00
 #        +               +--------------------------------------------+                +
 #              
 B058F03     Stage sequence number:                 2
-B058F04     Gain:                                  1.677722e+06
+B058F04     Gain:                                  1.677721e+06
 B058F05     Frequency of gain:                     1.000000e+00 HZ
 B058F06     Number of calibrations:                0
 #        +               +--------------------------------------------+                +
@@ -86,6 +86,6 @@ B058F06     Number of calibrations:                0
 #        +               +--------------------------------------------+                +
 #        
 B058F03     Stage sequence number:                  0
-B058F04     Sensitivity:                            2.025010e+09
+B058F04     Sensitivity:                            2014439604.7
 B058F05     Frequency of sensitivity:               1.000000E+00
 B058F06     Number of calibrations:                 0

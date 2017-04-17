@@ -90,7 +90,7 @@ B058F06     Number of calibrations:                0
 #		+                  +---------------------------------------+                  +
 #		
 B058F03     Stage sequence number:                 0
-B058F04     Sensitivity:                           5.452590e+08
+B058F04     Sensitivity:                           629145000.0
 B058F05     Frequency of sensitivity:              1.000000e+00 HZ
 B058F06     Number of calibrations:                0
 #		
