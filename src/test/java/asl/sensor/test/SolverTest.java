@@ -1,5 +1,7 @@
 package asl.sensor.test;
 
+import static org.junit.Assert.*;
+
 import java.util.Arrays;
 
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
@@ -84,7 +86,9 @@ public class SolverTest {
    
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
-    System.out.println( Arrays.toString( optimum.getPoint().toArray() ) );
+    double firstOptimum = optimum.getPoint().toArray()[0];
+    
+    // System.out.println( Arrays.toString( optimum.getPoint().toArray() ) );
     
     lsp = new LeastSquaresBuilder().
         start(initialGuess2).
@@ -97,7 +101,12 @@ public class SolverTest {
     
     optimum = optimizer.optimize(lsp);
     
-    System.out.println( Arrays.toString( optimum.getPoint().toArray() ) );
+    double secondOptimum = optimum.getPoint().toArray()[0];
+    
+    // System.out.println( Arrays.toString( optimum.getPoint().toArray() ) );
+    
+    assertEquals(firstOptimum, -4, 0.1);
+    assertEquals(secondOptimum, 3, 0.1);
     
   }
   
