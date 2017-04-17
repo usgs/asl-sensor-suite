@@ -49,6 +49,9 @@ import asl.sensor.utils.FFTResult;
 public class RandomizedExperiment extends Experiment {
 
   private static final double DELTA = 1E-7;
+  
+  private double initialResidual, fitResidual;
+  
   /**
    * Convert a list of variables to a set of poles to be applied to an
    * instrument response file. This variable must have an even number of
@@ -405,6 +408,10 @@ public class RandomizedExperiment extends Experiment {
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     
+    LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
+    initialResidual = initEval.getCost();
+    fitResidual = optimum.getCost();
+    
     double[] poleParams = optimum.getPoint().toArray();
     double[] initialValues =
         jacobian.value( initialGuess).getFirst().toArray();
@@ -667,5 +674,13 @@ public class RandomizedExperiment extends Experiment {
    */
   public void setLowFreq(boolean lowFreq) {
     this.lowFreq = lowFreq;
+  }
+  
+  public double getInitResidual() {
+    return initialResidual;
+  }
+  
+  public double getFitResidual() {
+    return fitResidual;
   }
 }

@@ -21,6 +21,7 @@ import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
@@ -49,6 +50,8 @@ public class RandomizedExperimentTest {
     String calName =  dataFolderName + "_EC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     String metaName;
+    
+    boolean lowFreq = false;
     
     try {
       metaName = TimeSeriesUtils.getMplexNameList(calName).get(0);
@@ -88,10 +91,16 @@ public class RandomizedExperimentTest {
       RandomizedExperiment rCal = (RandomizedExperiment)
           ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
       
-      rCal.setLowFreq(false);
+      rCal.setLowFreq(lowFreq);
       
       assertTrue( rCal.hasEnoughData(ds) );
       rCal.setData(ds);
+      
+      String initialResidual = new StringBuilder("Initial Residual: ").
+          append( rCal.getInitResidual() ).toString();
+      
+      String fitResidual = new StringBuilder("Fit Residual: ").
+          append( rCal.getFitResidual() ).toString();
       
       int width = 1280;
       int height = 960;
@@ -106,6 +115,35 @@ public class RandomizedExperimentTest {
       NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
       Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
       xAxis.setLabelFont(bold);
+      
+      StringBuilder sb = new StringBuilder();
+      sb.append( RandomizedPanel.getInsetString(rCal) );
+      sb.append('\n');
+      sb.append( RandomizedPanel.getTimeStampString(rCal) );
+      sb.append('\n');
+      sb.append("RESPONSE USED:");
+      sb.append('\n');
+      sb.append( rCal.getResponseName() );
+      sb.append('\n');
+      sb.append(initialResidual);
+      sb.append('\n');
+      sb.append(fitResidual);
+      sb.append('\n');
+      
+      // expected best fit params, for debugging
+      double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
+      ir = RandomizedExperiment.polesToResp(expectedParams, ir, lowFreq);
+      ir.setName("Best-fit params");
+      ds.setResponse(1, ir);
+      rCal.setData(ds);
+      String expectedResidual = new StringBuilder("Expected Residual: ").
+          append( rCal.getInitResidual() ).toString();
+      String expectedFitResid = new StringBuilder("Fit from Exp. Residual: ").
+          append( rCal.getFitResidual() ).toString();
+      
+      // add initial curve from expected fit params to report
+      XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);
+      xysc.get(0).addSeries(expectedInitialCurve);
       
       for (int i = 0; i < xysc.size(); ++i) {
         
@@ -127,14 +165,11 @@ public class RandomizedExperimentTest {
         xyp.setDomainAxis( xAxis );
       }
       
-      StringBuilder sb = new StringBuilder();
+      sb.append(expectedResidual);
+      sb.append('\n');
+      sb.append(expectedFitResid);
+      sb.append('\n').append('\n');
       sb.append( RandomizedPanel.getInsetString(rCal) );
-      sb.append('\n');
-      sb.append( RandomizedPanel.getTimeStampString(rCal) );
-      sb.append('\n');
-      sb.append("RESPONSE USED:");
-      sb.append('\n');
-      sb.append( rCal.getResponseName() );
       
       PDDocument pdf = new PDDocument();
       ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
