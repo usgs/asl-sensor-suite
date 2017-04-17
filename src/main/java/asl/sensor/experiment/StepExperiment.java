@@ -50,14 +50,16 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class StepExperiment extends Experiment{
 
-  double f, h; //corner and damping of output (uncorrected)
-  double fCorr, hCorr; // fit parameters to turn output into cal input
-  double initResid, fitResid;
+  private double f, h; //corner and damping of output (uncorrected)
+  private double fCorr, hCorr; // fit parameters to turn output into cal input
+  private double initResid, fitResid;
   
-  int trimmedLength, cutAmount;
-  double[] freqs;
-  Complex[] sensorFFTSeries; // FFT of step cal from sensor
-  double[] stepCalSeries; // time series of raw step cal function
+  private int trimmedLength, cutAmount;
+  private double[] freqs;
+  private Complex[] sensorFFTSeries; // FFT of step cal from sensor
+  private double[] stepCalSeries; // time series of raw step cal function
+  
+  private String responseName;
   
   final double STEP_FACTOR = 1E-16;
   
@@ -120,6 +122,7 @@ public class StepExperiment extends Experiment{
     DataBlock sensorOutput = ds.getBlock(outIdx);
     // long interval = sensorOutput.getInterval();
     InstrumentResponse ir = ds.getResponse(outIdx);
+    responseName = ir.getName();
     Complex pole = ir.getPoles().get(0);
     
     f = 1. / (2 * Math.PI / pole.abs() ); // corner frequency
@@ -169,11 +172,20 @@ public class StepExperiment extends Experiment{
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
         new EvaluationRmsChecker(1E-50, 1E-50);
-        
+    
+    // used to fit parameters
+    MultivariateJacobianFunction jbn = new MultivariateJacobianFunction() {
+      
+      public Pair<RealVector, RealMatrix> value(RealVector point) {
+          return jacobian(point);
+      }
+      
+    };
+    
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(startVector).
         target(observedComponents).
-        model( getJacobianFunction() ).
+        model( jbn ).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
@@ -216,6 +228,11 @@ public class StepExperiment extends Experiment{
     xySeriesData.add(xysc);
     
     
+  }
+  
+  @Override
+  public int blocksNeeded() {
+    return 2;
   }
   
   /**
@@ -325,22 +342,15 @@ public class StepExperiment extends Experiment{
   public double[] getFitCornerAndDamping() {
     return new double[]{fCorr, hCorr, fitResid};
   }
-  
-  /**
-   * Passes a handle to this object's jacobian function, used to get the
-   * partial-differential values and current solution at a given point
-   * for the Commons curve-fitting functions
-   * @return jacobian function according to the Apache Commons fitting library
-   */
-  public MultivariateJacobianFunction getJacobianFunction() {
-    return new MultivariateJacobianFunction() {
-      private static final long serialVersionUID = -8673650298627399464L;
-      public Pair<RealVector, RealMatrix> value(RealVector point) {
-          return jacobian(point);
-      }
-    };
+
+  public String getResponseName() {
+    return responseName;
   }
-  
+
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
+  }
   
   /**
    * Computes the forward change in value of the calculations for response
@@ -373,16 +383,6 @@ public class StepExperiment extends Experiment{
     RealVector fnc = MatrixUtils.createRealVector(fInit);
     
     return new Pair<RealVector, RealMatrix>(fnc, jMat);
-  }
-
-  @Override
-  public boolean hasEnoughData(DataStore ds) {
-    return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
-  }
-
-  @Override
-  public int blocksNeeded() {
-    return 2;
   }
   
 }

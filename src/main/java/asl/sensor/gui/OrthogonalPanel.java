@@ -32,6 +32,20 @@ public class OrthogonalPanel extends ExperimentPanel {
    */
   private static final long serialVersionUID = -2749224338484110043L;
 
+  public static String getInsetString(OrthogonalExperiment ort) {  
+    double[] fit = ort.getSolutionParams();
+    double angle = ort.getFitAngle();
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append("Calculated angle between non-reference sensors:\n");
+    sb.append(angle);
+    sb.append('\n');
+    sb.append("Offset angles for LH1 and LH2 sensor outputs:\n");
+    sb.append( Arrays.toString(fit) );
+    
+    return sb.toString();
+  }
+
   public OrthogonalPanel(ExperimentEnum exp) {
     super(exp);
     
@@ -70,8 +84,20 @@ public class OrthogonalPanel extends ExperimentPanel {
   }
 
   @Override
+  public String getInsetString() {
+    return getInsetString( (OrthogonalExperiment) expResult );
+  }
+  
+  @Override
+  public int panelsNeeded() {
+    return 4;
+  }
+    
+    
+  @Override
   public void updateData(final DataStore ds) {
-    // TODO Auto-generated method stub
+    
+    set = true;
     
     expResult.setData(ds);
     XYSeriesCollection xysc = expResult.getData().get(0);
@@ -79,18 +105,9 @@ public class OrthogonalPanel extends ExperimentPanel {
     setChart(xysc);
     XYPlot xyp = (XYPlot) chart.getPlot();
     
-    double[] fit = ( (OrthogonalExperiment) expResult ).getSolutionParams();
-    double angle = ( (OrthogonalExperiment) expResult ).getFitAngle();
-    
-    StringBuilder sb = new StringBuilder();
-    sb.append("Calculated angle between non-reference sensors:\n");
-    sb.append(angle);
-    sb.append('\n');
-    sb.append("Offset angles for LH1 and LH2 sensor outputs:\n");
-    sb.append( Arrays.toString(fit) );
     
     TextTitle result = new TextTitle();
-    result.setText( sb.toString() );
+    result.setText( getInsetString() );
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
@@ -99,11 +116,6 @@ public class OrthogonalPanel extends ExperimentPanel {
     
     chartPanel.setChart(chart);
     
-  }
-
-  @Override
-  public int panelsNeeded() {
-    return 4;
   }
 
 }

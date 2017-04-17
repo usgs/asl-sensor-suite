@@ -120,6 +120,60 @@ public class DataBlock {
   }
 
   /**
+   * Converts an end time to the last index of data to include in a trimmed
+   * data series  
+   * @param end Terminal cutoff point for data
+   * @return Index of last data point to include in trimmed subset
+   */
+  public int getTrimEndIndex(long end) {
+    int endIdx = data.size();
+    long endTime = getEndTime();
+    if ( end < endTime ) {
+      long diff = endTime - end;
+      // diff/interval is number of points from ending index, need to subtract
+      // (quick reminder that upper index of sublist method is exclusive)
+      endIdx = endIdx - (int) (diff / interval); // (end offset = size)
+    }
+    return endIdx;
+  }
+
+  /**
+   * Converts a start time to the first index of data to include in a trimmed
+   * data series
+   * @param start Initial cutoff point for data
+   * @return Index of first data point to include in trimmed subset
+   */
+  public int getTrimStartIndex(long start) {
+    int startIdx = 0;
+    if (startTime < start) {
+      long diff = start - startTime;
+      startIdx = (int) (diff / interval);
+    }
+    return startIdx;
+  }
+
+  /**
+   * Checks to see if the sensor's calibration is wired positively or not
+   * (i.e., if the result of a step-calibration is upside-down)
+   * @return 
+   */
+  public boolean needsSignFlip() {
+    
+    double max = Math.abs( data.get(0).doubleValue() );
+    int idx = 0;
+    
+    for (int i = 1; i < data.size() / 2; ++i) {
+      if ( Math.abs( data.get(i).doubleValue() ) > max ) {
+        max = Math.abs( data.get(i).doubleValue() );
+        idx = i;
+      }
+    }
+    
+    return Math.signum( data.get(idx).doubleValue() ) < 0;
+    
+  }
+
+  /**
    * Replace the time series data with a new list of Java numeric types.
    * This is the preferred call when data is resampled as it requires a new
    * interval to be specified, so that the old sample rate does not persist.
@@ -129,7 +183,7 @@ public class DataBlock {
     data = TimeSeriesUtils.decimate(data, interval, newInterval);
     interval = newInterval;
   }
-
+  
   /**
    * Replace the time series data with a new list of Java numeric types.
    * If the data has been resampled somehow, the resample method is preferred,
@@ -148,7 +202,7 @@ public class DataBlock {
   public void setInterval(long interval) {
     this.interval = interval;
   }
-
+  
   /**
    * Set the start timestamp of the data with a given long, expressed as
    * microseconds from UTC epoch (compatible with Java System Library Date and
@@ -167,7 +221,7 @@ public class DataBlock {
   public int size() {
     return data.size();
   }
-
+  
   /**
    * Converts this object's time series data into a form plottable by a chart.
    * The format is a pair of data: the time of a sample and that sample's value.
@@ -194,60 +248,6 @@ public class DataBlock {
     }
     
     return out;
-  }
-  
-  /**
-   * Checks to see if the sensor's calibration is wired positively or not
-   * (i.e., if the result of a step-calibration is upside-down)
-   * @return 
-   */
-  public boolean needsSignFlip() {
-    
-    double max = Math.abs( data.get(0).doubleValue() );
-    int idx = 0;
-    
-    for (int i = 1; i < data.size() / 2; ++i) {
-      if ( Math.abs( data.get(i).doubleValue() ) > max ) {
-        max = Math.abs( data.get(i).doubleValue() );
-        idx = i;
-      }
-    }
-    
-    return Math.signum( data.get(idx).doubleValue() ) < 0;
-    
-  }
-  
-  /**
-   * Converts a start time to the first index of data to include in a trimmed
-   * data series
-   * @param start Initial cutoff point for data
-   * @return Index of first data point to include in trimmed subset
-   */
-  public int getTrimStartIndex(long start) {
-    int startIdx = 0;
-    if (startTime < start) {
-      long diff = start - startTime;
-      startIdx = (int) (diff / interval);
-    }
-    return startIdx;
-  }
-  
-  /**
-   * Converts an end time to the last index of data to include in a trimmed
-   * data series  
-   * @param end Terminal cutoff point for data
-   * @return Index of last data point to include in trimmed subset
-   */
-  public int getTrimEndIndex(long end) {
-    int endIdx = data.size();
-    long endTime = getEndTime();
-    if ( end < endTime ) {
-      long diff = endTime - end;
-      // diff/interval is number of points from ending index, need to subtract
-      // (quick reminder that upper index of sublist method is exclusive)
-      endIdx = endIdx - (int) (diff / interval); // (end offset = size)
-    }
-    return endIdx;
   }
 
   /**

@@ -1,6 +1,7 @@
 package asl.sensor.test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public class DataPanelTest {
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename1, name);
       long start = db.getStartTime();
       long interval = db.getInterval();
-      long end = db.getEndTime();
+      // long end = db.getEndTime();
       int size = db.size();
       
       long timeRange = interval*size;

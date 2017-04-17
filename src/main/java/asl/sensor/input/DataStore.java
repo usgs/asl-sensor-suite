@@ -8,11 +8,6 @@ import org.jfree.data.xy.XYSeries;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.TimeSeriesUtils;
 
-// TODO (BIG, BIG IMPORTANT TODO) implement locking for file loading and
-// for PSD calculation
-// need to lock for file read-in to prevent race conditions on time boundary
-// need to lock on PSD to prevent redundant calculation thereof
-
 /**
  * Holds the inputted data from miniSEED files both as a simple struct
  * (see DataBlock) and as a plottable format for the DataPanel.
@@ -51,12 +46,10 @@ public class DataStore {
   private DataBlock[] dataBlockArray;
   private InstrumentResponse[] responses;
   private XYSeries[] outToPlots; // used to cache graph data
-  FFTResult[] powerSpectra; // used to cache PSD results to speed up calculation
   
   // these are used to check to make sure data has been loaded
   private boolean[] thisBlockIsSet;
   private boolean[] thisResponseIsSet;
-  private boolean[] thisPSDIsCalculated;
   
   /**
    * Instantiate the collections, including empty datasets to be sent to
@@ -66,15 +59,12 @@ public class DataStore {
    dataBlockArray = new DataBlock[FILE_COUNT];
    responses = new InstrumentResponse[FILE_COUNT];
    outToPlots = new XYSeries[FILE_COUNT];
-   powerSpectra = new FFTResult[FILE_COUNT];
    thisBlockIsSet = new boolean[FILE_COUNT];
    thisResponseIsSet = new boolean[FILE_COUNT];
-   thisPSDIsCalculated = new boolean[FILE_COUNT];
    for (int i = 0; i < FILE_COUNT; ++i) {
      outToPlots[i] = new XYSeries("(EMPTY) " + i);
      thisBlockIsSet[i] = false;
      thisResponseIsSet[i] = false;
-     thisPSDIsCalculated[i] = false;
    }
   }
   
@@ -94,10 +84,8 @@ public class DataStore {
   public DataStore(DataStore ds, int upperBound) {
     dataBlockArray = new DataBlock[FILE_COUNT];
     responses = new InstrumentResponse[FILE_COUNT];
-    powerSpectra = new FFTResult[FILE_COUNT];
     thisBlockIsSet = new boolean[FILE_COUNT];
     thisResponseIsSet = new boolean[FILE_COUNT];
-    thisPSDIsCalculated = new boolean[FILE_COUNT];
     outToPlots = new XYSeries[FILE_COUNT];
     boolean[] setBlocks = ds.dataIsSet();
     boolean[] setResps = ds.responsesAreSet();
@@ -111,14 +99,6 @@ public class DataStore {
         responses[i] = ds.getResponse(i);
         thisResponseIsSet[i] = true;
       }
-      if (setBlocks[i] && setResps[i]) {
-        thisPSDIsCalculated[i] = ds.isPSDSet(i);
-          if (thisPSDIsCalculated[i]) {
-            powerSpectra[i] = ds.getPSD(i);
-          }
-      } else {
-        thisPSDIsCalculated[i] = false;
-      }
     }
   }
   
@@ -131,18 +111,6 @@ public class DataStore {
    */
   public DataStore(DataStore ds, long start, long end, int upperBound) {
     this(ds);
-    for (int i = 0; i < upperBound; ++i) {
-      if (thisPSDIsCalculated[i]) {
-        DataBlock db = dataBlockArray[i];
-        long blockStart = db.getStartTime();
-        long blockEnd = db.getEndTime();
-        if (start == blockStart && end == blockEnd) {
-          powerSpectra[i] = ds.getPSD(i);
-        }
-      } else {
-        thisPSDIsCalculated[i] = false;
-      }
-    }
     
     this.trimAll(start, end);
   }
@@ -175,21 +143,6 @@ public class DataStore {
    */
   public boolean[] dataIsSet() {
     return thisBlockIsSet;
-  }
-  
-  /**
-   * Returns the power-spectral density for each data set loaded in this object
-   * @return Array of PSD results, each an object holding a complex array of
-   * frequency values and a double arrays of the frequency at each index in that
-   * complex array
-   */
-  public FFTResult[] getAllPSDs() {
-    for (int i = 0; i < FILE_COUNT; ++i) {
-      if (thisBlockIsSet[i] && thisResponseIsSet[i]) {
-        getPSD(i); // calc psd if it's not yet done (but we need data in first)
-      }
-    }
-    return powerSpectra;
   }
   
   /**
@@ -228,20 +181,9 @@ public class DataStore {
    * double array of the frequencies
    */
   public synchronized FFTResult getPSD(int idx) {
-    if (!thisPSDIsCalculated[idx]) {
-      // need both a response and source data
-      if (!thisBlockIsSet[idx] || !thisResponseIsSet[idx]) {
-        throw new RuntimeException("Not enough data loaded in");
-      } else {
-        // have enough data but need to calculate before returning
-        DataBlock db = dataBlockArray[idx];
-        InstrumentResponse ir = responses[idx];
-        powerSpectra[idx] = FFTResult.crossPower(db, db, ir, ir);
-        thisPSDIsCalculated[idx] = true;
-      }
-    }
-
-    return powerSpectra[idx];
+    DataBlock db = dataBlockArray[idx];
+    InstrumentResponse ir = responses[idx];
+    return FFTResult.crossPower(db, db, ir, ir);
   }
   
   /**
@@ -330,16 +272,36 @@ public class DataStore {
   }
   
   /**
-   * Checks if a PSD has been calculated for the object at this index
-   * used mainly to see if a PSD still needs to be calculated or if a
-   * cached result can be returned
-   * @param idx Index of the data to see if the PSD has been calculated
-   * @return True if there is a PSD calculated in an 
+   * Get lowest-frequency data and downsample all data to it
    */
-  public boolean isPSDSet(int idx) {
-    return thisPSDIsCalculated[idx];
+  public void matchIntervals() {
+    matchIntervals(FILE_COUNT);
   }
-  
+
+  /**
+   * Math the first [limit] inputs' intervals to the lowest-frequency used by
+   * any of the blocks within that range
+   * @param limit Index of last block to match intervals to
+   */
+  public void matchIntervals(int limit){
+    long interval = 0;
+    // first loop to get lowest-frequency data
+    for (int i = 0; i < limit; ++i) {
+      if ( thisBlockIsSet[i] && getBlock(i).getInterval() > interval ) {
+        interval = getBlock(i).getInterval();
+      }
+    }
+    // second loop to downsample
+    for (int i = 0; i < limit; ++i) {
+      if ( thisBlockIsSet[i] && getBlock(i).getInterval() != interval ) {
+        getBlock(i).resample(interval);
+      }
+    }
+    
+    trimToCommonTime();
+    
+  }
+
   /**
    * Gives the count of indices where both a miniseed and response are loaded
    * @return the number of entries of miniseeds with a matching response
@@ -353,7 +315,7 @@ public class DataStore {
     }
     return loaded;
   }
-
+  
   /**
    * Gives the number of DataBlocks (miniseed files) read in to this object
    * @return number of files read in
@@ -367,7 +329,7 @@ public class DataStore {
     }
     return loaded;
   }
-
+  
   /**
    * Removes all data at a specific index -- miniseed, response, and any
    * data generated from them
@@ -378,7 +340,6 @@ public class DataStore {
     responses[idx] = null;
     outToPlots[idx] = null;
     thisBlockIsSet[idx] = false;
-    thisPSDIsCalculated[idx] = false;
     thisResponseIsSet[idx] = false;
   }
   
@@ -411,8 +372,6 @@ public class DataStore {
   public void setData(int idx, DataBlock db) {
     thisBlockIsSet[idx] = true;
     dataBlockArray[idx] = db;
-    thisPSDIsCalculated[idx] = false;
-    powerSpectra[idx] = null;
     outToPlots[idx] = db.toXYSeries();
   }
   
@@ -428,11 +387,8 @@ public class DataStore {
       DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
       thisBlockIsSet[idx] = true;
       dataBlockArray[idx] = xy;
-      thisPSDIsCalculated[idx] = false;
-      powerSpectra[idx] = null;
       outToPlots[idx] = xy.toXYSeries();
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
 
@@ -462,6 +418,16 @@ public class DataStore {
   }
   
   /**
+   * Place an already-constructed instrument response at the index idx 
+   * @param idx index in this object to place the response at
+   * @param ir InstrumentResponse to have placed into this object
+   */
+  public void setResponse(int idx, InstrumentResponse ir) {
+    responses[idx] = ir;
+    thisResponseIsSet[idx] = true;
+  }
+
+  /**
    * Sets the response of a sensor's dataseries matched by index
    * @param idx Index of plot for which response file matches
    * @param filepath Full address of file to be loaded in
@@ -470,24 +436,9 @@ public class DataStore {
     try {
       responses[idx] = new InstrumentResponse(filepath);
       thisResponseIsSet[idx] = true;
-      thisPSDIsCalculated[idx] = false;
-      powerSpectra[idx] = null;
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
-  }
-  
-  /**
-   * Place an already-constructed instrument response at the index idx 
-   * @param idx index in this object to place the response at
-   * @param ir InstrumentResponse to have placed into this object
-   */
-  public void setResponse(int idx, InstrumentResponse ir) {
-    responses[idx] = ir;
-    thisResponseIsSet[idx] = true;
-    thisPSDIsCalculated[idx] = false;
-    powerSpectra[idx] = null;
   }
   
   /**
@@ -498,7 +449,7 @@ public class DataStore {
   public boolean timeSeriesSet(int idx) {
     return thisBlockIsSet[idx];
   }
-
+  
   /**
    * Trims all data blocks to be within a certain time range.
    * Used for getting a sub-range specified by sliding-bar window.
@@ -514,39 +465,9 @@ public class DataStore {
   }
   
   /**
-   * Get lowest-frequency data and downsample all data to it
-   */
-  public void matchIntervals() {
-    matchIntervals(FILE_COUNT);
-  }
-  
-  /**
-   * Math the first [limit] inputs' intervals to the lowest-frequency used by
-   * any of the blocks within that range
-   * @param limit Index of last block to match intervals to
-   */
-  public void matchIntervals(int limit){
-    long interval = 0;
-    // first loop to get lowest-frequency data
-    for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInterval() > interval ) {
-        interval = getBlock(i).getInterval();
-      }
-    }
-    // second loop to downsample
-    for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInterval() != interval ) {
-        getBlock(i).resample(interval);
-      }
-    }
-    
-    trimToCommonTime();
-    
-  }
-  
-  /**
    * Trims this object's data blocks to hold only points in their common range
    * WARNING: assumes each plot has its data taken at the same point in time
+   * (that is, that a common time range exists to be trimmed to)
    */
   public void trimToCommonTime() {
     trimToCommonTime(FILE_COUNT);

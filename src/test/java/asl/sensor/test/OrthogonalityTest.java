@@ -13,7 +13,6 @@ import java.util.TimeZone;
 
 import org.junit.Test;
 
-import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;

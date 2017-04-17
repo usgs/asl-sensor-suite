@@ -25,9 +25,34 @@ public class OrthogonalExperiment extends Experiment {
 
   final static double TAU = Math.PI * 2;
   
-  double[] diffs;
-  double angle;
+  /**
+   * Return the rotated signal given an angle and orthogonal components
+   * @param refX reference signal along the x-axis
+   * @param refY reference signal along the y-axis
+   * @param point angle (radians) to get as rotated signal
+   * @return signal rotated in the direction of the given angle
+   */
+  public 
+  static RealVector value(RealVector refX, RealVector refY, double point) {
+    double theta = point % TAU;
+    
+    if (theta < 0) {
+      theta += TAU; 
+    }
+    
+    double sinTheta = Math.sin(theta);
+    double cosTheta = Math.cos(theta);
+    
+    RealVector curValue = 
+        refX.mapMultiply(sinTheta).add( refY.mapMultiply(cosTheta) );
+    
+    return curValue;
+  }
   
+  private double[] diffs;
+  
+  private double angle;
+
   public OrthogonalExperiment() {
     super();
 
@@ -144,6 +169,19 @@ public class OrthogonalExperiment extends Experiment {
     xySeriesData.add(xysc);
     
   }
+  
+  @Override
+  public int blocksNeeded() {
+    return 4;
+  }
+  
+  /**
+   * Returns the difference of the best-fit angles for the unknown sensors
+   * @return Angle, in degrees
+   */
+  public double getFitAngle() {
+    return angle;
+  };
 
   /**
    * Returns the intermediate result of the calculation, 
@@ -154,38 +192,6 @@ public class OrthogonalExperiment extends Experiment {
   public double[] getSolutionParams() {
     return diffs;
   }
-  
-  /**
-   * Returns the difference of the best-fit angles for the unknown sensors
-   * @return Angle, in degrees
-   */
-  public double getFitAngle() {
-    return angle;
-  }
-  
-  /**
-   * Return the rotated signal given an angle and orthogonal components
-   * @param refX reference signal along the x-axis
-   * @param refY reference signal along the y-axis
-   * @param point angle (radians) to get as rotated signal
-   * @return signal rotated in the direction of the given angle
-   */
-  public 
-  static RealVector value(RealVector refX, RealVector refY, double point) {
-    double theta = point % TAU;
-    
-    if (theta < 0) {
-      theta += TAU; 
-    }
-    
-    double sinTheta = Math.sin(theta);
-    double cosTheta = Math.cos(theta);
-    
-    RealVector curValue = 
-        refX.mapMultiply(sinTheta).add( refY.mapMultiply(cosTheta) );
-    
-    return curValue;
-  };
 
   @Override
   public boolean hasEnoughData(DataStore ds) {
@@ -195,11 +201,6 @@ public class OrthogonalExperiment extends Experiment {
       }
     }
     return true;
-  }
-
-  @Override
-  public int blocksNeeded() {
-    return 4;
   }
   
 

@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,35 +45,6 @@ public class TimeSeriesUtils {
   public final static double ONE_HZ = 1.0;
   
   /**
-   * Rotates a north and east (known orthognal) set of data and produces a new
-   * DataBlock along the north axis in the rotated coordinate system from
-   * the given angle (y' = y cos theta + x sin theta)
-   * @param north
-   * @param east
-   * @param ang
-   * @return
-   */
-  public static DataBlock rotate(DataBlock north, DataBlock east, double ang) {
-    DataBlock rotated = new DataBlock(north);
-    List<Number> northData = rotated.getData();
-    List<Number> eastData = east.getData();
-    List<Number> rotatedData = new ArrayList<Number>();
-    
-    double sinTheta = Math.sin(-ang);
-    double cosTheta = Math.cos(-ang);
-    
-    for (int i = 0; i < northData.size(); ++i) {
-      rotatedData.add( 
-          northData.get(i).doubleValue() * cosTheta + 
-          eastData.get(i).doubleValue() * sinTheta );
-    }
-    
-    rotated.setData(rotatedData);
-    
-    return rotated;
-  }
-  
-  /**
    * Initial driver for the decimation utility
    * which takes a timeseries of unknown rate and
    * runs downsampling to convert it to a target
@@ -101,7 +73,7 @@ public class TimeSeriesUtils {
     int upf = (int)(src/gcd);
     int dnf = (int)(tgt/gcd);
     
-    double higherFreq = (1. / src) * upf * ONE_HZ_INTERVAL; // TODO: check this
+    double higherFreq = (1. / src) * upf * ONE_HZ_INTERVAL;
     double lowerFreq = (1. / tgt) * ONE_HZ_INTERVAL / 2; 
       // nyquist rate of downsampled data
     
@@ -134,7 +106,7 @@ public class TimeSeriesUtils {
 
     return downsamp;
   }
-
+  
   /**
    * Implements Euclid's algorithm for finding GCD
    * used to find common divisors to give us upsample
@@ -155,7 +127,7 @@ public class TimeSeriesUtils {
 
     return euclidGCD(tgt, rem);
   }
-  
+
   /**
    * Extract SNCL data from a SEED data header
    * @param dh found in a seed file
@@ -172,7 +144,7 @@ public class TimeSeriesUtils {
     fileID.append(dh.getChannelIdentifier());
     return fileID.toString();
   }
-
+  
   /**
    * Returns an int representing the number of bytes in a record for
    * a miniSEED file
@@ -203,10 +175,8 @@ public class TimeSeriesUtils {
           } // end of loop over blockettes
           
         } catch (SeedFormatException e) {
-          // TODO Auto-generated catch block
           e.printStackTrace();
         } catch (IOException e) {
-          // TODO Auto-generated catch block
           e.printStackTrace();
         } // end of try-catch blocks for parsing an individual record
         
@@ -216,6 +186,22 @@ public class TimeSeriesUtils {
       throw e;
     } // end of try block for creating DataInputStream
     
+  }
+
+  /**
+   * Get the set of available data series in a multiplexed miniseed file.
+   * Because the list is derived from the set, the result of this function
+   * should have no duplicate entries.
+   * Because Java Sets do not specify ordering, this allows for indexing
+   * operations to be performed on the returned data more easily.
+   * @param filename Name of file to read in
+   * @return List of strings corresponding to metadata of each data series
+   * in the given miniseed file
+   * @throws FileNotFoundException If given file from filename cannot be read
+   */
+  public static List<String> getMplexNameList(String filename)
+    throws FileNotFoundException {
+    return new ArrayList<String>( getMplexNameSet(filename) );
   }
 
   /**
@@ -274,7 +260,7 @@ public class TimeSeriesUtils {
     
     return dataNames;
   }
-
+  
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
    * list of Java numerics, which can be shorts, floats, doubles, or longs,
@@ -292,8 +278,6 @@ public class TimeSeriesUtils {
    */
   public static DataBlock getTimeSeries(String filename, String filter)
       throws FileNotFoundException {
-
-    // TODO: add gathering of data from step cal blockette (sep. function?)
     
     DataInputStream dis;
     // XYSeries xys = null;
@@ -325,13 +309,12 @@ public class TimeSeriesUtils {
               continue; // skip to next seedRecord
             }
 
-
-            byte af = dh.getActivityFlags();
-            byte correctionFlag = 0b00000010; // is there a time correction?
-            int correction = 0;
-            if ( (af & correctionFlag) != 0 ) {
-              correction = dh.getTimeCorrection();
-            }
+            // byte af = dh.getActivityFlags();
+            // byte correctionFlag = 0b00000010; // is there a time correction?
+            // int correction = 0;
+            // if ( (af & correctionFlag) != 0 ) {
+            //   correction = dh.getTimeCorrection();
+            // }
 
             Btime bt = dh.getStartBtime();
             
@@ -340,10 +323,11 @@ public class TimeSeriesUtils {
             // convert Btime to microseconds first as milliseconds
             long start = bt.convertToCalendar().getTimeInMillis();
 
-            start += correction;
+
             // .1 ms = 100 microseconds
             start *= 1000;
 
+            // start += correction;
 
             int fact = dh.getSampleRateFactor();
             int mult = dh.getSampleRateMultiplier();
@@ -407,36 +391,43 @@ public class TimeSeriesUtils {
       
       // now we have all the data in a convenient map timestamp -> value
       // which we can then convert into an easy array
-      Set<Long> times = timeMap.keySet();
+      List<Long> times = new ArrayList<Long>( timeMap.keySet() );
+      Collections.sort(times);
       
       // get the min value in the set, the start time for the series
-      long startTime = Long.MAX_VALUE;
+      long startTime = times.get(0);
       // when can we stop trying to read in data?
-      long endTime = Long.MIN_VALUE;
-      for (long time : times) {
-        if (time < startTime) {
-         startTime = time;
-        }
-        if (time > endTime) {
-          endTime = time;
-        }
-      }
+      // long endTime = times.get( times.size() - 1 );
       
       // read in data from the records as long as they exist
       // if no data exists (there's a gap in the record), set value to 0
       
       // this is done to handle cases where multiplexed files have non-matching
       // gaps and similar issues that previous code was not able to handle
+      
+      // TODO: iterate over list of times and add zeros only if distance
+      // between samples is larger than, say, 2*interval, and add that many 0s
       List<Number> timeList = new ArrayList<Number>();
-      long currentTime = startTime;
-      while (currentTime <= endTime) {
-        if ( timeMap.containsKey(currentTime) ) {
-          timeList.add( timeMap.get(currentTime) );
-        } else {
-          timeList.add(0.);
+      // long currentTime = startTime;
+      
+      for (int i = 0; i < times.size(); ++i) {
+        long timeNow = times.get(i);
+        timeList.add( timeMap.get(timeNow) );
+        
+        if ( (i + 1) < times.size() ) {
+          long timeNext = times.get(i + 1);
+          // is there a discrepancy, and is it big enough for us to care?
+          if (timeNext - timeNow != interval) {
+            // long gap = timeNext - timeNow;
+            // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
+            // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
+            while (timeNext - timeNow > interval * 2) {
+              timeList.add(0.);
+              timeNow += interval;
+            }
+          }
         }
         
-        currentTime += interval;
       }
             
       // demean the input to remove DC offset before adding it to the data
@@ -540,6 +531,35 @@ public class TimeSeriesUtils {
     
     return data;
     
+  }
+
+  /**
+   * Rotates a north and east (known orthognal) set of data and produces a new
+   * DataBlock along the north axis in the rotated coordinate system from
+   * the given angle (y' = y cos theta + x sin theta)
+   * @param north
+   * @param east
+   * @param ang
+   * @return
+   */
+  public static DataBlock rotate(DataBlock north, DataBlock east, double ang) {
+    DataBlock rotated = new DataBlock(north);
+    List<Number> northData = rotated.getData();
+    List<Number> eastData = east.getData();
+    List<Number> rotatedData = new ArrayList<Number>();
+    
+    double sinTheta = Math.sin(-ang);
+    double cosTheta = Math.cos(-ang);
+    
+    for (int i = 0; i < northData.size(); ++i) {
+      rotatedData.add( 
+          northData.get(i).doubleValue() * cosTheta + 
+          eastData.get(i).doubleValue() * sinTheta );
+    }
+    
+    rotated.setData(rotatedData);
+    
+    return rotated;
   }
   
   

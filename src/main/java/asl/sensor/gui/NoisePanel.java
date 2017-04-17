@@ -8,7 +8,6 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
-import javax.swing.SwingWorker;
 
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -120,6 +119,15 @@ public class NoisePanel extends ExperimentPanel {
     super.actionPerformed(e); // only actionlistener here
   }
   
+  @Override
+  public String getMetadataString() {
+    NoiseExperiment nex = (NoiseExperiment) expResult;
+    StringBuilder sb = new StringBuilder("LOADED RESPONSES:");
+    sb.append("\n");
+    sb.append( nex.getResponseNames() );
+    return sb.toString();
+  }
+  
   /**
    * Gets the x-axis for this panel based on whether or not the
    * selection box to plot in units of Hz is selected. If it is, this
@@ -152,40 +160,21 @@ public class NoisePanel extends ExperimentPanel {
     return xAxisTitle;
   }
 
+  @Override
+  public int panelsNeeded() {
+    
+    return 3;
+  }
+
   /**
    * Initially called function to calculate self-noise when data is passed in
    */
   @Override
   public void updateData(final DataStore ds) {
     
-    // TODO: replace with try-catch, put this check in the experiment backend?
-    if (ds.numberFullySet() < 3) {
-      displayErrorMessage("INSUFFICIENT DATA LOADED");
-      return;
-    }
+    set = true;
     
     boolean freqSpace = freqSpaceBox.isSelected();
-    
-    updateDriver(ds, freqSpace);
-    // setting the new chart is enough to update the plots
-    
-    
-  }
-  
-
-  /**
-   * Uses a threaded call to run the self-noise calculations in the background,
-   * to be plotted. In the process of getting these, the names of the data
-   * are used to populate the color of the input data, as well as whether or not
-   * data should be dashed or solid (the color choices are designed to
-   * match the first three input plots, where the data is expected from, and
-   * the dashes are used to distinguish the PSD from the self-noise plot)
-   * @param ds 
-   *  DataStore object that contains the seed and resp files to calculate
-   * @param freqSpace Boolean matching whether or not to plot in units of
-   * frequency if true (Hz) or in units of interval if false (s) 
-   */
-  protected void updateDriver(final DataStore ds, boolean freqSpace) {
     
     final boolean freqSpaceImmutable = freqSpace;
     
@@ -213,14 +202,7 @@ public class NoisePanel extends ExperimentPanel {
 
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
-
     
-  }
-
-  @Override
-  public int panelsNeeded() {
-    
-    return 3;
   }
   
 

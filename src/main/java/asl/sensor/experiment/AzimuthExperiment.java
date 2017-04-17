@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
-import org.apache.commons.math3.fitting.leastsquares.GaussNewtonOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
@@ -18,7 +16,6 @@ org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.optim.ConvergenceChecker;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -53,21 +50,17 @@ public class AzimuthExperiment extends Experiment {
 
   final static double TAU = Math.PI * 2;
   
-  double offset = 0.;
-  double angle;
+  private double offset = 0.;
+  private double angle;
   
-  double[] freqs;
-  double[] coherence;
+  private double[] freqs;
+  private double[] coherence;
   
   public AzimuthExperiment() {
     super();
 
   }
   
-  public void setOffset(double newOffset) {
-    offset = newOffset;
-  }
-
   @Override
   protected void backend(final DataStore ds) {
     
@@ -283,7 +276,43 @@ public class AzimuthExperiment extends Experiment {
     
     
   }
+
+  @Override
+  public int blocksNeeded() {
+    return 3;
+  }
   
+  /**
+   * Return the fit angle calculated by the backend in degrees
+   * @return angle result in degrees
+   */
+  public double getFitAngle() {
+    return Math.toDegrees(angle);
+  }
+  
+  /**
+   * Return the fit angle calculated by the backend in radians
+   * @return angle result in radians
+   */
+  public double getFitAngleRad() {
+    return angle;
+  }
+  
+  public double getOffset() {
+    // TODO Auto-generated method stub
+    return ( (offset % 360) + 360 ) % 360;
+  }
+  
+  @Override
+  public boolean hasEnoughData(DataStore ds) {
+    for (int i = 0; i < blocksNeeded(); ++i) {
+      if ( !ds.blockIsSet(i) ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
    * Jacobian function for the azimuth solver. Takes in the directional
    * signal components (DataBlocks) and the angle to evaluate at and produces
@@ -408,36 +437,13 @@ public class AzimuthExperiment extends Experiment {
     
     return new Pair<RealVector, RealMatrix>(curValue, jbn);
   }
-  
-  /**
-   * Return the fit angle calculated by the backend in degrees
-   * @return angle result in degrees
-   */
-  public double getFitAngle() {
-    return Math.toDegrees(angle);
-  }
-  
-  /**
-   * Return the fit angle calculated by the backend in radians
-   * @return angle result in radians
-   */
-  public double getFitAngleRad() {
-    return angle;
-  }
-  
-  @Override
-  public boolean hasEnoughData(DataStore ds) {
-    for (int i = 0; i < blocksNeeded(); ++i) {
-      if ( !ds.blockIsSet(i) ) {
-        return false;
-      }
-    }
-    return true;
-  }
 
-  @Override
-  public int blocksNeeded() {
-    return 3;
+  /**
+   * Set the angle offset for the reference sensor (degrees from north)
+   * @param newOffset Degrees from north that the reference sensor points
+   */
+  public void setOffset(double newOffset) {
+    offset = newOffset;
   }
   
 

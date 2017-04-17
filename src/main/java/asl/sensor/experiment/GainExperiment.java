@@ -121,6 +121,8 @@ public class GainExperiment extends Experiment {
   
   private List<FFTResult> fftResults;
   
+  private List<String> responseNames;
+  
   private double ratio, sigma;
   
   /**
@@ -157,12 +159,14 @@ public class GainExperiment extends Experiment {
     
     gainStage1 = new ArrayList<Double>();
     otherGainStages = new ArrayList<Double>();
+    responseNames = new ArrayList<String>();
     
     InstrumentResponse[] resps = ds.getResponses();
     for (int i = 0; i < 2; ++i) {
       if (resps[i] == null) {
         continue;
       }
+      responseNames.add( resps[i].getName() );
       List<Double> gains = resps[i].getGain();
       gainStage1.add( gains.get(1) );
       double accumulator = 1.0;
@@ -194,6 +198,11 @@ public class GainExperiment extends Experiment {
     
   }
   
+  @Override
+  public int blocksNeeded() {
+    return 2;
+  }
+  
   /**
    * Gets the octave centered around the frequency at the plotted PSD peak
    * @param idx Index of inputted data to get the peak of
@@ -212,7 +221,7 @@ public class GainExperiment extends Experiment {
     
     return new double[]{lowFreq, highFreq};
   }
-  
+
   /**
    * Finds the maximum value of PSD plot curve, by its index in the array
    * @param fft PSD calculation, including both FFT function and matching
@@ -241,7 +250,17 @@ public class GainExperiment extends Experiment {
     }
     return index;
   }
-
+  
+  public String getResponseNames(int idx0, int idx1) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("1: ");
+    sb.append( responseNames.get(idx0) );
+    sb.append('\n');
+    sb.append("2: ");
+    sb.append( responseNames.get(idx1) );
+    return sb.toString();
+  }
+  
   /**
    * Given indices to specific PSD data sets and frequency boundaries, gets
    * the mean and standard deviation ratios 
@@ -253,8 +272,6 @@ public class GainExperiment extends Experiment {
    */
   public double[] getStatsFromFreqs(int idx0, int idx1, 
       double lowFreq, double highFreq) {
-    
-    // TODO: check indices are valid
     
     FFTResult plot0 = fftResults.get(idx0);
     
@@ -303,7 +320,7 @@ public class GainExperiment extends Experiment {
     
     return new double[]{Math.sqrt(ratio), sigma, gain1, gain2};
   }
-  
+
   /**
    * Find the peak frequency of the reference series and use it to get the
    * gain statistics
@@ -321,11 +338,6 @@ public class GainExperiment extends Experiment {
   @Override
   public boolean hasEnoughData(DataStore ds) {
     return ( ds.bothComponentsSet(0) && ds.bothComponentsSet(1) );
-  }
-
-  @Override
-  public int blocksNeeded() {
-    return 2;
   }
 
 }

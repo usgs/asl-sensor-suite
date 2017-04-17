@@ -19,22 +19,76 @@ import asl.sensor.utils.FFTResult;
 public class FFTResultTest {
 
   @Test
-  public void lowPassFilterTest() {
-    double[] timeSeries = new double[400];
+  public final void cosineTaperTest() throws Exception {
+    Number[] x = { 5, 5, 5, 5, 5 };
+    List<Number> toTaper = Arrays.asList(x);
+    Double[] tapered = { 0d, 4.5d, 5d, 4.5d, 0d };
+
+    double power = FFTResult.cosineTaper(toTaper, 0.25);
     
-    for (int i = 0; i < timeSeries.length; ++i) {
-      if (i % 2 == 0) {
-        timeSeries[i] = -10;
-      } else
-        timeSeries[i] = 10;
+    assertEquals(new Double(Math.round(power)), new Double(4));
+    
+    for (int i = 0; i < x.length; i++) {
+      // round to the first decimal (multiply by 10, round, divide by 10)
+      Double result = 
+          new Double(Math.round(toTaper.get(i).doubleValue()*10d)/10d);
+      assertEquals(result, tapered[i]);
+    }
+  }
+  
+  @Test
+  public void demeaningTest() {
+    
+    // tests that demean does what it says it does and that
+    // the results are applied in-place
+    
+    Number[] numbers = {1,2,3,4,5};
+    
+    List<Number> numList = Arrays.asList(numbers);
+    List<Number> demeaned = new ArrayList<Number>(numList);
+    
+    FFTResult.demeanInPlace(demeaned);
+    
+    for (int i = 0; i < numList.size(); ++i) {
+      assertEquals(demeaned.get(i), numList.get(i).doubleValue()-3);
     }
     
-    double sps = 40.;
+  }
+  
+  @Test
+  public void detrendingCycleTest() {
     
-    double[] lowPassed = FFTResult.bandFilter(timeSeries, sps, 0., 1.);
+    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
+        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 
+        3, 2, 1 };
     
-    for (int i = 1; i < (lowPassed.length - 1); ++i) {
-      assertTrue( Math.abs( lowPassed[i] ) < 1. );
+    List<Number> toDetrend = Arrays.asList(x);
+    
+    Number[] answer = { -9d, -8d, -7d, -6d, -5d, -4d, -3d, -2d, -1d, 0d, 1d, 2d,
+        3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d, 9d, 8d, 7d, 6d, 5d, 4d, 3d, 2d, 1d, 0d,
+        -1d, -2d, -3d, -4d, -5d, -6d, -7d, -8d, -9d };
+
+    
+    FFTResult.detrend(toDetrend);
+    
+    for (int i = 0; i < x.length; i++) {
+      assertEquals(
+          new Double(Math.round(x[i].doubleValue())), 
+          new Double(answer[i].doubleValue()));
+    }
+    
+  }
+  
+  @Test
+  public void detrendingLinearTest() {
+    
+    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    
+    List<Number> toDetrend = Arrays.asList(x);
+    FFTResult.detrend(toDetrend);
+    
+    for (Number num : toDetrend) {
+      assertEquals(num.doubleValue(), 0.0, 0.001);
     }
     
   }
@@ -97,6 +151,28 @@ public class FFTResultTest {
     }
     
   }
+
+  
+  @Test
+  public void lowPassFilterTest() {
+    double[] timeSeries = new double[400];
+    
+    for (int i = 0; i < timeSeries.length; ++i) {
+      if (i % 2 == 0) {
+        timeSeries[i] = -10;
+      } else
+        timeSeries[i] = 10;
+    }
+    
+    double sps = 40.;
+    
+    double[] lowPassed = FFTResult.bandFilter(timeSeries, sps, 0., 1.);
+    
+    for (int i = 1; i < (lowPassed.length - 1); ++i) {
+      assertTrue( Math.abs( lowPassed[i] ) < 1. );
+    }
+    
+  }
   
   @Test
   public void rangeCopyTest() {
@@ -126,82 +202,6 @@ public class FFTResultTest {
       assertNotEquals( numList.get(fullListIdx), subseq.get(i) );
     }
     
-  }
-  
-  @Test
-  public void demeaningTest() {
-    
-    // tests that demean does what it says it does and that
-    // the results are applied in-place
-    
-    Number[] numbers = {1,2,3,4,5};
-    
-    List<Number> numList = Arrays.asList(numbers);
-    List<Number> demeaned = new ArrayList<Number>(numList);
-    
-    FFTResult.demeanInPlace(demeaned);
-    
-    for (int i = 0; i < numList.size(); ++i) {
-      assertEquals(demeaned.get(i), numList.get(i).doubleValue()-3);
-    }
-    
-  }
-  
-  @Test
-  public void detrendingLinearTest() {
-    
-    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    
-    List<Number> toDetrend = Arrays.asList(x);
-    FFTResult.detrend(toDetrend);
-    
-    for (Number num : toDetrend) {
-      assertEquals(num.doubleValue(), 0.0, 0.001);
-    }
-    
-  }
-
-  
-  @Test
-  public void detrendingCycleTest() {
-    
-    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
-        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 
-        3, 2, 1 };
-    
-    List<Number> toDetrend = Arrays.asList(x);
-    
-    Number[] answer = { -9d, -8d, -7d, -6d, -5d, -4d, -3d, -2d, -1d, 0d, 1d, 2d,
-        3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d, 9d, 8d, 7d, 6d, 5d, 4d, 3d, 2d, 1d, 0d,
-        -1d, -2d, -3d, -4d, -5d, -6d, -7d, -8d, -9d };
-
-    
-    FFTResult.detrend(toDetrend);
-    
-    for (int i = 0; i < x.length; i++) {
-      assertEquals(
-          new Double(Math.round(x[i].doubleValue())), 
-          new Double(answer[i].doubleValue()));
-    }
-    
-  }
-  
-  @Test
-  public final void cosineTaperTest() throws Exception {
-    Number[] x = { 5, 5, 5, 5, 5 };
-    List<Number> toTaper = Arrays.asList(x);
-    Double[] tapered = { 0d, 4.5d, 5d, 4.5d, 0d };
-
-    double power = FFTResult.cosineTaper(toTaper, 0.25);
-    
-    assertEquals(new Double(Math.round(power)), new Double(4));
-    
-    for (int i = 0; i < x.length; i++) {
-      // round to the first decimal (multiply by 10, round, divide by 10)
-      Double result = 
-          new Double(Math.round(toTaper.get(i).doubleValue()*10d)/10d);
-      assertEquals(result, tapered[i]);
-    }
   }
   
 }

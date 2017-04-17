@@ -20,8 +20,6 @@ import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.plot.PolarPlot;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
-import org.jfree.chart.title.Title;
-import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
 
@@ -38,10 +36,15 @@ import asl.sensor.input.DataStore;
  */
 public class AzimuthPanel extends ExperimentPanel {
 
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 4088024342809622854L;
   JSpinner offsetSpinner;
   JFreeChart angleChart, coherenceChart;
-  JComboBox<String> chartSelector;
   
+  JComboBox<String> chartSelector;
+
   public AzimuthPanel(ExperimentEnum exp) {
     super(exp);
     
@@ -125,11 +128,6 @@ public class AzimuthPanel extends ExperimentPanel {
     this.add(save, gbc);
   }
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 4088024342809622854L;
-
   @Override
   public void actionPerformed(ActionEvent e) {
     
@@ -147,8 +145,31 @@ public class AzimuthPanel extends ExperimentPanel {
   }
   
   @Override
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{angleChart, coherenceChart};
+  }
+
+  @Override
+  public String getInsetString() {
+    AzimuthExperiment az = (AzimuthExperiment) expResult;
+    double value = az.getOffset();
+    double angle = az.getFitAngle();
+    String angleStr = "FIT ANGLE: " + angle;
+    double result = ( (value + angle) % 360 + 360) % 360;
+
+    angleStr += " + " + value + " = " + result;
+    return angleStr;
+  }
+
+  @Override
+  public int panelsNeeded() {
+    return 3;
+  }
+  
+  @Override
   public void updateData(DataStore ds) {
-    // TODO Auto-generated method stub
+    
+    set = true;
     
     double value = (double) offsetSpinner.getValue();
     
@@ -198,10 +219,5 @@ public class AzimuthPanel extends ExperimentPanel {
     
     chartPanel.setChart(chart);
   }
-
-  @Override
-  public int panelsNeeded() {
-    return 3;
-  }
-
+  
 }

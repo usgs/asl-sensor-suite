@@ -21,13 +21,12 @@ import asl.sensor.utils.TimeSeriesUtils;
  * @author akearns
  *
  */
-public class NoiseNineExperiment extends Experiment {
+public class NoiseNineExperiment extends NoiseExperiment {
 
-  boolean freqSpace;
   
   public NoiseNineExperiment() {
     super();
-    freqSpace = false;
+    responseNames = new String[9];
   }
   
   @Override
@@ -62,6 +61,10 @@ public class NoiseNineExperiment extends Experiment {
     DataBlock vert3Sensor = ds.getBlock(8);
     InstrumentResponse vert3Resp = ds.getResponse(8);
     
+    for (int i = 0; i < responseNames.length; ++i) {
+      responseNames[i] = ds.getResponse(i).getName();
+    }
+    
     System.out.println("Got data, now doing rotations...");
     
     // set angles and then rotate data 
@@ -85,7 +88,6 @@ public class NoiseNineExperiment extends Experiment {
     double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
     System.out.println("2nd east sensor orientation found!");
     // need to offset rotation by 90 degrees -- don't want it facing north
-    // TODO: be sure that this is the correct sign for the 90-deg rotation
     
     aziStore.setData(2, north3Sensor);
     azi.setData(aziStore);
@@ -154,6 +156,11 @@ public class NoiseNineExperiment extends Experiment {
   }
 
   @Override
+  public int blocksNeeded() {
+    return 9;
+  }
+
+  @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < blocksNeeded(); ++i) {
       if ( !ds.bothComponentsSet(i) ) {
@@ -163,13 +170,5 @@ public class NoiseNineExperiment extends Experiment {
     return true;
   }
 
-  @Override
-  public int blocksNeeded() {
-    return 9;
-  }
-
-  public void setFreqSpace(boolean freq) {
-    freqSpace = freq;    
-  }
 
 }

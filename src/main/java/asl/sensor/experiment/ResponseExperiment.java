@@ -31,14 +31,6 @@ public class ResponseExperiment extends Experiment {
     freqSpace = false;
   }
   
-  /**
-   * True if the plot should use x-axis units of Hz or seconds
-   * @param freqSpace True if x-axis should use Hz units
-   */
-  public void setFreqSpace(boolean freqSpace) {
-    this.freqSpace = freqSpace;
-  }
-  
   @Override
   protected void backend(DataStore ds) {
     
@@ -99,7 +91,24 @@ public class ResponseExperiment extends Experiment {
     }
 
   }
+  
+  @Override
+  public int blocksNeeded() {
+    return 0;
+  }
 
+  @Override
+  public long getEnd() {
+    return 0L;
+  }
+
+  @Override
+  public long getStart() {
+    // there is no actual timeseries data used in this experiment
+    // only response data, so start and end times are not defined
+    return 0L;
+  }
+  
   @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < 3; ++i) {
@@ -110,11 +119,14 @@ public class ResponseExperiment extends Experiment {
     
     return false;
   }
-
-  @Override
-  public int blocksNeeded() {
-    // TODO Auto-generated method stub
-    return 0;
+  
+  /**
+   * Used to set the x-axis over which the response curve is plotted,
+   * either frequency (Hz) units or sample-interval (s) units
+   * @param freqSpace True if the plot should use units of Hz
+   */
+  public void setFreqSpace(boolean freqSpace) {
+    this.freqSpace = freqSpace;
   }
 
 }

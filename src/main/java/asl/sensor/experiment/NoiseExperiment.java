@@ -21,25 +21,19 @@ import asl.sensor.utils.FFTResult;
 public class NoiseExperiment extends Experiment {
   
 
-  boolean freqSpace;
+  protected boolean freqSpace;
+  
+  protected String[] responseNames;
   
   /**
    * Instantiates a noise experiment -- axis titles and scales
    */
   public NoiseExperiment() {
     super();
+    responseNames = new String[3];
     freqSpace = false;
   }
   
-  /**
-   * Used to set the x-axis over which the PSDs / cross-powers are plotted,
-   * either frequency (Hz) units or sample-interval (s) units
-   * @param freqSpace True if the plot should use units of Hz
-   */
-  public void setFreqSpace(boolean freqSpace) {
-    this.freqSpace = freqSpace;
-  }
-
   /**
    * Generates power spectral density of each inputted file, and calculates
    * self-noise based on that result.
@@ -71,10 +65,12 @@ public class NoiseExperiment extends Experiment {
     
     DataBlock[] dataIn = new DataBlock[indices.length];
     InstrumentResponse[] responses = new InstrumentResponse[indices.length];
+    responseNames = new String[indices.length];
     
     for (int i = 0; i < indices.length; ++i) {
       dataIn[i] = ds.getBlock(indices[i]);
       responses[i] = ds.getResponse(indices[i]);
+      responseNames[i] = responses[i].getName();
     }
     
     Complex[][] spectra = new Complex[3][];
@@ -180,6 +176,23 @@ public class NoiseExperiment extends Experiment {
   }
 
   @Override
+  public int blocksNeeded() {
+    return 3;
+  }
+
+  public String getResponseNames() {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < responseNames.length; ++i) {
+      sb.append(i + 1);
+      sb.append(": ");
+      sb.append( responseNames[i] );
+      sb.append('\n');
+    }
+    // remove trailing whitespace character
+    return sb.substring( 0, sb.length() - 1 );
+  }
+  
+  @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < blocksNeeded(); ++i) {
       if ( !ds.bothComponentsSet(i) ) {
@@ -189,9 +202,13 @@ public class NoiseExperiment extends Experiment {
     return true;
   }
 
-  @Override
-  public int blocksNeeded() {
-    return 3;
+  /**
+   * Used to set the x-axis over which the PSDs / cross-powers are plotted,
+   * either frequency (Hz) units or sample-interval (s) units
+   * @param freqSpace True if the plot should use units of Hz
+   */
+  public void setFreqSpace(boolean freqSpace) {
+    this.freqSpace = freqSpace;
   }
 
 }

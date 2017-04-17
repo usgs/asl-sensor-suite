@@ -24,6 +24,10 @@ public enum TransferFunction {
     this.function = function;
   }
   
+  /**
+   * Get the factor to multiply results by when applying responses
+   * @return factor (i.e., 1.0 for linear scale, 2*pi for laplacian)
+   */
   public double getFunction(){
     return function;
   }

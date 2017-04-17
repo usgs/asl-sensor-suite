@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.text.DecimalFormat;
 
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
@@ -30,6 +31,51 @@ public class StepPanel extends ExperimentPanel {
    * 
    */
   private static final long serialVersionUID = 3693391540945130688L;
+
+  /**
+   * Static helper method for getting the formatted inset string directly
+   * from a StepExperiment
+   * @param sp StepExperiment with data to be extracted
+   * @return String format representation of data from the experiment
+   */
+  public static String getInsetString(StepExperiment sp) {  
+    double[] rolloff = sp.getCornerAndDamping();
+    double[] fit = sp.getFitCornerAndDamping();
+    double corner = rolloff[0];
+    double damping = rolloff[1];
+    double fitCorner = fit[0];
+    double fitDamping = fit[1];
+    
+    double cornerPrd = 1. / corner; 
+    double fitCornerPrd = 1. / corner;
+    
+    DecimalFormat df = new DecimalFormat("#.######");
+    
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append("RESP parameters\n");
+    sb.append("corner frequency (Hz): ");
+    sb.append( df.format(corner) );
+    sb.append(" (");
+    sb.append(cornerPrd);
+    sb.append( " secs)");
+    sb.append("\n");
+    sb.append("damping: ");
+    sb.append( df.format(damping) );
+    sb.append("\n");
+    sb.append("Best-fit parameters\n");
+    sb.append("corner frequency (Hz): ");
+    sb.append( df.format(fitCorner) );
+    sb.append(" (");
+    sb.append( df.format(fitCornerPrd) );
+    sb.append( " secs)");
+    sb.append("\n");
+    sb.append("damping: ");
+    sb.append( df.format(fitDamping) );
+    sb.append("\n");
+    return sb.toString();
+    
+  }
 
   public StepPanel(ExperimentEnum exp) {
     super(exp);
@@ -68,6 +114,32 @@ public class StepPanel extends ExperimentPanel {
     
     
   }
+   
+  /**
+   * Used to get the text that will populate the inset box for the plots
+   * @return String to place in TextTitle
+   */
+  @Override
+  public String getInsetString() {
+    
+    return getInsetString( (StepExperiment) expResult );
+  
+  }
+  
+  @Override
+  public String getMetadataString() {
+    StepExperiment stex = (StepExperiment) expResult;
+    StringBuilder sb = new StringBuilder();
+    sb.append("LOADED RESPONSE:");
+    sb.append('\n');
+    sb.append( stex.getResponseName() );
+    return sb.toString();
+  }
+  
+  @Override
+  public int panelsNeeded() {
+    return 2;
+  }
 
 
   /**
@@ -78,7 +150,7 @@ public class StepPanel extends ExperimentPanel {
   @Override
   public void updateData(final DataStore ds) {
     
-    // TODO: threading?
+    set = true;
     
     displayInfoMessage("Running stepcal testing...");
     
@@ -87,47 +159,17 @@ public class StepPanel extends ExperimentPanel {
     
     // here's the stuff that needs to stay here, not moved to experiment class
     setChart(xysc);
-    XYPlot xyp = (XYPlot) chart.getPlot();
-    StepExperiment sp = (StepExperiment) expResult;
-    double[] rolloff = sp.getCornerAndDamping();
-    double[] fit = sp.getFitCornerAndDamping();
-    double corner = rolloff[0];
-    double damping = rolloff[1];
-    double fitCorner = fit[0];
-    double fitDamping = fit[1];
-    
-    // TODO: will probably need to relocate some of this to its own method
+
     TextTitle result = new TextTitle();
-    StringBuilder sb = new StringBuilder();
-    sb.append("RESP parameters\n");
-    sb.append("corner frequency: ");
-    sb.append(corner);
-    sb.append("\n");
-    sb.append("damping: ");
-    sb.append(damping);
-    sb.append("\n");
-    sb.append("Best-fit parameters\n");
-    sb.append("corner frequency: ");
-    sb.append(fitCorner);
-    sb.append("\n");
-    sb.append("damping: ");
-    sb.append(fitDamping);
-    sb.append("\n");
-    String temp = sb.toString();
-    result.setText(temp);
+    result.setText( getInsetString() );
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.5, result,
         RectangleAnchor.RIGHT);
+    XYPlot xyp = (XYPlot) chart.getPlot();
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
     
     chartPanel.setChart(chart);
-  }
-
-
-  @Override
-  public int panelsNeeded() {
-    return 2;
   }
 
 }
