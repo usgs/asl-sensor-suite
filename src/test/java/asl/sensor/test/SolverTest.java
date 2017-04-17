@@ -55,7 +55,16 @@ public class SolverTest {
           // create a new array, change the relevant variable, return
           double change = 1E-5;
           double[] fwdDiffArr = point.toArray();
+
           fwdDiffArr[i] += change;
+          // fwdDiffArr[1] += change; test should fail if uncommented
+          
+          for (int k = 0; k < pointArr.length; ++k) {
+            if (i != k) {
+              assertEquals(fwdDiffArr[k], pointArr[k], change);
+            }
+          }
+          
           // System.out.println( Arrays.toString(fwdDiffArr) );
           double[] forwardDiffRes = doCalculation(fwdDiffArr);
           

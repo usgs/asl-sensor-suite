@@ -359,7 +359,7 @@ public class RandomizedExperiment extends Experiment {
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
-    
+    // residuals used to determine quality of solution convergence
     LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     initialResidual = initEval.getCost();
     fitResidual = optimum.getCost();
@@ -370,19 +370,17 @@ public class RandomizedExperiment extends Experiment {
     double[] fitValues = 
         jacobian.value( optimum.getPoint() ).getFirst().toArray();
     
-    
-    System.out.println(fitPoles);
-    
     fitResponse = polesToResp(poleParams, fitResponse, lowFreq);
     fitPoles = fitResponse.getPoles();
     
-    System.out.println(fitPoles);
+    // System.out.println(inputPoles);
+    // System.out.println(fitPoles);
     
     // System.out.println("FIT PARAMS RESIDUAL: " +  optimum.getRMS() );
-    
     // fitResid = optimum.getRMS() * 100;
     
-    Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
+    // was initially used in plot before values were scaled
+    // Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
     
     String name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
@@ -482,14 +480,14 @@ public class RandomizedExperiment extends Experiment {
         curValue[i] += 0;
         curValue[argIdx] = 0;
       } else {
-        // TODO: again, make sure scaling is correct 
-        // (same scaling as fit curve)
         
         // System.out.println(value);
         double temp = 10 * Math.log10( value.abs() );
         temp -= 10 * Math.log10( scaleBy.abs() );
         curValue[i] = temp;
 
+        
+        // TODO: deal with potential rotation issues with parameters
         double argument = ( value.getArgument() );
         argument -= scaleBy.getArgument();
         argument = ( (argument % TAU) + TAU ) % TAU;
