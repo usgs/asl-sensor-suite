@@ -208,23 +208,17 @@ public class RandomizedExperiment extends Experiment {
       
     }
     
-    double scaleBy = appResponse[oneHzIdx].abs(); // value at 1Hz, to normalize
-    double angle = 0.; // angle at 1Hz, also used as a sort of normalization
-    
     // calculated response from deconvolving calibration from signal
     Complex[] estimatedResponse = new Complex[len];
     for (int i = 0; i < estimatedResponse.length; ++i) {
       Complex numer = numeratorPSDVals[i];
       Complex denom = denominatorPSDVals[i];
       estimatedResponse[i] = numer.divide(denom);
+      // convert from displacement to velocity
       estimatedResponse[i] = 
           estimatedResponse[i].multiply(2 * Math.PI * freqs[i]);
     }
     
-    double scaleDenom = estimatedResponse[oneHzIdx].abs();
-    scaleBy /= scaleDenom;
-    angle = estimatedResponse[oneHzIdx].getArgument();
-    angle -= appResponse[oneHzIdx].getArgument();
     
     // next, normalize estimated response
     
@@ -237,19 +231,14 @@ public class RandomizedExperiment extends Experiment {
     // second half of data is angles of resp
     double[] observedResult = new double[2 * estimatedResponse.length];
     
-    // used to scale response curve to [0,1] for better fitting to data
-    double magMax = Double.NEGATIVE_INFINITY;
-    double angMax = Double.NEGATIVE_INFINITY;
-    
     for (int i = 0; i < estimatedResponse.length; ++i) {
       
       int argIdx = estimatedResponse.length + i;
       
       Complex estValue = estimatedResponse[i];
-      double estValMag = estValue.abs() * scaleBy;
+      double estValMag = estValue.abs();
      
-      double phi = estValue.getArgument() - angle;
-      
+      double phi = estValue.getArgument();
       double respPhi = appResponse[i].getArgument();
       
       // conditional to avoid NaNs, but it's not too important
@@ -257,61 +246,26 @@ public class RandomizedExperiment extends Experiment {
         respMag.add( freqs[i], 10 * Math.log10( appResponse[i].abs() ) );
         respArg.add(freqs[i], Math.toDegrees(respPhi) );
         
-        //calcMag.add( freqs[i], 10 * Math.log10(estValMag) );
-        //calcArg.add(freqs[i], Math.toDegrees(phi) );
       }
       
-      // int argIdx = i + estimatedResponse.length;
-      
-      // TODO: check that the scaling parameters, etc. are correct here
-      // this is where the target function is actually defined
       if ( Double.isNaN(estValMag) ) {
         observedResult[i] = 0;
         observedResult[argIdx] = 0;
       } else {
         observedResult[i] = 10 * Math.log10(estValMag);
-        // do scaling to make sure value is 0 at 1Hz
-        observedResult[i] -= 
-            10 * Math.log10( estimatedResponse[oneHzIdx].abs() );
         observedResult[argIdx] = phi;
-        
-        // get max values for magnitude and argument for normalization
-        double tempMag = observedResult[i];
-        double tempAng = observedResult[argIdx];
-        if (tempMag > magMax) {
-          magMax = tempMag;
-        }
-        if (tempAng > angMax) {
-          angMax = Math.abs(tempMag);
-        }
-        
-        
       }
-      // initResult[argIdx] = phi;
     }
     
-    // now, scale the values of observed result
-    // scale mag to [0,1] and arg to [-1, 1]
-    for (int i = 0; i < observedResult.length / 2; ++i) {
-      int argIdx = i + (observedResult.length / 2);
-      observedResult[i] /= magMax;
-      observedResult[argIdx] /= angMax;
-
-    }
-    
-
-    
-    // try yet another scaling operaation to get value at 1Hz to 0 in
-    // scaled target function for solver (solver returns 0 at that point)
+    // set value at 1Hz of calculated function to 0
     double subtractBy = observedResult[oneHzIdx];
-    
+    double rotateBy = observedResult[estimatedResponse.length + oneHzIdx];
     for (int i = 0; i < observedResult.length / 2; ++i) {
       int argIdx = i + (observedResult.length / 2);
       observedResult[i] -= subtractBy;
-      
-      // TODO: get rid of this line when fitting angle and magnitude again
-      observedResult[argIdx] = 0;
-      
+      observedResult[argIdx] -= rotateBy;
+      observedResult[argIdx] = ( (observedResult[argIdx] % TAU) + TAU) % TAU;
+      observedResult[argIdx] /= TAU;
       calcMag.add(freqs[i], observedResult[i]);
       calcArg.add(freqs[i], observedResult[argIdx]);
     }
@@ -323,12 +277,12 @@ public class RandomizedExperiment extends Experiment {
       responseVariables = new double[2];
 
       // we only need to get one pole because the second is the complex conj.
-      // or else (unlikely) the imaginary part is zero and we have an issue
+      // or else (unlikely) the imaginary part is zero
       Complex cpx = fitPoles.get(0);
       responseVariables[0] = cpx.getReal();
       responseVariables[1] = cpx.getImaginary();
       // cell [2] would be same as [0]
-      // and cell[3] would be [-1] 
+      // and cell[3] would be [-1]
     } else {
 
       int idx = 2; // starting index for non-conjugate pole counting
@@ -372,13 +326,11 @@ public class RandomizedExperiment extends Experiment {
     RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector obsResVector = MatrixUtils.createRealVector(observedResult);
     
-    final double rotateFinal = angle;
-    
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         Pair<RealVector, RealMatrix> pair = 
-            jacobian(point, fitResponse, rotateFinal);
+            jacobian(point, fitResponse);
         return pair;
       }
     };
@@ -496,8 +448,7 @@ public class RandomizedExperiment extends Experiment {
    * @param ir InstrumentResponse that will be copied 
    * @return Doubles representing new response curve evaluation
    */
-  private double[] evaluateResponse(double[] variables, InstrumentResponse ir,
-      double rotate) {
+  private double[] evaluateResponse(double[] variables, InstrumentResponse ir) {
     
     InstrumentResponse testResp = polesToResp(variables, ir, lowFreq);
     
@@ -507,9 +458,6 @@ public class RandomizedExperiment extends Experiment {
     double[] curValue = new double[appliedCurve.length * 2];
     curValue[0] = 0.;
     curValue[appliedCurve.length] = 0.;
-    
-    double magMax = Double.NEGATIVE_INFINITY;
-    double angMax = Double.NEGATIVE_INFINITY;
     
     Complex scaleBy = appliedCurve[oneHzIdx].divide(2 * Math.PI);
     
@@ -541,34 +489,15 @@ public class RandomizedExperiment extends Experiment {
         double temp = 10 * Math.log10( value.abs() );
         temp -= 10 * Math.log10( scaleBy.abs() );
         curValue[i] = temp;
-        if ( Math.abs(curValue[i]) > magMax ) {
-          magMax = Math.abs(curValue[i]);
-        }
-        double argument = ( value.getArgument() - rotate );
+
+        double argument = ( value.getArgument() );
+        argument -= scaleBy.getArgument();
+        argument = ( (argument % TAU) + TAU ) % TAU;
+        argument /= TAU;
         curValue[argIdx] = argument;
-        if (curValue[argIdx] > angMax) {
-          angMax = curValue[argIdx];
-        }
+        // if line below is uncommented, we're not fitting angle
+        // curValue[argIdx] = 0.;
       }
-    }
-    
-    System.out.println(magMax);
-    
-    // now scale the results
-    for (int i = 0; i < appliedCurve.length; ++i) {
-      int argIdx = appliedCurve.length + i;
-      curValue[i] /= magMax;
-      curValue[argIdx] /= angMax;
-      
-      
-      // TODO: remove this line because it's just for debugging for now
-      curValue[argIdx] = 0.;
-    }
-    
-    // now make sure the one hz value is 0
-    double subtractBy = curValue[oneHzIdx];
-    for (int i = 0; i < appliedCurve.length; ++i) {
-      curValue[i] -= subtractBy;
     }
     
     return curValue;
@@ -616,7 +545,7 @@ public class RandomizedExperiment extends Experiment {
    * RealMatrix with forward difference of that response (Jacobian)
    */
   private Pair<RealVector, RealMatrix> 
-  jacobian(RealVector variables, InstrumentResponse ir, double rotate) {
+  jacobian(RealVector variables, InstrumentResponse ir) {
     
     int numVars = variables.getDimension();
     
@@ -626,7 +555,7 @@ public class RandomizedExperiment extends Experiment {
       currentVars[i] = variables.getEntry(i);
     }
     
-    double[] mag = evaluateResponse(currentVars, ir, rotate);
+    double[] mag = evaluateResponse(currentVars, ir);
     
     double[][] jacobian = new double[mag.length][numVars];
     // now take the forward difference of each value 
@@ -634,7 +563,7 @@ public class RandomizedExperiment extends Experiment {
       
       if (i % 2 == 1 && currentVars[i] == 0.) {
         // this is a zero pole. don't bother changing it
-        for (int j = 0; j < mag.length; j++) {
+        for (int j = 0; j < mag.length; ++j) {
           jacobian[j][i] = 0.;
         }
         continue;
@@ -649,7 +578,7 @@ public class RandomizedExperiment extends Experiment {
       changedVars[i] = diffX;
       
       double[] diffY = 
-          evaluateResponse(changedVars, ir, rotate);
+          evaluateResponse(changedVars, ir);
       
       
       for (int j = 0; j < diffY.length; ++j) {

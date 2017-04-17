@@ -22,8 +22,6 @@ import asl.sensor.utils.TimeSeriesUtils;
  *
  */
 public class OrthogonalExperiment extends Experiment {
-
-  final static double TAU = Math.PI * 2;
   
   /**
    * Return the rotated signal given an angle and orthogonal components

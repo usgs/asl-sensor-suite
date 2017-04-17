@@ -47,8 +47,6 @@ import asl.sensor.utils.TimeSeriesUtils;
  *
  */
 public class AzimuthExperiment extends Experiment {
-
-  final static double TAU = Math.PI * 2;
   
   private double offset = 0.;
   private double angle;
@@ -299,7 +297,6 @@ public class AzimuthExperiment extends Experiment {
   }
   
   public double getOffset() {
-    // TODO Auto-generated method stub
     return ( (offset % 360) + 360 ) % 360;
   }
   
