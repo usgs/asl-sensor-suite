@@ -292,7 +292,12 @@ implements ActionListener, ChangeListener {
     
   }
   
-  
+  /**
+   * Create a new data panel and add data to the charts from an existing
+   * DataStore, also setting the given number of panels as visible
+   * @param ds DataStore object with data to be plotted
+   * @param panelsNeeded number of panels to show in the object
+   */
   public InputPanel(DataStore ds, int panelsNeeded) {
     this();
     for (int i = 0; i < panelsNeeded; ++i) {
@@ -381,10 +386,12 @@ implements ActionListener, ChangeListener {
         
         String resultStr = (String) result;
         
+        // did user cancel operation?
         if (resultStr == null) {
           return;
         }
         
+        // is the loaded string one of the embedded response files?
         if ( respFilenames.contains(resultStr) ) {
           // final used here in the event of thread weirdness
           final String fname = resultStr;
@@ -419,7 +426,6 @@ implements ActionListener, ChangeListener {
           }
         }
         
-
         return;
       }
       
@@ -540,6 +546,7 @@ implements ActionListener, ChangeListener {
   
   /**
    * Return this panel's charts as a single buffered image
+   * @param plotsToShow number of plots to be placed in the image
    * @return Buffered image of the plots, writeable to file
    */
   public BufferedImage getAsImage(int plotsToShow) {
@@ -549,6 +556,14 @@ implements ActionListener, ChangeListener {
     return getAsImage( IMAGE_WIDTH, height, plotsToShow );
   }
   
+  /**
+   * Produce the visible charts as multiple images, to be used to split
+   * across multiple PDF pages when generating reports
+   * @param width Width of each plot in the image
+   * @param height Height of each plot in the image
+   * @param plotsToShow Number of plots that are to be added to the report
+   * @return list of buffered images of plots, each image to be made a PDF page
+   */
   public BufferedImage[] 
       getAsMultipleImages(int width, int height, int plotsToShow) {
    
@@ -566,6 +581,11 @@ implements ActionListener, ChangeListener {
       chartsToPrint[i] = chartPanels[i].getChart();
     }
     
+    if (plotsToShow < PLOTS_PER_PAGE) {
+      return ReportingUtils.chartsToImageList(
+          plotsToShow, width, chartHeight, chartsToPrint);
+    }
+    
     return ReportingUtils.chartsToImageList(
         PLOTS_PER_PAGE, width, chartHeight, chartsToPrint);
     
@@ -577,6 +597,7 @@ implements ActionListener, ChangeListener {
    * with specified dimensions
    * @param width Width of returned image
    * @param height Height of returned image
+   * @param plotsToShow Plots to be shown in the output image
    * @return Buffered image of the plots, writeable to file
    */
   public BufferedImage getAsImage(int width, int height, int plotsToShow) {
@@ -894,7 +915,7 @@ implements ActionListener, ChangeListener {
     chartSubpanel.add(chartPanels[i], gbc);
     
 
-    // Temoved a line to resize the chartpanels
+    // Removed a line to resize the chartpanels
     // This made sense before switching to gridbaglayout, but since that
     // tries to fill space with whatever panels it can, we can just get rid
     // of the code to do that. This also fixes the issue with the text boxes

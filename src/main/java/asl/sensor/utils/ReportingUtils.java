@@ -177,7 +177,8 @@ public class ReportingUtils {
   }
   
   /**
-   * Writes multiple pages of charts, 
+   * Writes multiple pages of charts to a PDF file, with the number of charts
+   * to display per page set according to a parameter 
    * @param perPage Number of charts to put in a page at a time
    * @param width Width of each chart to write to file
    * @param height Height of each chart to write to file
@@ -193,6 +194,12 @@ public class ReportingUtils {
     
   }
   
+  /**
+   * Write a list of images to a pdf document, each image its own page
+   * @param pdf PDF document to write to
+   * @param bis List of buffered images to write. Each image is written to its
+   * own PDF page.
+   */
   public static void
   imageListToPDFPages(PDDocument pdf, BufferedImage... bis) {
     for (BufferedImage bi : bis) {
@@ -200,6 +207,17 @@ public class ReportingUtils {
     }
   }
   
+  /**
+   * Create a list of buffered images from a series of charts, with a specified
+   * number of charts included on each image. This is used to write the charts
+   * to a series of pages in a PDF report
+   * @param perImg Number of charts' plots to write to a single page
+   * @param width Width to set each chart's output image
+   * @param height Height to set each chart's output image
+   * @param charts List of charts to be compiled into images
+   * @return A list of buffered images with no more than perImg plots in 
+   * each image
+   */
   public static BufferedImage[]
   chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
     

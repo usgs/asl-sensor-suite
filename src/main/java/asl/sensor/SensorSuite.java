@@ -129,7 +129,7 @@ public class SensorSuite extends JPanel
       
       ReportingUtils.imageListToPDFPages(pdf, toFile);
 
-      // TODO: response string generation?
+      // TODO: response string generation goes here
       
     }
 
