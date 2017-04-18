@@ -59,8 +59,12 @@ public class RandomizedPanel extends ExperimentPanel {
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();
     
+    double initResid = rnd.getInitResidual();
+    double fitResid = rnd.getFitResidual();
+    
     StringBuilder sbInit = new StringBuilder();
     StringBuilder sbFit = new StringBuilder();
+    // add poles, initial then fit (single loop, append the two builders)
     sbInit.append("INITIAL POLES: \n");
     sbFit.append("FIT POLES: \n");
     for (int i = 0; i < fitP.size(); ++i) {
@@ -79,6 +83,16 @@ public class RandomizedPanel extends ExperimentPanel {
       sbInit.append("\n");
       sbFit.append("\n");
     }
+    
+    StringBuilder sb = new StringBuilder( sbInit.append(sbFit) );
+    sb.append('\n');
+    sb.append("RESIDUALS:");
+    sb.append('\n');
+    sb.append("INITIAL (nom. resp curve): ");
+    sb.append(initResid);
+    sb.append("BEST FIT: ");
+    sb.append(fitResid);
+    
     // remove last newline character
     sbFit.deleteCharAt( sbFit.length() - 1 );
     sbInit.append(sbFit);
@@ -265,8 +279,8 @@ public class RandomizedPanel extends ExperimentPanel {
     argChart.getXYPlot().setRangeAxis(degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
-    XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
-            RectangleAnchor.TOP_RIGHT);
+    XYTitleAnnotation xyt = new XYTitleAnnotation(0.02, 0.02, result,
+            RectangleAnchor.BOTTOM_LEFT);
     
     XYPlot xyp = argChart.getXYPlot();
     xyp.clearAnnotations();
