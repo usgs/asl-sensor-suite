@@ -581,11 +581,6 @@ implements ActionListener, ChangeListener {
       chartsToPrint[i] = chartPanels[i].getChart();
     }
     
-    if (plotsToShow < PLOTS_PER_PAGE) {
-      return ReportingUtils.chartsToImageList(
-          plotsToShow, width, chartHeight, chartsToPrint);
-    }
-    
     return ReportingUtils.chartsToImageList(
         PLOTS_PER_PAGE, width, chartHeight, chartsToPrint);
     

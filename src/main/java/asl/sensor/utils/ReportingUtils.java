@@ -1,5 +1,6 @@
 package asl.sensor.utils;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -251,18 +252,28 @@ public class ReportingUtils {
     
     // special case for a non-evenly dividing plot series
     if (lastPageChartCount != 0) {
-      int lastIndex = (numFilledPages + 1) * perImg;
+      int lastIndex = numFilledPages * perImg;
       JFreeChart[] lastPage = new JFreeChart[lastPageChartCount];
-      for (int j = 0; j < perImg; ++j) {
+      for (int j = 0; j < lastPageChartCount; ++j) {
         lastPage[j] = charts[lastIndex + j];
       }
       BufferedImage lastPageImage = chartsToImage(width, height, lastPage);
-      BufferedImage space = new BufferedImage(width, height * spacerCount,
-          BufferedImage.TYPE_INT_RGB);
+      BufferedImage space = createWhitespace(width, height * spacerCount);
       imageList.add( mergeBufferedImages(lastPageImage, space) );
     }
     
     return imageList.toArray( new BufferedImage[]{} );
+  }
+  
+  public static BufferedImage createWhitespace(int width, int height) {
+    BufferedImage out = new BufferedImage(width, height, 
+        BufferedImage.TYPE_INT_RGB);
+    Graphics2D g = out.createGraphics();
+
+    g.setPaint(Color.WHITE);
+    g.fillRect ( 0, 0, out.getWidth(), out.getHeight() );
+    g.dispose();
+    return out;
   }
   
   
@@ -271,8 +282,7 @@ public class ReportingUtils {
    * @param toWrite String to add to a new PDF page
    * @param pdf Document to append the page to
    */
-  public static void
-  textToPDFPage(String toWrite, PDDocument pdf) {
+  public static void textToPDFPage(String toWrite, PDDocument pdf) {
     
     if ( toWrite.length() == 0 ) {
       return;
