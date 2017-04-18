@@ -157,7 +157,9 @@ public class RandomizedExperiment extends Experiment {
     FFTResult numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
     FFTResult denominatorPSD = FFTResult.spectralCalc(calib, calib);
     
-    double proportion = 0.8; // get up to .8 of Nyquist freq due to noise
+    // TODO: shift back to .5 if this is too extreme a cut
+    double proportion = 0.4; // get up to .5 of Nyquist freq due to noise
+    // (used to be .8 of frequency but this included too much noise)
     double minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
     
     freqs = numeratorPSD.getFreqs();    
@@ -221,14 +223,11 @@ public class RandomizedExperiment extends Experiment {
     
     
     // next, normalize estimated response
-    
-    XYSeries respMag = new XYSeries(fitResponse.getName() + " magnitude");
-    XYSeries respArg = new XYSeries(fitResponse.getName() + " arg. [phi]");
     XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. arg. [phi]");
     
-    // curve to fit poles to; first half of data is magnitudes of resp
-    // second half of data is angles of resp
+    // data to fit poles to; first half of data is magnitudes of resp (dB)
+    // second half of data is angles of resp (radians, scaled)
     double[] observedResult = new double[2 * estimatedResponse.length];
     
     for (int i = 0; i < estimatedResponse.length; ++i) {
@@ -239,14 +238,6 @@ public class RandomizedExperiment extends Experiment {
       double estValMag = estValue.abs();
      
       double phi = estValue.getArgument();
-      double respPhi = appResponse[i].getArgument();
-      
-      // conditional to avoid NaNs, but it's not too important
-      if (freqs[i] != 0) {
-        respMag.add( freqs[i], 10 * Math.log10( appResponse[i].abs() ) );
-        respArg.add(freqs[i], Math.toDegrees(respPhi) );
-        
-      }
       
       if ( Double.isNaN(estValMag) ) {
         observedResult[i] = 0;
@@ -257,15 +248,15 @@ public class RandomizedExperiment extends Experiment {
       }
     }
     
-    // set value at 1Hz of calculated function to 0
+    // set value at 1Hz of calculated function to 0, both magnitude and angle
     double subtractBy = observedResult[oneHzIdx];
     double rotateBy = observedResult[estimatedResponse.length + oneHzIdx];
     for (int i = 0; i < observedResult.length / 2; ++i) {
       int argIdx = i + (observedResult.length / 2);
       observedResult[i] -= subtractBy;
       observedResult[argIdx] -= rotateBy;
-      observedResult[argIdx] = ( (observedResult[argIdx] % TAU) + TAU) % TAU;
-      observedResult[argIdx] /= TAU;
+      // observedResult[argIdx] = ( (observedResult[argIdx] % TAU) + TAU) % TAU;
+      observedResult[argIdx] /= -TAU;
       calcMag.add(freqs[i], observedResult[i]);
       calcArg.add(freqs[i], observedResult[argIdx]);
     }
@@ -490,7 +481,7 @@ public class RandomizedExperiment extends Experiment {
         // TODO: deal with potential rotation issues with parameters
         double argument = ( value.getArgument() );
         argument -= scaleBy.getArgument();
-        argument = ( (argument % TAU) + TAU ) % TAU;
+        // argument = ( (argument % TAU) + TAU ) % TAU;
         argument /= TAU;
         curValue[argIdx] = argument;
         // if line below is uncommented, we're not fitting angle
