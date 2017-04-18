@@ -65,8 +65,8 @@ public class RandomizedPanel extends ExperimentPanel {
     StringBuilder sbInit = new StringBuilder();
     StringBuilder sbFit = new StringBuilder();
     // add poles, initial then fit (single loop, append the two builders)
-    sbInit.append("INITIAL POLES: \n");
-    sbFit.append("FIT POLES: \n");
+    sbInit.append("Initial poles: \n");
+    sbFit.append("Fit poles: \n");
     for (int i = 0; i < fitP.size(); ++i) {
       sbInit.append( initP.get(i) );
       sbInit.append("  ");
@@ -86,17 +86,15 @@ public class RandomizedPanel extends ExperimentPanel {
     
     StringBuilder sb = new StringBuilder( sbInit.append(sbFit) );
     sb.append('\n');
-    sb.append("RESIDUALS:");
+    sb.append("Residuals:");
     sb.append('\n');
-    sb.append("INITIAL (nom. resp curve): ");
+    sb.append("Initial (nom. resp curve): ");
     sb.append(initResid);
-    sb.append("BEST FIT: ");
+    sb.append('\n');
+    sb.append("Best fit: ");
     sb.append(fitResid);
     
-    // remove last newline character
-    sbFit.deleteCharAt( sbFit.length() - 1 );
-    sbInit.append(sbFit);
-    return sbInit.toString();
+    return sb.toString();
   }
   private ValueAxis degreeAxis;
   private String degreeAxisTitle;

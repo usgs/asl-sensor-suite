@@ -96,12 +96,6 @@ public class RandomizedExperimentTest {
       assertTrue( rCal.hasEnoughData(ds) );
       rCal.setData(ds);
       
-      String initialResidual = new StringBuilder("Initial Residual: ").
-          append( rCal.getInitResidual() ).toString();
-      
-      String fitResidual = new StringBuilder("Fit Residual: ").
-          append( rCal.getFitResidual() ).toString();
-      
       int width = 1280;
       int height = 960;
       
@@ -121,13 +115,12 @@ public class RandomizedExperimentTest {
       sb.append('\n');
       sb.append( RandomizedPanel.getTimeStampString(rCal) );
       sb.append('\n');
-      sb.append("RESPONSE USED:");
+      sb.append("Response file used:");
       sb.append('\n');
       sb.append( rCal.getResponseName() );
       sb.append('\n');
-      sb.append(initialResidual);
-      sb.append('\n');
-      sb.append(fitResidual);
+      
+      sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)");
       sb.append('\n');
       
       // expected best fit params, for debugging
@@ -136,11 +129,7 @@ public class RandomizedExperimentTest {
       ir.setName("Best-fit params");
       ds.setResponse(1, ir);
       rCal.setData(ds);
-      String expectedResidual = new StringBuilder("Expected Residual: ").
-          append( rCal.getInitResidual() ).toString();
-      String expectedFitResid = new StringBuilder("Fit from Exp. Residual: ").
-          append( rCal.getFitResidual() ).toString();
-      
+
       // add initial curve from expected fit params to report
       XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);
       xysc.get(0).addSeries(expectedInitialCurve);
@@ -167,10 +156,6 @@ public class RandomizedExperimentTest {
         xyp.setDomainAxis( xAxis );
       }
       
-      sb.append(expectedResidual);
-      sb.append('\n');
-      sb.append(expectedFitResid);
-      sb.append('\n').append('\n');
       sb.append( RandomizedPanel.getInsetString(rCal) );
       
       PDDocument pdf = new PDDocument();

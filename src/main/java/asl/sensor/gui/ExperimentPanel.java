@@ -445,12 +445,12 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     
     StringBuilder sb = new StringBuilder( getInsetString() );
     if ( sb.length() > 0 ) {
-      sb.append('\n');
+      sb.append("\n\n");
     }
     String metadata = getMetadataString();
     if ( metadata.length() > 0 ) {
       sb.append(metadata);
-      sb.append('\n');
+      sb.append("\n\n");
     }
     sb.append( getTimeStampString(expResult) );
     ReportingUtils.textToPDFPage(sb.toString(), pdf);
