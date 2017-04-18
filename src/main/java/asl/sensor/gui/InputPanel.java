@@ -88,9 +88,11 @@ implements ActionListener, ChangeListener {
    * (each chart is 240 pixels tall)
    */
   public static final int IMAGE_HEIGHT = 240;
-  public static final int IMAGE_WIDTH = 480;
+  public static final int IMAGE_WIDTH = 640;
   
   public static final int MAX_UNSCROLLED = 4;
+  
+  public static final int PLOTS_PER_PAGE = 3;
   
   public static final int FILE_COUNT = DataStore.FILE_COUNT;
   
@@ -448,8 +450,7 @@ implements ActionListener, ChangeListener {
         }
         try {
           int height = IMAGE_HEIGHT * activePlots;
-          BufferedImage bi = getAsImage( 640, height, activePlots );
-          
+          BufferedImage bi = getAsImage(IMAGE_WIDTH, height, activePlots);
           ImageIO.write(bi,"png",selFile);
         } catch (IOException e1) {
           e1.printStackTrace();
@@ -547,6 +548,29 @@ implements ActionListener, ChangeListener {
     // otherwise, we only use the height of images actually set
     return getAsImage( IMAGE_WIDTH, height, plotsToShow );
   }
+  
+  public BufferedImage[] 
+      getAsMultipleImages(int width, int height, int plotsToShow) {
+   
+    if (plotsToShow <= 0) {
+      return new BufferedImage[]{};
+    }
+    
+    int loaded = plotsToShow;
+    // cheap way to make sure height is a multiple of the chart count
+    height = (height*loaded)/loaded;
+    int chartHeight = height/loaded;
+    
+    JFreeChart[] chartsToPrint = new JFreeChart[plotsToShow];
+    for (int i = 0; i < plotsToShow; ++i) {
+      chartsToPrint[i] = chartPanels[i].getChart();
+    }
+    
+    return ReportingUtils.chartsToImageList(
+        PLOTS_PER_PAGE, width, chartHeight, chartsToPrint);
+    
+  }
+    
   
   /**
    * Return this panel's charts as a single buffered image 

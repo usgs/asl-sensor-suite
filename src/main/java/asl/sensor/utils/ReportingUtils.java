@@ -64,6 +64,17 @@ public class ReportingUtils {
   }
   
   /**
+   * Merge a series of buffered images and write them to a single PDF page
+   * @param pdf PDF document to append the page onto
+   * @param bis Series of buffered images to merge onto a single page
+   */
+  public static void 
+  bufferedImagesToPDFPage(PDDocument pdf, BufferedImage... bis) {
+    BufferedImage toPDF = mergeBufferedImages(bis);
+    bufferedImageToPDFPage(toPDF, pdf);
+  }
+  
+  /**
    * Converts a series of charts into a buffered image. Each chart has the
    * dimensions given as the width and height parameters, and so the resulting
    * image has width given by that parameter and height equal to height
@@ -149,6 +160,93 @@ public class ReportingUtils {
     return out;
     
   }
+  
+  /**
+   * Add pages to a PDF document consisting of textual data with a series of
+   * strings, where each string is written to a separate page
+   * @param pdf Document to append pages of text to
+   * @param toWrite Series of strings to write to PDF
+   */
+  public static void
+  textListToPDFPages(PDDocument pdf, String... toWrite) {
+    
+    for (String onePage : toWrite) {
+      textToPDFPage(onePage, pdf);
+    }
+    
+  }
+  
+  /**
+   * Writes multiple pages of charts, 
+   * @param perPage Number of charts to put in a page at a time
+   * @param width Width of each chart to write to file
+   * @param height Height of each chart to write to file
+   * @param pdf Document to append pages of chart plots to
+   * @param charts Charts whose plots will be written to PDF
+   */
+  public static void
+  groupChartsToPDFPages(int perPage, int width, int height,
+      PDDocument pdf, JFreeChart... charts) {
+    
+    imageListToPDFPages( pdf, 
+        chartsToImageList(perPage, width, height, charts) );
+    
+  }
+  
+  public static void
+  imageListToPDFPages(PDDocument pdf, BufferedImage... bis) {
+    for (BufferedImage bi : bis) {
+      bufferedImageToPDFPage(bi, pdf);
+    }
+  }
+  
+  public static BufferedImage[]
+  chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
+    
+    List<BufferedImage> imageList = new ArrayList<BufferedImage>();
+    int totalNumber = charts.length;
+    
+    if (totalNumber < perImg) {
+      // if we can fit them all on a single page, then we'll do so
+      imageList.add( chartsToImage(width, height, charts) );
+      return imageList.toArray( new BufferedImage[]{} );
+    }
+    
+    // want to keep all charts the same size; 
+    // if we can't fit them all on a single page, how many pages will have
+    // complete charts?
+    int numFilledPages = totalNumber / perImg;
+    // if we can't fill the last page with plots, how many will it have
+    int lastPageChartCount = totalNumber % perImg;
+    // how many chart-size blank spaces to keep plots on last page same size
+    int spacerCount = perImg - lastPageChartCount;
+    // Note that the above variable is not used if lastPageChartCount is zero
+    
+    // handle all the pages with complete data here
+    for (int i = 0; i < numFilledPages; ++i) {
+      JFreeChart[] onOnePage = new JFreeChart[perImg];
+      for (int j = 0; j < perImg; ++j) {
+        onOnePage[j] = charts[(perImg * i) + j];
+      }
+      imageList.add( chartsToImage(width, height, onOnePage) );
+    }
+    
+    // special case for a non-evenly dividing plot series
+    if (lastPageChartCount != 0) {
+      int lastIndex = (numFilledPages + 1) * perImg;
+      JFreeChart[] lastPage = new JFreeChart[lastPageChartCount];
+      for (int j = 0; j < perImg; ++j) {
+        lastPage[j] = charts[lastIndex + j];
+      }
+      BufferedImage lastPageImage = chartsToImage(width, height, lastPage);
+      BufferedImage space = new BufferedImage(width, height * spacerCount,
+          BufferedImage.TYPE_INT_RGB);
+      imageList.add( mergeBufferedImages(lastPageImage, space) );
+    }
+    
+    return imageList.toArray( new BufferedImage[]{} );
+  }
+  
   
   /**
    * Add a page to a PDF document consisting of textual data

@@ -124,14 +124,16 @@ public class SensorSuite extends JPanel
       int inHeight = ip.getImageHeight(inPlotCount) * 2;
       int width = 1280; // TODO: set as global static variable somewhere?
 
-      BufferedImage toFile = 
-          ip.getAsImage(width, inHeight, inPlotCount);
+      BufferedImage[] toFile = 
+          ip.getAsMultipleImages(width, inHeight, inPlotCount);
       
-      ReportingUtils.bufferedImageToPDFPage(toFile, pdf);
+      ReportingUtils.imageListToPDFPages(pdf, toFile);
 
+      // TODO: response string generation?
+      
     }
 
-    pdf.save( file );
+    pdf.save(file);
     pdf.close();
   }
   
