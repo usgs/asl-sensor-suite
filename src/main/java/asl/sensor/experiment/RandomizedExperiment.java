@@ -236,8 +236,7 @@ public class RandomizedExperiment extends Experiment {
     FFTResult numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
     FFTResult denominatorPSD = FFTResult.spectralCalc(calib, calib);
     
-    // TODO: shift back to .5 if this is too extreme a cut
-    double proportion = 0.4; // get up to .5 of Nyquist freq due to noise
+    double proportion = 0.4; // get up to .4 of Nyquist freq due to noise
     // (used to be .8 of frequency but this included too much noise)
     double minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
     
@@ -286,18 +285,17 @@ public class RandomizedExperiment extends Experiment {
     Complex[] appResponse = fitResponse.applyResponseToInput(freqs);
     for (int i = 0; i < appResponse.length; ++i) {
       appResponse[i] = appResponse[i].divide( 2 * Math.PI * freqs[i] );
-      
     }
     
     // calculated response from deconvolving calibration from signal
-    Complex[] estimatedResponse = new Complex[len];
-    for (int i = 0; i < estimatedResponse.length; ++i) {
+    // (this will be in displacement and need to be integrated)
+    Complex[] estResponse = new Complex[len];
+    for (int i = 0; i < estResponse.length; ++i) {
       Complex numer = numeratorPSDVals[i];
       Complex denom = denominatorPSDVals[i];
-      estimatedResponse[i] = numer.divide(denom);
+      estResponse[i] = numer.divide(denom);
       // convert from displacement to velocity
-      estimatedResponse[i] = 
-          estimatedResponse[i].multiply(2 * Math.PI * freqs[i]);
+      estResponse[i] = estResponse[i].multiply(2 * Math.PI * freqs[i]);
     }
     
     
@@ -306,19 +304,22 @@ public class RandomizedExperiment extends Experiment {
     XYSeries calcArg = new XYSeries("Calc. resp. phase");
     
     // scaling values, used to set curve values to 0 at 1Hz
-    Complex scaleValue = estimatedResponse[oneHzIdx];
+    Complex scaleValue = estResponse[oneHzIdx];
     double subtractBy = 10 * Math.log10( scaleValue.abs() );
     double rotateBy = scaleValue.getArgument();
+    if (rotateBy == 0.) {
+      rotateBy += Double.MIN_VALUE;
+    }
     
     // data to fit poles to; first half of data is magnitudes of resp (dB)
     // second half of data is angles of resp (radians, scaled)
-    double[] observedResult = new double[2 * estimatedResponse.length];
+    double[] observedResult = new double[2 * estResponse.length];
     
-    for (int i = 0; i < estimatedResponse.length; ++i) {
+    for (int i = 0; i < estResponse.length; ++i) {
       
-      int argIdx = estimatedResponse.length + i;
+      int argIdx = estResponse.length + i;
       
-      Complex estValue = estimatedResponse[i];
+      Complex estValue = estResponse[i];
       // estValue = estValue.subtract(scaleValue);
       double estValMag = estValue.abs();
       double phi = estValue.getArgument();
@@ -331,8 +332,9 @@ public class RandomizedExperiment extends Experiment {
         observedResult[i] = 10 * Math.log10(estValMag);
         observedResult[i] -= subtractBy;
         
+        // TODO: make sure that the rotation is going on is functioning
         double argument = phi;
-        argument -= rotateBy;
+        argument /= rotateBy;
         // argument *= -1;
         observedResult[argIdx] = argument;
         
@@ -352,7 +354,7 @@ public class RandomizedExperiment extends Experiment {
     if (lowFreq) {
       initialGuess = lowFreqPolesToVector(fitPoles);
     } else {
-      initialGuess =  highFreqPolesToVector(fitPoles);
+      initialGuess = highFreqPolesToVector(fitPoles);
     }
     
     // now, solve for the response that gets us the best-fit response curve
@@ -388,10 +390,18 @@ public class RandomizedExperiment extends Experiment {
     
     System.out.println("lsp built");
     
+    String name = fitResponse.getName();
+    XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
+    XYSeries initArg = new XYSeries("Initial param (" + name + ") phase");
+    
+    XYSeries fitMag = new XYSeries("Fit resp. magnitude");
+    XYSeries fitArg = new XYSeries("Fit resp. phase");
+    
     // LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     // initResid = initEval.getRMS() * 100;
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
     
+
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     // residuals used to determine quality of solution convergence
     LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
@@ -416,12 +426,7 @@ public class RandomizedExperiment extends Experiment {
     // was initially used in plot before values were scaled
     // Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
     
-    String name = fitResponse.getName();
-    XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
-    XYSeries initArg = new XYSeries("Initial param (" + name + ") phase");
-    
-    XYSeries fitMag = new XYSeries("Fit resp. magnitude");
-    XYSeries fitArg = new XYSeries("Fit resp. phase");
+
     
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = freqs.length + i;
@@ -430,20 +435,6 @@ public class RandomizedExperiment extends Experiment {
       fitMag.add(freqs[i], fitValues[i]);
       fitArg.add(freqs[i], fitValues[argIdx]);
     }
-    
-    /*
-    for (int i = 0; i < freqs.length; ++i) {
-      // int argIdx = freqs.length + i;
-      if (freqs[i] != 0) {
-        Complex fitRespInteg = fitRespCurve[i].divide(2 * Math.PI * freqs[i]);
-        fitMag.add( freqs[i], 10 * Math.log10( fitRespInteg.abs() ) );
-        double argument = 
-            Math.toDegrees( fitRespCurve[i].getArgument() );
-        fitArg.add(freqs[i], argument);
-      }
-    }
-    */
-    
     
     // XYSeries fitMag = new XYSeries("Dummy plot a");
     // XYSeries fitArg = new XYSeries("Dummy plot b");
@@ -528,7 +519,7 @@ public class RandomizedExperiment extends Experiment {
         
         // TODO: deal with potential rotation issues with parameters?
         double argument = value.getArgument();
-        argument -= argScale;
+        argument /= argScale;
         // argument /= TAU;
         curValue[argIdx] = argument;
         // curValue[argIdx] = Math.toDegrees(curValue[argIdx]);

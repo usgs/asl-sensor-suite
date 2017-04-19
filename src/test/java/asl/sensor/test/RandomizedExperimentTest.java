@@ -98,8 +98,6 @@ public class RandomizedExperimentTest {
       int width = 1280;
       int height = 960;
       
-      // TODO: simplify most of this with calls to ReportingUtils functions
-      
       List<XYSeriesCollection> xysc = rCal.getData();
       JFreeChart[] jfcl = new JFreeChart[xysc.size()];
       String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
