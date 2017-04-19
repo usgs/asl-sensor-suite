@@ -22,7 +22,7 @@ import asl.sensor.input.InstrumentResponse;
 public class ResponseExperiment extends Experiment {
 
   public static final String MAGNITUDE = "Response magnitude";
-  public static final String ARGUMENT = "Response argument (phi)";
+  public static final String ARGUMENT = "Response phase";
   
   private boolean freqSpace;
   

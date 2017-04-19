@@ -478,12 +478,12 @@ public class InstrumentResponse {
     
   }
   
-  public void setPoles(List<Complex> poleList) {
-    poles = poleList;
-  }
-
   public void setName(String newName) {
     name = newName;
+  }
+
+  public void setPoles(List<Complex> poleList) {
+    poles = poleList;
   }
   
 }

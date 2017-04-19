@@ -557,37 +557,6 @@ implements ActionListener, ChangeListener {
   }
   
   /**
-   * Produce the visible charts as multiple images, to be used to split
-   * across multiple PDF pages when generating reports
-   * @param width Width of each plot in the image
-   * @param height Height of each plot in the image
-   * @param plotsToShow Number of plots that are to be added to the report
-   * @return list of buffered images of plots, each image to be made a PDF page
-   */
-  public BufferedImage[] 
-      getAsMultipleImages(int width, int height, int plotsToShow) {
-   
-    if (plotsToShow <= 0) {
-      return new BufferedImage[]{};
-    }
-    
-    int loaded = plotsToShow;
-    // cheap way to make sure height is a multiple of the chart count
-    height = (height*loaded)/loaded;
-    int chartHeight = height/loaded;
-    
-    JFreeChart[] chartsToPrint = new JFreeChart[plotsToShow];
-    for (int i = 0; i < plotsToShow; ++i) {
-      chartsToPrint[i] = chartPanels[i].getChart();
-    }
-    
-    return ReportingUtils.chartsToImageList(
-        PLOTS_PER_PAGE, width, chartHeight, chartsToPrint);
-    
-  }
-    
-  
-  /**
    * Return this panel's charts as a single buffered image 
    * with specified dimensions
    * @param width Width of returned image
@@ -620,6 +589,37 @@ implements ActionListener, ChangeListener {
     
     return ReportingUtils.chartsToImage(width, chartHeight, chartsToPrint);
 
+  }
+    
+  
+  /**
+   * Produce the visible charts as multiple images, to be used to split
+   * across multiple PDF pages when generating reports
+   * @param width Width of each plot in the image
+   * @param height Height of each plot in the image
+   * @param plotsToShow Number of plots that are to be added to the report
+   * @return list of buffered images of plots, each image to be made a PDF page
+   */
+  public BufferedImage[] 
+      getAsMultipleImages(int width, int height, int plotsToShow) {
+   
+    if (plotsToShow <= 0) {
+      return new BufferedImage[]{};
+    }
+    
+    int loaded = plotsToShow;
+    // cheap way to make sure height is a multiple of the chart count
+    height = (height*loaded)/loaded;
+    int chartHeight = height/loaded;
+    
+    JFreeChart[] chartsToPrint = new JFreeChart[plotsToShow];
+    for (int i = 0; i < plotsToShow; ++i) {
+      chartsToPrint[i] = chartPanels[i].getChart();
+    }
+    
+    return ReportingUtils.chartsToImageList(
+        PLOTS_PER_PAGE, width, chartHeight, chartsToPrint);
+    
   }
   
   /**

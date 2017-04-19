@@ -1,8 +1,6 @@
 package asl.sensor.test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.awt.Font;
 import java.io.File;
@@ -14,6 +12,7 @@ import java.util.List;
 import java.util.TimeZone;
 
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.linear.RealVector;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
@@ -282,8 +281,72 @@ public class RandomizedExperimentTest {
         fail();
         e.printStackTrace();
       }
-     
     
   }
   
+  @Test
+  public void ResponseCorrectlyConvertedToVectorLowFreq() {
+    String fname = "responses/TST5_response.txt";
+    
+    InstrumentResponse ir;
+    try {
+      
+      ir = new InstrumentResponse(fname);
+      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      RealVector low = RandomizedExperiment.lowFreqPolesToVector(poles);
+      
+      // only test lower two poles
+      
+      assertEquals( low.getEntry(0), poles.get(0).getReal(), 0.0 );
+      assertEquals( low.getEntry(1), poles.get(0).getImaginary(), 0.0 );
+      
+      assertEquals( low.getEntry(0), poles.get(1).getReal(), 0.0 );
+      assertEquals( low.getEntry(1), -poles.get(1).getImaginary(), 0.0 );
+      
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+  }
+  
+  @Test
+  public void ResponseCorrectConvertedToVectorHighFreq() {
+    String fname = "responses/TST5_response.txt";
+    
+    InstrumentResponse ir;
+    try {
+      
+      ir = new InstrumentResponse(fname);
+      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      RealVector high = RandomizedExperiment.highFreqPolesToVector(poles);
+      
+      int complexIndex = 2; // start at second pole
+      int vectorIndex = 0;
+      
+      while ( vectorIndex < high.getDimension() ) {
+        // return current index
+        double real = high.getEntry(vectorIndex++);
+        double imag = high.getEntry(vectorIndex++);
+        
+        double poleImag = poles.get(complexIndex).getImaginary();
+        
+        assertEquals( real, poles.get(complexIndex).getReal(), 0.0 );
+        assertEquals( imag, poleImag, 0.0 );
+        
+        if (poleImag != 0) {
+          // complex conjugate case
+          ++complexIndex;
+          assertEquals( real, poles.get(complexIndex).getReal(), 0.0 );
+          assertEquals( imag, -poles.get(complexIndex).getImaginary(), 0.0 );
+        }
+        
+        ++complexIndex;
+        
+      }
+      
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+  }
 }

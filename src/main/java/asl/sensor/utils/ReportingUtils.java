@@ -31,6 +31,17 @@ import org.jfree.chart.JFreeChart;
 public class ReportingUtils {
 
   /**
+   * Merge a series of buffered images and write them to a single PDF page
+   * @param pdf PDF document to append the page onto
+   * @param bis Series of buffered images to merge onto a single page
+   */
+  public static void 
+  bufferedImagesToPDFPage(PDDocument pdf, BufferedImage... bis) {
+    BufferedImage toPDF = mergeBufferedImages(bis);
+    bufferedImageToPDFPage(toPDF, pdf);
+  }
+  
+  /**
    * Add a buffered image to a PDDocument page
    * @param bi BufferedImage to be added to PDF
    * @param pdf PDF to have BufferedImage appended to
@@ -65,17 +76,6 @@ public class ReportingUtils {
   }
   
   /**
-   * Merge a series of buffered images and write them to a single PDF page
-   * @param pdf PDF document to append the page onto
-   * @param bis Series of buffered images to merge onto a single page
-   */
-  public static void 
-  bufferedImagesToPDFPage(PDDocument pdf, BufferedImage... bis) {
-    BufferedImage toPDF = mergeBufferedImages(bis);
-    bufferedImageToPDFPage(toPDF, pdf);
-  }
-  
-  /**
    * Converts a series of charts into a buffered image. Each chart has the
    * dimensions given as the width and height parameters, and so the resulting
    * image has width given by that parameter and height equal to height
@@ -106,106 +106,6 @@ public class ReportingUtils {
     }
     
     return mergeBufferedImages(bis);
-  }
-  
-  /**
-   * Takes in a series of charts and produces a PDF page of those charts.
-   * For more details on this method, see the chartsToImage function, which
-   * this method uses to produce the image to be added to the PDF
-   * @param width Width of each chart to be added to the PDF
-   * @param height Height of each chart to be added to the PDF
-   * @param pdf PDF document to have the data appended to
-   * @param jfcs series of charts to place in the PDF
-   */
-  public static void 
-  chartsToPDFPage(int width, int height, PDDocument pdf, JFreeChart... jfcs) {
-    
-    BufferedImage bi = chartsToImage(width, height, jfcs);
-    bufferedImageToPDFPage(bi, pdf);
-    return;
-    
-  }
-  
-  /**
-   * Utility function to combine a series of buffered images into a single
-   * buffered image. Images are concatenated vertically and centered 
-   * horizontally into an image as wide as the widest passed-in image
-   * @param bis Buffered images to send in
-   * @return Single concatenated buffered image
-   */
-  public static BufferedImage mergeBufferedImages(BufferedImage... bis) {
-   
-    int maxWidth = 0;
-    int totalHeight = 0;
-    for (BufferedImage bi : bis) {
-      if ( maxWidth < bi.getWidth() ) {
-        maxWidth = bi.getWidth();
-      }
-      totalHeight += bi.getHeight();
-    }
-    
-    BufferedImage out = 
-        new BufferedImage(maxWidth, totalHeight, BufferedImage.TYPE_INT_RGB);
-    Graphics2D g = out.createGraphics();
-    
-    int heightIndex = 0;
-    for (BufferedImage bi : bis) {
-      int centeringOffset = 0; // need to center the component?
-      if (bi.getWidth() < maxWidth) {
-        centeringOffset = ( maxWidth - bi.getWidth() ) / 2;
-      }
-      g.drawImage(bi, null, centeringOffset, heightIndex);
-      heightIndex += bi.getHeight();
-    }
-    
-    return out;
-    
-  }
-  
-  /**
-   * Add pages to a PDF document consisting of textual data with a series of
-   * strings, where each string is written to a separate page
-   * @param pdf Document to append pages of text to
-   * @param toWrite Series of strings to write to PDF
-   */
-  public static void
-  textListToPDFPages(PDDocument pdf, String... toWrite) {
-    
-    for (String onePage : toWrite) {
-      textToPDFPage(onePage, pdf);
-    }
-    
-  }
-  
-  /**
-   * Writes multiple pages of charts to a PDF file, with the number of charts
-   * to display per page set according to a parameter 
-   * @param perPage Number of charts to put in a page at a time
-   * @param width Width of each chart to write to file
-   * @param height Height of each chart to write to file
-   * @param pdf Document to append pages of chart plots to
-   * @param charts Charts whose plots will be written to PDF
-   */
-  public static void
-  groupChartsToPDFPages(int perPage, int width, int height,
-      PDDocument pdf, JFreeChart... charts) {
-    
-    imageListToPDFPages( pdf, 
-        chartsToImageList(perPage, width, height, charts) );
-    
-  }
-  
-  /**
-   * Write a list of images to a pdf document, each image its own page
-   * @param pdf PDF document to write to
-   * @param bis List of buffered images to write. Each image is written to its
-   * own PDF page.
-   */
-  public static void
-  imageListToPDFPages(PDDocument pdf, BufferedImage... bis) {
-    for (BufferedImage bi : bis) {
-      bufferedImageToPDFPage(bi, pdf);
-    }
   }
   
   /**
@@ -265,6 +165,24 @@ public class ReportingUtils {
     return imageList.toArray( new BufferedImage[]{} );
   }
   
+  /**
+   * Takes in a series of charts and produces a PDF page of those charts.
+   * For more details on this method, see the chartsToImage function, which
+   * this method uses to produce the image to be added to the PDF
+   * @param width Width of each chart to be added to the PDF
+   * @param height Height of each chart to be added to the PDF
+   * @param pdf PDF document to have the data appended to
+   * @param jfcs series of charts to place in the PDF
+   */
+  public static void 
+  chartsToPDFPage(int width, int height, PDDocument pdf, JFreeChart... jfcs) {
+    
+    BufferedImage bi = chartsToImage(width, height, jfcs);
+    bufferedImageToPDFPage(bi, pdf);
+    return;
+    
+  }
+  
   public static BufferedImage createWhitespace(int width, int height) {
     BufferedImage out = new BufferedImage(width, height, 
         BufferedImage.TYPE_INT_RGB);
@@ -274,6 +192,88 @@ public class ReportingUtils {
     g.fillRect ( 0, 0, out.getWidth(), out.getHeight() );
     g.dispose();
     return out;
+  }
+  
+  /**
+   * Writes multiple pages of charts to a PDF file, with the number of charts
+   * to display per page set according to a parameter 
+   * @param perPage Number of charts to put in a page at a time
+   * @param width Width of each chart to write to file
+   * @param height Height of each chart to write to file
+   * @param pdf Document to append pages of chart plots to
+   * @param charts Charts whose plots will be written to PDF
+   */
+  public static void
+  groupChartsToPDFPages(int perPage, int width, int height,
+      PDDocument pdf, JFreeChart... charts) {
+    
+    imageListToPDFPages( pdf, 
+        chartsToImageList(perPage, width, height, charts) );
+    
+  }
+  
+  /**
+   * Write a list of images to a pdf document, each image its own page
+   * @param pdf PDF document to write to
+   * @param bis List of buffered images to write. Each image is written to its
+   * own PDF page.
+   */
+  public static void
+  imageListToPDFPages(PDDocument pdf, BufferedImage... bis) {
+    for (BufferedImage bi : bis) {
+      bufferedImageToPDFPage(bi, pdf);
+    }
+  }
+  
+  /**
+   * Utility function to combine a series of buffered images into a single
+   * buffered image. Images are concatenated vertically and centered 
+   * horizontally into an image as wide as the widest passed-in image
+   * @param bis Buffered images to send in
+   * @return Single concatenated buffered image
+   */
+  public static BufferedImage mergeBufferedImages(BufferedImage... bis) {
+   
+    int maxWidth = 0;
+    int totalHeight = 0;
+    for (BufferedImage bi : bis) {
+      if ( maxWidth < bi.getWidth() ) {
+        maxWidth = bi.getWidth();
+      }
+      totalHeight += bi.getHeight();
+    }
+    
+    BufferedImage out = 
+        new BufferedImage(maxWidth, totalHeight, BufferedImage.TYPE_INT_RGB);
+    Graphics2D g = out.createGraphics();
+    
+    int heightIndex = 0;
+    for (BufferedImage bi : bis) {
+      int centeringOffset = 0; // need to center the component?
+      if (bi.getWidth() < maxWidth) {
+        centeringOffset = ( maxWidth - bi.getWidth() ) / 2;
+      }
+      g.drawImage(bi, null, centeringOffset, heightIndex);
+      heightIndex += bi.getHeight();
+    }
+    
+    return out;
+    
+  }
+  
+  /**
+   * Add pages to a PDF document consisting of textual data with a series of
+   * strings, where each string is written to a separate page
+   * @param pdf Document to append pages of text to
+   * @param toWrite Series of strings to write to PDF
+   */
+  public static void
+  textListToPDFPages(PDDocument pdf, String... toWrite) {
+    
+    for (String onePage : toWrite) {
+      textToPDFPage(onePage, pdf);
+    }
+    
   }
   
   
