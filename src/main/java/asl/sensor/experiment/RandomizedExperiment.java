@@ -226,6 +226,11 @@ public class RandomizedExperiment extends Experiment {
     XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. arg. [phi]");
     
+    // scaling values, used to set curve values to 0 at 1Hz
+    Complex scaleValue = estimatedResponse[oneHzIdx];
+    double subtractBy = 10 * Math.log10( scaleValue.abs() );
+    double rotateBy = scaleValue.getArgument();
+    
     // data to fit poles to; first half of data is magnitudes of resp (dB)
     // second half of data is angles of resp (radians, scaled)
     double[] observedResult = new double[2 * estimatedResponse.length];
@@ -236,7 +241,6 @@ public class RandomizedExperiment extends Experiment {
       
       Complex estValue = estimatedResponse[i];
       double estValMag = estValue.abs();
-     
       double phi = estValue.getArgument();
       
       if ( Double.isNaN(estValMag) ) {
@@ -244,77 +248,30 @@ public class RandomizedExperiment extends Experiment {
         observedResult[argIdx] = 0;
       } else {
         observedResult[i] = 10 * Math.log10(estValMag);
-        observedResult[argIdx] = phi;
+        observedResult[i] -= subtractBy;
+        observedResult[argIdx] = - Math.toDegrees(phi - rotateBy);
       }
-    }
-    
-    // set value at 1Hz of calculated function to 0, both magnitude and angle
-    double subtractBy = observedResult[oneHzIdx];
-    double rotateBy = observedResult[estimatedResponse.length + oneHzIdx];
-    for (int i = 0; i < observedResult.length / 2; ++i) {
-      int argIdx = i + (observedResult.length / 2);
-      observedResult[i] -= subtractBy;
-      observedResult[argIdx] -= rotateBy;
-      // observedResult[argIdx] = ( (observedResult[argIdx] % TAU) + TAU) % TAU;
-      observedResult[argIdx] /= -TAU;
+      
       calcMag.add(freqs[i], observedResult[i]);
       calcArg.add(freqs[i], observedResult[argIdx]);
     }
     
     
-    // now to set up a solver for the params
-    double[] responseVariables;
-    if (lowFreq) {
-      responseVariables = new double[2];
-
-      // we only need to get one pole because the second is the complex conj.
-      // or else (unlikely) the imaginary part is zero
-      Complex cpx = fitPoles.get(0);
-      responseVariables[0] = cpx.getReal();
-      responseVariables[1] = cpx.getImaginary();
-      // cell [2] would be same as [0]
-      // and cell[3] would be [-1]
-    } else {
-
-      int idx = 2; // starting index for non-conjugate pole counting
-      if ( fitPoles.get(0).getImaginary() == 0. ) {
-        // start at 1 if the 0th pole has no conjugate
-        idx = 1;
-      }
-      
-      // how many poles are NOT the complex conjugate of another pole?
-      // i.e., assume the following are poles in a response file
-      // 2 + 3i, 2 - 3i, 4 + 0i
-      // then this would be 2, because 2 - 3i is complex conj of 2 + 3i
-      int nonPairPoles = 0;
-      for (int i = idx ; i < fitPoles.size(); ++i) {
-        ++nonPairPoles;
-        if ( fitPoles.get(i).getImaginary() != 0. ) {
-          // if nonzero, next value is the complex conjugate of this pole
-          // so we can skip it
-          ++i;
-        }
-      }
-
-      
-      responseVariables = new double[nonPairPoles * 2];
-      for (int i = 0; i < responseVariables.length; i += 2) {
-        int realIdx = i;
-        int imagIdx = realIdx + 1;
-        int poleIdx = (i / 2) + 2; // don't include first two poles
-        responseVariables[realIdx] = fitPoles.get(poleIdx).getReal();
-        responseVariables[imagIdx] = fitPoles.get(poleIdx).getImaginary();
-        if (responseVariables[imagIdx] != 0) {
-          // next pole is the complex conjugate, skip it
-          i += 2;
-        }
-      }
-    }
+    // now to set up a solver for the params -- first, get the input variables
+    // complex values are technically two variables, each a double
+    // so, let's split up their real and im components and make each one a
+    // variable. (we also need to ignore conjugate values, for constraints)
+    RealVector initialGuess;
     
+    if (lowFreq) {
+      initialGuess = lowFreqPolesToFitVariables(fitPoles);
+    } else {
+      initialGuess =  highFreqPolesToFitVariables(fitPoles);
+    }
     
     // now, solve for the response that gets us the best-fit response curve
     
-    RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
+    // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector obsResVector = MatrixUtils.createRealVector(observedResult);
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
@@ -449,6 +406,8 @@ public class RandomizedExperiment extends Experiment {
     curValue[appliedCurve.length] = 0.;
     
     Complex scaleBy = appliedCurve[oneHzIdx].divide(2 * Math.PI);
+    double magScale = 10 * Math.log10( scaleBy.abs() );
+    double argScale = scaleBy.getArgument();
     
     // System.out.println(appliedCurve[0]);
     for (int i = 0; i < appliedCurve.length; ++i) {
@@ -462,6 +421,7 @@ public class RandomizedExperiment extends Experiment {
         continue;
       }
       
+      // from acceleration to velocity
       Complex value = appliedCurve[i];
       value = value.divide(2 * Math.PI * freqs[i]);
       
@@ -474,16 +434,14 @@ public class RandomizedExperiment extends Experiment {
         
         // System.out.println(value);
         double temp = 10 * Math.log10( value.abs() );
-        temp -= 10 * Math.log10( scaleBy.abs() );
+        temp -= magScale;
         curValue[i] = temp;
 
         
-        // TODO: deal with potential rotation issues with parameters
-        double argument = ( value.getArgument() );
-        argument -= scaleBy.getArgument();
+        // TODO: deal with potential rotation issues with parameters?
+        double argument = value.getArgument() - argScale;
         // argument = ( (argument % TAU) + TAU ) % TAU;
-        argument /= TAU;
-        curValue[argIdx] = argument;
+        curValue[argIdx] = Math.toDegrees(argument);
         // if line below is uncommented, we're not fitting angle
         // curValue[argIdx] = 0.;
       }
@@ -492,23 +450,40 @@ public class RandomizedExperiment extends Experiment {
     return curValue;
   }
   
+  /**
+   * Get the poles that the solver has found to best-fit the est. response
+   * @return new poles that should improve fit over inputted response, as a list
+   */
   public List<Complex> getFitPoles() {
+    // for dealing with complex conjugate issues
+    int highFreqStartIdx = 2;
+    if ( fitPoles.get(0).getImaginary() == 0. ) {
+      highFreqStartIdx = 1;
+    }
+
     if (lowFreq) {
-      return fitPoles.subList(0, 2);
+      return fitPoles.subList(0, highFreqStartIdx);
     } else {
-      return fitPoles.subList( 2, inputPoles.size() );
+      return fitPoles.subList( highFreqStartIdx, inputPoles.size() );
     }
   }
   
   /**
-   * Get poles used in input response, for output in plot or 
-   * @return
+   * Get poles used in input response, for reference against best-fit poles 
+   * @return original poles being modified by the solver in calib. processing,
+   * as a list
    */
   public List<Complex> getInitialPoles() {
+    
+    int highFreqStartIdx = 2;
+    if ( fitPoles.get(0).getImaginary() == 0. ) {
+      highFreqStartIdx = 1;
+    }
+    
     if (lowFreq) {
-      return inputPoles.subList(0, 2);
+      return inputPoles.subList(0, highFreqStartIdx);
     } else {
-      return inputPoles.subList( 2, inputPoles.size() );
+      return inputPoles.subList( highFreqStartIdx, inputPoles.size() );
     }
   }
   
@@ -594,11 +569,99 @@ public class RandomizedExperiment extends Experiment {
     this.lowFreq = lowFreq;
   }
   
+  /**
+   * Get the residual value of the initial response parameters
+   * @return the residual of the initial poles from fed-in response
+   */
   public double getInitResidual() {
     return initialResidual;
   }
   
+  /**
+   * Get the residual value from the solved response parameters
+   * @return the residual of the solved-for poles (best-fit response)
+   */
   public double getFitResidual() {
     return fitResidual;
   }
+  
+  /**
+   * Convert low-frequency pole values into variables to be fit by the solver.
+   * Because there are only two such poles at most, and they are complex
+   * conjugates of each other, we need only get the first real and imaginary
+   * values of the function, stored as a vector of doubles.
+   * Note that the first vector index (0) is the real part, 
+   * and the second (1) is the imaginary part.
+   * @param poles List of poles to extract variables from (from input response)
+   * @return Vectorized representation of complex-value real and imaginary 
+   * components
+   */
+  public static RealVector lowFreqPolesToFitVariables(List<Complex> poles) {
+    // we only need to get one pole; second low-freq pole is complex conjugate
+    double[] responseVariables = new double[2];
+    
+    Complex cpx = poles.get(0);
+    responseVariables[0] = cpx.getReal();
+    responseVariables[1] = cpx.getImaginary();
+    // cell [2] would be same as [0]
+    // and cell[3] would be [-1]
+    
+    return MatrixUtils.createRealVector(responseVariables);
+   
+  }
+  
+  /**
+   * Convert high-frequency pole values into variables to be fit by the solver,
+   * ignoring the inclusion of a pole's complex conjugate pair in the list.
+   * There may be one or more poles in the list that have imaginary component 0.
+   * If this is the case, then no such complex conjugate exists in the pole
+   * list, and so additional handling is done to prevent skipping over the next
+   * valid pole. 
+   * Note that even vector indices (0, 2, 4...) are the real part of each pole
+   * and the odd vector indices (1, 3, 5...) are the corresponding imaginary
+   * part of each pole. That is, the vector index pair (0, 1) defines the first
+   * high frequency pole's complex value. 
+   * @param poles List of poles to extract variables from (from input response)
+   * @return
+   */
+  public static RealVector highFreqPolesToFitVariables(List<Complex> poles) {
+    
+    int startIdx = 2; // starting index for non-conjugate pole counting
+    if ( poles.get(0).getImaginary() == 0. ) {
+      // start at 1 if the 0th pole has no conjugate
+      startIdx = 1;
+    }
+    
+    // how many poles are NOT the complex conjugate of another pole?
+    // i.e., assume the following are poles in a response file
+    // 2 + 3i, 2 - 3i, 4 + 0i
+    // then this would be 2, because 2 - 3i is complex conj of 2 + 3i
+    int nonPairPoles = 0;
+    for (int i = startIdx ; i < poles.size(); ++i) {
+      ++nonPairPoles;
+      if ( poles.get(i).getImaginary() != 0. ) {
+        // if nonzero, next value is the complex conjugate of this pole
+        // so we can ignore it
+        ++i;
+      }
+    }
+
+    // add each (non-conjugate) pole (see above) to the list of variables 
+    double [] responseVariables = new double[nonPairPoles * 2];
+    for (int i = 0; i < responseVariables.length; i += 2) {
+      int realIdx = i;
+      int imagIdx = realIdx + 1;
+      int poleIdx = (i / 2) + 2; // don't include first two poles
+      responseVariables[realIdx] = poles.get(poleIdx).getReal();
+      responseVariables[imagIdx] = poles.get(poleIdx).getImaginary();
+      if (responseVariables[imagIdx] != 0) {
+        // next pole is the complex conjugate, skip it
+        i += 2;
+      }
+    }
+    
+    return MatrixUtils.createRealVector(responseVariables);
+  
+  }
+ 
 }
