@@ -52,11 +52,17 @@ public class ResponseExperiment extends Experiment {
       currentFreq = a * Math.pow(10, b * (i * linearChange) );
     }
     
+    // used to prevent issues with duplicate response plotting / XYSeries names
     Set<String> respNames = new HashSet<String>();
+    
+    XYSeriesCollection args = new XYSeriesCollection();
+    XYSeriesCollection mags = new XYSeriesCollection();
     
     for (int r = 0; r < 3; ++r) {
       if ( !ds.responseIsSet(r) ) {
         continue;
+      } else {
+        System.out.println( ds.getResponse(r).getName() );
       }
       
       InstrumentResponse ir = ds.getResponse(r);
@@ -85,10 +91,13 @@ public class ResponseExperiment extends Experiment {
         }
       }
       
-      xySeriesData.add( new XYSeriesCollection(magnitude) );
-      xySeriesData.add( new XYSeriesCollection(argument) );
+      mags.addSeries(magnitude);
+      args.addSeries(argument);
       
     }
+    
+    xySeriesData.add(mags);
+    xySeriesData.add(args);
 
   }
   
