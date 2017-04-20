@@ -109,7 +109,7 @@ public class RandomizedExperimentTest {
       
       List<XYSeriesCollection> xysc = rCal.getData();
       JFreeChart[] jfcl = new JFreeChart[xysc.size()];
-      String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle (phi)"};
+      String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
       
       String xAxisTitle = "Frequency (Hz)";
       NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
@@ -144,6 +144,8 @@ public class RandomizedExperimentTest {
       // add initial curve from expected fit params to report
       XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);
       xysc.get(0).addSeries(expectedInitialCurve);
+      XYSeries expectedInitialAngle = rCal.getData().get(1).getSeries(0);
+      xysc.get(1).addSeries(expectedInitialAngle);
       
       for (int i = 0; i < xysc.size(); ++i) {
         
