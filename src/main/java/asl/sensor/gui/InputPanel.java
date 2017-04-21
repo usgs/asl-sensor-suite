@@ -622,6 +622,14 @@ implements ActionListener, ChangeListener {
     
   }
   
+  public String[] getResponseStrings(int[] indices) {
+    String[] outStrings = new String[indices.length];
+    for (int i = 0; i < indices.length; ++i) {
+      outStrings[i] = zooms.getResponse(indices[i]).toString();
+    }
+    return outStrings;
+  }
+  
   /**
    * Returns the selected region of underlying DataStore, to be fed 
    * into experiments for processing (the results of which will be plotted)

@@ -115,7 +115,7 @@ public class RandomizedExperimentTest {
       sb.append("Response file used:");
       sb.append('\n');
       sb.append( rCal.getResponseName() );
-      sb.append('\n');
+      sb.append("\n \n");
       
       sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)");
       sb.append('\n');

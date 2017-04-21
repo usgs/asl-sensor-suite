@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.complex.ComplexFormat;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -56,6 +58,10 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   public static String getInsetString(RandomizedExperiment rnd) {
     
+    NumberFormat nf = NumberFormat.getInstance();
+    nf.setMaximumFractionDigits(4);
+    ComplexFormat cf = new ComplexFormat(nf);
+    
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();
     
@@ -68,16 +74,17 @@ public class RandomizedPanel extends ExperimentPanel {
     sbInit.append("Initial poles: \n");
     sbFit.append("Fit poles: \n");
     for (int i = 0; i < fitP.size(); ++i) {
-      sbInit.append( initP.get(i) );
-      sbInit.append("  ");
-      sbFit.append( fitP.get(i) );
-      sbFit.append("  ");
+      sbInit.append( cf.format( initP.get(i) ) );
+      sbFit.append( cf.format( fitP.get(i) ) );
+      
       // want to fit two to a line
       ++i;
       if ( i < fitP.size() ) {
-        sbInit.append( initP.get(i) );
+        sbInit.append(", ");
+        sbFit.append(", ");
+        sbInit.append( cf.format( initP.get(i) ) );
         sbInit.append("  ");
-        sbFit.append( fitP.get(i) );
+        sbFit.append( cf.format( fitP.get(i) ) );
         sbFit.append("  ");
       }
       sbInit.append("\n");

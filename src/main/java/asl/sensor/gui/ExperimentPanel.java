@@ -460,10 +460,9 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   /**
    * Loads in charts used in this panel and prints them out in a PDF document
    * and includes any relevant metadata / analysis results as plain text
-   * @param pdf Document to load in data from
-   * @return PDF with new pages corresponding to charts and analysis results
+   * @param pdf Document to save data to
    */
-  public PDDocument savePDFResults(PDDocument pdf) {
+  public void savePDFResults(PDDocument pdf) {
 
     int width = 1280;
     int height = 960;
@@ -472,8 +471,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     ReportingUtils.chartsToPDFPage(width, height, pdf, cps);
 
     saveInsetDataText(pdf);
-
-    return pdf;
     
   }
   

@@ -525,6 +525,7 @@ public class InstrumentResponse {
     sb.append('\n');
     sb.append("Normalization frequency (Hz): ");
     sb.append(normalFreq);
+    sb.append('\n');
     
     sb.append("Transfer function ");
     if (transferType == TransferFunction.LAPLACIAN) {

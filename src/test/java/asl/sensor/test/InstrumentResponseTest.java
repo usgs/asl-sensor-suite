@@ -4,17 +4,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.math3.complex.Complex;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;
 
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.input.TransferFunction;
 import asl.sensor.input.Unit;
+import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
 
@@ -56,6 +59,37 @@ public class InstrumentResponseTest {
       fail("Unexpected error trying to read response file");
     }
     
+  }
+  
+  @Test
+  public void testStringOutput() {
+    
+    String currentDir = System.getProperty("user.dir");
+    String filename = currentDir + "/responses/RESP.XX.NS087..BHZ.STS1.20.2400";
+
+    try {
+      InstrumentResponse ir = new InstrumentResponse(filename);
+      
+      System.out.println(ir);
+      
+      PDDocument pdf = new PDDocument();
+      
+      ReportingUtils.textToPDFPage( ir.toString(), pdf );
+      
+      String testResultFolder = currentDir + "/testResultImages/";
+      File dir = new File(testResultFolder);
+      if ( !dir.exists() ) {
+        dir.mkdir();
+      }
+      
+      String testResult = testResultFolder + "response-report.pdf";
+      pdf.save( new File(testResult) );
+      pdf.close();
+
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      fail("Unexpected error trying to read response file");
+    }
   }
 
 }

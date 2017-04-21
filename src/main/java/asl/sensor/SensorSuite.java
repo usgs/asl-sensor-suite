@@ -114,10 +114,12 @@ public class SensorSuite extends JPanel
       throws IOException{
 
     int inPlotCount = ep.plotsToShow();
+    String[] responses = ip.getResponseStrings( ep.getResponseIndices() );
     // BufferedImage toFile = getCompiledImage();
 
     // START OF UNIQUE CODE FOR PDF CREATION HERE
-    PDDocument pdf = ep.savePDFResults( new PDDocument() );
+    PDDocument pdf = new PDDocument();
+    ep.savePDFResults( new PDDocument() );
     
     if (inPlotCount > 0) {
 
@@ -130,7 +132,7 @@ public class SensorSuite extends JPanel
       ReportingUtils.imageListToPDFPages(pdf, toFile);
 
       // TODO: response string generation goes here
-      
+      ReportingUtils.textListToPDFPages(pdf, responses);
     }
 
     pdf.save(file);
@@ -139,13 +141,11 @@ public class SensorSuite extends JPanel
   
   private JFileChooser fc; // loads in files based on parameter
 
-
   private InputPanel inputPlots;
 
   private JTabbedPane tabbedPane; // holds set of experiment panels
 
   private JButton generate, savePDF; // run all calculations
-
 
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
