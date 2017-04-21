@@ -356,6 +356,18 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public String getMetadataString() {
     return "";
   }
+  
+  /**
+   * Used to return more detailed information from the experiment, such
+   * as a full-page report of a best-fit response file. Most experiments
+   * will not need to override this method, but it may be useful to add
+   * more detailed or verbose information that cannot be fit into a single
+   * report page.
+   * @return Array of strings, each one to be written to a new report page
+   */
+  public String[] getAdditionalReportPages() {
+    return new String[]{};
+  }
 
   /**
    * Default x-axis return function.
@@ -453,7 +465,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
       sb.append("\n\n");
     }
     sb.append( getTimeStampString(expResult) );
-    ReportingUtils.textToPDFPage(sb.toString(), pdf);
+    ReportingUtils.textToPDFPage( sb.toString(), pdf );
+    ReportingUtils.textListToPDFPages( pdf, getAdditionalReportPages() );
     return;
   }
   
