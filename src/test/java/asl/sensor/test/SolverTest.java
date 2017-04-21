@@ -2,8 +2,6 @@ package asl.sensor.test;
 
 import static org.junit.Assert.*;
 
-import java.util.Arrays;
-
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;

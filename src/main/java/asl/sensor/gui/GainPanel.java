@@ -59,12 +59,10 @@ implements ChangeListener {
    * @return
    */
   public static String 
-  getInsetString(GainExperiment gn, int idx0, int idx1, double lowPrd, 
-      double highPrd) {
+  getInsetString(GainExperiment gn, int refIdx, double lowPrd, double highPrd) {
 
     double[] meanAndStdDev = 
-        gn.getStatsFromFreqs(
-            idx0, idx1, 1/lowPrd, 1/highPrd);
+        gn.getStatsFromFreqs(refIdx, 1/lowPrd, 1/highPrd);
 
     double mean = meanAndStdDev[0];
     double sDev = meanAndStdDev[1];
@@ -87,9 +85,7 @@ implements ChangeListener {
   }
   private JSlider leftSlider;
   private JSlider rightSlider;
-  private JComboBox<String> firstSeries;
-  
-  private JComboBox<String> secondSeries;
+  private JComboBox<String> refSeries;
   private JButton recalcButton;
   
   private double low, high;
@@ -133,21 +129,16 @@ implements ChangeListener {
     recalcButton.addActionListener(this);
     
     // add dummy entries to the combo box, but don't let them get filled
-    firstSeries = new JComboBox<String>();
-    firstSeries.addActionListener(this);
-    firstSeries.setEnabled(false);
-    secondSeries = new JComboBox<String>();
-    secondSeries.addActionListener(this);
-    secondSeries.setEnabled(false);
+    refSeries = new JComboBox<String>();
+    refSeries.addActionListener(this);
+    refSeries.setEnabled(false);
     
     for (int i = 0; i < 2; ++i) {
       String out = "FILE NOT LOADED (" + i + ")";
-      firstSeries.addItem(out);
-      secondSeries.addItem(out);
+      refSeries.addItem(out);
     }
 
-    firstSeries.setSelectedIndex(0);
-    secondSeries.setSelectedIndex(1);
+    refSeries.setSelectedIndex(0);
     
     // create layout    
     this.setLayout( new GridBagLayout() );
@@ -178,14 +169,11 @@ implements ChangeListener {
     gbc.gridx = 0; gbc.gridy += 1;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;
-    this.add(firstSeries, gbc);
+    this.add(refSeries, gbc);
     gbc.weightx = 0;
     gbc.gridx += 1;
     gbc.fill = GridBagConstraints.NONE;
     this.add(save, gbc);
-    gbc.gridx += 1;
-    gbc.fill = GridBagConstraints.BOTH;
-    this.add(secondSeries, gbc);
     
   }
 
@@ -197,8 +185,7 @@ implements ChangeListener {
   public void actionPerformed(ActionEvent e) {
     super.actionPerformed(e); // saving?
     
-    int idx0 = firstSeries.getSelectedIndex();
-    int idx1 = secondSeries.getSelectedIndex();
+    int idx0 = refSeries.getSelectedIndex();
     
     if ( e.getSource() == recalcButton ) {
       
@@ -208,46 +195,20 @@ implements ChangeListener {
       
       return;
     } 
-    if ( e.getSource() == firstSeries ) {
+    if ( e.getSource() == refSeries ) {
       
       // if we got here from removing the items from the list
       // (which happens when we load in new data)
       // don't do anything
-      if ( !firstSeries.isEnabled() ){
+      if ( !refSeries.isEnabled() ){
         return;
       }
+
+      int refIdx = refSeries.getSelectedIndex();
       
-      // don't allow the same value for the two indices (plot behaves badly)
-      // assume the user is setting firstSeries selection correctly,
-      // and thus make sure that the secondSeries doesn't have a collision
-      // we disable the combo box to prevent a second event from triggering
-      if (idx0 == idx1) {
-        secondSeries.setEnabled(false);
-        idx1 = (idx1 + 1) % secondSeries.getItemCount();
-        secondSeries.setSelectedIndex(idx1);
-        secondSeries.setEnabled(true);
-      }
-      
-    } else if ( e.getSource() == secondSeries ) {      
-      
-      // same as above, do nothing
-      if ( !secondSeries.isEnabled() ) {
-        return;
-      }
-      
-      // same as with the above, but assume secondSeries selection intentional
-      if (idx0 == idx1) {
-        firstSeries.setEnabled(false);
-        idx0 = (idx0 + 1) % firstSeries.getItemCount();
-        firstSeries.setSelectedIndex(idx0);
-        firstSeries.setEnabled(true);
-      }
-      
-    }
-    // now that we have a guarantee of no collision, update data accordingly    
-    if ( e.getSource() == firstSeries || e.getSource() == secondSeries) {
       // if we selected a new series to plot, redraw the chart
-      updateDataDriver(idx0, idx1);
+      updateDataDriver(refIdx);
+      
     }
     
   }
@@ -262,24 +223,22 @@ implements ChangeListener {
     // remove old bars and draw the new ones
     // setDomainMarkers(lowPrd, highPrd, xyp);
     
-    int idx0 = firstSeries.getSelectedIndex();
-    int idx1 = secondSeries.getSelectedIndex();
+    int refIdx = refSeries.getSelectedIndex();
     
     GainExperiment gn = (GainExperiment) expResult;
  
-    return getInsetString(gn, idx0, idx1, lowPrd, highPrd);
+    return getInsetString(gn, refIdx, lowPrd, highPrd);
   }
   
   @Override
   public String getMetadataString() {
-    int idx0 = firstSeries.getSelectedIndex();
-    int idx1 = secondSeries.getSelectedIndex();
+    int refIdx = refSeries.getSelectedIndex();
     
     GainExperiment gn = (GainExperiment) expResult;
     StringBuilder sb = new StringBuilder();
     sb.append("LOADED RESPONSES:");
     sb.append('\n');
-    sb.append( gn.getResponseNames(idx0, idx1) );
+    sb.append( gn.getResponseNames(refIdx) );
     return sb.toString();
   }
   
@@ -317,11 +276,9 @@ implements ChangeListener {
    */
   private void setDataNames(DataStore ds) {
     
-    firstSeries.setEnabled(false);
-    secondSeries.setEnabled(false);
+    refSeries.setEnabled(false);
     
-    firstSeries.removeAllItems();
-    secondSeries.removeAllItems();
+    refSeries.removeAllItems();
     
     Set<String> preventDuplicates = new HashSet<String>();
     
@@ -331,12 +288,10 @@ implements ChangeListener {
         name += "_";
       }
       preventDuplicates.add(name);
-      firstSeries.addItem(name);
-      secondSeries.addItem(name);
+      refSeries.addItem(name);
     }
     
-    firstSeries.setSelectedIndex(0);
-    secondSeries.setSelectedIndex(1);
+    refSeries.setSelectedIndex(0);
   }
   
   /**
@@ -434,11 +389,9 @@ implements ChangeListener {
     }
 
     // need to have 2 series for relative gain
-    firstSeries.setEnabled(true);
-    secondSeries.setEnabled(true);
-    int idx0 = firstSeries.getSelectedIndex();
-    int idx1 = secondSeries.getSelectedIndex();
-    updateDataDriver(idx0, idx1);
+    refSeries.setEnabled(true);;
+    int refIdx = refSeries.getSelectedIndex();
+    updateDataDriver(refIdx);
 
   }
   
@@ -450,10 +403,10 @@ implements ChangeListener {
    * peak value's frequency. This function is cal0led when new data is fed in 
    * or when the combo box active entries change
    */
-  private void updateDataDriver(int index0, int index1) {
+  private void updateDataDriver(int index0) {
     
-    final int idx0 = index0;
-    final int idx1 = index1;
+    final int refIdx = index0;
+    final int idx1 = (refIdx + 1) % 2;
 
     displayInfoMessage("Calculating data...");
 
@@ -467,7 +420,7 @@ implements ChangeListener {
     // plot has 3 components: source, destination, NLNM line plot
     XYSeriesCollection xyscIn = expResult.getData().get(0);
     xysc = new XYSeriesCollection();
-    xysc.addSeries( xyscIn.getSeries(idx0) );
+    xysc.addSeries( xyscIn.getSeries(refIdx) );
     xysc.addSeries( xyscIn.getSeries(idx1) );
     xysc.addSeries( xyscIn.getSeries("NLNM") );
 
@@ -479,7 +432,7 @@ implements ChangeListener {
     GainExperiment gn = (GainExperiment) expResult;
 
     // want to default to octave centered at highest value of fixed freq
-    freqRange = gn.getOctaveCenteredAtPeak(idx0);
+    freqRange = gn.getOctaveCenteredAtPeak(refIdx);
 
     // get the locations (x-axis values) of frequency range as intervals
     lowPrd = Math.min(1/freqRange[0], 1/freqRange[1]);

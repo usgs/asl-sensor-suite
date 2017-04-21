@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.complex.ComplexFormat;
 
 import asl.sensor.gui.InputPanel;
 
@@ -90,7 +92,7 @@ public class InstrumentResponse {
    * @param array the array of zeros and poles the term will be added to
    */
   private static void parseTermAsComplex(String line, Complex[] array) {
-    // reparse the line. why are we doing this?
+    // reparse the line. why are we doing this? well,
     // if a number is negative, only one space between it and prev. number
     // and the previous split operation assumed > 2 spaces between numbers
     String[] words = line.split("\\s+");
@@ -478,14 +480,92 @@ public class InstrumentResponse {
     
   }
   
+  /**
+   * Set name of response file, used in some plot and report generation
+   * @param newName New name to give this response
+   */
   public void setName(String newName) {
     name = newName;
   }
 
+  /**
+   * Replace the current poles of this response with new ones
+   * @param poleList New poles to replace the current response poles with
+   */
   public void setPoles(List<Complex> poleList) {
     poles = poleList;
   }
   
+  /**
+   * Output text report of this response file. Not same format as IRIS RESP.
+   */
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    
+    NumberFormat nf = NumberFormat.getInstance();
+    nf.setMaximumFractionDigits(4);
+    ComplexFormat cf = new ComplexFormat(nf);
+    
+    // possible TODO: make this the IRIS RESP format instead?
+    sb.append("Response name: ");
+    sb.append(name);
+    sb.append('\n');
+    sb.append("Gain stage values: ");
+    sb.append('\n');
+    
+    for (int i = 0; i < gain.size(); ++i) {
+      sb.append(i);
+      sb.append(": ");
+      sb.append( nf.format( gain.get(i) ) );
+      sb.append("\n");
+    }
+    
+    sb.append("Normalization: ");
+    sb.append(normalization);
+    sb.append('\n');
+    sb.append("Normalization frequency (Hz): ");
+    sb.append(normalFreq);
+    
+    sb.append("Transfer function ");
+    if (transferType == TransferFunction.LAPLACIAN) {
+      sb.append("is LAPLACIAN");
+    } else {
+      sb.append("is LINEAR");
+    }
+    sb.append('\n');
+    
+    sb.append("Response input units: ");
+    if (unitType == Unit.DISPLACEMENT) {
+      sb.append("displacement (m)");
+    } else if (unitType == Unit.VELOCITY) {
+      sb.append("velocity (m/s)");
+    } else if (unitType == Unit.ACCELERATION) {
+      sb.append("acceleration (m/s^2)");
+    }
+    sb.append('\n');
+    
+    sb.append("Response zeros: ");
+    sb.append('\n');
+    
+    for (int i = 0; i < zeros.size(); ++i) {
+      sb.append(i);
+      sb.append(": ");
+      sb.append( cf.format( zeros.get(i) ) );
+      sb.append("\n");
+    }
+    
+    sb.append("Response poles: ");
+    sb.append('\n');
+    
+    for (int i = 0; i < poles.size(); ++i) {
+      sb.append(i);
+      sb.append(": ");
+      sb.append( cf.format( poles.get(i) ) );
+      sb.append("\n");
+    }
+    
+    return sb.toString();
+  }
 }
 
 

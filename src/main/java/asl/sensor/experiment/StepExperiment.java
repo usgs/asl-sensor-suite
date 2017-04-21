@@ -59,6 +59,8 @@ public class StepExperiment extends Experiment{
   private Complex[] sensorFFTSeries; // FFT of step cal from sensor
   private double[] stepCalSeries; // time series of raw step cal function
   
+  private int sensorOutIdx;
+  
   private String responseName;
   
   final double STEP_FACTOR = 1E-16;
@@ -109,19 +111,19 @@ public class StepExperiment extends Experiment{
     // stepCalSeries = filteredStepCal;
     
     // but we want the response and the data of the cal result
-    int outIdx = ds.getXthFullyLoadedIndex(1);
+    sensorOutIdx = ds.getXthFullyLoadedIndex(1);
     
     // if someone did load a raw cal with the response, then we wouldn't
     // get a different block with the second call above, so we get the 
     // next loaded block/response pair
-    if ( ds.getBlock(outIdx).getName().equals( stepCalRaw.getName() ) ) {
-      outIdx = ds.getXthFullyLoadedIndex(2);
+    if ( ds.getBlock(sensorOutIdx).getName().equals( stepCalRaw.getName() ) ) {
+      sensorOutIdx = ds.getXthFullyLoadedIndex(2);
     }
 
     // get data of the result of the step calibration
-    DataBlock sensorOutput = ds.getBlock(outIdx);
+    DataBlock sensorOutput = ds.getBlock(sensorOutIdx);
     // long interval = sensorOutput.getInterval();
-    InstrumentResponse ir = ds.getResponse(outIdx);
+    InstrumentResponse ir = ds.getResponse(sensorOutIdx);
     responseName = ir.getName();
     Complex pole = ir.getPoles().get(0);
     
@@ -383,6 +385,13 @@ public class StepExperiment extends Experiment{
     RealVector fnc = MatrixUtils.createRealVector(fInit);
     
     return new Pair<RealVector, RealMatrix>(fnc, jMat);
+  }
+  
+  @Override
+  public int[] listActiveResponseIndices() {
+    // NOTE: not used by corresponding panel, overrides with active indices
+    // of components in the combo-box
+    return new int[]{sensorOutIdx};
   }
   
 }

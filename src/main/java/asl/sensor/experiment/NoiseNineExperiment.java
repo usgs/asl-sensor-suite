@@ -27,6 +27,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
   public NoiseNineExperiment() {
     super();
     responseNames = new String[9];
+    // indices are fixed since we need all 9 data points here
+    respIndices = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
   }
   
   @Override

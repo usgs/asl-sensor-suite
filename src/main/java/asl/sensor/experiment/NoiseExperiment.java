@@ -25,12 +25,15 @@ public class NoiseExperiment extends Experiment {
   
   protected String[] responseNames;
   
+  protected int[] respIndices;
+  
   /**
    * Instantiates a noise experiment -- axis titles and scales
    */
   public NoiseExperiment() {
     super();
     responseNames = new String[3];
+    respIndices = new int[3];
     freqSpace = false;
   }
   
@@ -53,23 +56,23 @@ public class NoiseExperiment extends Experiment {
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.setAutoWidth(true);
     
-    int[] indices = new int[3]; // first 3 fully-loaded data sets
+    respIndices = new int[3]; // first 3 fully-loaded data sets
     
     // get the first (index.length) seed/resp pairs. while we expect to
     // have the first three plots be the ones with loaded data, in general
     // it is probably better to keep the program flexible against valid input
-    for (int i = 0; i < indices.length; ++i) {
+    for (int i = 0; i < respIndices.length; ++i) {
       // xth fully loaded function begins at 1
-      indices[i] = ds.getXthFullyLoadedIndex(i+1);
+      respIndices[i] = ds.getXthFullyLoadedIndex(i+1);
     }
     
-    DataBlock[] dataIn = new DataBlock[indices.length];
-    InstrumentResponse[] responses = new InstrumentResponse[indices.length];
-    responseNames = new String[indices.length];
+    DataBlock[] dataIn = new DataBlock[respIndices.length];
+    InstrumentResponse[] responses = new InstrumentResponse[respIndices.length];
+    responseNames = new String[respIndices.length];
     
-    for (int i = 0; i < indices.length; ++i) {
-      dataIn[i] = ds.getBlock(indices[i]);
-      responses[i] = ds.getResponse(indices[i]);
+    for (int i = 0; i < respIndices.length; ++i) {
+      dataIn[i] = ds.getBlock(respIndices[i]);
+      responses[i] = ds.getResponse(respIndices[i]);
       responseNames[i] = responses[i].getName();
     }
     
@@ -77,13 +80,13 @@ public class NoiseExperiment extends Experiment {
     double[] freqs = new double[1]; // initialize to prevent later errors
     
     // initialize the values above to have relevant data
-    for (int i = 0; i < indices.length; ++i) {
+    for (int i = 0; i < respIndices.length; ++i) {
       // note that frequency is applied during the ds
-      spectra[i] = ds.getPSD(indices[i]).getFFT();
-      freqs = ds.getPSD(indices[i]).getFreqs();
+      spectra[i] = ds.getPSD(respIndices[i]).getFFT();
+      freqs = ds.getPSD(respIndices[i]).getFreqs();
     }
     
-    addToPlot(ds, freqSpace, indices, xysc);
+    addToPlot(ds, freqSpace, respIndices, xysc);
     
     // spectra[i] is crosspower pii, now to get pij terms for i!=j
     FFTResult fft = 
@@ -211,4 +214,11 @@ public class NoiseExperiment extends Experiment {
     this.freqSpace = freqSpace;
   }
 
+  @Override
+  public int[] listActiveResponseIndices() {
+    // NOTE: not used by corresponding panel, overrides with active indices
+    // of components in the combo-box
+    return respIndices;
+  }
+  
 }

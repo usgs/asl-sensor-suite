@@ -187,4 +187,14 @@ public abstract class Experiment {
     backend(ds);
   }
   
+  /**
+   * Return a list of indices of responses used by an index, to include
+   * data in report generation
+   * @return
+   */
+  public int[] listActiveResponseIndices() {
+    // override this in functions that use a backend including responses
+    return new int[]{};
+  }
+   
 }

@@ -198,6 +198,8 @@ public class RandomizedExperiment extends Experiment {
   private double[] freqs;
   
   private int oneHzIdx;
+ 
+  private int sensorOutIdx; // location to load response from?
   
   private String responseName;
   
@@ -212,14 +214,15 @@ public class RandomizedExperiment extends Experiment {
     
     // construct response plot
     DataBlock calib = ds.getXthLoadedBlock(1);
-    int sensorOutIndex = ds.getXthFullyLoadedIndex(1);
+    sensorOutIdx = ds.getXthFullyLoadedIndex(1);
     
-    if ( ds.getBlock(sensorOutIndex).getName().equals( calib.getName() ) ) {
-      sensorOutIndex = ds.getXthFullyLoadedIndex(2);
+    if ( ds.getBlock(sensorOutIdx).getName().equals( calib.getName() ) ) {
+      sensorOutIdx = ds.getXthFullyLoadedIndex(2);
     }
+
     
-    DataBlock sensorOut = ds.getBlock(sensorOutIndex);
-    fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIndex) );
+    DataBlock sensorOut = ds.getBlock(sensorOutIdx);
+    fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIdx) );
     responseName = fitResponse.getName();
     
     inputPoles = new ArrayList<Complex>( fitResponse.getPoles() );
@@ -666,4 +669,11 @@ public class RandomizedExperiment extends Experiment {
     this.lowFreq = lowFreq;
   }
  
+  @Override
+  public int[] listActiveResponseIndices() {
+    // NOTE: not used by corresponding panel, overrides with active indices
+    // of components in the combo-box
+    return new int[]{sensorOutIdx};
+  }
+  
 }

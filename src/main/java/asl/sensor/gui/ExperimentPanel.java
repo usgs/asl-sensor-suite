@@ -498,5 +498,13 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   // details of how to run updateData are left up to the implementing panel
   // however, the boolean "set" should be set to true to enable PDF saving
 
+  /**
+   * For report generation, give the list of indices of response files used
+   * in the plot
+   * @return list where each index is a relevant response file
+   */
+  public int[] getResponseIndices() {
+    return expResult.listActiveResponseIndices();
+  }
 
 }

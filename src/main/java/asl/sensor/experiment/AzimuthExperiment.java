@@ -443,5 +443,4 @@ public class AzimuthExperiment extends Experiment {
     offset = newOffset;
   }
   
-
 }
