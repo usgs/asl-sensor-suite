@@ -120,7 +120,7 @@ public class SensorSuite extends JPanel
 
     // START OF UNIQUE CODE FOR PDF CREATION HERE
     PDDocument pdf = new PDDocument();
-    ep.savePDFResults( new PDDocument() );
+    ep.savePDFResults( pdf );
     
     if (inPlotCount > 0) {
 

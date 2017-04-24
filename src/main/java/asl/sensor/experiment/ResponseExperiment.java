@@ -9,6 +9,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * Produces plots of response curves' magnitudes (Bode plot) and angle of
@@ -77,16 +78,23 @@ public class ResponseExperiment extends Experiment {
       
       String name = ir.getName();
       
+      double phiPrev = 0; // use with unwrapping
       XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
       XYSeries argument = new XYSeries (name + " " + ARGUMENT);
       for (int i = 0; i < freqArray.length; ++i) {
-        double phi = ( Math.toDegrees( result[i].getArgument() ) + 360 ) % 360;
+        
+        Complex tmp = result[i].divide(NumericUtils.TAU * freqArray[i]);
+        
+        double phi = NumericUtils.atanc(tmp);
+        phi = NumericUtils.unwrap(phi, phiPrev);
+        phiPrev = phi;
+        phi = Math.toDegrees(phi);
+        double magAccel = tmp.abs();
         if (freqSpace) {
-          double magAccel = result[i].abs() / (2*Math.PI*freqArray[i]);
           magnitude.add( freqArray[i], 10 * Math.log10(magAccel) );
           argument.add( freqArray[i], phi );
         } else {
-          magnitude.add( 1/freqArray[i], 10 * Math.log10( result[i].abs() ) );
+          magnitude.add( 1/freqArray[i], 10 * Math.log10(magAccel) );
           argument.add( 1/freqArray[i], phi );
         }
       }

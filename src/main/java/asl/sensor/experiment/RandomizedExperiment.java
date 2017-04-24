@@ -544,7 +544,6 @@ public class RandomizedExperiment extends Experiment {
         // phi /= TAU;
         curValue[argIdx] = Math.toDegrees(phi);
         
-        // curValue[argIdx] = Math.toDegrees(curValue[argIdx]);
         // if line below is uncommented, we're not fitting angle
         // curValue[argIdx] = 0.;
       }

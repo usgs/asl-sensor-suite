@@ -38,54 +38,131 @@ import asl.sensor.utils.TimeSeriesUtils;
 public class RandomizedExperimentTest {
 
   
-  @Test
-  public void AutomateRandomCalTesting() {
+  public DataStore setUpTest1() throws IOException {
     
-    String currentDir = System.getProperty("user.dir");
-
-    
+    List<String> fileList = new ArrayList<String>();
     String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
     String dataFolderName = "data/random_cal/"; 
     String calName =  dataFolderName + "_EC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    
+    fileList.add(respName);
+    fileList.add(calName);
+    fileList.add(sensOutName);
+    
+    DataStore ds = getFromList(fileList);   
+    Calendar cCal = getStartCalendar(ds);
+    
+    cCal.set(Calendar.MINUTE, 36);
+    cCal.set(Calendar.SECOND, 0);
+    long start = cCal.getTime().getTime() * 1000L;
+    
+    cCal.set(Calendar.MINUTE, 41);
+    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
+    long end = cCal.getTime().getTime() * 1000L;
+    
+    ds.trimAll(start, end);
+    
+    return ds;
+  }
+  
+  public DataStore setUpTest2() throws IOException {
+    List<String> fileList = new ArrayList<String>();
+    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
+    String dataFolderName = "data/random_cal_2/"; 
+    String calName =  dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    
+    fileList.add(respName);
+    fileList.add(calName);
+    fileList.add(sensOutName);
+    
+    DataStore ds = getFromList(fileList);
+    
+    // response we want is embedded
+    InstrumentResponse ir;
+    ir = InstrumentResponse.loadEmbeddedResponse("T360_Q330_LH");
+    ds.setResponse(1, ir);
+    
+    System.out.println( ir.getZeros() );
+    
+    Calendar cCal = getStartCalendar(ds);
+    
+    cCal.set(Calendar.MINUTE, 52);
+    cCal.set(Calendar.SECOND, 0);
+    long start = cCal.getTime().getTime() * 1000L;
+    
+    int hour = cCal.get(Calendar.HOUR);
+    cCal.set(Calendar.HOUR, hour + 1);
+    cCal.set(Calendar.MINUTE, 12);
+    
+    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
+    long end = cCal.getTime().getTime() * 1000L;
+    
+    ds.trimAll(start, end);
+    
+    return ds;
+  }
+  
+  public Calendar getStartCalendar(DataStore ds) {
+    SimpleDateFormat sdf = InputPanel.SDF;
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    
+    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() / 1000 );
+    return cCal;
+  }
+  
+  public DataStore getFromList(List<String> setUpFilenames) throws IOException {
+    
+    String respName = setUpFilenames.get(0);
+    String calName = setUpFilenames.get(1);
+    String sensOutName = setUpFilenames.get(2);
     String metaName;
     
+    System.out.println(respName);
+    System.out.println(calName);
+    System.out.println(sensOutName);
+    
+    metaName = TimeSeriesUtils.getMplexNameList(calName).get(0);
+    DataBlock calib = TimeSeriesUtils.getTimeSeries(calName, metaName);
+    
+    InstrumentResponse ir = new InstrumentResponse(respName);
+    
+    metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
+    DataBlock sensor = TimeSeriesUtils.getTimeSeries(sensOutName, metaName);
+
+    DataStore ds = new DataStore();
+    ds.setData(0, calib);
+    ds.setData(1, sensor);
+    ds.setResponse(1, ir);
+    
+    return ds;
+    
+  }
+  
+  public long[] getTime2(DataStore ds) {
+    
+    return new long[]{0L,0L};
+  }
+  
+  @Test
+  public void AutomateRandomCalTesting() {
+    
+    String currentDir = System.getProperty("user.dir");
+    int testNumber = 2; // use to switch automated report data
     boolean lowFreq = false;
     
     try {
-      metaName = TimeSeriesUtils.getMplexNameList(calName).get(0);
-      DataBlock calib = TimeSeriesUtils.getTimeSeries(calName, metaName);
       
-      InstrumentResponse ir = new InstrumentResponse(respName);
+      DataStore ds;
+      if (testNumber == 1) {
+        ds = setUpTest1();
+      } else {
+        ds = setUpTest2();
+      }
       
-      metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
-      DataBlock sensor = TimeSeriesUtils.getTimeSeries(sensOutName, metaName);
-
-      DataStore ds = new DataStore();
-      ds.setData(0, calib);
-      ds.setData(1, sensor);
-      ds.setResponse(1, ir);
-      
-      SimpleDateFormat sdf = InputPanel.SDF;
-      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-      // sdf.setLenient(false);
-      
-      Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-      cCal.setTimeInMillis( ds.getBlock(0).getStartTime() / 1000 );
-      
-      // cCal.set(Calendar.DATE, 147);
-      // cCal.set(Calendar.HOUR, 20);
-      cCal.set(Calendar.MINUTE, 36);
-      cCal.set(Calendar.SECOND, 0);
-      // cCal.set(Calendar.MILLISECOND, 0);
-      // System.out.println( "start: " + sdf.format( cCal.getTime() ) );
-      long start = cCal.getTime().getTime() * 1000L;
-      
-      cCal.set(Calendar.MINUTE, 41);
-      // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-      long end = cCal.getTime().getTime() * 1000L;
-      
-      ds.trimAll(start, end);
+      InstrumentResponse ir = ds.getResponse(1);
       
       RandomizedExperiment rCal = (RandomizedExperiment)
           ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
@@ -112,26 +189,37 @@ public class RandomizedExperimentTest {
       sb.append('\n');
       sb.append( RandomizedPanel.getTimeStampString(rCal) );
       sb.append('\n');
-      sb.append("Response file used:");
-      sb.append('\n');
+      sb.append("Input files:\n");
+      sb.append( ds.getBlock(0).getName() );
+      sb.append(" (calibration)\n");
+      sb.append( ds.getBlock(1).getName() );
+      sb.append(" (sensor output)\n");
+      sb.append("Response file used:\n");
       sb.append( rCal.getResponseName() );
       sb.append("\n \n");
       
-      sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)");
-      sb.append('\n');
+      String page1 = sb.toString();
+      
+      sb = new StringBuilder();
       
       // expected best fit params, for debugging
-      double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
-      ir = RandomizedExperiment.polesToResp(expectedParams, ir, lowFreq);
-      ir.setName("Best-fit params");
-      ds.setResponse(1, ir);
-      rCal.setData(ds);
+      if (testNumber == 1) {
+        sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)\n");
+        double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
+        ir = RandomizedExperiment.polesToResp(expectedParams, ir, lowFreq);
+        ir.setName("Best-fit params");
+        ds.setResponse(1, ir);
+        rCal.setData(ds);
 
-      // add initial curve from expected fit params to report
-      XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);
-      xysc.get(0).addSeries(expectedInitialCurve);
-      XYSeries expectedInitialAngle = rCal.getData().get(1).getSeries(0);
-      xysc.get(1).addSeries(expectedInitialAngle);
+        // add initial curve from expected fit params to report
+        XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);
+        xysc.get(0).addSeries(expectedInitialCurve);
+        XYSeries expectedInitialAngle = rCal.getData().get(1).getSeries(0);
+        xysc.get(1).addSeries(expectedInitialAngle);
+        
+        sb.append( RandomizedPanel.getInsetString(rCal) );
+      }
+
       
       for (int i = 0; i < xysc.size(); ++i) {
         
@@ -153,11 +241,11 @@ public class RandomizedExperimentTest {
         xyp.setDomainAxis( xAxis );
       }
       
-      sb.append( RandomizedPanel.getInsetString(rCal) );
+      String page2 = sb.toString();
       
       PDDocument pdf = new PDDocument();
       ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-      ReportingUtils.textToPDFPage( sb.toString(), pdf );
+      ReportingUtils.textListToPDFPages(pdf, page1, page2);
       
       String testResultFolder = currentDir + "/testResultImages/";
       File dir = new File(testResultFolder);

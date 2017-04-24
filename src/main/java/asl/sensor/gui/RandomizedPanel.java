@@ -80,8 +80,8 @@ public class RandomizedPanel extends ExperimentPanel {
       // want to fit two to a line
       ++i;
       if ( i < fitP.size() ) {
-        sbInit.append(", ");
-        sbFit.append(", ");
+        sbInit.append("; ");
+        sbFit.append("; ");
         sbInit.append( cf.format( initP.get(i) ) );
         sbInit.append("  ");
         sbFit.append( cf.format( fitP.get(i) ) );
@@ -284,21 +284,37 @@ public class RandomizedPanel extends ExperimentPanel {
     argChart.getXYPlot().setRangeAxis(degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
-    XYTitleAnnotation xyt = new XYTitleAnnotation(0.02, 0.02, result,
-            RectangleAnchor.BOTTOM_LEFT);
+    /*
+    XYTitleAnnotation xyt = new XYTitleAnnotation(0.002, 0.98, result,
+            RectangleAnchor.TOP_LEFT);
     
     XYPlot xyp = argChart.getXYPlot();
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
+    */
     
     magChart = buildChart(magSeries);
     magChart.getXYPlot().setRangeAxis(yAxis);
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
-    xyt = new XYTitleAnnotation(0.98, 0.02, result,
-        RectangleAnchor.BOTTOM_RIGHT);
+    double x;
+    double y = 0.02;
+    RectangleAnchor ra;
     
-    xyp = magChart.getXYPlot();
+    // move text box left or right depending on which frequencies aren't
+    // being fitted
+    if ( lowFreqBox.isSelected() ) {
+      x = 1;
+      ra = RectangleAnchor.BOTTOM_RIGHT;
+    } else {
+      x = 0;
+      ra = RectangleAnchor.BOTTOM_LEFT;
+    }
+    
+    XYTitleAnnotation xyt = 
+        new XYTitleAnnotation(x, y, result, ra);
+    
+    XYPlot xyp = magChart.getXYPlot();
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
 
