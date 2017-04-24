@@ -11,6 +11,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
 /**
@@ -32,10 +33,10 @@ public class OrthogonalExperiment extends Experiment {
    */
   public 
   static RealVector value(RealVector refX, RealVector refY, double point) {
-    double theta = point % TAU;
+    double theta = point % NumericUtils.TAU;
     
     if (theta < 0) {
-      theta += TAU; 
+      theta += NumericUtils.TAU; 
     }
     
     double sinTheta = Math.sin(theta);

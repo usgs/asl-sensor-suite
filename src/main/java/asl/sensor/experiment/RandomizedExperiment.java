@@ -28,6 +28,7 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * This experiment takes in a randomized calibration signal and the
@@ -287,7 +288,7 @@ public class RandomizedExperiment extends Experiment {
     // applied response. make sure to use the correct units (velocity)
     Complex[] appResponse = fitResponse.applyResponseToInput(freqs);
     for (int i = 0; i < appResponse.length; ++i) {
-      appResponse[i] = appResponse[i].divide( 2 * Math.PI * freqs[i] );
+      appResponse[i] = appResponse[i].divide(NumericUtils.TAU * freqs[i]);
     }
     
     // calculated response from deconvolving calibration from signal
@@ -298,7 +299,7 @@ public class RandomizedExperiment extends Experiment {
       Complex denom = denominatorPSDVals[i];
       estResponse[i] = numer.divide(denom);
       // convert from displacement to velocity
-      estResponse[i] = estResponse[i].multiply(2 * Math.PI * freqs[i]);
+      estResponse[i] = estResponse[i].multiply(NumericUtils.TAU * freqs[i]);
     }
     
     
@@ -309,7 +310,8 @@ public class RandomizedExperiment extends Experiment {
     // scaling values, used to set curve values to 0 at 1Hz
     Complex scaleValue = estResponse[oneHzIdx];
     double subtractBy = 10 * Math.log10( scaleValue.abs() );
-    double rotateBy = scaleValue.getArgument();
+    double rotateBy = NumericUtils.atanc(scaleValue);
+    
     /*
     if (rotateBy == 0.) {
       rotateBy += Double.MIN_VALUE;
@@ -330,25 +332,14 @@ public class RandomizedExperiment extends Experiment {
       Complex estValue = estResponse[i];
       // estValue = estValue.subtract(scaleValue);
       double estValMag = estValue.abs();
-      double phi = estValue.getArgument() - rotateBy;
+      double phi = NumericUtils.atanc(estValue);
+      phi -= rotateBy;
       
-      // try to scale to 0-360 
-      phi = Math.toDegrees(phi);
-      phi = ( (phi % 360) + 360) % 360;
-      
-      // make curve continuous
-      // use 180 because we are in degrees
-      while ( Math.abs(phiPrev - phi) > 180 ) {
-        if (phiPrev < phi) {
-          phi -= 360;
-        } else {
-          phi += 360;
-        }
-      }
+      phi = NumericUtils.unwrap(phi, phiPrev);
       // iterative step
       phiPrev = phi;
 
-      
+      phi = Math.toDegrees(phi);
       
       if ( Double.isNaN(estValMag) ) {
         observedResult[i] = 0;
@@ -506,9 +497,9 @@ public class RandomizedExperiment extends Experiment {
     curValue[0] = 0.;
     curValue[appliedCurve.length] = 0.;
     
-    Complex scaleBy = appliedCurve[oneHzIdx].divide(2 * Math.PI);
+    Complex scaleBy = appliedCurve[oneHzIdx].divide(NumericUtils.TAU);
     double magScale = 10 * Math.log10( scaleBy.abs() );
-    double argScale = scaleBy.getArgument();
+    double argScale = NumericUtils.atanc(scaleBy);
     
     double phiPrev = 0.;
     
@@ -528,7 +519,7 @@ public class RandomizedExperiment extends Experiment {
       
       // from acceleration to velocity
       Complex value = appliedCurve[i];
-      value = value.divide(2 * Math.PI * freqs[i]);
+      value = value.divide(NumericUtils.TAU * freqs[i]);
       
       // value = value.subtract(scaleBy);
       
@@ -546,24 +537,12 @@ public class RandomizedExperiment extends Experiment {
 
         
         // TODO: deal with potential rotation issues with parameters?
-        double phi = value.getArgument() - argScale;
-        phi = Math.toDegrees(phi);
-        
-        if (i > 0) { 
-          while ( Math.abs(phiPrev - phi) > 180 ) {
-            if (phiPrev < phi) {
-              phi -= 360;
-            } else {
-              phi += 360;
-            }
-          }
-          // iterative step
-          phiPrev = phi;
-        }
+        double phi = NumericUtils.atanc(value) - argScale;
+        phi = NumericUtils.unwrap(phi, phiPrev);
         
         // phi /= argScale;
         // phi /= TAU;
-        curValue[argIdx] = phi;
+        curValue[argIdx] = Math.toDegrees(phi);
         
         // curValue[argIdx] = Math.toDegrees(curValue[argIdx]);
         // if line below is uncommented, we're not fitting angle

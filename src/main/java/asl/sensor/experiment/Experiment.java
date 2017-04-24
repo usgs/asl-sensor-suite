@@ -30,8 +30,6 @@ public abstract class Experiment {
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
   
-  final static double TAU = Math.PI * 2;
-  
   /**
    * Helper function to add data from a datastore object (the PSD calculation)
    * into an XYSeriesCollection to eventually be plotted
