@@ -310,13 +310,18 @@ public class RandomizedExperiment extends Experiment {
     Complex scaleValue = estResponse[oneHzIdx];
     double subtractBy = 10 * Math.log10( scaleValue.abs() );
     double rotateBy = scaleValue.getArgument();
+    /*
     if (rotateBy == 0.) {
       rotateBy += Double.MIN_VALUE;
     }
+    */
     
     // data to fit poles to; first half of data is magnitudes of resp (dB)
     // second half of data is angles of resp (radians, scaled)
     double[] observedResult = new double[2 * estResponse.length];
+    
+    // prevent discontinuities in angle plots (TODO: make external)
+    double phiPrev = 0.;
     
     for (int i = 0; i < estResponse.length; ++i) {
       
@@ -325,7 +330,25 @@ public class RandomizedExperiment extends Experiment {
       Complex estValue = estResponse[i];
       // estValue = estValue.subtract(scaleValue);
       double estValMag = estValue.abs();
-      double phi = estValue.getArgument();
+      double phi = estValue.getArgument() - rotateBy;
+      
+      // try to scale to 0-360 
+      phi = Math.toDegrees(phi);
+      phi = ( (phi % 360) + 360) % 360;
+      
+      // make curve continuous
+      // use 180 because we are in degrees
+      while ( Math.abs(phiPrev - phi) > 180 ) {
+        if (phiPrev < phi) {
+          phi -= 360;
+        } else {
+          phi += 360;
+        }
+      }
+      // iterative step
+      phiPrev = phi;
+
+      
       
       if ( Double.isNaN(estValMag) ) {
         observedResult[i] = 0;
@@ -337,7 +360,7 @@ public class RandomizedExperiment extends Experiment {
         
         // TODO: make sure that the rotation is going on is functioning
         double argument = phi;
-        argument /= rotateBy;
+        // argument /= rotateBy;
         // argument *= -1;
         observedResult[argIdx] = argument;
         
@@ -487,13 +510,17 @@ public class RandomizedExperiment extends Experiment {
     double magScale = 10 * Math.log10( scaleBy.abs() );
     double argScale = scaleBy.getArgument();
     
+    double phiPrev = 0.;
+    
     // System.out.println(appliedCurve[0]);
     for (int i = 0; i < appliedCurve.length; ++i) {
       
       int argIdx = appliedCurve.length + i;
       
       if (freqs[i] == 0.) {
-        // this would be a divide by 0 error, let's just call the result 0;
+        // this would be a divide by 0 error, let's just call the result 0
+        // (because freqs is trimmed in main function, this is likely not
+        // necessary, but better safe than sorry when it comes down to it)
         curValue[i] = 0.;
         curValue[argIdx] = 0.;
         continue;
@@ -512,8 +539,6 @@ public class RandomizedExperiment extends Experiment {
         curValue[argIdx] = 0;
       } else {
         
-        
-        
         // System.out.println(value);
         double temp = 10 * Math.log10( value.abs() );
         temp -= magScale;
@@ -521,10 +546,25 @@ public class RandomizedExperiment extends Experiment {
 
         
         // TODO: deal with potential rotation issues with parameters?
-        double argument = value.getArgument();
-        argument /= argScale;
-        // argument /= TAU;
-        curValue[argIdx] = argument;
+        double phi = value.getArgument() - argScale;
+        phi = Math.toDegrees(phi);
+        
+        if (i > 0) { 
+          while ( Math.abs(phiPrev - phi) > 180 ) {
+            if (phiPrev < phi) {
+              phi -= 360;
+            } else {
+              phi += 360;
+            }
+          }
+          // iterative step
+          phiPrev = phi;
+        }
+        
+        // phi /= argScale;
+        // phi /= TAU;
+        curValue[argIdx] = phi;
+        
         // curValue[argIdx] = Math.toDegrees(curValue[argIdx]);
         // if line below is uncommented, we're not fitting angle
         // curValue[argIdx] = 0.;

@@ -462,7 +462,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     String metadata = getMetadataString();
     if ( metadata.length() > 0 ) {
       sb.append(metadata);
-      sb.append("\n\n");
+      sb.append("\n \n");
     }
     sb.append( getTimeStampString(expResult) );
     ReportingUtils.textToPDFPage( sb.toString(), pdf );
