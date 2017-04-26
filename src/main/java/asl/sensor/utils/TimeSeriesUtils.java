@@ -537,10 +537,11 @@ public class TimeSeriesUtils {
    * Rotates a north and east (known orthognal) set of data and produces a new
    * DataBlock along the north axis in the rotated coordinate system from
    * the given angle (y' = y cos theta + x sin theta)
-   * @param north
-   * @param east
-   * @param ang
-   * @return
+   * @param north Sensor assumed to point north
+   * @param east Sensor assumed to point east, orthogonal to north sensor
+   * @param ang Angle to rotate the data along
+   * @return New DataBlock whose time series is the rotated data along the
+   * given angle.
    */
   public static DataBlock rotate(DataBlock north, DataBlock east, double ang) {
     DataBlock rotated = new DataBlock(north);

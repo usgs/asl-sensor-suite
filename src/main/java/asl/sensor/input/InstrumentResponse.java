@@ -250,7 +250,7 @@ public class InstrumentResponse {
    * Get the gain stages of the RESP file. Stage x is at index x. That is,
    * the sensitivity is at 0, the sensor gain is at 1, and the digitizer
    * gain is at 2.
-   * @return
+   * @return List of all gain stages found in resp file, including stage 0
    */
   public List<Double> getGain() {
     return gain;
@@ -267,7 +267,7 @@ public class InstrumentResponse {
   
   /**
    * Get the normalization of the response
-   * @return
+   * @return normalization constant
    */
   public double getNormalization() {
     return normalization;
@@ -275,7 +275,7 @@ public class InstrumentResponse {
   
   /**
    * Get the normalization frequency
-   * @return
+   * @return normalization frequency (Hz)
    */
   public double getNormalizationFrequency() {
     return normalFreq;
@@ -291,7 +291,8 @@ public class InstrumentResponse {
   
   /**
    * Get the transfer function of this response file (laplacian, linear)
-   * @return
+   * @return transfer type as an enumeration (can get factor as numeric type
+   * by calling getFunction() on the returned value)
    */
   public TransferFunction getTransferFunction() {
     return transferType;
@@ -299,7 +300,8 @@ public class InstrumentResponse {
   
   /**
    * Gives the unit type of the RESP file (displacement, velocity, acceleration)
-   * @return
+   * @return Unit type as enumeration, distance measures of meters and time of
+   * seconds (i.e., acceleration is m/s^2)
    */
   public Unit getUnits() {
     return unitType;

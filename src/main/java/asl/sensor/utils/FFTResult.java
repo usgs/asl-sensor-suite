@@ -186,7 +186,7 @@ public class FFTResult {
   /**
    * Remove mean (constant value) from a dataset and include
    * @param dataSet
-   * @return
+   * @return timeseries as numeric list with previous mean subtracted
    */
   public static List<Number> demean(List<Number> dataSet) {
     List<Number> dataOut = new ArrayList<Number>(dataSet);
@@ -392,7 +392,8 @@ public class FFTResult {
    * This does not trim the negative frequencies of the result; it returns
    * the full FFT result as an array of Complex numbers
    * @param dataIn Array of doubles representing timeseries data
-   * @return 
+   * @return Complex array representing forward FFT values, including
+   * symmetric component (second half of the function)
    */
   public static Complex[] simpleFFT(double[] dataIn) {
     

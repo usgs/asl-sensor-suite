@@ -91,14 +91,13 @@ public abstract class Experiment {
    * Abstract function that
    * (Overwritten by concrete experiments with specific operations)
    * @param ds Object containing the raw timeseries data to process
-   * @param freqSpace True if the data should be plotted by frequency (False
-   * if it should be plotted by period) for domain axis
    */
   protected abstract void backend(final DataStore ds);
   
   /**
    * Return the number of data blocks needed by the experiment
-   * @return
+   * (Used in determining the number of input plots needed to be shown)
+   * @return Number of blocks needed as integer
    */
   public abstract int blocksNeeded();
   
@@ -143,8 +142,6 @@ public abstract class Experiment {
    * This function specifically (rather than the backend implementation) is
    * where interval consistency is checked before doing calculations.
    * @param ds Timeseries data to be processed
-   * @param freqSpace True if the x-axis should be frequency units (False if it
-   * should be units of time, for the period)
    */
   public void setData(final DataStore ds) {
     
@@ -186,9 +183,9 @@ public abstract class Experiment {
   }
   
   /**
-   * Return a list of indices of responses used by an index, to include
+   * Return an array of indices of responses used by an index, to include
    * data in report generation
-   * @return
+   * @return Indices in which responses are required
    */
   public int[] listActiveResponseIndices() {
     // override this in functions that use a backend including responses

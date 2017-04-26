@@ -376,10 +376,10 @@ public class DataStore {
   }
   
   /**
-   * Takes a loaded miniSEED data series and converts it to a plottable format
+   * Takes a loaded miniSEED data series and loads it in as a datablock into
+   * this datastore object
    * @param idx The plot (range 0 to FILE_COUNT) to be given new data
    * @param filepath Full address of file to be loaded in
-   * @return The miniSEED data, in a plottable format
    */
   public void setData(int idx, String filepath, String nameFilter) {
     

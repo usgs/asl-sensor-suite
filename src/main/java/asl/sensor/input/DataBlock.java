@@ -155,7 +155,7 @@ public class DataBlock {
   /**
    * Checks to see if the sensor's calibration is wired positively or not
    * (i.e., if the result of a step-calibration is upside-down)
-   * @return 
+   * @return True if sign appears to be incorrect compared to expected step cal
    */
   public boolean needsSignFlip() {
     
@@ -177,7 +177,7 @@ public class DataBlock {
    * Replace the time series data with a new list of Java numeric types.
    * This is the preferred call when data is resampled as it requires a new
    * interval to be specified, so that the old sample rate does not persist.
-   * @param interval The new interval (time between samples in microseconds)
+   * @param newInterval The new interval (time between samples in microseconds)
    */
   public void resample(long newInterval) {
     data = TimeSeriesUtils.decimate(data, interval, newInterval);

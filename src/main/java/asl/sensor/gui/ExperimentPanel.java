@@ -319,7 +319,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   /**
    * Returns the identifiers of each input plot being used, such as 
    * "calibration input" for the calibration tests.
-   * @return
+   * @return Strings used to populate channel type identifiers in input panel
    */
   public String[] getChannelTypes() {
     return channelType;
@@ -446,12 +446,11 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
-   * Returns a PDF with a page dedicated to string data related to the
+   * Takes a PDF and adds a page dedicated to string data related to the
    * data that has been passed into the experiment backend,
    * including any text that might be included in chart title insets and
    * the input data start and end timestamps
    * @param pdf PDF document to append data to
-   * @return PDF document with page of text added
    */
   public void saveInsetDataText(PDDocument pdf) {
     

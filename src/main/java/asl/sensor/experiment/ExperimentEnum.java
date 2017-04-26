@@ -27,7 +27,7 @@ public enum ExperimentEnum {
   
   /**
    * Get the full name of this experiment (used for plot & tab names)
-   * @return
+   * @return Name of experiment, as String
    */
   public String getName() {
     return name;

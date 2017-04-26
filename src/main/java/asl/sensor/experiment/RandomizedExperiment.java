@@ -63,7 +63,7 @@ public class RandomizedExperiment extends Experiment {
    * part of each pole. That is, the vector index pair (0, 1) defines the first
    * high frequency pole's complex value. 
    * @param poles List of poles to extract variables from (from input response)
-   * @return
+   * @return RealVector containing each non-conjugate pole's components
    */
   public static RealVector highFreqPolesToVector(List<Complex> poles) {
     

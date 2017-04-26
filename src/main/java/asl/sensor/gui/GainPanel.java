@@ -52,11 +52,10 @@ implements ChangeListener {
    * Static helper method for getting the formatted inset string directly
    * from a GainExperiment
    * @param gn GainExperiment with data to be extracted
-   * @param idx0 Index of first data to be loaded (i.e., 0)
-   * @param idx1 Index of second data to be loaded (i.e., 1)
+   * @param refIdx Index of data to be loaded as reference (i.e., 0)
    * @param lowPrd low period boundary to take stats over
    * @param highPrd high period boundary to take stats over
-   * @return
+   * @return String with data representation of experiment results (mean, sdev)
    */
   public static String 
   getInsetString(GainExperiment gn, int refIdx, double lowPrd, double highPrd) {
@@ -185,8 +184,6 @@ implements ChangeListener {
   public void actionPerformed(ActionEvent e) {
     super.actionPerformed(e); // saving?
     
-    int idx0 = refSeries.getSelectedIndex();
-    
     if ( e.getSource() == recalcButton ) {
       
       setTitle();
@@ -234,8 +231,20 @@ implements ChangeListener {
   public String getMetadataString() {
     int refIdx = refSeries.getSelectedIndex();
     
-    GainExperiment gn = (GainExperiment) expResult;
+    int leftPos = leftSlider.getValue();
+    double lowPrd = mapSliderToPeriod(leftPos);
+    int rightPos = rightSlider.getValue();
+    double highPrd = mapSliderToPeriod(rightPos);
+    
     StringBuilder sb = new StringBuilder();
+    
+    sb.append("Range used in stat calculation: ");
+    sb.append(lowPrd);
+    sb.append(" to ");
+    sb.append(highPrd);
+    
+    GainExperiment gn = (GainExperiment) expResult;
+
     sb.append("LOADED RESPONSES:");
     sb.append('\n');
     sb.append( gn.getResponseNames(refIdx) );
@@ -312,9 +321,7 @@ implements ChangeListener {
 
   /**
    * Displays the statistic results when the calculate button is hit
-   * in an inset box on the chart
-   * @param mean Calculated mean value
-   * @param sDev Calculated standard deviation value
+   * in an inset box on the chart, also used as text in report generation
    */
   private void setTitle() {
     XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();

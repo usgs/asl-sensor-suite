@@ -226,8 +226,7 @@ public class GainExperiment extends Experiment {
 
   /**
    * Finds the maximum value of PSD plot curve, by its index in the array
-   * @param fft PSD calculation, including both FFT function and matching
-   * frequencies
+   * @param idx Index of array to be loaded in from result set to be plotted
    * @return The index of the peak location
    */
   private int getPeakIndex(int idx) {
