@@ -19,6 +19,7 @@ import asl.sensor.utils.TimeSeriesUtils;
  * input from two sensors known to be orthogonal and at north and east
  * orientation. The result returns the relative orientation between angles
  * using the azimuth calculation as an intermediate step.
+ * (See AzimuthExperiment for details on how the best-fit angles are found)
  * @author akearns
  *
  */

@@ -44,6 +44,9 @@ import asl.sensor.utils.NumericUtils;
  * These plots are returned in a list of two datasets: the first holds
  * the absolute values per-frequency of those curves, and the second holds
  * the angle of each such point in complex space.
+ * For more details on the algorithm, see Ringler, Hutt, et al., 
+ * "Estimating Pole-Zero Errors in GSN-IRIS/USGS Network Calibration Metadata", 
+ * Bulletin of the Seismological Society of America, Vol 102 (Apr. 2012).
  * @author akearns
  *
  */

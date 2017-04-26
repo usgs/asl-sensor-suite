@@ -18,6 +18,8 @@ import asl.sensor.utils.TimeSeriesUtils;
  * direction has its corresponding self-noise calculation performed. That is,
  * there is a self noise calculation for the north-aligned signals, for the
  * east-aligned signals, and for the vertical signals.
+ * See also Ringler, Hutt, "Self-Noise Models of Seismic Instruments",
+ * Seismological Research Letters 81 (SSA, Nov. 2010).
  * @author akearns
  *
  */

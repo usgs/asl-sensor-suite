@@ -39,8 +39,9 @@ import asl.sensor.utils.TimeSeriesUtils;
  * If the reference sensor is itself offset X degrees clockwise from
  * north, the azimuth is the sum of the estimated angle difference between
  * the sensors plus the offset from north.
- * This calculation is mostly based on Ringler, Edwards, et al. (2012)
- * 'Relative azimuth inversion by way of damped maximum correlation estimates'
+ * This calculation is mostly based on Ringler, Edwards, et al.,
+ * 'Relative azimuth inversion by way of damped maximum correlation estimates',
+ * Elsevier Computers and Geosciences 43 (2012)
  * but using coherence maximization rather than correlation to find optimized
  * angles.
  * @author akearns
