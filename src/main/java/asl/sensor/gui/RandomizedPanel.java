@@ -5,7 +5,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.text.NumberFormat;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 
@@ -58,9 +58,8 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   public static String getInsetString(RandomizedExperiment rnd) {
     
-    NumberFormat nf = NumberFormat.getInstance();
-    nf.setMaximumFractionDigits(4);
-    ComplexFormat cf = new ComplexFormat(nf);
+    DecimalFormat df = new DecimalFormat("#.#####");
+    ComplexFormat cf = new ComplexFormat(df);
     
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();
@@ -77,9 +76,9 @@ public class RandomizedPanel extends ExperimentPanel {
       sbInit.append( cf.format( initP.get(i) ) );
       sbFit.append( cf.format( fitP.get(i) ) );
       
-      // want to fit two to a line
-      ++i;
-      if ( i < fitP.size() ) {
+      // want to fit two to a line for paired values
+      if ( initP.get(i).getImaginary() != 0. ) {
+        ++i;
         sbInit.append("; ");
         sbFit.append("; ");
         sbInit.append( cf.format( initP.get(i) ) );
