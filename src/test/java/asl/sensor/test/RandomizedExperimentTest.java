@@ -351,6 +351,42 @@ public class RandomizedExperimentTest {
     return ds;
   }
   
+  public DataStore setUpTest4() throws IOException {
+    
+    List<String> fileList = new ArrayList<String>();
+    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
+    String dataFolderName = "data/random_cal_4/"; 
+    String calName =  dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    
+    fileList.add(respName);
+    fileList.add(calName);
+    fileList.add(sensOutName);
+    
+    DataStore ds = getFromList(fileList);
+    
+    // response we want is embedded
+    InstrumentResponse ir;
+    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
+    ds.setResponse(1, ir);
+    
+    Calendar cCal = getStartCalendar(ds);
+    
+    cCal.set(Calendar.HOUR_OF_DAY, 20);
+    cCal.set(Calendar.MINUTE, 16);
+    cCal.set(Calendar.SECOND, 0);
+    long start = cCal.getTime().getTime() * 1000L;
+    
+    cCal.set(Calendar.MINUTE, 26);
+    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
+    long end = cCal.getTime().getTime() * 1000L;
+    
+    ds.trimAll(start, end);
+    
+    return ds;
+  }
+
+  
   @Test
   public void testCalculationResult1() {
     
@@ -452,7 +488,7 @@ public class RandomizedExperimentTest {
       }
       
       String testResult = 
-          testResultFolder + "Random-Calib-Test-" + 1 + ".pdf";
+          testResultFolder + "Random-Calib-Test-1.pdf";
       pdf.save( new File(testResult) );
       pdf.close();
       System.out.println("Output result has been written");
@@ -544,7 +580,7 @@ public class RandomizedExperimentTest {
       }
       
       String testResult = 
-          testResultFolder + "Random-Calib-Test-" + 2 + ".pdf";
+          testResultFolder + "Random-Calib-Test-2.pdf";
       pdf.save( new File(testResult) );
       pdf.close();
       System.out.println("Output result has been written");
@@ -637,7 +673,100 @@ public class RandomizedExperimentTest {
       }
       
       String testResult = 
-          testResultFolder + "Random-Calib-Test-" + 3 + ".pdf";
+          testResultFolder + "Random-Calib-Test-3.pdf";
+      pdf.save( new File(testResult) );
+      pdf.close();
+      System.out.println("Output result has been written");
+      
+    } catch (IOException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+  
+  @Test
+  public void testCalculationResult4() {
+    String currentDir = System.getProperty("user.dir");
+    boolean lowFreq = false;
+    
+    try {
+      
+      DataStore ds = setUpTest4();
+      
+      // InstrumentResponse ir = ds.getResponse(1);
+      
+      RandomizedExperiment rCal = (RandomizedExperiment)
+          ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+      
+      rCal.setLowFreq(lowFreq);
+      
+      assertTrue( rCal.hasEnoughData(ds) );
+      rCal.setData(ds);
+      
+      int width = 1280;
+      int height = 960;
+      
+      List<XYSeriesCollection> xysc = rCal.getData();
+      JFreeChart[] jfcl = new JFreeChart[xysc.size()];
+      String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
+      
+      String xAxisTitle = "Frequency (Hz)";
+      NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
+      Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+      xAxis.setLabelFont(bold);
+      
+      StringBuilder sb = new StringBuilder();
+      sb.append( RandomizedPanel.getInsetString(rCal) );
+      sb.append('\n');
+      sb.append( RandomizedPanel.getTimeStampString(rCal) );
+      sb.append('\n');
+      sb.append("Input files:\n");
+      sb.append( ds.getBlock(0).getName() );
+      sb.append(" (calibration)\n");
+      sb.append( ds.getBlock(1).getName() );
+      sb.append(" (sensor output)\n");
+      sb.append("Response file used:\n");
+      sb.append( rCal.getResponseName() );
+      sb.append("\n \n");
+      
+      String page1 = sb.toString();
+      
+      sb = new StringBuilder();
+      
+      for (int i = 0; i < xysc.size(); ++i) {
+        
+        jfcl[i] = ChartFactory.createXYLineChart(
+            ExperimentEnum.RANDM.getName(),
+            xAxisTitle,
+            yAxisTitles[i],
+            xysc.get(i),
+            PlotOrientation.VERTICAL,
+            true,
+            false,
+            false);
+        
+        XYPlot xyp = jfcl[i].getXYPlot();
+                    
+        //xyp.clearAnnotations();
+        //xyp.addAnnotation(xyt);
+
+        xyp.setDomainAxis( xAxis );
+      }
+      
+      String page2 = sb.toString();
+      
+      PDDocument pdf = new PDDocument();
+      ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
+      ReportingUtils.textListToPDFPages(pdf, page1, page2);
+      
+      String testResultFolder = currentDir + "/testResultImages/";
+      File dir = new File(testResultFolder);
+      if ( !dir.exists() ) {
+        dir.mkdir();
+      }
+      
+      String testResult = 
+          testResultFolder + "Random-Calib-Test-4.pdf";
       pdf.save( new File(testResult) );
       pdf.close();
       System.out.println("Output result has been written");
