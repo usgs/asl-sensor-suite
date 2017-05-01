@@ -62,7 +62,7 @@ public class RandomizedExperiment extends Experiment {
    * @return
    */
   private static boolean isKS54000(List<Complex> poles) {
-    if ( poles.get(0).abs() / (NumericUtils.TAU) < CUTOFF ) {
+    if ( ( poles.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
       // first two poles are low-frequency
       return true;
     }
@@ -324,6 +324,13 @@ public class RandomizedExperiment extends Experiment {
       denomPSDMap.put(freqs[i], denominatorPSD.getFFT()[i]);
     }
     
+    double zeroTarget; // frequency to set all curves to zero at
+    if (lowFreq) {
+      zeroTarget = 0.02;
+    } else {
+      zeroTarget = 1.0;
+    }
+    
     // Collections.sort(freqList); // done mostly for peace of mind
     
     int len = freqList.size(); // length of trimmed frequencies
@@ -338,7 +345,8 @@ public class RandomizedExperiment extends Experiment {
       numeratorPSDVals[i] = numPSDMap.get(freqs[i]);
       denominatorPSDVals[i] = denomPSDMap.get(freqs[i]);
       
-      if ( freqs[i] == 1.0 || (freqs[i] > 1.0 && freqs[i - 1] < 1.0) ) {
+      if ( freqs[i] == 1.0 || 
+          (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) {
         normalIdx = i;
       }
     }
@@ -436,7 +444,7 @@ public class RandomizedExperiment extends Experiment {
     }
     
     System.out.println("Setting weight matrix...");
-    System.out.println(maxMagWeight);
+    // System.out.println(maxMagWeight);
     
     // weight matrix
     double[] weights = new double[observedResult.length];
@@ -444,8 +452,8 @@ public class RandomizedExperiment extends Experiment {
       int argIdx = i + estResponse.length;
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
-      weights[i] = 100 / maxMagWeight;
-      weights[argIdx] = 1 / maxArgWeight;
+      weights[i] = 1. / maxMagWeight;
+      weights[argIdx] = 1. / maxArgWeight;
     }
     
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
