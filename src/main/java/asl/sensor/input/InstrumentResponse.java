@@ -21,6 +21,7 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
 
 import asl.sensor.gui.InputPanel;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * This class is used to read in and store data from instrument response files
@@ -107,25 +108,27 @@ public class InstrumentResponse {
     double imagPart = Double.parseDouble(words[3]);
     array[index] = new Complex(realPart, imagPart);
   }
+  
   private TransferFunction transferType;
   
   // gain values, indexed by stage
   private List<Double> gain;
   
+  // poles and zeros
   private List<Complex> zeros;
-  
   private List<Complex> poles;
+  
   private String name;
   
   private Unit unitType;
   
-  private double normalization;
-  
-  private double normalFreq; // ♫ cuz she's a normalFreq, normalFreq 
+  private double normalization; // A0 normalization factor
+  private double normalFreq; // cuz she's a normalFreq, normalFreq 
+  // (the A0 norm. factor's frequency) 
   
   /**
    * Reads in a response from an already-accessed bufferedreader handle
-   * and assigns it to the name given
+   * and assigns it to the name given (used with embedded response files)
    * @param br Handle to a buffered reader of a given RESP file
    * @param name Name of RESP file to be used internally 
    * @throws IOException
@@ -446,7 +449,9 @@ public class InstrumentResponse {
     }
     // turn pole/zero arrays into lists
     zeros = Arrays.asList(zerosArr);
+    
     poles = Arrays.asList(polesArr);
+    NumericUtils.complexMagnitudeSorter(poles);
   }
   
   /**

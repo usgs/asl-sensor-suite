@@ -66,6 +66,8 @@ public class ResponsePanel extends ExperimentPanel {
     
     xAxis = new LogarithmicAxis(xAxisTitle);
     freqAxis = new LogarithmicAxis(freqAxisTitle);
+    xAxis.setAutoRange(true);
+    freqAxis.setAutoRange(true);
     
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
@@ -215,9 +217,11 @@ public class ResponsePanel extends ExperimentPanel {
     
     argChart = buildChart(argSeries);
     argChart.getXYPlot().setRangeAxis(degreeAxis);
+    // argChart.getXYPlot().setDomainAxis( getXAxis() );
     
     magChart = buildChart(magSeries);
     magChart.getXYPlot().setRangeAxis(yAxis);
+    // argChart.getXYPlot().setDomainAxis( getXAxis() );
 
     if (idx == 0) {
       chart = magChart;

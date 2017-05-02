@@ -1,5 +1,9 @@
 package asl.sensor.utils;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
 import org.apache.commons.math3.complex.Complex;
 
 /**
@@ -9,6 +13,8 @@ import org.apache.commons.math3.complex.Complex;
  */
 public class NumericUtils {
 
+  public static CpxMagComparator cmc;
+  
   /**
    * Get the two-component arctan of a complex number. A simpler way of calling
    * arctan2 using the real and imaginary components of a complex number
@@ -18,7 +24,7 @@ public class NumericUtils {
    * @return atan, between -pi and pi
    */
   public static double atanc(Complex c) {
-    return Math.atan2( c.getReal(), c.getImaginary() );
+    return Math.atan2( c.getImaginary(), c.getReal() );
   }
   
   /**
@@ -30,17 +36,17 @@ public class NumericUtils {
    */
   public static double unwrap(double phi, double prevPhi) {
     // sets range to [0,TAU], this syntax used because Java mod is weird
-    phi = ( (phi % TAU) + TAU) % TAU;
+    double newPhi = ( (phi % TAU) + TAU) % TAU;
     
-    while ( Math.abs(prevPhi - phi) > Math.PI ) {
-      if (prevPhi < phi) {
-        phi -= TAU;
+    while ( Math.abs(prevPhi - newPhi) > Math.PI ) {
+      if (prevPhi < newPhi) {
+        newPhi -= TAU;
       } else {
-        phi += TAU;
+        newPhi += TAU;
       }
     }
     
-    return phi;
+    return newPhi;
   }
   
   /**
@@ -63,10 +69,38 @@ public class NumericUtils {
     
     return out;
   }
-
+  
+  public static void complexMagnitudeSorter(List<Complex> complexes) {
+    Collections.sort(complexes, CpxMagComparator.instance);
+  }
+  
   /**
    * 2 * Pi, sometimes also referred to as Tau. 
    * The number of radians in a full circle.
    */
   public final static double TAU = Math.PI * 2; // radians in full circle
+  
+  /**
+   * Complex comparator that takes ordering by magnitude of the values
+   * Used to sort response pole values mainly for use in calibrations
+   * @author akearns
+   *
+   */
+  public static class CpxMagComparator implements Comparator<Complex> {
+    
+    public static final CpxMagComparator instance = new CpxMagComparator();
+    
+    private CpxMagComparator() {
+      
+    }
+    
+    @Override
+    public int compare(Complex c1, Complex c2) {
+      return (int) Math.signum( c1.abs() - c2.abs() );
+    }
+    
+  }
+  
 }
+
+

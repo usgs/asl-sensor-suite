@@ -1,7 +1,6 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,6 +15,7 @@ import
 org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import 
 org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
+import org.apache.commons.math3.linear.DiagonalMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
@@ -53,6 +53,48 @@ import asl.sensor.utils.NumericUtils;
 public class RandomizedExperiment extends Experiment {
 
   private static final double DELTA = 1E-7;
+  private static final double CUTOFF = 1. / 1000.; // used w/ KS-54000
+  
+  /**
+   * Quick check if the lowest-frequency pole is the KS54000, which should not
+   * be fit in this experiment's operation, merely ignored
+   * @param poles
+   * @return
+   */
+  private static boolean isKS54000(List<Complex> poles) {
+    if ( ( poles.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
+      // first two poles are low-frequency
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Used to get the index where high-frequency poles start, including cases
+   * where the low-frequency pole has no complex conjugate or the edge case of
+   * the KS-54000 which has an extra low-frequency pole we wish to ignore
+   * @param poles
+   * @return
+   */
+  public static int getStartIndex(List<Complex> poles) {
+    
+    //int startIdx = 2;
+
+    if ( isKS54000(poles) ) {
+      // ignore pole at index 0, use pole at index 1
+      return 2;
+    }
+    
+    if ( poles.get(0).getImaginary() == 0. ) {
+      // start at 1 if the 0th pole has no conjugate
+      // UNLESS IT IS A KS-540000, IGNORE FIRST POLE (see condition above)
+      return 1;
+    }
+    
+    return 2;
+    
+  }
   
   /**
    * Convert high-frequency pole values into variables to be fit by the solver,
@@ -72,11 +114,7 @@ public class RandomizedExperiment extends Experiment {
     
     // shame we can't use complex numbers in the LSP solver, huh
     
-    int startIdx = 2; // starting index for non-conjugate pole counting
-    if ( poles.get(0).getImaginary() == 0. ) {
-      // start at 1 if the 0th pole has no conjugate
-      startIdx = 1;
-    }
+    int startIdx = getStartIndex(poles);
     
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
@@ -124,6 +162,12 @@ public class RandomizedExperiment extends Experiment {
     double[] responseVariables = new double[2];
     
     Complex cpx = poles.get(0);
+    
+    // handle weird KS-54000 edge case here
+    if ( isKS54000(poles) ) {
+      cpx = poles.get(1);
+    }
+    
     responseVariables[0] = cpx.getReal();
     responseVariables[1] = cpx.getImaginary();
     // cell [2] would be same as [0]
@@ -172,15 +216,17 @@ public class RandomizedExperiment extends Experiment {
     }
     
     if (lowFreq) {
-      for (int i = 0; i < builtPoles.size(); ++i) {
+      int startIdx = 0;
+      
+      if ( isKS54000(poleList) ) {
+        startIdx = 1;
+      }
+      
+      for (int i = startIdx ; i < builtPoles.size(); ++i) {
         poleList.set( i, builtPoles.get(i) );
       }
     } else {
-      int offset = 2; // assume first two poles are complex conjugates
-      if ( poleList.get(0).getImaginary() == 0. ) {
-        // the first two poles are not complex conjugates
-        offset = 1;
-      }
+      int offset = getStartIndex(poleList);
       for (int i = 0; i < poleList.size() - offset; ++i) {
         poleList.set( i + offset, builtPoles.get(i) );
       }
@@ -201,7 +247,7 @@ public class RandomizedExperiment extends Experiment {
   
   private double[] freqs;
   
-  private int oneHzIdx;
+  private int normalIdx; // location of value to set to 0 in curves for scaling
  
   private int sensorOutIdx; // location to load response from?
   
@@ -210,7 +256,7 @@ public class RandomizedExperiment extends Experiment {
   public RandomizedExperiment() {
     super();
     lowFreq = false;
-    oneHzIdx = 0;
+    normalIdx = 0;
   }
   
   @Override
@@ -242,26 +288,35 @@ public class RandomizedExperiment extends Experiment {
     
     FFTResult numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
     FFTResult denominatorPSD = FFTResult.spectralCalc(calib, calib);
+    freqs = numeratorPSD.getFreqs(); // should be same for both results
     
-    double proportion = 0.4; // get up to .4 of Nyquist freq due to noise
-    // (used to be .8 of frequency but this included too much noise)
-    double minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
+    // trim frequency window in order to restrict range of response fits
+    double minFreq, maxFreq;
     
-    freqs = numeratorPSD.getFreqs();    
-
-    int len = (int) (freqs.length * proportion); // index of peak freq to check
+    // low frequency cal fits over a different range of data
+    if (lowFreq) {
+      minFreq = 0.001; // 1000s period
+      maxFreq = 0.05; // 20s period
+    } else {
+      minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
+      // get up to .4 of max freq of FFT to trim noise
+      maxFreq = 0.4 * freqs[freqs.length - 1];
+    }
     
-    // trim down the frequency array to the specified range
-    // we use a list because the lower bound is not fixed by index
-    
+    // now trim frequencies to in range
+    // use list because bounds are by frequency rather than index
     // use variable-size data structures to prevent issues with rounding
     // based on calculation of where minimum index should exist
     List<Double> freqList = new LinkedList<Double>();
     Map<Double, Complex> numPSDMap = new HashMap<Double, Complex>();
     Map<Double, Complex> denomPSDMap = new HashMap<Double, Complex>();
-    for (int i = 0; i < len; ++i) {
+    for (int i = 0; i < freqs.length; ++i) {
+      
       if (freqs[i] < minFreq) {
         continue;
+      }
+      if (freqs[i] > maxFreq) {
+        break;
       }
       
       freqList.add(freqs[i]);
@@ -269,9 +324,16 @@ public class RandomizedExperiment extends Experiment {
       denomPSDMap.put(freqs[i], denominatorPSD.getFFT()[i]);
     }
     
-    Collections.sort(freqList); // done mostly for peace of mind
+    double zeroTarget; // frequency to set all curves to zero at
+    if (lowFreq) {
+      zeroTarget = 0.02;
+    } else {
+      zeroTarget = 1.0;
+    }
     
-    len = freqList.size(); // now len is length of trimmed frequencies
+    // Collections.sort(freqList); // done mostly for peace of mind
+    
+    int len = freqList.size(); // length of trimmed frequencies
     freqs = new double[len];
     // trim the PSDs to the data in the trimmed frequency range
     Complex[] numeratorPSDVals = new Complex[len];
@@ -283,8 +345,9 @@ public class RandomizedExperiment extends Experiment {
       numeratorPSDVals[i] = numPSDMap.get(freqs[i]);
       denominatorPSDVals[i] = denomPSDMap.get(freqs[i]);
       
-      if ( freqs[i] == 1.0 || (freqs[i] > 1.0 && freqs[i - 1] < 1.0) ) {
-        oneHzIdx = i;
+      if ( freqs[i] == 1.0 || 
+          (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) {
+        normalIdx = i;
       }
     }
     
@@ -305,27 +368,20 @@ public class RandomizedExperiment extends Experiment {
       estResponse[i] = estResponse[i].multiply(NumericUtils.TAU * freqs[i]);
     }
     
-    
     // next, normalize estimated response
     XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. phase");
     
     // scaling values, used to set curve values to 0 at 1Hz
-    Complex scaleValue = estResponse[oneHzIdx];
+    Complex scaleValue = estResponse[normalIdx];
     double subtractBy = 10 * Math.log10( scaleValue.abs() );
     double rotateBy = NumericUtils.atanc(scaleValue);
-    
-    /*
-    if (rotateBy == 0.) {
-      rotateBy += Double.MIN_VALUE;
-    }
-    */
     
     // data to fit poles to; first half of data is magnitudes of resp (dB)
     // second half of data is angles of resp (radians, scaled)
     double[] observedResult = new double[2 * estResponse.length];
     
-    // prevent discontinuities in angle plots (TODO: make external)
+    // prevent discontinuities in angle plots
     double phiPrev = 0.;
     
     for (int i = 0; i < estResponse.length; ++i) {
@@ -364,6 +420,45 @@ public class RandomizedExperiment extends Experiment {
       calcArg.add(freqs[i], observedResult[argIdx]);
     }
     
+    // want to set up weight-scaling for the input so rotation doesn't dominate
+    // solver's residual calculations, i.e., so no phase overfitting
+    
+    System.out.println("Getting weighting....");
+    
+    double maxArgWeight = 1., maxMagWeight = 0.;
+    Complex weightScaler = appResponse[normalIdx];
+    double subtractWeight = 10 * Math.log10( weightScaler.abs() );
+    double rotateWeight = NumericUtils.atanc(weightScaler);
+    for (int i = 0; i < appResponse.length; ++i) {
+      // int argIdx = i + appResponse.length;
+      double magCandidate = 10 * Math.log10( appResponse[i].abs() );
+      magCandidate -= subtractWeight;
+      double phiCandidate = Math.abs( NumericUtils.atanc(appResponse[i]) );
+      phiCandidate -= rotateWeight;
+      if ( magCandidate > maxMagWeight ) {
+        maxMagWeight = magCandidate;
+      }
+      if ( phiCandidate > maxArgWeight ) {
+        maxArgWeight = phiCandidate;
+      }
+    }
+    
+    System.out.println("Setting weight matrix...");
+    // System.out.println(maxMagWeight);
+    
+    // weight matrix
+    double[] weights = new double[observedResult.length];
+    for (int i = 0; i < estResponse.length; ++i) {
+      int argIdx = i + estResponse.length;
+      // weights[i] = 1 / Math.pow(10, maxMagWeight);
+      // weights[i] = 10000;
+      weights[i] = 1. / maxMagWeight;
+      weights[argIdx] = 1. / maxArgWeight;
+    }
+    
+    DiagonalMatrix weightMat = new DiagonalMatrix(weights);
+    
+    System.out.println("Weighting done!");
     
     // now to set up a solver for the params -- first, get the input variables
     // complex values are technically two variables, each a double
@@ -372,9 +467,9 @@ public class RandomizedExperiment extends Experiment {
     RealVector initialGuess;
     
     if (lowFreq) {
-      initialGuess = lowFreqPolesToVector(fitPoles);
+      initialGuess = lowFreqPolesToVector(inputPoles);
     } else {
-      initialGuess = highFreqPolesToVector(fitPoles);
+      initialGuess = highFreqPolesToVector(inputPoles);
     }
     
     // now, solve for the response that gets us the best-fit response curve
@@ -397,11 +492,12 @@ public class RandomizedExperiment extends Experiment {
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(1.0E-7).
         withParameterRelativeTolerance(1.0E-7);
-    
+        
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(initialGuess).
         target(obsResVector).
         model(jacobian).
+        weight(weightMat).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
@@ -430,7 +526,7 @@ public class RandomizedExperiment extends Experiment {
     
     double[] poleParams = optimum.getPoint().toArray();
     double[] initialValues =
-        jacobian.value( initialGuess).getFirst().toArray();
+        jacobian.value(initialGuess).getFirst().toArray();
     double[] fitValues = 
         jacobian.value( optimum.getPoint() ).getFirst().toArray();
     
@@ -445,8 +541,6 @@ public class RandomizedExperiment extends Experiment {
     
     // was initially used in plot before values were scaled
     // Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
-    
-
     
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = freqs.length + i;
@@ -500,7 +594,8 @@ public class RandomizedExperiment extends Experiment {
     curValue[0] = 0.;
     curValue[appliedCurve.length] = 0.;
     
-    Complex scaleBy = appliedCurve[oneHzIdx].divide(NumericUtils.TAU);
+    Complex scaleBy = 
+        appliedCurve[normalIdx].divide(NumericUtils.TAU * freqs[normalIdx]);
     double magScale = 10 * Math.log10( scaleBy.abs() );
     double argScale = NumericUtils.atanc(scaleBy);
     
@@ -542,6 +637,7 @@ public class RandomizedExperiment extends Experiment {
         // TODO: deal with potential rotation issues with parameters?
         double phi = NumericUtils.atanc(value) - argScale;
         phi = NumericUtils.unwrap(phi, phiPrev);
+        phiPrev = phi; // iterative step for unwrap function
         
         // phi /= argScale;
         // phi /= TAU;
@@ -561,10 +657,7 @@ public class RandomizedExperiment extends Experiment {
    */
   public List<Complex> getFitPoles() {
     // for dealing with complex conjugate issues
-    int highFreqStartIdx = 2;
-    if ( fitPoles.get(0).getImaginary() == 0. ) {
-      highFreqStartIdx = 1;
-    }
+    int highFreqStartIdx = getStartIndex(inputPoles);
 
     if (lowFreq) {
       return fitPoles.subList(0, highFreqStartIdx);
@@ -587,11 +680,7 @@ public class RandomizedExperiment extends Experiment {
    * as a list
    */
   public List<Complex> getInitialPoles() {
-    
-    int highFreqStartIdx = 2;
-    if ( fitPoles.get(0).getImaginary() == 0. ) {
-      highFreqStartIdx = 1;
-    }
+    int highFreqStartIdx = getStartIndex(inputPoles);
     
     if (lowFreq) {
       return inputPoles.subList(0, highFreqStartIdx);
@@ -632,6 +721,8 @@ public class RandomizedExperiment extends Experiment {
   private Pair<RealVector, RealMatrix> 
   jacobian(RealVector variables, InstrumentResponse ir) {
     
+    variables = validate(variables);
+    
     int numVars = variables.getDimension();
     
     double[] currentVars = new double[numVars];
@@ -665,10 +756,15 @@ public class RandomizedExperiment extends Experiment {
       double[] diffY = 
           evaluateResponse(changedVars, ir);
       
-      
       for (int j = 0; j < diffY.length; ++j) {
         jacobian[j][i] = diffY[j] - mag[j];
         jacobian[j][i] /= changedVars[i] - currentVars[i];
+        /*
+        if ( (i % 2) == 0 && currentVars[i] > 0) {
+          // enforce that real values of poles must be negative
+          jacobian[j][i] = -1;
+        }
+        */
       }
       
     }
@@ -678,6 +774,16 @@ public class RandomizedExperiment extends Experiment {
     
     return new Pair<RealVector, RealMatrix>(result, jMat);
     
+  }
+  
+  private RealVector validate(RealVector poleParams) {
+    for (int i = 0; i < poleParams.getDimension(); ++i) {
+      double value = poleParams.getEntry(i);
+      if (value > 0) {
+        poleParams.setEntry(i, -value);
+      }
+    }
+    return poleParams;
   }
   
   /**
