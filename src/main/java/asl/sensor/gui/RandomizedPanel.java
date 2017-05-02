@@ -246,11 +246,20 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   public void updateData(DataStore ds) {
 
+    final boolean isLowFreq = lowFreqBox.isSelected();
     seriesColorMap = new HashMap<String, Color>();
     
     RandomizedExperiment respExp = (RandomizedExperiment) expResult;
-    respExp.setLowFreq( lowFreqBox.isSelected() );
+    respExp.setLowFreq(isLowFreq);
     expResult.setData(ds);
+    
+    String appendFreqTitle;
+    
+    if (isLowFreq) {
+      appendFreqTitle = " (LOW FREQ.)";
+    } else {
+      appendFreqTitle = " (HIGH FREQ.)";
+    }
     
     set = true;
     
@@ -316,6 +325,10 @@ public class RandomizedPanel extends ExperimentPanel {
     XYPlot xyp = magChart.getXYPlot();
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
+    
+    appendChartTitle(argChart, appendFreqTitle);
+    appendChartTitle(magChart, appendFreqTitle);
+    
 
     if (idx == 0) {
       chart = magChart;

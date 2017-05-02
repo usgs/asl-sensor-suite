@@ -289,6 +289,16 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
+   * Append text to a chart's title (used for distinguishing random cal types).
+   * @param chart Chart whose title will be modified
+   * @param appendText Text to append to chart's current title
+   */
+  public static void appendChartTitle(JFreeChart chart, String appendText) {
+    String titleText = chart.getTitle().getText();
+    chart.getTitle().setText(titleText + appendText);
+  }
+  
+  /**
    * Overlay informational text, such as extra results and statistics for plots
    * @param infoMsg
    */

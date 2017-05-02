@@ -38,9 +38,11 @@ For more information on the specifics of certain tests, consult the javadoc.
 
 #### Self-noise
 
-Self-noise requires three components and an appropriate response file for each. The test computes the cross-power (power-spectral density) of each pair of files, and use that data to extract estimations of the inherent noise of each sensor. Plots of the seismic NLNM and NHNM are also included. Units of frequency (Hz) or period (seconds, default) can be selected using the checkmark in the bottom-left of the panel.
+Self-noise requires three components and an appropriate response file for each. The test computes the cross-power (power-spectral density) of each pair of files, and uses that data to extract estimations of the inherent noise of each sensor. Plots of the seismic NLNM and NHNM are also included. Units of frequency (Hz) or period (seconds, default) can be selected using the checkmark in the bottom-left of the panel.
 
-The input files do not need to be in any particular order. They all must have responses specified.
+The input files do not need to be in any particular order. They all must have responses specified. For three-component self-noise, they should all be pointing in the same direction (i.e., all facing north).
+
+There is also a nine-component self-noise test that takes in horizontal north, east, and vertical sensor data for each of the three components, finds the best angle to rotate the horizontal components to maximize coherence, and then performs the same test on the 3 sensors in each direction. 
 
 #### Relative Gain
 
@@ -56,6 +58,14 @@ Step calibration takes in a step input signal and the response to that signal fr
 
 The input files have a specific order: the step input signal must be placed first, though it does not use a response. The second input, then, is the output from the sensor of interest, and a response should be chosen to help guide the initial guess of the solver.
 
+#### Randomized calibration
+
+This function solves for poles to attempt to fit the response curve calculated from deconvolving the given calibration input from the sensor output. Low-frequency (the two lowest poles) and high-frequency (all other poles) are fitted to minimize the difference between the estimated response, based on the response specified for the sensor. The inputs follow the same structure as step calculation, though what response parameters are solved for is dependent on whether a high or low frequency calculation is chosen. Both the magnitude and argument (angle of the response curve along the real axis) of the response curve are displayed in plots, and saving the plot to an image will include both such plots.
+
+Note that plots have been scaled in order to produce more representative fits of response curves. For high-frequency calibrations, the curves are all set to be equal to zero at 1 Hz; for low-frequency calibrations, this point occurs at 0.2 Hz.
+
+This function is still work-in-progress but has been tested with good results on data from a KS54000 sensor. Other sensors may not produce as good results (see known issues, below)
+
 #### Azimuth
 
 Azimuth takes in 3 inputs. The first two are orthogonal sensors assumed to be respectively facing near north and east. The third is a reference sensor assumed to point north, though the offset angle field can be used to specify a clockwise offset from north. The code will try to find a clockwise rotation angle that maximizes the coherence estimation between the rotated unknown-angle sensor data and the reference angle. This angle is added to the offset to produce the (clockwise) azimuth estimation. A value of the coherence estimations per-frequency for the found angle is also given as a separate plot. 
@@ -66,9 +76,6 @@ Orthogonality takes in four inputs, two each from sensors known or assumed to be
 
 The input files have a specific order: the first and third inputs are for north-facing sensors, and the second and fourth are for east-facing sensors. As noted above, the first two sensors are assumed to be 90 degrees apart for the purpose of the test; the second two sensors' orientation is what is solved for.
 
-#### Randomized calibration
-
-This function solves for poles to attempt to fit the response curve calculated from deconvolving the given calibration input from the sensor output. Low-frequency (the two lowest poles) and high-frequency (all other poles) are fitted to minimize the difference between the estimated response, based on the response specified for the sensor. The inputs follow the same structure as step calculation, though what response parameters are solved for is dependent on whether a high or low frequency calculation is chosen. Both the magnitude and argument (angle of the response curve along the real axis) of the response curve are displayed in plots, and saving the plot to an image will include both such plots.
 
 #### Response
 
@@ -78,4 +85,4 @@ This plots 1-3 different response attenuation and phase curves (Bode plots) for 
 
 Currently the application does its best to show the complete range among all data, there are some issues in doing so. If there are three SEED files loaded and the first two SEED files have more data than the third, then when switching to a test using only two inputs, the entire range of the first two sensors should be visible. However, if there are loaded inputs not included in a test and a new file is loaded in one of the input slots, it must still have a time range in common with the unused inputs. While not ideal behavior, it prevents additional bugs from handling non-matching time ranges if a test using the non-active data is selected again.
 
-There are plans to include additional tests in this project. In particular, self-noise test using 9 inputs is intended to be included as one of those tests.
+Most sensors have a specific response related to the calibration signal produced by their calibration coils. These responses are necessary for producing accurate plots of the calculated response from a calibration, but do not yet exist as part of the program. As a result, trying to solve for poles from a random calibration is likely to produce incorrect results for sensors that require calibration response correction. The KS54000 is an example of a sensor that does not require such correction, and results using the calibration test with one is much closer to expectation.
