@@ -447,8 +447,10 @@ public class InstrumentResponse {
     for (int stage : stages) {
       gain.add( gainMap.get(stage) );
     }
+    
     // turn pole/zero arrays into lists
     zeros = Arrays.asList(zerosArr);
+    NumericUtils.complexMagnitudeSorter(zeros);
     
     poles = Arrays.asList(polesArr);
     NumericUtils.complexMagnitudeSorter(poles);
@@ -573,6 +575,14 @@ public class InstrumentResponse {
     }
     
     return sb.toString();
+  }
+
+  /**
+   * Set the list of zeros to a new list, such as after fitting from random cal
+   * @param newZeros New list of zeros to assign this calibration
+   */
+  public void setZeros(List<Complex> newZeros) {
+    zeros = newZeros;
   }
 }
 

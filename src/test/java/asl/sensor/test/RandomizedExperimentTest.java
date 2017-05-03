@@ -78,13 +78,14 @@ public class RandomizedExperimentTest {
   @Test
   public void ResponseCorrectConvertedToVectorHighFreq() {
     String fname = "responses/TST5_response.txt";
-    
+    boolean lowFreq = false;
     InstrumentResponse ir;
     try {
       
       ir = new InstrumentResponse(fname);
       List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
-      RealVector high = RandomizedExperiment.highFreqPolesToVector(poles);
+      // using an unnecessarily high nyquist rate here
+      RealVector high = RandomizedExperiment.polesToVector(poles, lowFreq, 1E8);
       
       int complexIndex = 2; // start at second pole
       int vectorIndex = 0;
@@ -119,13 +120,14 @@ public class RandomizedExperimentTest {
   @Test
   public void ResponseCorrectlyConvertedToVectorLowFreq() {
     String fname = "responses/TST5_response.txt";
-    
+    boolean lowFreq = true;
     InstrumentResponse ir;
     try {
       
       ir = new InstrumentResponse(fname);
       List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
-      RealVector low = RandomizedExperiment.lowFreqPolesToVector(poles);
+      // again, use a very high nyquist rate
+      RealVector low = RandomizedExperiment.polesToVector(poles, lowFreq, 1E8);
       
       // only test lower two poles
       
@@ -180,7 +182,7 @@ public class RandomizedExperimentTest {
         }
         
         InstrumentResponse ir2 = 
-            RandomizedExperiment.polesToResp(newPoles, ir, lowFreq);
+            RandomizedExperiment.polesToResp(newPoles, ir, lowFreq, 1E8);
         
         List<Complex> testList = ir2.getPoles();
         int offsetIdx = 0;
@@ -218,6 +220,7 @@ public class RandomizedExperimentTest {
         ir = new InstrumentResponse(fname);
         boolean lowFreq = true;
         List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+        System.out.println(poles);
         double[] newPoles = new double[2];
         newPoles[0] = 0.;
         newPoles[1] = 1.;
@@ -226,8 +229,9 @@ public class RandomizedExperimentTest {
         
         
         InstrumentResponse ir2 = 
-            RandomizedExperiment.polesToResp(newPoles, ir, lowFreq);
+            RandomizedExperiment.polesToResp(newPoles, ir, lowFreq, 1E8);
         List<Complex> poles2 = ir2.getPoles();
+        System.out.println(poles2);
         List<Complex> testList = new ArrayList<Complex>(poles);
         testList.set(0, c);
         testList.set( 1, c.conjugate() );
@@ -440,7 +444,7 @@ public class RandomizedExperimentTest {
       // expected best fit params, for debugging
       sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)\n");
       double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
-      ir = RandomizedExperiment.polesToResp(expectedParams, ir, lowFreq);
+      ir = RandomizedExperiment.polesToResp(expectedParams, ir, lowFreq, 1E8);
       ir.setName("Best-fit params");
       ds.setResponse(1, ir);
       rCal.setData(ds);
@@ -452,8 +456,6 @@ public class RandomizedExperimentTest {
       xysc.get(1).addSeries(expectedInitialAngle);
 
       sb.append( RandomizedPanel.getInsetString(rCal) );
-
-
       
       for (int i = 0; i < xysc.size(); ++i) {
         

@@ -63,6 +63,8 @@ public class RandomizedPanel extends ExperimentPanel {
     
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();
+    List<Complex> fitZ = rnd.getFitZeros();
+    List<Complex> initZ = rnd.getInitialZeros();
     
     double initResid = rnd.getInitResidual();
     double fitResid = rnd.getFitResidual();
@@ -89,6 +91,44 @@ public class RandomizedPanel extends ExperimentPanel {
       sbInit.append("\n");
       sbFit.append("\n");
     }
+    
+    if (fitZ.size() > 0) {
+      sbInit.append("Initial zeros: \n");
+      sbFit.append("Fit zeros: \n");
+    }
+    
+    for (int i = 0; i < fitZ.size(); ++i) {
+      StringBuilder sbInitZ = new StringBuilder();
+      StringBuilder sbFitZ = new StringBuilder();
+      sbInitZ.append( cf.format( initZ.get(i) ) );
+      sbFitZ.append( cf.format( fitZ.get(i) ) );
+      
+      // want to fit two to a line for paired values
+      if ( initZ.get(i).getImaginary() != 0. ) {
+        ++i;
+        sbInitZ.append("; ");
+        sbFitZ.append("; ");
+        sbInitZ.append( cf.format( initZ.get(i) ) );
+        sbInitZ.append("\n");
+        sbFitZ.append( cf.format( fitZ.get(i) ) );
+        sbFitZ.append("\n");
+        
+        sbInit.append("\n");
+        sbFit.append("\n");
+        sbInit.append(sbInitZ);
+        sbFit.append(sbFitZ);
+      } else {
+        sbInit.append(sbInitZ);
+        sbFit.append(sbFitZ);
+        if ( i + 1 < fitZ.size() ) {
+          sbInit.append(";   ");
+          sbFit.append(";   ");
+        }
+      }
+    }
+    
+    sbFit.append("\n");
+    sbInit.append("\n");
     
     StringBuilder sb = new StringBuilder( sbInit.append(sbFit) );
     sb.append('\n');
