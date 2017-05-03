@@ -854,15 +854,23 @@ public class RandomizedExperiment extends Experiment {
    * @return Sublist of data to be fed to output reports
    */
   private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
+    
+    // TODO: don't bother including the values beyond cutoff frequencies
+    
     List<Complex> subList = new ArrayList<Complex>();
     
-    for (int i = 0; i < polesToTrim.size(); ++i) {
+    int start = 0;
+    
+    if ( isKS54000(polesToTrim) ) {
+      start = 1; // ignore first pole of KS54000
+    }
+    
+    for (int i = start; i < polesToTrim.size(); ++i) {
       
       double freq = polesToTrim.get(i).abs() / NumericUtils.TAU;
       
-      if (lowFreq && freq > 1.) {
-        break; // ignore all poles above 1Hz for lowFreqency cal
-        // assume that pole list is sorted
+      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
+        break;
       }
       
       if (!lowFreq && freq < 1.) {
@@ -877,12 +885,15 @@ public class RandomizedExperiment extends Experiment {
   }
   
   private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
+    
+    // TODO: don't bother including the values beyond cutoff frequencies
+    
     List<Complex> subList = new ArrayList<Complex>();
     for (int i = 0; i < zerosToTrim.size(); ++i) {
       
       double freq = zerosToTrim.get(i).abs() / NumericUtils.TAU;
       
-      if (lowFreq && freq > 1.) {
+      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
         break;
       }
       
