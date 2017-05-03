@@ -100,6 +100,16 @@ public class DataBlock {
     return interval;
   }
 
+  
+  /**
+   * Return the sample rate of the data, in Hz. This is the inverse of the
+   * interval, scaled to be in seconds rather than microseconds.
+   * @return Sample rate in Hz.
+   */
+  public double getSampleRate() {
+    return (double) TimeSeriesUtils.ONE_HZ_INTERVAL / (double) interval;
+  }
+  
   /**
    * Get the name of the dataset (used as a key in dataseries, etc.)
    * The name is defined by station-location-channel.

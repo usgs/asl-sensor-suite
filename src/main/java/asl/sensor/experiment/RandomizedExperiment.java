@@ -90,7 +90,7 @@ public class RandomizedExperiment extends Experiment {
       zeros[i] = fitParams[i];
     }
     
-    fitResp = zerosToResp(zeros, ir, lowFreq, nyquist);
+    fitResp = zerosToResp(zeros, fitResp, lowFreq, nyquist);
     
     double[] poles = new double[fitParams.length - zeros.length];
     for (int i = 0; i < poles.length; ++i) {
@@ -98,7 +98,7 @@ public class RandomizedExperiment extends Experiment {
       poles[i] = fitParams[fitIdx];
     }
     
-    fitResp = polesToResp(poles, ir, lowFreq, nyquist);
+    fitResp = polesToResp(poles, fitResp, lowFreq, nyquist);
     
     return fitResp;
     
@@ -130,15 +130,15 @@ public class RandomizedExperiment extends Experiment {
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<Double>();
     
-    // WARNING! Pole list should always be sorted!
+    // WARNING! Pole list should always be sorted by magnitude!
     
-    for (int i = 0; i < poles.size(); ++i) {
-      
-      if ( lowFreq && isKS54000(poles) && (i == 0) ) {
-        // ignore lowest-frequency pole in KS54000 case
-        // due to how it is damped
-        continue;
-      }
+    int start = 0;
+    
+    if ( isKS54000(poles) ) {
+      start = 1;
+    }
+    
+    for (int i = start; i < poles.size(); ++i) {
       
       if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU < 1. ) ) {
         // don't include poles below 1Hz in high-frequency calibration
@@ -150,7 +150,7 @@ public class RandomizedExperiment extends Experiment {
         break;
       }
       
-      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU > nyquist ) ) {
+      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU >= nyquist ) ) {
         // don't fit poles above nyquist rate of sensor output
         break;
       }
@@ -195,7 +195,7 @@ public class RandomizedExperiment extends Experiment {
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<Double>();
     
-    // WARNING! Pole list should always be sorted!
+    // WARNING! Zeros list should always be sorted!
     
     for (int i = 0; i < zeros.size(); ++i) {
       
@@ -205,17 +205,17 @@ public class RandomizedExperiment extends Experiment {
       }
       
       if ( !lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU < 1. ) ) {
-        // don't include poles below 1Hz in high-frequency calibration
+        // don't include poles zeros 1Hz in high-frequency calibration
         continue;
       }
       
       if ( lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU > 1. ) ) {
-        // only do low frequency calibrations on poles up to 
+        // only do low frequency calibrations on zeros up to 1Hz
         break;
       }
       
       if ( !lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU > nyquist) ) {
-        // don't fit poles above nyquist rate of sensor output
+        // don't fit zeros above nyquist rate of sensor output
         break;
       }
       
@@ -312,7 +312,7 @@ public class RandomizedExperiment extends Experiment {
         }
       }
     } else {
-      // add the poles above the Nyquist rate
+      // add the poles above the Nyquist rate when doing high-frequency cal
       for (int i = 0; i < poleList.size(); ++i) {
         Complex pole = poleList.get(i);
         if ( pole.abs() / NumericUtils.TAU >= nyquist ) {
@@ -631,14 +631,11 @@ public class RandomizedExperiment extends Experiment {
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
     
     initialPoleGuess = polesToVector(initialPoles, lowFreq, nyquist);
-    
     initialZeroGuess = zerosToVector(initialZeros, lowFreq, nyquist);
     int numZeros = initialZeroGuess.getDimension();
-    
     initialGuess = initialZeroGuess.append(initialPoleGuess);
     
     // now, solve for the response that gets us the best-fit response curve
-    
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector obsResVector = MatrixUtils.createRealVector(observedResult);
     
@@ -753,20 +750,8 @@ public class RandomizedExperiment extends Experiment {
   private double[] 
   evaluateResponse(double[] variables, int numZeros) {
     
-    double[] zeros = new double[numZeros];
-    for (int i = 0; i < zeros.length; ++i) {
-      zeros[i] = variables[i];
-    }
-    
-    double[] poles = new double[variables.length - zeros.length];
-    for (int i = 0; i < poles.length; ++i) {
-      int inputIdx = i + zeros.length;
-      poles[i] = variables[inputIdx];
-    }
-    
-    InstrumentResponse testResp;
-    testResp = zerosToResp(zeros, fitResponse, lowFreq, nyquist);
-    testResp = polesToResp(poles, fitResponse, lowFreq, nyquist);
+    InstrumentResponse testResp = new InstrumentResponse(fitResponse);
+    testResp = fitResultToResp(variables, testResp, lowFreq, numZeros, nyquist);
     
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     
@@ -808,12 +793,10 @@ public class RandomizedExperiment extends Experiment {
         curValue[i] += 0;
         curValue[argIdx] = 0;
       } else {
-        
         // System.out.println(value);
         double temp = 10 * Math.log10( value.abs() );
         temp -= magScale;
         curValue[i] = temp;
-
         
         // TODO: deal with potential rotation issues with parameters?
         double phi = NumericUtils.atanc(value) - argScale;
@@ -855,8 +838,6 @@ public class RandomizedExperiment extends Experiment {
    */
   private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
     
-    // TODO: don't bother including the values beyond cutoff frequencies
-    
     List<Complex> subList = new ArrayList<Complex>();
     
     int start = 0;
@@ -867,7 +848,7 @@ public class RandomizedExperiment extends Experiment {
     
     for (int i = start; i < polesToTrim.size(); ++i) {
       
-      double freq = polesToTrim.get(i).abs() / NumericUtils.TAU;
+      double freq = initialPoles.get(i).abs() / NumericUtils.TAU;
       
       if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
         break;
@@ -891,7 +872,7 @@ public class RandomizedExperiment extends Experiment {
     List<Complex> subList = new ArrayList<Complex>();
     for (int i = 0; i < zerosToTrim.size(); ++i) {
       
-      double freq = zerosToTrim.get(i).abs() / NumericUtils.TAU;
+      double freq = initialZeros.get(i).abs() / NumericUtils.TAU;
       
       if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
         break;

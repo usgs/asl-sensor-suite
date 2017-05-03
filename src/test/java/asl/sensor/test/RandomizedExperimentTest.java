@@ -403,6 +403,9 @@ public class RandomizedExperimentTest {
       DataStore ds = setUpTest1();
       InstrumentResponse ir = ds.getResponse(1);
       
+      double nyq = ds.getBlock(0).getSampleRate() / 2.;
+      System.out.println("NYQUIST RATE: " + nyq);
+      
       RandomizedExperiment rCal = (RandomizedExperiment)
           ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
       
@@ -444,7 +447,7 @@ public class RandomizedExperimentTest {
       // expected best fit params, for debugging
       sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)\n");
       double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
-      ir = RandomizedExperiment.polesToResp(expectedParams, ir, lowFreq, 1E8);
+      ir = RandomizedExperiment.polesToResp(expectedParams, ir, lowFreq, nyq);
       ir.setName("Best-fit params");
       ds.setResponse(1, ir);
       rCal.setData(ds);
