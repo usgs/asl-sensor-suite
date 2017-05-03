@@ -29,6 +29,7 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * Panel to display results from a randomized calibration experiment.
@@ -237,6 +238,67 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
+  }
+  
+  @Override
+  public String[] getAdditionalReportPages() {
+    // produce output of poles and zeros as period values in new report page
+    StringBuilder sb = new StringBuilder();
+    
+    DecimalFormat df = new DecimalFormat("#.#####");
+    
+    RandomizedExperiment rnd = (RandomizedExperiment) expResult;
+    
+    List<Complex> fitP = rnd.getFitPoles();
+    List<Complex> initP = rnd.getInitialPoles();
+    List<Complex> fitZ = rnd.getFitZeros();
+    List<Complex> initZ = rnd.getInitialZeros();
+    
+    StringBuilder initText = new StringBuilder("Initial:\n");
+    StringBuilder fitText = new StringBuilder("Best fit:\n");
+    
+    sb.append("Pole and zero values, given as period (s):\n");
+    sb.append("Poles:\n");
+    for (int i = 0; i < fitP.size(); ++i) {
+      double fitPrd = NumericUtils.TAU / fitP.get(i).abs();
+      double initPrd = NumericUtils.TAU / initP.get(i).abs();
+      
+      fitText.append( df.format(fitPrd) );
+      initText.append( df.format(initPrd) );
+      fitText.append("\n");
+      initText.append("\n");
+      
+      if ( fitP.get(i).getImaginary() != 0. ) {
+        // complex conjugate pole is at same period value, don't report
+        ++i;
+      }
+    }
+    
+    sb.append(initText);
+    sb.append(fitText);
+    
+    sb.append(" \nZeros:\n");
+    
+    initText = new StringBuilder("Initial:\n");
+    fitText = new StringBuilder("Best fit:\n");
+    
+    for (int i = 0; i < fitP.size(); ++i) {
+      double fitPrd = NumericUtils.TAU / fitZ.get(i).abs();
+      double initPrd = NumericUtils.TAU / initZ.get(i).abs();
+      
+      fitText.append( df.format(fitPrd) );
+      initText.append( df.format(initPrd) );
+      fitText.append("\n");
+      initText.append("\n");
+      
+      if ( fitZ.get(i).getImaginary() != 0. ) {
+        // complex conjugate pole is at same period value, don't report
+        ++i;
+      }
+    }
+    
+    String[] out = new String[]{sb.toString()}; // just a single new page
+    return out;
   }
   
   @Override
