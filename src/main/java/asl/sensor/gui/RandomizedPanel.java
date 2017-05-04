@@ -240,14 +240,18 @@ public class RandomizedPanel extends ExperimentPanel {
     
   }
   
-  @Override
-  public String[] getAdditionalReportPages() {
-    // produce output of poles and zeros as period values in new report page
+  /**
+   * Utility function for formatting additional report pages from the
+   * underlying experiment backend; can be called without constructing a
+   * panel. Called by a non-static function in order to implement overrides, as
+   * static functions do not get overridden by inheritance.
+   * @param rnd RandomizedExperiment to pull data from (i.e., from a panel 
+   * instance)
+   * @return List of strings, each one representing a new page's worth of data
+   */
+  public static String[] getAdditionalReportPages(RandomizedExperiment rnd) {
     StringBuilder sb = new StringBuilder();
-    
     DecimalFormat df = new DecimalFormat("#.#####");
-    
-    RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();
@@ -282,7 +286,7 @@ public class RandomizedPanel extends ExperimentPanel {
     initText = new StringBuilder("Initial:\n");
     fitText = new StringBuilder("Best fit:\n");
     
-    for (int i = 0; i < fitP.size(); ++i) {
+    for (int i = 0; i < fitZ.size(); ++i) {
       double fitPrd = NumericUtils.TAU / fitZ.get(i).abs();
       double initPrd = NumericUtils.TAU / initZ.get(i).abs();
       
@@ -299,6 +303,15 @@ public class RandomizedPanel extends ExperimentPanel {
     
     String[] out = new String[]{sb.toString()}; // just a single new page
     return out;
+  }
+  
+  @Override
+  public String[] getAdditionalReportPages() {
+    // produce output of poles and zeros as period values in new report page
+    
+    RandomizedExperiment rnd = (RandomizedExperiment) expResult;
+    
+    return getAdditionalReportPages(rnd);
   }
   
   @Override

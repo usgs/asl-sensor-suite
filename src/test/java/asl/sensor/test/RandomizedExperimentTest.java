@@ -442,6 +442,11 @@ public class RandomizedExperimentTest {
       
       String page1 = sb.toString();
       
+      String[] addtlPages = ( RandomizedPanel.getAdditionalReportPages(rCal) );
+      // technically 'page 2' but really second part of first dataset report
+      // and I'm too lazy to rename everything to reflect that
+      String page1Part2 = addtlPages[0];
+      
       sb = new StringBuilder();
       
       // expected best fit params, for debugging
@@ -484,7 +489,7 @@ public class RandomizedExperimentTest {
       
       PDDocument pdf = new PDDocument();
       ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-      ReportingUtils.textListToPDFPages(pdf, page1, page2);
+      ReportingUtils.textListToPDFPages(pdf, page1, page1Part2, page2);
       
       String testResultFolder = currentDir + "/testResultImages/";
       File dir = new File(testResultFolder);
