@@ -151,8 +151,8 @@ public class StepPanel extends ExperimentPanel {
   public void updateData(final DataStore ds) {
     
     set = true;
-    
-    displayInfoMessage("Running stepcal testing...");
+
+    clearChartAndSetProgressData();
     
     expResult.setData(ds);
     XYSeriesCollection xysc = expResult.getData().get(0);

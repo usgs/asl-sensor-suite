@@ -180,6 +180,8 @@ public class AzimuthPanel extends ExperimentPanel {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     az.setOffset(value);
     
+    clearChartAndSetProgressData();
+    
     expResult.setData(ds);
     
     List<XYSeriesCollection> allData = expResult.getData();

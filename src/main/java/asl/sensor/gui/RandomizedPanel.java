@@ -22,6 +22,7 @@ import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.Range;
+import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
 
@@ -378,6 +379,8 @@ public class RandomizedPanel extends ExperimentPanel {
     }
     
     set = true;
+    
+    clearChartAndSetProgressData();
     
     List<XYSeriesCollection> xysc = expResult.getData();
     

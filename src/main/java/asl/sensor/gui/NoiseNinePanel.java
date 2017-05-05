@@ -152,12 +152,13 @@ public class NoiseNinePanel extends NoisePanel {
     
     final boolean freqSpaceImmutable = freqSpace;
 
-    displayInfoMessage("Calculating data...");
-
     NoiseNineExperiment noisExp = (NoiseNineExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);
+    
+    clearChartAndSetProgressData();
+    
     expResult.setData(ds);
-
+    
     for (int j = 0; j < 3; ++j) {
       XYSeriesCollection xysc = expResult.getData().get(j);
 

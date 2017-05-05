@@ -178,7 +178,7 @@ public class NoisePanel extends ExperimentPanel {
     
     final boolean freqSpaceImmutable = freqSpace;
     
-    displayInfoMessage("Calculating data...");
+    clearChartAndSetProgressData();
     
     NoiseExperiment noisExp = (NoiseExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);

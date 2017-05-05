@@ -388,12 +388,9 @@ implements ChangeListener {
     
     setDataNames(ds);
 
-    try{
-      expResult.setData(ds);
-    } catch (IndexOutOfBoundsException e) {
-      displayErrorMessage("INSUFFICIENT DATA LOADED");
-      return;
-    }
+    clearChartAndSetProgressData();
+    
+    expResult.setData(ds);
 
     // need to have 2 series for relative gain
     refSeries.setEnabled(true);;
@@ -414,8 +411,6 @@ implements ChangeListener {
     
     final int refIdx = index0;
     final int idx1 = (refIdx + 1) % 2;
-
-    displayInfoMessage("Calculating data...");
 
 
     double lowPrd, highPrd;
