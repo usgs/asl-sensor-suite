@@ -280,12 +280,13 @@ public class RandomizedPanel extends ExperimentPanel {
     
     sb.append(initText);
     sb.append(fitText);
-    
     sb.append(" \nZeros:\n");
-    
-    initText = new StringBuilder("Initial:\n");
-    fitText = new StringBuilder("Best fit:\n");
-    
+        
+    if (fitZ.size() > 0) {    
+      initText = new StringBuilder("Initial:\n");
+      fitText = new StringBuilder("Best fit:\n");
+    }
+
     for (int i = 0; i < fitZ.size(); ++i) {
       double fitPrd = NumericUtils.TAU / fitZ.get(i).abs();
       double initPrd = NumericUtils.TAU / initZ.get(i).abs();

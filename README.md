@@ -7,7 +7,7 @@ This program is used to analyze various aspects of seismic sensor data in order 
 ### Requirements
 ##### Software
 This program is designed to be used with Java 1.8, but should also be compatible with Java 1.7
-This program also requires Gradle in order to be run. For instructions on installing Gradle, see https://gradle.org/install
+This program also requires Gradle in order to be run from source. For instructions on installing Gradle, see https://gradle.org/install
 NOTE: because Gradle requires access to the maven repositories to download dependencies, there may be build issues when running the program on DOI-networked computers. The instructions for using DOI certificates for maven authentication can be found under the Java subheader at https://github.com/usgs/best-practices/blob/master/WorkingWithinSSLIntercept.md. You will also need the file "DOIRootCA.crt" from the linked page near the top detailing how to configure git.
 For those using Mac computers, the last step for trusting the certificate in Java may be slightly different. If installing the certificate using the instructions above fails, try using this command instead (NOTE: requires administrative access due to the use of the sudo command) https://blog.alwold.com/2011/06/30/how-to-trust-a-certificate-in-java-on-mac-os-x/
 
@@ -80,6 +80,8 @@ The input files have a specific order: the first and third inputs are for north-
 #### Response
 
 This plots 1-3 different response attenuation and phase curves (Bode plots) for given response files. The image generated from this plot will include both plots, though the program can only display one at a time (selectable with the drop-down menu in the bottom-left of the panel). Units of frequency (Hz, default) or period can be selected by the selection box on the bottom-right, much like with the self-noise plot.
+
+This program also allows for extracting a response file embedded in the program, in order to be edited by hand. This way a field engineer with access to the program will be able to define a custom response file using the text editor of their choice. The response selected will be copied into the "responses" subdirectory with a date-stamped version of the same name as the embedded response file. (Copying the responses is done so that the nominal responses embedded in the program cannot be edited unwittingly. These new response files can be loaded in using the "load custom response" option with the response loader pane).
 
 ### Further Work / Known Issues
 

@@ -52,7 +52,8 @@ public class StepExperiment extends Experiment{
 
   private double f, h; //corner and damping of output (uncorrected)
   private double fCorr, hCorr; // fit parameters to turn output into cal input
-  private double initResid, fitResid;
+  private double initResid, fitResid; // residual values
+  private double sps; // samples per second
   
   private int trimmedLength, cutAmount;
   private double[] freqs;
@@ -87,7 +88,7 @@ public class StepExperiment extends Experiment{
       stepCalUnfiltered[i] = stepCalRaw.getData().get(i).doubleValue();
     }
     
-    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
+    sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
     
     double[] stepCalFiltered = 
         FFTResult.bandFilter(stepCalUnfiltered, sps, 0., 0.1);
@@ -122,6 +123,7 @@ public class StepExperiment extends Experiment{
 
     // get data of the result of the step calibration
     DataBlock sensorOutput = ds.getBlock(sensorOutIdx);
+    
     // long interval = sensorOutput.getInterval();
     InstrumentResponse ir = ds.getResponse(sensorOutIdx);
     responseName = ir.getName();
@@ -155,7 +157,7 @@ public class StepExperiment extends Experiment{
       now += interval;
     }
     now = start;
-    for (Number point : stepCalSeries ) {
+    for (Number point : stepCalSeries) {
       double seconds = (double) now / TimeSeriesUtils.ONE_HZ_INTERVAL;
       scs.add(seconds, point);
       now += interval;
@@ -170,7 +172,6 @@ public class StepExperiment extends Experiment{
     // next step: curve fitting
     RealVector startVector = MatrixUtils.createRealVector(params);
     RealVector observedComponents = MatrixUtils.createRealVector(stepCalSeries);
-    
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
         new EvaluationRmsChecker(1E-50, 1E-50);
@@ -187,7 +188,7 @@ public class StepExperiment extends Experiment{
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(startVector).
         target(observedComponents).
-        model( jbn ).
+        model(jbn).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
@@ -318,6 +319,10 @@ public class StepExperiment extends Experiment{
         FFTResult.singleSidedInverseFFT(toDeconvolve, inverseTrim);
     
     returnValue = FFTResult.demean(returnValue);
+    
+    // attempt to filter out additional noise
+    returnValue = 
+        FFTResult.bandFilterWithCuts(returnValue, sps, 0.0, 0.1, 0.0, sps);
     
     // trim out the ends
     returnValue = Arrays.copyOfRange(returnValue, cutAmount, upperBound);

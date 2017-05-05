@@ -46,18 +46,20 @@ public class FFTResult {
   public static double[] 
   bandFilter(double[] toFilt, double sps, double low, double high) {
     
+    return bandFilterWithCuts(toFilt, sps, low, high, 0., sps);
+    /*
     Complex[] fft = simpleFFT(toFilt);
     
-    int trim = fft.length/2 + 1;
+    int trim = fft.length / 2 + 1;
     
     Complex[] toInvert = new Complex[trim];
     
-    double freqDelta = sps/trim;
+    double freqDelta = sps / trim;
     
     for (int i = 0; i < trim; ++i) {
       double x = i * freqDelta;
       double scale = 1;
-      if ( x < low ) {
+      if (x < low) {
         scale = x / low;
       } else if (x > high) {
         scale = 1 - ( x / (sps - high) );
@@ -67,7 +69,48 @@ public class FFTResult {
     }
     
     return singleSidedInverseFFT(toInvert, toFilt.length);
+    */
     
+  }
+  
+  /**
+   * Band-pass filter that creates hard-stop for values outside of range but
+   * produces linear dropoff for points between the corner frequencies and
+   * hard stop limits.
+   * @param toFilt series of data to do a band-pass filter on
+   * @param sps sample rate of the current data (samples / sec)
+   * @param low low corner frequency of band-pass filter
+   * @param high high corner frequency of band-pass filter
+   * @param lowStop low frequency value beyond which to attenuate all signal
+   * @param highStop high frequency value beyond which to attenuate all signal
+   * @return timeseries with band-pass filter applied
+   */
+  public static double[] 
+  bandFilterWithCuts(double[] toFilt, double sps, double low, double high, 
+                     double lowStop, double highStop) {
+    Complex[] fft = simpleFFT(toFilt);
+    
+    int trim = fft.length/2 + 1;
+    
+    Complex[] toInvert = new Complex[trim];
+    
+    double freqDelta = sps / trim;
+    
+    for (int i = 0; i < trim; ++i) {
+      double x = i * freqDelta;
+      double scale = 1;
+      if (x < lowStop || x > highStop) {
+        scale = 0;
+      } else if (x < low) {
+        scale = (x - lowStop) / (low - lowStop);
+      } else if (x > high) {
+        scale = (x - highStop) / (high - highStop);
+      }
+      
+      toInvert[i] = fft[i].multiply(scale);
+    }
+    
+    return singleSidedInverseFFT(toInvert, toFilt.length);
   }
   
   /**

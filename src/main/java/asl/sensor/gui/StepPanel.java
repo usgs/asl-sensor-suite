@@ -57,7 +57,7 @@ public class StepPanel extends ExperimentPanel {
     sb.append("corner frequency (Hz): ");
     sb.append( df.format(corner) );
     sb.append(" (");
-    sb.append(cornerPrd);
+    sb.append( df.format(cornerPrd) );
     sb.append( " secs)");
     sb.append("\n");
     sb.append("damping: ");
