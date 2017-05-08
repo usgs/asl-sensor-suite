@@ -32,6 +32,7 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.title.Title;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
 
@@ -524,6 +525,15 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    */
   public int[] getResponseIndices() {
     return expResult.listActiveResponseIndices();
+  }
+  
+  /**
+   * Clear chart data and display text that it is loading new data
+   */
+  protected void clearChartAndSetProgressData() {
+    XYPlot plot = (XYPlot) chartPanel.getChart().getPlot();
+    plot.setDataset( new XYSeriesCollection() );
+    displayInfoMessage("Running calculation...");
   }
 
 }

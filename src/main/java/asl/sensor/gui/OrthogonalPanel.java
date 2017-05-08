@@ -99,6 +99,8 @@ public class OrthogonalPanel extends ExperimentPanel {
     
     set = true;
     
+    clearChartAndSetProgressData();
+    
     expResult.setData(ds);
     XYSeriesCollection xysc = expResult.getData().get(0);
     

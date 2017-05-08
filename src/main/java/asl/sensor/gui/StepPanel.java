@@ -57,7 +57,7 @@ public class StepPanel extends ExperimentPanel {
     sb.append("corner frequency (Hz): ");
     sb.append( df.format(corner) );
     sb.append(" (");
-    sb.append(cornerPrd);
+    sb.append( df.format(cornerPrd) );
     sb.append( " secs)");
     sb.append("\n");
     sb.append("damping: ");
@@ -151,8 +151,8 @@ public class StepPanel extends ExperimentPanel {
   public void updateData(final DataStore ds) {
     
     set = true;
-    
-    displayInfoMessage("Running stepcal testing...");
+
+    clearChartAndSetProgressData();
     
     expResult.setData(ds);
     XYSeriesCollection xysc = expResult.getData().get(0);
