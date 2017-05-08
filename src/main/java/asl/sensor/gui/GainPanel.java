@@ -103,8 +103,8 @@ implements ChangeListener {
     
     plotTheseInBold = new String[]{"NLNM"};
     
-    xAxisTitle = "Period (s)";
-    yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
+    String xAxisTitle = "Period (s)";
+    String yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
     xAxis = new LogarithmicAxis(xAxisTitle);
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
@@ -165,6 +165,7 @@ implements ChangeListener {
     gbc.anchor = GridBagConstraints.WEST;
     gbc.weightx = 1;
     this.add(rightSlider, gbc);
+    
     gbc.gridx = 0; gbc.gridy += 1;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;

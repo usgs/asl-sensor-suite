@@ -23,6 +23,7 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
 /**
@@ -129,7 +130,7 @@ public class StepExperiment extends Experiment{
     responseName = ir.getName();
     Complex pole = ir.getPoles().get(0);
     
-    f = 1. / (2 * Math.PI / pole.abs() ); // corner frequency
+    f = 1. / (NumericUtils.TAU / pole.abs() ); // corner frequency
     h = Math.abs( pole.getReal() / pole.abs() ); // damping
     
     // these manually-set parameters were used in testing convergence
@@ -227,10 +228,72 @@ public class StepExperiment extends Experiment{
     }
     
     xysc.addSeries(bfs);
+
+    // add plot of step stuff
+    xySeriesData.add(xysc);
+
+    System.out.println("Fit gotten. Getting Bode plots...");
     
+    // now add the plots of response curve and magnitude from init & fit value
+    
+    // p1 = -(h+i*sqrt(1-h^2))*2*pi*f
+    Complex p1 = new Complex( h, Math.sqrt( 1 - Math.pow(h, 2) ) );
+    p1 = p1.multiply( -1 * NumericUtils.TAU * f );
+    Complex p2 = new Complex( h, -1 * Math.sqrt( 1 - Math.pow(h, 2) ) );
+    p2 = p2.multiply( -1 * NumericUtils.TAU * f);
+    
+    InstrumentResponse fitResp = new InstrumentResponse(ir);
+    fitResp.setName( fitResp.getName() + " [FIT]" );
+    
+    Complex[] inputCurve = ir.applyResponseToInput(freqs);
+    Complex[] fitCurve = fitResp.applyResponseToInput(freqs);
+    
+    XYSeries inMag = new XYSeries( ir.getName() + " " + " magnitude" );
+    XYSeries inPhase = new XYSeries ( ir.getName() + " " + " phase" );
+    XYSeries fitMag = new XYSeries( fitResp.getName() + " " + " magnitude" );
+    XYSeries fitPhase = new XYSeries ( fitResp.getName() + " " + " phase" );
+    
+    double phiPrevIn = .0;
+    double phiPrevFit = .0;
+    for (int i = 0; i < freqs.length; ++i) {
+      
+      if (freqs[i] == 0.) {
+        continue;
+      }
+      
+      Complex tmpIn = inputCurve[i].divide(NumericUtils.TAU * freqs[i]);
+      Complex tmpFit = fitCurve[i].divide(NumericUtils.TAU * freqs[i]);
+      
+      double phiIn = NumericUtils.atanc(tmpIn);
+      phiIn = NumericUtils.unwrap(phiIn, phiPrevIn);
+      phiPrevIn = phiIn;
+      phiIn = Math.toDegrees(phiIn);
+      
+      double phiFit = NumericUtils.atanc(tmpIn);
+      phiFit = NumericUtils.unwrap(phiFit, phiPrevFit);
+      phiPrevFit = phiFit;
+      phiFit = Math.toDegrees(phiFit);
+      
+      double magAccelIn = tmpIn.abs();
+      inMag.add( freqs[i], 10 * Math.log10(magAccelIn) );
+      inPhase.add(freqs[i], phiIn);
+      
+      double magAccelFit = tmpFit.abs();
+      fitMag.add( freqs[i], 10 * Math.log10(magAccelFit) );
+      fitPhase.add(freqs[i], phiFit);
+    }
+    
+    xysc = new XYSeriesCollection();
+    xysc.addSeries(inMag);
+    xysc.addSeries(fitMag);
     xySeriesData.add(xysc);
     
+    XYSeriesCollection phaseCollection = new XYSeriesCollection();
+    phaseCollection.addSeries(inPhase);
+    phaseCollection.addSeries(fitPhase);
+    xySeriesData.add(phaseCollection);
     
+    System.out.println("Done!");
   }
   
   @Override

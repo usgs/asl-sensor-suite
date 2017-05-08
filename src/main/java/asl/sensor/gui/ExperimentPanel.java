@@ -104,9 +104,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
           // used to define experiment of each plot object
   
   protected Experiment expResult;
-          // used to get the actual data from loaded-in files
-  // axes and titles must be instantiated in implementing functino
-  protected String xAxisTitle, yAxisTitle;
   
   protected ValueAxis xAxis, yAxis;
   
@@ -204,11 +201,32 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * @return XY Line Chart with the corresponding data in it
    */
   public JFreeChart buildChart(XYSeriesCollection xyDataset) {
+    return buildChart( xyDataset, getXAxis(), getYAxis() );
+  }
+  
+  /**
+   * Function to construct a chart from the XYSeriesCollection produced
+   * from this panel's backend. Any data that requires a specific plot color,
+   * dashed line, or bold line have their corresponding properties applied.
+   * This function should be used for charts in cases where a chartPanel uses
+   * a combo box or similar menu item to select one of multiple charts where
+   * each chart may use a different axis for either domain or range.
+   * For example, step calibration has a panel with time series data of the step
+   * using x-axis of seconds and y of counts, and has two other plots with
+   * axes matching the charts of the response panel (x is frequency and 
+   * y is magnitude and phase).
+   * @param xyDataset Data to be plotted
+   * @param x X-axis to be applied to the chart
+   * @param y Y-axis to be applied to the chart
+   * @return XY Line Chart with the corresponding data in it
+   */
+  public JFreeChart 
+  buildChart(XYSeriesCollection xyDataset, ValueAxis x, ValueAxis y) {
     
     JFreeChart chart = ChartFactory.createXYLineChart(
         expType.getName(),
-        getXTitle(),
-        getYTitle(),
+        x.getLabel(),
+        y.getLabel(),
         xyDataset,
         PlotOrientation.VERTICAL,
         true, // include legend
@@ -223,7 +241,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     // force certain colors and whether or not a line should be dashed
 
     for ( String series : seriesColorMap.keySet() ) {
-      
       int seriesIdx = xyDataset.getSeriesIndex(series);
       if (seriesIdx >= 0) {
         xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series) );
@@ -267,8 +284,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
       }
     }
     
-    xyPlot.setDomainAxis( getXAxis() );
-    xyPlot.setRangeAxis( getYAxis() );
+    xyPlot.setDomainAxis(x);
+    xyPlot.setRangeAxis(y);
     
     return chart;
   }
@@ -393,32 +410,12 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
-   * Default x-axis title return. Displays the string used for the x-axis, 
-   * which is set when the panel's chart is constructed.
-   * As with the getXAxis function 
-   * @return String with axis title
-   */
-  public String getXTitle() {
-    return xAxisTitle;
-  }
-  
-  /**
    * Default y-axis return function. As with getXAxis, designed to be overridden
    * for charts that may use multiple scales.
    * @return ValueAxis to be applied to chart
    */
   public ValueAxis getYAxis() {
     return yAxis;
-  }
-  
-  /**
-   * Default y-axis title return. Displays the string used for the y-axis,
-   * which is set when the panel's chart is constructed. Designed to be
-   * overriden for charts that may use multiple scales
-   * @return String with axis title
-   */
-  public String getYTitle() {
-    return yAxisTitle;
   }
   
   /**
@@ -531,8 +528,10 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * Clear chart data and display text that it is loading new data
    */
   protected void clearChartAndSetProgressData() {
-    XYPlot plot = (XYPlot) chartPanel.getChart().getPlot();
-    plot.setDataset( new XYSeriesCollection() );
+    chart = 
+        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
+    applyAxesToChart();
+    chartPanel.setChart(chart);
     displayInfoMessage("Running calculation...");
   }
 

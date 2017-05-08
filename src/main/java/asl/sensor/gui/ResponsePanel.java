@@ -60,8 +60,6 @@ public class ResponsePanel extends ExperimentPanel {
   
   private ValueAxis freqAxis, degreeAxis;
   
-  private String freqAxisTitle, degreeAxisTitle;
-  
   private JCheckBox freqSpaceBox;
   private JComboBox<String> plotSelection;
   
@@ -76,10 +74,10 @@ public class ResponsePanel extends ExperimentPanel {
       channelType[i] = "Response data (SEED data not used)";
     }
     
-    xAxisTitle = "Period (s)";
-    freqAxisTitle = "Frequency (Hz)";
-    yAxisTitle = "10 * log10( RESP(f) )";
-    degreeAxisTitle = "phi(RESP(f))";
+    String xAxisTitle = "Period (s)";
+    String freqAxisTitle = "Frequency (Hz)";
+    String yAxisTitle = "10 * log10( RESP(f) )";
+    String degreeAxisTitle = "phi(RESP(f))";
     
     xAxis = new LogarithmicAxis(xAxisTitle);
     freqAxis = new LogarithmicAxis(freqAxisTitle);
@@ -91,12 +89,14 @@ public class ResponsePanel extends ExperimentPanel {
     
     degreeAxis = new NumberAxis(degreeAxisTitle);
     degreeAxis.setAutoRange(true);
+    ((NumberAxis) degreeAxis).setAutoRangeIncludesZero(false);
     
     ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     freqAxis.setLabelFont(bold);
+    degreeAxis.setLabelFont(bold);
     
     freqSpaceBox = new JCheckBox("Use Hz units (requires regen)");
     freqSpaceBox.setSelected(true);
@@ -160,12 +160,9 @@ public class ResponsePanel extends ExperimentPanel {
         return;
       }
       
+      JFreeChart[] charts = new JFreeChart[]{magChart, argChart};
       int idx = plotSelection.getSelectedIndex();
-      if (idx == 0) {
-        chartPanel.setChart(magChart);
-      } else {
-        chartPanel.setChart(argChart);
-      }
+      chartPanel.setChart(charts[idx]);
       
       return;
       
@@ -254,15 +251,13 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public ValueAxis getYAxis() {
     
+    ValueAxis[] axes = new ValueAxis[]{yAxis, degreeAxis};
+    
     if ( null == plotSelection ) {
       return yAxis;
     }
     
-    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
-      return yAxis;
-    } else {
-      return degreeAxis;
-    }
+    return axes[plotSelection.getSelectedIndex()];
   }
 
   @Override

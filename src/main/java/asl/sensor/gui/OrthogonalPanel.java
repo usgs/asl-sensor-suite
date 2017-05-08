@@ -54,8 +54,8 @@ public class OrthogonalPanel extends ExperimentPanel {
     channelType[2] = "Assumed-north test sensor";
     channelType[3] = "Assumed-east test sensor";
     
-    xAxisTitle = "Time (s)";
-    yAxisTitle = "Amplitude difference (counts)";
+    String xAxisTitle = "Time (s)";
+    String yAxisTitle = "Amplitude difference (counts)";
     xAxis = new NumberAxis(xAxisTitle);
     xAxis.setAutoRange(true);
     //SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
