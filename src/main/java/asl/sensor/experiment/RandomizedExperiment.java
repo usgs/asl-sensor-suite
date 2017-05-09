@@ -698,10 +698,19 @@ public class RandomizedExperiment extends Experiment {
     fitResidual = optimum.getCost();
     
     double[] fitParams = optimum.getPoint().toArray();
+    // get results from evaluating the function at the two points
     double[] initialValues =
         jacobian.value(initialGuess).getFirst().toArray();
     double[] fitValues = 
         jacobian.value( optimum.getPoint() ).getFirst().toArray();
+    
+    double[] initResidList = initEval.getResiduals().toArray();
+    double[] fitResidList = optimum.getResiduals().toArray();
+    
+    XYSeries initResidMag = new XYSeries("Input resp. mag residual");
+    XYSeries fitResidMag = new XYSeries("Fit resp. mag residual");
+    XYSeries initResidPhase = new XYSeries("Input resp. phase residual");
+    XYSeries fitResidPhase = new XYSeries("Fit resp. phase residual");
     
     fitResponse = 
         fitResultToResp(fitParams, fitResponse, lowFreq, numZeros, nyquist);
@@ -723,6 +732,11 @@ public class RandomizedExperiment extends Experiment {
       initArg.add(freqs[i], initialValues[argIdx]);
       fitMag.add(freqs[i], fitValues[i]);
       fitArg.add(freqs[i], fitValues[argIdx]);
+      
+      initResidMag.add(freqs[i], initResidList[i]);
+      initResidPhase.add(freqs[i], initResidList[argIdx]);
+      fitResidMag.add(freqs[i], fitResidList[i]);
+      fitResidPhase.add(freqs[i], fitResidList[argIdx]);
     }
     
     // XYSeries fitMag = new XYSeries("Dummy plot a");
@@ -737,6 +751,16 @@ public class RandomizedExperiment extends Experiment {
     xysc.addSeries(initArg);
     xysc.addSeries(calcArg);
     xysc.addSeries(fitArg);
+    xySeriesData.add(xysc);
+    
+    xysc = new XYSeriesCollection();
+    xysc.addSeries(initResidMag);
+    xysc.addSeries(fitResidMag);
+    xySeriesData.add(xysc);
+    
+    xysc = new XYSeriesCollection();
+    xysc.addSeries(initResidPhase);
+    xysc.addSeries(fitResidPhase);
     xySeriesData.add(xysc);
     
     System.out.println("Done!");

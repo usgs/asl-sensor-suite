@@ -90,9 +90,9 @@ public class RandomizedPanel extends ExperimentPanel {
     
     sb.append(initText);
     sb.append(fitText);
-    sb.append(" \nZeros:\n");
         
-    if (fitZ.size() > 0) {    
+    if (fitZ.size() > 0) {
+      sb.append(" \nZeros:\n");
       initText = new StringBuilder("Initial:\n");
       fitText = new StringBuilder("Best fit:\n");
     }
