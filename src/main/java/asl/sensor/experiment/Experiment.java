@@ -137,6 +137,16 @@ public abstract class Experiment {
   public abstract boolean hasEnoughData(final DataStore ds);
   
   /**
+   * Return an array of indices of responses used by an index, to include
+   * data in report generation
+   * @return Indices in which responses are required
+   */
+  public int[] listActiveResponseIndices() {
+    // override this in functions that use a backend including responses
+    return new int[]{};
+  }
+  
+  /**
    * Driver to do data processing on inputted data (calls a concrete backend
    * method which is different for each type of experiment)
    * This function specifically (rather than the backend implementation) is
@@ -180,16 +190,6 @@ public abstract class Experiment {
     }
     
     backend(ds);
-  }
-  
-  /**
-   * Return an array of indices of responses used by an index, to include
-   * data in report generation
-   * @return Indices in which responses are required
-   */
-  public int[] listActiveResponseIndices() {
-    // override this in functions that use a backend including responses
-    return new int[]{};
   }
    
 }
