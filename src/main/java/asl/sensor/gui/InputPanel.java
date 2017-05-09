@@ -1093,13 +1093,23 @@ implements ActionListener, ChangeListener {
       zooms.trimToCommonTime(activePlots);
       // try to trim to current active time range if possible, otherwise fit
       // as much data as possible
-      
-      try {
-        zooms.trimAll(start, end);
-        zoomOut.setEnabled(true);
-      } catch (IndexOutOfBoundsException e) {
+      db = zooms.getXthLoadedBlock(1);
+      // was the data zoomed in more than it is now?
+      if ( start > db.getStartTime() || end < db.getEndTime() ) {
+        try {
+          // zooms won't be modified if an exception is thrown
+          zooms.trimAll(start, end);
+          zoomOut.setEnabled(true);
+        } catch (IndexOutOfBoundsException e) {
+          // new time range not valid for all current data, show max range
+          zoomOut.setEnabled(false);
+        }
+      } else {
+        // common time range was already the max
         zoomOut.setEnabled(false);
       }
+      
+      
     } else {
       // no blocks loaded in, no zooms to handle
       zoomOut.setEnabled(false);

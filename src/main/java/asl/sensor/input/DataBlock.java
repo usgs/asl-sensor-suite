@@ -138,7 +138,7 @@ public class DataBlock {
   public int getTrimEndIndex(long end) {
     int endIdx = data.size();
     long endTime = getEndTime();
-    if ( end < endTime ) {
+    if (end < endTime && end > startTime) {
       long diff = endTime - end;
       // diff/interval is number of points from ending index, need to subtract
       // (quick reminder that upper index of sublist method is exclusive)
@@ -155,7 +155,8 @@ public class DataBlock {
    */
   public int getTrimStartIndex(long start) {
     int startIdx = 0;
-    if (startTime < start) {
+    long endTime = getEndTime();
+    if (startTime < start && endTime > start) {
       long diff = start - startTime;
       startIdx = (int) (diff / interval);
     }

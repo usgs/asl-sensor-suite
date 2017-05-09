@@ -342,13 +342,16 @@ public class RandomizedExperimentTest {
     cCal.set(Calendar.SECOND, 0);
     long start = cCal.getTime().getTime() * 1000L;
     
+    // commented out -- calibration ends when the data does
     //int hour = cCal.get(Calendar.HOUR);
+    /*
     cCal.set(Calendar.DAY_OF_YEAR, 4);
     cCal.set(Calendar.HOUR_OF_DAY, 0);
     cCal.set(Calendar.MINUTE, 0);
+    */
     
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime() * 1000L;
+    long end = ds.getBlock(0).getEndTime();
     
     ds.trimAll(start, end);
     

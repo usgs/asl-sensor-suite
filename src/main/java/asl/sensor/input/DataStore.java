@@ -469,6 +469,18 @@ public class DataStore {
    * @param end End time, relative to epoch (nanoseconds)
    */
   public void trimAll(long start, long end) throws IndexOutOfBoundsException {
+    
+    // check that the time range is valid to trim all set data
+    for (int i = 0; i < FILE_COUNT; ++i) {
+      if (!thisBlockIsSet[i]) {
+        continue;
+      }
+      DataBlock db = getBlock(i);
+      if ( start < db.getStartTime() || end > db.getEndTime() ) {
+        throw new IndexOutOfBoundsException();
+      }
+    }
+    
     for (int i = 0; i < FILE_COUNT; ++i) {
       if (thisBlockIsSet[i]) {
         getBlock(i).trim(start, end);
