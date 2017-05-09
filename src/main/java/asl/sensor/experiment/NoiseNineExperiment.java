@@ -72,8 +72,9 @@ public class NoiseNineExperiment extends NoiseExperiment {
     System.out.println("Got data, now doing rotations...");
     
     // set angles and then rotate data 
-    // (calling 'setData' includes internal call to azimuth backend)
+    // (calling 'azi.setData()' includes internal call to azimuth backend)
     AzimuthExperiment azi = new AzimuthExperiment();
+    azi.setSimple(true); // use rough estimate of coherence, no windowing
     DataStore aziStore = new DataStore();
     aziStore.setData(0, north1Sensor);
     aziStore.setData(1, east1Sensor);
