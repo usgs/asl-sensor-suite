@@ -41,7 +41,6 @@ public class NoisePanel extends ExperimentPanel {
   protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
   
   private NumberAxis freqAxis;
-  private String freqAxisTitle; // name to use when plotting in units of Hz
   
   /**
    * Constructs a new panel and lays out all the components in it
@@ -59,9 +58,9 @@ public class NoisePanel extends ExperimentPanel {
     plotTheseInBold = new String[]{"NLNM","NHNM"};
     
     // instantiate local fields
-    xAxisTitle = "Period (s)";
-    freqAxisTitle = "Frequency (Hz)";
-    yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
+    String xAxisTitle = "Period (s)";
+    String freqAxisTitle = "Frequency (Hz)";
+    String yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
     xAxis = new LogarithmicAxis(xAxisTitle);
     freqAxis = new LogarithmicAxis(freqAxisTitle);
     yAxis = new NumberAxis(yAxisTitle);
@@ -145,20 +144,6 @@ public class NoisePanel extends ExperimentPanel {
     return xAxis;
     
   }
-  
-  /**
-   * As with the getXAxis function, if the selection box to use Hz is selected,
-   * this will not return the default x-axis title but instead will return one
-   * reflecting the use of frequency/Hz units (the default is using the 
-   * interval (time)).
-   */
-  @Override
-  public String getXTitle() {
-    if (freqSpaceBox.isSelected()) {
-      return freqAxisTitle;
-    }
-    return xAxisTitle;
-  }
 
   @Override
   public int panelsNeeded() {
@@ -178,7 +163,7 @@ public class NoisePanel extends ExperimentPanel {
     
     final boolean freqSpaceImmutable = freqSpace;
     
-    displayInfoMessage("Calculating data...");
+    clearChartAndSetProgressData();
     
     NoiseExperiment noisExp = (NoiseExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);

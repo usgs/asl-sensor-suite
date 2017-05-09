@@ -51,16 +51,18 @@ public class NoiseNinePanel extends NoisePanel {
     this.setLayout( new GridBagLayout() );
     GridBagConstraints gbc = new GridBagConstraints();
     
+    String xTitle = getXAxis().getLabel();
+    String yTitle = getYAxis().getLabel();
     
     northChart = 
         ChartFactory.createXYLineChart( expType.getName() + " (North)",
-        getXTitle(), getYTitle(), null);
+        xTitle, yTitle, null);
     eastChart = 
         ChartFactory.createXYLineChart( expType.getName() + " (East)",
-        getXTitle(), getYTitle(), null);
+        xTitle, yTitle, null);
     vertChart = 
         ChartFactory.createXYLineChart( expType.getName() + " (Vertical)",
-        getXTitle(), getYTitle(), null);
+        xTitle, yTitle, null);
     
     chart = northChart;
     chartPanel.setChart(chart);
@@ -152,12 +154,13 @@ public class NoiseNinePanel extends NoisePanel {
     
     final boolean freqSpaceImmutable = freqSpace;
 
-    displayInfoMessage("Calculating data...");
-
     NoiseNineExperiment noisExp = (NoiseNineExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);
+    
+    clearChartAndSetProgressData();
+    
     expResult.setData(ds);
-
+    
     for (int j = 0; j < 3; ++j) {
       XYSeriesCollection xysc = expResult.getData().get(j);
 

@@ -103,8 +103,8 @@ implements ChangeListener {
     
     plotTheseInBold = new String[]{"NLNM"};
     
-    xAxisTitle = "Period (s)";
-    yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
+    String xAxisTitle = "Period (s)";
+    String yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
     xAxis = new LogarithmicAxis(xAxisTitle);
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
@@ -165,6 +165,7 @@ implements ChangeListener {
     gbc.anchor = GridBagConstraints.WEST;
     gbc.weightx = 1;
     this.add(rightSlider, gbc);
+    
     gbc.gridx = 0; gbc.gridy += 1;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;
@@ -388,12 +389,9 @@ implements ChangeListener {
     
     setDataNames(ds);
 
-    try{
-      expResult.setData(ds);
-    } catch (IndexOutOfBoundsException e) {
-      displayErrorMessage("INSUFFICIENT DATA LOADED");
-      return;
-    }
+    clearChartAndSetProgressData();
+    
+    expResult.setData(ds);
 
     // need to have 2 series for relative gain
     refSeries.setEnabled(true);;
@@ -414,8 +412,6 @@ implements ChangeListener {
     
     final int refIdx = index0;
     final int idx1 = (refIdx + 1) % 2;
-
-    displayInfoMessage("Calculating data...");
 
 
     double lowPrd, highPrd;

@@ -5,11 +5,25 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -20,6 +34,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
 
 /**
  * Panel used to display response curves. Includes plots of response magnitude
@@ -45,10 +60,10 @@ public class ResponsePanel extends ExperimentPanel {
   
   private ValueAxis freqAxis, degreeAxis;
   
-  private String freqAxisTitle, degreeAxisTitle;
-  
   private JCheckBox freqSpaceBox;
   private JComboBox<String> plotSelection;
+  
+  private JButton copyEmbedResp;
   
   private JFreeChart magChart, argChart;
 
@@ -59,10 +74,10 @@ public class ResponsePanel extends ExperimentPanel {
       channelType[i] = "Response data (SEED data not used)";
     }
     
-    xAxisTitle = "Period (s)";
-    freqAxisTitle = "Frequency (Hz)";
-    yAxisTitle = "10 * log10( RESP(f) )";
-    degreeAxisTitle = "phi(RESP(f))";
+    String xAxisTitle = "Period (s)";
+    String freqAxisTitle = "Frequency (Hz)";
+    String yAxisTitle = "10 * log10( RESP(f) )";
+    String degreeAxisTitle = "phi(RESP(f))";
     
     xAxis = new LogarithmicAxis(xAxisTitle);
     freqAxis = new LogarithmicAxis(freqAxisTitle);
@@ -74,15 +89,25 @@ public class ResponsePanel extends ExperimentPanel {
     
     degreeAxis = new NumberAxis(degreeAxisTitle);
     degreeAxis.setAutoRange(true);
+    ((NumberAxis) degreeAxis).setAutoRangeIncludesZero(false);
     
     ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     freqAxis.setLabelFont(bold);
+    degreeAxis.setLabelFont(bold);
     
     freqSpaceBox = new JCheckBox("Use Hz units (requires regen)");
     freqSpaceBox.setSelected(true);
+    
+    copyEmbedResp = new JButton("Extract an embedded response for editing");
+    copyEmbedResp.addActionListener(this);
+    
+    plotSelection = new JComboBox<String>();
+    plotSelection.addItem(MAGNITUDE);
+    plotSelection.addItem(ARGUMENT);
+    plotSelection.addActionListener(this);
     
     applyAxesToChart(); // now that we've got axes defined
     
@@ -96,6 +121,10 @@ public class ResponsePanel extends ExperimentPanel {
     gbc.gridwidth = 3;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
+    
+    gbc.gridy += 1;
+    gbc.weighty = 0;
+    this.add(copyEmbedResp, gbc);
     
     // place the other UI elements in a single row below the chart
     gbc.gridwidth = 1;
@@ -117,11 +146,7 @@ public class ResponsePanel extends ExperimentPanel {
     gbc.gridx += 1;
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;
-    plotSelection = new JComboBox<String>();
-    plotSelection.addItem(MAGNITUDE);
-    plotSelection.addItem(ARGUMENT);
     this.add(plotSelection, gbc);
-    plotSelection.addActionListener(this);
     
   }
   
@@ -135,15 +160,73 @@ public class ResponsePanel extends ExperimentPanel {
         return;
       }
       
+      JFreeChart[] charts = new JFreeChart[]{magChart, argChart};
       int idx = plotSelection.getSelectedIndex();
-      if (idx == 0) {
-        chartPanel.setChart(magChart);
-      } else {
-        chartPanel.setChart(argChart);
-      }
+      chartPanel.setChart(charts[idx]);
       
       return;
       
+    }
+    
+    if ( e.getSource() == copyEmbedResp ) {
+      Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
+      
+      List<String> names = new ArrayList<String>(respFilenames);
+      Collections.sort(names);
+      
+      JDialog dialog = new JDialog();
+      Object result = JOptionPane.showInputDialog(
+          dialog,
+          "Select a response to copy:",
+          "RESP File Selection",
+          JOptionPane.PLAIN_MESSAGE,
+          null, names.toArray(),
+          names.get( names.size() - 1 ) );
+      
+      String resultStr = (String) result;
+      
+      try {
+        // copy response file out of embedded set and into responses folder
+        
+        File respDir = new File("responses/");
+        
+        if ( !respDir.exists() ) {
+          respDir.mkdir();
+        }
+        
+        ClassLoader cl = InputPanel.class.getClassLoader();
+        InputStream is = cl.getResourceAsStream(resultStr);
+        BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
+        StringBuilder sb = new StringBuilder();
+        String line = fr.readLine();
+        while ( line != null ) {
+          sb.append(line);
+          sb.append("\n");
+          line = fr.readLine();
+        }
+        fr.close();
+        
+        StringBuilder fileNameOut = new StringBuilder();
+        fileNameOut.append( respDir.getCanonicalPath() );
+        fileNameOut.append("/");
+        fileNameOut.append(resultStr);
+        fileNameOut.append("_");
+        
+        SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DD");
+        Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+        String date = sdf.format( cCal.getTime() );
+        fileNameOut.append(date);
+        
+        File respOut = new File( respDir.getCanonicalPath() + "/" + resultStr );
+        FileWriter respWriter = new FileWriter(respOut, false);
+        respWriter.write( sb.toString() ); 
+        respWriter.close();
+        
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+      
+      return; // end of 'if response button clicked'
     }
     
   }
@@ -168,15 +251,13 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public ValueAxis getYAxis() {
     
+    ValueAxis[] axes = new ValueAxis[]{yAxis, degreeAxis};
+    
     if ( null == plotSelection ) {
       return yAxis;
     }
     
-    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
-      return yAxis;
-    } else {
-      return degreeAxis;
-    }
+    return axes[plotSelection.getSelectedIndex()];
   }
 
   @Override

@@ -71,6 +71,8 @@ public class AzimuthPanel extends ExperimentPanel {
     channelType[2] = "Reference sensor " + 
                      "(use offset to specify degrees from north)";
     
+    // don't bother instantiating axes, we need to build a custom polar plot
+    // and so will just use the chartfactory methods to do our building anyway    
     
     angleChart = ChartFactory.createPolarChart( expType.getName(), 
         null, false, false, false);
@@ -179,6 +181,8 @@ public class AzimuthPanel extends ExperimentPanel {
     
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     az.setOffset(value);
+    
+    clearChartAndSetProgressData();
     
     expResult.setData(ds);
     
