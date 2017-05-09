@@ -145,7 +145,6 @@ public class RandomizedPanel extends ExperimentPanel {
     return sb.toString();
   }
   private ValueAxis degreeAxis;
-  private String degreeAxisTitle;
   private JComboBox<String> plotSelection;
   
   private JCheckBox lowFreqBox;
@@ -158,9 +157,9 @@ public class RandomizedPanel extends ExperimentPanel {
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
     
-    yAxisTitle = "10 * log10( RESP(f) )";
-    xAxisTitle = "Frequency (Hz)";
-    degreeAxisTitle = "phi(RESP(f))";
+    String yAxisTitle = "10 * log10( RESP(f) )";
+    String xAxisTitle = "Frequency (Hz)";
+    String degreeAxisTitle = "phi(RESP(f))";
     
     xAxis = new LogarithmicAxis(xAxisTitle);
     
@@ -225,15 +224,12 @@ public class RandomizedPanel extends ExperimentPanel {
     
     if ( e.getSource() == plotSelection ) {
       if (!set) {
-        return;
+        applyAxesToChart();
       }
       
       int idx = plotSelection.getSelectedIndex();
-      if (idx == 0) {
-        chartPanel.setChart(magChart);
-      } else {
-        chartPanel.setChart(argChart);
-      }
+      chart = getCharts()[idx];
+      chartPanel.setChart(chart);
       
       return;
       
@@ -348,11 +344,9 @@ public class RandomizedPanel extends ExperimentPanel {
       return yAxis;
     }
     
-    if ( plotSelection.getSelectedItem().equals(MAGNITUDE) ) {
-      return yAxis;
-    } else {
-      return degreeAxis;
-    }
+    int idx = plotSelection.getSelectedIndex();
+    ValueAxis[] out = new ValueAxis[]{yAxis, degreeAxis};
+    return out[idx];
   }
   
   @Override
@@ -407,8 +401,7 @@ public class RandomizedPanel extends ExperimentPanel {
     result.setText( inset );
     result.setBackgroundPaint(Color.white);
 
-    argChart = buildChart(argSeries);
-    argChart.getXYPlot().setRangeAxis(degreeAxis);
+    argChart = buildChart(argSeries, xAxis, degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
     /*
@@ -420,8 +413,7 @@ public class RandomizedPanel extends ExperimentPanel {
     xyp.addAnnotation(xyt);
     */
     
-    magChart = buildChart(magSeries);
-    magChart.getXYPlot().setRangeAxis(yAxis);
+    magChart = buildChart(magSeries, xAxis, yAxis);
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
     double x;
@@ -448,12 +440,11 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
-
     if (idx == 0) {
       chart = magChart;
     } else {
       chart = argChart;
-      chart.getXYPlot().getRangeAxis().setRange(argRange); 
+      // chart.getXYPlot().getRangeAxis().setRange(argRange); 
     }
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);

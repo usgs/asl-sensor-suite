@@ -51,16 +51,18 @@ public class NoiseNinePanel extends NoisePanel {
     this.setLayout( new GridBagLayout() );
     GridBagConstraints gbc = new GridBagConstraints();
     
+    String xTitle = getXAxis().getLabel();
+    String yTitle = getYAxis().getLabel();
     
     northChart = 
         ChartFactory.createXYLineChart( expType.getName() + " (North)",
-        getXTitle(), getYTitle(), null);
+        xTitle, yTitle, null);
     eastChart = 
         ChartFactory.createXYLineChart( expType.getName() + " (East)",
-        getXTitle(), getYTitle(), null);
+        xTitle, yTitle, null);
     vertChart = 
         ChartFactory.createXYLineChart( expType.getName() + " (Vertical)",
-        getXTitle(), getYTitle(), null);
+        xTitle, yTitle, null);
     
     chart = northChart;
     chartPanel.setChart(chart);

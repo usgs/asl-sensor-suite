@@ -4,10 +4,20 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
 
+import javax.swing.JComboBox;
+import javax.swing.JPanel;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
+import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -76,6 +86,10 @@ public class StepPanel extends ExperimentPanel {
     return sb.toString();
     
   }
+  
+  private JComboBox<String> plotSelection;
+  private JFreeChart stepChart, magChart, phaseChart;
+  private ValueAxis freqAxis, magAxis, phaseAxis;
 
   public StepPanel(ExperimentEnum exp) {
     super(exp);
@@ -83,18 +97,39 @@ public class StepPanel extends ExperimentPanel {
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
     
-    xAxisTitle = "Time (s)";
-    yAxisTitle = "Normalized counts";
+    String xAxisTitle = "Time (s)";
+    String yAxisTitle = "Normalized counts";
     xAxis = new NumberAxis(xAxisTitle);
-    xAxis.setAutoRange(true);
-    //SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-    //sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    //xAxis.setLabel("UTC Time");
-    yAxis = new NumberAxis(yAxisTitle);
-    // yAxis.setAutoRange(true);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
+    // xAxis.setAutoRange(true);
+    
+    yAxis = new NumberAxis(yAxisTitle);
     yAxis.setLabelFont(bold);
+    // yAxis.setAutoRange(true);
+    
+    String freqAxisTitle = "Frequency (Hz)";
+    freqAxis = new LogarithmicAxis(freqAxisTitle);
+    freqAxis.setLabelFont(bold);
+    freqAxis.setAutoRange(true);
+    
+    String magAxisTitle = "10 * log10( RESP(f) )";
+    magAxis = new NumberAxis(magAxisTitle);
+    magAxis.setLabelFont(bold);
+    magAxis.setAutoRange(true);
+    ((NumberAxis) magAxis).setAutoRangeIncludesZero(false);
+    
+    String phaseAxisTitle = "phi(RESP(f))";
+    phaseAxis = new NumberAxis(phaseAxisTitle);
+    phaseAxis.setLabelFont(bold);
+    phaseAxis.setAutoRange(true);
+    ((NumberAxis) phaseAxis).setAutoRangeIncludesZero(false);
+    
+    plotSelection = new JComboBox<String>();
+    plotSelection.addItem("Step function");
+    plotSelection.addItem("Response magnitude");
+    plotSelection.addItem("Response argument");
+    plotSelection.addActionListener(this);
     
     applyAxesToChart();
     
@@ -102,13 +137,31 @@ public class StepPanel extends ExperimentPanel {
     GridBagConstraints gbc = new GridBagConstraints();
     gbc.gridx = 0; gbc.gridy = 0;
     gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.gridwidth = 3;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
-    gbc.weighty = 0.0;
-    gbc.fill = GridBagConstraints.NONE;
+    
+    // add empty space on left side to space out other components
+    JPanel space = new JPanel();
+    space.setMaximumSize( plotSelection.getMaximumSize() );
+    space.setPreferredSize( plotSelection.getPreferredSize() );
+    gbc.weighty = 0.0; gbc.weightx = 1.0;
+    gbc.fill = GridBagConstraints.BOTH;
+    gbc.gridwidth = 1;
     gbc.gridy += 1;
+    this.add(space, gbc);
+    
+    gbc.fill = GridBagConstraints.NONE;
+    gbc.anchor = GridBagConstraints.CENTER;
+    gbc.gridx += 1;
+    gbc.weightx = 0.0;
     this.add(save, gbc);
+    
+    gbc.weightx = 1.0;
+    gbc.gridx += 1;
+    gbc.anchor = GridBagConstraints.LINE_END;
+    this.add(plotSelection, gbc);
     
     plotTheseInBold = new String[]{};
     
@@ -127,6 +180,30 @@ public class StepPanel extends ExperimentPanel {
   }
   
   @Override
+  public ValueAxis getXAxis() {
+    
+    if ( null == plotSelection ) {
+      return xAxis;
+    }
+    
+    ValueAxis[] array = new ValueAxis[]{xAxis, freqAxis, freqAxis};
+    int idx = plotSelection.getSelectedIndex();
+    return array[idx];
+  }
+  
+  @Override
+  public ValueAxis getYAxis() {
+    
+    if ( null == plotSelection ) {
+      return yAxis;
+    }
+    
+    ValueAxis[] array = new ValueAxis[]{yAxis, magAxis, phaseAxis};
+    int idx = plotSelection.getSelectedIndex();
+    return array[idx];
+  }
+  
+  @Override
   public String getMetadataString() {
     StepExperiment stex = (StepExperiment) expResult;
     StringBuilder sb = new StringBuilder();
@@ -140,7 +217,35 @@ public class StepPanel extends ExperimentPanel {
   public int panelsNeeded() {
     return 2;
   }
+  
+  @Override
+  public void actionPerformed(ActionEvent e) {
+    
+    super.actionPerformed(e);
+    
+    if ( e.getSource() == plotSelection ) {
+      if (!set) {    
+        applyAxesToChart();
+        return;
+      }
+      
+      JFreeChart[] charts = getCharts();
+      int idx = plotSelection.getSelectedIndex();
+      chart = charts[idx];
+      
+      chartPanel.setChart(chart);
+      chartPanel.restoreAutoBounds();
+      chartPanel.validate();
+      
+      return;   
+    }
+    
+  }
 
+  @Override
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{stepChart, magChart, phaseChart};
+  }
 
   /**
    * Pass in and retrieve data from the step experiment backend, to plot;
@@ -150,26 +255,54 @@ public class StepPanel extends ExperimentPanel {
   @Override
   public void updateData(final DataStore ds) {
     
-    set = true;
-
+    set = false;
+    
     clearChartAndSetProgressData();
     
     expResult.setData(ds);
-    XYSeriesCollection xysc = expResult.getData().get(0);
     
-    // here's the stuff that needs to stay here, not moved to experiment class
-    setChart(xysc);
-
+    set = true;
+    
     TextTitle result = new TextTitle();
     result.setText( getInsetString() );
     result.setBackgroundPaint(Color.white);
+    
+    XYSeriesCollection stepData = expResult.getData().get(0);
+    stepChart = buildChart(stepData, xAxis, yAxis);
+    System.out.println("test1");
+    XYPlot xyp = stepChart.getXYPlot();
+    // xyp.setDomainAxis(xAxis);
+    // xyp.setRangeAxis(yAxis);
+    // xAxis.setRange( stepData.getDomainBounds(true) );
+    // yAxis.setRange( stepData.getRangeBounds(true) );
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.5, result,
         RectangleAnchor.RIGHT);
-    XYPlot xyp = (XYPlot) chart.getPlot();
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
     
-    chartPanel.setChart(chart);
+    XYSeriesCollection magData = expResult.getData().get(1);
+    magChart = buildChart(magData, freqAxis, magAxis);
+    System.out.println("test2");
+    xyp = magChart.getXYPlot();
+    //xyp.setDomainAxis(freqAxis);
+    //xyp.setRangeAxis(magAxis);
+    xyt = new XYTitleAnnotation(1., 0., result, RectangleAnchor.BOTTOM_RIGHT);
+    xyp.clearAnnotations();
+    xyp.addAnnotation(xyt);
+    
+    XYSeriesCollection phaseData = expResult.getData().get(2);
+    phaseChart = buildChart(phaseData, freqAxis, phaseAxis);
+    //xyp = phaseChart.getXYPlot();
+    //xyp.setDomainAxis(freqAxis);
+    //xyp.setRangeAxis(phaseAxis);
+    
+    JFreeChart[] charts = getCharts();
+    int idx = plotSelection.getSelectedIndex();
+    chart = charts[idx];
+    
+    chartPanel.setChart(charts[idx]);
+    chartPanel.restoreAutoBounds();
+    chartPanel.validate();
   }
 
 }
