@@ -21,8 +21,6 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
-import org.jfree.data.Range;
-import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
 
@@ -52,6 +50,71 @@ public class RandomizedPanel extends ExperimentPanel {
    * 
    */
   private static final long serialVersionUID = -1791709117080520178L;
+  /**
+   * Utility function for formatting additional report pages from the
+   * underlying experiment backend; can be called without constructing a
+   * panel. Called by a non-static function in order to implement overrides, as
+   * static functions do not get overridden by inheritance.
+   * @param rnd RandomizedExperiment to pull data from (i.e., from a panel 
+   * instance)
+   * @return List of strings, each one representing a new page's worth of data
+   */
+  public static String[] getAdditionalReportPages(RandomizedExperiment rnd) {
+    StringBuilder sb = new StringBuilder();
+    DecimalFormat df = new DecimalFormat("#.#####");
+    
+    List<Complex> fitP = rnd.getFitPoles();
+    List<Complex> initP = rnd.getInitialPoles();
+    List<Complex> fitZ = rnd.getFitZeros();
+    List<Complex> initZ = rnd.getInitialZeros();
+    
+    StringBuilder initText = new StringBuilder("Initial:\n");
+    StringBuilder fitText = new StringBuilder("Best fit:\n");
+    
+    sb.append("Pole and zero values, given as period (s):\n");
+    sb.append("Poles:\n");
+    for (int i = 0; i < fitP.size(); ++i) {
+      double fitPrd = NumericUtils.TAU / fitP.get(i).abs();
+      double initPrd = NumericUtils.TAU / initP.get(i).abs();
+      
+      fitText.append( df.format(fitPrd) );
+      initText.append( df.format(initPrd) );
+      fitText.append("\n");
+      initText.append("\n");
+      
+      if ( fitP.get(i).getImaginary() != 0. ) {
+        // complex conjugate pole is at same period value, don't report
+        ++i;
+      }
+    }
+    
+    sb.append(initText);
+    sb.append(fitText);
+    sb.append(" \nZeros:\n");
+        
+    if (fitZ.size() > 0) {    
+      initText = new StringBuilder("Initial:\n");
+      fitText = new StringBuilder("Best fit:\n");
+    }
+
+    for (int i = 0; i < fitZ.size(); ++i) {
+      double fitPrd = NumericUtils.TAU / fitZ.get(i).abs();
+      double initPrd = NumericUtils.TAU / initZ.get(i).abs();
+      
+      fitText.append( df.format(fitPrd) );
+      initText.append( df.format(initPrd) );
+      fitText.append("\n");
+      initText.append("\n");
+      
+      if ( fitZ.get(i).getImaginary() != 0. ) {
+        // complex conjugate pole is at same period value, don't report
+        ++i;
+      }
+    }
+    
+    String[] out = new String[]{sb.toString()}; // just a single new page
+    return out;
+  }
   /**
    * Static helper method for getting the formatted inset string directly
    * from a RandomizedExperiment
@@ -145,12 +208,13 @@ public class RandomizedPanel extends ExperimentPanel {
     return sb.toString();
   }
   private ValueAxis degreeAxis;
-  private JComboBox<String> plotSelection;
   
+  private JComboBox<String> plotSelection;
+
   private JCheckBox lowFreqBox;
 
   private JFreeChart magChart, argChart;
-
+  
   public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
     
@@ -235,72 +299,6 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
-  }
-  
-  /**
-   * Utility function for formatting additional report pages from the
-   * underlying experiment backend; can be called without constructing a
-   * panel. Called by a non-static function in order to implement overrides, as
-   * static functions do not get overridden by inheritance.
-   * @param rnd RandomizedExperiment to pull data from (i.e., from a panel 
-   * instance)
-   * @return List of strings, each one representing a new page's worth of data
-   */
-  public static String[] getAdditionalReportPages(RandomizedExperiment rnd) {
-    StringBuilder sb = new StringBuilder();
-    DecimalFormat df = new DecimalFormat("#.#####");
-    
-    List<Complex> fitP = rnd.getFitPoles();
-    List<Complex> initP = rnd.getInitialPoles();
-    List<Complex> fitZ = rnd.getFitZeros();
-    List<Complex> initZ = rnd.getInitialZeros();
-    
-    StringBuilder initText = new StringBuilder("Initial:\n");
-    StringBuilder fitText = new StringBuilder("Best fit:\n");
-    
-    sb.append("Pole and zero values, given as period (s):\n");
-    sb.append("Poles:\n");
-    for (int i = 0; i < fitP.size(); ++i) {
-      double fitPrd = NumericUtils.TAU / fitP.get(i).abs();
-      double initPrd = NumericUtils.TAU / initP.get(i).abs();
-      
-      fitText.append( df.format(fitPrd) );
-      initText.append( df.format(initPrd) );
-      fitText.append("\n");
-      initText.append("\n");
-      
-      if ( fitP.get(i).getImaginary() != 0. ) {
-        // complex conjugate pole is at same period value, don't report
-        ++i;
-      }
-    }
-    
-    sb.append(initText);
-    sb.append(fitText);
-    sb.append(" \nZeros:\n");
-        
-    if (fitZ.size() > 0) {    
-      initText = new StringBuilder("Initial:\n");
-      fitText = new StringBuilder("Best fit:\n");
-    }
-
-    for (int i = 0; i < fitZ.size(); ++i) {
-      double fitPrd = NumericUtils.TAU / fitZ.get(i).abs();
-      double initPrd = NumericUtils.TAU / initZ.get(i).abs();
-      
-      fitText.append( df.format(fitPrd) );
-      initText.append( df.format(initPrd) );
-      fitText.append("\n");
-      initText.append("\n");
-      
-      if ( fitZ.get(i).getImaginary() != 0. ) {
-        // complex conjugate pole is at same period value, don't report
-        ++i;
-      }
-    }
-    
-    String[] out = new String[]{sb.toString()}; // just a single new page
-    return out;
   }
   
   @Override
@@ -392,7 +390,7 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
-    Range argRange = argSeries.getRangeBounds(true);
+    // Range argRange = argSeries.getRangeBounds(true);
     
     int idx = plotSelection.getSelectedIndex();
     
@@ -403,15 +401,6 @@ public class RandomizedPanel extends ExperimentPanel {
 
     argChart = buildChart(argSeries, xAxis, degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
-    
-    /*
-    XYTitleAnnotation xyt = new XYTitleAnnotation(0.002, 0.98, result,
-            RectangleAnchor.TOP_LEFT);
-    
-    XYPlot xyp = argChart.getXYPlot();
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
-    */
     
     magChart = buildChart(magSeries, xAxis, yAxis);
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);

@@ -32,7 +32,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
-import org.jfree.chart.title.Title;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
 
@@ -58,6 +57,16 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
  
   private static final long serialVersionUID = -5591522915365766604L;
 
+  /**
+   * Append text to a chart's title (used for distinguishing random cal types).
+   * @param chart Chart whose title will be modified
+   * @param appendText Text to append to chart's current title
+   */
+  public static void appendChartTitle(JFreeChart chart, String appendText) {
+    String titleText = chart.getTitle().getText();
+    chart.getTitle().setText(titleText + appendText);
+  }
+  
   /**
    * Get start and end times of data for experiments that use time series data
    * @param expResult experiment with data already added
@@ -92,8 +101,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     }
     return sb.toString();
   }
-  
   protected JButton save;
+  
   protected JFreeChart chart; // replace with plot object
   
   protected ChartPanel chartPanel;
@@ -110,8 +119,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public String[] channelType;
   
   protected boolean set;
-  
   protected String[] plotTheseInBold; // given in the implementing function
+  
   // this is a String because bolded names are intended to be fixed
   protected Map<String, Color> seriesColorMap;
   
@@ -291,6 +300,17 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
+   * Clear chart data and display text that it is loading new data
+   */
+  protected void clearChartAndSetProgressData() {
+    chart = 
+        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
+    applyAxesToChart();
+    chartPanel.setChart(chart);
+    displayInfoMessage("Running calculation...");
+  }
+  
+  /**
    * Overlay an error message in the event of an exception or other issue
    * @param errMsg Text of the message to be displayed
    */
@@ -305,17 +325,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
   }
-  
-  /**
-   * Append text to a chart's title (used for distinguishing random cal types).
-   * @param chart Chart whose title will be modified
-   * @param appendText Text to append to chart's current title
-   */
-  public static void appendChartTitle(JFreeChart chart, String appendText) {
-    String titleText = chart.getTitle().getText();
-    chart.getTitle().setText(titleText + appendText);
-  }
-  
+
   /**
    * Overlay informational text, such as extra results and statistics for plots
    * @param infoMsg
@@ -328,6 +338,18 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
         RectangleAnchor.CENTER);
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
+  }
+  
+  /**
+   * Used to return more detailed information from the experiment, such
+   * as a full-page report of a best-fit response file. Most experiments
+   * will not need to override this method, but it may be useful to add
+   * more detailed or verbose information that cannot be fit into a single
+   * report page.
+   * @return Array of strings, each one to be written to a new report page
+   */
+  public String[] getAdditionalReportPages() {
+    return new String[]{};
   }
 
   /**
@@ -343,7 +365,8 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     return ReportingUtils.chartsToImage(width, height, jfcs);
     
   }
-  
+
+
   /**
    * Returns the identifiers of each input plot being used, such as 
    * "calibration input" for the calibration tests.
@@ -352,7 +375,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public String[] getChannelTypes() {
     return channelType;
   }
-
+  
   /**
    * Return all chart panels used in this object;
    * to be overridden by implementing experiment panels that contain multiple
@@ -363,8 +386,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{chart};
   }
-
-
+  
   /**
    * Used to return any title insets as text format for saving in PDF,
    * to be overridden by any panel that uses an inset
@@ -373,7 +395,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public String getInsetString() {
     return "";
   }
-  
+
   /**
    * Used to return any metadata from the experiment to be saved in PDF
    * to be overridden by panels with data that should be included in the report
@@ -386,17 +408,14 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
-   * Used to return more detailed information from the experiment, such
-   * as a full-page report of a best-fit response file. Most experiments
-   * will not need to override this method, but it may be useful to add
-   * more detailed or verbose information that cannot be fit into a single
-   * report page.
-   * @return Array of strings, each one to be written to a new report page
+   * For report generation, give the list of indices of response files used
+   * in the plot
+   * @return list where each index is a relevant response file
    */
-  public String[] getAdditionalReportPages() {
-    return new String[]{};
+  public int[] getResponseIndices() {
+    return expResult.listActiveResponseIndices();
   }
-
+  
   /**
    * Default x-axis return function.
    * Though the x-axis is a local variable, some panels may have multiple unit
@@ -493,7 +512,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     saveInsetDataText(pdf);
     
   }
-  
+
   /**
    * Used to plot the results of a backend function from an experiment
    * using a collection of XYSeries mapped by strings. This will be set to
@@ -514,25 +533,5 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public abstract void updateData(final DataStore ds);
   // details of how to run updateData are left up to the implementing panel
   // however, the boolean "set" should be set to true to enable PDF saving
-
-  /**
-   * For report generation, give the list of indices of response files used
-   * in the plot
-   * @return list where each index is a relevant response file
-   */
-  public int[] getResponseIndices() {
-    return expResult.listActiveResponseIndices();
-  }
-  
-  /**
-   * Clear chart data and display text that it is loading new data
-   */
-  protected void clearChartAndSetProgressData() {
-    chart = 
-        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
-    applyAxesToChart();
-    chartPanel.setChart(chart);
-    displayInfoMessage("Running calculation...");
-  }
 
 }

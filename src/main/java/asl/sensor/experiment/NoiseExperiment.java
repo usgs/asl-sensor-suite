@@ -205,6 +205,13 @@ public class NoiseExperiment extends Experiment {
     return true;
   }
 
+  @Override
+  public int[] listActiveResponseIndices() {
+    // NOTE: not used by corresponding panel, overrides with active indices
+    // of components in the combo-box
+    return respIndices;
+  }
+
   /**
    * Used to set the x-axis over which the PSDs / cross-powers are plotted,
    * either frequency (Hz) units or sample-interval (s) units
@@ -212,13 +219,6 @@ public class NoiseExperiment extends Experiment {
    */
   public void setFreqSpace(boolean freqSpace) {
     this.freqSpace = freqSpace;
-  }
-
-  @Override
-  public int[] listActiveResponseIndices() {
-    // NOTE: not used by corresponding panel, overrides with active indices
-    // of components in the combo-box
-    return respIndices;
   }
   
 }

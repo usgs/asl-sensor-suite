@@ -23,6 +23,8 @@ import asl.sensor.utils.FFTResult;
  */
 public class GainExperiment extends Experiment {
 
+  private static final int NUMBER_TO_LOAD = 2;
+  
   /**
    * Gets the indices denoting the inclusive range of a frequency bound on
    * a list of input frequencies
@@ -115,8 +117,8 @@ public class GainExperiment extends Experiment {
     
     return Math.sqrt(sigma);
   }
-  
   private double[] gainStage1;
+  
   private double[] otherGainStages; // product of gain stages 2 and up
   
   private FFTResult[] fftResults;
@@ -126,8 +128,6 @@ public class GainExperiment extends Experiment {
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
   
   private double ratio, sigma;
-  
-  private static final int NUMBER_TO_LOAD = 2;
   
   /**
    * Constructor for the gain experiment; effectively the same as that of the

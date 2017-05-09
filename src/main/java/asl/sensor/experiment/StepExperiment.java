@@ -397,20 +397,29 @@ public class StepExperiment extends Experiment{
   }
   
   /**
+   * Returns the corner, damping, and residual values from fit in that order
+   * @return Double array with fit values of f, h, and residual
+   */
+  public double[] getFitParams() {
+    return new double[]{fCorr, hCorr, fitResid};
+  }
+  
+  /**
    * Returns the corner, damping, and residual from the initial parameters
    * calculated from the resp input as a double array in that order
    * @return Double array with the specified f, h, r values
    */
-  public double[] getCornerAndDamping() {
+  public double[] getInitParams() {
     return new double[]{f, h, initResid};
   }
   
   /**
-   * Returns the corner, damping, and residual values from fit in that order
-   * @return Double array with fit values of f, h, and residual
+   * Return the residual values of initial and fit parameters
+   * @return Array whose entries are, respectively, the initial and 
+   * fit residuals
    */
-  public double[] getFitCornerAndDamping() {
-    return new double[]{fCorr, hCorr, fitResid};
+  public double[] getResiduals() {
+    return new double[]{initResid, fitResid};
   }
 
   public String getResponseName() {

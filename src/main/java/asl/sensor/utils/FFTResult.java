@@ -74,6 +74,35 @@ public class FFTResult {
   }
   
   /**
+   * Wrapper to do band filter on a list of data rather than an array.
+   * For more details see other definition of bandFilter
+   * @param toFilt timeseries data to be filtered
+   * @param sps samples per second of input data
+   * @param low low corner frequency for trim
+   * @param high higher corner frequency for trim
+   * @return timeseries data (list) that has gone through band-pass filter
+   */
+  public static List<Number> 
+  bandFilter(List<Number> toFilt, double sps, double low, double high) {
+    
+    double[] toFFT = new double[toFilt.size()];
+    
+    for (int i = 0; i < toFFT.length; ++i) {
+      toFFT[i] = toFilt.get(i).doubleValue();
+    }
+    
+    toFFT = bandFilter(toFFT, sps, low, high);
+    
+    List<Number> out = new ArrayList<Number>();
+    for (double value : toFFT) {
+      out.add(value);
+    }
+    
+    return out;
+    
+  }
+  
+  /**
    * Band-pass filter that creates hard-stop for values outside of range but
    * produces linear dropoff for points between the corner frequencies and
    * hard stop limits.
@@ -111,35 +140,6 @@ public class FFTResult {
     }
     
     return singleSidedInverseFFT(toInvert, toFilt.length);
-  }
-  
-  /**
-   * Wrapper to do band filter on a list of data rather than an array.
-   * For more details see other definition of bandFilter
-   * @param toFilt timeseries data to be filtered
-   * @param sps samples per second of input data
-   * @param low low corner frequency for trim
-   * @param high higher corner frequency for trim
-   * @return timeseries data (list) that has gone through band-pass filter
-   */
-  public static List<Number> 
-  bandFilter(List<Number> toFilt, double sps, double low, double high) {
-    
-    double[] toFFT = new double[toFilt.size()];
-    
-    for (int i = 0; i < toFFT.length; ++i) {
-      toFFT[i] = toFilt.get(i).doubleValue();
-    }
-    
-    toFFT = bandFilter(toFFT, sps, low, high);
-    
-    List<Number> out = new ArrayList<Number>();
-    for (double value : toFFT) {
-      out.add(value);
-    }
-    
-    return out;
-    
   }
   
   /**

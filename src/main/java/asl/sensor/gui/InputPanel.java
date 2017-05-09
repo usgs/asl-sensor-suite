@@ -622,14 +622,6 @@ implements ActionListener, ChangeListener {
     
   }
   
-  public String[] getResponseStrings(int[] indices) {
-    String[] outStrings = new String[indices.length];
-    for (int i = 0; i < indices.length; ++i) {
-      outStrings[i] = zooms.getResponse(indices[i]).toString();
-    }
-    return outStrings;
-  }
-  
   /**
    * Returns the selected region of underlying DataStore, to be fed 
    * into experiments for processing (the results of which will be plotted)
@@ -649,7 +641,6 @@ implements ActionListener, ChangeListener {
     return zooms;
   }
   
-  
   /**
    * Gets the height of resulting image of plots given default parameters,
    * so that it only needs to fit the plots that have data in them 
@@ -658,13 +649,22 @@ implements ActionListener, ChangeListener {
   public int getImageHeight(int plotsToShow) {
     return IMAGE_HEIGHT * plotsToShow;
   }
-
+  
+  
   /**
    * Returns a default image width for writing plots to file
    * @return width of image to output
    */
   public int getImageWidth()  {
     return allCharts.getWidth();
+  }
+
+  public String[] getResponseStrings(int[] indices) {
+    String[] outStrings = new String[indices.length];
+    for (int i = 0; i < indices.length; ++i) {
+      outStrings[i] = zooms.getResponse(indices[i]).toString();
+    }
+    return outStrings;
   }
   
   /**

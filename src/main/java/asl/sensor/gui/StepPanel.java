@@ -10,14 +10,11 @@ import java.text.DecimalFormat;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -49,8 +46,8 @@ public class StepPanel extends ExperimentPanel {
    * @return String format representation of data from the experiment
    */
   public static String getInsetString(StepExperiment sp) {  
-    double[] rolloff = sp.getCornerAndDamping();
-    double[] fit = sp.getFitCornerAndDamping();
+    double[] rolloff = sp.getInitParams();
+    double[] fit = sp.getFitParams();
     double corner = rolloff[0];
     double damping = rolloff[1];
     double fitCorner = fit[0];
@@ -168,6 +165,35 @@ public class StepPanel extends ExperimentPanel {
     
   }
    
+  @Override
+  public void actionPerformed(ActionEvent e) {
+    
+    super.actionPerformed(e);
+    
+    if ( e.getSource() == plotSelection ) {
+      if (!set) {    
+        applyAxesToChart();
+        return;
+      }
+      
+      JFreeChart[] charts = getCharts();
+      int idx = plotSelection.getSelectedIndex();
+      chart = charts[idx];
+      
+      chartPanel.setChart(chart);
+      chartPanel.restoreAutoBounds();
+      chartPanel.validate();
+      
+      return;   
+    }
+    
+  }
+  
+  @Override
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[]{stepChart, magChart, phaseChart};
+  }
+  
   /**
    * Used to get the text that will populate the inset box for the plots
    * @return String to place in TextTitle
@@ -177,6 +203,24 @@ public class StepPanel extends ExperimentPanel {
     
     return getInsetString( (StepExperiment) expResult );
   
+  }
+  
+  @Override
+  public String getMetadataString() {
+    StepExperiment stex = (StepExperiment) expResult;
+    StringBuilder sb = new StringBuilder();
+    sb.append("Residuals:\n");
+    double[] resids = stex.getResiduals();
+    sb.append("Initial:  ");
+    sb.append(resids[0]);
+    sb.append('\n');
+    sb.append("Fit:  ");
+    sb.append(resids[1]);
+    sb.append('\n');
+    sb.append("LOADED RESPONSE:");
+    sb.append('\n');
+    sb.append( stex.getResponseName() );
+    return sb.toString();
   }
   
   @Override
@@ -202,49 +246,10 @@ public class StepPanel extends ExperimentPanel {
     int idx = plotSelection.getSelectedIndex();
     return array[idx];
   }
-  
-  @Override
-  public String getMetadataString() {
-    StepExperiment stex = (StepExperiment) expResult;
-    StringBuilder sb = new StringBuilder();
-    sb.append("LOADED RESPONSE:");
-    sb.append('\n');
-    sb.append( stex.getResponseName() );
-    return sb.toString();
-  }
-  
+
   @Override
   public int panelsNeeded() {
     return 2;
-  }
-  
-  @Override
-  public void actionPerformed(ActionEvent e) {
-    
-    super.actionPerformed(e);
-    
-    if ( e.getSource() == plotSelection ) {
-      if (!set) {    
-        applyAxesToChart();
-        return;
-      }
-      
-      JFreeChart[] charts = getCharts();
-      int idx = plotSelection.getSelectedIndex();
-      chart = charts[idx];
-      
-      chartPanel.setChart(chart);
-      chartPanel.restoreAutoBounds();
-      chartPanel.validate();
-      
-      return;   
-    }
-    
-  }
-
-  @Override
-  public JFreeChart[] getCharts() {
-    return new JFreeChart[]{stepChart, magChart, phaseChart};
   }
 
   /**

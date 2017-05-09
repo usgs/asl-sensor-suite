@@ -506,6 +506,14 @@ public class InstrumentResponse {
   }
   
   /**
+   * Set the list of zeros to a new list, such as after fitting from random cal
+   * @param newZeros New list of zeros to assign this calibration
+   */
+  public void setZeros(List<Complex> newZeros) {
+    zeros = newZeros;
+  }
+
+  /**
    * Output text report of this response file. Not same format as IRIS RESP.
    */
   public String toString() {
@@ -575,14 +583,6 @@ public class InstrumentResponse {
     }
     
     return sb.toString();
-  }
-
-  /**
-   * Set the list of zeros to a new list, such as after fitting from random cal
-   * @param newZeros New list of zeros to assign this calibration
-   */
-  public void setZeros(List<Complex> newZeros) {
-    zeros = newZeros;
   }
 }
 
