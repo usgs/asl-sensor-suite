@@ -207,13 +207,13 @@ public class RandomizedPanel extends ExperimentPanel {
     
     return sb.toString();
   }
-  private ValueAxis degreeAxis;
+  private ValueAxis degreeAxis, residAxis;
   
   private JComboBox<String> plotSelection;
 
   private JCheckBox lowFreqBox;
 
-  private JFreeChart magChart, argChart;
+  private JFreeChart magChart, argChart, residMag, residArg;
   
   public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
@@ -231,7 +231,9 @@ public class RandomizedPanel extends ExperimentPanel {
     yAxis.setAutoRange(true);
     
     degreeAxis = new NumberAxis(degreeAxisTitle);
-    degreeAxis.setAutoRange(true);
+    degreeAxis.setAutoRange(true);    
+    
+    residAxis = new NumberAxis("Residual value per point");
     
     ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
@@ -277,6 +279,8 @@ public class RandomizedPanel extends ExperimentPanel {
     plotSelection = new JComboBox<String>();
     plotSelection.addItem(MAGNITUDE);
     plotSelection.addItem(ARGUMENT);
+    plotSelection.addItem(MAGNITUDE + " residuals");
+    plotSelection.addItem(ARGUMENT + " residuals");
     this.add(plotSelection, gbc);
     plotSelection.addActionListener(this);
   }
@@ -292,7 +296,9 @@ public class RandomizedPanel extends ExperimentPanel {
       }
       
       int idx = plotSelection.getSelectedIndex();
-      chart = getCharts()[idx];
+      JFreeChart[] charts = 
+          new JFreeChart[]{magChart, argChart, residMag, residArg};
+      chart = charts[idx];
       chartPanel.setChart(chart);
       
       return;
@@ -343,7 +349,7 @@ public class RandomizedPanel extends ExperimentPanel {
     }
     
     int idx = plotSelection.getSelectedIndex();
-    ValueAxis[] out = new ValueAxis[]{yAxis, degreeAxis};
+    ValueAxis[] out = new ValueAxis[]{yAxis, degreeAxis, residAxis, residAxis};
     return out[idx];
   }
   
@@ -392,8 +398,6 @@ public class RandomizedPanel extends ExperimentPanel {
     
     // Range argRange = argSeries.getRangeBounds(true);
     
-    int idx = plotSelection.getSelectedIndex();
-    
     String inset = getInsetString();
     TextTitle result = new TextTitle();
     result.setText( inset );
@@ -429,12 +433,20 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
+    residMag = buildChart(xysc.get(2), xAxis, residAxis);
+    residArg = buildChart(xysc.get(3), xAxis, residAxis);
+    
+    plotSelection.setSelectedIndex(0);
+    
+    /*
     if (idx == 0) {
+      int idx = plotSelection.getSelectedIndex();
       chart = magChart;
     } else {
       chart = argChart;
       // chart.getXYPlot().getRangeAxis().setRange(argRange); 
     }
+    */
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
     

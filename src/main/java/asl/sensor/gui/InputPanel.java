@@ -384,7 +384,7 @@ implements ActionListener, ChangeListener {
             null, names.toArray(),
             names.get( names.size() - 1 ) );
         
-        String resultStr = (String) result;
+        final String resultStr = (String) result;
         
         // did user cancel operation?
         if (resultStr == null) {
