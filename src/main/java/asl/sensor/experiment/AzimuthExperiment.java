@@ -55,9 +55,23 @@ public class AzimuthExperiment extends Experiment {
   private double[] freqs;
   private double[] coherence;
   
+  private boolean simpleCalc; // used for nine-noise calculation
+  
   public AzimuthExperiment() {
     super();
-
+    simpleCalc = false;
+  }
+  
+  /**
+   * Used to set a simple calculation of rotation angle, such as for
+   * nine-input self-noise. This is the case where the additional windowing
+   * is NOT done, and the initial least-squares guess gives us an answer.
+   * When creating an instance of this object, this is set to false and only
+   * needs to be explicitly set when a simple calculation is desired.
+   * @param isSimple True if a simple calculation should be done
+   */
+  public void setSimple(boolean isSimple) {
+    simpleCalc = isSimple;
   }
   
   @Override
@@ -95,21 +109,8 @@ public class AzimuthExperiment extends Experiment {
     testEastBlock.setData(testEast);
     refNorthBlock.setData(refNorth);
     
-    MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
-      
-      final DataBlock finalTestNorthBlock = new DataBlock(testNorthBlock);
-      final DataBlock finalTestEastBlock = new DataBlock(testEastBlock);
-      final DataBlock finalRefNorthBlock = new DataBlock(refNorthBlock);
-      
-      public Pair<RealVector, RealMatrix> value(final RealVector point) {
-        
-        return jacobian(point, 
-            finalRefNorthBlock, 
-            finalTestNorthBlock, 
-            finalTestEastBlock);
-        
-      }
-    };
+    MultivariateJacobianFunction jacobian = 
+        getJacobianFunction(testNorthBlock, testEastBlock, refNorthBlock);
     
     // want mean coherence to be as close to 1 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
@@ -140,6 +141,12 @@ public class AzimuthExperiment extends Experiment {
     double tempAngle = angleVector.getEntry(0);
     
     System.out.println("Found initial guess for angle");
+    
+    if (simpleCalc) {
+      // just stop here, don't do windowing
+      angle = tempAngle;
+      return;
+    }
     
     // angleVector is our new best guess for the azimuth
     // now let's cut the data into 2000-sec windows with 500-sec overlap
@@ -177,25 +184,12 @@ public class AzimuthExperiment extends Experiment {
       DataBlock testEastWindow = new DataBlock(testEastBlock, wdStart, wdEnd);
       DataBlock refNorthWindow = new DataBlock(refNorthBlock, wdStart, wdEnd);
       
-      MultivariateJacobianFunction jbn2 = new MultivariateJacobianFunction() {
-
-        final DataBlock finalTestNorthBlock = testNorthWindow;
-        final DataBlock finalTestEastBlock = testEastWindow;
-        final DataBlock finalRefNorthBlock = refNorthWindow;
-
-        public Pair<RealVector, RealMatrix> value(final RealVector point) {
-
-          return jacobian(point, 
-              finalRefNorthBlock, 
-              finalTestNorthBlock, 
-              finalTestEastBlock);
-
-        }
-      };
+      jacobian = 
+          getJacobianFunction(testNorthWindow, testEastWindow, refNorthWindow);
       
       LeastSquaresProblem findAngleWindow = new LeastSquaresBuilder().
           start(new double[]{tempAngle}).
-          model(jbn2).
+          model(jacobian).
           target(target).
           maxEvaluations(Integer.MAX_VALUE).
           maxIterations(Integer.MAX_VALUE).
@@ -323,7 +317,7 @@ public class AzimuthExperiment extends Experiment {
    * @return Coherence (RealVector) and forward difference 
    * approximation of the Jacobian (RealMatrix) at the current angle
    */
-  public Pair<RealVector, RealMatrix> jacobian(
+  private Pair<RealVector, RealMatrix> jacobian(
       final RealVector point, 
       final DataBlock refNorth,
       final DataBlock testNorth, 
@@ -442,6 +436,39 @@ public class AzimuthExperiment extends Experiment {
    */
   public void setOffset(double newOffset) {
     offset = newOffset;
+  }
+  
+  /**
+   * Returns the jacobian function for this object given input data blocks.
+   * The data blocks are set here because they are what will be rotated by
+   * the given angle (the realvector point is the angle).
+   * This allows us to fix the datablocks in question while varying the angle,
+   * and calling the jacobian on different datablocks, such as when finding
+   * the windows of maximum coherence.
+   * @param db1 Test north data block
+   * @param db2 Test east data block
+   * @param db3 Ref. north data block
+   * @return jacobian function to fit an angle of max coherence of this data
+   */
+  private MultivariateJacobianFunction 
+  getJacobianFunction(DataBlock db1, DataBlock db2, DataBlock db3) {
+    
+    // make my func the j-func, I want that func-y stuff
+    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
+
+      final DataBlock finalTestNorthBlock = db1;
+      final DataBlock finalTestEastBlock = db2;
+      final DataBlock finalRefNorthBlock = db3;
+
+      public Pair<RealVector, RealMatrix> value(final RealVector point) {
+        return jacobian(point, 
+            finalRefNorthBlock, 
+            finalTestNorthBlock, 
+            finalTestEastBlock);
+      }
+    };
+    
+    return jFunc; 
   }
   
 }

@@ -384,7 +384,7 @@ implements ActionListener, ChangeListener {
             null, names.toArray(),
             names.get( names.size() - 1 ) );
         
-        String resultStr = (String) result;
+        final String resultStr = (String) result;
         
         // did user cancel operation?
         if (resultStr == null) {
@@ -632,7 +632,7 @@ implements ActionListener, ChangeListener {
    */
   public DataStore getData() {
     
-    showRegionForGeneration();
+    // showRegionForGeneration();
     if ( zooms.numberOfBlocksSet() > 1 ) {
       zooms.matchIntervals(activePlots);
       zooms.trimToCommonTime(activePlots);
@@ -1082,10 +1082,41 @@ implements ActionListener, ChangeListener {
     
     activePlots = panelsNeeded;
     
-    zooms = new DataStore(ds, activePlots);
-    zooms.trimToCommonTime(activePlots);
-    int i;
-    for (i = 0; i < activePlots; ++i) {
+    // get current time range of zoom data for resetting, if any data is loaded
+    long start, end;
+    if ( zooms.areAnyBlocksSet() ) {
+      DataBlock db = zooms.getXthLoadedBlock(1);
+      start = db.getStartTime();
+      end = db.getEndTime();
+      
+      zooms = new DataStore(ds, activePlots);
+      zooms.trimToCommonTime(activePlots);
+      // try to trim to current active time range if possible, otherwise fit
+      // as much data as possible
+      db = zooms.getXthLoadedBlock(1);
+      // was the data zoomed in more than it is now?
+      if ( start > db.getStartTime() || end < db.getEndTime() ) {
+        try {
+          // zooms won't be modified if an exception is thrown
+          zooms.trimAll(start, end);
+          zoomOut.setEnabled(true);
+        } catch (IndexOutOfBoundsException e) {
+          // new time range not valid for all current data, show max range
+          zoomOut.setEnabled(false);
+        }
+      } else {
+        // common time range was already the max
+        zoomOut.setEnabled(false);
+      }
+      
+      
+    } else {
+      // no blocks loaded in, no zooms to handle
+      zoomOut.setEnabled(false);
+    }
+
+
+    for (int i = 0; i < activePlots; ++i) {
       if ( zooms.blockIsSet(i) ){
         resetPlotZoom(i);
       }
@@ -1099,8 +1130,6 @@ implements ActionListener, ChangeListener {
     setVerticalBars();
     
     zoomIn.setEnabled( zooms.numberOfBlocksSet() > 0 );
-    
-    zoomOut.setEnabled(false);
     
     // using this test means the panel doesn't try to scroll when it's
     // only got a few inputs to deal with, when stuff is still pretty readable

@@ -342,13 +342,16 @@ public class RandomizedExperimentTest {
     cCal.set(Calendar.SECOND, 0);
     long start = cCal.getTime().getTime() * 1000L;
     
+    // commented out -- calibration ends when the data does
     //int hour = cCal.get(Calendar.HOUR);
+    /*
     cCal.set(Calendar.DAY_OF_YEAR, 4);
     cCal.set(Calendar.HOUR_OF_DAY, 0);
     cCal.set(Calendar.MINUTE, 0);
+    */
     
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime() * 1000L;
+    long end = ds.getBlock(0).getEndTime();
     
     ds.trimAll(start, end);
     
@@ -418,8 +421,8 @@ public class RandomizedExperimentTest {
       int height = 960;
       
       List<XYSeriesCollection> xysc = rCal.getData();
-      JFreeChart[] jfcl = new JFreeChart[xysc.size()];
       String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
+      JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
       
       String xAxisTitle = "Frequency (Hz)";
       NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
@@ -465,7 +468,7 @@ public class RandomizedExperimentTest {
 
       sb.append( RandomizedPanel.getInsetString(rCal) );
       
-      for (int i = 0; i < xysc.size(); ++i) {
+      for (int i = 0; i < jfcl.length; ++i) {
         
         jfcl[i] = ChartFactory.createXYLineChart(
             ExperimentEnum.RANDM.getName(),
@@ -531,8 +534,8 @@ public class RandomizedExperimentTest {
       int height = 960;
       
       List<XYSeriesCollection> xysc = rCal.getData();
-      JFreeChart[] jfcl = new JFreeChart[xysc.size()];
       String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
+      JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
       
       String xAxisTitle = "Frequency (Hz)";
       NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
@@ -557,7 +560,7 @@ public class RandomizedExperimentTest {
       
       sb = new StringBuilder();
       
-      for (int i = 0; i < xysc.size(); ++i) {
+      for (int i = 0; i < jfcl.length; ++i) {
         
         jfcl[i] = ChartFactory.createXYLineChart(
             ExperimentEnum.RANDM.getName(),
@@ -624,8 +627,8 @@ public class RandomizedExperimentTest {
       int height = 960;
       
       List<XYSeriesCollection> xysc = rCal.getData();
-      JFreeChart[] jfcl = new JFreeChart[xysc.size()];
       String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
+      JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
       
       String xAxisTitle = "Frequency (Hz)";
       NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
@@ -650,7 +653,7 @@ public class RandomizedExperimentTest {
       
       sb = new StringBuilder();
       
-      for (int i = 0; i < xysc.size(); ++i) {
+      for (int i = 0; i < jfcl.length; ++i) {
         
         jfcl[i] = ChartFactory.createXYLineChart(
             ExperimentEnum.RANDM.getName(),
@@ -717,8 +720,8 @@ public class RandomizedExperimentTest {
       int height = 960;
       
       List<XYSeriesCollection> xysc = rCal.getData();
-      JFreeChart[] jfcl = new JFreeChart[xysc.size()];
       String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
+      JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
       
       String xAxisTitle = "Frequency (Hz)";
       NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
@@ -743,7 +746,7 @@ public class RandomizedExperimentTest {
       
       sb = new StringBuilder();
       
-      for (int i = 0; i < xysc.size(); ++i) {
+      for (int i = 0; i < jfcl.length; ++i) {
         
         jfcl[i] = ChartFactory.createXYLineChart(
             ExperimentEnum.RANDM.getName(),
