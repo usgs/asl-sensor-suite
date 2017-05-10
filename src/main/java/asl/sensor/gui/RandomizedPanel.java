@@ -71,7 +71,7 @@ public class RandomizedPanel extends ExperimentPanel {
     StringBuilder initText = new StringBuilder("Initial:\n");
     StringBuilder fitText = new StringBuilder("Best fit:\n");
     
-    sb.append("Pole and zero values, given as period (s):\n");
+    sb.append("Pole and zero values, given as period (s):\n \n");
     sb.append("Poles:\n");
     for (int i = 0; i < fitP.size(); ++i) {
       double fitPrd = NumericUtils.TAU / fitP.get(i).abs();
@@ -91,10 +91,13 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append(initText);
     sb.append(fitText);
         
-    if (fitZ.size() > 0) {
+    initText = new StringBuilder();
+    fitText = new StringBuilder();
+    
+    if ( fitZ.size() > 0 ) {
       sb.append(" \nZeros:\n");
-      initText = new StringBuilder("Initial:\n");
-      fitText = new StringBuilder("Best fit:\n");
+      initText.append("Initial:\n");
+      fitText.append("Best fit:\n");
     }
 
     for (int i = 0; i < fitZ.size(); ++i) {
@@ -157,14 +160,16 @@ public class RandomizedPanel extends ExperimentPanel {
       sbFit.append("\n");
     }
     
-    if (fitZ.size() > 0) {
-      sbInit.append("Initial zeros: \n");
-      sbFit.append("Fit zeros: \n");
+    StringBuilder sbInitZ = new StringBuilder();
+    StringBuilder sbFitZ = new StringBuilder();
+    
+    if ( fitZ.size() > 0 ) {
+      sbInitZ.append("Initial zeros: \n");
+      sbFitZ.append("Fit zeros: \n");
     }
     
     for (int i = 0; i < fitZ.size(); ++i) {
-      StringBuilder sbInitZ = new StringBuilder();
-      StringBuilder sbFitZ = new StringBuilder();
+
       sbInitZ.append( cf.format( initZ.get(i) ) );
       sbFitZ.append( cf.format( fitZ.get(i) ) );
       
@@ -178,24 +183,21 @@ public class RandomizedPanel extends ExperimentPanel {
         sbFitZ.append( cf.format( fitZ.get(i) ) );
         sbFitZ.append("\n");
         
-        sbInit.append("\n");
-        sbFit.append("\n");
-        sbInit.append(sbInitZ);
-        sbFit.append(sbFitZ);
       } else {
-        sbInit.append(sbInitZ);
-        sbFit.append(sbFitZ);
         if ( i + 1 < fitZ.size() ) {
-          sbInit.append(";   ");
-          sbFit.append(";   ");
+          sbInitZ.append(";   ");
+          sbFitZ.append(";   ");
         }
       }
     }
     
     sbFit.append("\n");
     sbInit.append("\n");
+    sbInitZ.append("\n");
+    sbFitZ.append("\n");
     
     StringBuilder sb = new StringBuilder( sbInit.append(sbFit) );
+    sb.append( sbInitZ.append(sbFitZ) );
     sb.append('\n');
     sb.append("Residuals:");
     sb.append('\n');
@@ -213,7 +215,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
   private JCheckBox lowFreqBox;
 
-  private JFreeChart magChart, argChart, residMag, residArg;
+  private JFreeChart magChart, argChart, residPlot;
   
   public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
@@ -239,6 +241,7 @@ public class RandomizedPanel extends ExperimentPanel {
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
+    residAxis.setLabelFont(bold);
     
     lowFreqBox = new JCheckBox("Low frequency calibration");
     lowFreqBox.setSelected(true);
@@ -279,8 +282,7 @@ public class RandomizedPanel extends ExperimentPanel {
     plotSelection = new JComboBox<String>();
     plotSelection.addItem(MAGNITUDE);
     plotSelection.addItem(ARGUMENT);
-    plotSelection.addItem(MAGNITUDE + " residuals");
-    plotSelection.addItem(ARGUMENT + " residuals");
+    plotSelection.addItem("Residuals plot");
     this.add(plotSelection, gbc);
     plotSelection.addActionListener(this);
   }
@@ -291,13 +293,15 @@ public class RandomizedPanel extends ExperimentPanel {
     super.actionPerformed(e);
     
     if ( e.getSource() == plotSelection ) {
+      
       if (!set) {
         applyAxesToChart();
+        return;
       }
       
       int idx = plotSelection.getSelectedIndex();
       JFreeChart[] charts = 
-          new JFreeChart[]{magChart, argChart, residMag, residArg};
+          new JFreeChart[]{magChart, argChart, residPlot};
       chart = charts[idx];
       chartPanel.setChart(chart);
       
@@ -349,7 +353,7 @@ public class RandomizedPanel extends ExperimentPanel {
     }
     
     int idx = plotSelection.getSelectedIndex();
-    ValueAxis[] out = new ValueAxis[]{yAxis, degreeAxis, residAxis, residAxis};
+    ValueAxis[] out = new ValueAxis[]{yAxis, degreeAxis, residAxis};
     return out[idx];
   }
   
@@ -433,8 +437,7 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
-    residMag = buildChart(xysc.get(2), xAxis, residAxis);
-    residArg = buildChart(xysc.get(3), xAxis, residAxis);
+    residPlot = buildChart(xysc.get(2), xAxis, residAxis);
     
     plotSelection.setSelectedIndex(0);
     

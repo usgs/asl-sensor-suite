@@ -685,17 +685,14 @@ public class RandomizedExperiment extends Experiment {
     
     XYSeries fitMag = new XYSeries("Fit resp. magnitude");
     XYSeries fitArg = new XYSeries("Fit resp. phase");
-    
-    // LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
-    // initResid = initEval.getRMS() * 100;
-    // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
-    
 
-    LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     // residuals used to determine quality of solution convergence
+    
+    LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+    fitResidual = optimum.getCost();
+    
     LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     initialResidual = initEval.getCost();
-    fitResidual = optimum.getCost();
     
     double[] fitParams = optimum.getPoint().toArray();
     // get results from evaluating the function at the two points
@@ -756,9 +753,6 @@ public class RandomizedExperiment extends Experiment {
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidMag);
     xysc.addSeries(fitResidMag);
-    xySeriesData.add(xysc);
-    
-    xysc = new XYSeriesCollection();
     xysc.addSeries(initResidPhase);
     xysc.addSeries(fitResidPhase);
     xySeriesData.add(xysc);
