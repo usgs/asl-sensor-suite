@@ -55,14 +55,24 @@ public class RandomizedExperiment extends Experiment {
   private static final double DELTA = 1E-7;
   private static final double CUTOFF = 1. / 1000.; // used w/ KS-54000
   
+  // To whomever has to maintain this code after I'm gone:
+  // I'm sorry, I'm so so sorry
+  // The vast bulk of this class is just adapter functions to get the
+  // least-squares/LM solver to play nice with (constrained) complex values
+  // and to get those to play nice with the instrument-response class
+  
   /**
    * Take the parameters given by the fit function and build a response from 
    * them
-   * @param fitParams
-   * @param lowFreq
-   * @param numPoles
+   * @param fitParams Array of doubles representing alternately
+   * complex real and imaginary parts of the results from the cal solver,
+   * both pole and zero values
+   * @param lowFreq True if the features represent the result from solving
+   * for low frequency cal parameters
+   * @param numZeros How much of input array is zero values, i.e. two zeros
+   * being fit means this is 4 (each zero has real and complex value)
    * @param nyquist Nyquist rate of sensor data the response is associated with
-   * @return
+   * @return Instrument response with fit parameters set as new poles, zeros
    */
   public static InstrumentResponse 
   fitResultToResp(double[] fitParams, InstrumentResponse ir, 
@@ -92,8 +102,8 @@ public class RandomizedExperiment extends Experiment {
   /**
    * Quick check if the lowest-frequency pole is the KS54000, which should not
    * be fit in this experiment's operation, merely ignored
-   * @param poles
-   * @return
+   * @param poles List of poles from response file, sorted
+   * @return True if the lowest-frequency pole is too low to try to fit
    */
   private static boolean isKS54000(List<Complex> poles) {
     if ( ( poles.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
@@ -267,7 +277,8 @@ public class RandomizedExperiment extends Experiment {
    * Converts zero values from the solver into parameters as part of a
    * response object, and creates an instrument response from them. Zeros above
    * the nyquist rate have not been fit, and so will need to come from response
-   * if a high-frequency cal was done
+   * if a high-frequency cal was done (this is not an issue for low-frequency
+   * cals as they already take the high-frequency values from the response)
    * @param variables List of doubles representing complex number real and
    * imaginary components of zeros
    * @param ir Response file to take as source
@@ -345,8 +356,11 @@ public class RandomizedExperiment extends Experiment {
   }
   
   /**
-   * Create a vector of the zeros to be fit by the function
-   * @param zeros List of zeros to be made into a vector by function
+   * Create a vector of the zeros to be fit by the function as a vector of
+   * alternating real and imaginary values. We ignore literally zero-valued
+   * zeros, zeros outside of the range of fit for frequency, and constrain
+   * zeros with complex conjugates
+   * @param zeros List of zeros to be made into a vector by function, sorted
    * @param lowFreq True if a low-frequency cal is used
    * @param nyquist Nyquist rate of data associated with sensor's zeros
    * @return RealVector of zeros under analysis
@@ -370,7 +384,7 @@ public class RandomizedExperiment extends Experiment {
       }
       
       if ( !lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU < 1. ) ) {
-        // don't include poles zeros 1Hz in high-frequency calibration
+        // don't include zeros 1Hz in high-frequency calibration
         continue;
       }
       
@@ -407,6 +421,10 @@ public class RandomizedExperiment extends Experiment {
     return MatrixUtils.createRealVector(responseVariables);
     
   }
+  
+  // yes, folks, appx. half this class is static methods designed to serve as
+  // adapter functions to convert from poles and zeros to fittable vectors and
+  // vice-versa
   
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
@@ -1036,6 +1054,14 @@ public class RandomizedExperiment extends Experiment {
     this.lowFreq = lowFreq;
   }
  
+  /**
+   * Simple validator method to enforce poles to be negative for their values
+   * (Since imaginary values are stored in resps as their value and complex
+   * conjugate, we can mandate this for all values in the vector, though only
+   * real components are strictly required to be negative).
+   * @param poleParams RealVector of parameters to be evaluated by solver
+   * @return Vector of parameters but with components all negative
+   */
   private RealVector validate(RealVector poleParams) {
     for (int i = 0; i < poleParams.getDimension(); ++i) {
       double value = poleParams.getEntry(i);
