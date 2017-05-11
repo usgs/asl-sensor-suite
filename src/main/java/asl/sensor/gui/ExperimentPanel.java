@@ -505,12 +505,25 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
 
     int width = 1280;
     int height = 960;
-    JFreeChart[] cps = getCharts();
+    JFreeChart[] charts = getCharts();
     
-    ReportingUtils.chartsToPDFPage(width, height, pdf, cps);
-
+    ReportingUtils.chartsToPDFPage(width, height, pdf, charts);
+    JFreeChart[] page2 = getSecondPageCharts();
+    if (page2.length > 0) {
+      ReportingUtils.chartsToPDFPage(width, height, pdf, page2);
+    }
     saveInsetDataText(pdf);
     
+  }
+  
+  /**
+   * Function to be overridden by implementing class that will add an extra
+   * page to PDF reports including charts with less-essential data, such as
+   * the plots of residual values over a range for parameter-fitting
+   * @return
+   */
+  public JFreeChart[] getSecondPageCharts() {
+    return new JFreeChart[]{};
   }
 
   /**
