@@ -361,6 +361,11 @@ public class RandomizedPanel extends ExperimentPanel {
   public int panelsNeeded() {
     return 2;
   }
+  
+  @Override
+  public JFreeChart[] getSecondPageCharts() {
+    return new JFreeChart[]{residPlot};
+  }
 
   @Override
   public void updateData(DataStore ds) {
@@ -440,6 +445,7 @@ public class RandomizedPanel extends ExperimentPanel {
     residPlot = buildChart(xysc.get(2), xAxis, residAxis);
     
     plotSelection.setSelectedIndex(0);
+    chart = magChart;
     
     /*
     if (idx == 0) {
