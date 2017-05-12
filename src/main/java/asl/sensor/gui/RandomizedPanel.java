@@ -342,7 +342,21 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append("LOADED RESPONSE:");
     sb.append('\n');
     sb.append( rnd.getResponseName() );
+    sb.append("\n \n");
+    
+    double[] weights = rnd.getWeights();
+    sb.append("Residuals weighting:\n");
+    sb.append("Magnitude weighting: ");
+    sb.append(weights[0]);
+    sb.append("\n");
+    sb.append("Phase weighting: ");
+    sb.append(weights[1]);
     return sb.toString();
+  }
+  
+  @Override
+  public JFreeChart[] getSecondPageCharts() {
+    return new JFreeChart[]{residChart};
   }
   
   @Override
@@ -360,11 +374,6 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   public int panelsNeeded() {
     return 2;
-  }
-  
-  @Override
-  public JFreeChart[] getSecondPageCharts() {
-    return new JFreeChart[]{residChart};
   }
 
   @Override
@@ -442,9 +451,12 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
-    residChart = buildChart(xysc.get(2), xAxis, residAxis);
-    xyp = residChart.getXYPlot();
+    plotSelection.setSelectedIndex(0);
+    chart = magChart;
+    chartPanel.setChart(chart);
+    chartPanel.setMouseZoomable(true);
     
+    residChart = buildChart(xysc.get(2), xAxis, residAxis);
     double[] weights = respExp.getWeights();
     StringBuilder sb = new StringBuilder();
     sb.append("Magnitude weighting: ");
@@ -452,15 +464,13 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append("\nPhase weighting: ");
     sb.append(weights[1]);
     TextTitle weightInset = new TextTitle();
-    result.setText( sb.toString() );
-    result.setBackgroundPaint(Color.white);
-    xyp.clearAnnotations();
+    weightInset.setText( sb.toString() );
+    weightInset.setBackgroundPaint(Color.white);
     XYTitleAnnotation weightAnnot = 
         new XYTitleAnnotation(0, 0, weightInset, RectangleAnchor.BOTTOM_LEFT);
-    xyp.addAnnotation(weightAnnot);
-    
-    plotSelection.setSelectedIndex(0);
-    chart = magChart;
+    XYPlot residPlot = residChart.getXYPlot();
+    residPlot.clearAnnotations();
+    residPlot.addAnnotation(weightAnnot);
     
     /*
     if (idx == 0) {
@@ -471,8 +481,7 @@ public class RandomizedPanel extends ExperimentPanel {
       // chart.getXYPlot().getRangeAxis().setRange(argRange); 
     }
     */
-    chartPanel.setChart(chart);
-    chartPanel.setMouseZoomable(true);
+
     
   }
 

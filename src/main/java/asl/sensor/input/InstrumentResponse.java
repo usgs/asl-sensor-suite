@@ -173,6 +173,10 @@ public class InstrumentResponse {
   /**
    * Apply the values of this response object to a list of frequencies and
    * return the resulting (complex) frequencies
+   * The response curve produced is in units of acceleration. Many of the
+   * experiments in the larger test suite expect frequency response curves that
+   * are in units of velocity, and so the resulting array will need to have
+   * its entries scaled by 2 * pi * f.
    * @param frequencies inputted list of frequencies, such as FFT windows
    * @return application of the response to those frequencies
    */
@@ -193,7 +197,7 @@ public class InstrumentResponse {
     // i.e., if the units of this response are velocity, we integrate once
     int integrations = Unit.ACCELERATION.getDifferentiations(unitType);
     // unlike s (see below) this is always 2Pi
-    double integConstant = 2*Math.PI;
+    double integConstant = NumericUtils.TAU;
     
     for (int i = 0; i < frequencies.length; ++i) {
      
@@ -523,7 +527,6 @@ public class InstrumentResponse {
     nf.setMaximumFractionDigits(4);
     ComplexFormat cf = new ComplexFormat(nf);
     
-    // possible TODO: make this the IRIS RESP format instead?
     sb.append("Response name: ");
     sb.append(name);
     sb.append('\n');
