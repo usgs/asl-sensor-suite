@@ -401,12 +401,9 @@ public class TimeSeriesUtils {
       
       // read in data from the records as long as they exist
       // if no data exists (there's a gap in the record), set value to 0
-      
       // this is done to handle cases where multiplexed files have non-matching
       // gaps and similar issues that previous code was not able to handle
       
-      // TODO: iterate over list of times and add zeros only if distance
-      // between samples is larger than, say, 2*interval, and add that many 0s
       List<Number> timeList = new ArrayList<Number>();
       // long currentTime = startTime;
       
