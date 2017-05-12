@@ -342,6 +342,15 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append("LOADED RESPONSE:");
     sb.append('\n');
     sb.append( rnd.getResponseName() );
+    sb.append("\n \n");
+    
+    double[] weights = rnd.getWeights();
+    sb.append("Residuals weighting:\n");
+    sb.append("Magnitude weighting: ");
+    sb.append(weights[0]);
+    sb.append("\n");
+    sb.append("Phase weighting: ");
+    sb.append(weights[1]);
     return sb.toString();
   }
   
