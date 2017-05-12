@@ -215,7 +215,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
   private JCheckBox lowFreqBox;
 
-  private JFreeChart magChart, argChart, residPlot;
+  private JFreeChart magChart, argChart, residChart;
   
   public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
@@ -301,7 +301,7 @@ public class RandomizedPanel extends ExperimentPanel {
       
       int idx = plotSelection.getSelectedIndex();
       JFreeChart[] charts = 
-          new JFreeChart[]{magChart, argChart, residPlot};
+          new JFreeChart[]{magChart, argChart, residChart};
       chart = charts[idx];
       chartPanel.setChart(chart);
       
@@ -364,7 +364,7 @@ public class RandomizedPanel extends ExperimentPanel {
   
   @Override
   public JFreeChart[] getSecondPageCharts() {
-    return new JFreeChart[]{residPlot};
+    return new JFreeChart[]{residChart};
   }
 
   @Override
@@ -442,7 +442,22 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
-    residPlot = buildChart(xysc.get(2), xAxis, residAxis);
+    residChart = buildChart(xysc.get(2), xAxis, residAxis);
+    xyp = residChart.getXYPlot();
+    
+    double[] weights = respExp.getWeights();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Magnitude weighting: ");
+    sb.append(weights[0]);
+    sb.append("\nPhase weighting: ");
+    sb.append(weights[1]);
+    TextTitle weightInset = new TextTitle();
+    result.setText( sb.toString() );
+    result.setBackgroundPaint(Color.white);
+    xyp.clearAnnotations();
+    XYTitleAnnotation weightAnnot = 
+        new XYTitleAnnotation(0, 0, weightInset, RectangleAnchor.BOTTOM_LEFT);
+    xyp.addAnnotation(weightAnnot);
     
     plotSelection.setSelectedIndex(0);
     chart = magChart;

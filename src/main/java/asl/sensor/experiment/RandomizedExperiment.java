@@ -439,6 +439,8 @@ public class RandomizedExperiment extends Experiment {
   private double[] freqs;
   private double nyquist;
   
+  private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
+  
   private int normalIdx; // location of value to set to 0 in curves for scaling
  
   private int sensorOutIdx; // location to load response from?
@@ -618,7 +620,7 @@ public class RandomizedExperiment extends Experiment {
     
     System.out.println("Getting weighting....");
     
-    double maxArgWeight = 1., maxMagWeight = 0.;
+    maxArgWeight = 1.; maxMagWeight = 0.;
     Complex weightScaler = estResponse[normalIdx];
     double subtractWeight = 10 * Math.log10( weightScaler.abs() );
     double rotateWeight = NumericUtils.atanc(weightScaler);
@@ -1052,6 +1054,10 @@ public class RandomizedExperiment extends Experiment {
    */
   public void setLowFreq(boolean lowFreq) {
     this.lowFreq = lowFreq;
+  }
+  
+  public double[] getWeights() {
+    return new double[]{maxMagWeight, maxArgWeight};
   }
  
   /**
