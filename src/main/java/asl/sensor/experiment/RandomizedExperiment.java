@@ -453,6 +453,11 @@ public class RandomizedExperiment extends Experiment {
     normalIdx = 0;
   }
   
+  /*
+   * (non-Javadoc)
+   * BACKEND FUNCTION BEGINS HERE
+   * @see asl.sensor.experiment.Experiment#backend(asl.sensor.input.DataStore)
+   */
   @Override
   protected void backend(DataStore ds) {
     
@@ -945,6 +950,15 @@ public class RandomizedExperiment extends Experiment {
     return responseName;
   }
   
+  /**
+   * Get the values used to weight the residual calculation function.
+   * The first value is the magnitude weighting, the second is phase.
+   * @return Weighting values for least-squared error terms of
+   */
+  public double[] getWeights() {
+    return new double[]{1. / maxMagWeight, 1. / maxArgWeight};
+  }
+  
   private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
     
     List<Complex> subList = new ArrayList<Complex>();
@@ -1054,10 +1068,6 @@ public class RandomizedExperiment extends Experiment {
    */
   public void setLowFreq(boolean lowFreq) {
     this.lowFreq = lowFreq;
-  }
-  
-  public double[] getWeights() {
-    return new double[]{maxMagWeight, maxArgWeight};
   }
  
   /**

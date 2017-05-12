@@ -151,6 +151,8 @@ public class SensorSuite extends JPanel
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
 
+  private SwingWorker worker;
+  
   /**
    * Creates the main window of the program when called
    * (Three main panels: the top panel for displaying the results
@@ -239,7 +241,12 @@ public class SensorSuite extends JPanel
 
 
     if ( e.getSource() == generate ) {
-      SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
+      
+      if (worker != null) {
+        worker.cancel(true); // doesn't matter if experiment already completed
+      }
+      
+      worker = new SwingWorker<Integer, Void>() {
         
         @Override
         public Integer doInBackground() {

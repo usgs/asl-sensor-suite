@@ -417,6 +417,16 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
+   * Function to be overridden by implementing class that will add an extra
+   * page to PDF reports including charts with less-essential data, such as
+   * the plots of residual values over a range for parameter-fitting
+   * @return
+   */
+  public JFreeChart[] getSecondPageCharts() {
+    return new JFreeChart[]{};
+  }
+  
+  /**
    * Default x-axis return function.
    * Though the x-axis is a local variable, some panels may have multiple unit
    * types for the x-axis (i.e., for units of seconds vs. Hz); accessing
@@ -514,16 +524,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     }
     saveInsetDataText(pdf);
     
-  }
-  
-  /**
-   * Function to be overridden by implementing class that will add an extra
-   * page to PDF reports including charts with less-essential data, such as
-   * the plots of residual values over a range for parameter-fitting
-   * @return
-   */
-  public JFreeChart[] getSecondPageCharts() {
-    return new JFreeChart[]{};
   }
 
   /**

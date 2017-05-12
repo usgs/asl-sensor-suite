@@ -62,18 +62,6 @@ public class AzimuthExperiment extends Experiment {
     simpleCalc = false;
   }
   
-  /**
-   * Used to set a simple calculation of rotation angle, such as for
-   * nine-input self-noise. This is the case where the additional windowing
-   * is NOT done, and the initial least-squares guess gives us an answer.
-   * When creating an instance of this object, this is set to false and only
-   * needs to be explicitly set when a simple calculation is desired.
-   * @param isSimple True if a simple calculation should be done
-   */
-  public void setSimple(boolean isSimple) {
-    simpleCalc = isSimple;
-  }
-  
   @Override
   protected void backend(final DataStore ds) {
     
@@ -269,12 +257,12 @@ public class AzimuthExperiment extends Experiment {
     
     
   }
-
+  
   @Override
   public int blocksNeeded() {
     return 3;
   }
-  
+
   /**
    * Return the fit angle calculated by the backend in degrees
    * @return angle result in degrees
@@ -289,6 +277,39 @@ public class AzimuthExperiment extends Experiment {
    */
   public double getFitAngleRad() {
     return angle;
+  }
+  
+  /**
+   * Returns the jacobian function for this object given input data blocks.
+   * The data blocks are set here because they are what will be rotated by
+   * the given angle (the realvector point is the angle).
+   * This allows us to fix the datablocks in question while varying the angle,
+   * and calling the jacobian on different datablocks, such as when finding
+   * the windows of maximum coherence.
+   * @param db1 Test north data block
+   * @param db2 Test east data block
+   * @param db3 Ref. north data block
+   * @return jacobian function to fit an angle of max coherence of this data
+   */
+  private MultivariateJacobianFunction 
+  getJacobianFunction(DataBlock db1, DataBlock db2, DataBlock db3) {
+    
+    // make my func the j-func, I want that func-y stuff
+    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
+
+      final DataBlock finalTestNorthBlock = db1;
+      final DataBlock finalTestEastBlock = db2;
+      final DataBlock finalRefNorthBlock = db3;
+
+      public Pair<RealVector, RealMatrix> value(final RealVector point) {
+        return jacobian(point, 
+            finalRefNorthBlock, 
+            finalTestNorthBlock, 
+            finalTestEastBlock);
+      }
+    };
+    
+    return jFunc; 
   }
   
   public double getOffset() {
@@ -439,36 +460,15 @@ public class AzimuthExperiment extends Experiment {
   }
   
   /**
-   * Returns the jacobian function for this object given input data blocks.
-   * The data blocks are set here because they are what will be rotated by
-   * the given angle (the realvector point is the angle).
-   * This allows us to fix the datablocks in question while varying the angle,
-   * and calling the jacobian on different datablocks, such as when finding
-   * the windows of maximum coherence.
-   * @param db1 Test north data block
-   * @param db2 Test east data block
-   * @param db3 Ref. north data block
-   * @return jacobian function to fit an angle of max coherence of this data
+   * Used to set a simple calculation of rotation angle, such as for
+   * nine-input self-noise. This is the case where the additional windowing
+   * is NOT done, and the initial least-squares guess gives us an answer.
+   * When creating an instance of this object, this is set to false and only
+   * needs to be explicitly set when a simple calculation is desired.
+   * @param isSimple True if a simple calculation should be done
    */
-  private MultivariateJacobianFunction 
-  getJacobianFunction(DataBlock db1, DataBlock db2, DataBlock db3) {
-    
-    // make my func the j-func, I want that func-y stuff
-    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
-
-      final DataBlock finalTestNorthBlock = db1;
-      final DataBlock finalTestEastBlock = db2;
-      final DataBlock finalRefNorthBlock = db3;
-
-      public Pair<RealVector, RealMatrix> value(final RealVector point) {
-        return jacobian(point, 
-            finalRefNorthBlock, 
-            finalTestNorthBlock, 
-            finalTestEastBlock);
-      }
-    };
-    
-    return jFunc; 
+  public void setSimple(boolean isSimple) {
+    simpleCalc = isSimple;
   }
   
 }
