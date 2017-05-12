@@ -433,7 +433,9 @@ public class RandomizedExperiment extends Experiment {
   private List<Complex> fitZeros;
   
   // when true, doesn't run solver, in event parameters have an issue
-  public final boolean skipSolving = true; // TODO: revert to false
+  // (does the solver seem to have frozen? try rebuilding with this as true,
+  // and then run the plot -- show nominal resp. and estimated curves)
+  public final boolean skipSolving = false;
   
   private boolean lowFreq; // fit the low- or high-frequency poles?
   
@@ -655,7 +657,7 @@ public class RandomizedExperiment extends Experiment {
       int argIdx = i + estResponse.length;
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
-      weights[i] = 1. / maxMagWeight;
+      weights[i] = 100. / maxMagWeight; // scale by 100 due to peak adjustment
       weights[argIdx] = 1. / maxArgWeight;
     }
     
@@ -731,7 +733,7 @@ public class RandomizedExperiment extends Experiment {
 
     if (!skipSolving) {
       LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
-      RealVector finalResult = optimum.getPoint();
+      finalResultVector = optimum.getPoint();
     } else {
       finalResultVector = initialGuess;
     }
