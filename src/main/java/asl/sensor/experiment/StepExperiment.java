@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.apache.commons.math3.complex.Complex;
@@ -63,8 +64,6 @@ public class StepExperiment extends Experiment{
   
   private int sensorOutIdx;
   
-  private String responseName;
-  
   final double STEP_FACTOR = 1E-16;
   
   public StepExperiment() {
@@ -74,9 +73,12 @@ public class StepExperiment extends Experiment{
   @Override
   protected void backend(final DataStore ds) {
     
+    dataNames = new ArrayList<String>();
+    
     // assume that the first block is the raw step calibration
     // the raw calibration is defined as not having an associated response
     DataBlock stepCalRaw = ds.getXthLoadedBlock(1);
+    dataNames.add( stepCalRaw.getName() );
     
     stepCalSeries = new double[stepCalRaw.size()];
     
@@ -124,10 +126,11 @@ public class StepExperiment extends Experiment{
 
     // get data of the result of the step calibration
     DataBlock sensorOutput = ds.getBlock(sensorOutIdx);
+    dataNames.add( sensorOutput.getName() );
     
     // long interval = sensorOutput.getInterval();
     InstrumentResponse ir = ds.getResponse(sensorOutIdx);
-    responseName = ir.getName();
+    dataNames.add( ir.getName() );
     Complex pole = ir.getPoles().get(0);
     
     f = 1. / (NumericUtils.TAU / pole.abs() ); // corner frequency
@@ -420,10 +423,6 @@ public class StepExperiment extends Experiment{
    */
   public double[] getResiduals() {
     return new double[]{initResid, fitResid};
-  }
-
-  public String getResponseName() {
-    return responseName;
   }
 
   @Override

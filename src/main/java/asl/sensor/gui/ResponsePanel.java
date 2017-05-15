@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -147,6 +148,38 @@ public class ResponsePanel extends ExperimentPanel {
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;
     this.add(plotSelection, gbc);
+    
+  }
+  
+  @Override
+  /**
+   * Produce the filename of the report generated from this experiment.
+   * Since response data is not directly associated with data at a given
+   * time, rather than a sensor as a whole, we merely use the current date
+   * and the first response used in the experiment.
+   * @return String that will be default filename of PDF generated from data
+   */
+  public String getPDFFilename() {
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    // experiment has no time metadata to be associated with it, get time now
+    String date = sdf.format(cCal);
+    
+    String test = expType.getName().replace(' ', '_');
+    
+    int idx = getIndexOfMainData(); // first resp in list
+    String name = expResult.getInputNames().get(idx);
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append(test);
+    sb.append('_');
+    sb.append(name);
+    sb.append('_');
+    sb.append(date);
+    sb.append(".pdf");
+    return sb.toString();
     
   }
   

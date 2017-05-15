@@ -123,9 +123,16 @@ public class NoiseNineTest {
     // sb.append('\n');
     sb.append( NoiseNinePanel.getTimeStampString(nne) );
     sb.append('\n');
-    sb.append("RESPONSES USED:");
+    sb.append("INPUTTED FILES:");
     sb.append('\n');
-    sb.append( nne.getResponseNames() );
+    
+    List<String> names = nne.getInputNames();
+    
+    for (String name : names) {
+      sb.append( name );
+      sb.append('\n');
+    }
+    
 
     int width = 1280; int height = 960;
 

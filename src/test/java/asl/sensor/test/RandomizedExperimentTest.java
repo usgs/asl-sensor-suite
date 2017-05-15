@@ -443,7 +443,7 @@ public class RandomizedExperimentTest {
       sb.append( ds.getBlock(1).getName() );
       sb.append(" (sensor output)\n");
       sb.append("Response file used:\n");
-      sb.append( rCal.getResponseName() );
+      sb.append( ds.getResponse(1).getName() );
       sb.append("\n \n");
       
       String page1 = sb.toString();
@@ -556,7 +556,7 @@ public class RandomizedExperimentTest {
       sb.append( ds.getBlock(1).getName() );
       sb.append(" (sensor output)\n");
       sb.append("Response file used:\n");
-      sb.append( rCal.getResponseName() );
+      sb.append( ds.getResponse(1).getName() );
       sb.append("\n \n");
       
       String page1 = sb.toString();
@@ -649,7 +649,7 @@ public class RandomizedExperimentTest {
       sb.append( ds.getBlock(1).getName() );
       sb.append(" (sensor output)\n");
       sb.append("Response file used:\n");
-      sb.append( rCal.getResponseName() );
+      sb.append( ds.getResponse(1).getName() );
       sb.append("\n \n");
       
       String page1 = sb.toString();
@@ -742,7 +742,7 @@ public class RandomizedExperimentTest {
       sb.append( ds.getBlock(1).getName() );
       sb.append(" (sensor output)\n");
       sb.append("Response file used:\n");
-      sb.append( rCal.getResponseName() );
+      sb.append( ds.getResponse(1).getName() );
       sb.append("\n \n");
       
       String page1 = sb.toString();

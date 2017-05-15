@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
@@ -399,12 +400,60 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   /**
    * Used to return any metadata from the experiment to be saved in PDF
    * to be overridden by panels with data that should be included in the report
-   * that it would not make sense to display in the inset, such as response
-   * filenames
+   * that it would not make sense to display in the inset, such as filenames.
+   * If there is no metadata besides filenames of input data, that is returned
+   * by the function, but experiments may need to augment with additional data.
    * @return A string with any additional data to be included in the PDF report
    */
   public String getMetadataString() {
-    return "";
+    List<String> names = expResult.getInputNames();
+    StringBuilder sb = new StringBuilder("Input filenames, ");
+    sb.append(" with SEED and RESP files paired as appropriate:\n");
+    for (String name : names) {
+      sb.append(name);
+      sb.append('\n');
+    }
+    return sb.toString();
+  }
+  
+  /**
+   * Produce the filename of the report generated from this experiment.
+   * Has the format TEST_STATION_YEAR.DAY unless overridden
+   * @return String that will be default filename of PDF generated from data
+   */
+  public String getPDFFilename() {
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    cCal.setTimeInMillis( expResult.getStart() / 1000 );
+    String date = sdf.format(cCal);
+    
+    String test = expType.getName().replace(' ', '_');
+    
+    int idx = getIndexOfMainData();
+    String name = expResult.getInputNames().get(idx);
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append(test);
+    sb.append('_');
+    sb.append(name);
+    sb.append('_');
+    sb.append(date);
+    sb.append(".pdf");
+    return sb.toString();
+    
+  }
+  
+  /**
+   * Get index for station name for most relevant data. For example, in the
+   * case of a calibration, this is usually the second input. In most cases,
+   * however, the first data input will be sufficient. Used in report filename
+   * generation.
+   * @return Index of data used to get naem for report
+   */
+  protected int getIndexOfMainData() {
+    return 0;
   }
   
   /**

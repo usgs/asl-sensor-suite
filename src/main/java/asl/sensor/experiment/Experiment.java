@@ -82,9 +82,15 @@ public abstract class Experiment {
   long start;
   long end;
   protected List<XYSeriesCollection> xySeriesData;
+  protected List<String> dataNames; // list of filenames of seed, resp files
+  // NOTE: if implementing new experiment, best to use consistent ordering with
+  // current set of experiments for this list: 
+  // SEED, RESP (if used), SEED, RESP (if used), etc.
+  // That is, place response files after their associated timeseries
   
   public Experiment() {
     start = 0L; end = 0L;
+    dataNames = new ArrayList<String>();
   }
   
   /**
@@ -147,6 +153,14 @@ public abstract class Experiment {
   }
   
   /**
+   * Get the names of data sent into program (set during backend calculations)
+   * @return
+   */
+  public List<String> getInputNames() {
+    return dataNames;
+  }
+   
+  /**
    * Driver to do data processing on inputted data (calls a concrete backend
    * method which is different for each type of experiment)
    * This function specifically (rather than the backend implementation) is
@@ -169,6 +183,8 @@ public abstract class Experiment {
     start = db.getStartTime();
     end = db.getEndTime();
 
+    dataNames = new ArrayList<String>();
+    
     long interval = db.getInterval();
     
     final DataBlock[] dataIn = ds.getData();

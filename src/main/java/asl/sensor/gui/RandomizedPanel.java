@@ -6,8 +6,11 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -343,10 +346,7 @@ public class RandomizedPanel extends ExperimentPanel {
   public String getMetadataString() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     StringBuilder sb = new StringBuilder();
-    sb.append("LOADED RESPONSE:");
-    sb.append('\n');
-    sb.append( rnd.getResponseName() );
-    sb.append("\n \n");
+    sb.append( super.getMetadataString() );
     
     double[] weights = rnd.getWeights();
     sb.append("Residuals weighting:\n");
@@ -361,6 +361,58 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   public JFreeChart[] getSecondPageCharts() {
     return new JFreeChart[]{residChart};
+  }
+  
+  
+  @Override
+  /**
+   * Get the index of the data holding the sensor output.
+   * Note that the input data list is listed as CAL, OUT, RESP, so the
+   * relevant index is the second one
+   */
+  protected int getIndexOfMainData() {
+    return 1;
+  }
+  
+  @Override
+  /**
+   * Produce the filename of the report generated from this experiment.
+   * Since response data is not directly associated with data at a given
+   * time, rather than a sensor as a whole, we merely use the current date
+   * and the first response used in the experiment.
+   * @return String that will be default filename of PDF generated from data
+   */
+  public String getPDFFilename() {
+    
+    String freq;
+    if ( lowFreqBox.isSelected() ) {
+      freq = "LOW_FRQ";
+    } else {
+      freq = "HIGH_FRQ";
+    }
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    // experiment has no time metadata to be associated with it, get time now
+    String date = sdf.format(cCal);
+    
+    String test = expType.getName().replace(' ', '_');
+    
+    int idx = getIndexOfMainData(); // first resp in list
+    String name = expResult.getInputNames().get(idx);
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append(test);
+    sb.append('_');
+    sb.append(freq);
+    sb.append('_');
+    sb.append(name);
+    sb.append('_');
+    sb.append(date);
+    sb.append(".pdf");
+    return sb.toString();
+    
   }
   
   @Override
