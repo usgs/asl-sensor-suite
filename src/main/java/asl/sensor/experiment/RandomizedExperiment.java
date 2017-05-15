@@ -495,7 +495,8 @@ public class RandomizedExperiment extends Experiment {
     freqs = numeratorPSD.getFreqs(); // should be same for both results
     
     // store nyquist rate of data because freqs will be trimmed down later
-    nyquist = freqs[freqs.length - 1] / 2;
+    nyquist = sensorOut.getSampleRate() / 2.;
+    nyquist += .5; // increasing to prevent issues with pole frequency rounding 
     
     // trim frequency window in order to restrict range of response fits
     double minFreq, maxFreq;
@@ -681,6 +682,11 @@ public class RandomizedExperiment extends Experiment {
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
     
+    System.out.println(nyquist);
+    for (int i = 0; i < initialPoles.size(); ++i) {
+      System.out.println( initialPoles.get(i).abs() / NumericUtils.TAU );
+    }
+    
     // now, solve for the response that gets us the best-fit response curve
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector obsResVector = MatrixUtils.createRealVector(observedResult);
@@ -727,6 +733,8 @@ public class RandomizedExperiment extends Experiment {
     
     LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     initialResidual = initEval.getCost();
+    
+    System.out.println("Got initial evaluation");
     
     double[] initialValues =
         jacobian.value(initialGuess).getFirst().toArray();
@@ -819,7 +827,14 @@ public class RandomizedExperiment extends Experiment {
   evaluateResponse(double[] variables, int numZeros) {
     
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
-    testResp = fitResultToResp(variables, testResp, lowFreq, numZeros, nyquist);
+    
+    // prevent terrible case where, say, only high-freq poles above nyquist rate
+    if (variables.length > 0) {
+      testResp = 
+          fitResultToResp(variables, testResp, lowFreq, numZeros, nyquist);
+    }
+    
+
     
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     

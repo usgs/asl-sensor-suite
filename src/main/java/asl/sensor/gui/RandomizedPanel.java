@@ -395,7 +395,7 @@ public class RandomizedPanel extends ExperimentPanel {
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     // experiment has no time metadata to be associated with it, get time now
-    String date = sdf.format(cCal);
+    String date = sdf.format( cCal.getTime() );
     
     String test = expType.getName().replace(' ', '_');
     
