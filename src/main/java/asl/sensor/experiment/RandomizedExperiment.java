@@ -432,6 +432,11 @@ public class RandomizedExperiment extends Experiment {
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
   
+  // when true, doesn't run solver, in event parameters have an issue
+  // (does the solver seem to have frozen? try rebuilding with this as true,
+  // and then run the plot -- show nominal resp. and estimated curves)
+  public final boolean skipSolving = false;
+  
   private boolean lowFreq; // fit the low- or high-frequency poles?
   
   private InstrumentResponse fitResponse;
@@ -652,7 +657,7 @@ public class RandomizedExperiment extends Experiment {
       int argIdx = i + estResponse.length;
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
-      weights[i] = 1. / maxMagWeight;
+      weights[i] = 100. / maxMagWeight; // scale by 100 due to peak adjustment
       weights[argIdx] = 1. / maxArgWeight;
     }
     
@@ -690,7 +695,15 @@ public class RandomizedExperiment extends Experiment {
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(1.0E-7).
         withParameterRelativeTolerance(1.0E-7);
-        
+    
+    String name = fitResponse.getName();
+    XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
+    XYSeries initArg = new XYSeries("Initial param (" + name + ") phase");
+    
+    XYSeries fitMag = new XYSeries("Fit resp. magnitude");
+    XYSeries fitArg = new XYSeries("Fit resp. phase");
+    
+    
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(initialGuess).
         target(obsResVector).
@@ -703,35 +716,40 @@ public class RandomizedExperiment extends Experiment {
         build();
     
     System.out.println("lsp built");
-    
-    String name = fitResponse.getName();
-    XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
-    XYSeries initArg = new XYSeries("Initial param (" + name + ") phase");
-    
-    XYSeries fitMag = new XYSeries("Fit resp. magnitude");
-    XYSeries fitArg = new XYSeries("Fit resp. phase");
+
 
     // residuals used to determine quality of solution convergence
-    
-    LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
-    fitResidual = optimum.getCost();
     
     LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     initialResidual = initEval.getCost();
     
-    double[] fitParams = optimum.getPoint().toArray();
-    // get results from evaluating the function at the two points
     double[] initialValues =
         jacobian.value(initialGuess).getFirst().toArray();
+    
+    XYSeries initResidMag = new XYSeries("Input resp. mag residual");
+    XYSeries initResidPhase = new XYSeries("Input resp. phase residual");
+    
+    RealVector finalResultVector;
+
+    if (!skipSolving) {
+      LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+      finalResultVector = optimum.getPoint();
+    } else {
+      finalResultVector = initialGuess;
+    }
+
+    LeastSquaresProblem.Evaluation optimum = lsp.evaluate(finalResultVector);
+    fitResidual = optimum.getCost();
+    double[] fitParams = optimum.getPoint().toArray();
+    // get results from evaluating the function at the two points
     double[] fitValues = 
         jacobian.value( optimum.getPoint() ).getFirst().toArray();
     
     double[] initResidList = initEval.getResiduals().toArray();
     double[] fitResidList = optimum.getResiduals().toArray();
     
-    XYSeries initResidMag = new XYSeries("Input resp. mag residual");
+
     XYSeries fitResidMag = new XYSeries("Fit resp. mag residual");
-    XYSeries initResidPhase = new XYSeries("Input resp. phase residual");
     XYSeries fitResidPhase = new XYSeries("Fit resp. phase residual");
     
     fitResponse = 
@@ -739,14 +757,6 @@ public class RandomizedExperiment extends Experiment {
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
     
-    // System.out.println(inputPoles);
-    // System.out.println(fitPoles);
-    
-    // System.out.println("FIT PARAMS RESIDUAL: " +  optimum.getRMS() );
-    // fitResid = optimum.getRMS() * 100;
-    
-    // was initially used in plot before values were scaled
-    // Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
     
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = freqs.length + i;
@@ -761,8 +771,6 @@ public class RandomizedExperiment extends Experiment {
       fitResidPhase.add(freqs[i], fitResidList[argIdx]);
     }
     
-    // XYSeries fitMag = new XYSeries("Dummy plot a");
-    // XYSeries fitArg = new XYSeries("Dummy plot b");
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.addSeries(initMag);
     xysc.addSeries(calcMag);
@@ -774,6 +782,7 @@ public class RandomizedExperiment extends Experiment {
     xysc.addSeries(calcArg);
     xysc.addSeries(fitArg);
     xySeriesData.add(xysc);
+    
     
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidMag);
@@ -916,7 +925,7 @@ public class RandomizedExperiment extends Experiment {
    */
   private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
     
-    List<Complex> subList = new ArrayList<Complex>();
+    List<Complex> subList = new ArrayList<Complex>();  
     
     int start = 0;
     
@@ -962,6 +971,7 @@ public class RandomizedExperiment extends Experiment {
   private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
     
     List<Complex> subList = new ArrayList<Complex>();
+    
     for (int i = 0; i < zerosToTrim.size(); ++i) {
       
       double freq = initialZeros.get(i).abs() / NumericUtils.TAU;

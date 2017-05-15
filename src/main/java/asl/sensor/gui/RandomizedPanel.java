@@ -134,6 +134,10 @@ public class RandomizedPanel extends ExperimentPanel {
     List<Complex> fitZ = rnd.getFitZeros();
     List<Complex> initZ = rnd.getInitialZeros();
     
+    if (fitP == null) {
+      return "";
+    }
+    
     double initResid = rnd.getInitResidual();
     double fitResid = rnd.getFitResidual();
     
@@ -382,8 +386,8 @@ public class RandomizedPanel extends ExperimentPanel {
     final boolean isLowFreq = lowFreqBox.isSelected();
     seriesColorMap = new HashMap<String, Color>();
     
-    RandomizedExperiment respExp = (RandomizedExperiment) expResult;
-    respExp.setLowFreq(isLowFreq);
+    RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
+    rndExp.setLowFreq(isLowFreq);
     expResult.setData(ds);
     
     String appendFreqTitle;
@@ -392,6 +396,10 @@ public class RandomizedPanel extends ExperimentPanel {
       appendFreqTitle = " (LOW FREQ.)";
     } else {
       appendFreqTitle = " (HIGH FREQ.)";
+    }
+    
+    if (rndExp.skipSolving) {
+      appendFreqTitle += " | SOLVER NOT RUN";
     }
     
     set = true;
@@ -414,23 +422,19 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
-    // Range argRange = argSeries.getRangeBounds(true);
-    
-    String inset = getInsetString();
-    TextTitle result = new TextTitle();
-    result.setText( inset );
-    result.setBackgroundPaint(Color.white);
-
     argChart = buildChart(argSeries, xAxis, degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
     magChart = buildChart(magSeries, xAxis, yAxis);
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
+    String inset = getInsetString();
+    TextTitle result = new TextTitle();
+    result.setText( inset );
+    result.setBackgroundPaint(Color.white);
     double x;
     double y = 0.02;
     RectangleAnchor ra;
-    
     // move text box left or right depending on which frequencies aren't
     // being fitted
     if ( lowFreqBox.isSelected() ) {
@@ -457,7 +461,7 @@ public class RandomizedPanel extends ExperimentPanel {
     chartPanel.setMouseZoomable(true);
     
     residChart = buildChart(xysc.get(2), xAxis, residAxis);
-    double[] weights = respExp.getWeights();
+    double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();
     sb.append("Magnitude weighting: ");
     sb.append(weights[0]);
