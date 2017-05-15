@@ -265,9 +265,9 @@ public class SensorSuite extends JPanel
           new FileNameExtensionFilter("PDF file (.pdf)",ext) );
       fc.setFileFilter(fc.getChoosableFileFilters()[1]);
       fc.setDialogTitle("Save plot to PNG...");
-      String tStamp = 
-          new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format( new Date() );
-      fc.setSelectedFile( new File(tStamp+"_ALL"+ext) );
+      ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+      String defaultName = ep.getPDFFilename();
+      fc.setSelectedFile( new File(defaultName) );
       int returnVal = fc.showSaveDialog(savePDF);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fc.getSelectedFile();

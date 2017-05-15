@@ -217,9 +217,7 @@ public class StepPanel extends ExperimentPanel {
     sb.append("Fit:  ");
     sb.append(resids[1]);
     sb.append('\n');
-    sb.append("LOADED RESPONSE:");
-    sb.append('\n');
-    sb.append( stex.getResponseName() );
+    sb.append( super.getMetadataString() );
     return sb.toString();
   }
   
@@ -245,6 +243,16 @@ public class StepPanel extends ExperimentPanel {
     ValueAxis[] array = new ValueAxis[]{yAxis, magAxis, phaseAxis};
     int idx = plotSelection.getSelectedIndex();
     return array[idx];
+  }
+  
+  @Override
+  /**
+   * Get the index of the data holding the sensor output.
+   * Note that the input data list is listed as CAL, OUT, RESP, so the
+   * relevant index is the second one
+   */
+  protected int getIndexOfMainData() {
+    return 1;
   }
 
   @Override

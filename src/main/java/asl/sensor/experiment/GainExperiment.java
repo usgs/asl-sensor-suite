@@ -123,8 +123,6 @@ public class GainExperiment extends Experiment {
   
   private FFTResult[] fftResults;
   
-  private String[] responseNames;
-  
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
   
   private double ratio, sigma;
@@ -153,23 +151,25 @@ public class GainExperiment extends Experiment {
   @Override
   protected void backend(final DataStore ds) {
     
-    indices = new int[NUMBER_TO_LOAD];
+    indices = new int[NUMBER_TO_LOAD]; 
+    // indices here is a linear array pointing to where
+    // the data is in the passed-in data store, mainly to find relevant resps
     
-    for (int i = 1; i <= NUMBER_TO_LOAD; ++i) {
-      indices[i-1] = ds.getXthFullyLoadedIndex(i);
+    for (int i = 0; i < NUMBER_TO_LOAD; ++i) {
+      // XthFullyLoaded starts at 1 (i.e., get first full-loaded), not 0
+      int idx = ds.getXthFullyLoadedIndex(i + 1);
+      indices[i] = idx;
+      dataNames.add( ds.getBlock(idx).getName() );
+      dataNames.add( ds.getResponse(idx).getName() );
     }
     
-    gainStage1 = new double[2];
-    otherGainStages = new double[2];
-    responseNames = new String[2];
-    
-    InstrumentResponse[] resps = ds.getResponses();
-    for (int i = 0; i < 2; ++i) {
-      if (resps[i] == null) {
-        continue;
-      }
-      responseNames[i] = resps[i].getName();
-      List<Double> gains = resps[i].getGain();
+    gainStage1 = new double[NUMBER_TO_LOAD];
+    otherGainStages = new double[NUMBER_TO_LOAD];
+
+    // InstrumentResponse[] resps = ds.getResponses();
+    for (int i = 0; i < indices.length; ++i) {
+      InstrumentResponse ir = ds.getResponse(indices[i]);
+      List<Double> gains = ir.getGain();
       gainStage1[i] = gains.get(1);
       double accumulator = 1.0;
       for (int j = 2; j < gains.size(); ++j) {
@@ -178,7 +178,7 @@ public class GainExperiment extends Experiment {
       otherGainStages[i] = accumulator;
     }
     
-    fftResults = new FFTResult[2];
+    fftResults = new FFTResult[NUMBER_TO_LOAD];
     ArrayList<DataBlock> blocksPlotting = new ArrayList<DataBlock>();
     
     for (int i = 0; i < indices.length; ++i) {
@@ -250,26 +250,6 @@ public class GainExperiment extends Experiment {
       }
     }
     return index;
-  }
-  
-  /**
-   * Get the response names for the data being used in this plot,
-   * indexed relative to first and second curve to be plotted in XYDataSeries
-   * @param refIdx Index of first curve to be plotted (numerator PSD)
-   * @return Responses from which the gain stats are calculated
-   */
-  public String getResponseNames(int refIdx) {
-    
-    int idx0 = refIdx;
-    int idx1 = (refIdx + 1) % NUMBER_TO_LOAD;
-    
-    StringBuilder sb = new StringBuilder();
-    sb.append("1: ");
-    sb.append( responseNames[idx0] );
-    sb.append('\n');
-    sb.append("2: ");
-    sb.append( responseNames[idx1] );
-    return sb.toString();
   }
   
   /**

@@ -28,13 +28,19 @@ public class NoiseNineExperiment extends NoiseExperiment {
   
   public NoiseNineExperiment() {
     super();
-    responseNames = new String[9];
     // indices are fixed since we need all 9 data points here
     respIndices = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
   }
   
   @Override
   protected void backend(DataStore ds) {
+    
+    // NOTE: this may need to change in the event of a test using > 9 inputs
+    for (int i = 0; i < 9; ++i) {
+      // doing this loop here saves us time and significant lines of code
+      dataNames.add( ds.getBlock(0).getName() );
+      dataNames.add( ds.getResponse(0).getName() );
+    }
     
     System.out.println("Beginning 9-input self noise test");
     
@@ -43,7 +49,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // since we need to do the azimuth calculations with subsets of the data
     // and then rotate some of those sensors to get new datablocks
     // we can only compact the code so hard, and this is an easier arrangement
-    // than, say, using the data from a 
+    // than, say, trying to index into a series of arraylists
     DataBlock north1Sensor = ds.getBlock(0);
     InstrumentResponse north1Resp = ds.getResponse(0);
     DataBlock east1Sensor = ds.getBlock(1);
@@ -65,10 +71,6 @@ public class NoiseNineExperiment extends NoiseExperiment {
     DataBlock vert3Sensor = ds.getBlock(8);
     InstrumentResponse vert3Resp = ds.getResponse(8);
     
-    for (int i = 0; i < responseNames.length; ++i) {
-      responseNames[i] = ds.getResponse(i).getName();
-    }
-    
     System.out.println("Got data, now doing rotations...");
     
     // set angles and then rotate data 
@@ -87,13 +89,13 @@ public class NoiseNineExperiment extends NoiseExperiment {
     double north2Angle = -azi.getFitAngleRad();
     System.out.println("2nd north sensor orientation found!");
     
-    
     aziStore.setData(2, east2Sensor);
     azi.setData(aziStore);
     double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
     System.out.println("2nd east sensor orientation found!");
     // need to offset rotation by 90 degrees -- don't want it facing north
     
+    // same as above
     aziStore.setData(2, north3Sensor);
     azi.setData(aziStore);
     double north3Angle = -azi.getFitAngleRad();

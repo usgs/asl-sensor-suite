@@ -65,12 +65,15 @@ public class AzimuthExperiment extends Experiment {
   @Override
   protected void backend(final DataStore ds) {
     
-    // assume the first two are the reference and the second two are the test?
-    
-    // we just need four timeseries, don't actually care about response
+    // assume the first two are the reference and the second two are the test
+    // we just need the timeseries, don't actually care about response
     DataBlock testNorthBlock = new DataBlock( ds.getXthLoadedBlock(1) );
     DataBlock testEastBlock = new DataBlock( ds.getXthLoadedBlock(2) );
     DataBlock refNorthBlock = new DataBlock( ds.getXthLoadedBlock(3) );
+    
+    dataNames.add( testNorthBlock.getName() );
+    dataNames.add( testEastBlock.getName() );
+    dataNames.add( refNorthBlock.getName() );
     
     List<Number> testNorth = new ArrayList<Number>( testNorthBlock.getData() );
     String northName = testNorthBlock.getName();

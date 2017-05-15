@@ -230,8 +230,8 @@ implements ChangeListener {
   
   @Override
   public String getMetadataString() {
-    int refIdx = refSeries.getSelectedIndex();
-    
+
+    // get range of data over which the gain statistics were calculated
     int leftPos = leftSlider.getValue();
     double lowPrd = mapSliderToPeriod(leftPos);
     int rightPos = rightSlider.getValue();
@@ -244,11 +244,8 @@ implements ChangeListener {
     sb.append(" to ");
     sb.append(highPrd);
     
-    GainExperiment gn = (GainExperiment) expResult;
-
-    sb.append("LOADED RESPONSES:");
-    sb.append('\n');
-    sb.append( gn.getResponseNames(refIdx) );
+    sb.append( super.getMetadataString() );
+    
     return sb.toString();
   }
   

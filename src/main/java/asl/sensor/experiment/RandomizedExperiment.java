@@ -450,8 +450,6 @@ public class RandomizedExperiment extends Experiment {
  
   private int sensorOutIdx; // location to load response from?
   
-  private String responseName;
-  
   public RandomizedExperiment() {
     super();
     lowFreq = false;
@@ -476,7 +474,10 @@ public class RandomizedExperiment extends Experiment {
 
     DataBlock sensorOut = ds.getBlock(sensorOutIdx);
     fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIdx) );
-    responseName = fitResponse.getName();
+    
+    dataNames.add( calib.getName() );
+    dataNames.add( sensorOut.getName() );
+    dataNames.add( fitResponse.getName() );
     
     initialPoles = new ArrayList<Complex>( fitResponse.getPoles() );
     initialZeros = new ArrayList<Complex>( fitResponse.getZeros() );
@@ -651,14 +652,18 @@ public class RandomizedExperiment extends Experiment {
     System.out.println("Setting weight matrix...");
     // System.out.println(maxMagWeight);
     
+    // we have the candidate mag and phase, now to turn them into weight values
+    maxMagWeight = 100. / maxMagWeight;
+    maxArgWeight = 1./ maxArgWeight;
+    
     // weight matrix
     double[] weights = new double[observedResult.length];
     for (int i = 0; i < estResponse.length; ++i) {
       int argIdx = i + estResponse.length;
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
-      weights[i] = 100. / maxMagWeight; // scale by 100 due to peak adjustment
-      weights[argIdx] = 1. / maxArgWeight;
+      weights[i] = maxMagWeight; // scale by 100 due to peak adjustment
+      weights[argIdx] = maxArgWeight;
     }
     
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
@@ -951,13 +956,6 @@ public class RandomizedExperiment extends Experiment {
     return subList;
     
   }
-
-  /**
-   * Get name of response file used in the calculation
-   */
-  public String getResponseName() {
-    return responseName;
-  }
   
   /**
    * Get the values used to weight the residual calculation function.
@@ -965,7 +963,7 @@ public class RandomizedExperiment extends Experiment {
    * @return Weighting values for least-squared error terms of
    */
   public double[] getWeights() {
-    return new double[]{1. / maxMagWeight, 1. / maxArgWeight};
+    return new double[]{maxMagWeight, maxArgWeight};
   }
   
   private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
