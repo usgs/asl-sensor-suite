@@ -268,13 +268,11 @@ public class StepPanel extends ExperimentPanel {
   @Override
   public void updateData(final DataStore ds) {
     
-    set = false;
+    set = true;
     
     clearChartAndSetProgressData();
     
     expResult.setData(ds);
-    
-    set = true;
     
     TextTitle result = new TextTitle();
     result.setText( getInsetString() );
