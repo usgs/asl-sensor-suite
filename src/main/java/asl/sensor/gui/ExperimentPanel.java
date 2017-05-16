@@ -312,6 +312,17 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
+   * Clear chart, for when calculation operations have been cancelled
+   */
+  public void clearChart() {
+    set = false;
+    chart = 
+        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
+    applyAxesToChart();
+    chartPanel.setChart(chart);
+  }
+  
+  /**
    * Overlay an error message in the event of an exception or other issue
    * @param errMsg Text of the message to be displayed
    */
@@ -561,7 +572,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    * @return Data string including all metadata and relevant infrom from
    * an experiment
    */
-  public String saveAllTextData() {
+  public String getAllTextData() {
     StringBuilder sb = new StringBuilder( getInsetString() );
     if ( sb.length() > 0 ) {
       sb.append("\n\n");

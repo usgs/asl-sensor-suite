@@ -248,6 +248,7 @@ public class RandomizedPanel extends ExperimentPanel {
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
+    degreeAxis.setLabelFont(bold);
     residAxis.setLabelFont(bold);
     
     lowFreqBox = new JCheckBox("Low frequency calibration");
@@ -434,6 +435,8 @@ public class RandomizedPanel extends ExperimentPanel {
 
   @Override
   public void updateData(DataStore ds) {
+    
+    set = true;
 
     final boolean isLowFreq = lowFreqBox.isSelected();
     seriesColorMap = new HashMap<String, Color>();
@@ -453,8 +456,6 @@ public class RandomizedPanel extends ExperimentPanel {
     if (rndExp.skipSolving) {
       appendFreqTitle += " | SOLVER NOT RUN";
     }
-    
-    set = true;
     
     clearChartAndSetProgressData();
     

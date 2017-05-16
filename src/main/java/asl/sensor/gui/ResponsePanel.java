@@ -306,14 +306,14 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public void updateData(DataStore ds) {
 
+    set = true;
+    
     seriesColorMap = new HashMap<String, Color>();
     
     boolean freqSpace = freqSpaceBox.isSelected();
     ResponseExperiment respExp = (ResponseExperiment) expResult;
     respExp.setFreqSpace(freqSpace);
     expResult.setData(ds);
-    
-    set = true;
     
     List<XYSeriesCollection> xysc = expResult.getData();
     XYSeriesCollection magSeries = xysc.get(0);
