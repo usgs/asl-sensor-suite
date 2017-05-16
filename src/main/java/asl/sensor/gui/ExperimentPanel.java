@@ -427,7 +427,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     cCal.setTimeInMillis( expResult.getStart() / 1000 );
-    String date = sdf.format(cCal);
+    String date = sdf.format( cCal.getTime() );
     
     String test = expType.getName().replace(' ', '_');
     
@@ -542,7 +542,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     
     StringBuilder sb = new StringBuilder( getInsetString() );
     if ( sb.length() > 0 ) {
-      sb.append("\n\n");
+      sb.append("\n \n");
     }
     String metadata = getMetadataString();
     if ( metadata.length() > 0 ) {
@@ -553,6 +553,32 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     ReportingUtils.textToPDFPage( sb.toString(), pdf );
     ReportingUtils.textListToPDFPages( pdf, getAdditionalReportPages() );
     return;
+  }
+  
+  /**
+   * Produce all data used in PDF reports as a single string that can be
+   * written to a text file
+   * @return Data string including all metadata and relevant infrom from
+   * an experiment
+   */
+  public String saveAllTextData() {
+    StringBuilder sb = new StringBuilder( getInsetString() );
+    if ( sb.length() > 0 ) {
+      sb.append("\n\n");
+    }
+    String metadata = getMetadataString();
+    if ( metadata.length() > 0 ) {
+      sb.append(metadata);
+      sb.append("\n\n");
+    }
+    sb.append( getTimeStampString(expResult) );
+    sb.append("\n\n");
+    String[] extraText = getAdditionalReportPages();
+    for (String text : extraText) {
+      sb.append(text);
+      sb.append("\n\n");
+    }
+    return sb.toString();
   }
   
   /**
