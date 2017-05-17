@@ -148,11 +148,8 @@ public class AzimuthPanel extends ExperimentPanel {
   
   @Override
   protected void drawCharts() {
-    if ( chartSelector.getSelectedIndex() == 0 ) {
-      chart = angleChart;
-    } else {
-      chart = coherenceChart;
-    }
+    int idx = chartSelector.getSelectedIndex();
+    chart = getCharts()[idx];
     
     chartPanel.setChart(chart);
   }
@@ -181,6 +178,10 @@ public class AzimuthPanel extends ExperimentPanel {
   
   @Override
   protected void updateData(DataStore ds) {
+    
+    chartSelector.setSelectedIndex(1);
+    chart = coherenceChart;
+    chartPanel.setChart(chart);
     
     set = true;
     

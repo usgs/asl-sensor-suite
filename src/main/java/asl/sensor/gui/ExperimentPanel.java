@@ -349,6 +349,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
     TextTitle result = new TextTitle();
     result.setText(infoMsg);
+    result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
         RectangleAnchor.CENTER);
     xyp.clearAnnotations();
@@ -599,7 +600,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     
     worker.addPropertyChangeListener( 
         new PropertyChangeListener() {
-          public  void propertyChange(PropertyChangeEvent evt) {
+          public void propertyChange(PropertyChangeEvent evt) {
               if ( Experiment.STATUS.equals( evt.getPropertyName() ) ) {
                   displayInfoMessage( (String) evt.getNewValue() );
               }
