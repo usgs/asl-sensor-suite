@@ -148,9 +148,9 @@ public class AzimuthPanel extends ExperimentPanel {
   
   @Override
   protected void drawCharts() {
-    int idx = chartSelector.getSelectedIndex();
-    chart = getCharts()[idx];
-    
+    chartSelector.setEnabled(true);
+    chartSelector.setSelectedIndex(0);
+    chart = angleChart;
     chartPanel.setChart(chart);
   }
 
@@ -176,12 +176,30 @@ public class AzimuthPanel extends ExperimentPanel {
     return 3;
   }
   
+  public void displayInfoMessage(String infoMsg) {
+    
+    if (chartSelector.getSelectedIndex() == 0) {
+      PolarPlot plot = (PolarPlot) angleChart.getPlot();
+      plot.clearCornerTextItems();
+      plot.addCornerTextItem(infoMsg);
+    } else {
+      super.displayInfoMessage(infoMsg);
+    }
+    
+  }
+  
+  @Override
+  protected void clearChartAndSetProgressData() {
+    chartSelector.setSelectedIndex(0);
+    angleChart = ChartFactory.createPolarChart( expType.getName(), 
+        null, false, false, false);
+    chart = angleChart;
+    chartPanel.setChart(chart);
+    displayInfoMessage("Running calculation...");
+  }
+  
   @Override
   protected void updateData(DataStore ds) {
-    
-    chartSelector.setSelectedIndex(1);
-    chart = coherenceChart;
-    chartPanel.setChart(chart);
     
     set = true;
     
@@ -223,6 +241,7 @@ public class AzimuthPanel extends ExperimentPanel {
     // plot.addCornerTextItem(angleStr);
     
     PolarPlot plot = (PolarPlot) angleChart.getPlot();
+    plot.clearCornerTextItems();
     plot.addCornerTextItem(angleStr);
   }
   
