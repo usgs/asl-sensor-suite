@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,6 +24,8 @@ import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -57,7 +60,9 @@ import asl.sensor.utils.ReportingUtils;
  * @author akearns
  *
  */
-public abstract class ExperimentPanel extends JPanel implements ActionListener {
+public abstract class ExperimentPanel 
+extends JPanel 
+implements ActionListener, ChangeListener {
  
   private static final long serialVersionUID = -5591522915365766604L;
 
@@ -153,6 +158,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     
     expType = exp;
     expResult = ExperimentFactory.createExperiment(exp);
+    expResult.addChangeListener(this);
     
     chart = ChartFactory.createXYLineChart( expType.getName(), 
         "", "", null);
@@ -170,6 +176,17 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     this.add(save);
   }
   
+  @Override
+  /**
+   * Used to print out status of the experiment backend onto the chart
+   */
+  public void stateChanged(ChangeEvent e) {
+    if ( e.getSource() == expResult ) {
+      String info = expResult.getStatus();
+      displayInfoMessage(info);
+    }
+  }
+  
   /**
    * Handle's saving this plot's chart to file (PNG image) 
    * when the save button is clicked.
@@ -177,7 +194,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   @Override
   public void actionPerformed(ActionEvent e) {
     
-    if( e.getSource() == save ) {
+    if ( e.getSource() == save ) {
       String ext = ".png";
       fc.addChoosableFileFilter(
           new FileNameExtensionFilter("PNG image (.png)",ext) );
@@ -597,16 +614,6 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
       }
       
     };
-    
-    worker.addPropertyChangeListener( 
-        new PropertyChangeListener() {
-          public void propertyChange(PropertyChangeEvent evt) {
-              if ( Experiment.STATUS.equals( evt.getPropertyName() ) ) {
-                  displayInfoMessage( (String) evt.getNewValue() );
-              }
-          }
-        }
-    );
     
     worker.execute();
     

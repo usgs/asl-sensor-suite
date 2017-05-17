@@ -73,7 +73,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     StringBuilder sb = new StringBuilder();
     sb.append("Beginning rotations (offset angle esimates)\n");
     sb.append("for second and third sets of horizontal (N, E) data...");
-    fireStatusChange( sb.toString() );
+    fireStateChange( sb.toString() );
     
     // set angles and then rotate data 
     // (calling 'azi.setData()' includes internal call to azimuth backend)
@@ -87,24 +87,24 @@ public class NoiseNineExperiment extends NoiseExperiment {
     aziStore.setData(2, north2Sensor);
     azi.setData(aziStore);
     double north2Angle = -azi.getFitAngleRad();
-    fireStatusChange("Found orientation of second north sensor!");
+    fireStateChange("Found orientation of second north sensor!");
     
     aziStore.setData(2, east2Sensor);
     azi.setData(aziStore);
     double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
-    fireStatusChange("Found orientation of second east sensor!");
+    fireStateChange("Found orientation of second east sensor!");
     // need to offset rotation by 90 degrees -- don't want it facing north
     
     // same as above
     aziStore.setData(2, north3Sensor);
     azi.setData(aziStore);
     double north3Angle = -azi.getFitAngleRad();
-    fireStatusChange("Found orientation of third north sensor!");
+    fireStateChange("Found orientation of third north sensor!");
     
     aziStore.setData(2, east2Sensor);
     azi.setData(aziStore);
     double east3Angle = -azi.getFitAngleRad() - (Math.PI / 2);
-    fireStatusChange("Found orientation of third east sensor!");
+    fireStateChange("Found orientation of third east sensor!");
     
     // now to rotate the data according to these angles
     DataBlock north2Rotated =
@@ -115,7 +115,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
         TimeSeriesUtils.rotate(north3Sensor, east3Sensor, north3Angle);
     DataBlock east3Rotated =
         TimeSeriesUtils.rotate(east3Sensor, north3Sensor, east3Angle);
-    fireStatusChange("All offset horizontal data rotated!");
+    fireStateChange("All offset horizontal data rotated!");
     
     // set components into N,E,Z directional subcomponents
     
@@ -145,14 +145,14 @@ public class NoiseNineExperiment extends NoiseExperiment {
     
     // get noise from each axis's data
     NoiseExperiment noiseExp = new NoiseExperiment();
-    fireStatusChange("Calculating north noise components...");
+    fireStateChange("Calculating north noise components...");
     noiseExp.setFreqSpace(freqSpace);
     noiseExp.setData(northComponents);
     XYSeriesCollection northXYS = noiseExp.getData().get(0);
-    fireStatusChange("Calculating east noise components...");
+    fireStateChange("Calculating east noise components...");
     noiseExp.setData(eastComponents);
     XYSeriesCollection eastXYS = noiseExp.getData().get(0);
-    fireStatusChange("Calculating vertical noise components...");
+    fireStateChange("Calculating vertical noise components...");
     noiseExp.setData(vertComponents);
     XYSeriesCollection vertXYS = noiseExp.getData().get(0);
 

@@ -3,7 +3,12 @@ package asl.sensor.experiment;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.List;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
 
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
@@ -92,18 +97,18 @@ public abstract class Experiment {
   // SEED, RESP (if used), SEED, RESP (if used), etc.
   // That is, place response files after their associated timeseries
   
-  private PropertyChangeSupport propertyHelper;
+  private EventListenerList eventHelper;
   
   public Experiment() {
     start = 0L; end = 0L;
     dataNames = new ArrayList<String>();
     status = "";
-    propertyHelper = new PropertyChangeSupport(this);
+    eventHelper = new EventListenerList();
   }
   
   public void
-  addPropertyChangeListener(PropertyChangeListener listener) {
-      propertyHelper.addPropertyChangeListener(listener);
+  addChangeListener(ChangeListener listener) {
+     eventHelper.add(ChangeListener.class, listener);
   }
   
   /**
@@ -120,10 +125,19 @@ public abstract class Experiment {
    */
   public abstract int blocksNeeded();
   
-  protected void fireStatusChange(String newStatus) {
-    propertyHelper.firePropertyChange(STATUS, status, newStatus);
+  protected void fireStateChange(String newStatus) {
     status = newStatus;
-    System.out.println(status);
+    ChangeListener[] lsners = eventHelper.getListeners(ChangeListener.class);
+    if (lsners != null && lsners.length > 0) {
+      ChangeEvent evt = new ChangeEvent(this);
+      for (ChangeListener lsnr : lsners) {
+        lsnr.stateChanged(evt);
+      }
+    }
+  }
+  
+  public String getStatus() {
+    return status;
   }
   
   /**
@@ -180,8 +194,8 @@ public abstract class Experiment {
   }
    
   public void
-  removePropertyChangeListener(PropertyChangeListener listener) {
-      propertyHelper.removePropertyChangeListener(listener);
+  removeChangeListener(ChangeListener listener) {
+      eventHelper.remove(ChangeListener.class, listener);
   }
   
   /**
@@ -195,7 +209,7 @@ public abstract class Experiment {
     
     status = "";
     
-    fireStatusChange("Beginning loading data...");
+    fireStateChange("Beginning loading data...");
     
     if ( hasEnoughData(ds) && ( blocksNeeded() == 0 ) ) {
       // prevent null issue 
@@ -228,17 +242,17 @@ public abstract class Experiment {
       }
       
       if ( data.getInterval() != interval ) {
-        fireStatusChange("Downsampling data...");
+        fireStateChange("Downsampling data...");
         // System.out.println( interval+","+data.getInterval() );
         ds.matchIntervals();
       }
     }
     
-    fireStatusChange("Beginning calculations...");
+    fireStateChange("Beginning calculations...");
     
     backend(ds);
     
-    fireStatusChange("Calculations done!");
+    fireStateChange("Calculations done!");
   }
    
 }

@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.beans.PropertyChangeEvent;
 import java.util.List;
 
 import javax.swing.JComboBox;

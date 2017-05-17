@@ -631,7 +631,7 @@ public class RandomizedExperiment extends Experiment {
     // want to set up weight-scaling for the input so rotation doesn't dominate
     // solver's residual calculations, i.e., so no phase overfitting
     
-    fireStatusChange("Getting weighting....");
+    fireStateChange("Getting weighting....");
     
     maxArgWeight = 1.; maxMagWeight = 0.;
     Complex weightScaler = estResponse[normalIdx];
@@ -651,7 +651,7 @@ public class RandomizedExperiment extends Experiment {
       }
     }
     
-    fireStatusChange("Setting weight matrix...");
+    fireStateChange("Setting weight matrix...");
     // System.out.println(maxMagWeight);
     
     // we have the candidate mag and phase, now to turn them into weight values
@@ -670,7 +670,7 @@ public class RandomizedExperiment extends Experiment {
     
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
     
-    fireStatusChange("Getting estimate and setting up solver...");
+    fireStateChange("Getting estimate and setting up solver...");
     
     // now to set up a solver for the params -- first, get the input variables
     // complex values are technically two variables, each a double
@@ -727,7 +727,7 @@ public class RandomizedExperiment extends Experiment {
         checker(svc).
         build();
     
-    fireStatusChange("Built least-squares problem; evaluating intial guess...");
+    fireStateChange("Built least-squares problem; evaluating intial guess...");
 
 
     // residuals used to determine quality of solution convergence
@@ -771,7 +771,7 @@ public class RandomizedExperiment extends Experiment {
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
     
-    fireStatusChange("Compiling data...");
+    fireStateChange("Compiling data...");
     
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = freqs.length + i;
