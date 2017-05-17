@@ -131,7 +131,8 @@ public class AzimuthExperiment extends Experiment {
     RealVector angleVector = optimumY.getPoint();
     double tempAngle = angleVector.getEntry(0);
     
-    System.out.println("Found initial guess for angle");
+    String newStatus = "Found initial guess for angle";
+    fireStateChange(newStatus);
     
     if (simpleCalc) {
       // just stop here, don't do windowing
@@ -158,11 +159,15 @@ public class AzimuthExperiment extends Experiment {
     final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
     int numWindows = (int) ( (timeRange - twoThouSecs) / fiveHundSecs);
     
-    System.out.println("Num. windows for better fit: " + numWindows);
-    
     for (int i = 0; i < numWindows; ++i) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("Fitting angle over data in window ");
+      sb.append(i + 1);
+      sb.append(" of ");
+      sb.append(numWindows);
+      newStatus = sb.toString();
       
-      System.out.println("Fitting angle over data in window " + i);
+      fireStateChange(newStatus);
       
       if (timeRange < 2 * twoThouSecs) {
         break;
@@ -199,7 +204,7 @@ public class AzimuthExperiment extends Experiment {
     }
     
     if (angleCoherenceList.size() < 1) {
-      System.out.println("Too little data for good angle estimation...");
+      fireStateChange("Window size too small for good angle estimation...");
       angle = Math.toDegrees( angleVector.getEntry(0) );
     } else {
       // get the best-coherence estimations of angle and average them
@@ -229,7 +234,7 @@ public class AzimuthExperiment extends Experiment {
       
     }
 
-    System.out.println("Found angle");
+    fireStateChange("Found angle");
     
     double angleDeg = Math.toDegrees(angle);
     angleDeg = ( (angleDeg % 360) + 360 ) % 360;
@@ -257,7 +262,6 @@ public class AzimuthExperiment extends Experiment {
     }
     
     xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
-    
     
   }
   

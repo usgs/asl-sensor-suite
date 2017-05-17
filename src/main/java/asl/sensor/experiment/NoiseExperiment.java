@@ -1,7 +1,5 @@
 package asl.sensor.experiment;
 
-import java.util.ArrayList;
-
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -79,6 +77,8 @@ public class NoiseExperiment extends Experiment {
     Complex[][] spectra = new Complex[3][];
     double[] freqs = new double[1]; // initialize to prevent later errors
     
+    fireStateChange("Getting PSDs of each series...");
+    
     // initialize the values above to have relevant data
     for (int i = 0; i < respIndices.length; ++i) {
       // note that frequency is applied during the ds
@@ -87,6 +87,8 @@ public class NoiseExperiment extends Experiment {
     }
     
     addToPlot(ds, freqSpace, respIndices, xysc);
+    
+    fireStateChange("Getting crosspower of each series...");
     
     // spectra[i] is crosspower pii, now to get pij terms for i!=j
     FFTResult fft = 
@@ -106,6 +108,8 @@ public class NoiseExperiment extends Experiment {
       noiseSeriesArr[j] = 
           new XYSeries( "Noise " + dataIn[j].getName() + " ["  + j + "]" );
     }
+    
+    fireStateChange("Doing noise esimation calculations...");
     
     for (int i = 1; i < freqs.length; ++i) {
         if (1/freqs[i] > 1.0E3){

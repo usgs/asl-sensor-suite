@@ -1,7 +1,14 @@
 package asl.sensor.experiment;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.List;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
 
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
@@ -29,6 +36,8 @@ public abstract class Experiment {
   
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
+  
+  public static final String STATUS = "status";
   
   /**
    * Helper function to add data from a datastore object (the PSD calculation)
@@ -78,19 +87,28 @@ public abstract class Experiment {
     }
     
   }
-  
   long start;
   long end;
   protected List<XYSeriesCollection> xySeriesData;
+  private String status;
   protected List<String> dataNames; // list of filenames of seed, resp files
   // NOTE: if implementing new experiment, best to use consistent ordering with
   // current set of experiments for this list: 
   // SEED, RESP (if used), SEED, RESP (if used), etc.
   // That is, place response files after their associated timeseries
   
+  private EventListenerList eventHelper;
+  
   public Experiment() {
     start = 0L; end = 0L;
     dataNames = new ArrayList<String>();
+    status = "";
+    eventHelper = new EventListenerList();
+  }
+  
+  public void
+  addChangeListener(ChangeListener listener) {
+     eventHelper.add(ChangeListener.class, listener);
   }
   
   /**
@@ -106,6 +124,21 @@ public abstract class Experiment {
    * @return Number of blocks needed as integer
    */
   public abstract int blocksNeeded();
+  
+  protected void fireStateChange(String newStatus) {
+    status = newStatus;
+    ChangeListener[] lsners = eventHelper.getListeners(ChangeListener.class);
+    if (lsners != null && lsners.length > 0) {
+      ChangeEvent evt = new ChangeEvent(this);
+      for (ChangeListener lsnr : lsners) {
+        lsnr.stateChanged(evt);
+      }
+    }
+  }
+  
+  public String getStatus() {
+    return status;
+  }
   
   /**
    * Return the plottable data for this experiment, populated in the backend
@@ -125,6 +158,14 @@ public abstract class Experiment {
    */
   public long getEnd() {
     return end;
+  }
+  
+  /**
+   * Get the names of data sent into program (set during backend calculations)
+   * @return
+   */
+  public List<String> getInputNames() {
+    return dataNames;
   }
   
   /**
@@ -151,15 +192,12 @@ public abstract class Experiment {
     // override this in functions that use a backend including responses
     return new int[]{};
   }
-  
-  /**
-   * Get the names of data sent into program (set during backend calculations)
-   * @return
-   */
-  public List<String> getInputNames() {
-    return dataNames;
-  }
    
+  public void
+  removeChangeListener(ChangeListener listener) {
+      eventHelper.remove(ChangeListener.class, listener);
+  }
+  
   /**
    * Driver to do data processing on inputted data (calls a concrete backend
    * method which is different for each type of experiment)
@@ -168,6 +206,10 @@ public abstract class Experiment {
    * @param ds Timeseries data to be processed
    */
   public void setData(final DataStore ds) {
+    
+    status = "";
+    
+    fireStateChange("Beginning loading data...");
     
     if ( hasEnoughData(ds) && ( blocksNeeded() == 0 ) ) {
       // prevent null issue 
@@ -200,12 +242,17 @@ public abstract class Experiment {
       }
       
       if ( data.getInterval() != interval ) {
+        fireStateChange("Downsampling data...");
         // System.out.println( interval+","+data.getInterval() );
         ds.matchIntervals();
       }
     }
     
+    fireStateChange("Beginning calculations...");
+    
     backend(ds);
+    
+    fireStateChange("Calculations done!");
   }
    
 }

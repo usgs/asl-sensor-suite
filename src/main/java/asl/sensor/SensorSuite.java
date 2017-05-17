@@ -134,7 +134,6 @@ public class SensorSuite extends JPanel
       
       ReportingUtils.imageListToPDFPages(pdf, toFile);
 
-      // TODO: response string generation goes here
       ReportingUtils.textListToPDFPages(pdf, responses);
     }
 
@@ -260,16 +259,8 @@ public class SensorSuite extends JPanel
         }
       }
       
-      worker = new SwingWorker<Integer, Void>() {
-        
-        @Override
-        public Integer doInBackground() {
-          resetTabPlots();
-          return 0;
-        }
-        
-      };
-      worker.execute();
+      resetTabPlots();
+      
       return;
     } else if ( e.getSource() == savePDF ) {
 
@@ -433,7 +424,7 @@ public class SensorSuite extends JPanel
     
     // now, update the data
 
-    ep.updateData(ds);
+    ep.runExperiment(ds, worker);
     
     savePDF.setEnabled( ep.hasRun() );
   }

@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.beans.PropertyChangeEvent;
 import java.util.List;
 
 import javax.swing.JComboBox;
@@ -147,6 +148,14 @@ public class AzimuthPanel extends ExperimentPanel {
   }
   
   @Override
+  protected void drawCharts() {
+    chartSelector.setEnabled(true);
+    chartSelector.setSelectedIndex(0);
+    chart = angleChart;
+    chartPanel.setChart(chart);
+  }
+
+  @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{angleChart, coherenceChart};
   }
@@ -162,14 +171,36 @@ public class AzimuthPanel extends ExperimentPanel {
     angleStr += " + " + value + " = " + result;
     return angleStr;
   }
-
+  
   @Override
   public int panelsNeeded() {
     return 3;
   }
   
+  public void displayInfoMessage(String infoMsg) {
+    
+    if (chartSelector.getSelectedIndex() == 0) {
+      PolarPlot plot = (PolarPlot) angleChart.getPlot();
+      plot.clearCornerTextItems();
+      plot.addCornerTextItem(infoMsg);
+    } else {
+      super.displayInfoMessage(infoMsg);
+    }
+    
+  }
+  
   @Override
-  public void updateData(DataStore ds) {
+  protected void clearChartAndSetProgressData() {
+    chartSelector.setSelectedIndex(0);
+    angleChart = ChartFactory.createPolarChart( expType.getName(), 
+        null, false, false, false);
+    chart = angleChart;
+    chartPanel.setChart(chart);
+    displayInfoMessage("Running calculation...");
+  }
+  
+  @Override
+  protected void updateData(DataStore ds) {
     
     set = true;
     
@@ -181,8 +212,6 @@ public class AzimuthPanel extends ExperimentPanel {
     
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     az.setOffset(value);
-    
-    clearChartAndSetProgressData();
     
     expResult.setData(ds);
     
@@ -213,15 +242,8 @@ public class AzimuthPanel extends ExperimentPanel {
     // plot.addCornerTextItem(angleStr);
     
     PolarPlot plot = (PolarPlot) angleChart.getPlot();
+    plot.clearCornerTextItems();
     plot.addCornerTextItem(angleStr);
-    
-    if ( chartSelector.getSelectedIndex() == 0 ) {
-      chart = angleChart;
-    } else {
-      chart = coherenceChart;
-    }
-    
-    chartPanel.setChart(chart);
   }
   
 }

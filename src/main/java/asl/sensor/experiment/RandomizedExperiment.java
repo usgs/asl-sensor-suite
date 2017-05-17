@@ -577,8 +577,9 @@ public class RandomizedExperiment extends Experiment {
     }
     
     // next, normalize estimated response
-    XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
-    XYSeries calcArg = new XYSeries("Calc. resp. phase");
+    String name = sensorOut.getName();
+    XYSeries calcMag = new XYSeries("Calc. resp. (" + name + ") magnitude");
+    XYSeries calcArg = new XYSeries("Calc. resp. (" + name + ") phase");
     
     // scaling values, used to set curve values to 0 at 1Hz
     Complex scaleValue = estResponse[normalIdx];
@@ -630,7 +631,7 @@ public class RandomizedExperiment extends Experiment {
     // want to set up weight-scaling for the input so rotation doesn't dominate
     // solver's residual calculations, i.e., so no phase overfitting
     
-    System.out.println("Getting weighting....");
+    fireStateChange("Getting weighting....");
     
     maxArgWeight = 1.; maxMagWeight = 0.;
     Complex weightScaler = estResponse[normalIdx];
@@ -650,7 +651,7 @@ public class RandomizedExperiment extends Experiment {
       }
     }
     
-    System.out.println("Setting weight matrix...");
+    fireStateChange("Setting weight matrix...");
     // System.out.println(maxMagWeight);
     
     // we have the candidate mag and phase, now to turn them into weight values
@@ -669,7 +670,7 @@ public class RandomizedExperiment extends Experiment {
     
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
     
-    System.out.println("Weighting done!");
+    fireStateChange("Getting estimate and setting up solver...");
     
     // now to set up a solver for the params -- first, get the input variables
     // complex values are technically two variables, each a double
@@ -707,7 +708,7 @@ public class RandomizedExperiment extends Experiment {
         withCostRelativeTolerance(1.0E-7).
         withParameterRelativeTolerance(1.0E-7);
     
-    String name = fitResponse.getName();
+    name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
     XYSeries initArg = new XYSeries("Initial param (" + name + ") phase");
     
@@ -726,7 +727,7 @@ public class RandomizedExperiment extends Experiment {
         checker(svc).
         build();
     
-    System.out.println("lsp built");
+    fireStateChange("Built least-squares problem; evaluating intial guess...");
 
 
     // residuals used to determine quality of solution convergence
@@ -734,7 +735,7 @@ public class RandomizedExperiment extends Experiment {
     LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     initialResidual = initEval.getCost();
     
-    System.out.println("Got initial evaluation");
+    System.out.println("Got initial evaluation; running solver...");
     
     double[] initialValues =
         jacobian.value(initialGuess).getFirst().toArray();
@@ -770,6 +771,7 @@ public class RandomizedExperiment extends Experiment {
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
     
+    fireStateChange("Compiling data...");
     
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = freqs.length + i;
@@ -803,8 +805,6 @@ public class RandomizedExperiment extends Experiment {
     xysc.addSeries(initResidPhase);
     xysc.addSeries(fitResidPhase);
     xySeriesData.add(xysc);
-    
-    System.out.println("Done!");
     
   }
   

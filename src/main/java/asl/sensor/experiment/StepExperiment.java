@@ -235,7 +235,7 @@ public class StepExperiment extends Experiment{
     // add plot of step stuff
     xySeriesData.add(xysc);
 
-    System.out.println("Fit gotten. Getting Bode plots...");
+    fireStateChange("Fit gotten. Getting Bode plots...");
     
     // now add the plots of response curve and magnitude from init & fit value
     
@@ -296,7 +296,6 @@ public class StepExperiment extends Experiment{
     phaseCollection.addSeries(fitPhase);
     xySeriesData.add(phaseCollection);
     
-    System.out.println("Done!");
   }
   
   @Override

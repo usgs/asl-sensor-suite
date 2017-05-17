@@ -320,6 +320,16 @@ public class RandomizedPanel extends ExperimentPanel {
   }
   
   @Override
+  protected void drawCharts() {
+    // just force the active plot at the start to be the amplitude plot
+    plotSelection.setSelectedIndex(0);
+    chart = magChart;
+    chartPanel.setChart(chart);
+    chartPanel.setMouseZoomable(true);
+    
+  }
+  
+  @Override
   public String[] getAdditionalReportPages() {
     // produce output of poles and zeros as period values in new report page
     
@@ -333,6 +343,16 @@ public class RandomizedPanel extends ExperimentPanel {
     return new JFreeChart[]{magChart, argChart};
   }
   
+  @Override
+  /**
+   * Get the index of the data holding the sensor output.
+   * Note that the input data list is listed as CAL, OUT, RESP, so the
+   * relevant index is the second one
+   */
+  protected int getIndexOfMainData() {
+    return 1;
+  }
+  
   /**
    * Used to get the text that will populate the inset box for the plots
    * @return String to place in TextTitle
@@ -343,6 +363,7 @@ public class RandomizedPanel extends ExperimentPanel {
     return getInsetString(rnd);
   }
   
+  
   @Override
   public String getMetadataString() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
@@ -351,28 +372,12 @@ public class RandomizedPanel extends ExperimentPanel {
     
     double[] weights = rnd.getWeights();
     sb.append("Residuals weighting:\n");
-    sb.append("Magnitude weighting: ");
+    sb.append("Amplitude weighting: ");
     sb.append(weights[0]);
     sb.append("\n");
     sb.append("Phase weighting: ");
     sb.append(weights[1]);
     return sb.toString();
-  }
-  
-  @Override
-  public JFreeChart[] getSecondPageCharts() {
-    return new JFreeChart[]{residChart};
-  }
-  
-  
-  @Override
-  /**
-   * Get the index of the data holding the sensor output.
-   * Note that the input data list is listed as CAL, OUT, RESP, so the
-   * relevant index is the second one
-   */
-  protected int getIndexOfMainData() {
-    return 1;
   }
   
   @Override
@@ -417,6 +422,11 @@ public class RandomizedPanel extends ExperimentPanel {
   }
   
   @Override
+  public JFreeChart[] getSecondPageCharts() {
+    return new JFreeChart[]{residChart};
+  }
+  
+  @Override
   public ValueAxis getYAxis() {
     
     if ( null == plotSelection ) {
@@ -427,14 +437,14 @@ public class RandomizedPanel extends ExperimentPanel {
     ValueAxis[] out = new ValueAxis[]{yAxis, degreeAxis, residAxis};
     return out[idx];
   }
-  
+
   @Override
   public int panelsNeeded() {
     return 2;
   }
 
   @Override
-  public void updateData(DataStore ds) {
+  protected void updateData(DataStore ds) {
     
     set = true;
 
@@ -457,7 +467,6 @@ public class RandomizedPanel extends ExperimentPanel {
       appendFreqTitle += " | SOLVER NOT RUN";
     }
     
-    clearChartAndSetProgressData();
     
     List<XYSeriesCollection> xysc = expResult.getData();
     
@@ -508,15 +517,10 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
-    plotSelection.setSelectedIndex(0);
-    chart = magChart;
-    chartPanel.setChart(chart);
-    chartPanel.setMouseZoomable(true);
-    
     residChart = buildChart(xysc.get(2), xAxis, residAxis);
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();
-    sb.append("Magnitude weighting: ");
+    sb.append("Amplitude weighting: ");
     sb.append(weights[0]);
     sb.append("\nPhase weighting: ");
     sb.append(weights[1]);
@@ -528,18 +532,6 @@ public class RandomizedPanel extends ExperimentPanel {
     XYPlot residPlot = residChart.getXYPlot();
     residPlot.clearAnnotations();
     residPlot.addAnnotation(weightAnnot);
-    
-    /*
-    if (idx == 0) {
-      int idx = plotSelection.getSelectedIndex();
-      chart = magChart;
-    } else {
-      chart = argChart;
-      // chart.getXYPlot().getRangeAxis().setRange(argRange); 
-    }
-    */
-
-    
   }
 
 }
