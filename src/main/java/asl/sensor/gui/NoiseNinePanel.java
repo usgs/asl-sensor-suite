@@ -133,6 +133,23 @@ public class NoiseNinePanel extends NoisePanel {
     
   }
   
+  protected void drawCharts() {
+    
+    int idx = plotSelection.getSelectedIndex();
+    
+    if (idx == 0) {
+      chart = northChart;
+    } else if (idx == 1){
+      chart = eastChart;
+    } else {
+      chart = vertChart;
+    }
+
+    chartPanel.setChart(chart);
+    chartPanel.setMouseZoomable(true);
+
+  }
+  
   @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{northChart, eastChart, vertChart};
@@ -142,8 +159,6 @@ public class NoiseNinePanel extends NoisePanel {
   public int panelsNeeded() {
     return 9;
   }
-  
-  
   
   @Override
   public void updateData(final DataStore ds) {
@@ -156,8 +171,6 @@ public class NoiseNinePanel extends NoisePanel {
 
     NoiseNineExperiment noisExp = (NoiseNineExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);
-    
-    clearChartAndSetProgressData();
     
     expResult.setData(ds);
     
@@ -193,20 +206,7 @@ public class NoiseNinePanel extends NoisePanel {
     vertChart = buildChart( expResult.getData().get(2) );
     vertChart.setTitle("Self-noise (VERTICAL)");
     System.out.println("Vert chart set!");
-    
-    int idx = plotSelection.getSelectedIndex();
-    if (idx == 0) {
-      chart = northChart;
-    } else if (idx == 1){
-      chart = eastChart;
-    } else {
-      chart = vertChart;
-    }
-
-    chartPanel.setChart(chart);
-    chartPanel.setMouseZoomable(true);
-
-
+  
   }
   
 }

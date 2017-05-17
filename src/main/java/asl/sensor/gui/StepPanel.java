@@ -190,8 +190,29 @@ public class StepPanel extends ExperimentPanel {
   }
   
   @Override
+  protected void drawCharts() {
+    JFreeChart[] charts = getCharts();
+    int idx = plotSelection.getSelectedIndex();
+    chart = charts[idx];
+    
+    chartPanel.setChart(charts[idx]);
+    chartPanel.restoreAutoBounds();
+    chartPanel.validate();
+  }
+  
+  @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{stepChart, magChart, phaseChart};
+  }
+  
+  @Override
+  /**
+   * Get the index of the data holding the sensor output.
+   * Note that the input data list is listed as CAL, OUT, RESP, so the
+   * relevant index is the second one
+   */
+  protected int getIndexOfMainData() {
+    return 1;
   }
   
   /**
@@ -232,7 +253,7 @@ public class StepPanel extends ExperimentPanel {
     int idx = plotSelection.getSelectedIndex();
     return array[idx];
   }
-  
+
   @Override
   public ValueAxis getYAxis() {
     
@@ -244,33 +265,21 @@ public class StepPanel extends ExperimentPanel {
     int idx = plotSelection.getSelectedIndex();
     return array[idx];
   }
-  
-  @Override
-  /**
-   * Get the index of the data holding the sensor output.
-   * Note that the input data list is listed as CAL, OUT, RESP, so the
-   * relevant index is the second one
-   */
-  protected int getIndexOfMainData() {
-    return 1;
-  }
 
   @Override
   public int panelsNeeded() {
     return 2;
   }
-
+  
   /**
    * Pass in and retrieve data from the step experiment backend, to plot;
    * this is both the timeseries data as well as a title inset displaying
    * the parameters used in the plot calculations
    */
   @Override
-  public void updateData(final DataStore ds) {
+  protected void updateData(final DataStore ds) {
     
     set = true;
-    
-    clearChartAndSetProgressData();
     
     expResult.setData(ds);
     
@@ -306,14 +315,6 @@ public class StepPanel extends ExperimentPanel {
     //xyp = phaseChart.getXYPlot();
     //xyp.setDomainAxis(freqAxis);
     //xyp.setRangeAxis(phaseAxis);
-    
-    JFreeChart[] charts = getCharts();
-    int idx = plotSelection.getSelectedIndex();
-    chart = charts[idx];
-    
-    chartPanel.setChart(charts[idx]);
-    chartPanel.restoreAutoBounds();
-    chartPanel.validate();
   }
 
 }

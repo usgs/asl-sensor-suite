@@ -147,6 +147,17 @@ public class AzimuthPanel extends ExperimentPanel {
   }
   
   @Override
+  protected void drawCharts() {
+    if ( chartSelector.getSelectedIndex() == 0 ) {
+      chart = angleChart;
+    } else {
+      chart = coherenceChart;
+    }
+    
+    chartPanel.setChart(chart);
+  }
+
+  @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{angleChart, coherenceChart};
   }
@@ -162,14 +173,14 @@ public class AzimuthPanel extends ExperimentPanel {
     angleStr += " + " + value + " = " + result;
     return angleStr;
   }
-
+  
   @Override
   public int panelsNeeded() {
     return 3;
   }
   
   @Override
-  public void updateData(DataStore ds) {
+  protected void updateData(DataStore ds) {
     
     set = true;
     
@@ -181,8 +192,6 @@ public class AzimuthPanel extends ExperimentPanel {
     
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     az.setOffset(value);
-    
-    clearChartAndSetProgressData();
     
     expResult.setData(ds);
     
@@ -214,14 +223,6 @@ public class AzimuthPanel extends ExperimentPanel {
     
     PolarPlot plot = (PolarPlot) angleChart.getPlot();
     plot.addCornerTextItem(angleStr);
-    
-    if ( chartSelector.getSelectedIndex() == 0 ) {
-      chart = angleChart;
-    } else {
-      chart = coherenceChart;
-    }
-    
-    chartPanel.setChart(chart);
   }
   
 }
