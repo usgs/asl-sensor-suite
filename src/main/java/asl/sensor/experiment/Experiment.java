@@ -1,9 +1,6 @@
 package asl.sensor.experiment;
 
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
-import java.util.EventListener;
 import java.util.List;
 
 import javax.swing.event.ChangeEvent;

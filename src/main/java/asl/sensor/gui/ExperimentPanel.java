@@ -5,13 +5,10 @@ import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +33,7 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
@@ -674,6 +672,25 @@ implements ActionListener, ChangeListener {
 
      chart = buildChart(xyDataset);
 
+  }
+  
+  /**
+   * Reverses an xyplot rendering order, allowing curves that would otherwise be
+   * at the background are inverted and placed in the foreground instead.
+   * That is, if a curve is to be rendered behind a different curve, it will be
+   * rendered instead with that series in front of the other curve.
+   * @param chart Chart with plot rendering order to be reversed. Must use
+   * an XY plot (i.e., is an XYLineSeries chart)
+   */
+  public static void invertSeriesRenderingOrder(JFreeChart chart) {
+    XYPlot xyp = chart.getXYPlot();
+    SeriesRenderingOrder sro = xyp.getSeriesRenderingOrder();
+    if ( sro.equals(SeriesRenderingOrder.FORWARD) ) {
+      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.REVERSE);
+    } else {
+      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
+    }
+    
   }
 
   /**
