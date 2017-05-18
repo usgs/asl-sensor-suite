@@ -470,6 +470,8 @@ public class RandomizedPanel extends ExperimentPanel {
     
     List<XYSeriesCollection> xysc = expResult.getData();
     
+
+    
     XYSeriesCollection magSeries = xysc.get(0);
     XYSeriesCollection argSeries = xysc.get(1);
     
@@ -486,8 +488,10 @@ public class RandomizedPanel extends ExperimentPanel {
     
     argChart = buildChart(argSeries, xAxis, degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    invertSeriesRenderingOrder( argChart );
     
     magChart = buildChart(magSeries, xAxis, yAxis);
+    invertSeriesRenderingOrder( magChart );
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
     String inset = getInsetString();
