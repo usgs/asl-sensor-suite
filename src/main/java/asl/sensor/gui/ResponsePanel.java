@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -231,11 +232,58 @@ public class ResponsePanel extends ExperimentPanel {
     
   }
   
+  protected void drawCharts() {
+
+    int idx = plotSelection.getSelectedIndex();
+    
+    if (idx == 0) {
+      chart = magChart;
+    } else {
+      chart = argChart;
+    }
+    
+    chartPanel.setChart(chart);
+    chartPanel.setMouseZoomable(true);
+    
+  }
+  
   @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{magChart, argChart};
   }
   
+  @Override
+  /**
+   * Produce the filename of the report generated from this experiment.
+   * Since response data is not directly associated with data at a given
+   * time, rather than a sensor as a whole, we merely use the current date
+   * and the first response used in the experiment.
+   * @return String that will be default filename of PDF generated from data
+   */
+  public String getPDFFilename() {
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    // experiment has no time metadata to be associated with it, get time now
+    String date = sdf.format( cCal.getTime() );
+    
+    String test = expType.getName().replace(' ', '_');
+    
+    int idx = getIndexOfMainData(); // first resp in list
+    String name = expResult.getInputNames().get(idx);
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append(test);
+    sb.append('_');
+    sb.append(name);
+    sb.append('_');
+    sb.append(date);
+    sb.append(".pdf");
+    return sb.toString();
+    
+  }
+
   @Override
   public ValueAxis getXAxis() {
     
@@ -259,7 +307,7 @@ public class ResponsePanel extends ExperimentPanel {
     
     return axes[plotSelection.getSelectedIndex()];
   }
-
+  
   @Override
   public int panelsNeeded() {
     return 3;
@@ -271,16 +319,16 @@ public class ResponsePanel extends ExperimentPanel {
   }
   
   @Override
-  public void updateData(DataStore ds) {
+  protected void updateData(DataStore ds) {
 
+    set = true;
+    
     seriesColorMap = new HashMap<String, Color>();
     
     boolean freqSpace = freqSpaceBox.isSelected();
     ResponseExperiment respExp = (ResponseExperiment) expResult;
     respExp.setFreqSpace(freqSpace);
     expResult.setData(ds);
-    
-    set = true;
     
     List<XYSeriesCollection> xysc = expResult.getData();
     XYSeriesCollection magSeries = xysc.get(0);
@@ -294,8 +342,6 @@ public class ResponsePanel extends ExperimentPanel {
         seriesColorMap.put(argName, toColor);
     }
     
-    int idx = plotSelection.getSelectedIndex();
-    
     argChart = buildChart(argSeries);
     argChart.getXYPlot().setRangeAxis(degreeAxis);
     // argChart.getXYPlot().setDomainAxis( getXAxis() );
@@ -303,15 +349,6 @@ public class ResponsePanel extends ExperimentPanel {
     magChart = buildChart(magSeries);
     magChart.getXYPlot().setRangeAxis(yAxis);
     // argChart.getXYPlot().setDomainAxis( getXAxis() );
-
-    if (idx == 0) {
-      chart = magChart;
-    } else {
-      chart = argChart;
-    }
-    chartPanel.setChart(chart);
-    chartPanel.setMouseZoomable(true);
-    
   }
 
 }

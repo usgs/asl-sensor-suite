@@ -62,27 +62,18 @@ public class AzimuthExperiment extends Experiment {
     simpleCalc = false;
   }
   
-  /**
-   * Used to set a simple calculation of rotation angle, such as for
-   * nine-input self-noise. This is the case where the additional windowing
-   * is NOT done, and the initial least-squares guess gives us an answer.
-   * When creating an instance of this object, this is set to false and only
-   * needs to be explicitly set when a simple calculation is desired.
-   * @param isSimple True if a simple calculation should be done
-   */
-  public void setSimple(boolean isSimple) {
-    simpleCalc = isSimple;
-  }
-  
   @Override
   protected void backend(final DataStore ds) {
     
-    // assume the first two are the reference and the second two are the test?
-    
-    // we just need four timeseries, don't actually care about response
+    // assume the first two are the reference and the second two are the test
+    // we just need the timeseries, don't actually care about response
     DataBlock testNorthBlock = new DataBlock( ds.getXthLoadedBlock(1) );
     DataBlock testEastBlock = new DataBlock( ds.getXthLoadedBlock(2) );
     DataBlock refNorthBlock = new DataBlock( ds.getXthLoadedBlock(3) );
+    
+    dataNames.add( testNorthBlock.getName() );
+    dataNames.add( testEastBlock.getName() );
+    dataNames.add( refNorthBlock.getName() );
     
     List<Number> testNorth = new ArrayList<Number>( testNorthBlock.getData() );
     String northName = testNorthBlock.getName();
@@ -140,7 +131,8 @@ public class AzimuthExperiment extends Experiment {
     RealVector angleVector = optimumY.getPoint();
     double tempAngle = angleVector.getEntry(0);
     
-    System.out.println("Found initial guess for angle");
+    String newStatus = "Found initial guess for angle";
+    fireStateChange(newStatus);
     
     if (simpleCalc) {
       // just stop here, don't do windowing
@@ -167,11 +159,15 @@ public class AzimuthExperiment extends Experiment {
     final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
     int numWindows = (int) ( (timeRange - twoThouSecs) / fiveHundSecs);
     
-    System.out.println("Num. windows for better fit: " + numWindows);
-    
     for (int i = 0; i < numWindows; ++i) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("Fitting angle over data in window ");
+      sb.append(i + 1);
+      sb.append(" of ");
+      sb.append(numWindows);
+      newStatus = sb.toString();
       
-      System.out.println("Fitting angle over data in window " + i);
+      fireStateChange(newStatus);
       
       if (timeRange < 2 * twoThouSecs) {
         break;
@@ -208,7 +204,7 @@ public class AzimuthExperiment extends Experiment {
     }
     
     if (angleCoherenceList.size() < 1) {
-      System.out.println("Too little data for good angle estimation...");
+      fireStateChange("Window size too small for good angle estimation...");
       angle = Math.toDegrees( angleVector.getEntry(0) );
     } else {
       // get the best-coherence estimations of angle and average them
@@ -238,7 +234,7 @@ public class AzimuthExperiment extends Experiment {
       
     }
 
-    System.out.println("Found angle");
+    fireStateChange("Found angle");
     
     double angleDeg = Math.toDegrees(angle);
     angleDeg = ( (angleDeg % 360) + 360 ) % 360;
@@ -267,14 +263,13 @@ public class AzimuthExperiment extends Experiment {
     
     xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
     
-    
   }
-
+  
   @Override
   public int blocksNeeded() {
     return 3;
   }
-  
+
   /**
    * Return the fit angle calculated by the backend in degrees
    * @return angle result in degrees
@@ -289,6 +284,39 @@ public class AzimuthExperiment extends Experiment {
    */
   public double getFitAngleRad() {
     return angle;
+  }
+  
+  /**
+   * Returns the jacobian function for this object given input data blocks.
+   * The data blocks are set here because they are what will be rotated by
+   * the given angle (the realvector point is the angle).
+   * This allows us to fix the datablocks in question while varying the angle,
+   * and calling the jacobian on different datablocks, such as when finding
+   * the windows of maximum coherence.
+   * @param db1 Test north data block
+   * @param db2 Test east data block
+   * @param db3 Ref. north data block
+   * @return jacobian function to fit an angle of max coherence of this data
+   */
+  private MultivariateJacobianFunction 
+  getJacobianFunction(DataBlock db1, DataBlock db2, DataBlock db3) {
+    
+    // make my func the j-func, I want that func-y stuff
+    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
+
+      final DataBlock finalTestNorthBlock = db1;
+      final DataBlock finalTestEastBlock = db2;
+      final DataBlock finalRefNorthBlock = db3;
+
+      public Pair<RealVector, RealMatrix> value(final RealVector point) {
+        return jacobian(point, 
+            finalRefNorthBlock, 
+            finalTestNorthBlock, 
+            finalTestEastBlock);
+      }
+    };
+    
+    return jFunc; 
   }
   
   public double getOffset() {
@@ -439,36 +467,15 @@ public class AzimuthExperiment extends Experiment {
   }
   
   /**
-   * Returns the jacobian function for this object given input data blocks.
-   * The data blocks are set here because they are what will be rotated by
-   * the given angle (the realvector point is the angle).
-   * This allows us to fix the datablocks in question while varying the angle,
-   * and calling the jacobian on different datablocks, such as when finding
-   * the windows of maximum coherence.
-   * @param db1 Test north data block
-   * @param db2 Test east data block
-   * @param db3 Ref. north data block
-   * @return jacobian function to fit an angle of max coherence of this data
+   * Used to set a simple calculation of rotation angle, such as for
+   * nine-input self-noise. This is the case where the additional windowing
+   * is NOT done, and the initial least-squares guess gives us an answer.
+   * When creating an instance of this object, this is set to false and only
+   * needs to be explicitly set when a simple calculation is desired.
+   * @param isSimple True if a simple calculation should be done
    */
-  private MultivariateJacobianFunction 
-  getJacobianFunction(DataBlock db1, DataBlock db2, DataBlock db3) {
-    
-    // make my func the j-func, I want that func-y stuff
-    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
-
-      final DataBlock finalTestNorthBlock = db1;
-      final DataBlock finalTestEastBlock = db2;
-      final DataBlock finalRefNorthBlock = db3;
-
-      public Pair<RealVector, RealMatrix> value(final RealVector point) {
-        return jacobian(point, 
-            finalRefNorthBlock, 
-            finalTestNorthBlock, 
-            finalTestEastBlock);
-      }
-    };
-    
-    return jFunc; 
+  public void setSimple(boolean isSimple) {
+    simpleCalc = isSimple;
   }
   
 }

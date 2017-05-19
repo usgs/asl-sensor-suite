@@ -432,6 +432,11 @@ public class RandomizedExperiment extends Experiment {
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
   
+  // when true, doesn't run solver, in event parameters have an issue
+  // (does the solver seem to have frozen? try rebuilding with this as true,
+  // and then run the plot -- show nominal resp. and estimated curves)
+  public final boolean skipSolving = false;
+  
   private boolean lowFreq; // fit the low- or high-frequency poles?
   
   private InstrumentResponse fitResponse;
@@ -439,11 +444,11 @@ public class RandomizedExperiment extends Experiment {
   private double[] freqs;
   private double nyquist;
   
+  private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
+  
   private int normalIdx; // location of value to set to 0 in curves for scaling
  
   private int sensorOutIdx; // location to load response from?
-  
-  private String responseName;
   
   public RandomizedExperiment() {
     super();
@@ -451,6 +456,11 @@ public class RandomizedExperiment extends Experiment {
     normalIdx = 0;
   }
   
+  /*
+   * (non-Javadoc)
+   * BACKEND FUNCTION BEGINS HERE
+   * @see asl.sensor.experiment.Experiment#backend(asl.sensor.input.DataStore)
+   */
   @Override
   protected void backend(DataStore ds) {
     
@@ -464,7 +474,10 @@ public class RandomizedExperiment extends Experiment {
 
     DataBlock sensorOut = ds.getBlock(sensorOutIdx);
     fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIdx) );
-    responseName = fitResponse.getName();
+    
+    dataNames.add( calib.getName() );
+    dataNames.add( sensorOut.getName() );
+    dataNames.add( fitResponse.getName() );
     
     initialPoles = new ArrayList<Complex>( fitResponse.getPoles() );
     initialZeros = new ArrayList<Complex>( fitResponse.getZeros() );
@@ -482,7 +495,8 @@ public class RandomizedExperiment extends Experiment {
     freqs = numeratorPSD.getFreqs(); // should be same for both results
     
     // store nyquist rate of data because freqs will be trimmed down later
-    nyquist = freqs[freqs.length - 1] / 2;
+    nyquist = sensorOut.getSampleRate() / 2.;
+    nyquist += .5; // increasing to prevent issues with pole frequency rounding 
     
     // trim frequency window in order to restrict range of response fits
     double minFreq, maxFreq;
@@ -563,8 +577,9 @@ public class RandomizedExperiment extends Experiment {
     }
     
     // next, normalize estimated response
-    XYSeries calcMag = new XYSeries("Calc. resp. magnitude");
-    XYSeries calcArg = new XYSeries("Calc. resp. phase");
+    String name = sensorOut.getName();
+    XYSeries calcMag = new XYSeries("Calc. resp. (" + name + ") magnitude");
+    XYSeries calcArg = new XYSeries("Calc. resp. (" + name + ") phase");
     
     // scaling values, used to set curve values to 0 at 1Hz
     Complex scaleValue = estResponse[normalIdx];
@@ -616,9 +631,9 @@ public class RandomizedExperiment extends Experiment {
     // want to set up weight-scaling for the input so rotation doesn't dominate
     // solver's residual calculations, i.e., so no phase overfitting
     
-    System.out.println("Getting weighting....");
+    fireStateChange("Getting weighting....");
     
-    double maxArgWeight = 1., maxMagWeight = 0.;
+    maxArgWeight = 1.; maxMagWeight = 0.;
     Complex weightScaler = estResponse[normalIdx];
     double subtractWeight = 10 * Math.log10( weightScaler.abs() );
     double rotateWeight = NumericUtils.atanc(weightScaler);
@@ -636,8 +651,12 @@ public class RandomizedExperiment extends Experiment {
       }
     }
     
-    System.out.println("Setting weight matrix...");
+    fireStateChange("Setting weight matrix...");
     // System.out.println(maxMagWeight);
+    
+    // we have the candidate mag and phase, now to turn them into weight values
+    maxMagWeight = 100. / maxMagWeight;
+    maxArgWeight = 1./ maxArgWeight;
     
     // weight matrix
     double[] weights = new double[observedResult.length];
@@ -645,13 +664,13 @@ public class RandomizedExperiment extends Experiment {
       int argIdx = i + estResponse.length;
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
-      weights[i] = 1. / maxMagWeight;
-      weights[argIdx] = 1. / maxArgWeight;
+      weights[i] = maxMagWeight; // scale by 100 due to peak adjustment
+      weights[argIdx] = maxArgWeight;
     }
     
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
     
-    System.out.println("Weighting done!");
+    fireStateChange("Getting estimate and setting up solver...");
     
     // now to set up a solver for the params -- first, get the input variables
     // complex values are technically two variables, each a double
@@ -663,6 +682,11 @@ public class RandomizedExperiment extends Experiment {
     initialZeroGuess = zerosToVector(initialZeros, lowFreq, nyquist);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
+    
+    System.out.println(nyquist);
+    for (int i = 0; i < initialPoles.size(); ++i) {
+      System.out.println( initialPoles.get(i).abs() / NumericUtils.TAU );
+    }
     
     // now, solve for the response that gets us the best-fit response curve
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
@@ -683,7 +707,15 @@ public class RandomizedExperiment extends Experiment {
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(1.0E-7).
         withParameterRelativeTolerance(1.0E-7);
-        
+    
+    name = fitResponse.getName();
+    XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
+    XYSeries initArg = new XYSeries("Initial param (" + name + ") phase");
+    
+    XYSeries fitMag = new XYSeries("Fit resp. magnitude");
+    XYSeries fitArg = new XYSeries("Fit resp. phase");
+    
+    
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(initialGuess).
         target(obsResVector).
@@ -695,36 +727,43 @@ public class RandomizedExperiment extends Experiment {
         checker(svc).
         build();
     
-    System.out.println("lsp built");
-    
-    String name = fitResponse.getName();
-    XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
-    XYSeries initArg = new XYSeries("Initial param (" + name + ") phase");
-    
-    XYSeries fitMag = new XYSeries("Fit resp. magnitude");
-    XYSeries fitArg = new XYSeries("Fit resp. phase");
+    fireStateChange("Built least-squares problem; evaluating intial guess...");
+
 
     // residuals used to determine quality of solution convergence
-    
-    LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
-    fitResidual = optimum.getCost();
     
     LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     initialResidual = initEval.getCost();
     
-    double[] fitParams = optimum.getPoint().toArray();
-    // get results from evaluating the function at the two points
+    System.out.println("Got initial evaluation; running solver...");
+    
     double[] initialValues =
         jacobian.value(initialGuess).getFirst().toArray();
+    
+    XYSeries initResidMag = new XYSeries("Input resp. mag residual");
+    XYSeries initResidPhase = new XYSeries("Input resp. phase residual");
+    
+    RealVector finalResultVector;
+
+    if (!skipSolving) {
+      LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+      finalResultVector = optimum.getPoint();
+    } else {
+      finalResultVector = initialGuess;
+    }
+
+    LeastSquaresProblem.Evaluation optimum = lsp.evaluate(finalResultVector);
+    fitResidual = optimum.getCost();
+    double[] fitParams = optimum.getPoint().toArray();
+    // get results from evaluating the function at the two points
     double[] fitValues = 
         jacobian.value( optimum.getPoint() ).getFirst().toArray();
     
     double[] initResidList = initEval.getResiduals().toArray();
     double[] fitResidList = optimum.getResiduals().toArray();
     
-    XYSeries initResidMag = new XYSeries("Input resp. mag residual");
+
     XYSeries fitResidMag = new XYSeries("Fit resp. mag residual");
-    XYSeries initResidPhase = new XYSeries("Input resp. phase residual");
     XYSeries fitResidPhase = new XYSeries("Fit resp. phase residual");
     
     fitResponse = 
@@ -732,14 +771,7 @@ public class RandomizedExperiment extends Experiment {
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
     
-    // System.out.println(inputPoles);
-    // System.out.println(fitPoles);
-    
-    // System.out.println("FIT PARAMS RESIDUAL: " +  optimum.getRMS() );
-    // fitResid = optimum.getRMS() * 100;
-    
-    // was initially used in plot before values were scaled
-    // Complex[] fitRespCurve = fitResponse.applyResponseToInput(freqs);
+    fireStateChange("Compiling data...");
     
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = freqs.length + i;
@@ -754,8 +786,6 @@ public class RandomizedExperiment extends Experiment {
       fitResidPhase.add(freqs[i], fitResidList[argIdx]);
     }
     
-    // XYSeries fitMag = new XYSeries("Dummy plot a");
-    // XYSeries fitArg = new XYSeries("Dummy plot b");
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.addSeries(initMag);
     xysc.addSeries(calcMag);
@@ -768,14 +798,13 @@ public class RandomizedExperiment extends Experiment {
     xysc.addSeries(fitArg);
     xySeriesData.add(xysc);
     
+    
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidMag);
     xysc.addSeries(fitResidMag);
     xysc.addSeries(initResidPhase);
     xysc.addSeries(fitResidPhase);
     xySeriesData.add(xysc);
-    
-    System.out.println("Done!");
     
   }
   
@@ -798,7 +827,14 @@ public class RandomizedExperiment extends Experiment {
   evaluateResponse(double[] variables, int numZeros) {
     
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
-    testResp = fitResultToResp(variables, testResp, lowFreq, numZeros, nyquist);
+    
+    // prevent terrible case where, say, only high-freq poles above nyquist rate
+    if (variables.length > 0) {
+      testResp = 
+          fitResultToResp(variables, testResp, lowFreq, numZeros, nyquist);
+    }
+    
+
     
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     
@@ -909,7 +945,7 @@ public class RandomizedExperiment extends Experiment {
    */
   private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
     
-    List<Complex> subList = new ArrayList<Complex>();
+    List<Complex> subList = new ArrayList<Complex>();  
     
     int start = 0;
     
@@ -935,17 +971,20 @@ public class RandomizedExperiment extends Experiment {
     return subList;
     
   }
-
+  
   /**
-   * Get name of response file used in the calculation
+   * Get the values used to weight the residual calculation function.
+   * The first value is the magnitude weighting, the second is phase.
+   * @return Weighting values for least-squared error terms of
    */
-  public String getResponseName() {
-    return responseName;
+  public double[] getWeights() {
+    return new double[]{maxMagWeight, maxArgWeight};
   }
   
   private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
     
     List<Complex> subList = new ArrayList<Complex>();
+    
     for (int i = 0; i < zerosToTrim.size(); ++i) {
       
       double freq = initialZeros.get(i).abs() / NumericUtils.TAU;

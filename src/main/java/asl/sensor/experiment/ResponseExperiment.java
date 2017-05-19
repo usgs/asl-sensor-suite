@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,7 +23,7 @@ import asl.sensor.utils.NumericUtils;
  */
 public class ResponseExperiment extends Experiment {
 
-  public static final String MAGNITUDE = "Response magnitude";
+  public static final String MAGNITUDE = "Response amplitude";
   public static final String ARGUMENT = "Response phase";
   
   private boolean freqSpace;
@@ -62,8 +63,6 @@ public class ResponseExperiment extends Experiment {
     for (int r = 0; r < 3; ++r) {
       if ( !ds.responseIsSet(r) ) {
         continue;
-      } else {
-        System.out.println( ds.getResponse(r).getName() );
       }
       
       InstrumentResponse ir = ds.getResponse(r);
@@ -107,6 +106,8 @@ public class ResponseExperiment extends Experiment {
     xySeriesData.add(mags);
     xySeriesData.add(args);
 
+    dataNames = new ArrayList<String>(respNames); 
+    
   }
   
   @Override

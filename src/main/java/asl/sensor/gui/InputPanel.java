@@ -761,12 +761,14 @@ implements ActionListener, ChangeListener {
           }
 
           zooms = new DataStore(ds);
-          zooms.matchIntervals(activePlots);
+          // zooms.matchIntervals(activePlots);
           zooms.trimToCommonTime(activePlots);
 
           XYSeries ts = zooms.getPlotSeries(idx);
+          double sRate = zooms.getBlock(idx).getSampleRate();
+          String rateString = " (" + sRate + " Hz)";
           chart = ChartFactory.createXYLineChart(
-              ts.getKey().toString(),
+              ts.getKey().toString() + rateString,
               "Time",
               "Counts",
               new XYSeriesCollection(ts),

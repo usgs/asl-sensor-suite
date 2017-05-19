@@ -6,8 +6,11 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -134,6 +137,10 @@ public class RandomizedPanel extends ExperimentPanel {
     List<Complex> fitZ = rnd.getFitZeros();
     List<Complex> initZ = rnd.getInitialZeros();
     
+    if (fitP == null) {
+      return "";
+    }
+    
     double initResid = rnd.getInitResidual();
     double fitResid = rnd.getFitResidual();
     
@@ -215,7 +222,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
   private JCheckBox lowFreqBox;
 
-  private JFreeChart magChart, argChart, residPlot;
+  private JFreeChart magChart, argChart, residChart;
   
   public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
@@ -241,6 +248,7 @@ public class RandomizedPanel extends ExperimentPanel {
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
+    degreeAxis.setLabelFont(bold);
     residAxis.setLabelFont(bold);
     
     lowFreqBox = new JCheckBox("Low frequency calibration");
@@ -301,13 +309,23 @@ public class RandomizedPanel extends ExperimentPanel {
       
       int idx = plotSelection.getSelectedIndex();
       JFreeChart[] charts = 
-          new JFreeChart[]{magChart, argChart, residPlot};
+          new JFreeChart[]{magChart, argChart, residChart};
       chart = charts[idx];
       chartPanel.setChart(chart);
       
       return;
       
     }
+    
+  }
+  
+  @Override
+  protected void drawCharts() {
+    // just force the active plot at the start to be the amplitude plot
+    plotSelection.setSelectedIndex(0);
+    chart = magChart;
+    chartPanel.setChart(chart);
+    chartPanel.setMouseZoomable(true);
     
   }
   
@@ -325,6 +343,16 @@ public class RandomizedPanel extends ExperimentPanel {
     return new JFreeChart[]{magChart, argChart};
   }
   
+  @Override
+  /**
+   * Get the index of the data holding the sensor output.
+   * Note that the input data list is listed as CAL, OUT, RESP, so the
+   * relevant index is the second one
+   */
+  protected int getIndexOfMainData() {
+    return 1;
+  }
+  
   /**
    * Used to get the text that will populate the inset box for the plots
    * @return String to place in TextTitle
@@ -335,14 +363,67 @@ public class RandomizedPanel extends ExperimentPanel {
     return getInsetString(rnd);
   }
   
+  
   @Override
   public String getMetadataString() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     StringBuilder sb = new StringBuilder();
-    sb.append("LOADED RESPONSE:");
-    sb.append('\n');
-    sb.append( rnd.getResponseName() );
+    sb.append( super.getMetadataString() );
+    
+    double[] weights = rnd.getWeights();
+    sb.append("Residuals weighting:\n");
+    sb.append("Amplitude weighting: ");
+    sb.append(weights[0]);
+    sb.append("\n");
+    sb.append("Phase weighting: ");
+    sb.append(weights[1]);
     return sb.toString();
+  }
+  
+  @Override
+  /**
+   * Produce the filename of the report generated from this experiment.
+   * Since response data is not directly associated with data at a given
+   * time, rather than a sensor as a whole, we merely use the current date
+   * and the first response used in the experiment.
+   * @return String that will be default filename of PDF generated from data
+   */
+  public String getPDFFilename() {
+    
+    String freq;
+    if ( lowFreqBox.isSelected() ) {
+      freq = "LOW_FRQ";
+    } else {
+      freq = "HIGH_FRQ";
+    }
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    // experiment has no time metadata to be associated with it, get time now
+    String date = sdf.format( cCal.getTime() );
+    
+    String test = expType.getName().replace(' ', '_');
+    
+    int idx = getIndexOfMainData(); // first resp in list
+    String name = expResult.getInputNames().get(idx);
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append(test);
+    sb.append('_');
+    sb.append(freq);
+    sb.append('_');
+    sb.append(name);
+    sb.append('_');
+    sb.append(date);
+    sb.append(".pdf");
+    return sb.toString();
+    
+  }
+  
+  @Override
+  public JFreeChart[] getSecondPageCharts() {
+    return new JFreeChart[]{residChart};
   }
   
   @Override
@@ -356,25 +437,22 @@ public class RandomizedPanel extends ExperimentPanel {
     ValueAxis[] out = new ValueAxis[]{yAxis, degreeAxis, residAxis};
     return out[idx];
   }
-  
+
   @Override
   public int panelsNeeded() {
     return 2;
   }
-  
-  @Override
-  public JFreeChart[] getSecondPageCharts() {
-    return new JFreeChart[]{residPlot};
-  }
 
   @Override
-  public void updateData(DataStore ds) {
+  protected void updateData(DataStore ds) {
+    
+    set = true;
 
     final boolean isLowFreq = lowFreqBox.isSelected();
     seriesColorMap = new HashMap<String, Color>();
     
-    RandomizedExperiment respExp = (RandomizedExperiment) expResult;
-    respExp.setLowFreq(isLowFreq);
+    RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
+    rndExp.setLowFreq(isLowFreq);
     expResult.setData(ds);
     
     String appendFreqTitle;
@@ -385,11 +463,14 @@ public class RandomizedPanel extends ExperimentPanel {
       appendFreqTitle = " (HIGH FREQ.)";
     }
     
-    set = true;
+    if (rndExp.skipSolving) {
+      appendFreqTitle += " | SOLVER NOT RUN";
+    }
     
-    clearChartAndSetProgressData();
     
     List<XYSeriesCollection> xysc = expResult.getData();
+    
+
     
     XYSeriesCollection magSeries = xysc.get(0);
     XYSeriesCollection argSeries = xysc.get(1);
@@ -405,23 +486,21 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
-    // Range argRange = argSeries.getRangeBounds(true);
+    argChart = buildChart(argSeries, xAxis, degreeAxis);
+    argChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    invertSeriesRenderingOrder( argChart );
+    
+    magChart = buildChart(magSeries, xAxis, yAxis);
+    invertSeriesRenderingOrder( magChart );
+    magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
     String inset = getInsetString();
     TextTitle result = new TextTitle();
     result.setText( inset );
     result.setBackgroundPaint(Color.white);
-
-    argChart = buildChart(argSeries, xAxis, degreeAxis);
-    argChart.getXYPlot().getRangeAxis().setAutoRange(true);
-    
-    magChart = buildChart(magSeries, xAxis, yAxis);
-    magChart.getXYPlot().getRangeAxis().setAutoRange(true);
-    
     double x;
     double y = 0.02;
     RectangleAnchor ra;
-    
     // move text box left or right depending on which frequencies aren't
     // being fitted
     if ( lowFreqBox.isSelected() ) {
@@ -442,23 +521,21 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
-    residPlot = buildChart(xysc.get(2), xAxis, residAxis);
-    
-    plotSelection.setSelectedIndex(0);
-    chart = magChart;
-    
-    /*
-    if (idx == 0) {
-      int idx = plotSelection.getSelectedIndex();
-      chart = magChart;
-    } else {
-      chart = argChart;
-      // chart.getXYPlot().getRangeAxis().setRange(argRange); 
-    }
-    */
-    chartPanel.setChart(chart);
-    chartPanel.setMouseZoomable(true);
-    
+    residChart = buildChart(xysc.get(2), xAxis, residAxis);
+    double[] weights = rndExp.getWeights();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Amplitude weighting: ");
+    sb.append(weights[0]);
+    sb.append("\nPhase weighting: ");
+    sb.append(weights[1]);
+    TextTitle weightInset = new TextTitle();
+    weightInset.setText( sb.toString() );
+    weightInset.setBackgroundPaint(Color.white);
+    XYTitleAnnotation weightAnnot = 
+        new XYTitleAnnotation(0, 0, weightInset, RectangleAnchor.BOTTOM_LEFT);
+    XYPlot residPlot = residChart.getXYPlot();
+    residPlot.clearAnnotations();
+    residPlot.addAnnotation(weightAnnot);
   }
 
 }

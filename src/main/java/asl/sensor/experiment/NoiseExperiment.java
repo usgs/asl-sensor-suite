@@ -23,8 +23,6 @@ public class NoiseExperiment extends Experiment {
 
   protected boolean freqSpace;
   
-  protected String[] responseNames;
-  
   protected int[] respIndices;
   
   /**
@@ -32,7 +30,6 @@ public class NoiseExperiment extends Experiment {
    */
   public NoiseExperiment() {
     super();
-    responseNames = new String[3];
     respIndices = new int[3];
     freqSpace = false;
   }
@@ -63,21 +60,24 @@ public class NoiseExperiment extends Experiment {
     // it is probably better to keep the program flexible against valid input
     for (int i = 0; i < respIndices.length; ++i) {
       // xth fully loaded function begins at 1
-      respIndices[i] = ds.getXthFullyLoadedIndex(i+1);
+      int idx = ds.getXthFullyLoadedIndex(i+1);
+      respIndices[i] = idx;
+      dataNames.add( ds.getBlock(idx).getName() );
+      dataNames.add( ds.getResponse(idx).getName() );
     }
     
     DataBlock[] dataIn = new DataBlock[respIndices.length];
     InstrumentResponse[] responses = new InstrumentResponse[respIndices.length];
-    responseNames = new String[respIndices.length];
     
     for (int i = 0; i < respIndices.length; ++i) {
       dataIn[i] = ds.getBlock(respIndices[i]);
       responses[i] = ds.getResponse(respIndices[i]);
-      responseNames[i] = responses[i].getName();
     }
     
     Complex[][] spectra = new Complex[3][];
     double[] freqs = new double[1]; // initialize to prevent later errors
+    
+    fireStateChange("Getting PSDs of each series...");
     
     // initialize the values above to have relevant data
     for (int i = 0; i < respIndices.length; ++i) {
@@ -87,6 +87,8 @@ public class NoiseExperiment extends Experiment {
     }
     
     addToPlot(ds, freqSpace, respIndices, xysc);
+    
+    fireStateChange("Getting crosspower of each series...");
     
     // spectra[i] is crosspower pii, now to get pij terms for i!=j
     FFTResult fft = 
@@ -106,6 +108,8 @@ public class NoiseExperiment extends Experiment {
       noiseSeriesArr[j] = 
           new XYSeries( "Noise " + dataIn[j].getName() + " ["  + j + "]" );
     }
+    
+    fireStateChange("Doing noise esimation calculations...");
     
     for (int i = 1; i < freqs.length; ++i) {
         if (1/freqs[i] > 1.0E3){
@@ -181,18 +185,6 @@ public class NoiseExperiment extends Experiment {
   @Override
   public int blocksNeeded() {
     return 3;
-  }
-
-  public String getResponseNames() {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < responseNames.length; ++i) {
-      sb.append(i + 1);
-      sb.append(": ");
-      sb.append( responseNames[i] );
-      sb.append('\n');
-    }
-    // remove trailing whitespace character
-    return sb.substring( 0, sb.length() - 1 );
   }
   
   @Override

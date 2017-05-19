@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
@@ -19,6 +20,9 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -29,6 +33,7 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
@@ -53,7 +58,9 @@ import asl.sensor.utils.ReportingUtils;
  * @author akearns
  *
  */
-public abstract class ExperimentPanel extends JPanel implements ActionListener {
+public abstract class ExperimentPanel 
+extends JPanel 
+implements ActionListener, ChangeListener {
  
   private static final long serialVersionUID = -5591522915365766604L;
 
@@ -149,6 +156,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     
     expType = exp;
     expResult = ExperimentFactory.createExperiment(exp);
+    expResult.addChangeListener(this);
     
     chart = ChartFactory.createXYLineChart( expType.getName(), 
         "", "", null);
@@ -166,6 +174,17 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     this.add(save);
   }
   
+  @Override
+  /**
+   * Used to print out status of the experiment backend onto the chart
+   */
+  public void stateChanged(ChangeEvent e) {
+    if ( e.getSource() == expResult ) {
+      String info = expResult.getStatus();
+      displayInfoMessage(info);
+    }
+  }
+  
   /**
    * Handle's saving this plot's chart to file (PNG image) 
    * when the save button is clicked.
@@ -173,7 +192,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   @Override
   public void actionPerformed(ActionEvent e) {
     
-    if( e.getSource() == save ) {
+    if ( e.getSource() == save ) {
       String ext = ".png";
       fc.addChoosableFileFilter(
           new FileNameExtensionFilter("PNG image (.png)",ext) );
@@ -300,6 +319,17 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
+   * Clear chart, for when calculation operations have been cancelled
+   */
+  public void clearChart() {
+    set = false;
+    chart = 
+        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
+    applyAxesToChart();
+    chartPanel.setChart(chart);
+  }
+  
+  /**
    * Clear chart data and display text that it is loading new data
    */
   protected void clearChartAndSetProgressData() {
@@ -334,12 +364,19 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
     TextTitle result = new TextTitle();
     result.setText(infoMsg);
+    result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
         RectangleAnchor.CENTER);
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
   }
   
+  /**
+   * Function template for applying data taken from updateData function
+   * and drawing the given charts on the screen as necessary
+   */
+  protected abstract void drawCharts();
+
   /**
    * Used to return more detailed information from the experiment, such
    * as a full-page report of a best-fit response file. Most experiments
@@ -352,6 +389,33 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     return new String[]{};
   }
 
+
+  /**
+   * Produce all data used in PDF reports as a single string that can be
+   * written to a text file
+   * @return Data string including all metadata and relevant infrom from
+   * an experiment
+   */
+  public String getAllTextData() {
+    StringBuilder sb = new StringBuilder( getInsetString() );
+    if ( sb.length() > 0 ) {
+      sb.append("\n\n");
+    }
+    String metadata = getMetadataString();
+    if ( metadata.length() > 0 ) {
+      sb.append(metadata);
+      sb.append("\n\n");
+    }
+    sb.append( getTimeStampString(expResult) );
+    sb.append("\n\n");
+    String[] extraText = getAdditionalReportPages();
+    for (String text : extraText) {
+      sb.append(text);
+      sb.append("\n\n");
+    }
+    return sb.toString();
+  }
+  
   /**
    * Return image of panel's plots with specified dimensions
    * Used to compile PNG image of all charts contained in this panel
@@ -365,8 +429,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     return ReportingUtils.chartsToImage(width, height, jfcs);
     
   }
-
-
+  
   /**
    * Returns the identifiers of each input plot being used, such as 
    * "calibration input" for the calibration tests.
@@ -375,7 +438,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public String[] getChannelTypes() {
     return channelType;
   }
-  
+
   /**
    * Return all chart panels used in this object;
    * to be overridden by implementing experiment panels that contain multiple
@@ -388,6 +451,17 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
+   * Get index for station name for most relevant data. For example, in the
+   * case of a calibration, this is usually the second input. In most cases,
+   * however, the first data input will be sufficient. Used in report filename
+   * generation.
+   * @return Index of data used to get naem for report
+   */
+  protected int getIndexOfMainData() {
+    return 0;
+  }
+  
+  /**
    * Used to return any title insets as text format for saving in PDF,
    * to be overridden by any panel that uses an inset
    * @return String with any relevant parameters in it
@@ -395,16 +469,53 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   public String getInsetString() {
     return "";
   }
-
+  
   /**
    * Used to return any metadata from the experiment to be saved in PDF
    * to be overridden by panels with data that should be included in the report
-   * that it would not make sense to display in the inset, such as response
-   * filenames
+   * that it would not make sense to display in the inset, such as filenames.
+   * If there is no metadata besides filenames of input data, that is returned
+   * by the function, but experiments may need to augment with additional data.
    * @return A string with any additional data to be included in the PDF report
    */
   public String getMetadataString() {
-    return "";
+    List<String> names = expResult.getInputNames();
+    StringBuilder sb = new StringBuilder("Input filenames, ");
+    sb.append(" with SEED and RESP files paired as appropriate:\n");
+    for (String name : names) {
+      sb.append(name);
+      sb.append('\n');
+    }
+    return sb.toString();
+  }
+  
+  /**
+   * Produce the filename of the report generated from this experiment.
+   * Has the format TEST_STATION_YEAR.DAY unless overridden
+   * @return String that will be default filename of PDF generated from data
+   */
+  public String getPDFFilename() {
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    cCal.setTimeInMillis( expResult.getStart() / 1000 );
+    String date = sdf.format( cCal.getTime() );
+    
+    String test = expType.getName().replace(' ', '_');
+    
+    int idx = getIndexOfMainData();
+    String name = expResult.getInputNames().get(idx);
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append(test);
+    sb.append('_');
+    sb.append(name);
+    sb.append('_');
+    sb.append(date);
+    sb.append(".pdf");
+    return sb.toString();
+    
   }
   
   /**
@@ -414,6 +525,16 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
    */
   public int[] getResponseIndices() {
     return expResult.listActiveResponseIndices();
+  }
+  
+  /**
+   * Function to be overridden by implementing class that will add an extra
+   * page to PDF reports including charts with less-essential data, such as
+   * the plots of residual values over a range for parameter-fitting
+   * @return
+   */
+  public JFreeChart[] getSecondPageCharts() {
+    return new JFreeChart[]{};
   }
   
   /**
@@ -472,6 +593,30 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     return panelsNeeded();
   }
   
+  public void 
+  runExperiment(final DataStore ds, SwingWorker<Integer, Void> worker) {
+    
+    clearChartAndSetProgressData();
+    
+    worker = new SwingWorker<Integer, Void>() {
+      
+      @Override
+      public Integer doInBackground() {
+        updateData(ds);
+        return 0;
+      }
+      
+      @Override
+      public void done() {
+        drawCharts();
+      }
+      
+    };
+    
+    worker.execute();
+    
+  }
+
   /**
    * Takes a PDF and adds a page dedicated to string data related to the
    * data that has been passed into the experiment backend,
@@ -483,7 +628,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     
     StringBuilder sb = new StringBuilder( getInsetString() );
     if ( sb.length() > 0 ) {
-      sb.append("\n\n");
+      sb.append("\n \n");
     }
     String metadata = getMetadataString();
     if ( metadata.length() > 0 ) {
@@ -516,16 +661,7 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
     
   }
   
-  /**
-   * Function to be overridden by implementing class that will add an extra
-   * page to PDF reports including charts with less-essential data, such as
-   * the plots of residual values over a range for parameter-fitting
-   * @return
-   */
-  public JFreeChart[] getSecondPageCharts() {
-    return new JFreeChart[]{};
-  }
-
+  
   /**
    * Used to plot the results of a backend function from an experiment
    * using a collection of XYSeries mapped by strings. This will be set to
@@ -539,12 +675,31 @@ public abstract class ExperimentPanel extends JPanel implements ActionListener {
   }
   
   /**
+   * Reverses an xyplot rendering order, allowing curves that would otherwise be
+   * at the background are inverted and placed in the foreground instead.
+   * That is, if a curve is to be rendered behind a different curve, it will be
+   * rendered instead with that series in front of the other curve.
+   * @param chart Chart with plot rendering order to be reversed. Must use
+   * an XY plot (i.e., is an XYLineSeries chart)
+   */
+  public static void invertSeriesRenderingOrder(JFreeChart chart) {
+    XYPlot xyp = chart.getXYPlot();
+    SeriesRenderingOrder sro = xyp.getSeriesRenderingOrder();
+    if ( sro.equals(SeriesRenderingOrder.FORWARD) ) {
+      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.REVERSE);
+    } else {
+      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
+    }
+    
+  }
+
+  /**
    * Function template for sending input to a backend fucntion and collecting
    * the corresponding data
    * @param ds DataStore object containing seed and resp files
    */
-  public abstract void updateData(final DataStore ds);
+  protected abstract void updateData(final DataStore ds);
   // details of how to run updateData are left up to the implementing panel
   // however, the boolean "set" should be set to true to enable PDF saving
-
+  
 }

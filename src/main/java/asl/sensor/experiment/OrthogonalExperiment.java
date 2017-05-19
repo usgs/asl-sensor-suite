@@ -67,15 +67,21 @@ public class OrthogonalExperiment extends Experiment {
     
     // we just need four timeseries, don't actually care about response
     DataBlock refLH1Block = ds.getXthLoadedBlock(1);
+    String refName = refLH1Block.getName();
+    dataNames.add(refName);
     DataBlock refLH2Block = ds.getXthLoadedBlock(2);
+    dataNames.add( refLH2Block.getName() );
     DataBlock testLH1Block = ds.getXthLoadedBlock(3);
-    DataBlock testLH2Block = ds.getXthLoadedBlock(4);    
+    String testName = testLH1Block.getName();
+    dataNames.add(testName);
+    DataBlock testLH2Block = ds.getXthLoadedBlock(4);
+    dataNames.add( testLH2Block.getName() );
     
     List<Number> refLH1 = new ArrayList<Number>( refLH1Block.getData() );
-    String refName = refLH1Block.getName();
+
     List<Number> refLH2 = new ArrayList<Number>( refLH2Block.getData() );
     List<Number> testLH1 = new ArrayList<Number>( testLH1Block.getData() );
-    String testName = testLH1Block.getName();
+
     List<Number> testLH2 = new ArrayList<Number>( testLH2Block.getData() );
     
     FFTResult.detrend(refLH1);

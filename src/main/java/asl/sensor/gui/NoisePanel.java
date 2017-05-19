@@ -119,14 +119,15 @@ public class NoisePanel extends ExperimentPanel {
   }
   
   @Override
-  public String getMetadataString() {
-    NoiseExperiment nex = (NoiseExperiment) expResult;
-    StringBuilder sb = new StringBuilder("LOADED RESPONSES:");
-    sb.append("\n");
-    sb.append( nex.getResponseNames() );
-    return sb.toString();
+  protected void drawCharts() {
+    
+    setChart( expResult.getData().get(0) );
+
+    chartPanel.setChart(chart);
+    chartPanel.setMouseZoomable(true);
+    
   }
-  
+
   /**
    * Gets the x-axis for this panel based on whether or not the
    * selection box to plot in units of Hz is selected. If it is, this
@@ -150,20 +151,18 @@ public class NoisePanel extends ExperimentPanel {
     
     return 3;
   }
-
+  
   /**
    * Initially called function to calculate self-noise when data is passed in
    */
   @Override
-  public void updateData(final DataStore ds) {
+  protected void updateData(final DataStore ds) {
     
     set = true;
     
     boolean freqSpace = freqSpaceBox.isSelected();
     
     final boolean freqSpaceImmutable = freqSpace;
-    
-    clearChartAndSetProgressData();
     
     NoiseExperiment noisExp = (NoiseExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);
@@ -180,14 +179,6 @@ public class NoisePanel extends ExperimentPanel {
       }
 
     }
-
-    displayInfoMessage("Data loaded...drawing chart");
-
-    setChart( expResult.getData().get(0) );
-
-    chartPanel.setChart(chart);
-    chartPanel.setMouseZoomable(true);
-    
   }
   
 

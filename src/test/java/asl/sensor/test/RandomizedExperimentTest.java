@@ -1,6 +1,9 @@
 package asl.sensor.test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.awt.Font;
 import java.io.File;
@@ -440,7 +443,7 @@ public class RandomizedExperimentTest {
       sb.append( ds.getBlock(1).getName() );
       sb.append(" (sensor output)\n");
       sb.append("Response file used:\n");
-      sb.append( rCal.getResponseName() );
+      sb.append( ds.getResponse(1).getName() );
       sb.append("\n \n");
       
       String page1 = sb.toString();
@@ -553,7 +556,7 @@ public class RandomizedExperimentTest {
       sb.append( ds.getBlock(1).getName() );
       sb.append(" (sensor output)\n");
       sb.append("Response file used:\n");
-      sb.append( rCal.getResponseName() );
+      sb.append( ds.getResponse(1).getName() );
       sb.append("\n \n");
       
       String page1 = sb.toString();
@@ -646,7 +649,7 @@ public class RandomizedExperimentTest {
       sb.append( ds.getBlock(1).getName() );
       sb.append(" (sensor output)\n");
       sb.append("Response file used:\n");
-      sb.append( rCal.getResponseName() );
+      sb.append( ds.getResponse(1).getName() );
       sb.append("\n \n");
       
       String page1 = sb.toString();
@@ -739,7 +742,7 @@ public class RandomizedExperimentTest {
       sb.append( ds.getBlock(1).getName() );
       sb.append(" (sensor output)\n");
       sb.append("Response file used:\n");
-      sb.append( rCal.getResponseName() );
+      sb.append( ds.getResponse(1).getName() );
       sb.append("\n \n");
       
       String page1 = sb.toString();

@@ -1,5 +1,6 @@
 package asl.sensor;
 
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -8,9 +9,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.io.PrintWriter;
 
 import javax.imageio.ImageIO;
 import javax.swing.Box;
@@ -28,6 +29,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.jfree.chart.JFreeChart;
 
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.gui.ExperimentPanel;
@@ -132,7 +134,6 @@ public class SensorSuite extends JPanel
       
       ReportingUtils.imageListToPDFPages(pdf, toFile);
 
-      // TODO: response string generation goes here
       ReportingUtils.textListToPDFPages(pdf, responses);
     }
 
@@ -151,6 +152,8 @@ public class SensorSuite extends JPanel
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
 
+  private SwingWorker<Integer, Void> worker;
+  
   /**
    * Creates the main window of the program when called
    * (Three main panels: the top panel for displaying the results
@@ -239,16 +242,25 @@ public class SensorSuite extends JPanel
 
 
     if ( e.getSource() == generate ) {
-      SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
-        
-        @Override
-        public Integer doInBackground() {
-          resetTabPlots();
-          return 0;
+      
+      if (worker != null) {
+        savePDF.setEnabled(false);
+        // clear out any old data in the chart
+        // since we only have one worker thread for experiment calculations
+        // we clear all charts -- if we run a new experiment while another one
+        // is calculating from another panel, we should make it clear that
+        // other panel was cancelled, and thus clear the chart / unset data
+        worker.cancel(true); // doesn't matter if experiment already completed
+        for (Component component : tabbedPane.getComponents()) {
+          ExperimentPanel ep = (ExperimentPanel) component;
+          if ( ep.hasRun() ) {
+            ep.clearChart();
+          }
         }
-        
-      };
-      worker.execute();
+      }
+      
+      resetTabPlots();
+      
       return;
     } else if ( e.getSource() == savePDF ) {
 
@@ -257,17 +269,60 @@ public class SensorSuite extends JPanel
       fc.addChoosableFileFilter(
           new FileNameExtensionFilter("PDF file (.pdf)",ext) );
       fc.setFileFilter(fc.getChoosableFileFilters()[1]);
-      fc.setDialogTitle("Save plot to PNG...");
-      String tStamp = 
-          new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format( new Date() );
-      fc.setSelectedFile( new File(tStamp+"_ALL"+ext) );
+      fc.setDialogTitle("Save PDF report...");
+      ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+      String defaultName = ep.getPDFFilename();
+
+      String text = ep.getAllTextData();
+      JFreeChart[] charts = ep.getCharts();
+      
+      fc.setSelectedFile( new File(defaultName) );
       int returnVal = fc.showSaveDialog(savePDF);
+      
       if (returnVal == JFileChooser.APPROVE_OPTION) {
+        
         File selFile = fc.getSelectedFile();
         saveDirectory = selFile.getParent();
         if( !selFile.getName().endsWith( ext.toLowerCase() ) ) {
-          selFile = new File( selFile.toString() + ext);
+          selFile = new File( selFile.getName() + ext);
         }
+        
+        // start in the folder the pdf is saved, add data into a new
+        // subfolder for calibration data
+        StringBuilder folderName = new StringBuilder( selFile.getParent() );
+        folderName.append("/test_results/");
+        folderName.append( selFile.getName().replace(".pdf","") );
+        
+        File folder = new File( folderName.toString() );
+        if ( !folder.exists() ) {
+          System.out.println("Writing directory " + folderName);
+          folder.mkdirs();
+        }
+        
+        String textName = folderName + "/outputData.txt";
+        
+        try {
+          PrintWriter out = new PrintWriter(textName);
+          out.println(text);
+          out.close();
+        } catch (FileNotFoundException e2) {
+          System.out.println("Can't write the text");
+          e2.printStackTrace();
+        }
+        
+        for (int i = 0; i < charts.length; ++i) {
+          JFreeChart chart = charts[i];
+          String plotName = folderName + "/chart" + (i + 1) + ".png";
+          BufferedImage chartImage = 
+              ReportingUtils.chartsToImage(1280, 960, chart);
+          File plotPNG = new File(plotName);
+          try {
+            ImageIO.write(chartImage, "png", plotPNG);
+          } catch (IOException e1) {
+            e1.printStackTrace();
+          }
+        }
+        
         try {
           plotsToPDF(selFile);
         } catch (IOException e1) {
@@ -369,7 +424,7 @@ public class SensorSuite extends JPanel
     
     // now, update the data
 
-    ep.updateData(ds);
+    ep.runExperiment(ds, worker);
     
     savePDF.setEnabled( ep.hasRun() );
   }

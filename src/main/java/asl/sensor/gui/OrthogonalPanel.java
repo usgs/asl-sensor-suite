@@ -84,29 +84,12 @@ public class OrthogonalPanel extends ExperimentPanel {
   }
 
   @Override
-  public String getInsetString() {
-    return getInsetString( (OrthogonalExperiment) expResult );
-  }
-  
-  @Override
-  public int panelsNeeded() {
-    return 4;
-  }
+  protected void drawCharts() {
     
-    
-  @Override
-  public void updateData(final DataStore ds) {
-    
-    set = true;
-    
-    clearChartAndSetProgressData();
-    
-    expResult.setData(ds);
     XYSeriesCollection xysc = expResult.getData().get(0);
     
     setChart(xysc);
     XYPlot xyp = (XYPlot) chart.getPlot();
-    
     
     TextTitle result = new TextTitle();
     result.setText( getInsetString() );
@@ -118,6 +101,25 @@ public class OrthogonalPanel extends ExperimentPanel {
     
     chartPanel.setChart(chart);
     
+  }
+  
+  @Override
+  public String getInsetString() {
+    return getInsetString( (OrthogonalExperiment) expResult );
+  }
+    
+    
+  @Override
+  public int panelsNeeded() {
+    return 4;
+  }
+  
+  @Override
+  protected void updateData(final DataStore ds) {
+    
+    set = true;
+    
+    expResult.setData(ds);
   }
 
 }
