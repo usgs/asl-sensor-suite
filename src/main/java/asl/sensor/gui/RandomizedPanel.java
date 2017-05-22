@@ -453,7 +453,7 @@ public class RandomizedPanel extends ExperimentPanel {
     
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
     rndExp.setLowFreq(isLowFreq);
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
     
     String appendFreqTitle;
     
@@ -467,10 +467,7 @@ public class RandomizedPanel extends ExperimentPanel {
       appendFreqTitle += " | SOLVER NOT RUN";
     }
     
-    
     List<XYSeriesCollection> xysc = expResult.getData();
-    
-
     
     XYSeriesCollection magSeries = xysc.get(0);
     XYSeriesCollection argSeries = xysc.get(1);
@@ -521,6 +518,7 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
+    // get residuals plot
     residChart = buildChart(xysc.get(2), xAxis, residAxis);
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();

@@ -328,7 +328,7 @@ public class ResponsePanel extends ExperimentPanel {
     boolean freqSpace = freqSpaceBox.isSelected();
     ResponseExperiment respExp = (ResponseExperiment) expResult;
     respExp.setFreqSpace(freqSpace);
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
     
     List<XYSeriesCollection> xysc = expResult.getData();
     XYSeriesCollection magSeries = xysc.get(0);

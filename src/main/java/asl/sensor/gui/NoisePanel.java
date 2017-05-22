@@ -166,7 +166,7 @@ public class NoisePanel extends ExperimentPanel {
     
     NoiseExperiment noisExp = (NoiseExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
 
     XYSeriesCollection xysc = expResult.getData().get(0);
 

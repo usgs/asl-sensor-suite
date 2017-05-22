@@ -418,7 +418,7 @@ public class RandomizedExperimentTest {
       rCal.setLowFreq(lowFreq);
       
       assertTrue( rCal.hasEnoughData(ds) );
-      rCal.setData(ds);
+      rCal.runExperimentOnData(ds);
       
       int width = 1280;
       int height = 960;
@@ -461,7 +461,7 @@ public class RandomizedExperimentTest {
       ir = RandomizedExperiment.polesToResp(expectedParams, ir, lowFreq, nyq);
       ir.setName("Best-fit params");
       ds.setResponse(1, ir);
-      rCal.setData(ds);
+      rCal.runExperimentOnData(ds);
 
       // add initial curve from expected fit params to report
       XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);
@@ -531,7 +531,7 @@ public class RandomizedExperimentTest {
       rCal.setLowFreq(lowFreq);
       
       assertTrue( rCal.hasEnoughData(ds) );
-      rCal.setData(ds);
+      rCal.runExperimentOnData(ds);
       
       int width = 1280;
       int height = 960;
@@ -624,7 +624,7 @@ public class RandomizedExperimentTest {
       rCal.setLowFreq(lowFreq);
       
       assertTrue( rCal.hasEnoughData(ds) );
-      rCal.setData(ds);
+      rCal.runExperimentOnData(ds);
       
       int width = 1280;
       int height = 960;
@@ -717,7 +717,7 @@ public class RandomizedExperimentTest {
       rCal.setLowFreq(lowFreq);
       
       assertTrue( rCal.hasEnoughData(ds) );
-      rCal.setData(ds);
+      rCal.runExperimentOnData(ds);
       
       int width = 1280;
       int height = 960;

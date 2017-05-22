@@ -90,15 +90,6 @@ public class AzimuthPanel extends ExperimentPanel {
     gbc.weightx = 1; gbc.weighty = 0;
     gbc.fill = GridBagConstraints.NONE;
     gbc.anchor = GridBagConstraints.EAST;
-    /*
-    this.add(jbl, gbc);
-    
-    gbc.gridx += 1;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.WEST;
-    this.add(offsetSpinner, gbc);
-    */
-
     
     gbc.anchor = GridBagConstraints.CENTER;
     gbc.gridx = 0; gbc.gridy = 0;
@@ -212,7 +203,7 @@ public class AzimuthPanel extends ExperimentPanel {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     az.setOffset(value);
     
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
     
     List<XYSeriesCollection> allData = expResult.getData();
     
