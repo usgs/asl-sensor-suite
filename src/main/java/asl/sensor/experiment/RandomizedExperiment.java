@@ -15,6 +15,7 @@ import
 org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import 
 org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
+import org.apache.commons.math3.fitting.leastsquares.ParameterValidator;
 import org.apache.commons.math3.linear.DiagonalMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -50,10 +51,12 @@ import asl.sensor.utils.NumericUtils;
  * @author akearns
  *
  */
-public class RandomizedExperiment extends Experiment {
+public class RandomizedExperiment 
+extends Experiment implements ParameterValidator {
 
   private static final double DELTA = 1E-7;
   private static final double CUTOFF = 1. / 1000.; // used w/ KS-54000
+  
   
   // To whomever has to maintain this code after I'm gone:
   // I'm sorry, I'm so so sorry
@@ -721,6 +724,7 @@ public class RandomizedExperiment extends Experiment {
         target(obsResVector).
         model(jacobian).
         weight(weightMat).
+        parameterValidator(this).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
@@ -1021,7 +1025,7 @@ public class RandomizedExperiment extends Experiment {
   private Pair<RealVector, RealMatrix> 
   jacobian(RealVector variables, int numZeros) {
     
-    variables = validate(variables);
+    // variables = validate(variables);
     
     int numVars = variables.getDimension();
     
@@ -1093,6 +1097,7 @@ public class RandomizedExperiment extends Experiment {
     this.lowFreq = lowFreq;
   }
  
+ 
   /**
    * Simple validator method to enforce poles to be negative for their values
    * (Since imaginary values are stored in resps as their value and complex
@@ -1101,7 +1106,7 @@ public class RandomizedExperiment extends Experiment {
    * @param poleParams RealVector of parameters to be evaluated by solver
    * @return Vector of parameters but with components all negative
    */
-  private RealVector validate(RealVector poleParams) {
+  public RealVector validate(RealVector poleParams) {
     for (int i = 0; i < poleParams.getDimension(); ++i) {
       double value = poleParams.getEntry(i);
       if (value > 0) {
@@ -1110,5 +1115,5 @@ public class RandomizedExperiment extends Experiment {
     }
     return poleParams;
   }
-  
+
 }
