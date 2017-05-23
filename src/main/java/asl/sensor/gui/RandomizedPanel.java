@@ -118,6 +118,10 @@ public class RandomizedPanel extends ExperimentPanel {
       }
     }
     
+    // add the values of the zeros to the metadata page
+    sb.append(initText);
+    sb.append(fitText);
+    
     String[] out = new String[]{sb.toString()}; // just a single new page
     return out;
   }

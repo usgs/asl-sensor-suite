@@ -1097,7 +1097,6 @@ extends Experiment implements ParameterValidator {
     this.lowFreq = lowFreq;
   }
  
- 
   /**
    * Simple validator method to enforce poles to be negative for their values
    * (Since imaginary values are stored in resps as their value and complex
