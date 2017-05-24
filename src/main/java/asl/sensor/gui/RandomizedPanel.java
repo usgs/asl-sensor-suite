@@ -467,7 +467,7 @@ public class RandomizedPanel extends ExperimentPanel {
       appendFreqTitle = " (HIGH FREQ.)";
     }
     
-    if (rndExp.skipSolving) {
+    if (rndExp.SKIP_SOLVING) {
       appendFreqTitle += " | SOLVER NOT RUN";
     }
     

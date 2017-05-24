@@ -438,7 +438,7 @@ extends Experiment implements ParameterValidator {
   // when true, doesn't run solver, in event parameters have an issue
   // (does the solver seem to have frozen? try rebuilding with this as true,
   // and then run the plot -- show nominal resp. and estimated curves)
-  public final boolean skipSolving = false;
+  public final boolean SKIP_SOLVING = false;
   
   private boolean lowFreq; // fit the low- or high-frequency poles?
   
@@ -450,7 +450,7 @@ extends Experiment implements ParameterValidator {
   private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
   
   private int normalIdx; // location of value to set to 0 in curves for scaling
- 
+  private int numZeros; // how many entries in parameter vector define zeros
   private int sensorOutIdx; // location to load response from?
   
   public RandomizedExperiment() {
@@ -683,7 +683,7 @@ extends Experiment implements ParameterValidator {
     
     initialPoleGuess = polesToVector(initialPoles, lowFreq, nyquist);
     initialZeroGuess = zerosToVector(initialZeros, lowFreq, nyquist);
-    int numZeros = initialZeroGuess.getDimension();
+    numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
     
     System.out.println(nyquist);
@@ -699,7 +699,7 @@ extends Experiment implements ParameterValidator {
       
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         Pair<RealVector, RealMatrix> pair = 
-            jacobian(point, numZeros);
+            jacobian(point);
         return pair;
       }
     };
@@ -749,7 +749,7 @@ extends Experiment implements ParameterValidator {
     
     RealVector finalResultVector;
 
-    if (!skipSolving) {
+    if (!SKIP_SOLVING) {
       LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
       finalResultVector = optimum.getPoint();
     } else {
@@ -828,7 +828,7 @@ extends Experiment implements ParameterValidator {
    * @return Doubles representing new response curve evaluation
    */
   private double[] 
-  evaluateResponse(double[] variables, int numZeros) {
+  evaluateResponse(double[] variables) {
     
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
     
@@ -1023,7 +1023,7 @@ extends Experiment implements ParameterValidator {
    * RealMatrix with forward difference of that response (Jacobian)
    */
   private Pair<RealVector, RealMatrix> 
-  jacobian(RealVector variables, int numZeros) {
+  jacobian(RealVector variables) {
     
     // variables = validate(variables);
     
@@ -1035,7 +1035,7 @@ extends Experiment implements ParameterValidator {
       currentVars[i] = variables.getEntry(i);
     }
     
-    double[] mag = evaluateResponse(currentVars, numZeros);
+    double[] mag = evaluateResponse(currentVars);
     
     double[][] jacobian = new double[mag.length][numVars];
     // now take the forward difference of each value 
@@ -1055,10 +1055,13 @@ extends Experiment implements ParameterValidator {
       }
       
       double diffX = changedVars[i] * (1 + DELTA);
+      if (diffX > 0.) {
+        diffX = 0.;
+      }
       changedVars[i] = diffX;
       
       double[] diffY = 
-          evaluateResponse(changedVars, numZeros);
+          evaluateResponse(changedVars);
       
       for (int j = 0; j < diffY.length; ++j) {
         jacobian[j][i] = diffY[j] - mag[j];
@@ -1106,10 +1109,11 @@ extends Experiment implements ParameterValidator {
    * @return Vector of parameters but with components all negative
    */
   public RealVector validate(RealVector poleParams) {
-    for (int i = 0; i < poleParams.getDimension(); ++i) {
+    for (int i = numZeros; i < poleParams.getDimension(); ++i) {
       double value = poleParams.getEntry(i);
       if (value > 0) {
-        poleParams.setEntry(i, -value);
+        // if it's above zero, set it back to zero
+        poleParams.setEntry(i, 0.);
       }
     }
     return poleParams;
