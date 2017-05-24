@@ -23,6 +23,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
 /**
@@ -226,18 +227,21 @@ public class AzimuthExperiment extends Experiment {
       }
       
       averageAngle /= coherenceCount;
+      
+      // do this calculation to get plot of freq/coherence, a side effect
+      // of running evaluation at the given point; this will be plotted
       RealVector angleVec = 
           MatrixUtils.createRealVector(new double[]{averageAngle});
       findAngleY.evaluate(angleVec);
       
-      angle = averageAngle;
+      double tau = NumericUtils.TAU;
+      angle = ( (averageAngle % tau) + tau ) % tau;
       
     }
 
     fireStateChange("Found angle");
     
     double angleDeg = Math.toDegrees(angle);
-    angleDeg = ( (angleDeg % 360) + 360 ) % 360;
     
     XYSeries ref = new XYSeries(northName + " rel. to reference");
     ref.add(offset + angleDeg, 0);
@@ -444,8 +448,7 @@ public class AzimuthExperiment extends Experiment {
     }
     
     fwdMeanCoherence /= (double) samples;
-    double deltaMean = 0.;
-    deltaMean = (fwdMeanCoherence - meanCoherence) / diff;
+    double deltaMean = (fwdMeanCoherence - meanCoherence) / diff;
     
     // System.out.println(deltaMean);
     

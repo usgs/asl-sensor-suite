@@ -24,12 +24,15 @@ public class SwingWorkerSingleton {
   /**
    * Used to run experiment panel's backend in the background as it should be
    * As long as this singleton is used to run an experiment, any currently
-   * running experiment will be cancelled, meaning only one is run at a time
+   * running experiment will be cancelled, meaning only one is run at a time.
    * This should improve performance and prevent experiments from competing
-   * with each other for 
+   * with each other for processing time, especially multiple runs of the same
+   * experiment.
+   * The returned result is a boolean used to determine if the data in the 
+   * experiment's display panel was properly set.
    * @param active ExperimentPanel to run calculations from
    * @param ds DataStore whose data will be used in the calculations
-   * @return true if the 
+   * @return true if the experiment completed successfully
    * @throws ExecutionException 
    * @throws InterruptedException 
    */
