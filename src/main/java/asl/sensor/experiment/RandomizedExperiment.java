@@ -1055,7 +1055,7 @@ extends Experiment implements ParameterValidator {
       }
       
       double diffX = changedVars[i] * (1 + DELTA);
-      if (diffX > 0.) {
+      if (diffX > 0. && i > numZeros) {
         diffX = 0.;
       }
       changedVars[i] = diffX;
