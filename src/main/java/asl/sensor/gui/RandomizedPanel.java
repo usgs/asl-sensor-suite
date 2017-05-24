@@ -17,8 +17,10 @@ import javax.swing.JComboBox;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
+import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
+import org.jfree.chart.axis.Axis;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
@@ -260,6 +262,10 @@ public class RandomizedPanel extends ExperimentPanel {
     
     applyAxesToChart(); // now that we've got axes defined
     
+    magChart = buildChart(null, xAxis, yAxis);
+    argChart = buildChart(null, xAxis, degreeAxis);
+    residChart = buildChart(null, xAxis, residAxis);
+    
     // set the GUI components
     this.setLayout( new GridBagLayout() );
     GridBagConstraints gbc = new GridBagConstraints();
@@ -307,7 +313,11 @@ public class RandomizedPanel extends ExperimentPanel {
     if ( e.getSource() == plotSelection ) {
       
       if (!set) {
-        applyAxesToChart();
+        XYPlot xyp = chart.getXYPlot();
+        String label = getXAxis().getLabel();
+        xyp.getDomainAxis().setLabel(label);
+        label = getYAxis().getLabel();
+        xyp.getRangeAxis().setLabel(label);
         return;
       }
       
@@ -325,11 +335,6 @@ public class RandomizedPanel extends ExperimentPanel {
   
   @Override
   protected void drawCharts() {
-    if (magChart == null) {
-      // happens if exception occurred during calculation of result
-      set = false;
-      return;
-    }
     // just force the active plot at the start to be the amplitude plot
     plotSelection.setSelectedIndex(0);
     chart = magChart;

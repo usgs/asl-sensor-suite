@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -336,8 +337,10 @@ implements ActionListener, ChangeListener {
   public void clearChart() {
     set = false;
     chart = 
-        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
-    applyAxesToChart();
+        ChartFactory.createXYLineChart( 
+            expType.getName(), 
+            getXAxis().getLabel(),  
+            getYAxis().getLabel(),  null );
     chartPanel.setChart(chart);
   }
   
@@ -354,7 +357,8 @@ implements ActionListener, ChangeListener {
    * @param errMsg Text of the message to be displayed
    */
   public void displayErrorMessage(String errMsg) {
-    XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
+    clearChart();
+    XYPlot xyp = (XYPlot) chart.getPlot();
     TextTitle result = new TextTitle();
     result.setText(errMsg);
     result.setBackgroundPaint(Color.red);
@@ -624,12 +628,22 @@ implements ActionListener, ChangeListener {
       
       @Override
       protected void done() {
-        drawCharts(); // display the results of experiment in this panel
+        if (set) {
+          drawCharts(); // display the results of experiment in this panel
+        }
       }
       
     };
     
     worker.execute();
+    
+    try {
+      worker.get();
+    } catch (InterruptedException e1) {
+      displayErrorMessage( e1.getMessage() );
+    } catch (ExecutionException e2) {
+      displayErrorMessage( e2.getMessage() );
+    }
     
     return worker;
     

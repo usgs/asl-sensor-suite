@@ -264,16 +264,12 @@ public class SensorSuite extends JPanel
         boolean set = worker.get();
         savePDF.setEnabled(set);
       } catch (InterruptedException e1) {
-        // TODO Auto-generated catch block
-        ep.displayErrorMessage( e1.getMessage() );
         e1.printStackTrace();
       } catch (ExecutionException e2) {
-        // TODO Auto-generated catch block
-        ep.displayErrorMessage( e2.getMessage() );
         e2.printStackTrace();
       }
-      
       return;
+      
     } else if ( e.getSource() == savePDF ) {
 
       String ext = ".pdf";
@@ -433,7 +429,6 @@ public class SensorSuite extends JPanel
     inputPlots.showRegionForGeneration();
     
     // now, update the data
-
     worker = ep.runExperiment(ds, worker);
 
   }
