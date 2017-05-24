@@ -438,7 +438,7 @@ extends Experiment implements ParameterValidator {
   // when true, doesn't run solver, in event parameters have an issue
   // (does the solver seem to have frozen? try rebuilding with this as true,
   // and then run the plot -- show nominal resp. and estimated curves)
-  public final boolean SKIP_SOLVING = false;
+  public final boolean SKIP_SOLVING = true;
   
   private boolean lowFreq; // fit the low- or high-frequency poles?
   
