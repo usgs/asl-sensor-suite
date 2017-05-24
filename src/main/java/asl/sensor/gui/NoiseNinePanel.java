@@ -172,7 +172,7 @@ public class NoiseNinePanel extends NoisePanel {
     NoiseNineExperiment noisExp = (NoiseNineExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);
     
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
     
     for (int j = 0; j < 3; ++j) {
       XYSeriesCollection xysc = expResult.getData().get(j);

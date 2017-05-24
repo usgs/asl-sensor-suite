@@ -457,7 +457,7 @@ implements ChangeListener {
     
     setDataNames(ds);
     
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
 
     // need to have 2 series for relative gain
     refSeries.setEnabled(true);

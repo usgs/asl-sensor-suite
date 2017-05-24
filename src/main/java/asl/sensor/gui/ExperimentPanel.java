@@ -108,29 +108,38 @@ implements ActionListener, ChangeListener {
     }
     return sb.toString();
   }
+  
   protected JButton save;
   
-  protected JFreeChart chart; // replace with plot object
+  protected JFreeChart chart; // the chart shown in the panel
   
-  protected ChartPanel chartPanel;
+  protected ChartPanel chartPanel; // component used to hold the shown chart
+  // (if an experiment has multiple charts to show, ideally each should be
+  // selectable through some sort of menu with the active menu option deciding
+  // which chart should be displayed in this panel)
   
   protected JFileChooser fc; // save image when image save button clicked
   
   public final ExperimentEnum expType; 
-          // used to define experiment of each plot object
+    // used to define experiment of each plot object (i.e., chart name)
   
   protected Experiment expResult;
+    // experiment actually being run (call its 'setData' method to run backend)
+    // experiments use builder pattern -- set necessary variables like
+    // angle offset or x-axis units before running the experiment
   
   protected ValueAxis xAxis, yAxis;
+    // default axes to use with the default chart
   
   public String[] channelType;
+    // used to give details in input panel about what users needs to load where
   
-  protected boolean set;
+  protected boolean set; // true if the experiment has run
   protected String[] plotTheseInBold; // given in the implementing function
-  
   // this is a String because bolded names are intended to be fixed
-  protected Map<String, Color> seriesColorMap;
+  // (i.e., NLNM, NHNM, not dependent on user input)
   
+  protected Map<String, Color> seriesColorMap;
   protected Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
   
@@ -169,6 +178,8 @@ implements ActionListener, ChangeListener {
     save.addActionListener(this);
     
     // basic layout for components (recommended to override in concrete class)
+    // if specific formatting or additional components are unnecessary, the
+    // implementing class can simply call super(expType) to make a panel
     this.setLayout( new BoxLayout(this, BoxLayout.Y_AXIS) );
     this.add(chartPanel);
     this.add(save);
@@ -176,7 +187,8 @@ implements ActionListener, ChangeListener {
   
   @Override
   /**
-   * Used to print out status of the experiment backend onto the chart
+   * Used to print out status of the experiment backend onto the chart when
+   * the backend status changes
    */
   public void stateChanged(ChangeEvent e) {
     if ( e.getSource() == expResult ) {
@@ -593,6 +605,13 @@ implements ActionListener, ChangeListener {
     return panelsNeeded();
   }
   
+  /**
+   * Function to call to run experiment backend on specific data, using the
+   * given swingworker
+   * @param ds Data to evaluate the backend on
+   * @param worker Worker thread to run the backend in, presumably the 
+   * worker object originating in the main class for the suite
+   */
   public void 
   runExperiment(final DataStore ds, SwingWorker<Integer, Void> worker) {
     
@@ -602,13 +621,13 @@ implements ActionListener, ChangeListener {
       
       @Override
       public Integer doInBackground() {
-        updateData(ds);
+        updateData(ds); // calculate backend and get chart, insets to show
         return 0;
       }
       
       @Override
       public void done() {
-        drawCharts();
+        drawCharts(); // display the results of experiment in this panel
       }
       
     };

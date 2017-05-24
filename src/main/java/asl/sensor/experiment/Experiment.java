@@ -21,10 +21,25 @@ import asl.sensor.input.DataStore;
  * for the calculations of the experiment to be passed into a class that does
  * plotting for the data that results from this object.
  * 
+ * Experiments work in a manner similar to builder patterns: experiments that
+ * rely on variables to determine how their calculations are run, such as
+ * the randomized experiment using a boolean to determine what frequency poles
+ * should be set or the noise experiment using a boolean to determine if it
+ * should return results in frequency or period space for the x-axis. Set these
+ * values first, and then call "runExperimentOnData" with a given DataStore
+ * containing the relevant values.
+ * 
  * Some experiment implementations may not only produce XY series data to be
  * plotted by the corresponding GUI implemntation, but also produce additional
  * statistical data relevant to the plots, such as residual calculations
- * or the values of best-fit parameters given a series of inputs.
+ * or the values of best-fit parameters given a series of inputs. These should
+ * not be called unless the experiment has already been run, as they will
+ * otherwise not be populated with valid results. Because the primary use case
+ * of an experiment is to be run by the GUI panel containing it, which will
+ * read in all the additional results as soon as the calculation completes,
+ * there is no particular safeguard against doing so at this time. The GUI
+ * panels should read in data during their updateData routine, which is where
+ * the experiment should be run.
  * 
  * @author akearns
  *
@@ -202,7 +217,7 @@ public abstract class Experiment {
    * where interval consistency is checked before doing calculations.
    * @param ds Timeseries data to be processed
    */
-  public void setData(final DataStore ds) {
+  public void runExperimentOnData(final DataStore ds) {
     
     status = "";
     

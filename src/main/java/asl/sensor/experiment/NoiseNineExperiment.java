@@ -85,24 +85,24 @@ public class NoiseNineExperiment extends NoiseExperiment {
     
     // angle should be set negative -- rotate third sensor, not the opposite
     aziStore.setData(2, north2Sensor);
-    azi.setData(aziStore);
+    azi.runExperimentOnData(aziStore);
     double north2Angle = -azi.getFitAngleRad();
     fireStateChange("Found orientation of second north sensor!");
     
     aziStore.setData(2, east2Sensor);
-    azi.setData(aziStore);
+    azi.runExperimentOnData(aziStore);
     double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
     fireStateChange("Found orientation of second east sensor!");
     // need to offset rotation by 90 degrees -- don't want it facing north
     
     // same as above
     aziStore.setData(2, north3Sensor);
-    azi.setData(aziStore);
+    azi.runExperimentOnData(aziStore);
     double north3Angle = -azi.getFitAngleRad();
     fireStateChange("Found orientation of third north sensor!");
     
     aziStore.setData(2, east2Sensor);
-    azi.setData(aziStore);
+    azi.runExperimentOnData(aziStore);
     double east3Angle = -azi.getFitAngleRad() - (Math.PI / 2);
     fireStateChange("Found orientation of third east sensor!");
     
@@ -147,13 +147,13 @@ public class NoiseNineExperiment extends NoiseExperiment {
     NoiseExperiment noiseExp = new NoiseExperiment();
     fireStateChange("Calculating north noise components...");
     noiseExp.setFreqSpace(freqSpace);
-    noiseExp.setData(northComponents);
+    noiseExp.runExperimentOnData(northComponents);
     XYSeriesCollection northXYS = noiseExp.getData().get(0);
     fireStateChange("Calculating east noise components...");
-    noiseExp.setData(eastComponents);
+    noiseExp.runExperimentOnData(eastComponents);
     XYSeriesCollection eastXYS = noiseExp.getData().get(0);
     fireStateChange("Calculating vertical noise components...");
-    noiseExp.setData(vertComponents);
+    noiseExp.runExperimentOnData(vertComponents);
     XYSeriesCollection vertXYS = noiseExp.getData().get(0);
 
     xySeriesData.add(northXYS);

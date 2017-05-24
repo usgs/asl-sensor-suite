@@ -70,7 +70,7 @@ public class OrthogonalityTest {
     
     ds.trimAll(start, end);
     
-    orth.setData(ds);
+    orth.runExperimentOnData(ds);
     
     System.out.println( orth.getFitAngle() );
     System.out.println( Arrays.toString( orth.getSolutionParams() ) );

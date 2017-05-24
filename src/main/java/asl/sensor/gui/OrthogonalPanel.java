@@ -119,7 +119,7 @@ public class OrthogonalPanel extends ExperimentPanel {
     
     set = true;
     
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
   }
 
 }
