@@ -325,6 +325,11 @@ public class RandomizedPanel extends ExperimentPanel {
   
   @Override
   protected void drawCharts() {
+    if (magChart == null) {
+      // happens if exception occurred during calculation of result
+      set = false;
+      return;
+    }
     // just force the active plot at the start to be the amplitude plot
     plotSelection.setSelectedIndex(0);
     chart = magChart;
@@ -467,7 +472,7 @@ public class RandomizedPanel extends ExperimentPanel {
       appendFreqTitle = " (HIGH FREQ.)";
     }
     
-    if (rndExp.SKIP_SOLVING) {
+    if ( rndExp.getSolverState() ) {
       appendFreqTitle += " | SOLVER NOT RUN";
     }
     

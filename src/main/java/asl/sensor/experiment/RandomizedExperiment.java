@@ -459,6 +459,10 @@ extends Experiment implements ParameterValidator {
     normalIdx = 0;
   }
   
+  public boolean getSolverState() {
+    return SKIP_SOLVING;
+  }
+  
   /*
    * (non-Javadoc)
    * BACKEND FUNCTION BEGINS HERE
@@ -658,7 +662,7 @@ extends Experiment implements ParameterValidator {
     // System.out.println(maxMagWeight);
     
     // we have the candidate mag and phase, now to turn them into weight values
-    maxMagWeight = 100. / maxMagWeight;
+    maxMagWeight = 10. / maxMagWeight;
     maxArgWeight = 1./ maxArgWeight;
     
     // weight matrix
@@ -686,10 +690,10 @@ extends Experiment implements ParameterValidator {
     numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
     
-    System.out.println(nyquist);
-    for (int i = 0; i < initialPoles.size(); ++i) {
-      System.out.println( initialPoles.get(i).abs() / NumericUtils.TAU );
-    }
+    //System.out.println(nyquist);
+    //for (int i = 0; i < initialPoles.size(); ++i) {
+    //  System.out.println( initialPoles.get(i).abs() / NumericUtils.TAU );
+    //}
     
     // now, solve for the response that gets us the best-fit response curve
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
@@ -718,7 +722,6 @@ extends Experiment implements ParameterValidator {
     XYSeries fitMag = new XYSeries("Fit resp. magnitude");
     XYSeries fitArg = new XYSeries("Fit resp. phase");
     
-    
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(initialGuess).
         target(obsResVector).
@@ -733,13 +736,12 @@ extends Experiment implements ParameterValidator {
     
     fireStateChange("Built least-squares problem; evaluating intial guess...");
 
-
     // residuals used to determine quality of solution convergence
     
     LeastSquaresProblem.Evaluation initEval = lsp.evaluate(initialGuess);
     initialResidual = initEval.getCost();
     
-    System.out.println("Got initial evaluation; running solver...");
+    fireStateChange("Got initial evaluation; running solver...");
     
     double[] initialValues =
         jacobian.value(initialGuess).getFirst().toArray();
@@ -749,7 +751,9 @@ extends Experiment implements ParameterValidator {
     
     RealVector finalResultVector;
 
-    if (!SKIP_SOLVING) {
+    boolean dontSolve = getSolverState(); // true if we should NOT run solver
+    
+    if (!dontSolve) {
       LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
       finalResultVector = optimum.getPoint();
     } else {
@@ -784,10 +788,10 @@ extends Experiment implements ParameterValidator {
       fitMag.add(freqs[i], fitValues[i]);
       fitArg.add(freqs[i], fitValues[argIdx]);
       
-      initResidMag.add(freqs[i], initResidList[i]);
-      initResidPhase.add(freqs[i], initResidList[argIdx]);
-      fitResidMag.add(freqs[i], fitResidList[i]);
-      fitResidPhase.add(freqs[i], fitResidList[argIdx]);
+      initResidMag.add( freqs[i], Math.pow(initResidList[i], 2) );
+      initResidPhase.add( freqs[i], Math.pow(initResidList[argIdx], 2) );
+      fitResidMag.add( freqs[i], Math.pow(fitResidList[i], 2) );
+      fitResidPhase.add( freqs[i], Math.pow(fitResidList[argIdx], 2) );
     }
     
     XYSeriesCollection xysc = new XYSeriesCollection();
@@ -1054,8 +1058,8 @@ extends Experiment implements ParameterValidator {
         changedVars[j] = currentVars[j];
       }
       
-      double diffX = changedVars[i] * (1 + DELTA);
-      if (diffX > 0. && i > numZeros) {
+      double diffX = changedVars[i] + DELTA;
+      if (i > numZeros && diffX > 0. && (i % 2) == 0.) {
         diffX = 0.;
       }
       changedVars[i] = diffX;
@@ -1111,9 +1115,15 @@ extends Experiment implements ParameterValidator {
   public RealVector validate(RealVector poleParams) {
     for (int i = numZeros; i < poleParams.getDimension(); ++i) {
       double value = poleParams.getEntry(i);
-      if (value > 0) {
+      if (value > 0 && (i % 2) == 0) {
+        // even index means this is a real-value vector entry
         // if it's above zero, set it back to zero
         poleParams.setEntry(i, 0.);
+      } else if (value > 0) {
+        // this means the value is complex, we can multiply it by -1
+        // this is ok for complex values since their conjugate is implied
+        // to be part of the set of poles being fit
+        poleParams.setEntry(i, value * -1);
       }
     }
     return poleParams;

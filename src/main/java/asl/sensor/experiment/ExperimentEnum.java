@@ -14,6 +14,7 @@ public enum ExperimentEnum {
   RGAIN ("Relative gain"),
   STCAL ("Step calibration"),
   RANDM ("Randomized calibration"),
+  RNDBG ("R-Cal. (no solver)"),
   AZMTH ("Azimuth"),
   ORTHO ("Orthogonality"),
   RESPN ("Response"),

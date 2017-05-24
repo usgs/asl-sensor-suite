@@ -21,6 +21,8 @@ public class ExperimentPanelFactory {
     switch(exp){
     case ORTHO:
       return new OrthogonalPanel(exp);
+    case NOIS9:
+      return new NoiseNinePanel(exp);
     case NOISE:
       return new NoisePanel(exp);
     case RGAIN:
@@ -33,8 +35,8 @@ public class ExperimentPanelFactory {
       return new RandomizedPanel(exp);
     case RESPN:
       return new ResponsePanel(exp);
-    case NOIS9:
-      return new NoiseNinePanel(exp);
+    case RNDBG:
+      return new RandDebugPanel(exp);
     default:
       // this shouldn't happen unless someone added to the enum
       // and forgot to follow-through on implementation
