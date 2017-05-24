@@ -36,6 +36,7 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.ExperimentPanelFactory;
 import asl.sensor.gui.InputPanel;
+import asl.sensor.gui.SwingWorkerSingleton;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
 
@@ -153,8 +154,6 @@ public class SensorSuite extends JPanel
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
 
-  private SwingWorker<Boolean, Void> worker;
-  
   /**
    * Creates the main window of the program when called
    * (Three main panels: the top panel for displaying the results
@@ -245,28 +244,20 @@ public class SensorSuite extends JPanel
     if ( e.getSource() == generate ) {
       
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+      savePDF.setEnabled(false);
       
-      if (worker != null) {
-        savePDF.setEnabled(false);
-        // clear out any old data in the chart
-        // since we only have one worker thread for experiment calculations
-        // if we run a new experiment while another one was calculating,
-        // the result won't actually complete, so we should make it clear that
-        // other panel was cancelled, and thus clear the chart / unset data
-        if ( !worker.isDone() ) {
-          worker.cancel(true); // cancel worker, set it to the new task
-        }
-      }
-      
-      resetTabPlots(ep); // worker gets passed to ep and then passed back
-      
+      // update the input plots to show the active region being calculated
+      inputPlots.showRegionForGeneration();
+      // pass the inputted data to the panels that handle them
+      DataStore ds = inputPlots.getData();
+
       try {
-        boolean set = worker.get();
+        boolean set = SwingWorkerSingleton.setInstance(ep, ds);
         savePDF.setEnabled(set);
       } catch (InterruptedException e1) {
         e1.printStackTrace();
       } catch (ExecutionException e2) {
-        e2.printStackTrace();
+        e2.getCause().printStackTrace();
       }
       return;
       
@@ -415,21 +406,6 @@ public class SensorSuite extends JPanel
 
     // just write the bufferedimage to file
     ImageIO.write( getCompiledImage(), "png", file );
-
-  }
-
-  /**
-   * Resets plot data and gets the inputted data to send to experiments
-   */
-  private void resetTabPlots(ExperimentPanel ep) {
-    
-    // pass the inputted data to the panels that handle them
-    DataStore ds = inputPlots.getData();
-    // update the input plots to show the active region being calculated
-    inputPlots.showRegionForGeneration();
-    
-    // now, update the data
-    worker = ep.runExperiment(ds, worker);
 
   }
 

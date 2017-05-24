@@ -616,34 +616,8 @@ implements ActionListener, ChangeListener {
   public SwingWorker<Boolean, Void> 
   runExperiment(final DataStore ds, SwingWorker<Boolean, Void> worker) {
     
-    clearChartAndSetProgressData();
-    
-    worker = new SwingWorker<Boolean, Void>() {
-      
-      @Override
-      protected Boolean doInBackground() {
-        updateData(ds); // calculate backend and get chart, insets to show
-        return set;
-      }
-      
-      @Override
-      protected void done() {
-        if (set) {
-          drawCharts(); // display the results of experiment in this panel
-        }
-      }
-      
-    };
     
     worker.execute();
-    
-    try {
-      worker.get();
-    } catch (InterruptedException e1) {
-      displayErrorMessage( e1.getMessage() );
-    } catch (ExecutionException e2) {
-      displayErrorMessage( e2.getMessage() );
-    }
     
     return worker;
     
