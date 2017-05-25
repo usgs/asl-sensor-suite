@@ -24,6 +24,8 @@ public class ExperimentFactory {
       return new NoiseExperiment();
     case RGAIN:
       return new GainExperiment();
+    case GAIN6:
+      return new GainSixExperiment();
     case STCAL:
       return new StepExperiment();
     case AZMTH:

@@ -220,7 +220,7 @@ public class StepPanel extends ExperimentPanel {
    * @return String to place in TextTitle
    */
   @Override
-  public String getInsetString() {
+  public String getInsetStrings() {
     
     return getInsetString( (StepExperiment) expResult );
   
@@ -284,7 +284,7 @@ public class StepPanel extends ExperimentPanel {
     expResult.runExperimentOnData(ds);
     
     TextTitle result = new TextTitle();
-    result.setText( getInsetString() );
+    result.setText( getInsetStrings() );
     result.setBackgroundPaint(Color.white);
     
     XYSeriesCollection stepData = expResult.getData().get(0);

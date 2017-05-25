@@ -188,7 +188,7 @@ public class AzimuthPanel extends ExperimentPanel {
   }
   
   @Override
-  public String getInsetString() {
+  public String getInsetStrings() {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     double value = az.getOffset();
     double angle = az.getFitAngle();

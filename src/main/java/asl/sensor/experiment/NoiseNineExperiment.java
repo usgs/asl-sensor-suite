@@ -75,8 +75,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     sb.append("for second and third sets of horizontal (N, E) data...");
     fireStateChange( sb.toString() );
     
-    // set angles and then rotate data 
-    // (calling 'azi.setData()' includes internal call to azimuth backend)
+    // set angles and then rotate data
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.setSimple(true); // use rough estimate of coherence, no windowing
     DataStore aziStore = new DataStore();

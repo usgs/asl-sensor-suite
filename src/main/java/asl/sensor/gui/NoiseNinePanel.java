@@ -29,10 +29,9 @@ public class NoiseNinePanel extends NoisePanel {
    * 
    */
   private static final long serialVersionUID = -8049021432657749975L;
-  JComboBox<String> plotSelection;
-  boolean set;
+  protected JComboBox<String> plotSelection;
   
-  JFreeChart northChart, eastChart, vertChart;
+  protected JFreeChart northChart, eastChart, vertChart;
 
   public NoiseNinePanel(ExperimentEnum exp) {
     super(exp);

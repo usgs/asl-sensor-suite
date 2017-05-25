@@ -74,7 +74,7 @@ Older high-frequency cals may produce lots of noise on the high-frequency end co
 This program includes a second checker tab which does not run the solver for 
 response parameters, but can be used to determine whether or not the calculated response from the sensor output is good enough to be used for the solver. 
 Noisy calibrations or ones whose output otherwise varies significantly from the given nominal response may take a long time to solve or produce errors that lead to the solver being unable to converge on any solution. 
-IT IS STRONGLY ENCOURAGED TO RUN THE NO-SOLVER RANDOM CAL PANEL ON DATA THAT PRODUCES A CONVERGENCE ERROR IN ORDER TO DIAGNOSE POTENTIAL ISSUES WITH THE CALIBRAITON ITSELF..
+IT IS STRONGLY ENCOURAGED TO RUN THE NO-SOLVER RANDOM CAL PANEL ON DATA THAT PRODUCES A CONVERGENCE ERROR DURING SOLVING IN ORDER TO DIAGNOSE POTENTIAL ISSUES WITH THE CALIBRATION ITSELF.
 
 #### Azimuth
 

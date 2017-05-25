@@ -18,7 +18,8 @@ public enum ExperimentEnum {
   AZMTH ("Azimuth"),
   ORTHO ("Orthogonality"),
   RESPN ("Response"),
-  NOIS9 ("Self-noise (9-Component)");
+  NOIS9 ("Self-noise (9-Component)"),
+  GAIN6 ("Relative-gain (6-component)");
 
   private String name;
   
