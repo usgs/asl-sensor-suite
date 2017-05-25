@@ -23,6 +23,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
 /**
@@ -226,18 +227,52 @@ public class AzimuthExperiment extends Experiment {
       }
       
       averageAngle /= coherenceCount;
+      
+      // do this calculation to get plot of freq/coherence, a side effect
+      // of running evaluation at the given point; this will be plotted
       RealVector angleVec = 
           MatrixUtils.createRealVector(new double[]{averageAngle});
       findAngleY.evaluate(angleVec);
       
-      angle = averageAngle;
+      double tau = NumericUtils.TAU;
+      angle = ( (averageAngle % tau) + tau ) % tau;
       
     }
 
-    fireStateChange("Found angle");
+    fireStateChange("Solver completed, checking if anti-polar...");
+    
+    // solver produces angle of x, 180+x that is closer to reference
+    // if angle is ~180 degrees away from reference in reality, then the signal
+    // would be inverted from the original. so get 10 seconds of data and check
+    // to see if the data is all on the same side of 0.
+    
+    // how much data we need (i.e., iteration length) to check 10 seconds
+    int tenSecondsLength = (int)  ( testNorthBlock.getSampleRate() * 10 ) + 1;
+    int numSameSign = 0; int numDiffSign = 0;
+    
+    DataBlock rot = 
+        TimeSeriesUtils.rotate(testNorthBlock, testEastBlock, angle);
+    
+    List<Number> rotTimeSeries = rot.getData();
+    List<Number> refTimeSeries = refNorthBlock.getData();
+    
+    for (int i = 0; i < tenSecondsLength; ++i) {
+      int sigRot = (int) Math.signum( (double) rotTimeSeries.get(i) );
+      int sigRef = (int) Math.signum( (double) refTimeSeries.get(i) );
+      
+      if (sigRot - sigRef == 0) {
+        ++numSameSign;
+      } else {
+        ++numDiffSign;
+      }
+    }
+    
+    if (numSameSign < numDiffSign) {
+      angle += Math.PI; // still in radians
+      angle = angle % NumericUtils.TAU; // keep between 0 and 360
+    }
     
     double angleDeg = Math.toDegrees(angle);
-    angleDeg = ( (angleDeg % 360) + 360 ) % 360;
     
     XYSeries ref = new XYSeries(northName + " rel. to reference");
     ref.add(offset + angleDeg, 0);
@@ -444,8 +479,7 @@ public class AzimuthExperiment extends Experiment {
     }
     
     fwdMeanCoherence /= (double) samples;
-    double deltaMean = 0.;
-    deltaMean = (fwdMeanCoherence - meanCoherence) / diff;
+    double deltaMean = (fwdMeanCoherence - meanCoherence) / diff;
     
     // System.out.println(deltaMean);
     

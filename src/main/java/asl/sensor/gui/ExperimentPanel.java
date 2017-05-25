@@ -336,8 +336,10 @@ implements ActionListener, ChangeListener {
   public void clearChart() {
     set = false;
     chart = 
-        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
-    applyAxesToChart();
+        ChartFactory.createXYLineChart( 
+            expType.getName(), 
+            getXAxis().getLabel(),  
+            getYAxis().getLabel(),  null );
     chartPanel.setChart(chart);
   }
   
@@ -354,7 +356,8 @@ implements ActionListener, ChangeListener {
    * @param errMsg Text of the message to be displayed
    */
   public void displayErrorMessage(String errMsg) {
-    XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
+    clearChart();
+    XYPlot xyp = (XYPlot) chart.getPlot();
     TextTitle result = new TextTitle();
     result.setText(errMsg);
     result.setBackgroundPaint(Color.red);
@@ -612,22 +615,6 @@ implements ActionListener, ChangeListener {
   public SwingWorker<Boolean, Void> 
   runExperiment(final DataStore ds, SwingWorker<Boolean, Void> worker) {
     
-    clearChartAndSetProgressData();
-    
-    worker = new SwingWorker<Boolean, Void>() {
-      
-      @Override
-      protected Boolean doInBackground() {
-        updateData(ds); // calculate backend and get chart, insets to show
-        return set;
-      }
-      
-      @Override
-      protected void done() {
-        drawCharts(); // display the results of experiment in this panel
-      }
-      
-    };
     
     worker.execute();
     

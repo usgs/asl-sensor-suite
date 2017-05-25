@@ -771,8 +771,8 @@ extends Experiment implements ParameterValidator {
     double[] fitResidList = optimum.getResiduals().toArray();
     
 
-    XYSeries fitResidMag = new XYSeries("Fit resp. mag residual");
-    XYSeries fitResidPhase = new XYSeries("Fit resp. phase residual");
+    XYSeries fitResidMag = new XYSeries("Fit resp. mag sqd. error");
+    XYSeries fitResidPhase = new XYSeries("Fit resp. phase sqd. error");
     
     fitResponse = 
         fitResultToResp(fitParams, fitResponse, lowFreq, numZeros, nyquist);
@@ -797,21 +797,30 @@ extends Experiment implements ParameterValidator {
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.addSeries(initMag);
     xysc.addSeries(calcMag);
-    xysc.addSeries(fitMag);
+    if (!dontSolve) {
+      xysc.addSeries(fitMag);
+    }
+
     xySeriesData.add(xysc);
     
     xysc = new XYSeriesCollection();
     xysc.addSeries(initArg);
-    xysc.addSeries(calcArg);
-    xysc.addSeries(fitArg);
+    xysc.addSeries(calcArg);    
+    if (!dontSolve) {
+      xysc.addSeries(fitArg);
+    }
     xySeriesData.add(xysc);
     
     
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidMag);
-    xysc.addSeries(fitResidMag);
+    if (!dontSolve) {
+      xysc.addSeries(fitResidMag);
+    }
     xysc.addSeries(initResidPhase);
-    xysc.addSeries(fitResidPhase);
+    if (!dontSolve) {
+      xysc.addSeries(fitResidPhase);
+    }
     xySeriesData.add(xysc);
     
   }
@@ -841,8 +850,6 @@ extends Experiment implements ParameterValidator {
       testResp = 
           fitResultToResp(variables, testResp, lowFreq, numZeros, nyquist);
     }
-    
-
     
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
     

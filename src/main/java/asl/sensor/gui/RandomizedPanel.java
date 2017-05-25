@@ -260,6 +260,10 @@ public class RandomizedPanel extends ExperimentPanel {
     
     applyAxesToChart(); // now that we've got axes defined
     
+    magChart = buildChart(null, xAxis, yAxis);
+    argChart = buildChart(null, xAxis, degreeAxis);
+    residChart = buildChart(null, xAxis, residAxis);
+    
     // set the GUI components
     this.setLayout( new GridBagLayout() );
     GridBagConstraints gbc = new GridBagConstraints();
@@ -307,7 +311,11 @@ public class RandomizedPanel extends ExperimentPanel {
     if ( e.getSource() == plotSelection ) {
       
       if (!set) {
-        applyAxesToChart();
+        XYPlot xyp = chart.getXYPlot();
+        String label = getXAxis().getLabel();
+        xyp.getDomainAxis().setLabel(label);
+        label = getYAxis().getLabel();
+        xyp.getRangeAxis().setLabel(label);
         return;
       }
       
@@ -325,11 +333,6 @@ public class RandomizedPanel extends ExperimentPanel {
   
   @Override
   protected void drawCharts() {
-    if (magChart == null) {
-      // happens if exception occurred during calculation of result
-      set = false;
-      return;
-    }
     // just force the active plot at the start to be the amplitude plot
     plotSelection.setSelectedIndex(0);
     chart = magChart;
@@ -470,10 +473,6 @@ public class RandomizedPanel extends ExperimentPanel {
       appendFreqTitle = " (LOW FREQ.)";
     } else {
       appendFreqTitle = " (HIGH FREQ.)";
-    }
-    
-    if ( rndExp.getSolverState() ) {
-      appendFreqTitle += " | SOLVER NOT RUN";
     }
     
     List<XYSeriesCollection> xysc = expResult.getData();
