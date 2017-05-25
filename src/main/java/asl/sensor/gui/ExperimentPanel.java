@@ -345,10 +345,7 @@ implements ActionListener, ChangeListener {
    * Clear chart data and display text that it is loading new data
    */
   protected void clearChartAndSetProgressData() {
-    chart = 
-        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
-    applyAxesToChart();
-    chartPanel.setChart(chart);
+    clearChart();
     displayInfoMessage("Running calculation...");
   }
   
@@ -612,27 +609,29 @@ implements ActionListener, ChangeListener {
    * @param worker Worker thread to run the backend in, presumably the 
    * worker object originating in the main class for the suite
    */
-  public void 
-  runExperiment(final DataStore ds, SwingWorker<Integer, Void> worker) {
+  public SwingWorker<Boolean, Void> 
+  runExperiment(final DataStore ds, SwingWorker<Boolean, Void> worker) {
     
     clearChartAndSetProgressData();
     
-    worker = new SwingWorker<Integer, Void>() {
+    worker = new SwingWorker<Boolean, Void>() {
       
       @Override
-      public Integer doInBackground() {
+      protected Boolean doInBackground() {
         updateData(ds); // calculate backend and get chart, insets to show
-        return 0;
+        return set;
       }
       
       @Override
-      public void done() {
+      protected void done() {
         drawCharts(); // display the results of experiment in this panel
       }
       
     };
     
     worker.execute();
+    
+    return worker;
     
   }
 

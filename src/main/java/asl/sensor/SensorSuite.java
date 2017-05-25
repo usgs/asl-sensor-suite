@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.ExecutionException;
 
 import javax.imageio.ImageIO;
 import javax.swing.Box;
@@ -152,7 +153,7 @@ public class SensorSuite extends JPanel
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
 
-  private SwingWorker<Integer, Void> worker;
+  private SwingWorker<Boolean, Void> worker;
   
   /**
    * Creates the main window of the program when called
@@ -243,23 +244,34 @@ public class SensorSuite extends JPanel
 
     if ( e.getSource() == generate ) {
       
+      ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+      
       if (worker != null) {
         savePDF.setEnabled(false);
         // clear out any old data in the chart
         // since we only have one worker thread for experiment calculations
-        // we clear all charts -- if we run a new experiment while another one
-        // is calculating from another panel, we should make it clear that
+        // if we run a new experiment while another one was calculating,
+        // the result won't actually complete, so we should make it clear that
         // other panel was cancelled, and thus clear the chart / unset data
-        worker.cancel(true); // doesn't matter if experiment already completed
-        for (Component component : tabbedPane.getComponents()) {
-          ExperimentPanel ep = (ExperimentPanel) component;
-          if ( ep.hasRun() ) {
-            ep.clearChart();
-          }
+        if ( !worker.isDone() ) {
+          worker.cancel(true); // cancel worker, set it to the new task
         }
       }
       
-      resetTabPlots();
+      resetTabPlots(ep); // worker gets passed to ep and then passed back
+      
+      try {
+        boolean set = worker.get();
+        savePDF.setEnabled(set);
+      } catch (InterruptedException e1) {
+        // TODO Auto-generated catch block
+        ep.displayErrorMessage( e1.getMessage() );
+        e1.printStackTrace();
+      } catch (ExecutionException e2) {
+        // TODO Auto-generated catch block
+        ep.displayErrorMessage( e2.getMessage() );
+        e2.printStackTrace();
+      }
       
       return;
     } else if ( e.getSource() == savePDF ) {
@@ -413,9 +425,7 @@ public class SensorSuite extends JPanel
   /**
    * Resets plot data and gets the inputted data to send to experiments
    */
-  private void resetTabPlots() {
-    
-    ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+  private void resetTabPlots(ExperimentPanel ep) {
     
     // pass the inputted data to the panels that handle them
     DataStore ds = inputPlots.getData();
@@ -424,9 +434,8 @@ public class SensorSuite extends JPanel
     
     // now, update the data
 
-    ep.runExperiment(ds, worker);
-    
-    savePDF.setEnabled( ep.hasRun() );
+    worker = ep.runExperiment(ds, worker);
+
   }
 
   /**
