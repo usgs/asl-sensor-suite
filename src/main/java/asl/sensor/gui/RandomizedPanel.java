@@ -475,10 +475,6 @@ public class RandomizedPanel extends ExperimentPanel {
       appendFreqTitle = " (HIGH FREQ.)";
     }
     
-    if ( rndExp.getSolverState() ) {
-      appendFreqTitle += " | SOLVER NOT RUN";
-    }
-    
     List<XYSeriesCollection> xysc = expResult.getData();
     
     XYSeriesCollection magSeries = xysc.get(0);
