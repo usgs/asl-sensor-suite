@@ -6,7 +6,7 @@ This program is used to analyze various aspects of seismic sensor data in order 
 
 ### Requirements
 ##### Software
-This program is designed to be used with Java 1.8, but should also be compatible with Java 1.7
+This program is designed to be used with Java 1.8, but should also be compatible with Java 1.7.
 This program also requires Gradle in order to be run from source. For instructions on installing Gradle, see https://gradle.org/install
 NOTE: because Gradle requires access to the maven repositories to download dependencies, there may be build issues when running the program on DOI-networked computers. The instructions for using DOI certificates for maven authentication can be found under the Java subheader at https://github.com/usgs/best-practices/blob/master/WorkingWithinSSLIntercept.md. You will also need the file "DOIRootCA.crt" from the linked page near the top detailing how to configure git.
 For those using Mac computers, the last step for trusting the certificate in Java may be slightly different. If installing the certificate using the instructions above fails, try using this command instead (NOTE: requires administrative access due to the use of the sudo command) https://blog.alwold.com/2011/06/30/how-to-trust-a-certificate-in-java-on-mac-os-x/
@@ -36,7 +36,9 @@ Plots of the input files used in a sensor test can be output in PNG, as can the 
 
 ### Usage
 
-For more information on the specifics of certain tests, consult the javadoc. 
+As noted above, running the program can be done using `gradle run` if using a full source download or `java -jar [TestSuite jar filename]` with the name of the currently-built application replacing the bracketed bit. Note that the program may require an increase in the normal java heap space in order to run files with a very large number of data points. In such a case, running the program should be done with `java -Xmx#G -jar [TestSuite jar filename]` with `#` being replaced with the number of gigabytes to allocate to the Java heap space. It is unlikely that the program will require more than 4 gigabytes of memory.
+
+The following describes what is required in order to run a specific calculation through the GUI. For more information on the specific details of certain tests or how to create code to automate testing, consult the javadoc (code documentation).
 
 #### Self-noise
 
