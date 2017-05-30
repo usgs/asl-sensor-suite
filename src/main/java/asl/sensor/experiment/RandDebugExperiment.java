@@ -12,7 +12,7 @@ public class RandDebugExperiment extends RandomizedExperiment {
   }
   
   @Override
-  public void backend(DataStore ds) {
+  protected void backend(DataStore ds) {
     super.backend(ds);
   }
 

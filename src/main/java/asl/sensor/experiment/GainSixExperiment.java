@@ -1,6 +1,5 @@
 package asl.sensor.experiment;
-
-import org.jfree.data.general.SeriesDataset;
+ 
 import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.input.DataBlock;
@@ -40,9 +39,10 @@ public class GainSixExperiment extends Experiment {
   }
   
   /**
-   * 
-   * @param idx
-   * @return
+   * Get the gain mean and deviation values from the peak frequency of the 
+   * given dataset; the range for stats is the octave centered at the peak.
+   * @param idx Index of north component's data to use as reference
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
   public double[][] getStatsFromPeak(int idx) {
     double[][] result = new double[DIMS][];
@@ -53,6 +53,14 @@ public class GainSixExperiment extends Experiment {
   }
   
 
+  /**
+   * Get the gain mean and deviation values from a specified peak
+   * frequency range.
+   * @param idx Index of north component's data to use as reference
+   * @param low Low frequency bound of range to get stats over
+   * @param high High frequency bound of range to get stats over
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
+   */
   public double[][] getStatsFromFreqs(int idx, double low, double high) {
     double[][] result = new double[DIMS][];
     for (int i = 0; i < result.length; ++i) {
@@ -61,6 +69,7 @@ public class GainSixExperiment extends Experiment {
     return result;
   }
   
+  @Override
   public boolean hasEnoughData(DataStore ds) {
     int needed = blocksNeeded();
     for (int i = 0; i < needed; ++i) {
@@ -149,6 +158,10 @@ public class GainSixExperiment extends Experiment {
     
   }
 
+  /**
+   * Get the frequency bounds of the data to be given to charts
+   * @return Array of form {low freq bound, high freq bound}
+   */
   public double[] getMinMaxFrequencies() {
     XYSeries xys = xySeriesData.get(0).getSeries(0);
     if ( xySeriesData.get(0).getSeriesKey(0).equals("NLNM") ) {

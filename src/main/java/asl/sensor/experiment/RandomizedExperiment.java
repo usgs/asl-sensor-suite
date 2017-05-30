@@ -1066,6 +1066,8 @@ extends Experiment implements ParameterValidator {
       }
       
       double diffX = changedVars[i] + DELTA;
+      
+      // real-value pole components must be less than zero
       if (i > numZeros && diffX > 0. && (i % 2) == 0.) {
         diffX = 0.;
       }
@@ -1075,8 +1077,12 @@ extends Experiment implements ParameterValidator {
           evaluateResponse(changedVars);
       
       for (int j = 0; j < diffY.length; ++j) {
-        jacobian[j][i] = diffY[j] - mag[j];
-        jacobian[j][i] /= changedVars[i] - currentVars[i];
+        if (changedVars[i] - currentVars[i] == 0.) {
+          jacobian[j][i] = 0.;
+        } else {
+          jacobian[j][i] = diffY[j] - mag[j];
+          jacobian[j][i] /= changedVars[i] - currentVars[i];
+        }
         /*
         if ( (i % 2) == 0 && currentVars[i] > 0) {
           // enforce that real values of poles must be negative
