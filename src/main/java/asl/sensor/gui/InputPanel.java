@@ -107,8 +107,14 @@ implements ActionListener, ChangeListener {
    */
   public static long getMarkerLocation(DataBlock db, int sliderValue) {
     long start = db.getStartTime();
-    long len = (db.getInterval()) * db.size();
-    return start + (sliderValue * len) / SLIDER_MAX;
+    long len = db.getInterval() * db.size();
+    return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
+  }
+  
+  public static int getSliderValue(DataBlock db, long timeStamp) {
+    long start = db.getStartTime();
+    long len = db.getInterval() * db.size();
+    return (int) ( ( SLIDER_MAX * (timeStamp - start) ) / len );
   }
   
   private int activePlots = FILE_COUNT; // how much data is being displayed
@@ -129,6 +135,8 @@ implements ActionListener, ChangeListener {
   private JSlider leftSlider;
   private JSlider rightSlider;
   private JScrollPane inputScrollPane;
+  
+  private EditableDateDisplayPanel startDate, endDate;
       
   private JButton[] seedLoaders  = new JButton[FILE_COUNT];
   private JTextComponent[] seedFileNames = 
@@ -221,6 +229,12 @@ implements ActionListener, ChangeListener {
     rightSlider.setEnabled(false);
     rightSlider.addChangeListener(this);
     
+    // TODO: re-add change listeners once update code is properly refactored
+    startDate = new EditableDateDisplayPanel();
+    //startDate.addChangeListener(this);
+    endDate = new EditableDateDisplayPanel();
+    //endDate.addChangeListener(this);
+    
     zoomIn = new JButton("Zoom in (on selection)");
     zoomIn.addActionListener(this);
     zoomIn.setEnabled(false);
@@ -253,6 +267,12 @@ implements ActionListener, ChangeListener {
     
     gbc.gridx += 1;
     this.add(rightSlider, gbc);
+    
+    gbc.gridx = 0;
+    gbc.gridy += 1;
+    this.add(startDate, gbc);
+    gbc.gridx += 1;
+    this.add(endDate, gbc);
     
     // now we can add the space between the last plot and the save button
     //this.add( Box.createVerticalStrut(5) );
@@ -837,10 +857,6 @@ implements ActionListener, ChangeListener {
           save.setEnabled(true);
           clearAll.setEnabled(true);
 
-          leftSlider.setValue(0);
-          rightSlider.setValue(SLIDER_MAX);
-          setVerticalBars();
-
           seedFileNames[idx].setText( 
               file.getName() + ": " + immutableFilter);
 
@@ -919,7 +935,6 @@ implements ActionListener, ChangeListener {
     gbc.gridy += 1;
     chartSubpanel.add(chartPanels[i], gbc);
     
-
     // Removed a line to resize the chartpanels
     // This made sense before switching to gridbaglayout, but since that
     // tries to fill space with whatever panels it can, we can just get rid
@@ -948,7 +963,6 @@ implements ActionListener, ChangeListener {
     gbc.weighty = 0.25;
     gbc.gridy += 1;
     chartSubpanel.add(respLoaders[i], gbc);
-
     
     gbc.fill = GridBagConstraints.BOTH;
     gbc.weighty = 1;
@@ -1049,14 +1063,17 @@ implements ActionListener, ChangeListener {
       
       DataBlock db = zooms.getBlock(i);
       
-      long startMarkerLocation = getMarkerLocation(db, leftValue);
-      long endMarkerLocation = getMarkerLocation(db, rightValue);
+      long startMarkerLocation = getMarkerLocation(db, leftValue) / 1000;
+      long endMarkerLocation = getMarkerLocation(db, rightValue) / 1000;
       
       // divide by 1000 here to get time value in ms
-      Marker startMarker = new ValueMarker(startMarkerLocation/1000);
+      Marker startMarker = new ValueMarker(startMarkerLocation);
       startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
-      Marker endMarker = new ValueMarker(endMarkerLocation/1000);
+      Marker endMarker = new ValueMarker(endMarkerLocation);
       endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      
+      startDate.setValues(startMarkerLocation);
+      endDate.setValues(endMarkerLocation);
       
       xyp.addDomainMarker(startMarker);
       xyp.addDomainMarker(endMarker);
@@ -1180,8 +1197,76 @@ implements ActionListener, ChangeListener {
    */
   public void stateChanged(ChangeEvent e) {
     
+    // TODO: do something about these recursive calls, maybe ignore the
+    // change events from slider when start, end dates have been set
+    
     int leftSliderValue = leftSlider.getValue();
     int rightSliderValue = rightSlider.getValue();
+    
+    if ( e.getSource() == startDate ) {
+      // if no data to do windowing on, don't bother
+      if ( zooms.numberOfBlocksSet() == 0 ) {
+        return;
+      }
+      long time = startDate.getTime();
+      DataBlock db = zooms.getXthLoadedBlock(1);
+      long startTime = db.getStartTime() / 1000;
+      long endTime = db.getEndTime() / 1000;
+      // startValue is current value of left-side slider in ms
+      long startValue = 
+          getMarkerLocation(db, leftSliderValue) / 1000;
+      if (time < startTime || time > endTime) {
+        // can't set the values beyond limits of data, so just reset
+        startDate.setValues(startValue);
+        return;
+      } else {
+        // go from time to slider value and enforce constraint on window size
+        int candidateValue = getSliderValue(db, time);
+        if (candidateValue + MARGIN > rightSliderValue) {
+          candidateValue = rightSliderValue - MARGIN;
+          if (candidateValue < 0) {
+            leftSliderValue = 0;
+            rightSliderValue = MARGIN;
+          } else {
+            leftSliderValue = candidateValue;
+          }
+        } else {
+          leftSliderValue = candidateValue;
+        }
+      }
+    }
+    
+    if ( e.getSource() == endDate ) {
+      // if no data to do windowing on, don't bother
+      if ( zooms.numberOfBlocksSet() == 0 ) {
+        return;
+      }
+      long time = endDate.getTime();
+      DataBlock db = zooms.getXthLoadedBlock(1);
+      long startTime = db.getStartTime() / 1000;
+      long endTime = db.getEndTime() / 1000;
+      // startValue is current value of left-side slider in ms
+      long endValue = 
+          getMarkerLocation(db, rightSliderValue) / 1000;
+      if (time < startTime || time > endTime) {
+        // can't set the values beyond limits of data, so just reset
+        endDate.setValues(endValue);
+        return;
+      } else {
+        // go from time to slider value and enforce constraint on window size
+        int candidateValue = getSliderValue(db, time);
+        if (candidateValue - MARGIN < leftSliderValue) {
+          candidateValue = leftSliderValue + MARGIN;
+          if (candidateValue > SLIDER_MAX) {
+            leftSliderValue = SLIDER_MAX - MARGIN;
+            rightSliderValue = SLIDER_MAX;
+          } else {
+            rightSliderValue = candidateValue;
+          }
+        }
+        // continue through with new values and window setting, don't return
+      }
+    }
     
     // probably can refactor this
     // the conditionals are effectively the same
@@ -1209,7 +1294,7 @@ implements ActionListener, ChangeListener {
     leftSlider.setValue(leftSliderValue);
     rightSlider.setValue(rightSliderValue);
     
-    setVerticalBars();
+    setVerticalBars(); // date display object's text gets updated here
     
   }
   
