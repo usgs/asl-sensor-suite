@@ -409,7 +409,7 @@ implements ActionListener, ChangeListener {
    * an experiment
    */
   public String getAllTextData() {
-    StringBuilder sb = new StringBuilder( getInsetString() );
+    StringBuilder sb = new StringBuilder( getInsetStrings() );
     if ( sb.length() > 0 ) {
       sb.append("\n\n");
     }
@@ -478,7 +478,7 @@ implements ActionListener, ChangeListener {
    * to be overridden by any panel that uses an inset
    * @return String with any relevant parameters in it
    */
-  public String getInsetString() {
+  public String getInsetStrings() {
     return "";
   }
   
@@ -631,7 +631,7 @@ implements ActionListener, ChangeListener {
    */
   public void saveInsetDataText(PDDocument pdf) {
     
-    StringBuilder sb = new StringBuilder( getInsetString() );
+    StringBuilder sb = new StringBuilder( getInsetStrings() );
     if ( sb.length() > 0 ) {
       sb.append("\n \n");
     }

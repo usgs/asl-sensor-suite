@@ -117,14 +117,11 @@ public class GainExperiment extends Experiment {
     
     return Math.sqrt(sigma);
   }
+  
   private double[] gainStage1;
-  
   private double[] otherGainStages; // product of gain stages 2 and up
-  
   private FFTResult[] fftResults;
-  
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
-  
   private double ratio, sigma;
   
   /**
@@ -280,7 +277,7 @@ public class GainExperiment extends Experiment {
    * @param refIdx Index of first curve to be plotted (numerator PSD)
    * @param lowBnd Lower-bound index of PSDs' frequency array
    * @param higBnd Upper-bound index of PSDs' frequency array
-   * @return 2-entry array of form {mean, standard deviation}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
   private double[] getStatsFromIndices(int refIdx,
       int lowBnd, int higBnd) {
@@ -317,7 +314,7 @@ public class GainExperiment extends Experiment {
    * Find the peak frequency of the reference series and use it to get the
    * gain statistics
    * @param refIdx Index of the reference sensor's FFT data
-   * @return 2-entry array of form {mean, standard deviation}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
   public double[] getStatsFromPeak(int refIdx) {
     double[] freqBounds = getOctaveCenteredAtPeak(refIdx);

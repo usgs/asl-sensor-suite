@@ -81,6 +81,7 @@ public class NoiseExperiment extends Experiment {
     
     // initialize the values above to have relevant data
     for (int i = 0; i < respIndices.length; ++i) {
+      fireStateChange("Getting PSDs of series " + (i+1) + "...");
       // note that frequency is applied during the ds
       spectra[i] = ds.getPSD(respIndices[i]).getFFT();
       freqs = ds.getPSD(respIndices[i]).getFreqs();
@@ -88,15 +89,20 @@ public class NoiseExperiment extends Experiment {
     
     addToPlot(ds, freqSpace, respIndices, xysc);
     
-    fireStateChange("Getting crosspower of each series...");
+    String getting = "Getting crosspower of series ";
     
     // spectra[i] is crosspower pii, now to get pij terms for i!=j
+    fireStateChange(getting + "1 & 3");
     FFTResult fft = 
         FFTResult.crossPower(dataIn[0], dataIn[2], responses[0], responses[2]);
     Complex[] c13 = fft.getFFT();
+    
+    fireStateChange(getting + "2 & 1");
     fft = 
         FFTResult.crossPower(dataIn[1], dataIn[0], responses[1], responses[0]);
     Complex[] c21 = fft.getFFT();
+    
+    fireStateChange(getting + "2 & 3");
     fft = 
         FFTResult.crossPower(dataIn[1], dataIn[2], responses[1], responses[2]);
     Complex[] c23 = fft.getFFT();

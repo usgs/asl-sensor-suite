@@ -370,7 +370,7 @@ public class RandomizedPanel extends ExperimentPanel {
    * @return String to place in TextTitle
    */
   @Override
-  public String getInsetString() {
+  public String getInsetStrings() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     return getInsetString(rnd);
   }
@@ -499,7 +499,7 @@ public class RandomizedPanel extends ExperimentPanel {
     invertSeriesRenderingOrder( magChart );
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
-    String inset = getInsetString();
+    String inset = getInsetStrings();
     TextTitle result = new TextTitle();
     result.setText( inset );
     result.setBackgroundPaint(Color.white);

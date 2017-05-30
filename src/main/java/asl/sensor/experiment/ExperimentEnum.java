@@ -9,16 +9,18 @@ public enum ExperimentEnum {
 
   // if adding a new test to this, make sure to also create a new extender for
   // experiment and a corresponding constructor call in experimentfactory
-  
+  // due to how iterating through an enum works, the order in which panels'
+  // tabs appear in the GUI should match up with the 
   NOISE ("Self-noise"),
+  NOIS9 ("Self-noise (3-component)"),
   RGAIN ("Relative gain"),
+  GAIN6 ("Relative gain (3-component)"),
   STCAL ("Step calibration"),
   RANDM ("Randomized calibration"),
   RNDBG ("Rdm. cal. verification"),
   AZMTH ("Azimuth"),
   ORTHO ("Orthogonality"),
-  RESPN ("Response"),
-  NOIS9 ("Self-noise (9-Component)");
+  RESPN ("Response");
 
   private String name;
   

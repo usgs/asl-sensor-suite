@@ -44,10 +44,12 @@ implements ChangeListener {
 
   
   private static final long serialVersionUID = 6697458429989867529L;
+  
   /**
    * Max value of slider (ranges from 0 to 1000, converted to log10 scale)
    */
-  private static final int SLIDER_MAX = 1000;
+  public static final int SLIDER_MAX = 1000;
+  
   /**
    * Static helper method for getting the formatted inset string directly
    * from a GainExperiment
@@ -82,12 +84,12 @@ implements ChangeListener {
     sb.append(calcGain);
     return sb.toString();
   }
-  private JSlider leftSlider;
-  private JSlider rightSlider;
-  private JComboBox<String> refSeries;
-  private JButton recalcButton;
+  protected JSlider leftSlider;
+  protected JSlider rightSlider;
+  protected JComboBox<String> refSeries;
+  protected JButton recalcButton;
   
-  private double low, high;
+  protected double low, high;
 
   /**
    * Instantiate the panel, including sliders and stat calc button
@@ -283,7 +285,7 @@ implements ChangeListener {
   }
   
   @Override
-  public String getInsetString() {
+  public String getInsetStrings() {
     int leftPos = leftSlider.getValue();
     double lowPrd = mapSliderToPeriod(leftPos);
     int rightPos = rightSlider.getValue();
@@ -378,7 +380,7 @@ implements ChangeListener {
    * @param highPrd upper x-axis value (period, in seconds)
    * @param xyp plot displayed in this object's chart
    */
-  private void setDomainMarkers(double lowPrd, double highPrd, XYPlot xyp) {
+  protected void setDomainMarkers(double lowPrd, double highPrd, XYPlot xyp) {
     xyp.clearDomainMarkers();
     Marker startMarker = new ValueMarker( lowPrd );
     startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
@@ -395,7 +397,7 @@ implements ChangeListener {
   private void setTitle() {
     XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
     TextTitle result = new TextTitle();
-    String temp = getInsetString();
+    String temp = getInsetStrings();
     result.setText(temp);
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,

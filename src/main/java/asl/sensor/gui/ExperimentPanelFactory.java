@@ -27,6 +27,8 @@ public class ExperimentPanelFactory {
       return new NoisePanel(exp);
     case RGAIN:
       return new GainPanel(exp);
+    case GAIN6:
+      return new GainSixPanel(exp);
     case STCAL:
       return new StepPanel(exp);
     case AZMTH:
