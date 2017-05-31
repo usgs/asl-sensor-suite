@@ -193,7 +193,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     minute.setValue( c.get(Calendar.MINUTE) );
     second.setValue( c.get(Calendar.SECOND) );
     millisecond.setValue( c.get(Calendar.MILLISECOND) );
-    fireStateChanged();
+    
   }
   
 }
