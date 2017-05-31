@@ -140,6 +140,8 @@ public class AzimuthExperiment extends Experiment {
     int tenSecondsLength = (int)  ( testNorthBlock.getSampleRate() * 10 ) + 1;
     
     if (simpleCalc) {
+      // used for orthogonality & multi-component self-noise and gain
+      // where a 'pretty good' estimate of the angle is all we need
       // just stop here, don't do windowing
       angle = tempAngle;
       

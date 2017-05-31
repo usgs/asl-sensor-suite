@@ -111,11 +111,12 @@ public class SensorSuite extends JPanel
    * @param file Filename to write to
    * @param ep Experiment panel with data to be plotted
    * @param ip Input panel holding data associated with the experiment
-   * @throws IOException If the file cannot be written to
    */
-  public static void plotsToPDF(File file, ExperimentPanel ep, InputPanel ip)
-      throws IOException{
+  public static void plotsToPDF(File file, ExperimentPanel ep, InputPanel ip) {
 
+    // note that PDFBox is not thread safe, so don't try to thread these
+    // calls to either the experiment or input panels
+    
     int inPlotCount = ep.plotsToShow();
     String[] responses = ip.getResponseStrings( ep.getResponseIndices() );
     // BufferedImage toFile = getCompiledImage();
@@ -125,7 +126,6 @@ public class SensorSuite extends JPanel
     ep.savePDFResults( pdf );
     
     if (inPlotCount > 0) {
-
       int inHeight = ip.getImageHeight(inPlotCount) * 2;
       int width = 1280; // TODO: set as global static variable somewhere?
 
@@ -133,22 +133,36 @@ public class SensorSuite extends JPanel
           ip.getAsMultipleImages(width, inHeight, inPlotCount);
       
       ReportingUtils.imageListToPDFPages(pdf, toFile);
-
+    }
+    
+    if (responses.length > 0) {
       ReportingUtils.textListToPDFPages(pdf, responses);
     }
+    
+    try{
+      pdf.save(file);
+      pdf.close();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } finally {
+      if (pdf != null) {
+        try {
+          pdf.close();
+        } catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+    }
 
-    pdf.save(file);
-    pdf.close();
+
   }
   
   private JFileChooser fc; // loads in files based on parameter
-
   private InputPanel inputPlots;
-
   private JTabbedPane tabbedPane; // holds set of experiment panels
-
   private JButton generate, savePDF; // run all calculations
-
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
 
@@ -320,11 +334,7 @@ public class SensorSuite extends JPanel
           }
         }
         
-        try {
-          plotsToPDF(selFile);
-        } catch (IOException e1) {
-          e1.printStackTrace();
-        }
+        plotsToPDF(selFile);
       }
       return;
     }
@@ -381,9 +391,8 @@ public class SensorSuite extends JPanel
   /**
    * Output the currently displayed plots as a PDF file.
    * @param file Filename to write to
-   * @throws IOException If the file cannot be written
    */
-  public void plotsToPDF(File file) throws IOException {
+  public void plotsToPDF(File file) {
 
     ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
     InputPanel ip = inputPlots;
