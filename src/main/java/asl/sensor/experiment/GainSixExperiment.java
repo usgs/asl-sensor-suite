@@ -18,7 +18,12 @@ public class GainSixExperiment extends Experiment {
   
   public GainSixExperiment() {
     super();
+    
     componentBackends = new GainExperiment[DIMS];
+    for (int i = 0; i < componentBackends.length; i++) {
+      componentBackends[i] = new GainExperiment();
+    }
+    
     indices = new int[6];
     for (int i = 0; i < indices.length; ++i) {
       indices[i] = i;
@@ -83,6 +88,12 @@ public class GainSixExperiment extends Experiment {
 
   @Override
   protected void backend(DataStore ds) {
+    
+    componentBackends = new GainExperiment[DIMS];
+    for (int i = 0; i < componentBackends.length; i++) {
+      componentBackends[i] = new GainExperiment();
+    }
+    
     //first get the first set of data (NSV), then second
     DataBlock north1Sensor = ds.getBlock(0);
     InstrumentResponse north1Resp = ds.getResponse(0);

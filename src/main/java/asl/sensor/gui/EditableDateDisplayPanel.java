@@ -5,7 +5,6 @@ import java.awt.GridBagLayout;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;

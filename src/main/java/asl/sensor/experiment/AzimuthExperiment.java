@@ -135,9 +135,24 @@ public class AzimuthExperiment extends Experiment {
     String newStatus = "Found initial guess for angle";
     fireStateChange(newStatus);
     
+    // how much data we need (i.e., iteration length) to check 10 seconds
+    // used when checking if alignment is off by 180 degrees
+    int tenSecondsLength = (int)  ( testNorthBlock.getSampleRate() * 10 ) + 1;
+    
     if (simpleCalc) {
       // just stop here, don't do windowing
       angle = tempAngle;
+      
+      // check if we need to rotate by 180 degrees
+      DataBlock rot = 
+          TimeSeriesUtils.rotate(testNorthBlock, testEastBlock, angle);
+      List<Number> rotTimeSeries = rot.getData();
+      List<Number> refTimeSeries = refNorthBlock.getData();
+      
+      if ( alignedAntipolar(rotTimeSeries, refTimeSeries, tenSecondsLength) ) {
+        angle += Math.PI; // still in radians
+      }
+      
       return;
     }
     
@@ -246,28 +261,13 @@ public class AzimuthExperiment extends Experiment {
     // would be inverted from the original. so get 10 seconds of data and check
     // to see if the data is all on the same side of 0.
     
-    // how much data we need (i.e., iteration length) to check 10 seconds
-    int tenSecondsLength = (int)  ( testNorthBlock.getSampleRate() * 10 ) + 1;
-    int numSameSign = 0; int numDiffSign = 0;
-    
     DataBlock rot = 
         TimeSeriesUtils.rotate(testNorthBlock, testEastBlock, angle);
     
     List<Number> rotTimeSeries = rot.getData();
     List<Number> refTimeSeries = refNorthBlock.getData();
     
-    for (int i = 0; i < tenSecondsLength; ++i) {
-      int sigRot = (int) Math.signum( (double) rotTimeSeries.get(i) );
-      int sigRef = (int) Math.signum( (double) refTimeSeries.get(i) );
-      
-      if (sigRot - sigRef == 0) {
-        ++numSameSign;
-      } else {
-        ++numDiffSign;
-      }
-    }
-    
-    if (numSameSign < numDiffSign) {
+    if ( alignedAntipolar(rotTimeSeries, refTimeSeries, tenSecondsLength) ) {
       angle += Math.PI; // still in radians
       angle = angle % NumericUtils.TAU; // keep between 0 and 360
     }
@@ -297,6 +297,31 @@ public class AzimuthExperiment extends Experiment {
     }
     
     xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
+    
+  }
+  
+  /**
+   * 
+   * @param rot
+   * @param ref
+   * @param len
+   * @return
+   */
+  public static boolean 
+  alignedAntipolar(List<Number> rot, List<Number> ref, int len) {
+    int numSameSign = 0; int numDiffSign = 0;
+    for (int i = 0; i < len; ++i) {
+      int sigRot = (int) Math.signum( (double) rot.get(i) );
+      int sigRef = (int) Math.signum( (double) ref.get(i) );
+      
+      if (sigRot - sigRef == 0) {
+        ++numSameSign;
+      } else {
+        ++numDiffSign;
+      }
+    }
+    
+    return numSameSign < numDiffSign;
     
   }
   

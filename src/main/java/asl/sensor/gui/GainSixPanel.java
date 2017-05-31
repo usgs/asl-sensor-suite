@@ -233,22 +233,27 @@ public class GainSixPanel extends GainPanel {
       charts[i] = buildChart(xysc);
       
       // set vertical bars and enable sliders
-      XYPlot xyp = chart.getXYPlot();
-
+     
       leftSlider.setValue(leftSliderValue);
       rightSlider.setValue(rightSliderValue);
 
       // set the domain to match the boundaries of the octave centered at peak
-      setDomainMarkers(lowPrd, highPrd, xyp);
-
+      charts[i] = setDomainMarkers(lowPrd, highPrd, charts[i]);
+      
       // and now set the sliders to match where that window is
       leftSlider.setEnabled(true);
       rightSlider.setEnabled(true);
 
-      // lastly, display the calculated statistics in a textbox in the corner
-      setTitle();
     }
+    
+    // make sure pointers to each chart are set properly
+    northChart = charts[0];
+    eastChart = charts[1];
+    vertChart = charts[2];
 
+    // lastly, display the calculated statistics in a textbox in the corner
+    setTitle();
+    
     int idx = plotSelection.getSelectedIndex();
     chart = charts[idx];
 
@@ -387,7 +392,7 @@ public class GainSixPanel extends GainPanel {
         double highPrd = mapSliderToPeriod(rightPos);
         
         // remove old bars and draw the new ones
-        setDomainMarkers(lowPrd, highPrd, xyp);
+        setDomainMarkers(lowPrd, highPrd, chart);
       }
       
     }
