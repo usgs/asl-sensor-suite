@@ -1048,23 +1048,32 @@ implements ActionListener, ChangeListener {
    */
   public void setVerticalBars() {
     
+    if ( zooms.numberOfBlocksSet() < 1 ) {
+      return;
+    }
+    
     // zooms.trimToCommonTime();
+    
+    int leftValue = leftSlider.getValue();
+    int rightValue = rightSlider.getValue();
+    DataBlock db = zooms.getXthLoadedBlock(1);
+    long startMarkerLocation = getMarkerLocation(db, leftValue) / 1000;
+    long endMarkerLocation = getMarkerLocation(db, rightValue) / 1000;
+    
+    startDate.removeChangeListener(this);
+    endDate.removeChangeListener(this);
+    startDate.setValues(startMarkerLocation);
+    endDate.setValues(endMarkerLocation);
+    startDate.addChangeListener(this);
+    endDate.addChangeListener(this);
     
     for (int i = 0; i < FILE_COUNT; ++i) {
       if ( !zooms.blockIsSet(i) ) {
         continue;
       }
       
-      int leftValue = leftSlider.getValue();
-      int rightValue = rightSlider.getValue();
-      
-      XYPlot xyp = (XYPlot) chartPanels[i].getChart().getPlot();
+      XYPlot xyp = chartPanels[i].getChart().getXYPlot();
       xyp.clearDomainMarkers();
-      
-      DataBlock db = zooms.getBlock(i);
-      
-      long startMarkerLocation = getMarkerLocation(db, leftValue) / 1000;
-      long endMarkerLocation = getMarkerLocation(db, rightValue) / 1000;
       
       // divide by 1000 here to get time value in ms
       Marker startMarker = new ValueMarker(startMarkerLocation);
@@ -1072,19 +1081,11 @@ implements ActionListener, ChangeListener {
       Marker endMarker = new ValueMarker(endMarkerLocation);
       endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
       
-      startDate.removeChangeListener(this);
-      endDate.removeChangeListener(this);
-      startDate.setValues(startMarkerLocation);
-      endDate.setValues(endMarkerLocation);
-      startDate.addChangeListener(this);
-      endDate.addChangeListener(this);
-      
       xyp.addDomainMarker(startMarker);
       xyp.addDomainMarker(endMarker);
       
       chartPanels[i].repaint();
     }
-    
     
   }
   
@@ -1251,28 +1252,22 @@ implements ActionListener, ChangeListener {
     
     if ( e.getSource() == startDate ) {
       // if no data to do windowing on, don't bother
-      if ( zooms.numberOfBlocksSet() == 0 ) {
+      if ( zooms.numberOfBlocksSet() < 1 ) {
         return;
       }
+      
       long time = startDate.getTime();
       DataBlock db = zooms.getXthLoadedBlock(1);
 
       long startTime = db.getStartTime() / 1000;
-      // long endTime = db.getEndTime() / 1000;
       // startValue is current value of left-side slider in ms
 
       int marginValue = rightSliderValue - MARGIN;
-      long marginTime = getMarkerLocation(db, marginValue);
-
-      // place left slider no farther right than margin away from max value
-      int endValue = SLIDER_MAX - MARGIN;
-      long endTime = getMarkerLocation(db, endValue);
+      long marginTime = getMarkerLocation(db, marginValue) / 1000;
 
       // fix boundary cases
       if (time < startTime) {
         time = startTime;
-      } else if (time > endTime) {
-        time = endTime;
       } else if (time > marginTime) {
         time = marginTime;
       }
@@ -1288,26 +1283,20 @@ implements ActionListener, ChangeListener {
     
     if ( e.getSource() == endDate ) {
       // if no data to do windowing on, don't bother
-      if ( zooms.numberOfBlocksSet() == 0 ) {
+      if ( zooms.numberOfBlocksSet() < 1 ) {
         return;
       }
+      
       long time = endDate.getTime();
       DataBlock db = zooms.getXthLoadedBlock(1);
-
 
       long endTime = db.getEndTime() / 1000;
 
       int marginValue = leftSliderValue + MARGIN;
-      long marginTime = getMarkerLocation(db, marginValue);
-
-      // place left slider no farther right than margin away from max value
-      int startValue = MARGIN;
-      long startTime = getMarkerLocation(db, startValue);
+      long marginTime = getMarkerLocation(db, marginValue) / 1000;
 
       // fix boundary cases
-      if (time < startTime) {
-        time = startTime;
-      } else if (time > endTime) {
+      if (time > endTime) {
         time = endTime;
       } else if (time < marginTime) {
         time = marginTime;
