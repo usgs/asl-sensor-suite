@@ -32,12 +32,9 @@ public class SwingWorkerSingleton {
    * experiment's display panel was properly set.
    * @param active ExperimentPanel to run calculations from
    * @param ds DataStore whose data will be used in the calculations
-   * @return true if the experiment completed successfully
-   * @throws ExecutionException 
-   * @throws InterruptedException 
    */
-  public static boolean setInstance(ExperimentPanel active, DataStore ds) 
-      throws InterruptedException, ExecutionException {
+  public static void setInstance(ExperimentPanel active, DataStore ds) 
+      {
     
     if (worker != null) {
       // clear out any old data in the chart
@@ -51,7 +48,6 @@ public class SwingWorkerSingleton {
     }
      
     epHandle = active;
-    
     epHandle.clearChartAndSetProgressData();
     
     worker = new SwingWorker<Boolean, Void>() {
@@ -64,26 +60,35 @@ public class SwingWorkerSingleton {
       
       @Override
       protected void done() {
-        boolean set = false;
         try {
-          set = get();
-        } catch (InterruptedException e1) {
-          epHandle.displayErrorMessage( e1.getMessage() );
-        } catch (ExecutionException e2) {
-          epHandle.displayErrorMessage( e2.getMessage() );
-        }
-        if (set) {
-          // display the results of experiment in the panel
-          epHandle.drawCharts(); 
+          boolean set = get();
+          if (set) {
+            // display the results of experiment in the panel
+            epHandle.setDone(); 
+          } 
+        } catch (Exception ex) {
+          epHandle.displayErrorMessage( ex.getMessage() );
+          ex.printStackTrace();
         }
       }
     };
 
     worker.execute();
-    
-    return worker.get();
   }
   
+  public static SwingWorker<Boolean, Void> getInstance() {
+    return worker;
+  }
   
+  /**
+   * Get the result of running the swingworker, that is, completion status
+   * @return True if the worker (i.e., experiment) completed successfully
+   * @throws InterruptedException
+   * @throws ExecutionException
+   */
+  public static boolean getCompleted() 
+      throws InterruptedException, ExecutionException {
+    return worker.get();
+  }
   
 }
