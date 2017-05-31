@@ -15,6 +15,7 @@ import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -265,15 +266,12 @@ implements ChangeListener {
     // obviously, set the chart
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(false);
-
-    // set vertical bars and enable sliders
-    XYPlot xyp = chartPanel.getChart().getXYPlot();
-
+    
     leftSlider.setValue(leftSliderValue);
     rightSlider.setValue(rightSliderValue);
 
     // set the domain to match the boundaries of the octave centered at peak
-    setDomainMarkers(lowPrd, highPrd, xyp);
+    chartPanel.setChart( setDomainMarkers(lowPrd, highPrd, chart) );
 
     // and now set the sliders to match where that window is
     leftSlider.setEnabled(true);
@@ -379,15 +377,19 @@ implements ChangeListener {
    * @param lowPrd lower x-axis value (period, in seconds)
    * @param highPrd upper x-axis value (period, in seconds)
    * @param xyp plot displayed in this object's chart
+   * @return XYPlot XYPlot with new domain markers set
    */
-  protected void setDomainMarkers(double lowPrd, double highPrd, XYPlot xyp) {
+  protected static JFreeChart 
+  setDomainMarkers(double lowPrd, double highPrd, JFreeChart chart) {
+    XYPlot xyp = chart.getXYPlot();
     xyp.clearDomainMarkers();
-    Marker startMarker = new ValueMarker( lowPrd );
+    Marker startMarker = new ValueMarker(lowPrd);
     startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
-    Marker endMarker = new ValueMarker( highPrd );
+    Marker endMarker = new ValueMarker(highPrd);
     endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
     xyp.addDomainMarker(startMarker);
     xyp.addDomainMarker(endMarker);
+    return chart;
   }
 
   /**
@@ -436,10 +438,10 @@ implements ChangeListener {
       recalcButton.setEnabled(true);
       
       // get plot (where we put the vertical bars)
-      XYPlot xyp = chartPanel.getChart().getXYPlot();
+      JFreeChart chart = chartPanel.getChart();
       
       // clear out annotations to prevent issues with misleading data
-      xyp.clearAnnotations();
+      chart.getXYPlot().clearAnnotations();
       
       // convert slider locations to (log-scale) frequency
       int leftPos = leftSlider.getValue();
@@ -448,7 +450,7 @@ implements ChangeListener {
       double highPrd = mapSliderToPeriod(rightPos);
       
       // remove old bars and draw the new ones
-      setDomainMarkers(lowPrd, highPrd, xyp);
+      chartPanel.setChart( setDomainMarkers(lowPrd, highPrd, chart) );
     }
   }
   

@@ -1262,6 +1262,7 @@ implements ActionListener, ChangeListener {
       long startTime = db.getStartTime() / 1000;
       // startValue is current value of left-side slider in ms
 
+      // assume current locations of sliders is valid
       int marginValue = rightSliderValue - MARGIN;
       long marginTime = getMarkerLocation(db, marginValue) / 1000;
 
