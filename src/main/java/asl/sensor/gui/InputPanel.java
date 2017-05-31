@@ -231,9 +231,9 @@ implements ActionListener, ChangeListener {
     
     // TODO: re-add change listeners once update code is properly refactored
     startDate = new EditableDateDisplayPanel();
-    //startDate.addChangeListener(this);
+    startDate.addChangeListener(this);
     endDate = new EditableDateDisplayPanel();
-    //endDate.addChangeListener(this);
+    endDate.addChangeListener(this);
     
     zoomIn = new JButton("Zoom in (on selection)");
     zoomIn.addActionListener(this);
@@ -1072,8 +1072,12 @@ implements ActionListener, ChangeListener {
       Marker endMarker = new ValueMarker(endMarkerLocation);
       endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
       
+      startDate.removeChangeListener(this);
+      endDate.removeChangeListener(this);
       startDate.setValues(startMarkerLocation);
       endDate.setValues(endMarkerLocation);
+      startDate.addChangeListener(this);
+      endDate.addChangeListener(this);
       
       xyp.addDomainMarker(startMarker);
       xyp.addDomainMarker(endMarker);
@@ -1191,14 +1195,56 @@ implements ActionListener, ChangeListener {
     
   }
   
+  /**
+   * Verify that slider locations will not violate restrictions in location
+   * @param moveLeft True if left slider needs to move (false if right slider)
+   * @param newLocation Value to set slider to if within restrictions
+   */
+  private void validateSliderPlacement(boolean moveLeft, int newLocation) {
+    
+    int leftSliderValue, rightSliderValue;
+    
+    if (moveLeft) {
+      leftSliderValue = newLocation;
+      rightSliderValue = rightSlider.getValue();
+    } else {
+      leftSliderValue = leftSlider.getValue();
+      rightSliderValue = newLocation;
+    }
+    
+    if (leftSliderValue > rightSliderValue || 
+        leftSliderValue + MARGIN > rightSliderValue) {
+      
+      // (left slider must stay left of right slider by at least margin)
+      
+      if (moveLeft) {
+        // move left slider as close to right as possible
+        leftSliderValue = rightSliderValue - MARGIN;
+        if (leftSliderValue < 0) {
+          leftSliderValue = 0;
+          rightSliderValue = MARGIN;
+        }
+      } else {
+        // move right slider as close to left as possible
+        rightSliderValue = leftSliderValue + MARGIN;
+        if (rightSliderValue > SLIDER_MAX) {
+          rightSliderValue = SLIDER_MAX;
+          leftSliderValue = SLIDER_MAX - MARGIN;
+        }
+      }
+      
+    }
+    
+    rightSlider.setValue(rightSliderValue);
+    leftSlider.setValue(leftSliderValue);
+    
+  }
+  
   @Override
   /**
    * Handles changes in value by the sliders below the charts
    */
   public void stateChanged(ChangeEvent e) {
-    
-    // TODO: do something about these recursive calls, maybe ignore the
-    // change events from slider when start, end dates have been set
     
     int leftSliderValue = leftSlider.getValue();
     int rightSliderValue = rightSlider.getValue();
@@ -1210,30 +1256,34 @@ implements ActionListener, ChangeListener {
       }
       long time = startDate.getTime();
       DataBlock db = zooms.getXthLoadedBlock(1);
+
       long startTime = db.getStartTime() / 1000;
-      long endTime = db.getEndTime() / 1000;
+      // long endTime = db.getEndTime() / 1000;
       // startValue is current value of left-side slider in ms
-      long startValue = 
-          getMarkerLocation(db, leftSliderValue) / 1000;
-      if (time < startTime || time > endTime) {
-        // can't set the values beyond limits of data, so just reset
-        startDate.setValues(startValue);
-        return;
-      } else {
-        // go from time to slider value and enforce constraint on window size
-        int candidateValue = getSliderValue(db, time);
-        if (candidateValue + MARGIN > rightSliderValue) {
-          candidateValue = rightSliderValue - MARGIN;
-          if (candidateValue < 0) {
-            leftSliderValue = 0;
-            rightSliderValue = MARGIN;
-          } else {
-            leftSliderValue = candidateValue;
-          }
-        } else {
-          leftSliderValue = candidateValue;
-        }
+
+      int marginValue = rightSliderValue - MARGIN;
+      long marginTime = getMarkerLocation(db, marginValue);
+
+      // place left slider no farther right than margin away from max value
+      int endValue = SLIDER_MAX - MARGIN;
+      long endTime = getMarkerLocation(db, endValue);
+
+      // fix boundary cases
+      if (time < startTime) {
+        time = startTime;
+      } else if (time > endTime) {
+        time = endTime;
+      } else if (time > marginTime) {
+        time = marginTime;
       }
+     
+      startDate.setValues(time);
+      int newLeftSliderValue = getSliderValue(db, time * 1000);
+      leftSlider.removeChangeListener(this);
+      leftSlider.setValue(newLeftSliderValue); // already validated
+      leftSlider.addChangeListener(this);
+      setVerticalBars();
+      return;
     }
     
     if ( e.getSource() == endDate ) {
@@ -1243,56 +1293,40 @@ implements ActionListener, ChangeListener {
       }
       long time = endDate.getTime();
       DataBlock db = zooms.getXthLoadedBlock(1);
-      long startTime = db.getStartTime() / 1000;
+
+
       long endTime = db.getEndTime() / 1000;
-      // startValue is current value of left-side slider in ms
-      long endValue = 
-          getMarkerLocation(db, rightSliderValue) / 1000;
-      if (time < startTime || time > endTime) {
-        // can't set the values beyond limits of data, so just reset
-        endDate.setValues(endValue);
-        return;
-      } else {
-        // go from time to slider value and enforce constraint on window size
-        int candidateValue = getSliderValue(db, time);
-        if (candidateValue - MARGIN < leftSliderValue) {
-          candidateValue = leftSliderValue + MARGIN;
-          if (candidateValue > SLIDER_MAX) {
-            leftSliderValue = SLIDER_MAX - MARGIN;
-            rightSliderValue = SLIDER_MAX;
-          } else {
-            rightSliderValue = candidateValue;
-          }
-        }
-        // continue through with new values and window setting, don't return
+
+      int marginValue = leftSliderValue + MARGIN;
+      long marginTime = getMarkerLocation(db, marginValue);
+
+      // place left slider no farther right than margin away from max value
+      int startValue = MARGIN;
+      long startTime = getMarkerLocation(db, startValue);
+
+      // fix boundary cases
+      if (time < startTime) {
+        time = startTime;
+      } else if (time > endTime) {
+        time = endTime;
+      } else if (time < marginTime) {
+        time = marginTime;
       }
+     
+      endDate.setValues(time);
+      int newRightSliderValue = getSliderValue(db, time * 1000);
+      rightSlider.removeChangeListener(this);
+      rightSlider.setValue(newRightSliderValue); // already validated
+      rightSlider.addChangeListener(this);
+      setVerticalBars();
+      return;
     }
-    
-    // probably can refactor this
-    // the conditionals are effectively the same
     
     if ( e.getSource() == leftSlider ) {
-      if (leftSliderValue > rightSliderValue || 
-          leftSliderValue + MARGIN > rightSliderValue) {
-        leftSliderValue = rightSliderValue - MARGIN;
-        if (leftSliderValue < 0) {
-          leftSliderValue = 0;
-          rightSliderValue = MARGIN;
-        }
-      }
+      validateSliderPlacement(true, leftSliderValue);
     } else if ( e.getSource() == rightSlider ) {
-      if (rightSliderValue < leftSliderValue ||
-          rightSliderValue - MARGIN < leftSliderValue) {
-        rightSliderValue = leftSliderValue + MARGIN;
-        if (rightSliderValue > SLIDER_MAX) {
-          rightSliderValue = SLIDER_MAX;
-          leftSliderValue = SLIDER_MAX - MARGIN;
-        }
-      }
+      validateSliderPlacement(false, rightSliderValue);
     }
-    
-    leftSlider.setValue(leftSliderValue);
-    rightSlider.setValue(rightSliderValue);
     
     setVerticalBars(); // date display object's text gets updated here
     

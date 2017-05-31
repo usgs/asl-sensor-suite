@@ -36,12 +36,12 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     SpinnerNumberModel model = new SpinnerNumberModel();
     model.setStepSize(1);
     model.setMinimum(0);
-    model.setMaximum(9999); // TODO: change this by year 9000 or so
+    model.setMaximum(9999); // TODO: in the year 9000, change this
     year = new JSpinner(model);
-    year.addChangeListener(this);
     // remove commas from date display
     JSpinner.NumberEditor editor = new JSpinner.NumberEditor(year, "#");
     year.setEditor(editor);
+    year.addChangeListener(this);
     yLabel = new JLabel("(Y)");
     
     model = new SpinnerNumberModel();
@@ -181,6 +181,11 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
   }
   
   public void setValues(long timeStamp) {
+    
+    if ( timeStamp == getTime() ) {
+      return; // don't do anything if no change is necessary
+    }
+    
     c.setTimeInMillis(timeStamp);
     year.setValue( c.get(Calendar.YEAR) );
     day.setValue( c.get(Calendar.DAY_OF_YEAR) );
