@@ -153,19 +153,36 @@ public class RandomizedPanel extends ExperimentPanel {
     // add poles, initial then fit (single loop, append the two builders)
     sbInit.append("Initial poles: \n");
     sbFit.append("Fit poles: \n");
+    
+    int numInLine = 0;
+    
     for (int i = 0; i < fitP.size(); ++i) {
       sbInit.append( cf.format( initP.get(i) ) );
       sbFit.append( cf.format( fitP.get(i) ) );
       
       // want to fit two to a line for paired values
       if ( initP.get(i).getImaginary() != 0. ) {
-        ++i;
+        ++i; // INCREMENT I TO GET THE CONJUGATE AND NOT DO REDUNDANT OPERATION
         sbInit.append("; ");
         sbFit.append("; ");
         sbInit.append( cf.format( initP.get(i) ) );
-        sbInit.append("  ");
         sbFit.append( cf.format( fitP.get(i) ) );
-        sbFit.append("  ");
+        sbInit.append("\n");
+        sbFit.append("\n");
+        numInLine = 0;
+      } else if ( i + 1 < fitP.size() ) {
+        // if there is still data, fit up to 4 in a line
+        // but separate conjugate pairs into their own line for space
+        if ( numInLine < 4 && initP.get(i + 1).getImaginary() == 0. ) {
+          sbInit.append(";   ");
+          sbFit.append(";   ");
+          ++numInLine;
+        } else {
+          sbInit.append("\n");
+          sbInit.append("\n");
+          numInLine = 0;
+        }
+
       }
       sbInit.append("\n");
       sbFit.append("\n");
@@ -194,7 +211,7 @@ public class RandomizedPanel extends ExperimentPanel {
         sbFitZ.append( cf.format( fitZ.get(i) ) );
         sbFitZ.append("\n");
         
-      } else {
+      } else { 
         if ( i + 1 < fitZ.size() ) {
           sbInitZ.append(";   ");
           sbFitZ.append(";   ");
