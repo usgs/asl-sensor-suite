@@ -66,10 +66,11 @@ public class ReportingUtils {
       contentStream.drawImage( pdImageXObject, 0, 0, 
           bi.getWidth(), bi.getHeight() );
       contentStream.close();
+      pdf.close();
       
     } catch (IOException e) {
       e.printStackTrace();
-    }
+    } 
 
     return;
     
