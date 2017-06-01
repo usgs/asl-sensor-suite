@@ -58,7 +58,6 @@ public class StepPanel extends ExperimentPanel {
     
     DecimalFormat df = new DecimalFormat("#.######");
     
-    
     StringBuilder sb = new StringBuilder();
     sb.append("RESP parameters\n");
     sb.append("corner frequency (Hz): ");
@@ -289,7 +288,6 @@ public class StepPanel extends ExperimentPanel {
     
     XYSeriesCollection stepData = expResult.getData().get(0);
     stepChart = buildChart(stepData, xAxis, yAxis);
-    System.out.println("test1");
     XYPlot xyp = stepChart.getXYPlot();
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.5, result,
         RectangleAnchor.RIGHT);
@@ -298,7 +296,6 @@ public class StepPanel extends ExperimentPanel {
     
     XYSeriesCollection magData = expResult.getData().get(1);
     magChart = buildChart(magData, freqAxis, magAxis);
-    System.out.println("test2");
     xyp = magChart.getXYPlot();
     xyt = new XYTitleAnnotation(1., 0., result, RectangleAnchor.BOTTOM_RIGHT);
     xyp.clearAnnotations();

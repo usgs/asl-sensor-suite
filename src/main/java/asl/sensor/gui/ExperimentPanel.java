@@ -707,4 +707,9 @@ implements ActionListener, ChangeListener {
   // details of how to run updateData are left up to the implementing panel
   // however, the boolean "set" should be set to true to enable PDF saving
   
+  public void setDone() {
+    firePropertyChange("Backend completed", false, set);
+    drawCharts();
+  }
+  
 }

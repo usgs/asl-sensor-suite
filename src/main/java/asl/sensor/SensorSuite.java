@@ -1,5 +1,6 @@
 package asl.sensor;
 
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -7,6 +8,8 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -22,6 +25,7 @@ import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -47,7 +51,7 @@ import asl.sensor.utils.ReportingUtils;
  *
  */
 public class SensorSuite extends JPanel 
-                         implements ActionListener, ChangeListener {
+implements ActionListener, ChangeListener, PropertyChangeListener {
 
   /**
    * 
@@ -150,12 +154,11 @@ public class SensorSuite extends JPanel
         try {
           pdf.close();
         } catch (IOException e) {
-          // TODO Auto-generated catch block
+          // this shouldn't be reached and seems to violate program's examples
           e.printStackTrace();
         }
       }
     }
-
 
   }
   
@@ -187,7 +190,6 @@ public class SensorSuite extends JPanel
     Dimension d = tabbedPane.getPreferredSize();
     d.setSize( d.getWidth() * 1.5, d.getHeight() );
     tabbedPane.setPreferredSize(d);
-    
     tabbedPane.addChangeListener(this);
     
     inputPlots = new InputPanel();
@@ -237,7 +239,6 @@ public class SensorSuite extends JPanel
     
     ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
     inputPlots.showDataNeeded( ep.panelsNeeded() );
-
     inputPlots.setChannelTypes( ep.getChannelTypes() );
     
   }
@@ -256,6 +257,7 @@ public class SensorSuite extends JPanel
     if ( e.getSource() == generate ) {
       
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+      ep.addPropertyChangeListener("Backend completed", this);
       savePDF.setEnabled(false);
       
       // update the input plots to show the active region being calculated
@@ -263,14 +265,10 @@ public class SensorSuite extends JPanel
       // pass the inputted data to the panels that handle them
       DataStore ds = inputPlots.getData();
 
-      try {
-        boolean set = SwingWorkerSingleton.setInstance(ep, ds);
-        savePDF.setEnabled(set);
-      } catch (InterruptedException e1) {
-        e1.printStackTrace();
-      } catch (ExecutionException e2) {
-        e2.getCause().printStackTrace();
-      }
+      SwingWorkerSingleton.setInstance(ep, ds);
+      SwingWorker<Boolean, Void> wkr = SwingWorkerSingleton.getInstance();
+      wkr.execute();
+      
       return;
       
     } else if ( e.getSource() == savePDF ) {
@@ -422,6 +420,7 @@ public class SensorSuite extends JPanel
    */
   @Override
   public void stateChanged(ChangeEvent e) {
+    
     if ( e.getSource() == inputPlots ){
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
       DataStore ds = inputPlots.getData();
@@ -439,6 +438,25 @@ public class SensorSuite extends JPanel
       boolean isSet = ep.hasRun();
       generate.setEnabled(canGenerate);
       savePDF.setEnabled(canGenerate && isSet);
+    }
+    
+    
+    
+  }
+  @Override
+  public void propertyChange(PropertyChangeEvent evt) {
+    // handle the completion of the swingworker thread of the backend
+    if ( evt.getPropertyName().equals("Backend completed") ) {
+      ExperimentPanel source = (ExperimentPanel) evt.getSource();
+      source.removePropertyChangeListener(this);
+      
+      if ( evt.getNewValue().equals(false) ) {
+        return; 
+      }
+      
+      if ( tabbedPane.getSelectedComponent() == source ) {
+        savePDF.setEnabled( source.hasRun() );
+      }
     }
   }
 
