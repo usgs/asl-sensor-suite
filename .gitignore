@@ -159,3 +159,4 @@ local.properties
 # jar files
 #
 .jar
+.seed
