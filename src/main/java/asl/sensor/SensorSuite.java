@@ -440,9 +440,8 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       savePDF.setEnabled(canGenerate && isSet);
     }
     
-    
-    
   }
+  
   @Override
   public void propertyChange(PropertyChangeEvent evt) {
     // handle the completion of the swingworker thread of the backend
