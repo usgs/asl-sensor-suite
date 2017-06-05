@@ -90,7 +90,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     
     aziStore.setData(2, east2Sensor);
     azi.runExperimentOnData(aziStore);
-    double east2Angle = -azi.getFitAngleRad();
+    double east2Angle = -azi.getFitAngleRad() - Math.PI;
     fireStateChange("Found orientation of second east sensor!");
     // need to offset rotation by 90 degrees -- don't want it facing north
     
@@ -102,18 +102,18 @@ public class NoiseNineExperiment extends NoiseExperiment {
     
     aziStore.setData(2, east3Sensor);
     azi.runExperimentOnData(aziStore);
-    double east3Angle = -azi.getFitAngleRad();
+    double east3Angle = -azi.getFitAngleRad() - Math.PI;
     fireStateChange("Found orientation of third east sensor!");
     
     // now to rotate the data according to these angles
     DataBlock north2Rotated =
         TimeSeriesUtils.rotate(north2Sensor, east2Sensor, north2Angle);
     DataBlock east2Rotated = 
-        TimeSeriesUtils.rotate(east2Sensor, north2Sensor, east2Angle);
+        TimeSeriesUtils.rotateX(north2Sensor, east2Sensor, east2Angle);
     DataBlock north3Rotated =
         TimeSeriesUtils.rotate(north3Sensor, east3Sensor, north3Angle);
     DataBlock east3Rotated =
-        TimeSeriesUtils.rotate(east3Sensor, north3Sensor, east3Angle);
+        TimeSeriesUtils.rotateX(north3Sensor, east3Sensor, east3Angle);
     fireStateChange("All offset horizontal data rotated!");
     
     // set components into N,E,Z directional subcomponents
