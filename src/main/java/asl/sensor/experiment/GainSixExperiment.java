@@ -127,8 +127,7 @@ public class GainSixExperiment extends Experiment {
     fireStateChange("Getting second east sensor orientation...");
     aziStore.setData(2, east2Sensor);
     azi.runExperimentOnData(aziStore);
-    double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
-    // need to offset rotation by 90 degrees -- don't want it facing north
+    double east2Angle = -azi.getFitAngleRad();
     
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");

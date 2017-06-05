@@ -538,7 +538,7 @@ public class TimeSeriesUtils {
    * @param east Sensor assumed to point east, orthogonal to north sensor
    * @param ang Angle to rotate the data along
    * @return New DataBlock whose time series is the rotated data along the
-   * given angle.
+   * given angle, facing north
    */
   public static DataBlock rotate(DataBlock north, DataBlock east, double ang) {
     DataBlock rotated = new DataBlock(north);
@@ -560,6 +560,35 @@ public class TimeSeriesUtils {
     return rotated;
   }
   
+  /**
+   * Rotates a north and east (known orthognal) set of data and produces a new
+   * DataBlock along the east axis in the rotated coordinate system from
+   * the given angle (x' = x cos theta - y sin theta)
+   * @param north Sensor assumed to point north
+   * @param east Sensor assumed to point east, orthogonal to north sensor
+   * @param ang Angle to rotate the data along
+   * @return New DataBlock whose time series is the rotated data along the
+   * given angle, facing east.
+   */
+  public static DataBlock rotateX(DataBlock north, DataBlock east, double ang) {
+    DataBlock rotated = new DataBlock(north);
+    List<Number> northData = rotated.getData();
+    List<Number> eastData = east.getData();
+    List<Number> rotatedData = new ArrayList<Number>();
+    
+    double sinTheta = Math.sin(-ang);
+    double cosTheta = Math.cos(-ang);
+    
+    for (int i = 0; i < northData.size(); ++i) {
+      rotatedData.add( 
+          eastData.get(i).doubleValue() * cosTheta - 
+          northData.get(i).doubleValue() * sinTheta );
+    }
+    
+    rotated.setData(rotatedData);
+    
+    return rotated;
+  }
   
   /**
    * Upsamples data by a multiple of passed factor, placing zeros

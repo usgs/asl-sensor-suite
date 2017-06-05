@@ -38,8 +38,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // NOTE: this may need to change in the event of a test using > 9 inputs
     for (int i = 0; i < 9; ++i) {
       // doing this loop here saves us time and significant lines of code
-      dataNames.add( ds.getBlock(0).getName() );
-      dataNames.add( ds.getResponse(0).getName() );
+      dataNames.add( ds.getBlock(i).getName() );
+      dataNames.add( ds.getResponse(i).getName() );
     }
     
     // get the components
@@ -90,7 +90,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     
     aziStore.setData(2, east2Sensor);
     azi.runExperimentOnData(aziStore);
-    double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
+    double east2Angle = -azi.getFitAngleRad();
     fireStateChange("Found orientation of second east sensor!");
     // need to offset rotation by 90 degrees -- don't want it facing north
     
@@ -100,9 +100,9 @@ public class NoiseNineExperiment extends NoiseExperiment {
     double north3Angle = -azi.getFitAngleRad();
     fireStateChange("Found orientation of third north sensor!");
     
-    aziStore.setData(2, east2Sensor);
+    aziStore.setData(2, east3Sensor);
     azi.runExperimentOnData(aziStore);
-    double east3Angle = -azi.getFitAngleRad() - (Math.PI / 2);
+    double east3Angle = -azi.getFitAngleRad();
     fireStateChange("Found orientation of third east sensor!");
     
     // now to rotate the data according to these angles
