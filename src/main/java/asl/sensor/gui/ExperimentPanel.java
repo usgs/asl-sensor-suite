@@ -514,10 +514,15 @@ implements ActionListener, ChangeListener {
     cCal.setTimeInMillis( expResult.getStart() / 1000 );
     String date = sdf.format( cCal.getTime() );
     
-    String test = expType.getName().replace(' ', '_');
+    // turn spaces into underscores
+    String test = expType.getName().replace(' ', '_'); // name of experiment
+    // make sure parentheses in filenames aren't causing issues
+    // (i.e., better than dealing with system-specific setups to escape them)
+    test = test.replace('(','_');
+    test = test.replace(')','_');
     
     int idx = getIndexOfMainData();
-    String name = expResult.getInputNames().get(idx);
+    String name = expResult.getInputNames().get(idx); // name of input data
     
     StringBuilder sb = new StringBuilder();
     sb.append(test);
