@@ -155,3 +155,8 @@ local.properties
 # Code Recommenders
 .recommenders/
 /.gradle/
+
+# jar files
+#
+.jar
+.seed

@@ -69,7 +69,7 @@ public class ReportingUtils {
       
     } catch (IOException e) {
       e.printStackTrace();
-    }
+    } 
 
     return;
     

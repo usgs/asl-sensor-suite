@@ -1,0 +1,4 @@
+ 219  git checkout 8f6cdba241e206341bde9005b1c211ac5a1ea419
+
+went back to this and the fit was better.
+

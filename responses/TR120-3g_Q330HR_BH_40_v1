@@ -1,9 +1,9 @@
-#               << RESP_VER    RESP.XX.NS123..BHZ.Trillium240_g2.244.1168    2012.198    NEW     >>
-#               << RESP_VER    RESP.XX.NS123..BHZ.Trillium240_g2.244.1189    2015.021    UPDATED    Updated paz and sensitivity. >>
+#               << RESP_VER    RESP.XX.NS331..BHZ.Trillium120PH.120.1202    2013.058    NEW     >>
+#               << RESP_VER    RESP.XX.NS331..BHZ.Trillium120PH_g3.120.1202    2015.083    UPDATED    Filename change >>
 #        << Nanometrics RESP Writer >>
 #        
 #        ======== CHANNEL RESPONSE DATA ========
-B050F03     Station:                                NS123
+B050F03     Station:                                NS331
 B050F16     Network:                                XX
 B052F03     Location:                               ??
 B052F04     Channel:                                BHZ
@@ -11,46 +11,48 @@ B052F22     Start date:                             2015,001,00:00:00.0000
 B052F23     End date:                               No Ending Time
 #        =======================================
 #        +               +--------------------------------------------+                +
-#        +               |  Response (Poles & Zeros),  NS123 ch BHZ   |                +
+#        +               |  Response (Poles & Zeros),  NS331 ch BHZ   |                +
 #        +               +--------------------------------------------+                +
 #        
 B053F03     Transfer function type:                 A
 B053F04     Stage sequence number:                  1
 B053F05     Response in units lookup:               M/S - Velocity in Meters Per Second
 B053F06     Response out units lookup:              V - Volts
-B053F07     A0 normalization factor:                2.46316029129e+23
-B053F08     Normalization frequency:                1.000000E+00
-B053F09     Number of zeroes:                       4
-B053F14     Number of poles:                        11
-#            Complex zeroes:
-#             i  real          imag          real_error    imag_error
-B053F10-13    0  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
-B053F10-13    1  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
-B053F10-13    2 -7.250000E+01  0.000000E+00  0.000000E+00  0.000000E+00
-B053F10-13    3 -2.510000E+02  0.000000E+00  0.000000E+00  0.000000E+00
-#            Complex poles:
-#             i  real          imag          real_error    imag_error
-B053F15-18    0 -1.769900E-02  1.760400E-02  0.000000E+00  0.000000E+00
-B053F15-18    1 -1.769900E-02 -1.760400E-02  0.000000E+00  0.000000E+00
-B053F15-18    2 -8.530000E+01  0.000000E+00  0.000000E+00  0.000000E+00
-B053F15-18    3 -1.554000E+02  2.108000E+02  0.000000E+00  0.000000E+00
-B053F15-18    4 -1.554000E+02 -2.108000E+02  0.000000E+00  0.000000E+00
-B053F15-18    5 -7.130000E+02  0.000000E+00  0.000000E+00  0.000000E+00
-B053F15-18    6 -1.140000E+03  0.000000E+00  0.000000E+00  0.000000E+00
-B053F15-18    7 -4.300000E+03  0.000000E+00  0.000000E+00  0.000000E+00
-B053F15-18    8 -5.800000E+03  0.000000E+00  0.000000E+00  0.000000E+00
-B053F15-18    9 -4.300000E+03  4.400000E+03  0.000000E+00  0.000000E+00
-B053F15-18   10 -4.300000E+03 -4.400000E+03  0.000000E+00  0.000000E+00
+B053F07     A0 normalization factor:               8.318710E+17
+B053F08     Normalization frequency:               1.000000E+00
+B053F09     Number of zeroes:                      5
+B053F14     Number of poles:                       11
+#        Complex zeroes:
+#          i  real          imag          real_error    imag_error
+B053F10-13    0  0.000000e+00  0.000000e+00  0.000000E+00  0.000000E+00
+B053F10-13    1  0.000000e+00  0.000000e+00  0.000000E+00  0.000000E+00
+B053F10-13    2 -3.163000e+01  0.000000e+00  0.000000E+00  0.000000E+00
+B053F10-13    3 -1.600000e+02  0.000000e+00  0.000000E+00  0.000000E+00
+B053F10-13    4 -3.500000e+02  0.000000e+00  0.000000E+00  0.000000E+00
+
+#        Complex poles:
+#          i  real          imag          real_error    imag_error
+B053F15-18    0 -3.661400e-02  3.705900e-02  0.000000E+00  0.000000E+00
+B053F15-18    1 -3.661400e-02 -3.705900e-02  0.000000E+00  0.000000E+00
+B053F15-18    2 -3.255000e+01  0.000000e+00  0.000000E+00  0.000000E+00
+B053F15-18    3 -1.420000e+02  0.000000e+00  0.000000E+00  0.000000E+00
+B053F15-18    4 -3.640000e+02  4.040000e+02  0.000000E+00  0.000000E+00
+B053F15-18    5 -3.640000e+02 -4.040000e+02  0.000000E+00  0.000000E+00
+B053F15-18    6 -1.260000e+03  0.000000e+00  0.000000E+00  0.000000E+00
+B053F15-18    7 -4.900000e+03  5.204000e+03  0.000000E+00  0.000000E+00
+B053F15-18    8 -4.900000e+03 -5.204000e+03  0.000000E+00  0.000000E+00
+B053F15-18    9 -7.100000e+03  1.700000e+03  0.000000E+00  0.000000E+00
+B053F15-18   10 -7.100000e+03 -1.700000e+03  0.000000E+00  0.000000E+00
 #        +               +--------------------------------------------+                +
-#        +               |        Channel Gain,  NS123 ch BHZ         |                +
+#        +               |        Channel Gain,  NS331 ch BHZ         |                +
 #        +               +--------------------------------------------+                +
 #        
 B058F03     Stage sequence number:                  1
-B058F04     Gain:                                   1.189000E+03
-B058F05     Frequency of gain:                      1.00000E+00
+B058F04     Gain:                                   1.202500e+03
+B058F05     Frequency of gain:                      1.000000E+00
 B058F06     Number of calibrations:                 0
 #        +               +--------------------------------------------+                +
-#        +               |   Response (Coefficients),  NS123 ch BHZ   |                +
+#        +               |   Response (Coefficients),  NS331 ch BHZ   |                +
 #        +               +--------------------------------------------+                +
 #     
 B054F03     Transfer function type:                D
@@ -63,7 +65,7 @@ B054F10     Number of denominators:                0
 #          i, coefficient,  error
 B054F08-09    0  1.000000e+00  0.000000E+00
 #        +               +--------------------------------------------+                +
-#        +               |         Decimation,  NS123 ch BHZ          |                +
+#        +               |         Decimation,  NS331 ch BHZ          |                +
 #        +               +--------------------------------------------+                +
 #         
 B057F03     Stage sequence number:                 2
@@ -73,7 +75,7 @@ B057F06     Decimation offset:                     0
 B057F07     Estimated delay (seconds):             0.00000E+00
 B057F08     Correction applied (seconds):          0.00000E+00
 #        +               +--------------------------------------------+                +
-#        +               |        Channel Gain,  NS123 ch BHZ         |                +
+#        +               |        Channel Gain,  NS331 ch BHZ         |                +
 #        +               +--------------------------------------------+                +
 #              
 B058F03     Stage sequence number:                 2
@@ -81,11 +83,11 @@ B058F04     Gain:                                  1.677721e+06
 B058F05     Frequency of gain:                     1.000000e+00 HZ
 B058F06     Number of calibrations:                0
 #        +               +--------------------------------------------+                +
-#        +               |     Channel Sensitivity,  NS123 ch BHZ     |                +
+#        +               |     Channel Sensitivity,  NS331 ch BHZ     |                +
 #        +               +--------------------------------------------+                +
 #         
 B058F03     Stage sequence number:                 0
-B058F04     Sensitivity:                           1994810269.0
+B058F04     Sensitivity:                           2017459502.5
 B058F05     Frequency of sensitivity:              1.000000e+00 HZ
 B058F06     Number of calibrations:                0
 #        
