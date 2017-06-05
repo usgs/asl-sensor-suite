@@ -29,7 +29,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   public NoiseNineExperiment() {
     super();
     // indices are fixed since we need all 9 data points here
-    respIndices = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    respIndices = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
   }
   
   @Override
