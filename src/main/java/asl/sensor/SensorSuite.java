@@ -1,6 +1,5 @@
 package asl.sensor;
 
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -14,7 +13,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.concurrent.ExecutionException;
 
 import javax.imageio.ImageIO;
 import javax.swing.Box;
@@ -147,7 +145,6 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       pdf.save(file);
       pdf.close();
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     } finally {
       if (pdf != null) {
@@ -427,7 +424,6 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       boolean canGenerate = ep.hasEnoughData(ds);
       generate.setEnabled(canGenerate);
     } else if ( e.getSource() == tabbedPane ) {
-      
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
       
       inputPlots.setChannelTypes( ep.getChannelTypes() );

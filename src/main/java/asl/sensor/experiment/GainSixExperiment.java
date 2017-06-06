@@ -1,5 +1,7 @@
 package asl.sensor.experiment;
  
+import java.util.List;
+
 import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.input.DataBlock;
@@ -15,6 +17,7 @@ public class GainSixExperiment extends Experiment {
   // (in that order)
   private GainExperiment[] componentBackends;
   private int[] indices;
+  private double north2Angle, east2Angle;
   
   public GainSixExperiment() {
     super();
@@ -24,7 +27,7 @@ public class GainSixExperiment extends Experiment {
       componentBackends[i] = new GainExperiment();
     }
     
-    indices = new int[6];
+    indices = new int[6]; // TODO: change to get set during backend
     for (int i = 0; i < indices.length; ++i) {
       indices[i] = i;
     }
@@ -120,20 +123,21 @@ public class GainSixExperiment extends Experiment {
     fireStateChange("Getting second north sensor orientation...");
     aziStore.setData(2, north2Sensor);
     azi.runExperimentOnData(aziStore);
-    double north2Angle = -azi.getFitAngleRad();
+    north2Angle = -azi.getFitAngleRad();
 
     fireStateChange("Getting second east sensor orientation...");
     aziStore.setData(2, east2Sensor);
     azi.runExperimentOnData(aziStore);
-    double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
-    // need to offset rotation by 90 degrees -- don't want it facing north
+    // direction north angle should be if orthogonal to east angle
+    // then east component is x component of rotation in that direction
+    east2Angle = -azi.getFitAngleRad() - Math.PI;
     
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
     DataBlock north2Rotated =
         TimeSeriesUtils.rotate(north2Sensor, east2Sensor, north2Angle);
     DataBlock east2Rotated = 
-        TimeSeriesUtils.rotate(east2Sensor, north2Sensor, east2Angle);
+        TimeSeriesUtils.rotateX(north2Sensor, east2Sensor, east2Angle);
     
     // now get the datasets to plug into the datastore
     DataStore northComponents = new DataStore();
@@ -165,6 +169,8 @@ public class GainSixExperiment extends Experiment {
       // each backend only has one plot's worth of data
       // but is formatted as a list of per-plot data, so we use addAll
       xySeriesData.addAll( exp.getData() );
+      // also get the names of the data going in for use w/ PDF, metadata
+      dataNames.addAll( exp.getInputNames() );
     }
     
   }

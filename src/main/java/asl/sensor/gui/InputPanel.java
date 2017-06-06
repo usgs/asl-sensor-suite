@@ -154,6 +154,7 @@ implements ActionListener, ChangeListener {
   private String seedDirectory = "data";
   private String respDirectory = "responses";
 
+  private int lastRespIndex;
   
   private String saveDirectory = System.getProperty("user.home");
   
@@ -289,7 +290,6 @@ implements ActionListener, ChangeListener {
     gbc.anchor = GridBagConstraints.WEST;
     this.add(zoomOut, gbc);
 
-    
     gbc.gridwidth = 1;
     gbc.anchor = GridBagConstraints.CENTER;
     gbc.gridx = 7;
@@ -299,16 +299,15 @@ implements ActionListener, ChangeListener {
 
     this.add(save, gbc);
 
-    
     gbc.gridy += 2;
     gbc.gridheight = GridBagConstraints.REMAINDER;
 
     this.add(clearAll, gbc);
 
-    
     //this.add(buttons);
     
     fc = new JFileChooser();
+    lastRespIndex = -1;
     
   }
   
@@ -395,6 +394,11 @@ implements ActionListener, ChangeListener {
         
         names.add(custom);
         
+        int idx = lastRespIndex;
+        if (lastRespIndex < 0) {
+          idx = names.size() - 1;
+        }
+        
         JDialog dialog = new JDialog();
         Object result = JOptionPane.showInputDialog(
             dialog,
@@ -402,7 +406,7 @@ implements ActionListener, ChangeListener {
             "RESP File Selection",
             JOptionPane.PLAIN_MESSAGE,
             null, names.toArray(),
-            names.get( names.size() - 1 ) );
+            names.get(idx) );
         
         final String resultStr = (String) result;
         
@@ -413,6 +417,9 @@ implements ActionListener, ChangeListener {
         
         // is the loaded string one of the embedded response files?
         if ( respFilenames.contains(resultStr) ) {
+          // what was the index of the selected item?
+          // used to make sure we default to that choice next round
+          lastRespIndex = Collections.binarySearch(names, resultStr);
           // final used here in the event of thread weirdness
           final String fname = resultStr;
           try {
@@ -429,6 +436,7 @@ implements ActionListener, ChangeListener {
             e1.printStackTrace();
           }
         } else {
+          lastRespIndex = -1;
           fc.setCurrentDirectory( new File(respDirectory) );
           fc.resetChoosableFileFilters();
           fc.setDialogTitle("Load response file...");

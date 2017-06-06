@@ -29,7 +29,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   public NoiseNineExperiment() {
     super();
     // indices are fixed since we need all 9 data points here
-    respIndices = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    respIndices = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
   }
   
   @Override
@@ -38,8 +38,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // NOTE: this may need to change in the event of a test using > 9 inputs
     for (int i = 0; i < 9; ++i) {
       // doing this loop here saves us time and significant lines of code
-      dataNames.add( ds.getBlock(0).getName() );
-      dataNames.add( ds.getResponse(0).getName() );
+      dataNames.add( ds.getBlock(i).getName() );
+      dataNames.add( ds.getResponse(i).getName() );
     }
     
     // get the components
@@ -90,7 +90,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     
     aziStore.setData(2, east2Sensor);
     azi.runExperimentOnData(aziStore);
-    double east2Angle = -azi.getFitAngleRad() - (Math.PI / 2);
+    double east2Angle = -azi.getFitAngleRad() - Math.PI;
     fireStateChange("Found orientation of second east sensor!");
     // need to offset rotation by 90 degrees -- don't want it facing north
     
@@ -100,20 +100,20 @@ public class NoiseNineExperiment extends NoiseExperiment {
     double north3Angle = -azi.getFitAngleRad();
     fireStateChange("Found orientation of third north sensor!");
     
-    aziStore.setData(2, east2Sensor);
+    aziStore.setData(2, east3Sensor);
     azi.runExperimentOnData(aziStore);
-    double east3Angle = -azi.getFitAngleRad() - (Math.PI / 2);
+    double east3Angle = -azi.getFitAngleRad() - Math.PI;
     fireStateChange("Found orientation of third east sensor!");
     
     // now to rotate the data according to these angles
     DataBlock north2Rotated =
         TimeSeriesUtils.rotate(north2Sensor, east2Sensor, north2Angle);
     DataBlock east2Rotated = 
-        TimeSeriesUtils.rotate(east2Sensor, north2Sensor, east2Angle);
+        TimeSeriesUtils.rotateX(north2Sensor, east2Sensor, east2Angle);
     DataBlock north3Rotated =
         TimeSeriesUtils.rotate(north3Sensor, east3Sensor, north3Angle);
     DataBlock east3Rotated =
-        TimeSeriesUtils.rotate(east3Sensor, north3Sensor, east3Angle);
+        TimeSeriesUtils.rotateX(north3Sensor, east3Sensor, east3Angle);
     fireStateChange("All offset horizontal data rotated!");
     
     // set components into N,E,Z directional subcomponents
