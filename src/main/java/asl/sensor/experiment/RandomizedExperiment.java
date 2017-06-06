@@ -55,379 +55,12 @@ public class RandomizedExperiment
 extends Experiment implements ParameterValidator {
 
   private static final double DELTA = 1E-7;
-  private static final double CUTOFF = 1. / 1000.; // used w/ KS-54000
-  
   
   // To whomever has to maintain this code after I'm gone:
   // I'm sorry, I'm so so sorry
-  // The vast bulk of this class is just adapter functions to get the
-  // least-squares/LM solver to play nice with (constrained) complex values
-  // and to get those to play nice with the instrument-response class
-  
-  /**
-   * Take the parameters given by the fit function and build a response from 
-   * them
-   * @param fitParams Array of doubles representing alternately
-   * complex real and imaginary parts of the results from the cal solver,
-   * both pole and zero values
-   * @param lowFreq True if the features represent the result from solving
-   * for low frequency cal parameters
-   * @param numZeros How much of input array is zero values, i.e. two zeros
-   * being fit means this is 4 (each zero has real and complex value)
-   * @param nyquist Nyquist rate of sensor data the response is associated with
-   * @return Instrument response with fit parameters set as new poles, zeros
-   */
-  public static InstrumentResponse 
-  fitResultToResp(double[] fitParams, InstrumentResponse ir, 
-                  boolean lowFreq, int numZeros, double nyquist) {
-    
-    InstrumentResponse fitResp = new InstrumentResponse(ir);
-    
-    double[] zeros = new double[numZeros];
-    for (int i = 0; i < zeros.length; ++i) {
-      zeros[i] = fitParams[i];
-    }
-    
-    fitResp = zerosToResp(zeros, fitResp, lowFreq, nyquist);
-    
-    double[] poles = new double[fitParams.length - zeros.length];
-    for (int i = 0; i < poles.length; ++i) {
-      int fitIdx = i + zeros.length;
-      poles[i] = fitParams[fitIdx];
-    }
-    
-    fitResp = polesToResp(poles, fitResp, lowFreq, nyquist);
-    
-    return fitResp;
-    
-  }
-  
-  /**
-   * Quick check if the lowest-frequency pole is the KS54000, which should not
-   * be fit in this experiment's operation, merely ignored
-   * @param poles List of poles from response file, sorted
-   * @return True if the lowest-frequency pole is too low to try to fit
-   */
-  private static boolean isKS54000(List<Complex> poles) {
-    if ( ( poles.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
-      // first two poles are low-frequency
-      return true;
-    }
-    
-    return false;
-  }
-  
-  /**
-   * Convert a list of variables to a set of poles to be applied to an
-   * instrument response file. This variable must have an even number of
-   * entries or the function will return an out-of-bounds exception.
-   * Variable pairs are combined to create complex numbers, with the first
-   * entry representing the real component of the complex number and the second
-   * representing the imaginary component. If this is a low-frequency
-   * calibration, there should be 4 variables; the lowest two poles are the
-   * ones which will be modified. If this is a high-frequency calibration,
-   * then there should be 2*(pole.size() - 2) variables as all but the lowest
-   * two poles will be modified.
-   * Note that the passed response file is not changed or modified by this
-   * process; a deep copy of the response is made, then that is modified and 
-   * returned.
-   * @param variables List of doubles representing complex number real and
-   * imaginary components of poles
-   * @param ir Response file to take as source
-   * @param lowFreq True if the bottom low-frequency poles should be modified, 
-   * false if high-frequency poles up to Nyquist rate should be
-   * @param nyquist Nyquist rate of input data
-   * @return New response file with the altered poles
-   */
-  public static InstrumentResponse 
-  polesToResp(double[] variables, InstrumentResponse ir, 
-              boolean lowFreq, double nyquist) {
-    
-    int numVars = variables.length;
-    InstrumentResponse testResp = new InstrumentResponse(ir);
-    
-    List<Complex> poleList = new ArrayList<Complex>( testResp.getPoles() );
-    List<Complex> builtPoles = new ArrayList<Complex>();
-    
-    
-    if (!lowFreq) {
-      // first, add the low-frequency poles if we're doing high-freq cal
-      for (int i = 0; i < poleList.size(); ++i) {
-        Complex pole = poleList.get(i);
-        if ( pole.abs() / NumericUtils.TAU > 1. ) {
-          break;
-        }
-        builtPoles.add(pole);
-      }
-      
-    } else if ( isKS54000(poleList) ) {
-      // in the low-frequency cal we've ignored this low-freq damping pole
-      // so we need to add it here
-      builtPoles.add( poleList.get(0) );
-    }
-    
-    // now add the poles under consideration for fit
-    // these are the high-frequency poles if we're doing high-frequency cal
-    // or the low-frequency poles
-    for (int i = 0; i < numVars; i += 2) {
-      Complex c = new Complex(variables[i], variables[i+1]);
-      builtPoles.add(c);
-      if ( variables[i+1] != 0. ) {
-        builtPoles.add( c.conjugate() );
-      }
-    }
-    
-    if (lowFreq) {
-      // add ALL poles above 1Hz
-      for (int i = 0; i < poleList.size(); ++i) {
-        Complex pole = poleList.get(i);
-        if ( pole.abs() / NumericUtils.TAU >= 1.) {
-          builtPoles.add(pole);
-        }
-      }
-    } else {
-      // add the poles above the Nyquist rate when doing high-frequency cal
-      for (int i = 0; i < poleList.size(); ++i) {
-        Complex pole = poleList.get(i);
-        if ( pole.abs() / NumericUtils.TAU >= nyquist ) {
-          builtPoles.add(pole);
-        }
-      }
-    }
-    
-    // System.out.println(poleList);
-    // get the result for the input value
-    testResp.setPoles(builtPoles);
-    return testResp;
-  }
-  
-  /**
-   * Converts pole values into variables to be fit by the solver, ignoring the
-   * inclusion of a pole's complex conjugate pair in the list. If the imaginary
-   * component of a pole is 0, then no such conjugate pole exists.
-   * For low frequency calibrations, only poles below 1Hz are used. For high
-   * frequency calibrations, only poles between 1Hz and the Nyquist rate are
-   * used.
-   * Note that even vector indices (0, 2, 4...) are the real part of each pole
-   * and the odd vector indices (1, 3, 5...) are the corresponding imaginary
-   * part of each pole. That is, the vector index pair (0, 1) defines the first
-   * high frequency pole's complex value.
-   * @param poles List of poles to extract variables from (from input response).
-   * These are sorted when loaded in from a RESP file, which this method expects
-   * @param lowFreq True if a low frequency [long period] cal is being analysed
-   * @param nyquist Nyquist rate of cal signal
-   * @return RealVector containing each non-conjugate pole's components
-   */
-  public static RealVector 
-  polesToVector(List<Complex> poles, boolean lowFreq, double nyquist) {
-    
-    // shame we can't use complex numbers in the LSP solver, huh
-    
-    // create a list of doubles that are the non-conjugate elements from list
-    // of poles, to convert to array and then vector format
-    List<Double> componentList = new ArrayList<Double>();
-    
-    // WARNING! Pole list should always be sorted by magnitude!
-    
-    int start = 0;
-    
-    if ( isKS54000(poles) ) {
-      start = 1;
-    }
-    
-    for (int i = start; i < poles.size(); ++i) {
-      
-      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU < 1. ) ) {
-        // don't include poles below 1Hz in high-frequency calibration
-        continue;
-      }
-      
-      if ( lowFreq && ( poles.get(i).abs() / NumericUtils.TAU > 1. ) ) {
-        // only do low frequency calibrations on poles up to 
-        break;
-      }
-      
-      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU >= nyquist ) ) {
-        // don't fit poles above nyquist rate of sensor output
-        break;
-      }
-      
-      double realPart = poles.get(i).getReal();
-      double imagPart = poles.get(i).getImaginary();
-      
-      componentList.add(realPart);
-      componentList.add(imagPart);
-      
-      if (imagPart != 0.) {
-        // next value is complex conjugate of this one, so skip it
-        ++i;
-      }
-      
-    }
-
-    // turn into array to be turned into vector
-    // can't use toArray because List doesn't use primitive double objects
-    double[] responseVariables = new double[componentList.size()];
-    for (int i = 0; i < responseVariables.length; ++i) {
-      responseVariables[i] = componentList.get(i);
-    }
-    
-    return MatrixUtils.createRealVector(responseVariables);
-  
-  }
-  
-  /**
-   * Converts zero values from the solver into parameters as part of a
-   * response object, and creates an instrument response from them. Zeros above
-   * the nyquist rate have not been fit, and so will need to come from response
-   * if a high-frequency cal was done (this is not an issue for low-frequency
-   * cals as they already take the high-frequency values from the response)
-   * @param variables List of doubles representing complex number real and
-   * imaginary components of zeros
-   * @param ir Response file to take as source
-   * @param lowFreq True if the bottom low-frequency zeros should be modified, 
-   * false if high-frequency poles up to Nyquist rate should be
-   * @param nyquist Nyquist rate of input data
-   * @return New response file with the altered zeros
-   */
-  public static InstrumentResponse 
-  zerosToResp(double[] variables, InstrumentResponse ir, 
-              boolean lowFreq, double nyquist) {
-   
-    int numVars = variables.length;
-    InstrumentResponse testResp = new InstrumentResponse(ir);
-    
-    List<Complex> zeroList = new ArrayList<Complex>( testResp.getZeros() );
-    List<Complex> builtZeros = new ArrayList<Complex>();
-    
-    // first, add the literally zero values (no more than 2)
-    for (int i = 0; i < 2; ++i) {
-      Complex zero = zeroList.get(i);
-      if ( zero.abs() > 0. ) {
-        break;
-      }
-      builtZeros.add(zero);
-    }
-    
-    // now add the low-frequency zeros if they're not being fit
-    if (!lowFreq) {
-      // start by ignoring the zeros we just added
-      for (int i = builtZeros.size(); i < zeroList.size(); ++i) {
-        Complex zero = zeroList.get(i);
-        // same cutoff criterias as in vector conversions and such
-        if ( zero.abs() / NumericUtils.TAU > 1. ) {
-          break;
-        }
-        builtZeros.add(zero);
-      }
-    }
-    
-    // now add the poles under consideration for fit
-    // these are the high-frequency poles if we're doing high-frequency cal
-    // or the low-frequency poles
-    for (int i = 0; i < numVars; i += 2) {
-      Complex c = new Complex(variables[i], variables[i+1]);
-      builtZeros.add(c);
-      if ( variables[i+1] != 0. ) {
-        builtZeros.add( c.conjugate() );
-      }
-    }
-    
-    if (lowFreq) {
-      // now for the high-frequency zeros
-      // we'll start from zero and only add those above 1Hz
-      for (int i = 0; i < zeroList.size(); ++i) {
-        Complex zero = zeroList.get(i);
-        if ( zero.abs() / NumericUtils.TAU >= 1. ) {
-          builtZeros.add(zero);
-        }
-      }
-    } else {
-      // add the zeros above the Nyquist rate for high-freq cal case
-      for (int i = 0; i < zeroList.size(); ++i) {
-        Complex pole = zeroList.get(i);
-        if ( pole.abs() / NumericUtils.TAU >= nyquist ) {
-          builtZeros.add(pole);
-        }
-      }
-    }
-    
-    // now add any zeros in the response above the nyquist cut-off
-    
-    testResp.setZeros(builtZeros);
-    return testResp;
-  }
-  
-  /**
-   * Create a vector of the zeros to be fit by the function as a vector of
-   * alternating real and imaginary values. We ignore literally zero-valued
-   * zeros, zeros outside of the range of fit for frequency, and constrain
-   * zeros with complex conjugates
-   * @param zeros List of zeros to be made into a vector by function, sorted
-   * @param lowFreq True if a low-frequency cal is used
-   * @param nyquist Nyquist rate of data associated with sensor's zeros
-   * @return RealVector of zeros under analysis
-   */
-  public static RealVector 
-  zerosToVector(List<Complex> zeros, boolean lowFreq, double nyquist) {
-    
-    // also a shame we can't use multiple vectors of variables in the solver?
-    
-    // create a list of doubles that are the non-conjugate elements from list
-    // of poles, to convert to array and then vector format
-    List<Double> componentList = new ArrayList<Double>();
-    
-    // WARNING! Zeros list should always be sorted!
-    
-    for (int i = 0; i < zeros.size(); ++i) {
-      
-      if ( zeros.get(i).abs() == 0. ) {
-        // ignore zeros that are literally zero-valued
-        continue;
-      }
-      
-      if ( !lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU < 1. ) ) {
-        // don't include zeros 1Hz in high-frequency calibration
-        continue;
-      }
-      
-      if ( lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU > 1. ) ) {
-        // only do low frequency calibrations on zeros up to 1Hz
-        break;
-      }
-      
-      if ( !lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU > nyquist) ) {
-        // don't fit zeros above nyquist rate of sensor output
-        break;
-      }
-      
-      double realPart = zeros.get(i).getReal();
-      double imagPart = zeros.get(i).getImaginary();
-      
-      componentList.add(realPart);
-      componentList.add(imagPart);
-      
-      if (imagPart != 0.) {
-        // next value is complex conjugate of this one, so skip it
-        ++i;
-      }
-      
-    }
-
-    // turn into array to be turned into vector
-    // can't use toArray because List doesn't use primitive double objects
-    double[] responseVariables = new double[componentList.size()];
-    for (int i = 0; i < responseVariables.length; ++i) {
-      responseVariables[i] = componentList.get(i);
-    }
-    
-    return MatrixUtils.createRealVector(responseVariables);
-    
-  }
-  
-  // yes, folks, appx. half this class is static methods designed to serve as
-  // adapter functions to convert from poles and zeros to fittable vectors and
-  // vice-versa
+  // I suppose it's a little neater now that some functions are part of the
+  // response class? It's still inherently nasty due to issues relating to
+  // converting complex lists into arrays of doubles in order to use the solver
   
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
@@ -685,8 +318,8 @@ extends Experiment implements ParameterValidator {
     // variable. (we also need to ignore conjugate values, for constraints)
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
     
-    initialPoleGuess = polesToVector(initialPoles, lowFreq, nyquist);
-    initialZeroGuess = zerosToVector(initialZeros, lowFreq, nyquist);
+    initialPoleGuess = fitResponse.polesToVector(lowFreq, nyquist);
+    initialZeroGuess = fitResponse.zerosToVector(lowFreq, nyquist);
     numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
     
@@ -770,12 +403,11 @@ extends Experiment implements ParameterValidator {
     double[] initResidList = initEval.getResiduals().toArray();
     double[] fitResidList = optimum.getResiduals().toArray();
     
-
     XYSeries fitResidMag = new XYSeries("Fit resp. mag sqd. error");
     XYSeries fitResidPhase = new XYSeries("Fit resp. phase sqd. error");
     
-    fitResponse = 
-        fitResultToResp(fitParams, fitResponse, lowFreq, numZeros, nyquist);
+    fitResponse = fitResponse.buildResponseFromFitVector(
+        fitParams, lowFreq, numZeros, nyquist);
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
     
@@ -837,18 +469,16 @@ extends Experiment implements ParameterValidator {
    * start and is not modified directly. Which values (poles) are modified
    * depends on high or low frequency calibration setting.
    * @param variables values to set the instrument response to 
-   * @param ir InstrumentResponse that will be copied 
    * @return Doubles representing new response curve evaluation
    */
-  private double[] 
-  evaluateResponse(double[] variables) {
+  private double[] evaluateResponse(double[] variables) {
     
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
     
     // prevent terrible case where, say, only high-freq poles above nyquist rate
     if (variables.length > 0) {
-      testResp = 
-          fitResultToResp(variables, testResp, lowFreq, numZeros, nyquist);
+      testResp = fitResponse.buildResponseFromFitVector(
+          variables, lowFreq, numZeros, nyquist);
     }
     
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
@@ -866,6 +496,7 @@ extends Experiment implements ParameterValidator {
     double phiPrev = 0.;
     
     // System.out.println(appliedCurve[0]);
+    // now, do scaling and create the result vector (or, rather, array)
     for (int i = 0; i < appliedCurve.length; ++i) {
       
       int argIdx = appliedCurve.length + i;
@@ -959,23 +590,14 @@ extends Experiment implements ParameterValidator {
    * @return Sublist of data to be fed to output reports
    */
   private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
-    
     List<Complex> subList = new ArrayList<Complex>();  
     
-    int start = 0;
-    
-    if ( isKS54000(polesToTrim) ) {
-      start = 1; // ignore first pole of KS54000
-    }
-    
-    for (int i = start; i < polesToTrim.size(); ++i) {
-      
+    for (int i = 0; i < polesToTrim.size(); ++i) {
       double freq = initialPoles.get(i).abs() / NumericUtils.TAU;
       
       if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
         break;
       }
-      
       if (!lowFreq && freq < 1.) {
         continue; // ignore b
       }
@@ -984,7 +606,6 @@ extends Experiment implements ParameterValidator {
     }
     
     return subList;
-    
   }
   
   /**
@@ -997,17 +618,14 @@ extends Experiment implements ParameterValidator {
   }
   
   private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
-    
     List<Complex> subList = new ArrayList<Complex>();
     
     for (int i = 0; i < zerosToTrim.size(); ++i) {
-      
       double freq = initialZeros.get(i).abs() / NumericUtils.TAU;
       
       if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
         break;
       }
-      
       if (!lowFreq && freq < 1. || freq == 0.) {
         continue;
       }
@@ -1016,7 +634,6 @@ extends Experiment implements ParameterValidator {
     }
     
     return subList;
-    
   }
   
   @Override
