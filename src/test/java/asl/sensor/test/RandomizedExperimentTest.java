@@ -335,7 +335,7 @@ public class RandomizedExperimentTest {
     
     // response we want is embedded
     InstrumentResponse ir;
-    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
+    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_20");
     ds.setResponse(1, ir);
     
     Calendar cCal = getStartCalendar(ds);
@@ -377,7 +377,7 @@ public class RandomizedExperimentTest {
     
     // response we want is embedded
     InstrumentResponse ir;
-    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
+    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_20");
     ds.setResponse(1, ir);
     
     Calendar cCal = getStartCalendar(ds);
