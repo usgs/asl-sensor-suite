@@ -117,7 +117,7 @@ public class GainSixExperiment extends Experiment {
     aziStore.setData(0, north1Sensor);
     aziStore.setData(1, east1Sensor);
     
-    // angle should be set negative -- rotate third sensor, not the opposite
+    // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting second north sensor orientation...");
     aziStore.setData(2, north2Sensor);
     azi.runExperimentOnData(aziStore);
@@ -128,7 +128,7 @@ public class GainSixExperiment extends Experiment {
     azi.runExperimentOnData(aziStore);
     // direction north angle should be if orthogonal to east angle
     // then east component is x component of rotation in that direction
-    east2Angle = -azi.getFitAngleRad(); // try not subtracting Math.PI;
+    east2Angle = -azi.getFitAngleRad();
     
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
