@@ -128,7 +128,7 @@ public class GainSixExperiment extends Experiment {
     azi.runExperimentOnData(aziStore);
     // direction north angle should be if orthogonal to east angle
     // then east component is x component of rotation in that direction
-    east2Angle = -azi.getFitAngleRad() - Math.PI;
+    east2Angle = -azi.getFitAngleRad(); // try not subtracting Math.PI;
     
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");

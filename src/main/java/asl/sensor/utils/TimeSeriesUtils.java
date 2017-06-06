@@ -571,7 +571,7 @@ public class TimeSeriesUtils {
    * given angle, facing east.
    */
   public static DataBlock rotateX(DataBlock north, DataBlock east, double ang) {
-    DataBlock rotated = new DataBlock(north);
+    DataBlock rotated = new DataBlock(east); // use east component metadata
     List<Number> northData = rotated.getData();
     List<Number> eastData = east.getData();
     List<Number> rotatedData = new ArrayList<Number>();
