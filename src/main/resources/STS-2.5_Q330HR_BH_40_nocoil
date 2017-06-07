@@ -18,9 +18,9 @@ B053F03     Transfer function type:                A [Laplace Transform (Rad/sec
 B053F04     Stage sequence number:                 1
 B053F05     Response in units lookup:              M/S - Velocity in Meters Per Second
 B053F06     Response out units lookup:             V - Volts
-B053F07     A0 normalization factor:               1.572860E-04
-B053F08     Normalization frequency:               5.000000E-02
-B053F09     Number of zeroes:                      8
+B053F07     A0 normalization factor:               180579.920306
+B053F08     Normalization frequency:               1.000000E+00
+B053F09     Number of zeroes:                      5
 B053F14     Number of poles:                       7
 #        Complex zeroes:
 #          i  real          imag          real_error    imag_error
@@ -29,9 +29,6 @@ B053F10-13    1  0.000000e+00  0.000000e+00  0.000000E+00  0.000000E+00
 B053F10-13    2 -1.570800e+01  0.000000e+00  0.000000E+00  0.000000E+00
 B053F10-13    3 -1.570800e+01  0.000000e+00  0.000000E+00  0.000000E+00
 B053F10-13    4 -6.302030e+02  0.000000e+00  0.000000E+00  0.000000E+00
-B053F10-13    5 -5.560620e+02 -9.361950e+02  0.000000E+00  0.000000E+00
-B053F10-13    6 -5.560620e+02  9.361950e+02  0.000000E+00  0.000000E+00
-B053F10-13    7 -9.738940e+02  0.000000e+00  0.000000E+00  0.000000E+00
 #        Complex poles:
 #          i  real          imag          real_error    imag_error
 B053F15-18    0 -3.702000e-02  3.702000e-02  0.000000E+00  0.000000E+00
