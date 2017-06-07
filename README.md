@@ -46,7 +46,7 @@ Self-noise requires three components and an appropriate response file for each. 
 
 The input files do not need to be in any particular order. They all must have responses specified. For three-component self-noise, they should all be pointing in the same direction (i.e., all facing north).
 
-There is also a nine-component self-noise test that takes in horizontal north, east, and vertical sensor data for each of the three components, finds the best angle to rotate the horizontal components to maximize coherence, and then performs the same test on the 3 sensors in each direction. 
+There is also a nine-component self-noise test that takes in [horizontal] north, east, and vertical sensor data for each of the three components, finds the best angle to rotate the horizontal components to maximize coherence, and then performs the same test on the 3 sensors in each direction. 
 
 #### Relative Gain
 
@@ -54,7 +54,9 @@ Relative gain computes the mean of the PSD of each of two sensors, and estimates
 
 The input files, again, do not need to be in any order (the panel allows for choosing which sensor to be used as reference by way of the selection menus below the chart), but they must both have responses specified.
 
-The gain is initially calculated using the octave around the peak frequency, but a custom range can be specified using the sliders, same as the 
+The gain is initially calculated using the octave around the peak frequency, but a custom range can be specified using the sliders, functioning similarly to the region selectors for input data.
+
+There is also a six-component relative gain test that takes in horizontal north, east, and vertical sensor data, finds the coherence-maximizing angle, and then takes the statistics over the rotated components. The first set of data is always taken as the reference for horizontal rotation; the selection menu on the left side of this panel allows for setting either input as the gain reference.
 
 #### Step Calibration
 

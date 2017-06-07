@@ -89,6 +89,12 @@ public class InstrumentResponse {
     return respFilenames;
   }
   
+  /**
+   * Determines whether or not the first pole is too low to fit even with
+   * a low-frequency random cal solver operation. Mainly an issue for
+   * the KS54000 RESP, since the damping curve is unusual.
+   * @return True if the initial pole is too low-frequency to add to fit.
+   */
   private boolean hasTooLowFreqPole() {
     final double CUTOFF = 1. / 1000.;
     if ( ( poles.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
@@ -99,6 +105,21 @@ public class InstrumentResponse {
     return false;
   }
   
+  /**
+   * Given a best-fit vector, build the poles and zeros to use the ones
+   * defined by that vector. Imaginary values that are non-zero are constrained 
+   * to be (implicitly) defining a complex conjugate of the pole/zero they
+   * are built into. Similarly, any poles or zeros in the initial list that
+   * are duplicated are all set to have the same new value. 
+   * @see #zerosToVector and #polesToVector
+   * @param params Array of real and imaginary component values of poles
+   * and zeros
+   * @param lowFreq True if the fit values are for low-frequency components
+   * @param numZeros How much of the input parameter array is zero components
+   * @param nyquist Nyquist rate of cal data 
+   * (upper bound on poles/zeros being fit)
+   * @return New InstrumentResponse with the fit values applied to it
+   */
   public InstrumentResponse 
   buildResponseFromFitVector(double[] params, boolean lowFreq, 
       int numZeros, double nyquist) {
@@ -457,6 +478,19 @@ public class InstrumentResponse {
     return zeros;
   }
   
+  /**
+   * Create a RealVector of the components in the list of poles for this
+   * response, used for finding best-fit poles from a random calibration
+   * The complex numbers each representing a pole are split into their
+   * real and imaginary components (each a double), with the real components
+   * being set on even indices and imaginary components on the odd indices; 
+   * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
+   * single pole. Poles with non-zero imaginary components do not have their
+   * conjugate included in this vector in order to maintain constraints. 
+   * @param lowFreq True if the low-frequency poles are to be fit
+   * @param nyquist Nyquist rate of data (upper bound on high-freq poles to fit)
+   * @return RealVector with fittable pole values
+   */
   public RealVector polesToVector(boolean lowFreq, double nyquist) {
     // first, sort poles by magnitude
     NumericUtils.complexMagnitudeSorter(poles);
@@ -516,6 +550,19 @@ public class InstrumentResponse {
     return MatrixUtils.createRealVector(responseVariables);
   }
   
+  /**
+   * Create a RealVector of the components in the list of zeros for this
+   * response, used for finding best-fit zeros from a random calibration
+   * The complex numbers each representing a zero are split into their
+   * real and imaginary components (each a double), with the real components
+   * being set on even indices and imaginary components on the odd indices; 
+   * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
+   * single zero. Zeros with non-zero imaginary components do not have their
+   * conjugate included in this vector in order to maintain constraints. 
+   * @param lowFreq True if the low-frequency zeros are to be fit
+   * @param nyquist Nyquist rate of data (upper bound on high-freq zeros to fit)
+   * @return RealVector with fittable zero values
+   */
   public RealVector zerosToVector(boolean lowFreq, double nyquist) {
     NumericUtils.complexMagnitudeSorter(zeros);
     

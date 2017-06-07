@@ -92,6 +92,11 @@ extends Experiment implements ParameterValidator {
     normalIdx = 0;
   }
   
+  /**
+   * Used to determine whether to run the solver or not; disabling the solver
+   * is useful for determining the quality of a given calibration function
+   * @return True if the solver is to be run
+   */
   public boolean getSolverState() {
     return SKIP_SOLVING;
   }

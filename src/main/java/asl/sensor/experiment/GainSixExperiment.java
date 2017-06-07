@@ -33,10 +33,22 @@ public class GainSixExperiment extends Experiment {
     }
   }
   
+  /**
+   * Get the rotation angle used to rotate the second input set's north sensor
+   * @return Angle of second north sensor (radians)
+   */
   public double getNorthAzimuth() {
     return north2Angle;
   }
   
+  /**
+   * Get the rotation angle used to rotate the second input set's east sensor
+   * Ideally this should be close to the value used for the north azimuth
+   * @return Angle of second east sensor (radians) minus 90-degree offset 
+   * representing angle between north and east sensors; this is the angle sent
+   * to the rotation function
+   * @see TimeSeriesUtils#rotateX
+   */
   public double getEastAzimuth() {
     return east2Angle;
   }
