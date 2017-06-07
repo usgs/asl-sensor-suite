@@ -542,7 +542,7 @@ public class TimeSeriesUtils {
    */
   public static DataBlock rotate(DataBlock north, DataBlock east, double ang) {
     DataBlock rotated = new DataBlock(north);
-    List<Number> northData = rotated.getData();
+    List<Number> northData = north.getData();
     List<Number> eastData = east.getData();
     List<Number> rotatedData = new ArrayList<Number>();
     
@@ -572,7 +572,7 @@ public class TimeSeriesUtils {
    */
   public static DataBlock rotateX(DataBlock north, DataBlock east, double ang) {
     DataBlock rotated = new DataBlock(east); // use east component metadata
-    List<Number> northData = rotated.getData();
+    List<Number> northData = north.getData();
     List<Number> eastData = east.getData();
     List<Number> rotatedData = new ArrayList<Number>();
     

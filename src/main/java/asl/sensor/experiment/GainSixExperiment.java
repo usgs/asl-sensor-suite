@@ -1,5 +1,7 @@
 package asl.sensor.experiment;
  
+import java.util.List;
+
 import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.input.DataBlock;
@@ -179,7 +181,19 @@ public class GainSixExperiment extends Experiment {
       // but is formatted as a list of per-plot data, so we use addAll
       xySeriesData.addAll( exp.getData() );
       // also get the names of the data going in for use w/ PDF, metadata
-      dataNames.addAll( exp.getInputNames() );
+    }
+    
+    List<String> northNames = componentBackends[0].getInputNames();
+    List<String> eastNames = componentBackends[1].getInputNames();
+    List<String> vertNames = componentBackends[2].getInputNames();
+    
+    for (int i = 0; i < northNames.size(); i += 2) {
+      dataNames.add( northNames.get(i) );
+      dataNames.add( northNames.get(i + 1) );
+      dataNames.add( eastNames.get(i) );
+      dataNames.add( eastNames.get(i + 1) );
+      dataNames.add( vertNames.get(i) );
+      dataNames.add( vertNames.get(i + 1) );
     }
     
   }
