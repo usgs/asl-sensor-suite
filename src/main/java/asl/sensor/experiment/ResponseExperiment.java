@@ -28,6 +28,8 @@ public class ResponseExperiment extends Experiment {
   
   private boolean freqSpace;
   
+  private Set<InstrumentResponse> responses;
+  
   public ResponseExperiment() {
     super();
     freqSpace = false;
@@ -35,6 +37,8 @@ public class ResponseExperiment extends Experiment {
   
   @Override
   protected void backend(DataStore ds) {
+    
+    responses = new HashSet<InstrumentResponse>();
     
     double lowFreq = .0001;
     double highFreq = 10000;
@@ -71,6 +75,7 @@ public class ResponseExperiment extends Experiment {
         continue;
       } else {
         respNames.add( ir.getName() );
+        responses.add(ir);
       }
        
       Complex[] result = ir.applyResponseToInput(freqArray);
@@ -136,6 +141,10 @@ public class ResponseExperiment extends Experiment {
     }
     
     return false;
+  }
+  
+  public InstrumentResponse[] getResponses() {
+    return responses.toArray( new InstrumentResponse[responses.size()] );
   }
   
   /**
