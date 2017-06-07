@@ -65,6 +65,15 @@ public class GainSixPanel extends GainPanel {
     sb.append("\n");
     sb.append("** CALCULATED GAIN: ");
     sb.append(calcGain);
+    
+    if (plotIdx == 0) {
+      sb.append("\nNorth azimuth (rad): ");
+      sb.append( gn.getNorthAzimuth() );
+    } else if (plotIdx == 1) {
+      sb.append("\nEast azimuth (rad): ");
+      sb.append( gn.getEastAzimuth() );
+    }
+    
     return sb.toString();
   }
 

@@ -314,6 +314,7 @@ implements ChangeListener {
     sb.append(lowPrd);
     sb.append(" to ");
     sb.append(highPrd);
+    sb.append('\n');
     
     sb.append( super.getMetadataString() );
     

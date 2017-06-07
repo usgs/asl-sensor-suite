@@ -1,7 +1,5 @@
 package asl.sensor.experiment;
  
-import java.util.List;
-
 import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.input.DataBlock;
@@ -33,6 +31,13 @@ public class GainSixExperiment extends Experiment {
     }
   }
   
+  public double getNorthAzimuth() {
+    return north2Angle;
+  }
+  
+  public double getEastAzimuth() {
+    return east2Angle;
+  }
 
   /**
    * Get octave centered around peak of first (north) components. We assume
@@ -119,7 +124,7 @@ public class GainSixExperiment extends Experiment {
     aziStore.setData(0, north1Sensor);
     aziStore.setData(1, east1Sensor);
     
-    // angle should be set negative -- rotate third sensor, not the opposite
+    // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting second north sensor orientation...");
     aziStore.setData(2, north2Sensor);
     azi.runExperimentOnData(aziStore);
@@ -128,9 +133,13 @@ public class GainSixExperiment extends Experiment {
     fireStateChange("Getting second east sensor orientation...");
     aziStore.setData(2, east2Sensor);
     azi.runExperimentOnData(aziStore);
-    // direction north angle should be if orthogonal to east angle
+    // direction north angle should be if north and east truly orthogonal
     // then east component is x component of rotation in that direction
-    east2Angle = -azi.getFitAngleRad() - Math.PI;
+    // i.e., need to correct by 90 degrees to get rotation angle rather than
+    // azimuth of east sensor
+    // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other 
+    // rotation direction
+    east2Angle = -azi.getFitAngleRad() + (3 * Math.PI / 2);
     
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");

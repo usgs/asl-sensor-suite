@@ -19,6 +19,8 @@ import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealVector;
 
 import asl.sensor.gui.InputPanel;
 import asl.sensor.utils.NumericUtils;
@@ -85,6 +87,139 @@ public class InstrumentResponse {
     }
     
     return respFilenames;
+  }
+  
+  private boolean hasTooLowFreqPole() {
+    final double CUTOFF = 1. / 1000.;
+    if ( ( poles.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
+      // first two poles are low-frequency
+      return true;
+    }
+    
+    return false;
+  }
+  
+  public InstrumentResponse 
+  buildResponseFromFitVector(double[] params, boolean lowFreq, 
+      int numZeros, double nyquist) {
+    
+    // first covert poles and zeros back to complex values to make this easier
+    List<Complex> zerosAsComplex = new ArrayList<Complex>();
+    for (int i = 0; i < numZeros; i += 2) {
+      Complex c = new Complex( params[i], params[i+1] );
+      zerosAsComplex.add(c);
+    }
+    
+    List<Complex> polesAsComplex = new ArrayList<Complex>();
+    for (int i = numZeros; i < params.length; i += 2) {
+      Complex c = new Complex( params[i], params[i+1] );
+      polesAsComplex.add(c);
+    }
+    
+    // fit the zeros
+    List<Complex> builtZeros = new ArrayList<Complex>();
+    
+    // first, add the literally zero values (no more than 2); these aren't fit
+    for (int i = 0; i < 2; ++i) {
+      Complex zero = zeros.get(i);
+      if ( zero.abs() > 0. ) {
+        break;
+      }
+      builtZeros.add(zero);
+    }
+    
+    // add the low-frequency zeros from source if they're not being fit
+    if (!lowFreq) {
+      // add zeros until they reach the high-freq cutoff point
+      // start from current index of data
+      for (int i = builtZeros.size(); i < zeros.size(); ++i) {
+        Complex zero = zeros.get(i);
+        if ( zero.abs() / NumericUtils.TAU > 1. ) {
+          // zeros after this point are high-frequency
+          break;
+        }
+        builtZeros.add(zero);
+      }
+    }
+    
+    // now add the zeros under consideration for fit
+    // these are the high-frequency zeros if we're doing high-frequency cal
+    // or the low-frequency zeros otherwise
+    for (int i = 0; i < zerosAsComplex.size(); ++i) {
+      int idx = builtZeros.size();
+      Complex zero = zerosAsComplex.get(i);
+      builtZeros.add(zero);
+
+      // add conjugate if it has one
+      if ( zero.getImaginary() != 0. ) {
+        builtZeros.add( zero.conjugate() );
+      } else if ( idx + 1 < zeros.size() ) {
+        // if this response has two same-valued zeros, treat them as conjugates
+        double real = zeros.get(idx).getReal();
+        double realNext = zeros.get(idx + 1).getReal();
+        if (real == realNext) {
+          builtZeros.add(zero); // im-part is 0, zero is its own conjugate
+        }
+      }
+    }
+    
+    // now add in all remaining zeros
+    for (int i = builtZeros.size(); i < zeros.size(); ++i) {
+      builtZeros.add( zeros.get(i) );
+    }
+    
+    // now do the same thing as the zeros but for the poles
+    List<Complex> builtPoles = new ArrayList<Complex>();
+    
+    // low frequency poles not being fit added first (keeps list sorted)
+    if (!lowFreq) {
+      // first add low-frequency poles not getting fit by high-freq cal
+      for (int i = 0; i < poles.size(); ++i) {
+        Complex pole = poles.get(i);
+        if ( pole.abs() / NumericUtils.TAU > 1. ) {
+          break;
+        }
+        builtPoles.add(pole);
+      }
+    } else if ( hasTooLowFreqPole() ) {
+      // used in the odd KS54000 case, we don't fit the low-freq damping pole
+      builtPoles.add( poles.get(0) );
+    }
+    
+    // now add the poles under consideration for fit as with zeros
+    for (int i = 0; i < polesAsComplex.size(); ++i) {
+      int idx = builtPoles.size();
+      Complex pole = polesAsComplex.get(i);
+      builtPoles.add(pole);
+      
+      // add conjugate if it has one
+      if ( pole.getImaginary() != 0. ) {
+        builtPoles.add( pole.conjugate() );
+      } else if ( idx + 1 < poles.size() ) {
+        // if this response has two same-valued zeros, treat them as conjugates
+        double real = poles.get(idx).getReal();
+        double realNext = poles.get(idx + 1).getReal();
+        if (real == realNext) {
+          builtPoles.add(pole); // im-part is 0, zero is its own conjugate
+        }
+      }
+    }
+    
+    // now add the poles that remain
+    for (int i = builtPoles.size(); i < poles.size(); ++i) {
+      builtPoles.add( poles.get(i) );
+    }
+    
+    // NumericUtils.complexMagnitudeSorter(builtZeros);
+    // NumericUtils.complexMagnitudeSorter(builtPoles);
+
+    
+    // create a copy of this instrument response and set the new values
+    InstrumentResponse out = new InstrumentResponse(this);
+    out.setZeros(builtZeros);
+    out.setPoles(builtPoles);
+    return out;
+    
   }
   
   /**
@@ -320,6 +455,121 @@ public class InstrumentResponse {
    */
   public List<Complex> getZeros() {
     return zeros;
+  }
+  
+  public RealVector polesToVector(boolean lowFreq, double nyquist) {
+    // first, sort poles by magnitude
+    NumericUtils.complexMagnitudeSorter(poles);
+    
+    // create a list of doubles that are the non-conjugate elements from list
+    // of poles, to convert to array and then vector format
+    List<Double> componentList = new ArrayList<Double>();
+    
+    // starting index for poles, shift up one if lowest-freq pole is TOO low
+    int start = 0;
+    if ( hasTooLowFreqPole() ) {
+      start = 1;
+    }
+    
+    for (int i = start; i < poles.size(); ++i) {
+      
+      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU < 1. ) ) {
+        // don't include poles below 1Hz in high-frequency calibration
+        continue;
+      }
+      if ( lowFreq && ( poles.get(i).abs() / NumericUtils.TAU > 1. ) ) {
+        // only do low frequency calibrations on poles up to 
+        break;
+      }
+      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU >= nyquist ) ) {
+        // don't fit poles above nyquist rate of sensor output
+        break;
+      }
+      
+      // a complex is just two doubles representing real and imaginary lengths
+      double realPart = poles.get(i).getReal();
+      double imagPart = poles.get(i).getImaginary();
+      
+      componentList.add(realPart);
+      componentList.add(imagPart);
+      
+      if (imagPart != 0.) {
+        // next value is complex conjugate of this one, so skip it
+        ++i;
+      } else if ( (i + 1) < zeros.size() &&
+          poles.get(i + 1).getImaginary() == 0. && 
+          realPart == poles.get(i + 1).getReal() ) {
+        // two values with zero imaginary are duplicated in the list
+        // again, we skip this one
+        ++i;
+      }
+      
+    }
+    
+    // turn into array to be turned into vector
+    // can't use toArray because List doesn't use primitive double objects
+    double[] responseVariables = new double[componentList.size()];
+    for (int i = 0; i < responseVariables.length; ++i) {
+      responseVariables[i] = componentList.get(i);
+    }
+    
+    return MatrixUtils.createRealVector(responseVariables);
+  }
+  
+  public RealVector zerosToVector(boolean lowFreq, double nyquist) {
+    NumericUtils.complexMagnitudeSorter(zeros);
+    
+    // create a list of doubles that are the non-conjugate elements from list
+    // of poles, to convert to array and then vector format
+    List<Double> componentList = new ArrayList<Double>();
+    
+    for (int i = 0; i < zeros.size(); ++i) {
+      
+      if ( zeros.get(i).abs() == 0. ) {
+        // ignore zeros that are literally zero-valued
+        continue;
+      }
+      if ( lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU > 1. ) ) {
+        // only do low frequency calibrations on zeros up to 1Hz
+        break;
+      }
+      
+      double cutoffChecker = zeros.get(i).abs() / NumericUtils.TAU;
+      
+      if ( !lowFreq && ( cutoffChecker < 1. ) ) {
+        // don't include zeros > 1Hz in high-frequency calibration
+        continue;
+      }
+      if ( !lowFreq && ( cutoffChecker > nyquist) ) {
+        // don't fit zeros above nyquist rate of sensor output
+        break;
+      }
+      
+      double realPart = zeros.get(i).getReal();
+      double imagPart = zeros.get(i).getImaginary();
+      componentList.add(realPart);
+      componentList.add(imagPart);
+      
+      if (imagPart != 0.) {
+        // next value is complex conjugate of this one, so skip it
+        ++i;
+      } else if ( (i + 1) < zeros.size() && 
+          zeros.get(i + 1).getImaginary() == 0. && 
+          realPart == zeros.get(i + 1).getReal() ) {
+        // two values with zero imaginary are duplicated in the list
+        // again, we skip this one
+        ++i;
+      }
+    }
+
+    // turn into array to be turned into vector
+    // can't use toArray because List doesn't use primitive double objects
+    double[] responseVariables = new double[componentList.size()];
+    for (int i = 0; i < responseVariables.length; ++i) {
+      responseVariables[i] = componentList.get(i);
+    }
+    
+    return MatrixUtils.createRealVector(responseVariables);
   }
 
   /**

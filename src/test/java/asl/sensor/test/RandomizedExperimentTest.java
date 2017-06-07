@@ -88,7 +88,7 @@ public class RandomizedExperimentTest {
       ir = new InstrumentResponse(fname);
       List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
       // using an unnecessarily high nyquist rate here
-      RealVector high = RandomizedExperiment.polesToVector(poles, lowFreq, 1E8);
+      RealVector high = ir.polesToVector(lowFreq, 1E8);
       
       int complexIndex = 2; // start at second pole
       int vectorIndex = 0;
@@ -130,10 +130,9 @@ public class RandomizedExperimentTest {
       ir = new InstrumentResponse(fname);
       List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
       // again, use a very high nyquist rate
-      RealVector low = RandomizedExperiment.polesToVector(poles, lowFreq, 1E8);
+      RealVector low = ir.polesToVector(lowFreq, 1E8);
       
-      // only test lower two poles
-      
+      // only test lower two poless
       assertEquals( low.getEntry(0), poles.get(0).getReal(), 0.0 );
       assertEquals( low.getEntry(1), poles.get(0).getImaginary(), 0.0 );
       
@@ -185,7 +184,7 @@ public class RandomizedExperimentTest {
         }
         
         InstrumentResponse ir2 = 
-            RandomizedExperiment.polesToResp(newPoles, ir, lowFreq, 1E8);
+            ir.buildResponseFromFitVector(newPoles, lowFreq, 0, 1E8);
         
         List<Complex> testList = ir2.getPoles();
         int offsetIdx = 0;
@@ -223,23 +222,24 @@ public class RandomizedExperimentTest {
         ir = new InstrumentResponse(fname);
         boolean lowFreq = true;
         List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
-        System.out.println(poles);
+
         double[] newPoles = new double[2];
         newPoles[0] = 0.;
         newPoles[1] = 1.;
         
         Complex c = new Complex( newPoles[0], newPoles[1] );
         
-        
         InstrumentResponse ir2 = 
-            RandomizedExperiment.polesToResp(newPoles, ir, lowFreq, 1E8);
+            ir.buildResponseFromFitVector(newPoles, lowFreq, 0, 1E8);
         List<Complex> poles2 = ir2.getPoles();
-        System.out.println(poles2);
+
         List<Complex> testList = new ArrayList<Complex>(poles);
         testList.set(0, c);
         testList.set( 1, c.conjugate() );
         
         // System.out.println(testList);
+        // System.out.println(poles);
+        // System.out.println(poles2);
         
         for (int i = 0; i < poles.size(); ++i) {
           if (i < 2) {
@@ -335,7 +335,7 @@ public class RandomizedExperimentTest {
     
     // response we want is embedded
     InstrumentResponse ir;
-    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
+    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_20");
     ds.setResponse(1, ir);
     
     Calendar cCal = getStartCalendar(ds);
@@ -377,7 +377,7 @@ public class RandomizedExperimentTest {
     
     // response we want is embedded
     InstrumentResponse ir;
-    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
+    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_20");
     ds.setResponse(1, ir);
     
     Calendar cCal = getStartCalendar(ds);
@@ -458,7 +458,7 @@ public class RandomizedExperimentTest {
       // expected best fit params, for debugging
       sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)\n");
       double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
-      ir = RandomizedExperiment.polesToResp(expectedParams, ir, lowFreq, nyq);
+      ir = ir.buildResponseFromFitVector(expectedParams, lowFreq, 0, nyq);
       ir.setName("Best-fit params");
       ds.setResponse(1, ir);
       rCal.runExperimentOnData(ds);
