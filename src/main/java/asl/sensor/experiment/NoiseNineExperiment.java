@@ -88,9 +88,12 @@ public class NoiseNineExperiment extends NoiseExperiment {
     double north2Angle = -azi.getFitAngleRad();
     fireStateChange("Found orientation of second north sensor!");
     
+    // add 90 degrees (pi/2 in radians) to get azimuth that will match the 
+    // north azimuth if north and east are truly orthogonal.
+    // 
     aziStore.setData(2, east2Sensor);
     azi.runExperimentOnData(aziStore);
-    double east2Angle = -azi.getFitAngleRad();
+    double east2Angle = -azi.getFitAngleRad() + (Math.PI / 2);
     fireStateChange("Found orientation of second east sensor!");
     
     // same as above
@@ -101,7 +104,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     
     aziStore.setData(2, east3Sensor);
     azi.runExperimentOnData(aziStore);
-    double east3Angle = -azi.getFitAngleRad();
+    double east3Angle = -azi.getFitAngleRad() + (Math.PI / 2);
     fireStateChange("Found orientation of third east sensor!");
     
     // now to rotate the data according to these angles
