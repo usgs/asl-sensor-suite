@@ -533,7 +533,7 @@ public class TimeSeriesUtils {
   /**
    * Rotates a north and east (known orthognal) set of data and produces a new
    * DataBlock along the north axis in the rotated coordinate system from
-   * the given angle (y' = y cos theta + x sin theta)
+   * the given angle, clockwise (y' = y cos theta - x sin theta)
    * @param north Sensor assumed to point north
    * @param east Sensor assumed to point east, orthogonal to north sensor
    * @param ang Angle to rotate the data along
@@ -546,12 +546,13 @@ public class TimeSeriesUtils {
     List<Number> eastData = east.getData();
     List<Number> rotatedData = new ArrayList<Number>();
     
-    double sinTheta = Math.sin(-ang);
-    double cosTheta = Math.cos(-ang);
+    // clockwise rotation matrix!! That's why things are so screwy
+    double sinTheta = Math.sin(ang);
+    double cosTheta = Math.cos(ang);
     
     for (int i = 0; i < northData.size(); ++i) {
       rotatedData.add( 
-          northData.get(i).doubleValue() * cosTheta + 
+          northData.get(i).doubleValue() * cosTheta - 
           eastData.get(i).doubleValue() * sinTheta );
     }
     
@@ -563,7 +564,7 @@ public class TimeSeriesUtils {
   /**
    * Rotates a north and east (known orthognal) set of data and produces a new
    * DataBlock along the east axis in the rotated coordinate system from
-   * the given angle (x' = x cos theta - y sin theta)
+   * the given angle, clockwise (x' = x cos theta + y sin theta)
    * @param north Sensor assumed to point north
    * @param east Sensor assumed to point east, orthogonal to north sensor
    * @param ang Angle to rotate the data along
@@ -581,7 +582,7 @@ public class TimeSeriesUtils {
     
     for (int i = 0; i < northData.size(); ++i) {
       rotatedData.add( 
-          - eastData.get(i).doubleValue() * cosTheta - 
+          eastData.get(i).doubleValue() * cosTheta + 
           northData.get(i).doubleValue() * sinTheta );
     }
     
