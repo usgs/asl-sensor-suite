@@ -31,6 +31,13 @@ public class GainSixExperiment extends Experiment {
     }
   }
   
+  public double getNorthAzimuth() {
+    return north2Angle;
+  }
+  
+  public double getEastAzimuth() {
+    return east2Angle;
+  }
 
   /**
    * Get octave centered around peak of first (north) components. We assume
