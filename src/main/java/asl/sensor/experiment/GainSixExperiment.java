@@ -137,7 +137,7 @@ public class GainSixExperiment extends Experiment {
     // then east component is x component of rotation in that direction
     // i.e., need to correct by 90 degrees to get rotation angle rather than
     // azimuth of east sensor
-    east2Angle = -azi.getFitAngleRad() + (Math.PI / 2);
+    east2Angle = -azi.getFitAngleRad() + (3 * Math.PI / 2);
     
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
