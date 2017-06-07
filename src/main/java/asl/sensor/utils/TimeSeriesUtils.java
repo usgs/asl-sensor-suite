@@ -581,7 +581,7 @@ public class TimeSeriesUtils {
     
     for (int i = 0; i < northData.size(); ++i) {
       rotatedData.add( 
-          eastData.get(i).doubleValue() * cosTheta - 
+          - eastData.get(i).doubleValue() * cosTheta - 
           northData.get(i).doubleValue() * sinTheta );
     }
     
