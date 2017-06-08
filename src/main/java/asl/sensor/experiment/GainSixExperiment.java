@@ -72,11 +72,10 @@ public class GainSixExperiment extends Experiment {
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
   public double[][] getStatsFromPeak(int idx) {
-    double[][] result = new double[DIMS][];
-    for (int i = 0; i < result.length; ++i) {
-      result[i] = componentBackends[i].getStatsFromPeak(idx);
-    }
-    return result;
+    
+    double[] octave = getOctaveCenteredAtPeak(idx);
+    return getStatsFromFreqs(idx, octave[0], octave[1]);
+    
   }
   
 
@@ -90,9 +89,34 @@ public class GainSixExperiment extends Experiment {
    */
   public double[][] getStatsFromFreqs(int idx, double low, double high) {
     double[][] result = new double[DIMS][];
-    for (int i = 0; i < result.length; ++i) {
-      result[i] = componentBackends[i].getStatsFromFreqs(idx, low, high);
+    // vertical component requires no rotation
+    result[2] = componentBackends[2].getStatsFromFreqs(idx, low, high);
+    
+    double meanAngle = (north2Angle + east2Angle) / 2;
+    // get north and east components and then rotate their gain as necessary
+    result[0] = componentBackends[0].getStatsFromFreqs(idx, low, high);
+    result[1] = componentBackends[1].getStatsFromFreqs(idx, low, high);
+    
+    // get the values we need for doing rotation
+    double northRef = result[0][2];
+    double northCalc = result[0][3];
+    double eastRef = result[1][2];
+    double eastCalc = result[1][3];
+    
+    if ( idx == 0 ) {
+      // the fixed data is being used as reference, un-rotate calc'd results
+      double calcNish = (northCalc - eastCalc) / ( 2 * Math.cos(meanAngle) );
+      double calcEish = (northCalc + eastCalc) / ( 2 * Math.sin(meanAngle) );
+      result[0][3] = calcNish;
+      result[1][3] = calcEish;
+    } else {
+      // the rotated data is being used as reference, un-rotate the reference
+      double refNish = (northRef - eastRef) / ( 2 * Math.cos(meanAngle) );
+      double refEish = (northRef + eastRef) / ( 2 * Math.sin(meanAngle) );
+      result[0][2] = refNish;
+      result[1][2] = refEish;
     }
+    
     return result;
   }
   
