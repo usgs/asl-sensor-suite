@@ -159,12 +159,13 @@ public class RandomizedPanel extends ExperimentPanel {
     for (int i = 0; i < fitP.size(); ++i) {
       sbInit.append( cf.format( initP.get(i) ) );
       sbFit.append( cf.format( fitP.get(i) ) );
-      
+      ++numInLine;
       // want to fit two to a line for paired values
+      
       if ( initP.get(i).getImaginary() != 0. ) {
         ++i; // INCREMENT I TO GET THE CONJUGATE AND NOT DO REDUNDANT OPERATION
-        sbInit.append("; ");
-        sbFit.append("; ");
+        sbInit.append(";  ");
+        sbFit.append(";  ");
         sbInit.append( cf.format( initP.get(i) ) );
         sbFit.append( cf.format( fitP.get(i) ) );
         sbInit.append("\n");
@@ -176,17 +177,17 @@ public class RandomizedPanel extends ExperimentPanel {
         if ( numInLine < 4 && initP.get(i + 1).getImaginary() == 0. ) {
           sbInit.append(";   ");
           sbFit.append(";   ");
-          ++numInLine;
         } else {
+          System.out.println(numInLine);
           sbInit.append("\n");
-          sbInit.append("\n");
+          sbFit.append("\n");
           numInLine = 0;
         }
-
       }
-      sbInit.append("\n");
-      sbFit.append("\n");
     }
+    
+    sbInit.append("\n");
+    sbFit.append("\n");
     
     StringBuilder sbInitZ = new StringBuilder();
     StringBuilder sbFitZ = new StringBuilder();
@@ -518,7 +519,7 @@ public class RandomizedPanel extends ExperimentPanel {
     
     String inset = getInsetStrings();
     TextTitle result = new TextTitle();
-    result.setText( inset );
+    result.setText(inset);
     result.setBackgroundPaint(Color.white);
     double x;
     double y = 0.02;

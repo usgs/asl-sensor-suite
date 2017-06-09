@@ -167,10 +167,11 @@ public class InstrumentResponse {
     // these are the high-frequency zeros if we're doing high-frequency cal
     // or the low-frequency zeros otherwise
     for (int i = 0; i < zerosAsComplex.size(); ++i) {
-      int idx = builtZeros.size();
+
       Complex zero = zerosAsComplex.get(i);
       builtZeros.add(zero);
-
+      int idx = builtZeros.size() - 1;
+      
       // add conjugate if it has one
       if ( zero.getImaginary() != 0. ) {
         builtZeros.add( zero.conjugate() );
@@ -207,11 +208,13 @@ public class InstrumentResponse {
       builtPoles.add( poles.get(0) );
     }
     
+    System.out.println(polesAsComplex);
+    
     // now add the poles under consideration for fit as with zeros
     for (int i = 0; i < polesAsComplex.size(); ++i) {
-      int idx = builtPoles.size();
       Complex pole = polesAsComplex.get(i);
       builtPoles.add(pole);
+      int idx = builtPoles.size() - 1;
       
       // add conjugate if it has one
       if ( pole.getImaginary() != 0. ) {
@@ -530,7 +533,7 @@ public class InstrumentResponse {
       if (imagPart != 0.) {
         // next value is complex conjugate of this one, so skip it
         ++i;
-      } else if ( (i + 1) < zeros.size() &&
+      } else if ( (i + 1) < poles.size() &&
           poles.get(i + 1).getImaginary() == 0. && 
           realPart == poles.get(i + 1).getReal() ) {
         // two values with zero imaginary are duplicated in the list
