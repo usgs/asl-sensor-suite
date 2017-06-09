@@ -329,7 +329,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
           }
         }
         
-        plotsToPDF(selFile);
+        plotsToPDF(selFile, ep, inputPlots);
       }
       return;
     }
@@ -382,19 +382,6 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     
     return returnedImage;
   }
-  
-  /**
-   * Output the currently displayed plots as a PDF file.
-   * @param file Filename to write to
-   */
-  public void plotsToPDF(File file) {
-
-    ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-    InputPanel ip = inputPlots;
-
-    plotsToPDF(file, ep, ip);
-  }
-
 
   /**
    * Handles function to create a PNG image with all currently-displayed plots

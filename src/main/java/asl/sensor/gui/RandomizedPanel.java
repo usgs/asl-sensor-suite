@@ -77,9 +77,20 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append("Pole and zero values, given as period (s):\n \n");
     sb.append("Poles:\n");
     for (int i = 0; i < fitP.size(); ++i) {
-      double fitPrd = NumericUtils.TAU / fitP.get(i).abs();
-      double initPrd = NumericUtils.TAU / initP.get(i).abs();
       
+      double fitDenom = fitP.get(i).abs();
+      double initDenom = initP.get(i).abs();
+      
+      // prevent division by 0;
+      double fitPrd = 0.;
+      if (fitDenom != 0) {
+        fitPrd = NumericUtils.TAU / fitDenom;
+      }
+      double initPrd = 0.;
+      if (initDenom != 0) {
+        initPrd = NumericUtils.TAU / initDenom;
+      }
+
       fitText.append( df.format(fitPrd) );
       initText.append( df.format(initPrd) );
       fitText.append("\n");
@@ -104,8 +115,18 @@ public class RandomizedPanel extends ExperimentPanel {
     }
 
     for (int i = 0; i < fitZ.size(); ++i) {
-      double fitPrd = NumericUtils.TAU / fitZ.get(i).abs();
-      double initPrd = NumericUtils.TAU / initZ.get(i).abs();
+      double fitDenom = fitZ.get(i).abs();
+      double initDenom = initZ.get(i).abs();
+      
+      // prevent division by 0;
+      double fitPrd = 0.;
+      if (fitDenom != 0) {
+        fitPrd = NumericUtils.TAU / fitDenom;
+      }
+      double initPrd = 0.;
+      if (initDenom != 0) {
+        initPrd = NumericUtils.TAU / initDenom;
+      }
       
       fitText.append( df.format(fitPrd) );
       initText.append( df.format(initPrd) );
