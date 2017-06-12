@@ -58,7 +58,6 @@ public class StepPanel extends ExperimentPanel {
     
     DecimalFormat df = new DecimalFormat("#.######");
     
-    
     StringBuilder sb = new StringBuilder();
     sb.append("RESP parameters\n");
     sb.append("corner frequency (Hz): ");
@@ -220,7 +219,7 @@ public class StepPanel extends ExperimentPanel {
    * @return String to place in TextTitle
    */
   @Override
-  public String getInsetString() {
+  public String getInsetStrings() {
     
     return getInsetString( (StepExperiment) expResult );
   
@@ -281,20 +280,15 @@ public class StepPanel extends ExperimentPanel {
     
     set = true;
     
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
     
     TextTitle result = new TextTitle();
-    result.setText( getInsetString() );
+    result.setText( getInsetStrings() );
     result.setBackgroundPaint(Color.white);
     
     XYSeriesCollection stepData = expResult.getData().get(0);
     stepChart = buildChart(stepData, xAxis, yAxis);
-    System.out.println("test1");
     XYPlot xyp = stepChart.getXYPlot();
-    // xyp.setDomainAxis(xAxis);
-    // xyp.setRangeAxis(yAxis);
-    // xAxis.setRange( stepData.getDomainBounds(true) );
-    // yAxis.setRange( stepData.getRangeBounds(true) );
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.5, result,
         RectangleAnchor.RIGHT);
     xyp.clearAnnotations();
@@ -302,19 +296,13 @@ public class StepPanel extends ExperimentPanel {
     
     XYSeriesCollection magData = expResult.getData().get(1);
     magChart = buildChart(magData, freqAxis, magAxis);
-    System.out.println("test2");
     xyp = magChart.getXYPlot();
-    //xyp.setDomainAxis(freqAxis);
-    //xyp.setRangeAxis(magAxis);
     xyt = new XYTitleAnnotation(1., 0., result, RectangleAnchor.BOTTOM_RIGHT);
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
     
     XYSeriesCollection phaseData = expResult.getData().get(2);
     phaseChart = buildChart(phaseData, freqAxis, phaseAxis);
-    //xyp = phaseChart.getXYPlot();
-    //xyp.setDomainAxis(freqAxis);
-    //xyp.setRangeAxis(phaseAxis);
   }
 
 }

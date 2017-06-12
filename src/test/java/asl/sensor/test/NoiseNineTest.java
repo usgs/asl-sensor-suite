@@ -87,7 +87,7 @@ public class NoiseNineTest {
 
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
-    nne.setData(ds);
+    nne.runExperimentOnData(ds);
 
     List<XYSeriesCollection> xysc = nne.getData();
     JFreeChart[] jfcl = new JFreeChart[xysc.size()];

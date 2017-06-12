@@ -92,7 +92,7 @@ public class OrthogonalPanel extends ExperimentPanel {
     XYPlot xyp = (XYPlot) chart.getPlot();
     
     TextTitle result = new TextTitle();
-    result.setText( getInsetString() );
+    result.setText( getInsetStrings() );
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
@@ -104,7 +104,7 @@ public class OrthogonalPanel extends ExperimentPanel {
   }
   
   @Override
-  public String getInsetString() {
+  public String getInsetStrings() {
     return getInsetString( (OrthogonalExperiment) expResult );
   }
     
@@ -119,7 +119,7 @@ public class OrthogonalPanel extends ExperimentPanel {
     
     set = true;
     
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
   }
 
 }

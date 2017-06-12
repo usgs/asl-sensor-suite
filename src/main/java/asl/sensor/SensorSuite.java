@@ -1,6 +1,5 @@
 package asl.sensor;
 
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -8,6 +7,8 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -35,6 +36,7 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.ExperimentPanelFactory;
 import asl.sensor.gui.InputPanel;
+import asl.sensor.gui.SwingWorkerSingleton;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
 
@@ -47,7 +49,7 @@ import asl.sensor.utils.ReportingUtils;
  *
  */
 public class SensorSuite extends JPanel 
-                         implements ActionListener, ChangeListener {
+implements ActionListener, ChangeListener, PropertyChangeListener {
 
   /**
    * 
@@ -111,11 +113,12 @@ public class SensorSuite extends JPanel
    * @param file Filename to write to
    * @param ep Experiment panel with data to be plotted
    * @param ip Input panel holding data associated with the experiment
-   * @throws IOException If the file cannot be written to
    */
-  public static void plotsToPDF(File file, ExperimentPanel ep, InputPanel ip)
-      throws IOException{
+  public static void plotsToPDF(File file, ExperimentPanel ep, InputPanel ip) {
 
+    // note that PDFBox is not thread safe, so don't try to thread these
+    // calls to either the experiment or input panels
+    
     int inPlotCount = ep.plotsToShow();
     String[] responses = ip.getResponseStrings( ep.getResponseIndices() );
     // BufferedImage toFile = getCompiledImage();
@@ -125,7 +128,6 @@ public class SensorSuite extends JPanel
     ep.savePDFResults( pdf );
     
     if (inPlotCount > 0) {
-
       int inHeight = ip.getImageHeight(inPlotCount) * 2;
       int width = 1280; // TODO: set as global static variable somewhere?
 
@@ -133,27 +135,37 @@ public class SensorSuite extends JPanel
           ip.getAsMultipleImages(width, inHeight, inPlotCount);
       
       ReportingUtils.imageListToPDFPages(pdf, toFile);
-
+    }
+    
+    if (responses.length > 0) {
       ReportingUtils.textListToPDFPages(pdf, responses);
     }
+    
+    try{
+      pdf.save(file);
+      pdf.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      if (pdf != null) {
+        try {
+          pdf.close();
+        } catch (IOException e) {
+          // this shouldn't be reached and seems to violate program's examples
+          e.printStackTrace();
+        }
+      }
+    }
 
-    pdf.save(file);
-    pdf.close();
   }
   
   private JFileChooser fc; // loads in files based on parameter
-
   private InputPanel inputPlots;
-
   private JTabbedPane tabbedPane; // holds set of experiment panels
-
   private JButton generate, savePDF; // run all calculations
-
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
 
-  private SwingWorker<Integer, Void> worker;
-  
   /**
    * Creates the main window of the program when called
    * (Three main panels: the top panel for displaying the results
@@ -175,7 +187,6 @@ public class SensorSuite extends JPanel
     Dimension d = tabbedPane.getPreferredSize();
     d.setSize( d.getWidth() * 1.5, d.getHeight() );
     tabbedPane.setPreferredSize(d);
-    
     tabbedPane.addChangeListener(this);
     
     inputPlots = new InputPanel();
@@ -225,7 +236,6 @@ public class SensorSuite extends JPanel
     
     ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
     inputPlots.showDataNeeded( ep.panelsNeeded() );
-
     inputPlots.setChannelTypes( ep.getChannelTypes() );
     
   }
@@ -243,25 +253,21 @@ public class SensorSuite extends JPanel
 
     if ( e.getSource() == generate ) {
       
-      if (worker != null) {
-        savePDF.setEnabled(false);
-        // clear out any old data in the chart
-        // since we only have one worker thread for experiment calculations
-        // we clear all charts -- if we run a new experiment while another one
-        // is calculating from another panel, we should make it clear that
-        // other panel was cancelled, and thus clear the chart / unset data
-        worker.cancel(true); // doesn't matter if experiment already completed
-        for (Component component : tabbedPane.getComponents()) {
-          ExperimentPanel ep = (ExperimentPanel) component;
-          if ( ep.hasRun() ) {
-            ep.clearChart();
-          }
-        }
-      }
+      ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+      ep.addPropertyChangeListener("Backend completed", this);
+      savePDF.setEnabled(false);
       
-      resetTabPlots();
+      // update the input plots to show the active region being calculated
+      inputPlots.showRegionForGeneration();
+      // pass the inputted data to the panels that handle them
+      DataStore ds = inputPlots.getData();
+
+      SwingWorkerSingleton.setInstance(ep, ds);
+      SwingWorker<Boolean, Void> wkr = SwingWorkerSingleton.getInstance();
+      wkr.execute();
       
       return;
+      
     } else if ( e.getSource() == savePDF ) {
 
       String ext = ".pdf";
@@ -323,11 +329,7 @@ public class SensorSuite extends JPanel
           }
         }
         
-        try {
-          plotsToPDF(selFile);
-        } catch (IOException e1) {
-          e1.printStackTrace();
-        }
+        plotsToPDF(selFile, ep, inputPlots);
       }
       return;
     }
@@ -380,20 +382,6 @@ public class SensorSuite extends JPanel
     
     return returnedImage;
   }
-  
-  /**
-   * Output the currently displayed plots as a PDF file.
-   * @param file Filename to write to
-   * @throws IOException If the file cannot be written
-   */
-  public void plotsToPDF(File file) throws IOException {
-
-    ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-    InputPanel ip = inputPlots;
-
-    plotsToPDF(file, ep, ip);
-  }
-
 
   /**
    * Handles function to create a PNG image with all currently-displayed plots
@@ -411,37 +399,18 @@ public class SensorSuite extends JPanel
   }
 
   /**
-   * Resets plot data and gets the inputted data to send to experiments
-   */
-  private void resetTabPlots() {
-    
-    ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-    
-    // pass the inputted data to the panels that handle them
-    DataStore ds = inputPlots.getData();
-    // update the input plots to show the active region being calculated
-    inputPlots.showRegionForGeneration();
-    
-    // now, update the data
-
-    ep.runExperiment(ds, worker);
-    
-    savePDF.setEnabled( ep.hasRun() );
-  }
-
-  /**
    * Checks when input panel gets new data or active experiment changes
    * to determine whether or not the experiment can be run yet
    */
   @Override
   public void stateChanged(ChangeEvent e) {
+    
     if ( e.getSource() == inputPlots ){
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
       DataStore ds = inputPlots.getData();
       boolean canGenerate = ep.hasEnoughData(ds);
       generate.setEnabled(canGenerate);
     } else if ( e.getSource() == tabbedPane ) {
-      
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
       
       inputPlots.setChannelTypes( ep.getChannelTypes() );
@@ -452,6 +421,24 @@ public class SensorSuite extends JPanel
       boolean isSet = ep.hasRun();
       generate.setEnabled(canGenerate);
       savePDF.setEnabled(canGenerate && isSet);
+    }
+    
+  }
+  
+  @Override
+  public void propertyChange(PropertyChangeEvent evt) {
+    // handle the completion of the swingworker thread of the backend
+    if ( evt.getPropertyName().equals("Backend completed") ) {
+      ExperimentPanel source = (ExperimentPanel) evt.getSource();
+      source.removePropertyChangeListener(this);
+      
+      if ( evt.getNewValue().equals(false) ) {
+        return; 
+      }
+      
+      if ( tabbedPane.getSelectedComponent() == source ) {
+        savePDF.setEnabled( source.hasRun() );
+      }
     }
   }
 

@@ -6,7 +6,7 @@ This program is used to analyze various aspects of seismic sensor data in order 
 
 ### Requirements
 ##### Software
-This program is designed to be used with Java 1.8, but should also be compatible with Java 1.7
+This program is designed to be used with Java 1.8, but should also be compatible with Java 1.7.
 This program also requires Gradle in order to be run from source. For instructions on installing Gradle, see https://gradle.org/install
 NOTE: because Gradle requires access to the maven repositories to download dependencies, there may be build issues when running the program on DOI-networked computers. The instructions for using DOI certificates for maven authentication can be found under the Java subheader at https://github.com/usgs/best-practices/blob/master/WorkingWithinSSLIntercept.md. You will also need the file "DOIRootCA.crt" from the linked page near the top detailing how to configure git.
 For those using Mac computers, the last step for trusting the certificate in Java may be slightly different. If installing the certificate using the instructions above fails, try using this command instead (NOTE: requires administrative access due to the use of the sudo command) https://blog.alwold.com/2011/06/30/how-to-trust-a-certificate-in-java-on-mac-os-x/
@@ -16,9 +16,11 @@ Because SEED files must be decompressed and stored in memory, the footprint of t
 
 ### Compilation
 
+While releases are regularly updated with major feature changes included in the releases tab on this project's Github and approximately-daily snapshots included among the projects files, it may be desired to build the project direct from source. There are a few ways of doing this, explained below.
+
 ##### Command Line
 The program can be compiled by using the commands `gradle compileJava` which will compile the source code, or `gradle build` which will also run the unit tests.
-Running the program can be done by either opening the jar through a filebrowser or running either `gradle run`, which launches the jar file, or `java -jar build/libs/SensorTestSuite$version_number$.jar` after the program has been built, with $version_number$ replaced with the current version, such as 0.9.0.
+Running the program can be done by either opening the jar through a filebrowser or running either `gradle run`, which launches the jar file, or `java -jar build/libs/SensorTestSuite$version_number$.jar` after the program has been built, with $version_number$ replaced with the current version, such as 0.9.0. The gradle build script also allows the built jar file to be placed in the root directory; if `gradle compileJava` was previously run, then `gradle copyJar` will move it there. Note that `gradle build` includes this step by default.
 
 ##### Eclipse
 For those who wish to compile and run this program with Eclipse, run the command `gradle eclipse` and then, inside eclipse, go to File>"Open projects from file system..." and direct Eclipse to the root folder of the test suite. Now the code will be available as an Eclipse project. For more information on using Eclipse, consult the Eclipse documentation.
@@ -34,7 +36,9 @@ Plots of the input files used in a sensor test can be output in PNG, as can the 
 
 ### Usage
 
-For more information on the specifics of certain tests, consult the javadoc. 
+As noted above, running the program can be done using `gradle run` if using a full source download or `java -jar [TestSuite jar filename]` with the name of the currently-built application replacing the bracketed bit. Note that the program may require an increase in the normal java heap space in order to run files with a very large number of data points. In such a case, running the program should be done with `java -Xmx#G -jar [TestSuite jar filename]` with `#` being replaced with the number of gigabytes to allocate to the Java heap space. It is unlikely that the program will require more than 4 gigabytes of memory.
+
+The following describes what is required in order to run a specific calculation through the GUI. For more information on the specific details of certain tests or how to create code to automate testing, consult the javadoc (code documentation).
 
 #### Self-noise
 
@@ -42,7 +46,7 @@ Self-noise requires three components and an appropriate response file for each. 
 
 The input files do not need to be in any particular order. They all must have responses specified. For three-component self-noise, they should all be pointing in the same direction (i.e., all facing north).
 
-There is also a nine-component self-noise test that takes in horizontal north, east, and vertical sensor data for each of the three components, finds the best angle to rotate the horizontal components to maximize coherence, and then performs the same test on the 3 sensors in each direction. 
+There is also a nine-component self-noise test that takes in [horizontal] north, east, and vertical sensor data for each of the three components, finds the best angle to rotate the horizontal components to maximize coherence, and then performs the same test on the 3 sensors in each direction. 
 
 #### Relative Gain
 
@@ -50,7 +54,9 @@ Relative gain computes the mean of the PSD of each of two sensors, and estimates
 
 The input files, again, do not need to be in any order (the panel allows for choosing which sensor to be used as reference by way of the selection menus below the chart), but they must both have responses specified.
 
-The gain is initially calculated using the octave around the peak frequency, but a custom range can be specified using the sliders, same as the 
+The gain is initially calculated using the octave around the peak frequency, but a custom range can be specified using the sliders, functioning similarly to the region selectors for input data.
+
+There is also a six-component relative gain test that takes in horizontal north, east, and vertical sensor data, finds the coherence-maximizing angle, and then takes the statistics over the rotated components. The first set of data is always taken as the reference for horizontal rotation; the selection menu on the left side of this panel allows for setting either input as the gain reference.
 
 #### Step Calibration
 
@@ -62,9 +68,17 @@ The input files have a specific order: the step input signal must be placed firs
 
 This function solves for poles to attempt to fit the response curve calculated from deconvolving the given calibration input from the sensor output. Low-frequency (the two lowest poles) and high-frequency (all other poles) are fitted to minimize the difference between the estimated response, based on the response specified for the sensor. The inputs follow the same structure as step calculation, though what response parameters are solved for is dependent on whether a high or low frequency calculation is chosen. Both the magnitude and argument (angle of the response curve along the real axis) of the response curve are displayed in plots, and saving the plot to an image will include both such plots.
 
+When using embedded response files, it is strongly recommended to use an appropriate response file with "nocoil" in the name, as these remove the calibration coil's response from the file and thus generate more accurate results of calculations.
+
 Note that plots have been scaled in order to produce more representative fits of response curves. For high-frequency calibrations, the curves are all set to be equal to zero at 1 Hz; for low-frequency calibrations, this point occurs at 0.2 Hz.
 
-This function is still work-in-progress but has been tested with good results on data from a KS54000 sensor. Other sensors may not produce as good results (see known issues, below)
+This function is still work-in-progress but has been tested with good results on data from a KS54000 sensor. Other sensors may not produce as good results (see known issues, below).
+
+Older high-frequency cals may produce lots of noise on the high-frequency end confounding the solver, especially depending on how the calibration was produced.
+This program includes a second checker tab which does not run the solver for 
+response parameters, but can be used to determine whether or not the calculated response from the sensor output is good enough to be used for the solver. 
+Noisy calibrations or ones whose output otherwise varies significantly from the given nominal response may take a long time to solve or produce errors that lead to the solver being unable to converge on any solution. 
+IT IS STRONGLY ENCOURAGED TO RUN THE NO-SOLVER RANDOM CAL PANEL ON DATA THAT PRODUCES A CONVERGENCE ERROR DURING SOLVING IN ORDER TO DIAGNOSE POTENTIAL ISSUES WITH THE CALIBRATION ITSELF.
 
 #### Azimuth
 

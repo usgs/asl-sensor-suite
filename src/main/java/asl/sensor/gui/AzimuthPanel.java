@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.text.DecimalFormat;
 import java.util.List;
 
 import javax.swing.JComboBox;
@@ -40,6 +41,7 @@ public class AzimuthPanel extends ExperimentPanel {
    * 
    */
   private static final long serialVersionUID = 4088024342809622854L;
+  private static final DecimalFormat df = new DecimalFormat("#.###");
   JSpinner offsetSpinner;
   JFreeChart angleChart, coherenceChart;
   
@@ -90,15 +92,6 @@ public class AzimuthPanel extends ExperimentPanel {
     gbc.weightx = 1; gbc.weighty = 0;
     gbc.fill = GridBagConstraints.NONE;
     gbc.anchor = GridBagConstraints.EAST;
-    /*
-    this.add(jbl, gbc);
-    
-    gbc.gridx += 1;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.WEST;
-    this.add(offsetSpinner, gbc);
-    */
-
     
     gbc.anchor = GridBagConstraints.CENTER;
     gbc.gridx = 0; gbc.gridy = 0;
@@ -129,7 +122,7 @@ public class AzimuthPanel extends ExperimentPanel {
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(save, gbc);
   }
-
+  
   @Override
   public void actionPerformed(ActionEvent e) {
     
@@ -145,7 +138,42 @@ public class AzimuthPanel extends ExperimentPanel {
     
     super.actionPerformed(e);
   }
+
+  @Override
+  protected void clearChartAndSetProgressData() {
+    chartSelector.setSelectedIndex(0);
+    angleChart = ChartFactory.createPolarChart( expType.getName(), 
+        null, false, false, false);
+    chart = angleChart;
+    chartPanel.setChart(chart);
+    displayInfoMessage("Running calculation...");
+  }
   
+  @Override
+  public void displayErrorMessage(String errMsg) {
+    
+    if (chartSelector.getSelectedIndex() == 0) {
+      PolarPlot plot = (PolarPlot) angleChart.getPlot();
+      plot.clearCornerTextItems();
+      plot.addCornerTextItem(errMsg);
+    } else {
+      super.displayInfoMessage(errMsg);
+    }
+    
+  }
+
+  public void displayInfoMessage(String infoMsg) {
+    
+    if (chartSelector.getSelectedIndex() == 0) {
+      PolarPlot plot = (PolarPlot) angleChart.getPlot();
+      plot.clearCornerTextItems();
+      plot.addCornerTextItem(infoMsg);
+    } else {
+      super.displayInfoMessage(infoMsg);
+    }
+    
+  }
+
   @Override
   protected void drawCharts() {
     chartSelector.setEnabled(true);
@@ -153,14 +181,14 @@ public class AzimuthPanel extends ExperimentPanel {
     chart = angleChart;
     chartPanel.setChart(chart);
   }
-
+  
   @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{angleChart, coherenceChart};
   }
-
+  
   @Override
-  public String getInsetString() {
+  public String getInsetStrings() {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     double value = az.getOffset();
     double angle = az.getFitAngle();
@@ -174,28 +202,6 @@ public class AzimuthPanel extends ExperimentPanel {
   @Override
   public int panelsNeeded() {
     return 3;
-  }
-  
-  public void displayInfoMessage(String infoMsg) {
-    
-    if (chartSelector.getSelectedIndex() == 0) {
-      PolarPlot plot = (PolarPlot) angleChart.getPlot();
-      plot.clearCornerTextItems();
-      plot.addCornerTextItem(infoMsg);
-    } else {
-      super.displayInfoMessage(infoMsg);
-    }
-    
-  }
-  
-  @Override
-  protected void clearChartAndSetProgressData() {
-    chartSelector.setSelectedIndex(0);
-    angleChart = ChartFactory.createPolarChart( expType.getName(), 
-        null, false, false, false);
-    chart = angleChart;
-    chartPanel.setChart(chart);
-    displayInfoMessage("Running calculation...");
   }
   
   @Override
@@ -212,7 +218,7 @@ public class AzimuthPanel extends ExperimentPanel {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     az.setOffset(value);
     
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
     
     List<XYSeriesCollection> allData = expResult.getData();
     
@@ -226,10 +232,10 @@ public class AzimuthPanel extends ExperimentPanel {
         polars, true, true, false);
     
     double angle = az.getFitAngle();
-    String angleStr = "FIT ANGLE: " + angle;
+    String angleStr = "FIT ANGLE: " + df.format(angle);
     double result = ( (value + angle) % 360 + 360) % 360;
     
-    angleStr += " + " + value + " = " + result;
+    angleStr += " + " + df.format(value) + " = " + df.format(result);
     
     XYPlot xyp = (XYPlot) coherenceChart.getPlot();
     TextTitle title = new TextTitle(angleStr);

@@ -126,9 +126,9 @@ public class OrthogonalExperiment extends Experiment {
     findTestY.setData(2, testLH1Block);
     
     AzimuthExperiment azi = new AzimuthExperiment();
-    azi.setData(findTestY);
+    azi.runExperimentOnData(findTestY);
     double angleY = azi.getFitAngle();
-    azi.setData(findTestX);
+    azi.runExperimentOnData(findTestX);
     double angleX = azi.getFitAngle();
     
     angle = Math.abs(angleY - angleX);

@@ -18,10 +18,14 @@ public class ExperimentFactory {
     switch(exp){
     case ORTHO:
       return new OrthogonalExperiment();
+    case NOIS9:
+      return new NoiseNineExperiment();
     case NOISE:
       return new NoiseExperiment();
     case RGAIN:
       return new GainExperiment();
+    case GAIN6:
+      return new GainSixExperiment();
     case STCAL:
       return new StepExperiment();
     case AZMTH:
@@ -30,8 +34,8 @@ public class ExperimentFactory {
       return new RandomizedExperiment();
     case RESPN:
       return new ResponseExperiment();
-    case NOIS9:
-      return new NoiseNineExperiment();
+    case RNDBG:
+      return new RandDebugExperiment();
     default:
       // this shouldn't happen unless someone added to the enum
       // and forgot to follow-through on implementation
