@@ -208,8 +208,6 @@ public class InstrumentResponse {
       builtPoles.add( poles.get(0) );
     }
     
-    System.out.println(polesAsComplex);
-    
     // now add the poles under consideration for fit as with zeros
     for (int i = 0; i < polesAsComplex.size(); ++i) {
       Complex pole = polesAsComplex.get(i);
