@@ -77,9 +77,20 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append("Pole and zero values, given as period (s):\n \n");
     sb.append("Poles:\n");
     for (int i = 0; i < fitP.size(); ++i) {
-      double fitPrd = NumericUtils.TAU / fitP.get(i).abs();
-      double initPrd = NumericUtils.TAU / initP.get(i).abs();
       
+      double fitDenom = fitP.get(i).abs();
+      double initDenom = initP.get(i).abs();
+      
+      // prevent division by 0;
+      double fitPrd = 0.;
+      if (fitDenom != 0) {
+        fitPrd = NumericUtils.TAU / fitDenom;
+      }
+      double initPrd = 0.;
+      if (initDenom != 0) {
+        initPrd = NumericUtils.TAU / initDenom;
+      }
+
       fitText.append( df.format(fitPrd) );
       initText.append( df.format(initPrd) );
       fitText.append("\n");
@@ -104,8 +115,18 @@ public class RandomizedPanel extends ExperimentPanel {
     }
 
     for (int i = 0; i < fitZ.size(); ++i) {
-      double fitPrd = NumericUtils.TAU / fitZ.get(i).abs();
-      double initPrd = NumericUtils.TAU / initZ.get(i).abs();
+      double fitDenom = fitZ.get(i).abs();
+      double initDenom = initZ.get(i).abs();
+      
+      // prevent division by 0;
+      double fitPrd = 0.;
+      if (fitDenom != 0) {
+        fitPrd = NumericUtils.TAU / fitDenom;
+      }
+      double initPrd = 0.;
+      if (initDenom != 0) {
+        initPrd = NumericUtils.TAU / initDenom;
+      }
       
       fitText.append( df.format(fitPrd) );
       initText.append( df.format(initPrd) );
@@ -117,6 +138,10 @@ public class RandomizedPanel extends ExperimentPanel {
         ++i;
       }
     }
+    
+    // add the values of the zeros to the metadata page
+    sb.append(initText);
+    sb.append(fitText);
     
     String[] out = new String[]{sb.toString()}; // just a single new page
     return out;
@@ -149,23 +174,41 @@ public class RandomizedPanel extends ExperimentPanel {
     // add poles, initial then fit (single loop, append the two builders)
     sbInit.append("Initial poles: \n");
     sbFit.append("Fit poles: \n");
+    
+    int numInLine = 0;
+    
     for (int i = 0; i < fitP.size(); ++i) {
       sbInit.append( cf.format( initP.get(i) ) );
       sbFit.append( cf.format( fitP.get(i) ) );
-      
+      ++numInLine;
       // want to fit two to a line for paired values
+      
       if ( initP.get(i).getImaginary() != 0. ) {
-        ++i;
-        sbInit.append("; ");
-        sbFit.append("; ");
+        ++i; // INCREMENT I TO GET THE CONJUGATE AND NOT DO REDUNDANT OPERATION
+        sbInit.append(";  ");
+        sbFit.append(";  ");
         sbInit.append( cf.format( initP.get(i) ) );
-        sbInit.append("  ");
         sbFit.append( cf.format( fitP.get(i) ) );
-        sbFit.append("  ");
+        sbInit.append("\n");
+        sbFit.append("\n");
+        numInLine = 0;
+      } else if ( i + 1 < fitP.size() ) {
+        // if there is still data, fit up to 4 in a line
+        // but separate conjugate pairs into their own line for space
+        if ( numInLine < 4 && initP.get(i + 1).getImaginary() == 0. ) {
+          sbInit.append(";   ");
+          sbFit.append(";   ");
+        } else {
+          System.out.println(numInLine);
+          sbInit.append("\n");
+          sbFit.append("\n");
+          numInLine = 0;
+        }
       }
-      sbInit.append("\n");
-      sbFit.append("\n");
     }
+    
+    sbInit.append("\n");
+    sbFit.append("\n");
     
     StringBuilder sbInitZ = new StringBuilder();
     StringBuilder sbFitZ = new StringBuilder();
@@ -190,7 +233,7 @@ public class RandomizedPanel extends ExperimentPanel {
         sbFitZ.append( cf.format( fitZ.get(i) ) );
         sbFitZ.append("\n");
         
-      } else {
+      } else { 
         if ( i + 1 < fitZ.size() ) {
           sbInitZ.append(";   ");
           sbFitZ.append(";   ");
@@ -256,6 +299,10 @@ public class RandomizedPanel extends ExperimentPanel {
     
     applyAxesToChart(); // now that we've got axes defined
     
+    magChart = buildChart(null, xAxis, yAxis);
+    argChart = buildChart(null, xAxis, degreeAxis);
+    residChart = buildChart(null, xAxis, residAxis);
+    
     // set the GUI components
     this.setLayout( new GridBagLayout() );
     GridBagConstraints gbc = new GridBagConstraints();
@@ -303,7 +350,11 @@ public class RandomizedPanel extends ExperimentPanel {
     if ( e.getSource() == plotSelection ) {
       
       if (!set) {
-        applyAxesToChart();
+        XYPlot xyp = chart.getXYPlot();
+        String label = getXAxis().getLabel();
+        xyp.getDomainAxis().setLabel(label);
+        label = getYAxis().getLabel();
+        xyp.getRangeAxis().setLabel(label);
         return;
       }
       
@@ -358,7 +409,7 @@ public class RandomizedPanel extends ExperimentPanel {
    * @return String to place in TextTitle
    */
   @Override
-  public String getInsetString() {
+  public String getInsetStrings() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     return getInsetString(rnd);
   }
@@ -372,10 +423,10 @@ public class RandomizedPanel extends ExperimentPanel {
     
     double[] weights = rnd.getWeights();
     sb.append("Residuals weighting:\n");
-    sb.append("Amplitude weighting: ");
+    sb.append("    Amplitude: ");
     sb.append(weights[0]);
     sb.append("\n");
-    sb.append("Phase weighting: ");
+    sb.append("    Phase: ");
     sb.append(weights[1]);
     return sb.toString();
   }
@@ -453,7 +504,7 @@ public class RandomizedPanel extends ExperimentPanel {
     
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
     rndExp.setLowFreq(isLowFreq);
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
     
     String appendFreqTitle;
     
@@ -463,14 +514,7 @@ public class RandomizedPanel extends ExperimentPanel {
       appendFreqTitle = " (HIGH FREQ.)";
     }
     
-    if (rndExp.skipSolving) {
-      appendFreqTitle += " | SOLVER NOT RUN";
-    }
-    
-    
     List<XYSeriesCollection> xysc = expResult.getData();
-    
-
     
     XYSeriesCollection magSeries = xysc.get(0);
     XYSeriesCollection argSeries = xysc.get(1);
@@ -494,9 +538,9 @@ public class RandomizedPanel extends ExperimentPanel {
     invertSeriesRenderingOrder( magChart );
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
-    String inset = getInsetString();
+    String inset = getInsetStrings();
     TextTitle result = new TextTitle();
-    result.setText( inset );
+    result.setText(inset);
     result.setBackgroundPaint(Color.white);
     double x;
     double y = 0.02;
@@ -521,6 +565,7 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
+    // get residuals plot
     residChart = buildChart(xysc.get(2), xAxis, residAxis);
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();

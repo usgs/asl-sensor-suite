@@ -15,6 +15,7 @@ import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -44,10 +45,12 @@ implements ChangeListener {
 
   
   private static final long serialVersionUID = 6697458429989867529L;
+  
   /**
    * Max value of slider (ranges from 0 to 1000, converted to log10 scale)
    */
-  private static final int SLIDER_MAX = 1000;
+  public static final int SLIDER_MAX = 1000;
+  
   /**
    * Static helper method for getting the formatted inset string directly
    * from a GainExperiment
@@ -82,12 +85,12 @@ implements ChangeListener {
     sb.append(calcGain);
     return sb.toString();
   }
-  private JSlider leftSlider;
-  private JSlider rightSlider;
-  private JComboBox<String> refSeries;
-  private JButton recalcButton;
+  protected JSlider leftSlider;
+  protected JSlider rightSlider;
+  protected JComboBox<String> refSeries;
+  protected JButton recalcButton;
   
-  private double low, high;
+  protected double low, high;
 
   /**
    * Instantiate the panel, including sliders and stat calc button
@@ -263,15 +266,12 @@ implements ChangeListener {
     // obviously, set the chart
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(false);
-
-    // set vertical bars and enable sliders
-    XYPlot xyp = chartPanel.getChart().getXYPlot();
-
+    
     leftSlider.setValue(leftSliderValue);
     rightSlider.setValue(rightSliderValue);
 
     // set the domain to match the boundaries of the octave centered at peak
-    setDomainMarkers(lowPrd, highPrd, xyp);
+    chartPanel.setChart( setDomainMarkers(lowPrd, highPrd, chart) );
 
     // and now set the sliders to match where that window is
     leftSlider.setEnabled(true);
@@ -283,7 +283,7 @@ implements ChangeListener {
   }
   
   @Override
-  public String getInsetString() {
+  public String getInsetStrings() {
     int leftPos = leftSlider.getValue();
     double lowPrd = mapSliderToPeriod(leftPos);
     int rightPos = rightSlider.getValue();
@@ -314,6 +314,7 @@ implements ChangeListener {
     sb.append(lowPrd);
     sb.append(" to ");
     sb.append(highPrd);
+    sb.append('\n');
     
     sb.append( super.getMetadataString() );
     
@@ -377,15 +378,19 @@ implements ChangeListener {
    * @param lowPrd lower x-axis value (period, in seconds)
    * @param highPrd upper x-axis value (period, in seconds)
    * @param xyp plot displayed in this object's chart
+   * @return XYPlot XYPlot with new domain markers set
    */
-  private void setDomainMarkers(double lowPrd, double highPrd, XYPlot xyp) {
+  protected static JFreeChart 
+  setDomainMarkers(double lowPrd, double highPrd, JFreeChart chart) {
+    XYPlot xyp = chart.getXYPlot();
     xyp.clearDomainMarkers();
-    Marker startMarker = new ValueMarker( lowPrd );
+    Marker startMarker = new ValueMarker(lowPrd);
     startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
-    Marker endMarker = new ValueMarker( highPrd );
+    Marker endMarker = new ValueMarker(highPrd);
     endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
     xyp.addDomainMarker(startMarker);
     xyp.addDomainMarker(endMarker);
+    return chart;
   }
 
   /**
@@ -395,7 +400,7 @@ implements ChangeListener {
   private void setTitle() {
     XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
     TextTitle result = new TextTitle();
-    String temp = getInsetString();
+    String temp = getInsetStrings();
     result.setText(temp);
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
@@ -434,10 +439,10 @@ implements ChangeListener {
       recalcButton.setEnabled(true);
       
       // get plot (where we put the vertical bars)
-      XYPlot xyp = chartPanel.getChart().getXYPlot();
+      JFreeChart chart = chartPanel.getChart();
       
       // clear out annotations to prevent issues with misleading data
-      xyp.clearAnnotations();
+      chart.getXYPlot().clearAnnotations();
       
       // convert slider locations to (log-scale) frequency
       int leftPos = leftSlider.getValue();
@@ -446,7 +451,7 @@ implements ChangeListener {
       double highPrd = mapSliderToPeriod(rightPos);
       
       // remove old bars and draw the new ones
-      setDomainMarkers(lowPrd, highPrd, xyp);
+      chartPanel.setChart( setDomainMarkers(lowPrd, highPrd, chart) );
     }
   }
   
@@ -457,7 +462,7 @@ implements ChangeListener {
     
     setDataNames(ds);
     
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
 
     // need to have 2 series for relative gain
     refSeries.setEnabled(true);

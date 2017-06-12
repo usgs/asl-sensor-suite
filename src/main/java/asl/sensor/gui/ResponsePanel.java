@@ -314,6 +314,17 @@ public class ResponsePanel extends ExperimentPanel {
   }
   
   @Override
+  public String[] getAdditionalReportPages() {
+    ResponseExperiment respExp = (ResponseExperiment) expResult;
+    InstrumentResponse[] irs = respExp.getResponses();
+    String[] pages = new String[irs.length];
+    for (int i = 0; i < pages.length; ++i) {
+      pages[i] = irs[i].toString();
+    }
+    return pages;
+  }
+  
+  @Override
   public int plotsToShow() {
     return 0;
   }
@@ -328,7 +339,7 @@ public class ResponsePanel extends ExperimentPanel {
     boolean freqSpace = freqSpaceBox.isSelected();
     ResponseExperiment respExp = (ResponseExperiment) expResult;
     respExp.setFreqSpace(freqSpace);
-    expResult.setData(ds);
+    expResult.runExperimentOnData(ds);
     
     List<XYSeriesCollection> xysc = expResult.getData();
     XYSeriesCollection magSeries = xysc.get(0);

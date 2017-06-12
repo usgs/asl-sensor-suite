@@ -117,14 +117,11 @@ public class GainExperiment extends Experiment {
     
     return Math.sqrt(sigma);
   }
+  
   private double[] gainStage1;
-  
   private double[] otherGainStages; // product of gain stages 2 and up
-  
   private FFTResult[] fftResults;
-  
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
-  
   private double ratio, sigma;
   
   /**
@@ -256,18 +253,17 @@ public class GainExperiment extends Experiment {
    * Given indices to specific PSD data sets and frequency boundaries, gets
    * the mean and standard deviation ratios 
    * @param refIdx Index of first curve to be plotted (numerator PSD)
-   * @param lowFreq Lower-bound of frequency window of PSD
-   * @param highFreq Upper-bound of frequency window of PSD
+   * @param lowFq Lower-bound of frequency window of PSD
+   * @param highFq Upper-bound of frequency window of PSD
    * @return 2-entry array of form {mean, standard deviation}
    */
-  public double[] 
-      getStatsFromFreqs(int refIdx, double lowFreq, double highFreq) {
+  public double[] getStatsFromFreqs(int refIdx, double lowFq, double highFq) {
     
     FFTResult plot0 = fftResults[refIdx];
     
     double[] freqBoundaries = new double[2];
-    freqBoundaries[0] = Math.min(lowFreq, highFreq);
-    freqBoundaries[1] = Math.max(lowFreq, highFreq);
+    freqBoundaries[0] = Math.min(lowFq, highFq);
+    freqBoundaries[1] = Math.max(lowFq, highFq);
     
     int[] indices = getRange( plot0.getFreqs(), freqBoundaries );
     
@@ -280,10 +276,9 @@ public class GainExperiment extends Experiment {
    * @param refIdx Index of first curve to be plotted (numerator PSD)
    * @param lowBnd Lower-bound index of PSDs' frequency array
    * @param higBnd Upper-bound index of PSDs' frequency array
-   * @return 2-entry array of form {mean, standard deviation}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-  private double[] getStatsFromIndices(int refIdx,
-      int lowBnd, int higBnd) {
+  private double[] getStatsFromIndices(int refIdx, int lowBnd, int higBnd) {
     
     int idx0 = refIdx;
     int idx1 = (refIdx + 1) % NUMBER_TO_LOAD;
@@ -307,17 +302,17 @@ public class GainExperiment extends Experiment {
     
     sigma = sdev(plot0, plot1, ratio, lowBnd, higBnd);
     
-    double gain1 = gainStage1[idx0];
-    double gain2 = gainStage1[idx1]/Math.sqrt(ratio);
+    double refGain = gainStage1[idx0];
+    double calcGain = gainStage1[idx1]/Math.sqrt(ratio);
     
-    return new double[]{Math.sqrt(ratio), sigma, gain1, gain2};
+    return new double[]{Math.sqrt(ratio), sigma, refGain, calcGain};
   }
 
   /**
    * Find the peak frequency of the reference series and use it to get the
    * gain statistics
    * @param refIdx Index of the reference sensor's FFT data
-   * @return 2-entry array of form {mean, standard deviation}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
   public double[] getStatsFromPeak(int refIdx) {
     double[] freqBounds = getOctaveCenteredAtPeak(refIdx);

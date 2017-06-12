@@ -69,7 +69,7 @@ public class ReportingUtils {
       
     } catch (IOException e) {
       e.printStackTrace();
-    }
+    } 
 
     return;
     
@@ -292,7 +292,7 @@ public class ReportingUtils {
       pdf.addPage(page);
 
       PDFont pdfFont = PDType1Font.COURIER;
-      float fontSize = 14;
+      float fontSize = 12;
       float leading = 1.5f * fontSize;
 
       PDRectangle mediabox = page.getMediaBox();

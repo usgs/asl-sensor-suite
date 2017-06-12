@@ -108,29 +108,38 @@ implements ActionListener, ChangeListener {
     }
     return sb.toString();
   }
+  
   protected JButton save;
   
-  protected JFreeChart chart; // replace with plot object
+  protected JFreeChart chart; // the chart shown in the panel
   
-  protected ChartPanel chartPanel;
+  protected ChartPanel chartPanel; // component used to hold the shown chart
+  // (if an experiment has multiple charts to show, ideally each should be
+  // selectable through some sort of menu with the active menu option deciding
+  // which chart should be displayed in this panel)
   
   protected JFileChooser fc; // save image when image save button clicked
   
   public final ExperimentEnum expType; 
-          // used to define experiment of each plot object
+    // used to define experiment of each plot object (i.e., chart name)
   
   protected Experiment expResult;
+    // experiment actually being run (call its 'setData' method to run backend)
+    // experiments use builder pattern -- set necessary variables like
+    // angle offset or x-axis units before running the experiment
   
   protected ValueAxis xAxis, yAxis;
+    // default axes to use with the default chart
   
   public String[] channelType;
+    // used to give details in input panel about what users needs to load where
   
-  protected boolean set;
+  protected boolean set; // true if the experiment has run
   protected String[] plotTheseInBold; // given in the implementing function
-  
   // this is a String because bolded names are intended to be fixed
-  protected Map<String, Color> seriesColorMap;
+  // (i.e., NLNM, NHNM, not dependent on user input)
   
+  protected Map<String, Color> seriesColorMap;
   protected Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
   
@@ -169,6 +178,8 @@ implements ActionListener, ChangeListener {
     save.addActionListener(this);
     
     // basic layout for components (recommended to override in concrete class)
+    // if specific formatting or additional components are unnecessary, the
+    // implementing class can simply call super(expType) to make a panel
     this.setLayout( new BoxLayout(this, BoxLayout.Y_AXIS) );
     this.add(chartPanel);
     this.add(save);
@@ -176,7 +187,8 @@ implements ActionListener, ChangeListener {
   
   @Override
   /**
-   * Used to print out status of the experiment backend onto the chart
+   * Used to print out status of the experiment backend onto the chart when
+   * the backend status changes
    */
   public void stateChanged(ChangeEvent e) {
     if ( e.getSource() == expResult ) {
@@ -324,8 +336,10 @@ implements ActionListener, ChangeListener {
   public void clearChart() {
     set = false;
     chart = 
-        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
-    applyAxesToChart();
+        ChartFactory.createXYLineChart( 
+            expType.getName(), 
+            getXAxis().getLabel(),  
+            getYAxis().getLabel(),  null );
     chartPanel.setChart(chart);
   }
   
@@ -333,10 +347,7 @@ implements ActionListener, ChangeListener {
    * Clear chart data and display text that it is loading new data
    */
   protected void clearChartAndSetProgressData() {
-    chart = 
-        ChartFactory.createXYLineChart( expType.getName(), "",  "",  null );
-    applyAxesToChart();
-    chartPanel.setChart(chart);
+    clearChart();
     displayInfoMessage("Running calculation...");
   }
   
@@ -345,7 +356,8 @@ implements ActionListener, ChangeListener {
    * @param errMsg Text of the message to be displayed
    */
   public void displayErrorMessage(String errMsg) {
-    XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
+    clearChart();
+    XYPlot xyp = (XYPlot) chart.getPlot();
     TextTitle result = new TextTitle();
     result.setText(errMsg);
     result.setBackgroundPaint(Color.red);
@@ -397,7 +409,7 @@ implements ActionListener, ChangeListener {
    * an experiment
    */
   public String getAllTextData() {
-    StringBuilder sb = new StringBuilder( getInsetString() );
+    StringBuilder sb = new StringBuilder( getInsetStrings() );
     if ( sb.length() > 0 ) {
       sb.append("\n\n");
     }
@@ -466,7 +478,7 @@ implements ActionListener, ChangeListener {
    * to be overridden by any panel that uses an inset
    * @return String with any relevant parameters in it
    */
-  public String getInsetString() {
+  public String getInsetStrings() {
     return "";
   }
   
@@ -502,10 +514,15 @@ implements ActionListener, ChangeListener {
     cCal.setTimeInMillis( expResult.getStart() / 1000 );
     String date = sdf.format( cCal.getTime() );
     
-    String test = expType.getName().replace(' ', '_');
+    // turn spaces into underscores
+    String test = expType.getName().replace(' ', '_'); // name of experiment
+    // make sure parentheses in filenames aren't causing issues
+    // (i.e., better than dealing with system-specific setups to escape them)
+    test = test.replace('(','_');
+    test = test.replace(')','_');
     
     int idx = getIndexOfMainData();
-    String name = expResult.getInputNames().get(idx);
+    String name = expResult.getInputNames().get(idx); // name of input data
     
     StringBuilder sb = new StringBuilder();
     sb.append(test);
@@ -593,27 +610,20 @@ implements ActionListener, ChangeListener {
     return panelsNeeded();
   }
   
-  public void 
-  runExperiment(final DataStore ds, SwingWorker<Integer, Void> worker) {
+  /**
+   * Function to call to run experiment backend on specific data, using the
+   * given swingworker
+   * @param ds Data to evaluate the backend on
+   * @param worker Worker thread to run the backend in, presumably the 
+   * worker object originating in the main class for the suite
+   */
+  public SwingWorker<Boolean, Void> 
+  runExperiment(final DataStore ds, SwingWorker<Boolean, Void> worker) {
     
-    clearChartAndSetProgressData();
-    
-    worker = new SwingWorker<Integer, Void>() {
-      
-      @Override
-      public Integer doInBackground() {
-        updateData(ds);
-        return 0;
-      }
-      
-      @Override
-      public void done() {
-        drawCharts();
-      }
-      
-    };
     
     worker.execute();
+    
+    return worker;
     
   }
 
@@ -626,7 +636,7 @@ implements ActionListener, ChangeListener {
    */
   public void saveInsetDataText(PDDocument pdf) {
     
-    StringBuilder sb = new StringBuilder( getInsetString() );
+    StringBuilder sb = new StringBuilder( getInsetStrings() );
     if ( sb.length() > 0 ) {
       sb.append("\n \n");
     }
@@ -701,5 +711,10 @@ implements ActionListener, ChangeListener {
   protected abstract void updateData(final DataStore ds);
   // details of how to run updateData are left up to the implementing panel
   // however, the boolean "set" should be set to true to enable PDF saving
+  
+  public void setDone() {
+    firePropertyChange("Backend completed", false, set);
+    drawCharts();
+  }
   
 }
