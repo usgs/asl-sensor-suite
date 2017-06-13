@@ -482,6 +482,7 @@ extends Experiment implements ParameterValidator {
     
     // prevent terrible case where, say, only high-freq poles above nyquist rate
     if (variables.length > 0) {
+      System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
       testResp = fitResponse.buildResponseFromFitVector(
           variables, lowFreq, numZeros, nyquist);
     }

@@ -423,10 +423,10 @@ public class RandomizedPanel extends ExperimentPanel {
     
     double[] weights = rnd.getWeights();
     sb.append("Residuals weighting:\n");
-    sb.append("Amplitude weighting: ");
+    sb.append("    Amplitude: ");
     sb.append(weights[0]);
     sb.append("\n");
-    sb.append("Phase weighting: ");
+    sb.append("    Phase: ");
     sb.append(weights[1]);
     return sb.toString();
   }
