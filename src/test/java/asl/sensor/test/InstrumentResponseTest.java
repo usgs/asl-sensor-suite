@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.linear.RealVector;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;
 
@@ -58,6 +59,36 @@ public class InstrumentResponseTest {
       // TODO Auto-generated catch block
       fail("Unexpected error trying to read response file");
     }
+    
+  }
+  
+  @Test
+  public void vectorCreationRespectsDuplicatePoles() {
+    
+    InstrumentResponse ir;
+    try {
+      ir = 
+          InstrumentResponse.loadEmbeddedResponse("STS-5A_Q330HR_BH_40");
+      
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      fail();
+      e.printStackTrace();
+      return;
+    }
+    
+    List<Complex> initPoles = new ArrayList<Complex>( ir.getPoles() );
+    RealVector rv = ir.polesToVector(false, 100.);
+    Complex c = new Complex(-20, 0);
+    // poles at indices 2 and 3 are duplicated, have zero imaginary component
+    // set them to a new value to test array resetting with diff. values
+    initPoles.set(2, c);
+    initPoles.set(3, c);
+    // build new vector, is it the same?
+    List<Complex> endPoles = 
+        ir.buildResponseFromFitVector( rv.toArray(), false, 0, 100.).getPoles();
+    
+    assertTrue( initPoles.size() == endPoles.size() );
     
   }
   
