@@ -113,9 +113,16 @@ extends Experiment implements ParameterValidator {
     DataBlock calib = ds.getXthLoadedBlock(1);
     sensorOutIdx = ds.getXthFullyLoadedIndex(1);
     
+    // if first data has response loaded erroneously, load in next data set
+    if (sensorOutIdx == 0) {
+      sensorOutIdx = ds.getXthFullyLoadedIndex(2);
+    }
+    
+    /*
     if ( ds.getBlock(sensorOutIdx).getName().equals( calib.getName() ) ) {
       sensorOutIdx = ds.getXthFullyLoadedIndex(2);
     }
+    */
 
     DataBlock sensorOut = ds.getBlock(sensorOutIdx);
     fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIdx) );
