@@ -452,7 +452,7 @@ public class FFTResult {
     }
     
     FastFourierTransformer fft = 
-        new FastFourierTransformer(DftNormalization.UNITARY);
+        new FastFourierTransformer(DftNormalization.STANDARD);
     
     Complex[] frqDomn = fft.transform(toFFT, TransformType.FORWARD);
     
@@ -521,7 +521,7 @@ public class FFTResult {
    */
   public static double[] singleSidedInverseFFT(Complex[] freqDomn, int trim) {
     FastFourierTransformer fft = 
-        new FastFourierTransformer(DftNormalization.UNITARY);
+        new FastFourierTransformer(DftNormalization.STANDARD);
      
     int padding = (freqDomn.length - 1) * 2;
     
@@ -654,7 +654,6 @@ public class FFTResult {
       
       FastFourierTransformer fft = 
           new FastFourierTransformer(DftNormalization.STANDARD);
-
 
       Complex[] frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
       // use arraycopy now (as it's fast) to get the first half of the fft

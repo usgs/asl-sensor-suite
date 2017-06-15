@@ -199,7 +199,6 @@ public class RandomizedPanel extends ExperimentPanel {
           sbInit.append(";   ");
           sbFit.append(";   ");
         } else {
-          System.out.println(numInLine);
           sbInit.append("\n");
           sbFit.append("\n");
           numInLine = 0;
