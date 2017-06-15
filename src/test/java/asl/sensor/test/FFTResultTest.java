@@ -3,18 +3,33 @@ package asl.sensor.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.LogarithmicAxis;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
+import asl.sensor.input.DataBlock;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 
 public class FFTResultTest {
 
@@ -148,6 +163,71 @@ public class FFTResultTest {
       result[i] = Math.round( inverseFrqDomn[i].getReal() );
       
       assertEquals(timeSeries[i], result[i], 10.);
+    }
+    
+  }
+  
+  @Test
+  public void spectrumTest() {
+    
+    long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
+    long timeStart = 0L;
+    String name1 = "XX_FAKE_LH1_00";
+    String name2 = "XX_FAKE_LH2_00";
+    List<Number> timeSeries = new ArrayList<Number>();
+    List<Number> secondSeries = new ArrayList<Number>();
+    
+    for (int i = 0; i < 10000; ++i) {
+      timeSeries.add( Math.sin(i) );
+      secondSeries.add( Math.sin(i) + Math.sin(2 * i) );
+    }
+    
+    DataBlock db = new DataBlock(timeSeries, interval, name1, timeStart);
+    DataBlock db2 = new DataBlock(secondSeries, interval, name2, timeStart);
+    FFTResult fft = FFTResult.spectralCalc(db, db2);
+    
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    String name = name1+"_"+name2;
+    XYSeries xysr = new XYSeries(name + " spectrum (Real part)");
+    XYSeries xysi = new XYSeries(name + " spectrum (Imag part)");
+    for (int i = 0; i < fft.size(); ++i) {
+      
+      double freq = fft.getFreq(i);
+      if ( freq <= 0. ) {
+        continue;
+      }
+      
+      xysr.add( freq, fft.getFFT(i).getReal() );
+      xysi.add( freq, fft.getFFT(i).getImaginary() );
+    }
+    // xysc.addSeries(xysr);
+    xysc.addSeries(xysi);
+    
+    JFreeChart jfc = ChartFactory.createXYLineChart(
+        "SPECTRUM TEST CHART",
+        "frequency",
+        "value of spectrum",
+        xysc);
+    
+    ValueAxis x = new LogarithmicAxis("frequency");
+    jfc.getXYPlot().setDomainAxis(x);
+    
+    BufferedImage bi = ReportingUtils.chartsToImage(640, 480, jfc);
+    String currentDir = System.getProperty("user.dir");
+    String testResultFolder = currentDir + "/testResultImages/";
+    File dir = new File(testResultFolder);
+    if ( !dir.exists() ) {
+      dir.mkdir();
+    }
+    
+    String testResult = 
+        testResultFolder + "spectrum.png";
+    File file = new File(testResult);
+    try {
+      ImageIO.write(bi, "png", file);
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
     }
     
   }

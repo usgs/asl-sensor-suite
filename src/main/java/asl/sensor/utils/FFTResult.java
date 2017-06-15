@@ -631,8 +631,8 @@ public class FFTResult {
       double[] toFFT2 = null;
       
       // demean and detrend work in-place on the list
-      demeanInPlace(data1Range);
       detrend(data1Range);
+      demeanInPlace(data1Range);
       wss = cosineTaper(data1Range, TAPER_WIDTH);
       // presumably we only need the last value of wss
       
@@ -754,11 +754,29 @@ public class FFTResult {
   }
 
   /**
+   * Get the size of the complex array of FFT values, also the size of the
+   * double array of frequencies for the FFT at each index
+   * @return int representing size of thi's object's arrays
+   */
+  public int size() {
+    return transform.length;
+  }
+  
+  /**
    * Get the FFT for some sort of previously calculated data
    * @return Array of FFT results, as complex numbers
    */
   public Complex[] getFFT() {
     return transform;
+  }
+  
+  /**
+   * Return the value of the FFT at the given index
+   * @param idx Index to get the FFT value at
+   * @return FFT value at index
+   */
+  public Complex getFFT(int idx) {
+    return transform[idx];
   }
   
   /**
@@ -769,5 +787,13 @@ public class FFTResult {
     return freqs;
   }
   
+  /**
+   * Get the frequency value at the given index
+   * @param idx Index to get the frequency value at
+   * @return Frequency value at index
+   */
+  public double getFreq(int idx) {
+    return freqs[idx];
+  }
   
 }
