@@ -117,10 +117,9 @@ public class StepExperiment extends Experiment{
     // but we want the response and the data of the cal result
     sensorOutIdx = ds.getXthFullyLoadedIndex(1);
     
-    // if someone did load a raw cal with the response, then we wouldn't
-    // get a different block with the second call above, so we get the 
-    // next loaded block/response pair
-    if ( ds.getBlock(sensorOutIdx).getName().equals( stepCalRaw.getName() ) ) {
+    // if first data has response loaded erroneously, load in next data set
+    // (otherwise first data is first fully loaded index)
+    if ( sensorOutIdx == 0 ) {
       sensorOutIdx = ds.getXthFullyLoadedIndex(2);
     }
 
