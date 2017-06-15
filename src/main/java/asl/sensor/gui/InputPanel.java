@@ -690,7 +690,10 @@ implements ActionListener, ChangeListener {
   public String[] getResponseStrings(int[] indices) {
     String[] outStrings = new String[indices.length];
     for (int i = 0; i < indices.length; ++i) {
-      outStrings[i] = zooms.getResponse(indices[i]).toString();
+      if ( !ds.responseIsSet(i) ) {
+        System.out.println("ERROR WITH RESP AT INDEX " + i);
+      }
+      outStrings[i] = ds.getResponse(indices[i]).toString();
     }
     return outStrings;
   }
