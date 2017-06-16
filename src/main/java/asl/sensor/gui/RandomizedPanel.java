@@ -12,8 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.TimeZone;
 
+import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JPanel;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
@@ -262,7 +264,7 @@ public class RandomizedPanel extends ExperimentPanel {
   
   private JComboBox<String> plotSelection;
 
-  private JCheckBox lowFreqBox;
+  private JCheckBox lowFreqBox, showParams;
 
   private JFreeChart magChart, argChart, residChart;
   
@@ -296,6 +298,10 @@ public class RandomizedPanel extends ExperimentPanel {
     lowFreqBox = new JCheckBox("Low frequency calibration");
     lowFreqBox.setSelected(true);
     
+    showParams = new JCheckBox("Show params");
+    showParams.setEnabled(false);
+    showParams.addActionListener(this);
+    
     applyAxesToChart(); // now that we've got axes defined
     
     magChart = buildChart(null, xAxis, yAxis);
@@ -319,7 +325,11 @@ public class RandomizedPanel extends ExperimentPanel {
     gbc.anchor = GridBagConstraints.WEST;
     gbc.fill = GridBagConstraints.NONE;
     gbc.gridy += 1; gbc.gridx = 0;
-    this.add(lowFreqBox, gbc);
+    JPanel checkBoxPanel = new JPanel();
+    checkBoxPanel.setLayout( new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS) );
+    checkBoxPanel.add(lowFreqBox);
+    checkBoxPanel.add(showParams);
+    this.add(checkBoxPanel, gbc);
     
     gbc.gridx += 1;
     gbc.weightx = 1.0;
@@ -367,12 +377,46 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
+    if ( e.getSource() == showParams ) {
+      XYPlot xyp = magChart.getXYPlot();
+      xyp.clearAnnotations();
+      
+      if ( showParams.isSelected() ) {    
+        String inset = getInsetStrings();
+        TextTitle result = new TextTitle();
+        result.setText(inset);
+        result.setBackgroundPaint(Color.white);
+        double x;
+        double y = 0.02;
+        RectangleAnchor ra;
+        // move text box left or right depending on which frequencies aren't
+        // being fitted
+        if ( lowFreqBox.isSelected() ) {
+          x = 1;
+          ra = RectangleAnchor.BOTTOM_RIGHT;
+        } else {
+          x = 0;
+          ra = RectangleAnchor.BOTTOM_LEFT;
+        }
+
+        XYTitleAnnotation xyt = 
+            new XYTitleAnnotation(x, y, result, ra);
+
+        xyp.addAnnotation(xyt);
+      }
+      
+      return;
+    }
+    
   }
   
   @Override
   protected void drawCharts() {
+    
     // just force the active plot at the start to be the amplitude plot
     plotSelection.setSelectedIndex(0);
+    showParams.setSelected(true);
+    showParams.setEnabled(true);
     chart = magChart;
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
@@ -497,7 +541,8 @@ public class RandomizedPanel extends ExperimentPanel {
   protected void updateData(DataStore ds) {
     
     set = true;
-
+    showParams.setEnabled(false);
+    
     final boolean isLowFreq = lowFreqBox.isSelected();
     seriesColorMap = new HashMap<String, Color>();
     

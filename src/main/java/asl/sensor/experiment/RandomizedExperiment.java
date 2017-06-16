@@ -307,7 +307,7 @@ extends Experiment implements ParameterValidator {
     // System.out.println(maxMagWeight);
     
     // we have the candidate mag and phase, now to turn them into weight values
-    maxMagWeight = 10. / maxMagWeight;
+    maxMagWeight = 1000. / maxMagWeight; // scale factor to weight over phase
     maxArgWeight = 1./ maxArgWeight;
     
     // weight matrix
@@ -316,7 +316,7 @@ extends Experiment implements ParameterValidator {
       int argIdx = i + estResponse.length;
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
-      weights[i] = maxMagWeight; // scale by 100 due to peak adjustment
+      weights[i] = maxMagWeight;
       weights[argIdx] = maxArgWeight;
     }
     
@@ -562,7 +562,7 @@ extends Experiment implements ParameterValidator {
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    return fitPoles;
+    return getPoleSubList(fitPoles);
   }
   
   /**
@@ -578,7 +578,7 @@ extends Experiment implements ParameterValidator {
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    return fitZeros;
+    return getZeroSubList(fitZeros);
   }
   
   /**
@@ -586,7 +586,7 @@ extends Experiment implements ParameterValidator {
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    return initialPoles;
+    return getPoleSubList(initialPoles);
   }
   
   /**
@@ -594,7 +594,7 @@ extends Experiment implements ParameterValidator {
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    return initialZeros;
+    return getZeroSubList(initialZeros);
   }
 
   /**
@@ -706,7 +706,7 @@ extends Experiment implements ParameterValidator {
       double diffX = changedVars[i] + DELTA;
       
       // real-value pole components must be less than zero
-      if (i > numZeros && diffX > 0. && (i % 2) == 0.) {
+      if (diffX > 0. && (i % 2) == 0.) {
         diffX = 0.;
       }
       changedVars[i] = diffX;
@@ -764,7 +764,7 @@ extends Experiment implements ParameterValidator {
    * @return Vector of parameters but with components all negative
    */
   public RealVector validate(RealVector poleParams) {
-    for (int i = numZeros; i < poleParams.getDimension(); ++i) {
+    for (int i = 0; i < poleParams.getDimension(); ++i) {
       double value = poleParams.getEntry(i);
       if (value > 0 && (i % 2) == 0) {
         // even index means this is a real-value vector entry
