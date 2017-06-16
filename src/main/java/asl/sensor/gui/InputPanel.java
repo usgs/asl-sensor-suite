@@ -690,10 +690,11 @@ implements ActionListener, ChangeListener {
   public String[] getResponseStrings(int[] indices) {
     String[] outStrings = new String[indices.length];
     for (int i = 0; i < indices.length; ++i) {
-      if ( !ds.responseIsSet(i) ) {
-        System.out.println("ERROR WITH RESP AT INDEX " + i);
+      int idx = indices[i];
+      if ( !ds.responseIsSet(idx) ) {
+        System.out.println("ERROR WITH RESP AT INDEX " + idx);
       }
-      outStrings[i] = ds.getResponse(indices[i]).toString();
+      outStrings[i] = ds.getResponse(idx).toString();
     }
     return outStrings;
   }

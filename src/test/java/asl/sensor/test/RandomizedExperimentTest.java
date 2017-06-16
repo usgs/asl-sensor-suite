@@ -397,7 +397,7 @@ public class RandomizedExperimentTest {
   }
 
   
-  // @Test ignore this one, almost certainly a bad cal
+  @Test
   public void testCalculationResult1() {
     
     String currentDir = System.getProperty("user.dir");
