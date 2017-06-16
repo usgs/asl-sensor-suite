@@ -307,7 +307,7 @@ extends Experiment implements ParameterValidator {
     // System.out.println(maxMagWeight);
     
     // we have the candidate mag and phase, now to turn them into weight values
-    maxMagWeight = 10. / maxMagWeight;
+    maxMagWeight = 1000. / maxMagWeight;
     maxArgWeight = 1./ maxArgWeight;
     
     // weight matrix
