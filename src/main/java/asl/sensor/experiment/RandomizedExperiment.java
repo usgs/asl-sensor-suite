@@ -85,11 +85,13 @@ extends Experiment implements ParameterValidator {
   private int normalIdx; // location of value to set to 0 in curves for scaling
   private int numZeros; // how many entries in parameter vector define zeros
   private int sensorOutIdx; // location to load response from?
+  private int numIterations; // how much the solver ran
   
   public RandomizedExperiment() {
     super();
     lowFreq = false;
     normalIdx = 0;
+    numIterations = 0;
   }
   
   /**
@@ -316,8 +318,12 @@ extends Experiment implements ParameterValidator {
       int argIdx = i + estResponse.length;
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
-      weights[i] = maxMagWeight;
-      weights[argIdx] = maxArgWeight;
+      double denom = 1.;
+      if (freqs[i] > 1) {
+        denom = freqs[i];
+      }
+      weights[i] = maxMagWeight / denom;
+      weights[argIdx] = maxArgWeight / denom;
     }
     
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
@@ -346,11 +352,16 @@ extends Experiment implements ParameterValidator {
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       
+      int numIterations = 0;
+      
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
+        ++numIterations;
+        fireStateChange("Fitting, iteration count " + numIterations);
         Pair<RealVector, RealMatrix> pair = 
             jacobian(point);
         return pair;
       }
+      
     };
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
@@ -401,10 +412,13 @@ extends Experiment implements ParameterValidator {
     if (!dontSolve) {
       LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
       finalResultVector = optimum.getPoint();
+      numIterations = optimum.getIterations();
     } else {
       finalResultVector = initialGuess;
     }
 
+    
+    
     LeastSquaresProblem.Evaluation optimum = lsp.evaluate(finalResultVector);
     fitResidual = optimum.getCost();
     double[] fitParams = optimum.getPoint().toArray();
@@ -603,6 +617,15 @@ extends Experiment implements ParameterValidator {
    */
   public double getInitResidual() {
     return initialResidual;
+  }
+  
+  /**
+   * Get the number of times the algorithm iterated to produce the optimum
+   * response fit, from the underlying least squares solver
+   * @return the number of iterations
+   */
+  public int getIterations() {
+    return numIterations;
   }
 
   /**

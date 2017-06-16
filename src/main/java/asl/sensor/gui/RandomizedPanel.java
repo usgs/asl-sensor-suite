@@ -462,6 +462,12 @@ public class RandomizedPanel extends ExperimentPanel {
   public String getMetadataString() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     StringBuilder sb = new StringBuilder();
+    
+    int iters = rnd.getIterations();
+    sb.append("Iteration count from solver: ");
+    sb.append(iters);
+    sb.append("\n");
+    
     sb.append( super.getMetadataString() );
     
     double[] weights = rnd.getWeights();
