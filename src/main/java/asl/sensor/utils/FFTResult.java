@@ -189,17 +189,16 @@ public class FFTResult {
     Complex[] out = new Complex[freqs.length];
     Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
     Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
-    freqs = selfPSD.getFreqs();
     
     for (int j = 0; j < freqs.length; ++j) {
       Complex respMagnitude = 
           freqRespd1[j].multiply( freqRespd2[j].conjugate() );
+      
       if (respMagnitude.abs() == 0) {
         respMagnitude = new Complex(Double.MIN_VALUE, 0);
       }
       
       out[j] = results[j].divide(respMagnitude);
-      
     }
     
     return new FFTResult(out, freqs);
@@ -217,11 +216,9 @@ public class FFTResult {
     demeanInPlace(dataToProcess);
     
     double[] out = new double[dataSet.length];
-    
     for (int i = 0; i < out.length; ++i) {
       out[i] = dataToProcess.get(i).doubleValue();
     }
-    
     return out;
     
   }
