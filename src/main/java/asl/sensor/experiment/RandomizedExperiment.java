@@ -562,7 +562,7 @@ extends Experiment implements ParameterValidator {
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    return fitPoles;
+    return getPoleSubList(fitPoles);
   }
   
   /**
@@ -578,7 +578,7 @@ extends Experiment implements ParameterValidator {
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    return fitZeros;
+    return getZeroSubList(fitZeros);
   }
   
   /**
@@ -586,7 +586,7 @@ extends Experiment implements ParameterValidator {
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    return initialPoles;
+    return getPoleSubList(initialPoles);
   }
   
   /**
@@ -594,7 +594,7 @@ extends Experiment implements ParameterValidator {
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    return initialZeros;
+    return getZeroSubList(initialZeros);
   }
 
   /**

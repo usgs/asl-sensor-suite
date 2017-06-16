@@ -234,14 +234,8 @@ public class ResponsePanel extends ExperimentPanel {
   
   protected void drawCharts() {
 
-    int idx = plotSelection.getSelectedIndex();
-    
-    if (idx == 0) {
-      chart = magChart;
-    } else {
-      chart = argChart;
-    }
-    
+    plotSelection.setSelectedIndex(0);
+    chart = magChart;
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
     
@@ -353,13 +347,10 @@ public class ResponsePanel extends ExperimentPanel {
         seriesColorMap.put(argName, toColor);
     }
     
-    argChart = buildChart(argSeries);
-    argChart.getXYPlot().setRangeAxis(degreeAxis);
-    // argChart.getXYPlot().setDomainAxis( getXAxis() );
-    
-    magChart = buildChart(magSeries);
-    magChart.getXYPlot().setRangeAxis(yAxis);
-    // argChart.getXYPlot().setDomainAxis( getXAxis() );
+    argChart = buildChart(argSeries, xAxis, degreeAxis);
+    argChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    magChart = buildChart(magSeries, xAxis, yAxis);
+    magChart.getXYPlot().getRangeAxis().setAutoRange(true);
   }
 
 }
