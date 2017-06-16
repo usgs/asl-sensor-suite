@@ -307,7 +307,7 @@ extends Experiment implements ParameterValidator {
     // System.out.println(maxMagWeight);
     
     // we have the candidate mag and phase, now to turn them into weight values
-    maxMagWeight = 1000. / maxMagWeight;
+    maxMagWeight = 1000. / maxMagWeight; // scale factor to weight over phase
     maxArgWeight = 1./ maxArgWeight;
     
     // weight matrix
@@ -316,7 +316,7 @@ extends Experiment implements ParameterValidator {
       int argIdx = i + estResponse.length;
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
-      weights[i] = maxMagWeight; // scale by 100 due to peak adjustment
+      weights[i] = maxMagWeight;
       weights[argIdx] = maxArgWeight;
     }
     
@@ -706,7 +706,7 @@ extends Experiment implements ParameterValidator {
       double diffX = changedVars[i] + DELTA;
       
       // real-value pole components must be less than zero
-      if (i > numZeros && diffX > 0. && (i % 2) == 0.) {
+      if (diffX > 0. && (i % 2) == 0.) {
         diffX = 0.;
       }
       changedVars[i] = diffX;
@@ -764,7 +764,7 @@ extends Experiment implements ParameterValidator {
    * @return Vector of parameters but with components all negative
    */
   public RealVector validate(RealVector poleParams) {
-    for (int i = numZeros; i < poleParams.getDimension(); ++i) {
+    for (int i = 0; i < poleParams.getDimension(); ++i) {
       double value = poleParams.getEntry(i);
       if (value > 0 && (i % 2) == 0) {
         // even index means this is a real-value vector entry

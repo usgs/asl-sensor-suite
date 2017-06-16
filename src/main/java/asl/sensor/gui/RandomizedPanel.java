@@ -541,7 +541,8 @@ public class RandomizedPanel extends ExperimentPanel {
   protected void updateData(DataStore ds) {
     
     set = true;
-
+    showParams.setEnabled(false);
+    
     final boolean isLowFreq = lowFreqBox.isSelected();
     seriesColorMap = new HashMap<String, Color>();
     
