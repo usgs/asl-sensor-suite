@@ -106,7 +106,9 @@ public class RandomizedPanel extends ExperimentPanel {
     
     sb.append(initText);
     
-    if ( !rnd.SKIP_SOLVING ) {
+    boolean solverRun = rnd.getSolverState();
+    
+    if (solverRun) {
       sb.append(fitText);
     }
         
@@ -146,7 +148,7 @@ public class RandomizedPanel extends ExperimentPanel {
     
     // add the values of the zeros to the metadata page
     sb.append(initText);
-    if ( !rnd.SKIP_SOLVING ) {
+    if (solverRun) {
       sb.append(fitText);
     }
     
@@ -172,6 +174,8 @@ public class RandomizedPanel extends ExperimentPanel {
     if (fitP == null) {
       return "";
     }
+    
+    boolean solverRun = rnd.getSolverState();
     
     double initResid = rnd.getInitResidual();
     double fitResid = rnd.getFitResidual();
@@ -253,11 +257,11 @@ public class RandomizedPanel extends ExperimentPanel {
     sbFitZ.append("\n");
     
     StringBuilder sb = new StringBuilder(sbInit);
-    if ( !rnd.SKIP_SOLVING ) {
+    if (solverRun) {
       sb.append(sbFit);
     }
     sb.append(sbInitZ);
-    if ( !rnd.SKIP_SOLVING ) {
+    if (solverRun) {
       sb.append(sbFitZ);
     }
     sb.append('\n');
@@ -266,7 +270,7 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append("Initial (nom. resp curve): ");
     sb.append(initResid);
     sb.append('\n');
-    if ( !rnd.SKIP_SOLVING ) {
+    if (solverRun) {
       sb.append("Best fit: ");
       sb.append(fitResid);
     }
