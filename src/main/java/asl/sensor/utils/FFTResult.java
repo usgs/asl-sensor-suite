@@ -464,7 +464,8 @@ public class FFTResult {
    * @return Complex array of FFT values and double array of corresponding 
    * frequencies 
    */
-  public static FFTResult singleSidedFFT(DataBlock db, boolean mustFlip) {
+  public static FFTResult 
+  singleSidedFilteredFFT(DataBlock db, boolean mustFlip) {
     
     double[] data = new double[db.size()];
     
@@ -481,6 +482,51 @@ public class FFTResult {
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
     
     data = bandFilter(data, sps, 0.0, 0.1);
+    
+    data = demean(data);
+    
+    // data = TimeSeriesUtils.normalize(data);
+    
+    Complex[] frqDomn = simpleFFT(data);
+    
+    int padding = frqDomn.length;
+    int singleSide = padding/2 + 1;
+    
+    double period = 1. / TimeSeriesUtils.ONE_HZ_INTERVAL;
+    period *= db.getInterval();
+    double deltaFrq = 1. / (period * padding);
+    
+    Complex[] fftOut = new Complex[singleSide];
+    double[] frequencies = new double[singleSide];
+    
+    for (int i = 0; i < singleSide; ++i) {
+      fftOut[i] = frqDomn[i];
+      frequencies[i] = i * deltaFrq;
+    }
+    
+    return new FFTResult(fftOut, frequencies);
+    
+  }
+  
+  /**
+   * Calculates the FFT of the timeseries data in a DataBlock
+   * and returns the positive frequencies resulting from the FFT calculation
+   * @param db DataBlock to get the timeseries data from
+   * @param mustFlip True if signal from sensor is inverted (for step cal)
+   * @return Complex array of FFT values and double array of corresponding 
+   * frequencies 
+   */
+  public static FFTResult singleSidedFFT(DataBlock db, boolean mustFlip) {
+    
+    double[] data = new double[db.size()];
+    
+    for (int i = 0; i < db.size(); ++i) {
+      data[i] = db.getData().get(i).doubleValue();
+      
+      if (mustFlip) {
+        data[i] *= -1;
+      }
+    }
     
     data = demean(data);
     

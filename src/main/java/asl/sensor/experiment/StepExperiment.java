@@ -145,7 +145,9 @@ public class StepExperiment extends Experiment{
     
     // get FFT of datablock timeseries, deconvolve with response
     // single sided FFT includes lowpass filter, demean, and normalization
-    FFTResult sensorsFFT = FFTResult.singleSidedFFT(sensorOutput, needsFlip);
+
+    FFTResult sensorsFFT = 
+        FFTResult.singleSidedFilteredFFT(sensorOutput, needsFlip);
     // these values used in calculating the response deconvolution
     sensorFFTSeries = sensorsFFT.getFFT();
     freqs = sensorsFFT.getFreqs();

@@ -105,29 +105,91 @@ public class PhaseTest {
     DataBlock cal = ds.getBlock(0);
     DataBlock out = ds.getBlock(1);
     
-    FFTResult calFFT = FFTResult.singleSidedFFT(cal, false);
-    FFTResult outFFT = FFTResult.singleSidedFFT(out, false);
+    double[] calArr = new double[cal.size()];
+    double[] outArr = new double[cal.size()];
     
-    Complex[] result = new Complex[outFFT.size()];
-    double[] freqs = calFFT.getFreqs();
+    StringBuilder sbCalData = new StringBuilder();
+    StringBuilder sbOutData = new StringBuilder();
     
-    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < calArr.length; ++i) {
+      calArr[i] = cal.getData().get(i).doubleValue();
+      outArr[i] = out.getData().get(i).doubleValue();
+      sbCalData.append(calArr[i]);
+      sbOutData.append(outArr[i]);
+      if ( i < (calArr.length - 1) ) {
+        sbCalData.append("\n");
+        sbOutData.append("\n");
+      }
+    }
     
-    for (int i = 0; i < result.length; ++i) {
-      Complex numer = outFFT.getFFT(i);
-      Complex denom = calFFT.getFFT(i);
-      Complex conj = calFFT.getFFT(i).conjugate();
+    //double[] fq = FFTResult.singleSidedFFT(cal, false).getFreqs();
+    //System.out.println( fq[fq.length - 1] );
+    
+    Complex[] calFFTCpx = FFTResult.simpleFFT(calArr);
+    Complex[] outFFTCpx = FFTResult.simpleFFT(outArr);
+    
+    double[] freqs = new double[calFFTCpx.length];
+    int numIdx = freqs.length / 2 + 1;
+    double deltaFrq = cal.getSampleRate() / (numIdx * 2);
+    for (int i = 1; i <= freqs.length / 2; ++i) {
+      freqs[i] = i * deltaFrq;
+      freqs[freqs.length - i] = - i * deltaFrq;
+    }
+    freqs[0] = 0;
+    freqs[numIdx] = cal.getSampleRate() / 2;
+    
+    
+    StringBuilder sbNumer = new StringBuilder();
+    StringBuilder sbDenom = new StringBuilder();
+    
+    StringBuilder sbCalFFT = new StringBuilder();
+    StringBuilder sbOutFFT = new StringBuilder();
+    
+    for (int i = 0; i < calFFTCpx.length; ++i) {
+      Complex numer = outFFTCpx[i];
+      Complex denom = calFFTCpx[i];
+      Complex conj = calFFTCpx[i].conjugate();
       numer = numer.multiply(conj);
       denom = denom.multiply(conj);
       
       Complex entry = numer.divide(denom);
-      result[i] = entry;
-      sb.append(entry.getReal());
-      sb.append(", ");
-      sb.append(entry.getImaginary());
-      sb.append(", ");
-      sb.append(freqs[i]);
-      sb.append("\n");
+      
+      // reset numerator in order to output it, without mult by conj
+      // numer = outFFT.getFFT(i);
+      // denom = calFFT.getFFT(i);
+      
+      sbCalFFT.append(calFFTCpx[i].getReal());
+      sbCalFFT.append(", ");
+      sbCalFFT.append(calFFTCpx[i].getImaginary());
+      sbCalFFT.append(", ");
+      sbCalFFT.append(freqs[i]);
+      
+      sbOutFFT.append(outFFTCpx[i].getReal());
+      sbOutFFT.append(", ");
+      sbOutFFT.append(outFFTCpx[i].getImaginary());
+      sbOutFFT.append(", ");
+      sbOutFFT.append(freqs[i]);
+      
+      sbNumer.append(numer.getReal());
+      sbNumer.append(", ");
+      sbNumer.append(numer.getImaginary());
+      sbNumer.append(", ");
+      sbNumer.append(freqs[i]);
+      
+      sbDenom.append(denom.getReal());
+      sbDenom.append(", ");
+      sbDenom.append(denom.getImaginary());
+      sbDenom.append(", ");
+      sbDenom.append(freqs[i]);
+      
+      if ( i < (calFFTCpx.length - 1) ) {
+        // don't append final newline on last entry
+        sbOutFFT.append("\n");
+        sbCalFFT.append("\n");
+        sbNumer.append("\n");
+        sbDenom.append("\n");
+      }
+
     }
     
     String folderName = "testResultImages";
@@ -137,11 +199,32 @@ public class PhaseTest {
       folder.mkdirs();
     }
 
-    String textName = folderName + "/outputData.txt";
+    String textNameNumer = folderName + "/outputData_Numer.txt";
+    String textNameDenom = folderName + "/outputData_Denom.txt";
+    String textNameCalIn = folderName + "/outputData_CalSignal.txt";
+    String textNameOutIn = folderName + "/outputData_OutSignal.txt";
+    String textNameCalFFT = folderName + "/outputData_CalFFT.txt";
+    String textNameOutFFT = folderName + "/outputData_OutFFT.txt";
+    
     PrintWriter write;
     try {
-      write = new PrintWriter(textName);
-      write.println( sb.toString() );
+      write = new PrintWriter(textNameNumer);
+      write.println( sbNumer.toString() );
+      write.close();
+      write = new PrintWriter(textNameDenom);
+      write.println( sbDenom.toString() );
+      write.close();
+      write = new PrintWriter(textNameCalIn);
+      write.println( sbCalData.toString() );
+      write.close();
+      write = new PrintWriter(textNameOutIn);
+      write.println( sbOutData.toString() );
+      write.close();
+      write = new PrintWriter(textNameCalFFT);
+      write.println( sbCalFFT.toString() );
+      write.close();
+      write = new PrintWriter(textNameOutFFT);
+      write.println( sbOutFFT.toString() );
       write.close();
     } catch (FileNotFoundException e) {
       fail();
