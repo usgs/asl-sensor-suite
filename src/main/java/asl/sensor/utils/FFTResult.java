@@ -460,14 +460,13 @@ public class FFTResult {
    * Calculates the FFT of the timeseries data in a DataBlock
    * and returns the positive frequencies resulting from the FFT calculation
    * @param db DataBlock to get the timeseries data from
+   * @param mustFlip True if signal from sensor is inverted (for step cal)
    * @return Complex array of FFT values and double array of corresponding 
    * frequencies 
    */
-  public static FFTResult singleSidedFFT(DataBlock db) {
+  public static FFTResult singleSidedFFT(DataBlock db, boolean mustFlip) {
     
     double[] data = new double[db.size()];
-    
-    boolean mustFlip = db.needsSignFlip();
     
     for (int i = 0; i < db.size(); ++i) {
       data[i] = db.getData().get(i).doubleValue();
