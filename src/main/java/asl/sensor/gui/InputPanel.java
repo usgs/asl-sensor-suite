@@ -662,11 +662,11 @@ implements ActionListener, ChangeListener {
     
     // showRegionForGeneration();
     if ( zooms.numberOfBlocksSet() > 1 ) {
-      zooms.matchIntervals(activePlots);
+      // zooms.matchIntervals(activePlots); done at experiment level
       zooms.trimToCommonTime(activePlots);
     }
 
-    return zooms;
+    return new DataStore(zooms);
   }
   
   /**

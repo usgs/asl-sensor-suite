@@ -280,7 +280,8 @@ public class TimeSeriesUtils {
     long interval = 0L;
     DataInputStream dis;
     Map<Long, Number> timeMap = new HashMap<Long, Number>();
-
+    Set<Integer> dataTypes = new HashSet<Integer>();
+    
     int byteSize = 512;
     try {
       byteSize = getByteSize(filename);
@@ -341,6 +342,7 @@ public class TimeSeriesUtils {
             // otherwise the decompressed data gets converted (cloned) as
             // the other type instead
             int dataType = decomp.getType();
+            dataTypes.add(dataType);
             long timeOfData = start;
 
             switch (dataType) {
@@ -397,6 +399,8 @@ public class TimeSeriesUtils {
       // Auto-generated catch block
       e.printStackTrace();
     }
+    
+    System.out.println(dataTypes);
 
     return new Pair<Long, Map<Long, Number>>(interval, timeMap);
   }

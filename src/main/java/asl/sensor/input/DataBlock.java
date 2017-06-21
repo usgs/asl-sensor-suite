@@ -191,6 +191,11 @@ public class DataBlock {
    * @param newInterval The new interval (time between samples in microseconds)
    */
   public void resample(long newInterval) {
+    
+    if (interval == newInterval) {
+      return;
+    }
+    
     data = TimeSeriesUtils.decimate(data, interval, newInterval);
     interval = newInterval;
   }
