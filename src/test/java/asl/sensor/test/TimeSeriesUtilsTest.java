@@ -10,13 +10,18 @@ import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
 
 import asl.sensor.input.DataBlock;
@@ -79,11 +84,15 @@ public class TimeSeriesUtilsTest {
       timeSeries.add(i);
     }
     
+    // System.out.println(timeSeries);
+    
     timeSeries = TimeSeriesUtils.decimate(timeSeries, interval40Hz, interval);
+    
+    // System.out.println(timeSeries);
     
     assertEquals(timeSeries.size(), 4);
     for (int i = 0; i < timeSeries.size(); ++i) {
-      assertEquals(timeSeries.get(i).doubleValue(), 40*i, 0.5);
+      assertEquals(timeSeries.get(i).doubleValue(), 40. * i, 0.5);
     }
   }
   
@@ -294,5 +303,57 @@ public class TimeSeriesUtilsTest {
     }
   }
   
+  @Test
+  public void testInputParsing() {
+    String dataFolderName = "data/random_cal_4/"; 
+    String extension = "CB_BC0.512.seed";;
+    doInputParseTest(dataFolderName, extension);
+    extension = "00_EHZ.512.seed";
+    doInputParseTest(dataFolderName, extension);
+  }
+  
+
+  public void doInputParseTest(String dataFolderName, String extension) {
+
+    String fileName =  dataFolderName + extension;
+    String metaName;
+    try {
+      metaName = TimeSeriesUtils.getMplexNameList(fileName).get(0);
+      Pair<Long, Map<Long, Number>> data = 
+          TimeSeriesUtils.getTimeSeriesMap(fileName, metaName);
+      Map<Long, Number> map = data.getSecond();
+      
+      List<Long> times = new ArrayList<Long>( map.keySet() );
+      Collections.sort(times);
+      long lastTime = times.get( times.size() - 1 );
+      
+      StringBuilder sb = new StringBuilder();
+      for (Long time : times) {
+        sb.append(time);
+        sb.append(", ");
+        sb.append( map.get(time) );
+        if (time < lastTime) {
+          sb.append("\n");
+        }
+      }
+      
+      String folderName = "testResultImages";
+      File folder = new File(folderName);
+      if ( !folder.exists() ) {
+        System.out.println("Writing directory " + folderName);
+        folder.mkdirs();
+      }
+      
+      String outputFilename = folderName + "/"+extension+"_timeDataMap.txt";
+      PrintWriter write;
+      write = new PrintWriter(outputFilename);
+      write.println( sb.toString() );
+      write.close();
+      
+    } catch (FileNotFoundException e) {
+      fail();
+      e.printStackTrace();
+    }
+  }
   
 }

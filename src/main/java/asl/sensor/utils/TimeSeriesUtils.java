@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.util.Pair;
+
 import asl.sensor.input.DataBlock;
 import edu.iris.dmc.seedcodec.B1000Types;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -43,7 +45,7 @@ public class TimeSeriesUtils {
    * Sample rate of a 1 Hz sample, in Hz, as a double (that is, 1.0)
    */
   public final static double ONE_HZ = 1.0;
-  
+
   /**
    * Initial driver for the decimation utility
    * which takes a timeseries of unknown rate and
@@ -72,11 +74,11 @@ public class TimeSeriesUtils {
     // as an int
     int upf = (int)(src/gcd);
     int dnf = (int)(tgt/gcd);
-    
+
     double higherFreq = (1. / src) * upf * ONE_HZ_INTERVAL;
     double lowerFreq = (1. / tgt) * ONE_HZ_INTERVAL / 2; 
-      // nyquist rate of downsampled data
-    
+    // nyquist rate of downsampled data
+
     // one valid sample rate for data is 2.5Hz
     // with 1Hz that comes out as a ratio of 5/2, which won't
     // downsample neatly in some cases so we would first upsample,
@@ -88,7 +90,7 @@ public class TimeSeriesUtils {
     return down;
 
   }
-  
+
   /**
    * Downsamples data by a multiple of passed factor. Result is
    * data.length/factor cells in size
@@ -98,7 +100,7 @@ public class TimeSeriesUtils {
    * @return The downsampled series
    */
   public static List<Number> downsample(List<Number> data, int factor){
-    
+
     List<Number> downsamp = Arrays.asList(new Number[data.size()/factor]);
     for(int i=0; i < downsamp.size(); i++){
       downsamp.set( i, data.get(i*factor) ); 
@@ -106,7 +108,7 @@ public class TimeSeriesUtils {
 
     return downsamp;
   }
-  
+
   /**
    * Implements Euclid's algorithm for finding GCD
    * used to find common divisors to give us upsample
@@ -144,7 +146,7 @@ public class TimeSeriesUtils {
     fileID.append(dh.getChannelIdentifier());
     return fileID.toString();
   }
-  
+
   /**
    * Returns an int representing the number of bytes in a record for
    * a miniSEED file
@@ -153,19 +155,19 @@ public class TimeSeriesUtils {
    * @throws FileNotFoundException If file does not exist
    */
   public static int getByteSize(String filename) throws FileNotFoundException {
-    
+
     DataInputStream dis; // used to read in input to get b1000
     int byteSize;
     try {
       dis = new DataInputStream( new FileInputStream(filename) );
-      
+
       while (true) {
-        
+
         try {
           SeedRecord sr = SeedRecord.read(dis, 4096);
-          
+
           Blockette[] blockettes = sr.getBlockettes();
-          
+
           for (Blockette blockette : blockettes) {
             if ( blockette.getType() == 1000 ) {
               Blockette1000 b1000 = (Blockette1000) blockette;
@@ -173,19 +175,19 @@ public class TimeSeriesUtils {
               return byteSize;
             }
           } // end of loop over blockettes
-          
+
         } catch (SeedFormatException e) {
           e.printStackTrace();
         } catch (IOException e) {
           e.printStackTrace();
         } // end of try-catch blocks for parsing an individual record
-        
+
       } // end of while loop for gotByteSize
-      
+
     } catch (FileNotFoundException e) {
       throw e;
     } // end of try block for creating DataInputStream
-    
+
   }
 
   /**
@@ -200,7 +202,7 @@ public class TimeSeriesUtils {
    * @throws FileNotFoundException If given file from filename cannot be read
    */
   public static List<String> getMplexNameList(String filename)
-    throws FileNotFoundException {
+      throws FileNotFoundException {
     return new ArrayList<String>( getMplexNameSet(filename) );
   }
 
@@ -214,7 +216,7 @@ public class TimeSeriesUtils {
   public static Set<String> getMplexNameSet(String filename) 
       throws FileNotFoundException {
     Set<String> dataNames = new HashSet<String>();
-    
+
     int byteSize;
     try {
       byteSize = getByteSize(filename);
@@ -226,27 +228,27 @@ public class TimeSeriesUtils {
 
     try {
       dis = new DataInputStream( new FileInputStream(filename) );
-      
+
       while (true) {
         // read in the current record, then get the SNCL data
         try {
           SeedRecord sr = SeedRecord.read(dis, byteSize);
-          
+
           if (sr instanceof DataRecord) {
             DataRecord dr = (DataRecord)sr;
             DataHeader dh = dr.getHeader();
-            
+
             String fileID = extractName(dh);
             dataNames.add(fileID);
           }
-          
+
         } catch (EOFException e) {
           // just break out of loop, this means we reached the file end
           break;
         }
-        
+
       } // end loop until EOF exception
-      
+
     } catch (FileNotFoundException e) {
       // Auto-generated catch block
       e.printStackTrace();
@@ -257,33 +259,27 @@ public class TimeSeriesUtils {
       // Auto-generated catch block
       e.printStackTrace();
     }
-    
+
     return dataNames;
   }
-  
+
   /**
-   * Reads in the time series data from a miniSEED file and produces it as a
-   * list of Java numerics, which can be shorts, floats, doubles, or longs,
-   * reflecting the format of the data in the file which can be any of these.
-   * This is packaged into a data structure that also includes the file's
-   * metadata (station, channel, etc.) and the start time and period between
-   * samples.
-   * Some of this code is based on the miniseed to float array example given
-   * in the repository for the included seisFile miniSEED parser library;
-   * see the src/.../examples folder under
-   * https://github.com/crotwell/seisFile/ for more
-   * @param filename The full path to the file to be loaded in
-   * @return A structure containing the time series and metadata for the file
-   * @throws FileNotFoundException If file cannot be read in
+   * Extract data from records in a miniseed file and return them as a map
+   * of sampled data points at various times
+   * @param filename Name of miniseed file to read in
+   * @param filter SNCL data of relevant channel to get data from
+   * @return Paired value, first entry of which is the interval between points
+   * given as a long and second of which is a map from sample times to data 
+   * points from each given time value in the miniseed records
+   * @throws FileNotFoundException if given file from filename cannot be read
    */
-  public static DataBlock getTimeSeries(String filename, String filter)
+  public static Pair<Long, Map<Long, Number>>
+   getTimeSeriesMap(String filename, String filter) 
       throws FileNotFoundException {
-    
-    DataInputStream dis;
-    // XYSeries xys = null;
-    DataBlock db = null;
-    Map<Long, Number> timeMap = new HashMap<Long, Number>();
+
     long interval = 0L;
+    DataInputStream dis;
+    Map<Long, Number> timeMap = new HashMap<Long, Number>();
 
     int byteSize = 512;
     try {
@@ -291,7 +287,7 @@ public class TimeSeriesUtils {
     } catch (FileNotFoundException e1) {
       throw e1;
     }
-    
+
     try {
       dis = new DataInputStream(  new FileInputStream(filename) );
 
@@ -317,16 +313,12 @@ public class TimeSeriesUtils {
             // }
 
             Btime bt = dh.getStartBtime();
-            
-            //System.out.println(bt.getYear()+","+bt.getJDay());
 
             // convert Btime to microseconds first as milliseconds
             long start = bt.convertToCalendar().getTimeInMillis();
 
-
             // .1 ms = 100 microseconds
             start *= 1000;
-
             // start += correction;
 
             int fact = dh.getSampleRateFactor();
@@ -388,49 +380,6 @@ public class TimeSeriesUtils {
         }
 
       } // end infinite while loop (read until EOF)
-      
-      // now we have all the data in a convenient map timestamp -> value
-      // which we can then convert into an easy array
-      List<Long> times = new ArrayList<Long>( timeMap.keySet() );
-      Collections.sort(times);
-      
-      // get the min value in the set, the start time for the series
-      long startTime = times.get(0);
-      // when can we stop trying to read in data?
-      // long endTime = times.get( times.size() - 1 );
-      
-      // read in data from the records as long as they exist
-      // if no data exists (there's a gap in the record), set value to 0
-      // this is done to handle cases where multiplexed files have non-matching
-      // gaps and similar issues that previous code was not able to handle
-      
-      List<Number> timeList = new ArrayList<Number>();
-      // long currentTime = startTime;
-      
-      for (int i = 0; i < times.size(); ++i) {
-        long timeNow = times.get(i);
-        timeList.add( timeMap.get(timeNow) );
-        
-        if ( (i + 1) < times.size() ) {
-          long timeNext = times.get(i + 1);
-          // is there a discrepancy, and is it big enough for us to care?
-          if (timeNext - timeNow != interval) {
-            // long gap = timeNext - timeNow;
-            // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
-            // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
-            while (timeNext - timeNow > interval * 2) {
-              timeList.add(0.);
-              timeNow += interval;
-            }
-          }
-        }
-        
-      }
-            
-      // demean the input to remove DC offset before adding it to the data
-      List<Number> listOut = FFTResult.demean( timeList );
-      db = new DataBlock(listOut, interval, filter, startTime);
-      return db;
 
     } catch (FileNotFoundException e) {
       // Auto-generated catch block
@@ -449,7 +398,77 @@ public class TimeSeriesUtils {
       e.printStackTrace();
     }
 
+    return new Pair<Long, Map<Long, Number>>(interval, timeMap);
+  }
+
+  /**
+   * Reads in the time series data from a miniSEED file and produces it as a
+   * list of Java numerics, which can be shorts, floats, doubles, or longs,
+   * reflecting the format of the data in the file which can be any of these.
+   * This is packaged into a data structure that also includes the file's
+   * metadata (station, channel, etc.) and the start time and period between
+   * samples.
+   * Some of this code is based on the miniseed to float array example given
+   * in the repository for the included seisFile miniSEED parser library;
+   * see the src/.../examples folder under
+   * https://github.com/crotwell/seisFile/ for more
+   * @param filename The full path to the file to be loaded in
+   * @return A structure containing the time series and metadata for the file
+   * @throws FileNotFoundException If file cannot be read in
+   */
+  public static DataBlock getTimeSeries(String filename, String filter)
+      throws FileNotFoundException {
+
+    // XYSeries xys = null;
+    DataBlock db = null;
+    Pair<Long, Map<Long, Number>> intervalSeriesMapPair = 
+        getTimeSeriesMap(filename, filter);
+    long interval = intervalSeriesMapPair.getFirst();
+    Map<Long, Number> timeMap = intervalSeriesMapPair.getSecond();
+
+    // now we have all the data in a convenient map timestamp -> value
+    // which we can then convert into an easy array
+    List<Long> times = new ArrayList<Long>( timeMap.keySet() );
+    Collections.sort(times);
+
+    // get the min value in the set, the start time for the series
+    long startTime = times.get(0);
+    // when can we stop trying to read in data?
+    // long endTime = times.get( times.size() - 1 );
+
+    // read in data from the records as long as they exist
+    // if no data exists (there's a gap in the record), set value to 0
+    // this is done to handle cases where multiplexed files have non-matching
+    // gaps and similar issues that previous code was not able to handle
+
+    List<Number> timeList = new ArrayList<Number>();
+    // long currentTime = startTime;
+
+    for (int i = 0; i < times.size(); ++i) {
+      long timeNow = times.get(i);
+      timeList.add( timeMap.get(timeNow) );
+
+      if ( (i + 1) < times.size() ) {
+        long timeNext = times.get(i + 1);
+        // is there a discrepancy, and is it big enough for us to care?
+        if (timeNext - timeNow != interval) {
+          // long gap = timeNext - timeNow;
+          // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
+          // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
+          while (timeNext - timeNow > interval * 2) {
+            timeList.add(0.);
+            timeNow += interval;
+          }
+        }
+      }
+
+    }
+
+    // demean the input to remove DC offset before adding it to the data
+    List<Number> listOut = FFTResult.demean( timeList );
+    db = new DataBlock(listOut, interval, filter, startTime);
     return db;
+
   }
 
   /**
@@ -461,23 +480,23 @@ public class TimeSeriesUtils {
   public static List<Number> 
   lowPassFilter(List<Number> timeseries, double sps, double corner)
   {
-    
+
     double fl = 0.;
     double fh = corner;
-    
+
     return FFTResult.bandFilter(timeseries, sps, fl, fh);
-    
+
     /*
     List<Number> timeseriesOut = new ArrayList<Number>();
-    
+
     for (int i = 0; i < timeseries.size(); ++i) {
       double point = timeseriesFilter.get(i);
       // System.out.println(point);
       timeseriesOut.add(point);
     }
-    
+
     return timeseriesOut;
-    */
+     */
   }
 
   /** 
@@ -488,7 +507,7 @@ public class TimeSeriesUtils {
   public static double[] normalize(double[] data) {
     double max = Double.NEGATIVE_INFINITY;
     double min = Double.POSITIVE_INFINITY;
-    
+
     for (double point : data) {
       if (point < min) {
         min = point;
@@ -497,20 +516,20 @@ public class TimeSeriesUtils {
         max = point;
       }
     }
-    
+
     for (int i = 0; i < data.length; ++i) {
       // scale to range (0,2) then to (-1, 1)
       data[i] = ( 2 * (data[i] - min) / (max - min) ) - 1;
     }
-    
+
     return data;
-    
+
   }
 
   public static List<Number> normalize(List<Number> data) {
     double max = Double.NEGATIVE_INFINITY;
     double min = Double.POSITIVE_INFINITY;
-    
+
     for (Number point : data) {
       if (point.doubleValue() < min) {
         min = point.doubleValue();
@@ -519,15 +538,15 @@ public class TimeSeriesUtils {
         max = point.doubleValue();
       }
     }
-    
+
     for (int i = 0; i < data.size(); ++i) {
       // scale to range (0,2) then to (-1, 1)
       Double previous = data.get(i).doubleValue();
       data.set(i, 2 * ( (previous - min) / (max-min) ) - 1 );
     }
-    
+
     return data;
-    
+
   }
 
   /**
@@ -545,22 +564,22 @@ public class TimeSeriesUtils {
     List<Number> northData = north.getData();
     List<Number> eastData = east.getData();
     List<Number> rotatedData = new ArrayList<Number>();
-    
+
     // clockwise rotation matrix!! That's why things are so screwy
     double sinTheta = Math.sin(ang);
     double cosTheta = Math.cos(ang);
-    
+
     for (int i = 0; i < northData.size(); ++i) {
       rotatedData.add( 
           northData.get(i).doubleValue() * cosTheta - 
           eastData.get(i).doubleValue() * sinTheta );
     }
-    
+
     rotated.setData(rotatedData);
-    
+
     return rotated;
   }
-  
+
   /**
    * Rotates a north and east (known orthognal) set of data and produces a new
    * DataBlock along the east axis in the rotated coordinate system from
@@ -576,21 +595,21 @@ public class TimeSeriesUtils {
     List<Number> northData = north.getData();
     List<Number> eastData = east.getData();
     List<Number> rotatedData = new ArrayList<Number>();
-    
+
     double sinTheta = Math.sin(ang);
     double cosTheta = Math.cos(ang);
-    
+
     for (int i = 0; i < northData.size(); ++i) {
       rotatedData.add( 
           eastData.get(i).doubleValue() * cosTheta + 
           northData.get(i).doubleValue() * sinTheta );
     }
-    
+
     rotated.setData(rotatedData);
-    
+
     return rotated;
   }
-  
+
   /**
    * Upsamples data by a multiple of passed factor, placing zeros
    * between each data point. Result is data.length*factor cells in size.
@@ -606,13 +625,13 @@ public class TimeSeriesUtils {
     for(int i = 0; i < data.size() * factor; ++i) {
       upsamp.add( new Double(0.) );
     }
-    
+
     for(int i = 0; i < data.size(); ++i){
       upsamp.set( i*factor, data.get(i) ); // index, element
     }
 
     return upsamp;
   }
-  
+
 }
 

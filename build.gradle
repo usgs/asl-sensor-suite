@@ -30,7 +30,7 @@ dependencies {
 	compile group: 'edu.sc.seis', name: 'seedCodec', version: '1.0.11'
 
 	// https://mvnrepository.com/artifact/org.apache.commons/commons-math3
-	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.+'
 
 	// https://mvnrepository.com/artifact/commons-logging/commons-logging
 	compile group: 'commons-logging', name: 'commons-logging', version: '1.2'

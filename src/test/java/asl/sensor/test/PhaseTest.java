@@ -88,14 +88,114 @@ public class PhaseTest {
 
     return ds;
   }
+  
+  public DataStore setUpTest3() throws IOException {
+    List<String> fileList = new ArrayList<String>();
+    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
+    String dataFolderName = "data/random_cal_3/"; 
+    String calName =  dataFolderName + "BC0.512.seed";
+    String sensOutName = dataFolderName + "00_BHZ.512.seed";
+    
+    fileList.add(respName);
+    fileList.add(calName);
+    fileList.add(sensOutName);
+    
+    DataStore ds = getFromList(fileList);
+    
+    // response we want is embedded
+    InstrumentResponse ir;
+    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
+    ds.setResponse(1, ir);
+    
+    Calendar cCal = getStartCalendar(ds);
+    
+    cCal.set(Calendar.HOUR_OF_DAY, 21);
+    cCal.set(Calendar.MINUTE, 24);
+    cCal.set(Calendar.SECOND, 0);
+    long start = cCal.getTime().getTime() * 1000L;
+    
+    // commented out -- calibration ends when the data does
+    //int hour = cCal.get(Calendar.HOUR);
+    /*
+    cCal.set(Calendar.DAY_OF_YEAR, 4);
+    cCal.set(Calendar.HOUR_OF_DAY, 0);
+    cCal.set(Calendar.MINUTE, 0);
+    */
+    
+    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
+    long end = ds.getBlock(0).getEndTime();
+    
+    ds.trimAll(start, end);
+    
+    return ds;
+  }
+  
+public DataStore setUpTest4() throws IOException {
+    
+    List<String> fileList = new ArrayList<String>();
+    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
+    String dataFolderName = "data/random_cal_4/"; 
+    String calName =  dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    
+    fileList.add(respName);
+    fileList.add(calName);
+    fileList.add(sensOutName);
+    
+    DataStore ds = getFromList(fileList);
+    
+    // response we want is embedded
+    InstrumentResponse ir;
+    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
+    ds.setResponse(1, ir);
+    
+    Calendar cCal = getStartCalendar(ds);
+    
+    cCal.set(Calendar.HOUR_OF_DAY, 20);
+    cCal.set(Calendar.MINUTE, 16);
+    cCal.set(Calendar.SECOND, 0);
+    long start = cCal.getTime().getTime() * 1000L;
+    
+    cCal.set(Calendar.MINUTE, 26);
+    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
+    long end = cCal.getTime().getTime() * 1000L;
+    
+    ds.trimAll(start, end);
+    
+    return ds;
+  }
 
   @Test
-  public void testFFTPhaseCalc() {
+  public void testFFTDriver() {
+    int[] tests = new int[]{1,3,4};
+    // yes, folks, that's right, the abhorrent for-case paradigm
+    for (int test : tests) {
+      testFFTPhaseCalc(test);
+    }
+  }
+  
+  public void testFFTPhaseCalc(int testIteration) {
 
     DataStore ds = new DataStore();
 
+    int test = testIteration;
+    
     try {
-      ds = setUpTest1();
+      switch (test) {
+      case 1:
+        ds = setUpTest1();
+        break;
+      case 3:
+        ds = setUpTest3();
+        break;
+      case 4:
+        ds = setUpTest4();
+        break;
+        default:
+          fail();
+          return;
+      }
+
     } catch (IOException e) {
       fail();
       e.printStackTrace();
@@ -199,12 +299,12 @@ public class PhaseTest {
       folder.mkdirs();
     }
 
-    String textNameNumer = folderName + "/outputData_Numer.txt";
-    String textNameDenom = folderName + "/outputData_Denom.txt";
-    String textNameCalIn = folderName + "/outputData_CalSignal.txt";
-    String textNameOutIn = folderName + "/outputData_OutSignal.txt";
-    String textNameCalFFT = folderName + "/outputData_CalFFT.txt";
-    String textNameOutFFT = folderName + "/outputData_OutFFT.txt";
+    String textNameNumer = folderName + "/outputData"+test+"_Numer.txt";
+    String textNameDenom = folderName + "/outputData"+test+"_Denom.txt";
+    String textNameCalIn = folderName + "/outputData"+test+"_CalSignal.txt";
+    String textNameOutIn = folderName + "/outputData"+test+"_OutSignal.txt";
+    String textNameCalFFT = folderName + "/outputData"+test+"_CalFFT.txt";
+    String textNameOutFFT = folderName + "/outputData"+test+"_OutFFT.txt";
     
     PrintWriter write;
     try {
