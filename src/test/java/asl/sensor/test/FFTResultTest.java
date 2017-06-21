@@ -62,7 +62,7 @@ public class FFTResultTest {
     List<Number> numList = Arrays.asList(numbers);
     List<Number> demeaned = new ArrayList<Number>(numList);
     
-    FFTResult.demeanInPlace(demeaned);
+    TimeSeriesUtils.demeanInPlace(demeaned);
     
     for (int i = 0; i < numList.size(); ++i) {
       assertEquals(demeaned.get(i), numList.get(i).doubleValue()-3);
@@ -84,7 +84,7 @@ public class FFTResultTest {
         -1d, -2d, -3d, -4d, -5d, -6d, -7d, -8d, -9d };
 
     
-    FFTResult.detrend(toDetrend);
+    TimeSeriesUtils.detrend(toDetrend);
     
     for (int i = 0; i < x.length; i++) {
       assertEquals(
@@ -100,7 +100,7 @@ public class FFTResultTest {
     Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
     
     List<Number> toDetrend = Arrays.asList(x);
-    FFTResult.detrend(toDetrend);
+    TimeSeriesUtils.detrend(toDetrend);
     
     for (Number num : toDetrend) {
       assertEquals(num.doubleValue(), 0.0, 0.001);

@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -216,10 +217,8 @@ public class TimeSeriesUtilsTest {
     } catch (IOException e) {
       assertNull(e);
     } catch (UnsupportedCompressionType e) {
-      // TODO Auto-generated catch block
       assertNull(e);
     } catch (CodecException e) {
-      // TODO Auto-generated catch block
       assertNull(e);
     }
   }
@@ -312,6 +311,62 @@ public class TimeSeriesUtilsTest {
     doInputParseTest(dataFolderName, extension);
   }
   
+  @Test
+  public void demeaningTest() {
+    
+    // tests that demean does what it says it does and that
+    // the results are applied in-place
+    
+    Number[] numbers = {1,2,3,4,5};
+    
+    List<Number> numList = Arrays.asList(numbers);
+    List<Number> demeaned = new ArrayList<Number>(numList);
+    
+    TimeSeriesUtils.demeanInPlace(demeaned);
+    
+    for (int i = 0; i < numList.size(); ++i) {
+      assertEquals(demeaned.get(i), numList.get(i).doubleValue()-3);
+    }
+    
+  }
+  
+  @Test
+  public void detrendingCycleTest() {
+    
+    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
+        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 
+        3, 2, 1 };
+    
+    List<Number> toDetrend = Arrays.asList(x);
+    
+    Number[] answer = { -9d, -8d, -7d, -6d, -5d, -4d, -3d, -2d, -1d, 0d, 1d, 2d,
+        3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d, 9d, 8d, 7d, 6d, 5d, 4d, 3d, 2d, 1d, 0d,
+        -1d, -2d, -3d, -4d, -5d, -6d, -7d, -8d, -9d };
+
+    
+    TimeSeriesUtils.detrend(toDetrend);
+    
+    for (int i = 0; i < x.length; i++) {
+      assertEquals(
+          new Double(Math.round(x[i].doubleValue())), 
+          new Double(answer[i].doubleValue()));
+    }
+    
+  }
+  
+  @Test
+  public void detrendingLinearTest() {
+    
+    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    
+    List<Number> toDetrend = Arrays.asList(x);
+    TimeSeriesUtils.detrend(toDetrend);
+    
+    for (Number num : toDetrend) {
+      assertEquals(num.doubleValue(), 0.0, 0.001);
+    }
+    
+  }
 
   public void doInputParseTest(String dataFolderName, String extension) {
 

@@ -205,143 +205,6 @@ public class FFTResult {
     
   }
   
-  public static double[] demean(double[] dataSet) {
-    
-    List<Number> dataToProcess = new ArrayList<Number>();
-    
-    for (double number : dataSet) {
-      dataToProcess.add(number);
-    }
-    
-    demeanInPlace(dataToProcess);
-    
-    double[] out = new double[dataSet.length];
-    for (int i = 0; i < out.length; ++i) {
-      out[i] = dataToProcess.get(i).doubleValue();
-    }
-    return out;
-    
-  }
-  
-  /**
-   * Remove mean (constant value) from a dataset and include
-   * @param dataSet
-   * @return timeseries as numeric list with previous mean subtracted
-   */
-  public static List<Number> demean(List<Number> dataSet) {
-    List<Number> dataOut = new ArrayList<Number>(dataSet);
-    demeanInPlace(dataOut);
-    return dataOut;
-  }
-  
-  
-  /**
-   * In-place subtraction of mean from each point in an incoming data set.
-   * This is a necessary step in calculating the power-spectral density.
-   * @param dataSet The data to have the mean removed from.
-   */
-  public static void demeanInPlace(List<Number> dataSet) {
-    
-    // I'm always getting the demeaning tasks, huh?
-    
-    if(dataSet.size() == 0) return; // shouldn't happen but just in case
-    
-    double mean = 0.0;
-    
-    for(Number data : dataSet) {
-      mean += data.doubleValue();
-    }
-    
-    mean /= dataSet.size();
-    
-    for(int i = 0; i < dataSet.size(); ++i) {
-      // iterate over index rather than for-each cuz we must replace data
-      // ugly syntax because numeric data types are immutable
-      dataSet.set(i, dataSet.get(i).doubleValue() - mean);
-    }
-    
-    // test shows this works as in-place method
-  }
-  
-  /**
-   * Linear detrend applied to an array of doubles rather than a list.
-   * This operation is not done in-place.
-   * @param dataSet The double array to be detrended
-   * @return Array of doubles with linear detrend removed
-   */
-  public static double[] detrend (double[] dataSet) {
-    double sumX = 0.0;
-    double sumY = 0.0;
-    double sumXSqd = 0.0;
-    double sumXY = 0.0;
-    
-    for (int i = 0; i < dataSet.length; ++i) {
-      sumX += (double) i;
-      sumXSqd += (double) i * (double) i;
-      double value = dataSet[i];
-      sumXY += value * (double) i;
-      sumY += value;
-    }
-    
-    // brackets here so you don't get confused thinking this should be
-    // algebraic division (in which case we'd just factor out the size term)
-    // 
-    
-    double del = sumXSqd - ( sumX * sumX / dataSet.length );
-    
-    double slope = sumXY - ( sumX * sumY / dataSet.length );
-    slope /= del;
-    
-    double yOffset = (sumXSqd * sumY) - (sumX * sumXY);
-    yOffset /= del * dataSet.length;
-    
-    double[] detrended = new double[dataSet.length];
-    
-    for (int i = 0; i < dataSet.length; ++i) {
-      detrended[i] = dataSet[i] - ( (slope * i) + yOffset);
-    }
-    
-    return detrended;
-  }
-  
-  /**
-   * In-place subtraction of trend from each point in an incoming data set.
-   * This is a necessary step in calculating the power-spectral density.
-   * @param dataSet The data to have the trend removed from.
-   */
-  public static void detrend(List<Number> dataSet) {
-    
-    double sumX = 0.0;
-    double sumY = 0.0;
-    double sumXSqd = 0.0;
-    double sumXY = 0.0;
-    
-    for (int i = 0; i < dataSet.size(); ++i) {
-      sumX += (double) i;
-      sumXSqd += (double) i * (double) i;
-      double value = dataSet.get(i).doubleValue();
-      sumXY += value * (double) i;
-      sumY += value;
-    }
-    
-    // brackets here so you don't get confused thinking this should be
-    // algebraic division (in which case we'd just factor out the size term)
-    // 
-    
-    double del = sumXSqd - ( sumX * sumX / dataSet.size() );
-    
-    double slope = sumXY - ( sumX * sumY / dataSet.size() );
-    slope /= del;
-    
-    double yOffset = (sumXSqd * sumY) - (sumX * sumXY);
-    yOffset /= del * dataSet.size();
-    
-    for (int i = 0; i < dataSet.size(); ++i) {
-      dataSet.set(i, dataSet.get(i).doubleValue() - ( (slope * i) + yOffset) );
-    }
-    
-  }
-  
   /**
    * Collects the data points in the Peterson new high noise model 
    * into a plottable format.
@@ -483,7 +346,7 @@ public class FFTResult {
     
     data = bandFilter(data, sps, 0.0, 0.1);
     
-    data = demean(data);
+    data = TimeSeriesUtils.demean(data);
     
     // data = TimeSeriesUtils.normalize(data);
     
@@ -528,7 +391,7 @@ public class FFTResult {
       }
     }
     
-    data = demean(data);
+    data = TimeSeriesUtils.demean(data);
     
     // data = TimeSeriesUtils.normalize(data);
     
@@ -673,14 +536,14 @@ public class FFTResult {
       double[] toFFT2 = null;
       
       // demean and detrend work in-place on the list
-      detrend(data1Range);
-      demeanInPlace(data1Range);
+      TimeSeriesUtils.detrend(data1Range);
+      TimeSeriesUtils.demeanInPlace(data1Range);
       wss = cosineTaper(data1Range, TAPER_WIDTH);
       // presumably we only need the last value of wss
       
       if (!sameData) {
-        demeanInPlace(data2Range);
-        detrend(data2Range);
+        TimeSeriesUtils.demeanInPlace(data2Range);
+        TimeSeriesUtils.detrend(data2Range);
         wss = cosineTaper(data2Range, TAPER_WIDTH);
         toFFT2 = new double[padding];
       }
