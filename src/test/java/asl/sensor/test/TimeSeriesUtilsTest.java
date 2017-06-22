@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -22,10 +23,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.imageio.ImageIO;
+
 import org.apache.commons.math3.util.Pair;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
 import asl.sensor.input.DataBlock;
+import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.B1000Types;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -54,6 +62,76 @@ public class TimeSeriesUtilsTest {
     } catch (Exception e) {
       assertNull(e);
     }
+  }
+  
+  // test uncommented as it's long and not very useful as a unit test
+  public void testDemeaning() {
+    String dataFolderName = "data/random_cal/"; 
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    
+    String metaName;
+    try {
+      metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
+      Pair<Long, Map<Long, Number>> dataMap = 
+          TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
+      DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      XYSeries meaned = new XYSeries(metaName + " mean kept");
+      XYSeries demeaned = new XYSeries(metaName + " mean removed");
+      
+      Map<Long, Number> map = dataMap.getSecond();
+      
+      int numRemaining;
+      int numIters = 0;
+      for (long time : map.keySet()) {
+        meaned.add(time, map.get(time));
+        ++numIters;
+        numRemaining = map.keySet().size() - numIters;
+        if ( numRemaining % 10000 == 0 ) {
+          System.out.println(numRemaining + " remaining");
+        }
+      }
+      
+      long now = sensor.getStartTime();
+      long interval = sensor.getInterval();
+      for (int i = 0; i < sensor.size(); ++i) {
+        demeaned.add(now, sensor.getData().get(i));
+        now += interval;
+        numRemaining = sensor.size() - i;
+        if ( numRemaining % 10000 == 0 ) {
+          System.out.println(numRemaining + " remaining");
+        }
+      }
+      
+      xysc.addSeries(meaned);
+      xysc.addSeries(demeaned);
+      
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          "Test demeaning operation",
+          "epoch time in nanoseconds",
+          "data sample",
+          xysc);
+      
+      String folderName = "testResultImages";
+      File folder = new File(folderName);
+      if ( !folder.exists() ) {
+        System.out.println("Writing directory " + folderName);
+        folder.mkdirs();
+      }
+      
+      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+      File file = new File("testResultImages/demeaning-test.png");
+      ImageIO.write( bi, "png", file );
+      
+    } catch (FileNotFoundException e) {
+      fail();
+      e.printStackTrace();
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+
   }
   
   

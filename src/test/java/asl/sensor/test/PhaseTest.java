@@ -202,8 +202,15 @@ public DataStore setUpTest4() throws IOException {
       return;
     }
     
+    long start = ds.getBlock(0).getStartTime();
+    long interval = ds.getBlock(0).getInterval();
+    
     DataBlock cal = ds.getBlock(0);
     DataBlock out = ds.getBlock(1);
+    
+    if ( interval != out.getInterval() ) {
+      fail();
+    }
     
     double[] calArr = new double[cal.size()];
     double[] outArr = new double[cal.size()];
@@ -211,11 +218,18 @@ public DataStore setUpTest4() throws IOException {
     StringBuilder sbCalData = new StringBuilder();
     StringBuilder sbOutData = new StringBuilder();
     
+    long nowTime = start;
+    
     for (int i = 0; i < calArr.length; ++i) {
       calArr[i] = cal.getData().get(i).doubleValue();
       outArr[i] = out.getData().get(i).doubleValue();
       sbCalData.append(calArr[i]);
+      sbCalData.append(", ");
+      sbCalData.append(nowTime);
       sbOutData.append(outArr[i]);
+      sbOutData.append(", ");
+      sbOutData.append(nowTime);
+      nowTime += interval;
       if ( i < (calArr.length - 1) ) {
         sbCalData.append("\n");
         sbOutData.append("\n");

@@ -263,6 +263,57 @@ public class TimeSeriesUtils {
     return dataNames;
   }
 
+  public static 
+  DataBlock mapToTimeSeries(Pair<Long, Map<Long, Number>> data, String filter) {
+    
+    long interval = data.getFirst();
+    Map<Long, Number> timeMap = data.getSecond();
+    DataBlock db;
+
+    // now we have all the data in a convenient map timestamp -> value
+    // which we can then convert into an easy array
+    List<Long> times = new ArrayList<Long>( timeMap.keySet() );
+    Collections.sort(times);
+
+    // get the min value in the set, the start time for the series
+    long startTime = times.get(0);
+    // when can we stop trying to read in data?
+    // long endTime = times.get( times.size() - 1 );
+
+    // read in data from the records as long as they exist
+    // if no data exists (there's a gap in the record), set value to 0
+    // this is done to handle cases where multiplexed files have non-matching
+    // gaps and similar issues that previous code was not able to handle
+
+    List<Number> timeList = new ArrayList<Number>();
+    // long currentTime = startTime;
+
+    for (int i = 0; i < times.size(); ++i) {
+      long timeNow = times.get(i);
+      timeList.add( timeMap.get(timeNow) );
+
+      if ( (i + 1) < times.size() ) {
+        long timeNext = times.get(i + 1);
+        // is there a discrepancy, and is it big enough for us to care?
+        if (timeNext - timeNow != interval) {
+          // long gap = timeNext - timeNow;
+          // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
+          // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
+          while (timeNext - timeNow > interval * 2) {
+            timeList.add(0.);
+            timeNow += interval;
+          }
+        }
+      }
+
+    }
+
+    // demean the input to remove DC offset before adding it to the data
+    List<Number> listOut = TimeSeriesUtils.demean( timeList );
+    db = new DataBlock(listOut, interval, filter, startTime);
+    return db;
+  }
+  
   /**
    * Extract data from records in a miniseed file and return them as a map
    * of sampled data points at various times
@@ -427,50 +478,7 @@ public class TimeSeriesUtils {
     DataBlock db = null;
     Pair<Long, Map<Long, Number>> intervalSeriesMapPair = 
         getTimeSeriesMap(filename, filter);
-    long interval = intervalSeriesMapPair.getFirst();
-    Map<Long, Number> timeMap = intervalSeriesMapPair.getSecond();
-
-    // now we have all the data in a convenient map timestamp -> value
-    // which we can then convert into an easy array
-    List<Long> times = new ArrayList<Long>( timeMap.keySet() );
-    Collections.sort(times);
-
-    // get the min value in the set, the start time for the series
-    long startTime = times.get(0);
-    // when can we stop trying to read in data?
-    // long endTime = times.get( times.size() - 1 );
-
-    // read in data from the records as long as they exist
-    // if no data exists (there's a gap in the record), set value to 0
-    // this is done to handle cases where multiplexed files have non-matching
-    // gaps and similar issues that previous code was not able to handle
-
-    List<Number> timeList = new ArrayList<Number>();
-    // long currentTime = startTime;
-
-    for (int i = 0; i < times.size(); ++i) {
-      long timeNow = times.get(i);
-      timeList.add( timeMap.get(timeNow) );
-
-      if ( (i + 1) < times.size() ) {
-        long timeNext = times.get(i + 1);
-        // is there a discrepancy, and is it big enough for us to care?
-        if (timeNext - timeNow != interval) {
-          // long gap = timeNext - timeNow;
-          // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
-          // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
-          while (timeNext - timeNow > interval * 2) {
-            timeList.add(0.);
-            timeNow += interval;
-          }
-        }
-      }
-
-    }
-
-    // demean the input to remove DC offset before adding it to the data
-    List<Number> listOut = TimeSeriesUtils.demean( timeList );
-    db = new DataBlock(listOut, interval, filter, startTime);
+    db = mapToTimeSeries(intervalSeriesMapPair, filter);
     return db;
 
   }

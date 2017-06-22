@@ -7,10 +7,13 @@ import static org.junit.Assert.fail;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -18,6 +21,7 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
+import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -227,6 +231,81 @@ public class FFTResultTest {
       assertNotEquals( numList.get(fullListIdx), subseq.get(i) );
     }
     
+  }
+  
+  @Test
+  public void testDemeaning() {
+    String dataFolderName = "data/random_cal/"; 
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    
+    String metaName;
+    try {
+      metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
+      Pair<Long, Map<Long, Number>> dataMap = 
+          TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
+      DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      XYSeries meaned = new XYSeries(metaName + "FFT, mean kept");
+      XYSeries demeaned = new XYSeries(metaName + "FFT, mean removed");
+      
+      Map<Long, Number> map = dataMap.getSecond();
+      
+      double[] meanedTimeSeries = new double[map.size()];
+      List<Long> time = new ArrayList<Long>( map.keySet() );
+      Collections.sort(time);
+      for (int i = 0; i < time.size(); ++i) {
+        meanedTimeSeries[i] = map.get( time.get(i) ).doubleValue();
+      }
+      
+      double[] demeanedTimeSeries = new double[sensor.size()];
+      for (int i = 0; i < sensor.size(); ++i) {
+        demeanedTimeSeries[i] = sensor.getData().get(i).doubleValue();
+      }
+      
+      double nyquist = sensor.getSampleRate() / 2;
+      double deltaFrq = nyquist / sensor.size();
+      
+      Complex[] meanedFFT = FFTResult.simpleFFT(meanedTimeSeries);
+      Complex[] demeanedFFT = FFTResult.simpleFFT(demeanedTimeSeries);
+      
+      for (int i = 1; i < meanedFFT.length; ++i) {
+        double frq = i * deltaFrq;
+        meaned.add(frq, 10 * Math.log10(meanedFFT[i].abs()));
+        demeaned.add(frq, 10 * Math.log10(demeanedFFT[i].abs()));
+      }
+      
+      xysc.addSeries(meaned);
+      xysc.addSeries(demeaned);
+      
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          "Test demeaning operation",
+          "frequency (hz)",
+          "10 * log10 of FFT amplitude",
+          xysc);
+      ValueAxis va = new LogarithmicAxis ("freq[hz]");
+      chart.getXYPlot().setDomainAxis(va);
+      
+      
+      String folderName = "testResultImages";
+      File folder = new File(folderName);
+      if ( !folder.exists() ) {
+        System.out.println("Writing directory " + folderName);
+        folder.mkdirs();
+      }
+      
+      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+      File file = new File("testResultImages/demeaning-FFT-test.png");
+      ImageIO.write( bi, "png", file );
+      
+    } catch (FileNotFoundException e) {
+      fail();
+      e.printStackTrace();
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+
   }
   
 }

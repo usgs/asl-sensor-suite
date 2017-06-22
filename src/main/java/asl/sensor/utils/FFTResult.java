@@ -85,6 +85,7 @@ public class FFTResult {
   public static List<Number> 
   bandFilter(List<Number> toFilt, double sps, double low, double high) {
     
+    
     double[] toFFT = new double[toFilt.size()];
     
     for (int i = 0; i < toFFT.length; ++i) {
@@ -117,6 +118,9 @@ public class FFTResult {
   public static double[] 
   bandFilterWithCuts(double[] toFilt, double sps, double low, double high, 
                      double lowStop, double highStop) {
+    
+    System.out.println("FILTERING OPERATION OCCURRING");
+    
     Complex[] fft = simpleFFT(toFilt);
     
     int trim = fft.length/2 + 1;
