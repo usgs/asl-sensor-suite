@@ -64,8 +64,11 @@ public class TimeSeriesUtilsTest {
     }
   }
   
-  // test uncommented as it's long and not very useful as a unit test
+  @Test
   public void testDemeaning() {
+    
+    System.out.println("Running demeaning test...");
+    
     String dataFolderName = "data/random_cal/"; 
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     
@@ -78,36 +81,40 @@ public class TimeSeriesUtilsTest {
       
       XYSeriesCollection xysc = new XYSeriesCollection();
       XYSeries meaned = new XYSeries(metaName + " mean kept");
+      XYSeries meanedDbl = new XYSeries(metaName + " mean kept, conv. double");
       XYSeries demeaned = new XYSeries(metaName + " mean removed");
       
       Map<Long, Number> map = dataMap.getSecond();
       
-      int numRemaining;
-      int numIters = 0;
-      for (long time : map.keySet()) {
+      // get only the last quarter of data so that the test runs faster
+      List<Long> times = new ArrayList<Long>(map.keySet());
+      Collections.sort(times);
+      int lastQuarterIdx = (times.size() * 3) / 4;
+      long lastQuarterTime = times.get(lastQuarterIdx);
+      
+      // System.out.println(times.size());
+      // System.out.println(sensor.size());
+      
+      for (int i = lastQuarterIdx; i < times.size(); ++i) {
+        long time = times.get(i);
         meaned.add(time, map.get(time));
-        ++numIters;
-        numRemaining = map.keySet().size() - numIters;
-        if ( numRemaining % 10000 == 0 ) {
-          System.out.println(numRemaining + " remaining");
-        }
+        meanedDbl.add(time, map.get(time).doubleValue());
       }
       
-      long now = sensor.getStartTime();
+      long now = lastQuarterTime;
       long interval = sensor.getInterval();
-      for (int i = 0; i < sensor.size(); ++i) {
+      lastQuarterIdx = 
+          (int) ((lastQuarterTime - sensor.getStartTime()) / interval);
+      for (int i = lastQuarterIdx; i < sensor.size(); ++i) {
         demeaned.add(now, sensor.getData().get(i));
         now += interval;
-        numRemaining = sensor.size() - i;
-        if ( numRemaining % 10000 == 0 ) {
-          System.out.println(numRemaining + " remaining");
-        }
       }
       
       xysc.addSeries(meaned);
+      xysc.addSeries(meanedDbl);
       xysc.addSeries(demeaned);
       
-      JFreeChart chart = ChartFactory.createXYLineChart(
+      JFreeChart chart = ChartFactory.createScatterPlot(
           "Test demeaning operation",
           "epoch time in nanoseconds",
           "data sample",
@@ -381,12 +388,25 @@ public class TimeSeriesUtilsTest {
   }
   
   @Test
-  public void testInputParsing() {
-    String dataFolderName = "data/random_cal_4/"; 
-    String extension = "CB_BC0.512.seed";;
-    doInputParseTest(dataFolderName, extension);
+  public void testInputParsing1() {
+    String dataFolderName = "data/random_cal/"; 
+    String extension = "_EC0.512.seed";    
+    String testID = "1_Cal";
+    doInputParseTest(dataFolderName, extension, testID);
     extension = "00_EHZ.512.seed";
-    doInputParseTest(dataFolderName, extension);
+    testID = "1_Out";
+    doInputParseTest(dataFolderName, extension, testID);
+  }
+  
+  @Test
+  public void testInputParsing4() {
+    String dataFolderName = "data/random_cal_4/"; 
+    String extension = "CB_BC0.512.seed";
+    String testID = "4_Cal";
+    doInputParseTest(dataFolderName, extension, testID);
+    extension = "00_EHZ.512.seed";
+    testID = "4_Out";
+    doInputParseTest(dataFolderName, extension, testID);
   }
   
   @Test
@@ -446,7 +466,8 @@ public class TimeSeriesUtilsTest {
     
   }
 
-  public void doInputParseTest(String dataFolderName, String extension) {
+  public void 
+  doInputParseTest(String dataFolderName, String extension, String testID) {
 
     String fileName =  dataFolderName + extension;
     String metaName;
@@ -477,7 +498,8 @@ public class TimeSeriesUtilsTest {
         folder.mkdirs();
       }
       
-      String outputFilename = folderName + "/"+extension+"_timeDataMap.txt";
+      String outputFilename = 
+          folderName + "/outputData"+testID+"TimeDataMap.txt";
       PrintWriter write;
       write = new PrintWriter(outputFilename);
       write.println( sb.toString() );

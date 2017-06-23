@@ -251,25 +251,31 @@ public class FFTResultTest {
       
       Map<Long, Number> map = dataMap.getSecond();
       
-      double[] meanedTimeSeries = new double[map.size()];
+      int padding = 2;
+      while (padding < sensor.size()) {
+        padding *= 2;
+      }
+      
+      double[] meanedTimeSeries = new double[padding];
       List<Long> time = new ArrayList<Long>( map.keySet() );
       Collections.sort(time);
       for (int i = 0; i < time.size(); ++i) {
         meanedTimeSeries[i] = map.get( time.get(i) ).doubleValue();
       }
       
-      double[] demeanedTimeSeries = new double[sensor.size()];
+      double[] demeanedTimeSeries = new double[padding];
       for (int i = 0; i < sensor.size(); ++i) {
         demeanedTimeSeries[i] = sensor.getData().get(i).doubleValue();
       }
       
-      double nyquist = sensor.getSampleRate() / 2;
-      double deltaFrq = nyquist / sensor.size();
-      
       Complex[] meanedFFT = FFTResult.simpleFFT(meanedTimeSeries);
       Complex[] demeanedFFT = FFTResult.simpleFFT(demeanedTimeSeries);
       
-      for (int i = 1; i < meanedFFT.length; ++i) {
+      double deltaFrq = sensor.getSampleRate() / meanedFFT.length;
+      
+      int numPoints = meanedFFT.length / 2 + 1;
+      
+      for (int i = 1; i <= numPoints; ++i) {
         double frq = i * deltaFrq;
         meaned.add(frq, 10 * Math.log10(meanedFFT[i].abs()));
         demeaned.add(frq, 10 * Math.log10(demeanedFFT[i].abs()));
@@ -284,7 +290,7 @@ public class FFTResultTest {
           "10 * log10 of FFT amplitude",
           xysc);
       ValueAxis va = new LogarithmicAxis ("freq[hz]");
-      chart.getXYPlot().setDomainAxis(va);
+      // chart.getXYPlot().setDomainAxis(va);
       
       
       String folderName = "testResultImages";

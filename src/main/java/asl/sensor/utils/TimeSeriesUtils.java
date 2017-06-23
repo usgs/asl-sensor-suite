@@ -275,6 +275,12 @@ public class TimeSeriesUtils {
     List<Long> times = new ArrayList<Long>( timeMap.keySet() );
     Collections.sort(times);
 
+    double mean = 0.;
+    for ( Number point : timeMap.values() ) {
+      mean += point.doubleValue();
+    }
+    mean /= timeMap.size();
+    
     // get the min value in the set, the start time for the series
     long startTime = times.get(0);
     // when can we stop trying to read in data?
@@ -287,15 +293,27 @@ public class TimeSeriesUtils {
 
     List<Number> timeList = new ArrayList<Number>();
     // long currentTime = startTime;
+    
+    Set<Pair<Long, Long>> gapLocations = new HashSet<Pair<Long, Long>>();
 
     for (int i = 0; i < times.size(); ++i) {
       long timeNow = times.get(i);
-      timeList.add( timeMap.get(timeNow) );
+      // do a demean here so that we can add 0-values to empty points
+      // without those values affecting the removal of a DC offset later
+      timeList.add( timeMap.get(timeNow).doubleValue() - mean );
 
       if ( (i + 1) < times.size() ) {
         long timeNext = times.get(i + 1);
         // is there a discrepancy, and is it big enough for us to care?
         if (timeNext - timeNow != interval) {
+          
+          if (timeNext - timeNow < interval / 2) {
+            System.out.println("SKIPPING POSSIBLE REPEATED VALUE");
+            continue;
+          }
+          
+          gapLocations.add( new Pair<Long, Long>(timeNow, timeNext) );
+          
           // long gap = timeNext - timeNow;
           // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
           // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
@@ -308,9 +326,16 @@ public class TimeSeriesUtils {
 
     }
 
+    if ( gapLocations.size() > 0 ) {
+      System.out.println("Found gaps over the following time ranges:");
+      System.out.println(gapLocations);
+    }
+
+    
     // demean the input to remove DC offset before adding it to the data
-    List<Number> listOut = TimeSeriesUtils.demean( timeList );
-    db = new DataBlock(listOut, interval, filter, startTime);
+    // List<Number> listOut = TimeSeriesUtils.demean( timeList );
+    // since we've demeaned the data while adding it in, don't need to do that
+    db = new DataBlock(timeList, interval, filter, startTime);
     return db;
   }
   
@@ -331,7 +356,6 @@ public class TimeSeriesUtils {
     long interval = 0L;
     DataInputStream dis;
     Map<Long, Number> timeMap = new HashMap<Long, Number>();
-    Set<Integer> dataTypes = new HashSet<Integer>();
     
     int byteSize = 512;
     try {
@@ -393,7 +417,6 @@ public class TimeSeriesUtils {
             // otherwise the decompressed data gets converted (cloned) as
             // the other type instead
             int dataType = decomp.getType();
-            dataTypes.add(dataType);
             long timeOfData = start;
 
             switch (dataType) {
@@ -450,8 +473,6 @@ public class TimeSeriesUtils {
       // Auto-generated catch block
       e.printStackTrace();
     }
-    
-    System.out.println(dataTypes);
 
     return new Pair<Long, Map<Long, Number>>(interval, timeMap);
   }
