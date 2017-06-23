@@ -6,20 +6,34 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import javax.imageio.ImageIO;
+
+import org.apache.commons.math3.util.Pair;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
 import asl.sensor.input.DataBlock;
+import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.B1000Types;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -48,6 +62,83 @@ public class TimeSeriesUtilsTest {
     } catch (Exception e) {
       assertNull(e);
     }
+  }
+  
+  @Test
+  public void testDemeaning() {
+    
+    System.out.println("Running demeaning test...");
+    
+    String dataFolderName = "data/random_cal/"; 
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    
+    String metaName;
+    try {
+      metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
+      Pair<Long, Map<Long, Number>> dataMap = 
+          TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
+      DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      XYSeries meaned = new XYSeries(metaName + " mean kept");
+      XYSeries meanedDbl = new XYSeries(metaName + " mean kept, conv. double");
+      XYSeries demeaned = new XYSeries(metaName + " mean removed");
+      
+      Map<Long, Number> map = dataMap.getSecond();
+      
+      // get only the last quarter of data so that the test runs faster
+      List<Long> times = new ArrayList<Long>(map.keySet());
+      Collections.sort(times);
+      int lastQuarterIdx = (times.size() * 3) / 4;
+      long lastQuarterTime = times.get(lastQuarterIdx);
+      
+      // System.out.println(times.size());
+      // System.out.println(sensor.size());
+      
+      for (int i = lastQuarterIdx; i < times.size(); ++i) {
+        long time = times.get(i);
+        meaned.add(time, map.get(time));
+        meanedDbl.add(time, map.get(time).doubleValue());
+      }
+      
+      long now = lastQuarterTime;
+      long interval = sensor.getInterval();
+      lastQuarterIdx = 
+          (int) ((lastQuarterTime - sensor.getStartTime()) / interval);
+      for (int i = lastQuarterIdx; i < sensor.size(); ++i) {
+        demeaned.add(now, sensor.getData().get(i));
+        now += interval;
+      }
+      
+      xysc.addSeries(meaned);
+      xysc.addSeries(meanedDbl);
+      xysc.addSeries(demeaned);
+      
+      JFreeChart chart = ChartFactory.createScatterPlot(
+          "Test demeaning operation",
+          "epoch time in nanoseconds",
+          "data sample",
+          xysc);
+      
+      String folderName = "testResultImages";
+      File folder = new File(folderName);
+      if ( !folder.exists() ) {
+        System.out.println("Writing directory " + folderName);
+        folder.mkdirs();
+      }
+      
+      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+      File file = new File("testResultImages/demeaning-test.png");
+      ImageIO.write( bi, "png", file );
+      
+    } catch (FileNotFoundException e) {
+      fail();
+      e.printStackTrace();
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+
   }
   
   
@@ -79,11 +170,15 @@ public class TimeSeriesUtilsTest {
       timeSeries.add(i);
     }
     
+    // System.out.println(timeSeries);
+    
     timeSeries = TimeSeriesUtils.decimate(timeSeries, interval40Hz, interval);
+    
+    // System.out.println(timeSeries);
     
     assertEquals(timeSeries.size(), 4);
     for (int i = 0; i < timeSeries.size(); ++i) {
-      assertEquals(timeSeries.get(i).doubleValue(), 40*i, 0.5);
+      assertEquals(timeSeries.get(i).doubleValue(), 40. * i, 0.5);
     }
   }
   
@@ -207,10 +302,8 @@ public class TimeSeriesUtilsTest {
     } catch (IOException e) {
       assertNull(e);
     } catch (UnsupportedCompressionType e) {
-      // TODO Auto-generated catch block
       assertNull(e);
     } catch (CodecException e) {
-      // TODO Auto-generated catch block
       assertNull(e);
     }
   }
@@ -294,5 +387,128 @@ public class TimeSeriesUtilsTest {
     }
   }
   
+  @Test
+  public void testInputParsing1() {
+    String dataFolderName = "data/random_cal/"; 
+    String extension = "_EC0.512.seed";    
+    String testID = "1_Cal";
+    doInputParseTest(dataFolderName, extension, testID);
+    extension = "00_EHZ.512.seed";
+    testID = "1_Out";
+    doInputParseTest(dataFolderName, extension, testID);
+  }
+  
+  @Test
+  public void testInputParsing4() {
+    String dataFolderName = "data/random_cal_4/"; 
+    String extension = "CB_BC0.512.seed";
+    String testID = "4_Cal";
+    doInputParseTest(dataFolderName, extension, testID);
+    extension = "00_EHZ.512.seed";
+    testID = "4_Out";
+    doInputParseTest(dataFolderName, extension, testID);
+  }
+  
+  @Test
+  public void demeaningTest() {
+    
+    // tests that demean does what it says it does and that
+    // the results are applied in-place
+    
+    Number[] numbers = {1,2,3,4,5};
+    
+    List<Number> numList = Arrays.asList(numbers);
+    List<Number> demeaned = new ArrayList<Number>(numList);
+    
+    TimeSeriesUtils.demeanInPlace(demeaned);
+    
+    for (int i = 0; i < numList.size(); ++i) {
+      assertEquals(demeaned.get(i), numList.get(i).doubleValue()-3);
+    }
+    
+  }
+  
+  @Test
+  public void detrendingCycleTest() {
+    
+    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
+        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 
+        3, 2, 1 };
+    
+    List<Number> toDetrend = Arrays.asList(x);
+    
+    Number[] answer = { -9d, -8d, -7d, -6d, -5d, -4d, -3d, -2d, -1d, 0d, 1d, 2d,
+        3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d, 9d, 8d, 7d, 6d, 5d, 4d, 3d, 2d, 1d, 0d,
+        -1d, -2d, -3d, -4d, -5d, -6d, -7d, -8d, -9d };
+
+    
+    TimeSeriesUtils.detrend(toDetrend);
+    
+    for (int i = 0; i < x.length; i++) {
+      assertEquals(
+          new Double(Math.round(x[i].doubleValue())), 
+          new Double(answer[i].doubleValue()));
+    }
+    
+  }
+  
+  @Test
+  public void detrendingLinearTest() {
+    
+    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    
+    List<Number> toDetrend = Arrays.asList(x);
+    TimeSeriesUtils.detrend(toDetrend);
+    
+    for (Number num : toDetrend) {
+      assertEquals(num.doubleValue(), 0.0, 0.001);
+    }
+    
+  }
+
+  public void 
+  doInputParseTest(String dataFolderName, String extension, String testID) {
+
+    String fileName =  dataFolderName + extension;
+    String metaName;
+    try {
+      metaName = TimeSeriesUtils.getMplexNameList(fileName).get(0);
+      Pair<Long, Map<Long, Number>> data = 
+          TimeSeriesUtils.getTimeSeriesMap(fileName, metaName);
+      Map<Long, Number> map = data.getSecond();
+      
+      List<Long> times = new ArrayList<Long>( map.keySet() );
+      Collections.sort(times);
+      long lastTime = times.get( times.size() - 1 );
+      
+      StringBuilder sb = new StringBuilder();
+      for (Long time : times) {
+        sb.append(time);
+        sb.append(", ");
+        sb.append( map.get(time) );
+        if (time < lastTime) {
+          sb.append("\n");
+        }
+      }
+      
+      String folderName = "testResultImages";
+      File folder = new File(folderName);
+      if ( !folder.exists() ) {
+        System.out.println("Writing directory " + folderName);
+        folder.mkdirs();
+      }
+      
+      String outputFilename = 
+          folderName + "/outputData"+testID+"TimeDataMap.txt";
+      PrintWriter write;
+      write = new PrintWriter(outputFilename);
+      write.println( sb.toString() );
+      write.close();
+      
+    } catch (FileNotFoundException e) {
+      fail();
+      e.printStackTrace();
+    }
+  }
   
 }

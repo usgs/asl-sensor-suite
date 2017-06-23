@@ -105,7 +105,7 @@ public class StepExperiment extends Experiment{
     double[] stepCalTrimmed = 
         Arrays.copyOfRange(stepCalFiltered, cutAmount, highBound);
     
-    stepCalSeries = FFTResult.demean(stepCalTrimmed);
+    stepCalSeries = TimeSeriesUtils.demean(stepCalTrimmed);
     
     stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
     
@@ -386,7 +386,7 @@ public class StepExperiment extends Experiment{
     double[] returnValue =  
         FFTResult.singleSidedInverseFFT(toDeconvolve, inverseTrim);
     
-    returnValue = FFTResult.demean(returnValue);
+    returnValue = TimeSeriesUtils.demean(returnValue);
     
     // attempt to filter out additional noise
     returnValue = 

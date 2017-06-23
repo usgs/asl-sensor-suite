@@ -84,10 +84,10 @@ public class OrthogonalExperiment extends Experiment {
 
     List<Number> testLH2 = new ArrayList<Number>( testLH2Block.getData() );
     
-    FFTResult.detrend(refLH1);
-    FFTResult.detrend(refLH2);
-    FFTResult.detrend(testLH1);
-    FFTResult.detrend(testLH2);
+    TimeSeriesUtils.detrend(refLH1);
+    TimeSeriesUtils.detrend(refLH2);
+    TimeSeriesUtils.detrend(testLH1);
+    TimeSeriesUtils.detrend(testLH2);
     
     refLH1 = TimeSeriesUtils.normalize(refLH1);
     refLH2 = TimeSeriesUtils.normalize(refLH2);

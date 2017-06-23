@@ -83,9 +83,9 @@ public class AzimuthExperiment extends Experiment {
     List<Number> refNorth = new ArrayList<Number>( refNorthBlock.getData() );
     String refName = refNorthBlock.getName();
     
-    FFTResult.detrend(testNorth);
-    FFTResult.detrend(testEast);
-    FFTResult.detrend(refNorth);
+    TimeSeriesUtils.detrend(testNorth);
+    TimeSeriesUtils.detrend(testEast);
+    TimeSeriesUtils.detrend(refNorth);
     
     // originally had normalization step here, but that harmed the estimates
     

@@ -7,10 +7,13 @@ import static org.junit.Assert.fail;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -18,6 +21,7 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
+import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -51,62 +55,7 @@ public class FFTResultTest {
     }
   }
   
-  @Test
-  public void demeaningTest() {
-    
-    // tests that demean does what it says it does and that
-    // the results are applied in-place
-    
-    Number[] numbers = {1,2,3,4,5};
-    
-    List<Number> numList = Arrays.asList(numbers);
-    List<Number> demeaned = new ArrayList<Number>(numList);
-    
-    FFTResult.demeanInPlace(demeaned);
-    
-    for (int i = 0; i < numList.size(); ++i) {
-      assertEquals(demeaned.get(i), numList.get(i).doubleValue()-3);
-    }
-    
-  }
-  
-  @Test
-  public void detrendingCycleTest() {
-    
-    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
-        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 
-        3, 2, 1 };
-    
-    List<Number> toDetrend = Arrays.asList(x);
-    
-    Number[] answer = { -9d, -8d, -7d, -6d, -5d, -4d, -3d, -2d, -1d, 0d, 1d, 2d,
-        3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d, 9d, 8d, 7d, 6d, 5d, 4d, 3d, 2d, 1d, 0d,
-        -1d, -2d, -3d, -4d, -5d, -6d, -7d, -8d, -9d };
 
-    
-    FFTResult.detrend(toDetrend);
-    
-    for (int i = 0; i < x.length; i++) {
-      assertEquals(
-          new Double(Math.round(x[i].doubleValue())), 
-          new Double(answer[i].doubleValue()));
-    }
-    
-  }
-  
-  @Test
-  public void detrendingLinearTest() {
-    
-    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    
-    List<Number> toDetrend = Arrays.asList(x);
-    FFTResult.detrend(toDetrend);
-    
-    for (Number num : toDetrend) {
-      assertEquals(num.doubleValue(), 0.0, 0.001);
-    }
-    
-  }
   
   @Test
   public void fftInversionTest() {
@@ -282,6 +231,87 @@ public class FFTResultTest {
       assertNotEquals( numList.get(fullListIdx), subseq.get(i) );
     }
     
+  }
+  
+  @Test
+  public void testDemeaning() {
+    String dataFolderName = "data/random_cal/"; 
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    
+    String metaName;
+    try {
+      metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
+      Pair<Long, Map<Long, Number>> dataMap = 
+          TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
+      DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      XYSeries meaned = new XYSeries(metaName + "FFT, mean kept");
+      XYSeries demeaned = new XYSeries(metaName + "FFT, mean removed");
+      
+      Map<Long, Number> map = dataMap.getSecond();
+      
+      int padding = 2;
+      while (padding < sensor.size()) {
+        padding *= 2;
+      }
+      
+      double[] meanedTimeSeries = new double[padding];
+      List<Long> time = new ArrayList<Long>( map.keySet() );
+      Collections.sort(time);
+      for (int i = 0; i < time.size(); ++i) {
+        meanedTimeSeries[i] = map.get( time.get(i) ).doubleValue();
+      }
+      
+      double[] demeanedTimeSeries = new double[padding];
+      for (int i = 0; i < sensor.size(); ++i) {
+        demeanedTimeSeries[i] = sensor.getData().get(i).doubleValue();
+      }
+      
+      Complex[] meanedFFT = FFTResult.simpleFFT(meanedTimeSeries);
+      Complex[] demeanedFFT = FFTResult.simpleFFT(demeanedTimeSeries);
+      
+      double deltaFrq = sensor.getSampleRate() / meanedFFT.length;
+      
+      int numPoints = meanedFFT.length / 2 + 1;
+      
+      for (int i = 1; i <= numPoints; ++i) {
+        double frq = i * deltaFrq;
+        meaned.add(frq, 10 * Math.log10(meanedFFT[i].abs()));
+        demeaned.add(frq, 10 * Math.log10(demeanedFFT[i].abs()));
+      }
+      
+      xysc.addSeries(meaned);
+      xysc.addSeries(demeaned);
+      
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          "Test demeaning operation",
+          "frequency (hz)",
+          "10 * log10 of FFT amplitude",
+          xysc);
+      ValueAxis va = new LogarithmicAxis ("freq[hz]");
+      // chart.getXYPlot().setDomainAxis(va);
+      
+      
+      String folderName = "testResultImages";
+      File folder = new File(folderName);
+      if ( !folder.exists() ) {
+        System.out.println("Writing directory " + folderName);
+        folder.mkdirs();
+      }
+      
+      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+      File file = new File("testResultImages/demeaning-FFT-test.png");
+      ImageIO.write( bi, "png", file );
+      
+    } catch (FileNotFoundException e) {
+      fail();
+      e.printStackTrace();
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+
   }
   
 }
