@@ -521,7 +521,7 @@ public class DataStore {
       if (start > lastStartTime) {
         lastStartTime = start;
       }
-      long end = start + data.getInterval() * data.size();
+      long end = data.getEndTime();
       if (end < firstEndTime) {
         firstEndTime = end;
       }

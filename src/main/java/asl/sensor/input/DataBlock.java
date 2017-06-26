@@ -132,25 +132,26 @@ public class DataBlock {
   /**
    * Converts an end time to the last index of data to include in a trimmed
    * data series  
-   * @param end Terminal cutoff point for data
-   * @return Index of last data point to include in trimmed subset
+   * @param end Terminal cutoff point for data (time, microseconds)
+   * @return Index of last data point to include in trimmed subset + 1
    */
   public int getTrimEndIndex(long end) {
-    int endIdx = data.size();
-    long endTime = getEndTime();
-    if (end < endTime && end > startTime) {
-      long diff = endTime - end;
-      // diff/interval is number of points from ending index, need to subtract
-      // (quick reminder that upper index of sublist method is exclusive)
-      endIdx = endIdx - (int) (diff / interval); // (end offset = size)
+    
+    int endIdx = 0;
+    for (int i = 0; i <= data.size(); ++i) {
+      endIdx = i; // exclusive upper bound, so iterate, then check above bound
+      if ( startTime + (i * interval) >= end ) {
+        break;
+      }
     }
     return endIdx;
+    
   }
 
   /**
    * Converts a start time to the first index of data to include in a trimmed
    * data series
-   * @param start Initial cutoff point for data
+   * @param start Initial cutoff point for data (time, microseconds)
    * @return Index of first data point to include in trimmed subset
    */
   public int getTrimStartIndex(long start) {
@@ -275,7 +276,6 @@ public class DataBlock {
     
     int startIdx = getTrimStartIndex(start);
     int endIdx = getTrimEndIndex(end);
-    
     
     if ( startIdx == 0 && endIdx >= data.size() ){
       return;

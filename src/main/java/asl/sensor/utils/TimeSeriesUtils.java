@@ -262,9 +262,72 @@ public class TimeSeriesUtils {
 
     return dataNames;
   }
+  
+  public List<Pair<Long, Long>> getRanges(Pair<Long, Map<Long, Number>> data) {
+    List<Pair<Long, Long>> gapList = new ArrayList<Pair<Long, Long>>();
+    
+    long interval = data.getFirst();
+    List<Long> times = new ArrayList<Long>( data.getSecond().keySet() );
 
-  public static 
-  DataBlock mapToTimeSeries(Pair<Long, Map<Long, Number>> data, String filter) {
+    for (int i = 0; i < times.size(); ++i) {
+      long timeNow = times.get(i);
+      if ( (i + 1) < times.size() ) {
+        long timeNext = times.get(i + 1);
+        // is there a discrepancy, and is it big enough for us to care?
+        if (timeNext - timeNow != interval) {
+          
+          if (timeNext - timeNow < interval / 2) {
+            System.out.println("SKIPPING POSSIBLE REPEATED VALUE");
+            continue;
+          }
+          
+          // it's a gap if it's more than twice the interval size
+          if (timeNext - timeNow  > interval * 2) {
+            gapList.add( new Pair<Long, Long>(timeNow, timeNext) );
+          }
+
+          
+          // long gap = timeNext - timeNow;
+          // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
+          // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
+          while (timeNext - timeNow > interval * 2) {
+            timeNow += interval;
+          }
+        }
+      }
+    }
+    
+    List<Pair<Long, Long>> contiguous = new ArrayList<Pair<Long, Long>>();
+    
+    // PairComparator sorts the gaps by start time
+    Collections.sort(gapList, new StartTimeComparator() );
+    long start = times.get(0);
+    long end = times.get( times.size() - 1 );
+    if (gapList.size() == 0) {
+      contiguous.add( new Pair<Long, Long>(start, end) );
+    }
+
+    contiguous.add( new Pair<Long, Long>(start, gapList.get(0).getFirst() ) );
+    
+    for (int i = 0; i < gapList.size() - 1; ++i) {
+      contiguous.add( 
+          new Pair<Long, Long>( 
+              gapList.get(i).getSecond(), 
+              gapList.get(i + 1).getFirst() ) );
+    }
+    
+    Long last = gapList.get( gapList.size() - 1).getSecond();
+    contiguous.add( new Pair<Long, Long>(last, end) );
+    
+    return contiguous;
+  }
+
+  public static DataBlock 
+  mapToTimeSeries(Pair<Long, Map<Long, Number>> data, String filter, 
+      Pair<Long, Long> range) {
+    
+    long start = Math.min( range.getFirst(), range.getSecond() );
+    long end = Math.max( range.getFirst(), range.getSecond() );
     
     long interval = data.getFirst();
     Map<Long, Number> timeMap = data.getSecond();
@@ -274,12 +337,6 @@ public class TimeSeriesUtils {
     // which we can then convert into an easy array
     List<Long> times = new ArrayList<Long>( timeMap.keySet() );
     Collections.sort(times);
-
-    double mean = 0.;
-    for ( Number point : timeMap.values() ) {
-      mean += point.doubleValue();
-    }
-    mean /= timeMap.size();
     
     // get the min value in the set, the start time for the series
     long startTime = times.get(0);
@@ -293,14 +350,19 @@ public class TimeSeriesUtils {
 
     List<Number> timeList = new ArrayList<Number>();
     // long currentTime = startTime;
-    
-    Set<Pair<Long, Long>> gapLocations = new HashSet<Pair<Long, Long>>();
 
     for (int i = 0; i < times.size(); ++i) {
       long timeNow = times.get(i);
+      
+      if (timeNow < start) {
+        continue;
+      } else if (timeNow > end) {
+        break;
+      }
+      
       // do a demean here so that we can add 0-values to empty points
       // without those values affecting the removal of a DC offset later
-      timeList.add( timeMap.get(timeNow).doubleValue() - mean );
+      timeList.add( timeMap.get(timeNow).doubleValue() );
 
       if ( (i + 1) < times.size() ) {
         long timeNext = times.get(i + 1);
@@ -311,8 +373,6 @@ public class TimeSeriesUtils {
             System.out.println("SKIPPING POSSIBLE REPEATED VALUE");
             continue;
           }
-          
-          gapLocations.add( new Pair<Long, Long>(timeNow, timeNext) );
           
           // long gap = timeNext - timeNow;
           // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
@@ -326,17 +386,38 @@ public class TimeSeriesUtils {
 
     }
 
-    if ( gapLocations.size() > 0 ) {
-      System.out.println("Found gaps over the following time ranges:");
-      System.out.println(gapLocations);
-    }
-
     
     // demean the input to remove DC offset before adding it to the data
     // List<Number> listOut = TimeSeriesUtils.demean( timeList );
     // since we've demeaned the data while adding it in, don't need to do that
     db = new DataBlock(timeList, interval, filter, startTime);
     return db;
+    
+  }
+  
+  /**
+   * Convert map from getTimeSeriesMap to a datablock format. This process
+   * removes the DC offset and fills in any data gaps with zeros.
+   * @param data Pair, first value is long representing interval and the
+   * second value is a map from longs representing time of a data sample
+   * to a numeric type representing the recorded value at that time
+   * @param filter String with SNCL (station, network, channel, location) data
+   * @return DataBlock with the given timeseries and metadata
+   */
+  public static 
+  DataBlock mapToTimeSeries(Pair<Long, Map<Long, Number>> data, String filter) {
+    
+    // get the full range of data and fill with zeros whenever necessary
+    Map<Long, Number> timeMap = data.getSecond();
+    // get the defined times and get the min and max values as the range
+    List<Long> times = new ArrayList<Long>( timeMap.keySet() );
+    Collections.sort(times);
+    // used to specify the range to trim to (all data) in given method
+    Pair<Long, Long> range = 
+        new Pair<Long, Long>( times.get(0), times.get( times.size() - 1 ) );
+    
+    return mapToTimeSeries(data, filter, range);
+    
   }
   
   /**

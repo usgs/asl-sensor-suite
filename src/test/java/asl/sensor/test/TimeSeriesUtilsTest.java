@@ -80,6 +80,7 @@ public class TimeSeriesUtilsTest {
       DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
       
       XYSeriesCollection xysc = new XYSeriesCollection();
+      XYSeriesCollection justDemeaned = new XYSeriesCollection();
       XYSeries meaned = new XYSeries(metaName + " mean kept");
       XYSeries meanedDbl = new XYSeries(metaName + " mean kept, conv. double");
       XYSeries demeaned = new XYSeries(metaName + " mean removed");
@@ -114,11 +115,19 @@ public class TimeSeriesUtilsTest {
       xysc.addSeries(meanedDbl);
       xysc.addSeries(demeaned);
       
-      JFreeChart chart = ChartFactory.createScatterPlot(
+      justDemeaned.addSeries(demeaned);
+      
+      JFreeChart chart = ChartFactory.createXYLineChart(
           "Test demeaning operation",
           "epoch time in nanoseconds",
           "data sample",
           xysc);
+      
+      JFreeChart chart2 = ChartFactory.createXYLineChart(
+          "Test demeaning operation",
+          "epoch time in nanoseconds",
+          "data sample",
+          justDemeaned);
       
       String folderName = "testResultImages";
       File folder = new File(folderName);
@@ -128,8 +137,10 @@ public class TimeSeriesUtilsTest {
       }
       
       BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+      BufferedImage bi2 = ReportingUtils.chartsToImage(1280, 960, chart2);
+      BufferedImage out = ReportingUtils.mergeBufferedImages(bi, bi2);
       File file = new File("testResultImages/demeaning-test.png");
-      ImageIO.write( bi, "png", file );
+      ImageIO.write(out, "png", file);
       
     } catch (FileNotFoundException e) {
       fail();
@@ -338,7 +349,6 @@ public class TimeSeriesUtilsTest {
       }
       
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       assertNull(e);
     }
     
