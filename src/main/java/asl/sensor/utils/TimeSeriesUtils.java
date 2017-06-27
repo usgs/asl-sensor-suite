@@ -263,11 +263,13 @@ public class TimeSeriesUtils {
     return dataNames;
   }
   
-  public List<Pair<Long, Long>> getRanges(Pair<Long, Map<Long, Number>> data) {
+  public static List<Pair<Long, Long>> 
+  getRanges(Pair<Long, Map<Long, Number>> data) {
     List<Pair<Long, Long>> gapList = new ArrayList<Pair<Long, Long>>();
     
     long interval = data.getFirst();
     List<Long> times = new ArrayList<Long>( data.getSecond().keySet() );
+    Collections.sort(times);
 
     for (int i = 0; i < times.size(); ++i) {
       long timeNow = times.get(i);
@@ -303,10 +305,12 @@ public class TimeSeriesUtils {
     Collections.sort(gapList, new StartTimeComparator() );
     long start = times.get(0);
     long end = times.get( times.size() - 1 );
+    
     if (gapList.size() == 0) {
       contiguous.add( new Pair<Long, Long>(start, end) );
+      return contiguous;
     }
-
+    
     contiguous.add( new Pair<Long, Long>(start, gapList.get(0).getFirst() ) );
     
     for (int i = 0; i < gapList.size() - 1; ++i) {
@@ -318,8 +322,20 @@ public class TimeSeriesUtils {
     
     Long last = gapList.get( gapList.size() - 1).getSecond();
     contiguous.add( new Pair<Long, Long>(last, end) );
-    
+    Collections.sort(contiguous, new StartTimeComparator() );
     return contiguous;
+  }
+  
+  /**
+   * Get range of contiguous data blocks in a file
+   * @param file Seed file to read in
+   * @param filter SNCL data representing relevant timeseries
+   * @return List of regions of data within which no time gaps exist
+   * @throws FileNotFoundException If file does not exist
+   */
+  public static List<Pair<Long, Long>> getRanges(String file, String filter) 
+      throws FileNotFoundException {
+    return getRanges( getTimeSeriesMap(file, filter) );
   }
 
   public static DataBlock 
@@ -390,9 +406,15 @@ public class TimeSeriesUtils {
     // demean the input to remove DC offset before adding it to the data
     // List<Number> listOut = TimeSeriesUtils.demean( timeList );
     // since we've demeaned the data while adding it in, don't need to do that
-    db = new DataBlock(timeList, interval, filter, startTime);
+    db = new DataBlock(timeList, interval, filter, start);
     return db;
     
+  }
+  
+  public static DataBlock 
+  getTimeSeries(String file, String filter, Pair<Long, Long> range) 
+      throws FileNotFoundException {
+    return mapToTimeSeries( getTimeSeriesMap(file, filter), filter, range);
   }
   
   /**
