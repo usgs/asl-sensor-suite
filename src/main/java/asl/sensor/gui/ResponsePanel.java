@@ -242,10 +242,21 @@ public class ResponsePanel extends ExperimentPanel {
   }
   
   @Override
+  public String[] getAdditionalReportPages() {
+    ResponseExperiment respExp = (ResponseExperiment) expResult;
+    InstrumentResponse[] irs = respExp.getResponses();
+    String[] pages = new String[irs.length];
+    for (int i = 0; i < pages.length; ++i) {
+      pages[i] = irs[i].toString();
+    }
+    return pages;
+  }
+  
+  @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{magChart, argChart};
   }
-  
+
   @Override
   /**
    * Produce the filename of the report generated from this experiment.
@@ -289,7 +300,7 @@ public class ResponsePanel extends ExperimentPanel {
     return xAxis;
     
   }
-
+  
   @Override
   public ValueAxis getYAxis() {
     
@@ -305,17 +316,6 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public int panelsNeeded() {
     return 3;
-  }
-  
-  @Override
-  public String[] getAdditionalReportPages() {
-    ResponseExperiment respExp = (ResponseExperiment) expResult;
-    InstrumentResponse[] irs = respExp.getResponses();
-    String[] pages = new String[irs.length];
-    for (int i = 0; i < pages.length; ++i) {
-      pages[i] = irs[i].toString();
-    }
-    return pages;
   }
   
   @Override

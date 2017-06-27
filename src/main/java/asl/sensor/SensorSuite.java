@@ -398,6 +398,23 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
 
   }
 
+  @Override
+  public void propertyChange(PropertyChangeEvent evt) {
+    // handle the completion of the swingworker thread of the backend
+    if ( evt.getPropertyName().equals("Backend completed") ) {
+      ExperimentPanel source = (ExperimentPanel) evt.getSource();
+      source.removePropertyChangeListener(this);
+      
+      if ( evt.getNewValue().equals(false) ) {
+        return; 
+      }
+      
+      if ( tabbedPane.getSelectedComponent() == source ) {
+        savePDF.setEnabled( source.hasRun() );
+      }
+    }
+  }
+  
   /**
    * Checks when input panel gets new data or active experiment changes
    * to determine whether or not the experiment can be run yet
@@ -423,23 +440,6 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       savePDF.setEnabled(canGenerate && isSet);
     }
     
-  }
-  
-  @Override
-  public void propertyChange(PropertyChangeEvent evt) {
-    // handle the completion of the swingworker thread of the backend
-    if ( evt.getPropertyName().equals("Backend completed") ) {
-      ExperimentPanel source = (ExperimentPanel) evt.getSource();
-      source.removePropertyChangeListener(this);
-      
-      if ( evt.getNewValue().equals(false) ) {
-        return; 
-      }
-      
-      if ( tabbedPane.getSelectedComponent() == source ) {
-        savePDF.setEnabled( source.hasRun() );
-      }
-    }
   }
 
 

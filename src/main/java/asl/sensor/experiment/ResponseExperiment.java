@@ -126,6 +126,10 @@ public class ResponseExperiment extends Experiment {
     return 0L;
   }
 
+  public InstrumentResponse[] getResponses() {
+    return responses.toArray( new InstrumentResponse[responses.size()] );
+  }
+  
   @Override
   public long getStart() {
     // there is no actual timeseries data used in this experiment
@@ -142,10 +146,6 @@ public class ResponseExperiment extends Experiment {
     }
     
     return false;
-  }
-  
-  public InstrumentResponse[] getResponses() {
-    return responses.toArray( new InstrumentResponse[responses.size()] );
   }
   
   /**

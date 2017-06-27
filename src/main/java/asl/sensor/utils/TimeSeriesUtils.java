@@ -541,12 +541,14 @@ public class TimeSeriesUtils {
    * reflecting the format of the data in the file which can be any of these.
    * This is packaged into a data structure that also includes the file's
    * metadata (station, channel, etc.) and the start time and period between
-   * samples. The data loaded in is pre-trimmed according a specified range
-   * @param filename
-   * @param filter
-   * @param range
-   * @return
-   * @throws FileNotFoundException
+   * samples. The data loaded in is pre-trimmed according a specified range,
+   * mainly to be used for loading in contiguous regions of data based on
+   * gap locations
+   * @param filename The full path to the file to be loaded in
+   * @param filter Specifies which data to load in, for multiplexed files
+   * @param range Range of time to trim data to before loading
+   * @return A structure containing the time series and metadata for the file
+   * @throws FileNotFoundException If file cannot be read in
    */
   public static DataBlock 
   getTimeSeries(String filename, String filter, Pair<Long, Long> range) 

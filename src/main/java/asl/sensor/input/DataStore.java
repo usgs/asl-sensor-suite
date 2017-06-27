@@ -167,6 +167,32 @@ public class DataStore {
     return dataBlockArray[idx];
   }
   
+  public Pair<Long, Long> getCommonTime() {
+    if ( numberOfBlocksSet() < 1) {
+      return new Pair<Long, Long>(Long.MIN_VALUE, Long.MAX_VALUE);
+    } else {
+      long lastStartTime = Long.MIN_VALUE;
+      long firstEndTime = Long.MAX_VALUE;
+      
+      // first pass to get the limits of the time data
+      for (int i = 0; i < FILE_COUNT; ++i) {
+        DataBlock data = dataBlockArray[i];
+        if (!thisBlockIsSet[i]) {
+          continue;
+        }
+        long start = data.getStartTime();
+        if (start > lastStartTime) {
+          lastStartTime = start;
+        }
+        long end = data.getEndTime();
+        if (end < firstEndTime) {
+          firstEndTime = end;
+        }
+      }
+      return new Pair<Long, Long>(lastStartTime, firstEndTime);
+    }
+  }
+  
   /**
    * Returns the set of structures used to hold the loaded miniSeed data sets
    * @return An array of DataBlocks (time series and metadata)
@@ -283,7 +309,7 @@ public class DataStore {
     }
     return false;
   }
-  
+
   /**
    * Get lowest-frequency data and downsample all data to it
    */
@@ -314,7 +340,7 @@ public class DataStore {
     trimToCommonTime();
     
   }
-
+  
   /**
    * Gives the count of indices where both a miniseed and response are loaded
    * @return the number of entries of miniseeds with a matching response
@@ -482,7 +508,7 @@ public class DataStore {
     }
     
   }
-  
+
   /**
    * Place an already-constructed instrument response at the index idx 
    * @param idx index in this object to place the response at
@@ -492,7 +518,7 @@ public class DataStore {
     responses[idx] = ir;
     thisResponseIsSet[idx] = true;
   }
-
+  
   /**
    * Sets the response of a sensor's dataseries matched by index
    * @param idx Index of plot for which response file matches
@@ -549,32 +575,6 @@ public class DataStore {
    */
   public void trimToCommonTime() {
     trimToCommonTime(FILE_COUNT);
-  }
-  
-  public Pair<Long, Long> getCommonTime() {
-    if ( numberOfBlocksSet() < 1) {
-      return new Pair<Long, Long>(Long.MIN_VALUE, Long.MAX_VALUE);
-    } else {
-      long lastStartTime = Long.MIN_VALUE;
-      long firstEndTime = Long.MAX_VALUE;
-      
-      // first pass to get the limits of the time data
-      for (int i = 0; i < FILE_COUNT; ++i) {
-        DataBlock data = dataBlockArray[i];
-        if (!thisBlockIsSet[i]) {
-          continue;
-        }
-        long start = data.getStartTime();
-        if (start > lastStartTime) {
-          lastStartTime = start;
-        }
-        long end = data.getEndTime();
-        if (end < firstEndTime) {
-          firstEndTime = end;
-        }
-      }
-      return new Pair<Long, Long>(lastStartTime, firstEndTime);
-    }
   }
   
   /**

@@ -50,10 +50,41 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class AzimuthExperiment extends Experiment {
   
+  /**
+   * Check if data is aligned antipolar or not (signs of data are inverted).
+   * This is done by getting a range of data and seeing whether more data
+   * have the same sign or different signs. This is necessary because the
+   * data is fit by coherence, which is optimized by both the angle x and the
+   * angle 180 + x, so the solver chooses the closest one to the initial angle.
+   * @param rot Data that has been rotated and may be 180 degrees off from
+   * correct orientation
+   * @param ref Data that is to be used as reference with known orientation
+   * @param len Amount of data to be analysed for sign matching
+   * @return True if more data analysed has opposite signs than matching signs
+   * (i.e., one signal is positive and one is negative)
+   */
+  public static boolean 
+  alignedAntipolar(List<Number> rot, List<Number> ref, int len) {
+    int numSameSign = 0; int numDiffSign = 0;
+    for (int i = 0; i < len; ++i) {
+      int sigRot = (int) Math.signum( (double) rot.get(i) );
+      int sigRef = (int) Math.signum( (double) ref.get(i) );
+      
+      if (sigRot - sigRef == 0) {
+        ++numSameSign;
+      } else {
+        ++numDiffSign;
+      }
+    }
+    
+    return numSameSign < numDiffSign;
+    
+  }
   private double offset = 0.;
-  private double angle;
   
+  private double angle;
   private double[] freqs;
+  
   private double[] coherence;
   
   private boolean simpleCalc; // used for nine-noise calculation
@@ -299,31 +330,6 @@ public class AzimuthExperiment extends Experiment {
     }
     
     xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
-    
-  }
-  
-  /**
-   * 
-   * @param rot
-   * @param ref
-   * @param len
-   * @return
-   */
-  public static boolean 
-  alignedAntipolar(List<Number> rot, List<Number> ref, int len) {
-    int numSameSign = 0; int numDiffSign = 0;
-    for (int i = 0; i < len; ++i) {
-      int sigRot = (int) Math.signum( (double) rot.get(i) );
-      int sigRef = (int) Math.signum( (double) ref.get(i) );
-      
-      if (sigRot - sigRef == 0) {
-        ++numSameSign;
-      } else {
-        ++numDiffSign;
-      }
-    }
-    
-    return numSameSign < numDiffSign;
     
   }
   

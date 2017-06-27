@@ -137,6 +137,44 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     setValues(timeStamp);
   }
 
+  public void addChangeListener(ChangeListener listener) {
+    listeners.add(ChangeListener.class, listener);
+  }
+  
+  public void fireStateChanged() {
+    ChangeListener[] lsners = listeners.getListeners(ChangeListener.class);
+    if (lsners != null && lsners.length > 0) {
+      ChangeEvent evt = new ChangeEvent(this);
+      for (ChangeListener lsnr : lsners) {
+        lsnr.stateChanged(evt);
+      }
+    }
+  }
+  
+  public long getTime() {
+    return c.getTimeInMillis();
+  }
+  
+  public void removeChangeListener(ChangeListener listener) {
+    listeners.remove(ChangeListener.class, listener);
+  }
+  
+  public void setValues(long timeStamp) {
+    
+    if ( timeStamp == getTime() ) {
+      return; // don't do anything if no change is necessary
+    }
+    
+    c.setTimeInMillis(timeStamp);
+    year.setValue( c.get(Calendar.YEAR) );
+    day.setValue( c.get(Calendar.DAY_OF_YEAR) );
+    hour.setValue( c.get(Calendar.HOUR_OF_DAY) );
+    minute.setValue( c.get(Calendar.MINUTE) );
+    second.setValue( c.get(Calendar.SECOND) );
+    millisecond.setValue( c.get(Calendar.MILLISECOND) );
+    
+  }
+  
   @Override
   public void stateChanged(ChangeEvent e) {
     
@@ -155,44 +193,6 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     }
     
     fireStateChanged(); // percolate change in component up to any containers
-  }
-  
-  public void addChangeListener(ChangeListener listener) {
-    listeners.add(ChangeListener.class, listener);
-  }
-  
-  public void removeChangeListener(ChangeListener listener) {
-    listeners.remove(ChangeListener.class, listener);
-  }
-  
-  public void fireStateChanged() {
-    ChangeListener[] lsners = listeners.getListeners(ChangeListener.class);
-    if (lsners != null && lsners.length > 0) {
-      ChangeEvent evt = new ChangeEvent(this);
-      for (ChangeListener lsnr : lsners) {
-        lsnr.stateChanged(evt);
-      }
-    }
-  }
-  
-  public long getTime() {
-    return c.getTimeInMillis();
-  }
-  
-  public void setValues(long timeStamp) {
-    
-    if ( timeStamp == getTime() ) {
-      return; // don't do anything if no change is necessary
-    }
-    
-    c.setTimeInMillis(timeStamp);
-    year.setValue( c.get(Calendar.YEAR) );
-    day.setValue( c.get(Calendar.DAY_OF_YEAR) );
-    hour.setValue( c.get(Calendar.HOUR_OF_DAY) );
-    minute.setValue( c.get(Calendar.MINUTE) );
-    second.setValue( c.get(Calendar.SECOND) );
-    millisecond.setValue( c.get(Calendar.MILLISECOND) );
-    
   }
   
 }

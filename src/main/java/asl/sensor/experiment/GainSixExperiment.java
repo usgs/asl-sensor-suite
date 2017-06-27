@@ -33,105 +33,6 @@ public class GainSixExperiment extends Experiment {
     }
   }
   
-  /**
-   * Get the rotation angle used to rotate the second input set's north sensor
-   * @return Angle of second north sensor (radians)
-   */
-  public double getNorthAzimuth() {
-    return north2Angle;
-  }
-  
-  /**
-   * Get the rotation angle used to rotate the second input set's east sensor
-   * Ideally this should be close to the value used for the north azimuth
-   * @return Angle of second east sensor (radians) minus 90-degree offset 
-   * representing angle between north and east sensors; this is the angle sent
-   * to the rotation function
-   * @see TimeSeriesUtils#rotateX
-   */
-  public double getEastAzimuth() {
-    return east2Angle;
-  }
-
-  /**
-   * Get octave centered around peak of first (north) components. We assume
-   * that all three component gain sets have their peaks at nearly the same
-   * points.
-   * @param idx Index of north component's data to use as reference
-   * @return Upper and lower frequency bound of octave over given peak
-   */
-  public double[] getOctaveCenteredAtPeak(int idx) {
-    // we assume the first sensor is a good enough 
-    return componentBackends[0].getOctaveCenteredAtPeak(idx);
-  }
-  
-  /**
-   * Get the gain mean and deviation values from the peak frequency of the 
-   * given dataset; the range for stats is the octave centered at the peak.
-   * @param idx Index of north component's data to use as reference
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
-   */
-  public double[][] getStatsFromPeak(int idx) {
-    
-    double[] octave = getOctaveCenteredAtPeak(idx);
-    return getStatsFromFreqs(idx, octave[0], octave[1]);
-    
-  }
-  
-
-  /**
-   * Get the gain mean and deviation values from a specified peak
-   * frequency range.
-   * @param idx Index of north component's data to use as reference
-   * @param low Low frequency bound of range to get stats over
-   * @param high High frequency bound of range to get stats over
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
-   */
-  public double[][] getStatsFromFreqs(int idx, double low, double high) {
-    double[][] result = new double[DIMS][];
-    // vertical component requires no rotation
-    result[2] = componentBackends[2].getStatsFromFreqs(idx, low, high);
-    
-    double meanAngle = (north2Angle + east2Angle) / 2;
-    // get north and east components and then rotate their gain as necessary
-    result[0] = componentBackends[0].getStatsFromFreqs(idx, low, high);
-    result[1] = componentBackends[1].getStatsFromFreqs(idx, low, high);
-    
-    // get the values we need for doing rotation
-    double northRef = result[0][2];
-    double northCalc = result[0][3];
-    double eastRef = result[1][2];
-    double eastCalc = result[1][3];
-    
-    if ( idx == 0 ) {
-      // the fixed data is being used as reference, un-rotate calc'd results
-      double calcNish = (northCalc - eastCalc) / ( 2 * Math.cos(meanAngle) );
-      double calcEish = (northCalc + eastCalc) / ( 2 * Math.sin(meanAngle) );
-      result[0][3] = calcNish;
-      result[1][3] = calcEish;
-    } else {
-      // the rotated data is being used as reference, un-rotate the reference
-      double refNish = (northRef - eastRef) / ( 2 * Math.cos(meanAngle) );
-      double refEish = (northRef + eastRef) / ( 2 * Math.sin(meanAngle) );
-      result[0][2] = refNish;
-      result[1][2] = refEish;
-    }
-    
-    return result;
-  }
-  
-  @Override
-  public boolean hasEnoughData(DataStore ds) {
-    int needed = blocksNeeded();
-    for (int i = 0; i < needed; ++i) {
-      if ( !ds.bothComponentsSet(i) ) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-
   @Override
   protected void backend(DataStore ds) {
     
@@ -233,7 +134,24 @@ public class GainSixExperiment extends Experiment {
     }
     
   }
+  
+  @Override
+  public int blocksNeeded() {
+    return 6;
+  }
 
+  /**
+   * Get the rotation angle used to rotate the second input set's east sensor
+   * Ideally this should be close to the value used for the north azimuth
+   * @return Angle of second east sensor (radians) minus 90-degree offset 
+   * representing angle between north and east sensors; this is the angle sent
+   * to the rotation function
+   * @see TimeSeriesUtils#rotateX
+   */
+  public double getEastAzimuth() {
+    return east2Angle;
+  }
+  
   /**
    * Get the frequency bounds of the data to be given to charts
    * @return Array of form {low freq bound, high freq bound}
@@ -247,9 +165,91 @@ public class GainSixExperiment extends Experiment {
   }
   
 
+  /**
+   * Get the rotation angle used to rotate the second input set's north sensor
+   * @return Angle of second north sensor (radians)
+   */
+  public double getNorthAzimuth() {
+    return north2Angle;
+  }
+  
+  /**
+   * Get octave centered around peak of first (north) components. We assume
+   * that all three component gain sets have their peaks at nearly the same
+   * points.
+   * @param idx Index of north component's data to use as reference
+   * @return Upper and lower frequency bound of octave over given peak
+   */
+  public double[] getOctaveCenteredAtPeak(int idx) {
+    // we assume the first sensor is a good enough 
+    return componentBackends[0].getOctaveCenteredAtPeak(idx);
+  }
+
+
+  /**
+   * Get the gain mean and deviation values from a specified peak
+   * frequency range.
+   * @param idx Index of north component's data to use as reference
+   * @param low Low frequency bound of range to get stats over
+   * @param high High frequency bound of range to get stats over
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
+   */
+  public double[][] getStatsFromFreqs(int idx, double low, double high) {
+    double[][] result = new double[DIMS][];
+    // vertical component requires no rotation
+    result[2] = componentBackends[2].getStatsFromFreqs(idx, low, high);
+    
+    double meanAngle = (north2Angle + east2Angle) / 2;
+    // get north and east components and then rotate their gain as necessary
+    result[0] = componentBackends[0].getStatsFromFreqs(idx, low, high);
+    result[1] = componentBackends[1].getStatsFromFreqs(idx, low, high);
+    
+    // get the values we need for doing rotation
+    double northRef = result[0][2];
+    double northCalc = result[0][3];
+    double eastRef = result[1][2];
+    double eastCalc = result[1][3];
+    
+    if ( idx == 0 ) {
+      // the fixed data is being used as reference, un-rotate calc'd results
+      double calcNish = (northCalc - eastCalc) / ( 2 * Math.cos(meanAngle) );
+      double calcEish = (northCalc + eastCalc) / ( 2 * Math.sin(meanAngle) );
+      result[0][3] = calcNish;
+      result[1][3] = calcEish;
+    } else {
+      // the rotated data is being used as reference, un-rotate the reference
+      double refNish = (northRef - eastRef) / ( 2 * Math.cos(meanAngle) );
+      double refEish = (northRef + eastRef) / ( 2 * Math.sin(meanAngle) );
+      result[0][2] = refNish;
+      result[1][2] = refEish;
+    }
+    
+    return result;
+  }
+
+  /**
+   * Get the gain mean and deviation values from the peak frequency of the 
+   * given dataset; the range for stats is the octave centered at the peak.
+   * @param idx Index of north component's data to use as reference
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
+   */
+  public double[][] getStatsFromPeak(int idx) {
+    
+    double[] octave = getOctaveCenteredAtPeak(idx);
+    return getStatsFromFreqs(idx, octave[0], octave[1]);
+    
+  }
+  
+
   @Override
-  public int blocksNeeded() {
-    return 6;
+  public boolean hasEnoughData(DataStore ds) {
+    int needed = blocksNeeded();
+    for (int i = 0; i < needed; ++i) {
+      if ( !ds.bothComponentsSet(i) ) {
+        return false;
+      }
+    }
+    return true;
   }
   
   @Override

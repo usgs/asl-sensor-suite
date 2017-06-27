@@ -6,7 +6,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Paint;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -60,7 +59,6 @@ import org.jfree.ui.RectangleAnchor;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.DisplayableDateRange;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
@@ -1233,51 +1231,6 @@ implements ActionListener, ChangeListener {
     
   }
   
-  /**
-   * Verify that slider locations will not violate restrictions in location
-   * @param moveLeft True if left slider needs to move (false if right slider)
-   * @param newLocation Value to set slider to if within restrictions
-   */
-  private void validateSliderPlacement(boolean moveLeft, int newLocation) {
-    
-    int leftSliderValue, rightSliderValue;
-    
-    if (moveLeft) {
-      leftSliderValue = newLocation;
-      rightSliderValue = rightSlider.getValue();
-    } else {
-      leftSliderValue = leftSlider.getValue();
-      rightSliderValue = newLocation;
-    }
-    
-    if (leftSliderValue > rightSliderValue || 
-        leftSliderValue + MARGIN > rightSliderValue) {
-      
-      // (left slider must stay left of right slider by at least margin)
-      
-      if (moveLeft) {
-        // move left slider as close to right as possible
-        leftSliderValue = rightSliderValue - MARGIN;
-        if (leftSliderValue < 0) {
-          leftSliderValue = 0;
-          rightSliderValue = MARGIN;
-        }
-      } else {
-        // move right slider as close to left as possible
-        rightSliderValue = leftSliderValue + MARGIN;
-        if (rightSliderValue > SLIDER_MAX) {
-          rightSliderValue = SLIDER_MAX;
-          leftSliderValue = SLIDER_MAX - MARGIN;
-        }
-      }
-      
-    }
-    
-    rightSlider.setValue(rightSliderValue);
-    leftSlider.setValue(leftSliderValue);
-    
-  }
-  
   @Override
   /**
    * Handles changes in value by the sliders below the charts
@@ -1356,6 +1309,51 @@ implements ActionListener, ChangeListener {
     }
     
     setVerticalBars(); // date display object's text gets updated here
+    
+  }
+  
+  /**
+   * Verify that slider locations will not violate restrictions in location
+   * @param moveLeft True if left slider needs to move (false if right slider)
+   * @param newLocation Value to set slider to if within restrictions
+   */
+  private void validateSliderPlacement(boolean moveLeft, int newLocation) {
+    
+    int leftSliderValue, rightSliderValue;
+    
+    if (moveLeft) {
+      leftSliderValue = newLocation;
+      rightSliderValue = rightSlider.getValue();
+    } else {
+      leftSliderValue = leftSlider.getValue();
+      rightSliderValue = newLocation;
+    }
+    
+    if (leftSliderValue > rightSliderValue || 
+        leftSliderValue + MARGIN > rightSliderValue) {
+      
+      // (left slider must stay left of right slider by at least margin)
+      
+      if (moveLeft) {
+        // move left slider as close to right as possible
+        leftSliderValue = rightSliderValue - MARGIN;
+        if (leftSliderValue < 0) {
+          leftSliderValue = 0;
+          rightSliderValue = MARGIN;
+        }
+      } else {
+        // move right slider as close to left as possible
+        rightSliderValue = leftSliderValue + MARGIN;
+        if (rightSliderValue > SLIDER_MAX) {
+          rightSliderValue = SLIDER_MAX;
+          leftSliderValue = SLIDER_MAX - MARGIN;
+        }
+      }
+      
+    }
+    
+    rightSlider.setValue(rightSliderValue);
+    leftSlider.setValue(leftSliderValue);
     
   }
   

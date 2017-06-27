@@ -7,13 +7,13 @@ public class RandDebugExperiment extends RandomizedExperiment {
   public final boolean SKIP_SOLVING = true;
   
   @Override
-  public boolean getSolverState() {
-    return SKIP_SOLVING;
+  protected void backend(DataStore ds) {
+    super.backend(ds);
   }
   
   @Override
-  protected void backend(DataStore ds) {
-    super.backend(ds);
+  public boolean getSolverState() {
+    return SKIP_SOLVING;
   }
 
 }

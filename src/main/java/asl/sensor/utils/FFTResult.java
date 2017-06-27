@@ -331,8 +331,7 @@ public class FFTResult {
    * @return Complex array of FFT values and double array of corresponding 
    * frequencies 
    */
-  public static FFTResult 
-  singleSidedFilteredFFT(DataBlock db, boolean mustFlip) {
+  public static FFTResult singleSidedFFT(DataBlock db, boolean mustFlip) {
     
     double[] data = new double[db.size()];
     
@@ -343,12 +342,6 @@ public class FFTResult {
         data[i] *= -1;
       }
     }
-    
-    long interval = db.getInterval();
-
-    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
-    
-    data = bandFilter(data, sps, 0.0, 0.1);
     
     data = TimeSeriesUtils.demean(data);
     
@@ -383,7 +376,8 @@ public class FFTResult {
    * @return Complex array of FFT values and double array of corresponding 
    * frequencies 
    */
-  public static FFTResult singleSidedFFT(DataBlock db, boolean mustFlip) {
+  public static FFTResult 
+  singleSidedFilteredFFT(DataBlock db, boolean mustFlip) {
     
     double[] data = new double[db.size()];
     
@@ -394,6 +388,12 @@ public class FFTResult {
         data[i] *= -1;
       }
     }
+    
+    long interval = db.getInterval();
+
+    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
+    
+    data = bandFilter(data, sps, 0.0, 0.1);
     
     data = TimeSeriesUtils.demean(data);
     
@@ -663,15 +663,6 @@ public class FFTResult {
   }
 
   /**
-   * Get the size of the complex array of FFT values, also the size of the
-   * double array of frequencies for the FFT at each index
-   * @return int representing size of thi's object's arrays
-   */
-  public int size() {
-    return transform.length;
-  }
-  
-  /**
    * Get the FFT for some sort of previously calculated data
    * @return Array of FFT results, as complex numbers
    */
@@ -689,6 +680,15 @@ public class FFTResult {
   }
   
   /**
+   * Get the frequency value at the given index
+   * @param idx Index to get the frequency value at
+   * @return Frequency value at index
+   */
+  public double getFreq(int idx) {
+    return freqs[idx];
+  }
+  
+  /**
    * Get the frequency range for the (previously calculated) FFT
    * @return Array of frequencies (doubles), matching index to each FFT point
    */
@@ -697,12 +697,12 @@ public class FFTResult {
   }
   
   /**
-   * Get the frequency value at the given index
-   * @param idx Index to get the frequency value at
-   * @return Frequency value at index
+   * Get the size of the complex array of FFT values, also the size of the
+   * double array of frequencies for the FFT at each index
+   * @return int representing size of thi's object's arrays
    */
-  public double getFreq(int idx) {
-    return freqs[idx];
+  public int size() {
+    return transform.length;
   }
   
 }

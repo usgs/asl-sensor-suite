@@ -94,15 +94,6 @@ extends Experiment implements ParameterValidator {
     numIterations = 0;
   }
   
-  /**
-   * Used to determine whether to run the solver or not; disabling the solver
-   * is useful for determining the quality of a given calibration function
-   * @return True if the solver is to be run
-   */
-  public boolean getSolverState() {
-    return SKIP_SOLVING;
-  }
-  
   /*
    * (non-Javadoc)
    * BACKEND FUNCTION BEGINS HERE
@@ -615,7 +606,7 @@ extends Experiment implements ParameterValidator {
   public List<Complex> getInitialZeros() {
     return getZeroSubList(initialZeros);
   }
-
+  
   /**
    * Get the residual value of the initial response parameters
    * @return the residual of the initial poles from fed-in response
@@ -623,7 +614,7 @@ extends Experiment implements ParameterValidator {
   public double getInitResidual() {
     return initialResidual;
   }
-  
+
   /**
    * Get the number of times the algorithm iterated to produce the optimum
    * response fit, from the underlying least squares solver
@@ -632,7 +623,7 @@ extends Experiment implements ParameterValidator {
   public int getIterations() {
     return numIterations;
   }
-
+  
   /**
    * Trim down the poles to those within the range of those being fit
    * @param polesToTrim Either fit or input poles, sorted by frequency
@@ -655,6 +646,15 @@ extends Experiment implements ParameterValidator {
     }
     
     return subList;
+  }
+
+  /**
+   * Used to determine whether to run the solver or not; disabling the solver
+   * is useful for determining the quality of a given calibration function
+   * @return True if the solver is to be run
+   */
+  public boolean getSolverState() {
+    return SKIP_SOLVING;
   }
   
   /**
@@ -695,7 +695,6 @@ extends Experiment implements ParameterValidator {
    * approximation given a set of points to set as response. 
    * Mainly a wrapper for the evaluateResponse function.
    * @param variables Values to set the response's poles to
-   * @param numZeros How much of input vector is zeros of response
    * @return RealVector with evaluation at current response value and 
    * RealMatrix with forward difference of that response (Jacobian)
    */
