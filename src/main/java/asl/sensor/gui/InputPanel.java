@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Paint;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -45,11 +46,13 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.plot.IntervalMarker;
 import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
@@ -776,58 +779,6 @@ implements ActionListener, ChangeListener {
       }
 
       final String immutableFilter = filterName;
-      final long start;
-      final long end;
-      try {
-        
-        List<Pair<Long, Long>> ranges =  
-            TimeSeriesUtils.getRanges(filePath, filterName);
-        
-        long startFile = ranges.get(0).getFirst();
-        long endFile = ranges.get( ranges.size() - 1 ).getSecond();
-        
-        if ( ranges.size() > 1 ) {
-          // default range: load in all data, pad with zeros
-          // this will be the first option, and the default
-          ranges.add( 0, new Pair<Long, Long>(startFile, endFile) );
-          
-          StringBuilder msg = new StringBuilder("File loaded in is not ");
-          msg.append("contiguous. Please select a range to load:\n");
-          msg.append("(Default choice is to load in data and ");
-          msg.append("fill gaps with zeros)");
-          
-          DisplayableDateRange[] rangeStrings = 
-              new DisplayableDateRange[ranges.size()];
-          
-          for (int i = 0; i < rangeStrings.length; ++i) {
-            String str = "";
-            if (i == 0) {
-              str = " (pad gap with zeros)";
-            }
-            rangeStrings[i] = new DisplayableDateRange( ranges.get(i), str );
-          }
-          
-          JDialog dialog = new JDialog();
-          Object result = JOptionPane.showInputDialog(
-              dialog,
-              msg.toString(),
-              "Time Range Selection",
-              JOptionPane.PLAIN_MESSAGE,
-              null, rangeStrings,
-              rangeStrings[0]);
-          DisplayableDateRange ddr = (DisplayableDateRange) result;
-          start = ddr.getDateRange().getFirst();
-          end = ddr.getDateRange().getSecond();
-          
-        } else {
-          start = startFile;
-          end = endFile;
-        }
-        
-      } catch (FileNotFoundException e1) {
-        e1.printStackTrace();
-        return;
-      }
 
       // create swingworker to load large files in the background
       SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>(){
@@ -839,7 +790,7 @@ implements ActionListener, ChangeListener {
         public Integer doInBackground() {
 
           try {
-            ds.setData(idx, filePath, immutableFilter, start, end);
+            ds.setData(idx, filePath, immutableFilter);
           } catch (RuntimeException e) {
             e.printStackTrace();
             caughtException = true;
@@ -1150,6 +1101,25 @@ implements ActionListener, ChangeListener {
       xyp.addDomainMarker(startMarker);
       xyp.addDomainMarker(endMarker);
       
+      List<Pair<Long,Long>> gaps = zooms.getBlock(i).getGapBoundaries();
+      
+      XYDataset data = xyp.getDataset();
+      XYSeriesCollection xysc = (XYSeriesCollection) data;
+      double min = xysc.getDomainLowerBound(false);
+      double max = xysc.getDomainUpperBound(false);
+      
+      for (Pair<Long, Long> gapLoc : gaps) {
+        long divisor = TimeSeriesUtils.ONE_HZ_INTERVAL / 1000;
+        Double gapStart = gapLoc.getFirst().doubleValue() / divisor;
+        Double gapEnd = gapLoc.getSecond().doubleValue() / divisor;
+        if (gapEnd > min || gapStart < max) {
+          double start = Math.max(gapStart, min);
+          double end = Math.min(gapEnd, max);
+          Marker gapMarker = new IntervalMarker(start, end);
+          gapMarker.setPaint( Color.ORANGE );
+          xyp.addDomainMarker(gapMarker);
+        }
+      }
       chartPanels[i].repaint();
     }
     
@@ -1256,6 +1226,7 @@ implements ActionListener, ChangeListener {
         continue;
       }
       resetPlotZoom(i);
+      
     }
 
     setVerticalBars();

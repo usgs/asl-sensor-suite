@@ -1,8 +1,11 @@
 package asl.sensor.input;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.utils.TimeSeriesUtils;
@@ -22,6 +25,7 @@ public class DataBlock {
   private long interval;
   private String name;
   private long startTime;
+  private List<Pair<Long, Long>> gapBoundaries;
   
   /**
    * Creates a copy of a given DataBlock, which has the same parameters
@@ -32,6 +36,7 @@ public class DataBlock {
     setData( new ArrayList<Number>( in.getData() ) );
     name = in.getName();
     setStartTime(in.getStartTime());
+    gapBoundaries = in.getGapBoundaries();
   }
   
   /**
@@ -55,6 +60,8 @@ public class DataBlock {
       setStartTime(start);
     }
     
+    gapBoundaries = in.getGapBoundaries();
+    
   }
   
   /**
@@ -70,9 +77,14 @@ public class DataBlock {
     setInterval(intervalIn);
     name = nameIn;
     setStartTime(timeIn);
+    gapBoundaries = new ArrayList<Pair<Long,Long>>();
   }
   
 
+  public List<Pair<Long,Long>> getGapBoundaries() {
+    return gapBoundaries;
+  }
+  
   /**
    * Returns the time series object as a list of Java numeric types.
    * The underlying data can be any numeric type, likely Doubles or Integers
@@ -284,6 +296,10 @@ public class DataBlock {
     data = new ArrayList<Number>( data.subList(startIdx, endIdx) );
     startTime = start;
     
+  }
+ 
+  public void setGapLocations(List<Pair<Long, Long>> gapList) {
+    gapBoundaries = new ArrayList<Pair<Long, Long>>(gapList);
   }
   
 }

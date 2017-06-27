@@ -566,7 +566,6 @@ public class TimeSeriesUtilsTest {
     
     Pair<Long, Map<Long, Number>> data = 
         new Pair<Long, Map<Long, Number>>( new Long(interval), dataMap );
-    Pair<Long, Long> range = new Pair<Long, Long>(0L, Long.MAX_VALUE);
     List<Number> convertedList = 
         TimeSeriesUtils.mapToTimeSeries(data, "blah").getData();
     
