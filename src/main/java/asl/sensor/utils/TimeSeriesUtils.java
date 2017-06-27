@@ -356,9 +356,10 @@ public class TimeSeriesUtils {
     
     // get the min value in the set, the start time for the series
     long startTime = times.get(0);
-    // when can we stop trying to read in data?
-    // long endTime = times.get( times.size() - 1 );
-
+    
+    start = Math.max(start, startTime); // data can't start before first sample
+    // this is necessary since we use this value as start time of data block
+   
     // read in data from the records as long as they exist
     // if no data exists (there's a gap in the record), set value to 0
     // this is done to handle cases where multiplexed files have non-matching
@@ -390,10 +391,16 @@ public class TimeSeriesUtils {
             continue;
           }
           
+          if (timeNext - timeNow > interval && 
+              timeNext - timeNow < interval * 1.75) {
+            System.out.println("CORRECTING SMALL TIME ROUNDING ERROR");
+            continue;
+          }
+          
           // long gap = timeNext - timeNow;
           // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
           // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
-          while (timeNext - timeNow > interval * 2) {
+          while (timeNext - timeNow > interval) {
             timeList.add(0.);
             timeNow += interval;
           }
