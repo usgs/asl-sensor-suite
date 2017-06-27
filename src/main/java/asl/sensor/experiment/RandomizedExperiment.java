@@ -216,7 +216,8 @@ extends Experiment implements ParameterValidator {
     // applied response. make sure to use the correct units (velocity)
     Complex[] appResponse = fitResponse.applyResponseToInput(freqs);
     for (int i = 0; i < appResponse.length; ++i) {
-      appResponse[i] = appResponse[i].divide(NumericUtils.TAU * freqs[i]);
+      Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
+      appResponse[i] = appResponse[i].divide(scaleFactor);
     }
     
     // calculated response from deconvolving calibration from signal
@@ -227,7 +228,8 @@ extends Experiment implements ParameterValidator {
       Complex denom = denominatorPSDVals[i];
       estResponse[i] = numer.divide(denom);
       // convert from displacement to velocity
-      estResponse[i] = estResponse[i].multiply(NumericUtils.TAU * freqs[i]);
+      Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
+      estResponse[i] = estResponse[i].multiply(scaleFactor);
     }
     
     // next, normalize estimated response
@@ -516,8 +518,10 @@ extends Experiment implements ParameterValidator {
     curValue[0] = 0.;
     curValue[appliedCurve.length] = 0.;
     
+    
+    Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[normalIdx]);
     Complex scaleBy = 
-        appliedCurve[normalIdx].divide(NumericUtils.TAU * freqs[normalIdx]);
+        appliedCurve[normalIdx].divide(scaleFactor);
     double magScale = 10 * Math.log10( scaleBy.abs() );
     double argScale = NumericUtils.atanc(scaleBy);
     
@@ -540,7 +544,8 @@ extends Experiment implements ParameterValidator {
       
       // from acceleration to velocity
       Complex value = appliedCurve[i];
-      value = value.divide(NumericUtils.TAU * freqs[i]);
+      scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
+      value = value.divide(scaleFactor);
       
       // value = value.subtract(scaleBy);
       

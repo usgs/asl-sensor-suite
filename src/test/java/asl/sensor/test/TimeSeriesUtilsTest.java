@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -80,6 +81,7 @@ public class TimeSeriesUtilsTest {
       DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
       
       XYSeriesCollection xysc = new XYSeriesCollection();
+      XYSeriesCollection justDemeaned = new XYSeriesCollection();
       XYSeries meaned = new XYSeries(metaName + " mean kept");
       XYSeries meanedDbl = new XYSeries(metaName + " mean kept, conv. double");
       XYSeries demeaned = new XYSeries(metaName + " mean removed");
@@ -114,11 +116,19 @@ public class TimeSeriesUtilsTest {
       xysc.addSeries(meanedDbl);
       xysc.addSeries(demeaned);
       
-      JFreeChart chart = ChartFactory.createScatterPlot(
+      justDemeaned.addSeries(demeaned);
+      
+      JFreeChart chart = ChartFactory.createXYLineChart(
           "Test demeaning operation",
           "epoch time in nanoseconds",
           "data sample",
           xysc);
+      
+      JFreeChart chart2 = ChartFactory.createXYLineChart(
+          "Test demeaning operation",
+          "epoch time in nanoseconds",
+          "data sample",
+          justDemeaned);
       
       String folderName = "testResultImages";
       File folder = new File(folderName);
@@ -128,8 +138,10 @@ public class TimeSeriesUtilsTest {
       }
       
       BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+      BufferedImage bi2 = ReportingUtils.chartsToImage(1280, 960, chart2);
+      BufferedImage out = ReportingUtils.mergeBufferedImages(bi, bi2);
       File file = new File("testResultImages/demeaning-test.png");
-      ImageIO.write( bi, "png", file );
+      ImageIO.write(out, "png", file);
       
     } catch (FileNotFoundException e) {
       fail();
@@ -338,7 +350,6 @@ public class TimeSeriesUtilsTest {
       }
       
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       assertNull(e);
     }
     
@@ -511,4 +522,74 @@ public class TimeSeriesUtilsTest {
     }
   }
   
+  
+  @Test
+  public void testGapPadding() {
+    
+    long interval = 10L;
+    Map<Long, Number> dataMap = new HashMap<Long, Number>();
+    dataMap.put(1000L, 1000);
+    
+    for (int i = 2000; i < 3000; i += interval) {
+      if ( i == 2010 ) {
+        dataMap.put(2011L, i); // handle a rounding error
+      } else{
+        dataMap.put( (long) i, i );
+      }
+    }
+    
+    for (int i = 4000; i < 5000; i += interval) {
+      dataMap.put( (long) i, i );
+    }
+    
+    List<Number> gapFittedList = new ArrayList<Number>();
+    
+    List<Long> times = new ArrayList<Long>( dataMap.keySet() );
+    Collections.sort(times);
+    
+    for (int i = 0; i < times.size(); ++i) {
+      long time = times.get(i);
+      gapFittedList.add( dataMap.get(time) );
+      if ( (i + 1) < times.size() ) {
+        long nextTime = times.get(i + 1);
+        long timeDiff = nextTime - time;
+        if (timeDiff > interval && timeDiff < interval * 1.5) {
+          // rounding error, do nothing
+          continue;
+        }
+        while (nextTime - time > interval) {
+          gapFittedList.add(0);
+          time += interval;
+        }
+      }
+    }
+    
+    Pair<Long, Map<Long, Number>> data = 
+        new Pair<Long, Map<Long, Number>>( new Long(interval), dataMap );
+    Pair<Long, Long> range = new Pair<Long, Long>(0L, Long.MAX_VALUE);
+    List<Number> convertedList = 
+        TimeSeriesUtils.mapToTimeSeries(data, "blah").getData();
+    
+    Map<Long, Number> fittedTestList = new HashMap<Long, Number>();
+    Map<Long, Number> testListSeries = new HashMap<Long, Number>();
+    long startTime = times.get(0);
+    for (int i = 0; i < gapFittedList.size(); ++i) {
+      long timeNow = startTime + i * interval;
+      fittedTestList.put( timeNow, gapFittedList.get(i) );
+      testListSeries.put( timeNow, convertedList.get(i));
+    }
+    
+    
+    
+    for ( long time : times ) {
+      if ( fittedTestList.containsKey(time) ) {
+        // cast to int because double value 
+        assertEquals( dataMap.get(time), fittedTestList.get(time) );
+        double mapDouble = dataMap.get(time).doubleValue();
+        double testValue = (double) testListSeries.get(time);
+        assertEquals( mapDouble, testValue, 1E-15 );
+      }
+    }
+    
+  }
 }

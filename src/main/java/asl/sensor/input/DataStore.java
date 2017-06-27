@@ -3,6 +3,7 @@ package asl.sensor.input;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.utils.FFTResult;
@@ -392,6 +393,7 @@ public class DataStore {
    * this datastore object
    * @param idx The plot (range 0 to FILE_COUNT) to be given new data
    * @param filepath Full address of file to be loaded in
+   * @param nameFilter Station ID (SNCL) to load in from multiplexed file
    */
   public void setData(int idx, String filepath, String nameFilter) {
     
@@ -417,6 +419,58 @@ public class DataStore {
             // whole block either comes before or after the data set
             if (end < dataBlockArray[i].getStartTime() || 
                 start > dataBlockArray[i].getEndTime() ) {
+              thisBlockIsSet[idx] = false;
+              outToPlots[idx] = null;
+              dataBlockArray[idx] = null;
+              throw new RuntimeException("Time range does not intersect");
+            }
+          }
+        }
+      }
+    }
+    
+  }
+  
+  /**
+   * Takes a loaded miniSEED data series and loads it in as a datablock into
+   * this datastore object
+   * @param idx The plot (range 0 to FILE_COUNT) to be given new data
+   * @param filepath Full address of file to be loaded in
+   * @param nameFilter Station ID (SNCL) to load in from multiplexed file
+   * @param startTrim Time of initial data point in file to load
+   * @param endTrim Time of last data point in file to load
+   */
+  public void setData(int idx, String filepath, String nameFilter, 
+      long startTrim, long endTrim) {
+    
+    try {
+      Pair<Long, Long> timeRange = new Pair<Long, Long>(startTrim, endTrim);
+      DataBlock xy = 
+          TimeSeriesUtils.getTimeSeries(filepath, nameFilter, timeRange);
+      thisBlockIsSet[idx] = true;
+      dataBlockArray[idx] = xy;
+      outToPlots[idx] = xy.toXYSeries();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
+
+    synchronized(this) {
+      if (numberOfBlocksSet() > 1) {
+        // don't trim data here, that way we don't lose data
+        long start = dataBlockArray[idx].getStartTime();
+        long end = dataBlockArray[idx].getEndTime();
+
+        // there's clearly already another block loaded, let's make sure they
+        // actually have an intersecting time range
+        for (int i = 0; i < FILE_COUNT; ++i) {
+          if (i != idx && thisBlockIsSet[i]) {
+            // whole block either comes before or after the data set
+            if (end < dataBlockArray[i].getStartTime() || 
+                start > dataBlockArray[i].getEndTime() ) {
+              
+              System.out.println(end+","+dataBlockArray[i].getStartTime());
+              System.out.println(start+","+dataBlockArray[i].getEndTime());
+              
               thisBlockIsSet[idx] = false;
               outToPlots[idx] = null;
               dataBlockArray[idx] = null;
@@ -497,6 +551,32 @@ public class DataStore {
     trimToCommonTime(FILE_COUNT);
   }
   
+  public Pair<Long, Long> getCommonTime() {
+    if ( numberOfBlocksSet() < 1) {
+      return new Pair<Long, Long>(Long.MIN_VALUE, Long.MAX_VALUE);
+    } else {
+      long lastStartTime = Long.MIN_VALUE;
+      long firstEndTime = Long.MAX_VALUE;
+      
+      // first pass to get the limits of the time data
+      for (int i = 0; i < FILE_COUNT; ++i) {
+        DataBlock data = dataBlockArray[i];
+        if (!thisBlockIsSet[i]) {
+          continue;
+        }
+        long start = data.getStartTime();
+        if (start > lastStartTime) {
+          lastStartTime = start;
+        }
+        long end = data.getEndTime();
+        if (end < firstEndTime) {
+          firstEndTime = end;
+        }
+      }
+      return new Pair<Long, Long>(lastStartTime, firstEndTime);
+    }
+  }
+  
   /**
    * Trim the first [limit] blocks of data to a common time range
    * @param limit upper bound of blocks to do trimming on
@@ -521,7 +601,7 @@ public class DataStore {
       if (start > lastStartTime) {
         lastStartTime = start;
       }
-      long end = start + data.getInterval() * data.size();
+      long end = data.getEndTime();
       if (end < firstEndTime) {
         firstEndTime = end;
       }

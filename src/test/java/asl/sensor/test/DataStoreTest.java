@@ -52,6 +52,7 @@ public class DataStoreTest {
     ds.trimToCommonTime();
     
     assertEquals( ds.getBlock(1).getStartTime(), loc1);
+    assertEquals( ds.getBlock(1).getEndTime(), loc2);
     assertEquals( db.size(), ds.getBlock(1).size() );
     assertNotEquals( db.size(), oldSize );
     

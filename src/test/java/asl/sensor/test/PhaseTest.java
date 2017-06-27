@@ -347,5 +347,25 @@ public DataStore setUpTest4() throws IOException {
 
     
   }
+  
+  @Test
+  public void quickNumericTest() {
+    // get a number as integer
+    Integer x = new Integer(123456);
+
+    // get a number as float
+    Float y = new Float(9876f);
+    
+    // get a number as double
+    Double u = new Double(12304566983.045);
+
+    // print their value as double
+    System.out.println("x as integer: " + x
+       + ", x as double: " + x.doubleValue());
+    System.out.println("y as float: " + y
+       + ", y as double: " + y.doubleValue());
+    System.out.println("u as double: " + u
+        + ", u as double: " + u.doubleValue());
+  }
 
 }
