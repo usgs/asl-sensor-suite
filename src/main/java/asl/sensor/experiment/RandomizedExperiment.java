@@ -426,7 +426,7 @@ extends Experiment implements ParameterValidator {
     XYSeries fitResidPhase = new XYSeries("Fit resp. phase sqd. error");
     
     fitResponse = fitResponse.buildResponseFromFitVector(
-        fitParams, lowFreq, numZeros, nyquist);
+        fitParams, lowFreq, numZeros);
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
     
@@ -497,7 +497,7 @@ extends Experiment implements ParameterValidator {
     // prevent terrible case where, say, only high-freq poles above nyquist rate
     if ( variables.length > 0) {
       testResp = fitResponse.buildResponseFromFitVector(
-          variables, lowFreq, numZeros, nyquist);
+          variables, lowFreq, numZeros);
     } else {
       System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
     }
@@ -632,10 +632,12 @@ extends Experiment implements ParameterValidator {
   private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
     List<Complex> subList = new ArrayList<Complex>();  
     
+    double peak = .8 * nyquist;
+    
     for (int i = 0; i < polesToTrim.size(); ++i) {
       double freq = initialPoles.get(i).abs() / NumericUtils.TAU;
       
-      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
+      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > peak ) ) {
         break;
       }
       if (!lowFreq && freq < 1.) {
@@ -669,10 +671,12 @@ extends Experiment implements ParameterValidator {
   private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
     List<Complex> subList = new ArrayList<Complex>();
     
+    double peak = .8 * nyquist;
+    
     for (int i = 0; i < zerosToTrim.size(); ++i) {
       double freq = initialZeros.get(i).abs() / NumericUtils.TAU;
       
-      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
+      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > peak ) ) {
         break;
       }
       if (!lowFreq && freq < 1. || freq == 0.) {

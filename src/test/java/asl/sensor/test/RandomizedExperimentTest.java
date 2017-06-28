@@ -184,7 +184,7 @@ public class RandomizedExperimentTest {
         }
         
         InstrumentResponse ir2 = 
-            ir.buildResponseFromFitVector(newPoles, lowFreq, 0, 1E8);
+            ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
         
         List<Complex> testList = ir2.getPoles();
         int offsetIdx = 0;
@@ -230,7 +230,7 @@ public class RandomizedExperimentTest {
         Complex c = new Complex( newPoles[0], newPoles[1] );
         
         InstrumentResponse ir2 = 
-            ir.buildResponseFromFitVector(newPoles, lowFreq, 0, 1E8);
+            ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
         List<Complex> poles2 = ir2.getPoles();
 
         List<Complex> testList = new ArrayList<Complex>(poles);
@@ -458,7 +458,7 @@ public class RandomizedExperimentTest {
       // expected best fit params, for debugging
       sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)\n");
       double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
-      ir = ir.buildResponseFromFitVector(expectedParams, lowFreq, 0, nyq);
+      ir = ir.buildResponseFromFitVector(expectedParams, lowFreq, 0);
       ir.setName("Best-fit params");
       ds.setResponse(1, ir);
       rCal.runExperimentOnData(ds);

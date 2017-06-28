@@ -266,13 +266,11 @@ public class InstrumentResponse {
    * and zeros
    * @param lowFreq True if the fit values are for low-frequency components
    * @param numZeros How much of the input parameter array is zero components
-   * @param nyquist Nyquist rate of cal data 
-   * (upper bound on poles/zeros being fit)
    * @return New InstrumentResponse with the fit values applied to it
    */
   public InstrumentResponse 
   buildResponseFromFitVector(double[] params, boolean lowFreq, 
-      int numZeros, double nyquist) {
+      int numZeros) {
     
     // first covert poles and zeros back to complex values to make this easier
     List<Complex> zerosAsComplex = new ArrayList<Complex>();
@@ -667,6 +665,9 @@ public class InstrumentResponse {
     // first, sort poles by magnitude
     NumericUtils.complexMagnitudeSorter(poles);
     
+    double peak = .8 * nyquist;
+    
+    
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<Double>();
@@ -687,8 +688,8 @@ public class InstrumentResponse {
         // only do low frequency calibrations on poles up to 
         break;
       }
-      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU >= nyquist ) ) {
-        // don't fit poles above nyquist rate of sensor output
+      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU >= peak ) ) {
+        // don't fit poles above 80% of nyquist rate of sensor output
         break;
       }
       
@@ -833,6 +834,8 @@ public class InstrumentResponse {
   public RealVector zerosToVector(boolean lowFreq, double nyquist) {
     NumericUtils.complexMagnitudeSorter(zeros);
     
+    double peak = 0.8 * nyquist;
+    
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<Double>();
@@ -854,8 +857,8 @@ public class InstrumentResponse {
         // don't include zeros > 1Hz in high-frequency calibration
         continue;
       }
-      if ( !lowFreq && ( cutoffChecker > nyquist) ) {
-        // don't fit zeros above nyquist rate of sensor output
+      if ( !lowFreq && ( cutoffChecker > peak) ) {
+        // don't fit zeros above 80% nyquist rate of sensor output
         break;
       }
       

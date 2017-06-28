@@ -86,7 +86,7 @@ public class InstrumentResponseTest {
     initPoles.set(3, c);
     // build new vector, is it the same?
     List<Complex> endPoles = 
-        ir.buildResponseFromFitVector( rv.toArray(), false, 0, 100.).getPoles();
+        ir.buildResponseFromFitVector( rv.toArray(), false, 0 ).getPoles();
     
     assertTrue( initPoles.size() == endPoles.size() );
     
