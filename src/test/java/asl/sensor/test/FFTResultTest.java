@@ -115,7 +115,7 @@ public class FFTResultTest {
    
     for (int i = 0; i < timeSeries.length; ++i) {
       result[i] = Math.round( inverseFrqDomn[i].getReal() );
-      System.out.println( result[i] + "," + inverseFrqDomn[i].getReal() );
+      // System.out.println( result[i] + "," + inverseFrqDomn[i].getReal() );
       assertEquals(timeSeries[i], result[i], 0.1);
     }
     
@@ -269,7 +269,7 @@ public class FFTResultTest {
 
       sensor.trim(startTime, endTime);
       System.out.println("Trimmed!");
-      System.out.println(startTime + "," + sensor.getStartTime());
+      // System.out.println(startTime + "," + sensor.getStartTime());
 
       List<Double> timeSeriesList = new ArrayList<Double>();
 
@@ -288,9 +288,9 @@ public class FFTResultTest {
 
       }
       
-      System.out.println(sensor.size());
-      System.out.println(timeSeriesList.size());
-      System.out.println(endTime+","+sensor.getEndTime());
+      // System.out.println(sensor.size());
+      // System.out.println(timeSeriesList.size());
+      // System.out.println(endTime+","+sensor.getEndTime());
 
       double[] timeSeriesArrayMean = new double[timeSeriesList.size()];
       double[] timeSeriesArrayDemean = new double[timeSeriesList.size()];
@@ -306,12 +306,14 @@ public class FFTResultTest {
       double nyquist = sensor.getSampleRate() / 2;
       double deltaFrq = nyquist / (len - 1);
       
+      System.out.println("PEAK FREQ: " + (len - 1) * deltaFrq);
 
       XYSeries meanSeries = new XYSeries(metaName + " w/ mean");
       XYSeries demeanSeries = new XYSeries(metaName + " demeaned");
       
       for (int i = 1; i < len; ++i) {
         double xValue = i * deltaFrq;
+        
         meanSeries.add(xValue, 10 * Math.log10( withMeanFFT[i].abs() ) );
         demeanSeries.add(xValue, 10 * Math.log10( demeanedFFT[i].abs() ) );
       }
@@ -350,7 +352,7 @@ public class FFTResultTest {
       
   }
   
-  // @Test
+  @Test
   public void testDemeaning() {
     String dataFolderName = "data/random_cal/"; 
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
@@ -397,10 +399,14 @@ public class FFTResultTest {
               continue;
             }
             
+            if (timeNext - timeNow < interval * 1.75) {
+              continue; // assume just a time rounding error between records
+            }
+            
             // long gap = timeNext - timeNow;
             // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
             // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
-            while (timeNext - timeNow > interval * 2) {
+            while (timeNext - timeNow > interval) {
               meanedTimeSeries[arrIdx] = 0.;
               ++arrIdx;
               timeNow += interval;
@@ -419,11 +425,16 @@ public class FFTResultTest {
       Complex[] meanedFFT = FFTResult.simpleFFT(meanedTimeSeries);
       Complex[] demeanedFFT = FFTResult.simpleFFT(demeanedTimeSeries);
       
-      double deltaFrq = sensor.getSampleRate() / meanedFFT.length;
-      
       int numPoints = meanedFFT.length / 2 + 1;
+      double nyquist = sensor.getSampleRate() / 2;
+      double deltaFrq = nyquist / (numPoints - 1);
       
-      for (int i = 1; i <= numPoints; ++i) {
+      double deltaFrqB = sensor.getSampleRate() / meanedFFT.length;
+      
+      System.out.println("PEAK FREQ: " + deltaFrq * (numPoints - 1) );
+      assertEquals(deltaFrq, deltaFrqB, 1E-7);
+      
+      for (int i = 1; i < numPoints; ++i) {
         double frq = i * deltaFrq;
         meaned.add(frq, 10 * Math.log10(meanedFFT[i].abs()));
         demeaned.add(frq, 10 * Math.log10(demeanedFFT[i].abs()));

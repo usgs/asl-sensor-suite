@@ -352,9 +352,8 @@ public class FFTResult {
     int padding = frqDomn.length;
     int singleSide = padding/2 + 1;
     
-    double period = 1. / TimeSeriesUtils.ONE_HZ_INTERVAL;
-    period *= db.getInterval();
-    double deltaFrq = 1. / (period * padding);
+    double nyquist = db.getSampleRate() / 2;
+    double deltaFrq = nyquist / (singleSide - 1);
     
     Complex[] fftOut = new Complex[singleSide];
     double[] frequencies = new double[singleSide];
@@ -363,6 +362,8 @@ public class FFTResult {
       fftOut[i] = frqDomn[i];
       frequencies[i] = i * deltaFrq;
     }
+    
+    System.out.println(frequencies[singleSide - 1]);
     
     return new FFTResult(fftOut, frequencies);
     
@@ -404,9 +405,8 @@ public class FFTResult {
     int padding = frqDomn.length;
     int singleSide = padding/2 + 1;
     
-    double period = 1. / TimeSeriesUtils.ONE_HZ_INTERVAL;
-    period *= db.getInterval();
-    double deltaFrq = 1. / (period * padding);
+    double nyquist = db.getSampleRate() / 2;
+    double deltaFrq = nyquist / (singleSide - 1);
     
     Complex[] fftOut = new Complex[singleSide];
     double[] frequencies = new double[singleSide];
