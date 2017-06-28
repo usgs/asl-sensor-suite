@@ -55,6 +55,14 @@ import asl.sensor.utils.ReportingUtils;
  * implementing methods are suggested to override this in their constructor
  * (see existing classes such as GainPanel and NoisePanel for examples).
  * 
+ * This class also includes a number of utility functions used in report
+ * generation. This is done with the expectation that some (but not necessarily
+ * all) such functions will be overridden by an implementing class, such as
+ * functions for creating reports with multiple charts and ensuring that any
+ * and all text data relevant to the panel is included in a report. In addition
+ * there are methods to display on the panel the current status of the
+ * experiment based on calls to a status change report in the backend.
+ * 
  * @author akearns
  *
  */
