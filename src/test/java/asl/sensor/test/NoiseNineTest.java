@@ -156,7 +156,7 @@ public class NoiseNineTest {
       dir.mkdir();
     }
 
-    String testResult = testResultFolder + "Nine-Noise-Test.pdf";
+    String testResult = testResultFolder + "Nine-Noise-Test-2.pdf";
     try {
       pdf.save( new File(testResult) );
       pdf.close();
