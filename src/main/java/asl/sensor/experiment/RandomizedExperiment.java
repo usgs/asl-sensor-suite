@@ -314,7 +314,7 @@ extends Experiment implements ParameterValidator {
       double denom = 1.;
       if (!lowFreq) {
         // give frequencies below 1 less weight in high-freq calibrations
-        denom = .01;
+        denom = 100;
       }
       if (freqs[i] > 1.) {
         denom = freqs[i];
