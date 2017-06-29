@@ -2,6 +2,7 @@ package asl.sensor.input;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Calendar;
 
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
@@ -566,6 +567,14 @@ public class DataStore {
         getBlock(i).trim(start, end);
       }
     }
+  }
+  
+  public void trimAll(Calendar start, Calendar end) {
+    
+    long startTime = start.getTimeInMillis() * 1000;
+    long endTime = end.getTimeInMillis() * 1000;
+    trimAll(startTime, endTime);
+    
   }
   
   /**

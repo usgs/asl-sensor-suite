@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Calendar;
 
 import org.junit.Test;
 
@@ -49,6 +50,13 @@ public class GainTest {
       String fName = folder + rnames[i];
       ds.setResponse(i, fName);
     }
+    
+    Calendar start = ds.getBlock(0).getStartCalendar();
+    start.set(Calendar.HOUR_OF_DAY, 10);
+    Calendar end = (Calendar) start.clone();
+    end.set(Calendar.HOUR_OF_DAY, 14);
+    
+    ds.trimAll(start, end);
     
     GainExperiment ge = new GainExperiment();
     ge.runExperimentOnData(ds);

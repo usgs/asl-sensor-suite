@@ -1,7 +1,9 @@
 package asl.sensor.input;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
 
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
@@ -251,6 +253,16 @@ public class DataBlock {
    */
   public int size() {
     return data.size();
+  }
+  
+  /**
+   * Get start time of data series as a Java calendar object
+   * @return Calendar object representing start time (UTC time zone)
+   */
+  public Calendar getStartCalendar() {
+    Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
+    cCal.setTimeInMillis( startTime / 1000 );
+    return cCal;
   }
 
   /**
