@@ -74,7 +74,8 @@ public class NoiseNineTest {
     String ending = ".512.seed";
     String respName = "responses/RESP.XX.MOFO.00.BHZ";
     
-    DataStore ds = setUpTest(folder, types, freqName, components, ending, respName);
+    DataStore ds = 
+        setUpTest(folder, types, freqName, components, ending, respName);
 
     SimpleDateFormat sdf = InputPanel.SDF;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
