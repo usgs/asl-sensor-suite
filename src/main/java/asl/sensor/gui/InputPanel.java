@@ -45,6 +45,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.IntervalMarker;
 import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PlotOrientation;
@@ -811,8 +812,8 @@ implements ActionListener, ChangeListener {
               false, false, false);
 
           XYPlot xyp = (XYPlot) chart.getPlot();
+          
           DateAxis da = new DateAxis();
-
           SDF.setTimeZone( TimeZone.getTimeZone("UTC") );
           da.setLabel("UTC Time (Year.Day.Hour:Minute)");
           Font bold = da.getLabelFont();
@@ -822,6 +823,9 @@ implements ActionListener, ChangeListener {
           xyp.setDomainAxis(da);
           int colorIdx = idx % defaultColor.length;
           xyp.getRenderer().setSeriesPaint(0, defaultColor[colorIdx]);
+          
+          NumberAxis na = (NumberAxis) xyp.getRangeAxis();
+          na.setAutoRangeIncludesZero(false);
           
           return 0;
           // setData(idx, filePath, immutableFilter);
