@@ -312,8 +312,12 @@ extends Experiment implements ParameterValidator {
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
       double denom = 1.;
-      if (freqs[i] > 1) {
+      if (freqs[i] > 1.) {
         denom = freqs[i];
+      }
+      if (freqs[i] > 20.) {
+        // for high enough freqs, make weighting (20/f^2) rather than 1/f;
+        denom *= freqs[i] / 20;
       }
       weights[i] = maxMagWeight / denom;
       weights[argIdx] = maxArgWeight / denom;
