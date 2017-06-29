@@ -362,11 +362,11 @@ extends Experiment implements ParameterValidator {
     };
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
-        new EvaluationRmsChecker(1.0E-7, 1.0E-7);
+        new EvaluationRmsChecker(1.0E-12, 1.0E-12);
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-7).
-        withParameterRelativeTolerance(1.0E-7);
+        withCostRelativeTolerance(1.0E-12).
+        withParameterRelativeTolerance(1.0E-12);
     
     name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");

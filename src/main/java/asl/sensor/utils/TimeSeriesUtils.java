@@ -788,7 +788,8 @@ public class TimeSeriesUtils {
     // get the min value in the set, the start time for the series
     long startTime = times.get(0);
     
-    start = Math.max(start, startTime); // data can't start before first sample
+    long blockStart = Math.max(start, startTime); 
+    // data can't start before first sample
     // this is necessary since we use this value as start time of data block
    
     // read in data from the records as long as they exist
@@ -845,7 +846,7 @@ public class TimeSeriesUtils {
     // demean the input to remove DC offset before adding it to the data
     // List<Number> listOut = TimeSeriesUtils.demean( timeList );
     // since we've demeaned the data while adding it in, don't need to do that
-    db = new DataBlock(timeList, interval, filter, start);
+    db = new DataBlock(timeList, interval, filter, blockStart);
     return db;
     
   }
