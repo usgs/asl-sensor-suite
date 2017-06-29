@@ -750,7 +750,25 @@ public class TimeSeriesUtils {
     return mapToTimeSeries(data, filter, range);
     
   }
-
+  
+  /**
+   * Get actual start time of block being trimmed
+   * @param sortedTimes List of times that have data with them in a seed file
+   * NOTE THAT THESE MUST BE SORTED
+   * @param trimTo Lower bound of time of data to include in datablock
+   * @return First time above lower bound that has data defined for it
+   */
+  private static long getTrimmedStartTime(List<Long> sortedTimes, long trimTo) {
+    long start = trimTo;
+    for (long time : sortedTimes) {
+      if (time > start) {
+        start = time;
+        break;
+      }
+    }
+    return start;
+  }
+ 
   /**
    * Convert loaded in time-value map to contiguous timeseries over a given
    * range.
@@ -785,10 +803,7 @@ public class TimeSeriesUtils {
     List<Long> times = new ArrayList<Long>( timeMap.keySet() );
     Collections.sort(times);
     
-    // get the min value in the set, the start time for the series
-    long startTime = times.get(0);
-    
-    long blockStart = Math.max(start, startTime); 
+    long blockStart = getTrimmedStartTime(times, start); 
     // data can't start before first sample
     // this is necessary since we use this value as start time of data block
    

@@ -82,7 +82,7 @@ public class PhaseTest {
 
     cCal.set(Calendar.MINUTE, 41);
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime() * 1000L;
+    long end = cCal.getTimeInMillis() * 1000L;
 
     ds.trimAll(start, end);
 

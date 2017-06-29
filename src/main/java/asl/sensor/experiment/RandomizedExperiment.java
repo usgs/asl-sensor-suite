@@ -312,6 +312,10 @@ extends Experiment implements ParameterValidator {
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
       double denom = 1.;
+      if (!lowFreq) {
+        // give frequencies below 1 less weight in high-freq calibrations
+        denom = .01;
+      }
       if (freqs[i] > 1.) {
         denom = freqs[i];
       }
