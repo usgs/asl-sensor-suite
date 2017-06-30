@@ -525,9 +525,15 @@ implements ActionListener, ChangeListener {
     
     SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    cCal.setTimeInMillis( expResult.getStart() / 1000 );
-    String date = sdf.format( cCal.getTime() );
+    
+    String date;
+    long time = expResult.getStart() / 1000;
+    if (time > 0) {
+      date = sdf.format( time );
+    } else {
+      Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+      date = sdf.format( cCal.getTime() );
+    }
     
     // turn spaces into underscores
     String test = expType.getName().replace(' ', '_'); // name of experiment

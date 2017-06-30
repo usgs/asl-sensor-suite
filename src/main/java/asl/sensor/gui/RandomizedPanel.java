@@ -507,35 +507,16 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   public String getPDFFilename() {
     
-    String freq;
+    StringBuilder sb = new StringBuilder();
     if ( lowFreqBox.isSelected() ) {
-      freq = "LOW_FRQ";
+      sb.append("Low_Frq_");
     } else {
-      freq = "HIGH_FRQ";
+      sb.append("High_Frq_");
     }
     
-    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    // experiment has no time metadata to be associated with it, get time now
-    String date = sdf.format( cCal.getTime() );
+    sb.append( super.getPDFFilename() );
     
-    String test = expType.getName().replace(' ', '_');
-    
-    int idx = getIndexOfMainData(); // first resp in list
-    String name = expResult.getInputNames().get(idx);
-    
-    StringBuilder sb = new StringBuilder();
-    sb.append(test);
-    sb.append('_');
-    sb.append(freq);
-    sb.append('_');
-    sb.append(name);
-    sb.append('_');
-    sb.append(date);
-    sb.append(".pdf");
     return sb.toString();
-    
   }
   
   @Override

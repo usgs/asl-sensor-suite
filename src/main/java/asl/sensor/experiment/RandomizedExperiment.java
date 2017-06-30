@@ -417,8 +417,6 @@ extends Experiment implements ParameterValidator {
     } else {
       finalResultVector = initialGuess;
     }
-
-    
     
     LeastSquaresProblem.Evaluation optimum = lsp.evaluate(finalResultVector);
     fitResidual = optimum.getCost();
