@@ -72,7 +72,7 @@ When using embedded response files, it is strongly recommended to use an appropr
 
 Note that plots have been scaled in order to produce more representative fits of response curves. For high-frequency calibrations, the curves are all set to be equal to zero at 1 Hz; for low-frequency calibrations, this point occurs at 0.2 Hz.
 
-This function is still work-in-progress but has been tested with good results on data from a KS54000 sensor. Other sensors may not produce as good results (see known issues, below).
+This function is still work-in-progress but has been tested with good results on several sensors.
 
 Older high-frequency cals may produce lots of noise on the high-frequency end confounding the solver, especially depending on how the calibration was produced.
 This program includes a second checker tab which does not run the solver for 

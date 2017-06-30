@@ -644,7 +644,7 @@ public class RandomizedPanel extends ExperimentPanel {
     weightInset.setText( sb.toString() );
     weightInset.setBackgroundPaint(Color.white);
     XYTitleAnnotation weightAnnot = 
-        new XYTitleAnnotation(0, 0, weightInset, RectangleAnchor.BOTTOM_LEFT);
+        new XYTitleAnnotation(0, 1, weightInset, RectangleAnchor.TOP_LEFT);
     XYPlot residPlot = residChart.getXYPlot();
     residPlot.clearAnnotations();
     residPlot.addAnnotation(weightAnnot);
