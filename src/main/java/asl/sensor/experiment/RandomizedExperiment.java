@@ -240,6 +240,8 @@ extends Experiment implements ParameterValidator {
     // prevent discontinuities in angle plots
     double phiPrev = 0.;
     
+    double[] scaledAmps = new double[estResponse.length];
+    
     for (int i = 0; i < estResponse.length; ++i) {
       
       int argIdx = estResponse.length + i;
@@ -261,6 +263,7 @@ extends Experiment implements ParameterValidator {
         observedResult[argIdx] = 0;
       } else {
         
+        scaledAmps[i] = estValMag / scaleValue.abs();
         observedResult[i] = 10 * Math.log10(estValMag);
         observedResult[i] -= subtractBy;
         
@@ -431,10 +434,15 @@ extends Experiment implements ParameterValidator {
     XYSeries fitResidMag = new XYSeries("Fit resp. mag sqd. error");
     XYSeries fitResidPhase = new XYSeries("Fit resp. phase sqd. error");
     
+    InstrumentResponse init = ds.getResponse(sensorOutIdx);
+    Complex[] initTerms = init.applyResponseToInput(freqs);
+    
     fitResponse = fitResponse.buildResponseFromFitVector(
         fitParams, lowFreq, numZeros);
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
+    
+    Complex[] fitTerms = fitResponse.applyResponseToInput(freqs);
     
     fireStateChange("Compiling data...");
     
@@ -445,10 +453,22 @@ extends Experiment implements ParameterValidator {
       fitMag.add(freqs[i], fitValues[i]);
       fitArg.add(freqs[i], fitValues[argIdx]);
       
-      initResidMag.add( freqs[i], Math.pow(initResidList[i], 2) );
-      initResidPhase.add( freqs[i], Math.pow(initResidList[argIdx], 2) );
-      fitResidMag.add( freqs[i], Math.pow(fitResidList[i], 2) );
-      fitResidPhase.add( freqs[i], Math.pow(fitResidList[argIdx], 2) );
+      
+      double initMagDbl = initTerms[i].abs();
+      double fitMagDbl = fitTerms[i].abs();
+      double errInitMag = 100. * (initMagDbl - scaledAmps[i]) / scaledAmps[i]; 
+      double errFitMag = 100. * (fitMagDbl - scaledAmps[i]) / scaledAmps[i]; 
+      initResidMag.add(freqs[i], errInitMag);
+      fitResidMag.add(freqs[i], errFitMag);
+      
+      double initPhsDbl = NumericUtils.atanc(initTerms[i]);
+      double fitPhsDbl = NumericUtils.atanc(fitTerms[i]);
+      double obsPhs = observedResult[argIdx];
+      double degInitPhs = Math.toDegrees(initPhsDbl - obsPhs);
+      double degFitPhs = Math.toDegrees(fitPhsDbl - obsPhs);
+          
+      initResidPhase.add( freqs[i], degInitPhs );
+      fitResidPhase.add( freqs[i], degFitPhs );
     }
     
     XYSeriesCollection xysc = new XYSeriesCollection();
@@ -474,6 +494,9 @@ extends Experiment implements ParameterValidator {
     if (!dontSolve) {
       xysc.addSeries(fitResidMag);
     }
+    xySeriesData.add(xysc);
+    
+    xysc = new XYSeriesCollection();    
     xysc.addSeries(initResidPhase);
     if (!dontSolve) {
       xysc.addSeries(fitResidPhase);

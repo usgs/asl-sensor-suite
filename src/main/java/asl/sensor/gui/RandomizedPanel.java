@@ -277,13 +277,13 @@ public class RandomizedPanel extends ExperimentPanel {
     
     return sb.toString();
   }
-  private ValueAxis degreeAxis, residAxis;
+  private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis;
   
   private JComboBox<String> plotSelection;
 
   private JCheckBox lowFreqBox, showParams;
 
-  private JFreeChart magChart, argChart, residChart;
+  private JFreeChart magChart, argChart, residAmpChart, residPhaseChart;
   
   public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
@@ -303,14 +303,16 @@ public class RandomizedPanel extends ExperimentPanel {
     degreeAxis = new NumberAxis(degreeAxisTitle);
     degreeAxis.setAutoRange(true);    
     
-    residAxis = new NumberAxis("Residual value per point");
+    residPhaseAxis = new NumberAxis("Phase error (degrees)");
+    residAmpAxis = new NumberAxis("Amplitude error (percentage)");
     
     ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     degreeAxis.setLabelFont(bold);
-    residAxis.setLabelFont(bold);
+    residPhaseAxis.setLabelFont(bold);
+    residAmpAxis.setLabelFont(bold);
     
     lowFreqBox = new JCheckBox("Low frequency calibration");
     lowFreqBox.setSelected(true);
@@ -323,7 +325,8 @@ public class RandomizedPanel extends ExperimentPanel {
     
     magChart = buildChart(null, xAxis, yAxis);
     argChart = buildChart(null, xAxis, degreeAxis);
-    residChart = buildChart(null, xAxis, residAxis);
+    residPhaseChart = buildChart(null, xAxis, residPhaseAxis);
+    residAmpChart = buildChart(null, xAxis, residAmpAxis);
     
     // set the GUI components
     this.setLayout( new GridBagLayout() );
@@ -363,7 +366,8 @@ public class RandomizedPanel extends ExperimentPanel {
     plotSelection = new JComboBox<String>();
     plotSelection.addItem(MAGNITUDE);
     plotSelection.addItem(ARGUMENT);
-    plotSelection.addItem("Residuals plot");
+    plotSelection.addItem("Residual amplitude plot");
+    plotSelection.addItem("Residual phase plot");
     this.add(plotSelection, gbc);
     plotSelection.addActionListener(this);
   }
@@ -386,7 +390,7 @@ public class RandomizedPanel extends ExperimentPanel {
       
       int idx = plotSelection.getSelectedIndex();
       JFreeChart[] charts = 
-          new JFreeChart[]{magChart, argChart, residChart};
+          new JFreeChart[]{magChart, argChart, residAmpChart, residPhaseChart};
       chart = charts[idx];
       chartPanel.setChart(chart);
       
@@ -521,7 +525,7 @@ public class RandomizedPanel extends ExperimentPanel {
   
   @Override
   public JFreeChart[] getSecondPageCharts() {
-    return new JFreeChart[]{residChart};
+    return new JFreeChart[]{residAmpChart, residPhaseChart};
   }
   
   @Override
@@ -532,7 +536,8 @@ public class RandomizedPanel extends ExperimentPanel {
     }
     
     int idx = plotSelection.getSelectedIndex();
-    ValueAxis[] out = new ValueAxis[]{yAxis, degreeAxis, residAxis};
+    ValueAxis[] out = 
+        new ValueAxis[]{yAxis, degreeAxis, residAmpAxis, residPhaseAxis};
     return out[idx];
   }
 
@@ -614,7 +619,8 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(magChart, appendFreqTitle);
     
     // get residuals plot
-    residChart = buildChart(xysc.get(2), xAxis, residAxis);
+    residAmpChart = buildChart(xysc.get(2), xAxis, residAmpAxis);
+    /*
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();
     sb.append("Amplitude weighting: ");
@@ -629,6 +635,24 @@ public class RandomizedPanel extends ExperimentPanel {
     XYPlot residPlot = residChart.getXYPlot();
     residPlot.clearAnnotations();
     residPlot.addAnnotation(weightAnnot);
+    */
+    residPhaseChart = buildChart(xysc.get(3), xAxis, residPhaseAxis);
+    /*
+    double[] weights = rndExp.getWeights();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Amplitude weighting: ");
+    sb.append(weights[0]);
+    sb.append("\nPhase weighting: ");
+    sb.append(weights[1]);
+    TextTitle weightInset = new TextTitle();
+    weightInset.setText( sb.toString() );
+    weightInset.setBackgroundPaint(Color.white);
+    XYTitleAnnotation weightAnnot = 
+        new XYTitleAnnotation(0, 1, weightInset, RectangleAnchor.TOP_LEFT);
+    XYPlot residPlot = residChart.getXYPlot();
+    residPlot.clearAnnotations();
+    residPlot.addAnnotation(weightAnnot);
+    */
   }
 
 }
