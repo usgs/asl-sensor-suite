@@ -6,11 +6,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TimeZone;
 
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;

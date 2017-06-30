@@ -240,7 +240,7 @@ extends Experiment implements ParameterValidator {
     // prevent discontinuities in angle plots
     double phiPrev = 0.;
     
-    double[] scaledAmps = new double[estResponse.length];
+    double[] obsdAmps = new double[estResponse.length];
     
     for (int i = 0; i < estResponse.length; ++i) {
       
@@ -263,7 +263,7 @@ extends Experiment implements ParameterValidator {
         observedResult[argIdx] = 0;
       } else {
         
-        scaledAmps[i] = estValMag / scaleValue.abs();
+        obsdAmps[i] = estValMag / scaleValue.abs();
         observedResult[i] = 10 * Math.log10(estValMag);
         observedResult[i] -= subtractBy;
         
@@ -406,9 +406,6 @@ extends Experiment implements ParameterValidator {
     double[] initialValues =
         jacobian.value(initialGuess).getFirst().toArray();
     
-    XYSeries initResidMag = new XYSeries("Input resp. mag residual");
-    XYSeries initResidPhase = new XYSeries("Input resp. phase residual");
-    
     RealVector finalResultVector;
 
     boolean dontSolve = getSolverState(); // true if we should NOT run solver
@@ -428,11 +425,12 @@ extends Experiment implements ParameterValidator {
     double[] fitValues = 
         jacobian.value( optimum.getPoint() ).getFirst().toArray();
     
-    double[] initResidList = initEval.getResiduals().toArray();
-    double[] fitResidList = optimum.getResiduals().toArray();
-    
-    XYSeries fitResidMag = new XYSeries("Fit resp. mag sqd. error");
-    XYSeries fitResidPhase = new XYSeries("Fit resp. phase sqd. error");
+    // double[] initResidList = initEval.getResiduals().toArray();
+    // double[] fitResidList = optimum.getResiduals().toArray();
+    XYSeries initResidMag = new XYSeries("Amplitude of init. residual");
+    XYSeries initResidPhase = new XYSeries("Phase of init. residual");
+    XYSeries fitResidMag = new XYSeries("Amplitude of fit residual");
+    XYSeries fitResidPhase = new XYSeries("Phase of fit residual");
     
     InstrumentResponse init = ds.getResponse(sensorOutIdx);
     Complex[] initTerms = init.applyResponseToInput(freqs);
@@ -444,6 +442,11 @@ extends Experiment implements ParameterValidator {
     
     Complex[] fitTerms = fitResponse.applyResponseToInput(freqs);
     
+    // get the values at 1Hz for the curves to use for scaling
+    // boy isn't this syntax beautiful
+    Complex init1Hz = init.applyResponseToInput(new double[]{1.})[0];
+    Complex fit1Hz = init.applyResponseToInput(new double[]{1.})[0];
+    
     fireStateChange("Compiling data...");
     
     for (int i = 0; i < freqs.length; ++i) {
@@ -453,22 +456,23 @@ extends Experiment implements ParameterValidator {
       fitMag.add(freqs[i], fitValues[i]);
       fitArg.add(freqs[i], fitValues[argIdx]);
       
+      Complex scaledInit = initTerms[i].subtract(init1Hz);
+      Complex scaledFit = fitTerms[i].subtract(fit1Hz);
       
-      double initMagDbl = initTerms[i].abs();
-      double fitMagDbl = fitTerms[i].abs();
-      double errInitMag = 100. * (initMagDbl - scaledAmps[i]) / scaledAmps[i]; 
-      double errFitMag = 100. * (fitMagDbl - scaledAmps[i]) / scaledAmps[i]; 
+      double initMagDbl = scaledInit.abs();
+      double fitMagDbl = scaledFit.abs();
+      double obsMagDbl = obsdAmps[i];
+      if (obsMagDbl == 0.) {
+        obsMagDbl = Double.MIN_VALUE;
+      }
+      double errInitMag = 100. * (initMagDbl - obsMagDbl) / obsMagDbl; 
+      double errFitMag = 100. * (fitMagDbl - obsMagDbl) / obsMagDbl; 
       initResidMag.add(freqs[i], errInitMag);
       fitResidMag.add(freqs[i], errFitMag);
       
-      double initPhsDbl = NumericUtils.atanc(initTerms[i]);
-      double fitPhsDbl = NumericUtils.atanc(fitTerms[i]);
-      double obsPhs = observedResult[argIdx];
-      double degInitPhs = Math.toDegrees(initPhsDbl - obsPhs);
-      double degFitPhs = Math.toDegrees(fitPhsDbl - obsPhs);
-          
-      initResidPhase.add( freqs[i], degInitPhs );
-      fitResidPhase.add( freqs[i], degFitPhs );
+      double observedPhase = observedResult[argIdx];
+      initResidPhase.add(freqs[i], initialValues[argIdx] - observedPhase);
+      fitResidPhase.add(freqs[i], fitValues[argIdx] - observedPhase);
     }
     
     XYSeriesCollection xysc = new XYSeriesCollection();

@@ -5,6 +5,7 @@
 This program is used to analyze various aspects of seismic sensor data in order to determine information about their configuration, such as gain and orientation. It is meant to be a simple program that can be used to generate data on a wide range of sensor tests, a one-stop-shop for sensor diagnostics designed to replace several disparate programs across multiple languages. The program is designed around an interface meant to be simple and intuitive.
 
 ### Requirements
+
 ##### Software
 This program is designed to be used with Java 1.8, but should also be compatible with Java 1.7.
 This program also requires Gradle in order to be run from source. For instructions on installing Gradle, see https://gradle.org/install
@@ -32,6 +33,7 @@ SEED files must have an intersecting time range, which will be displayed when mu
 The program also comes with a number of response files (in RESP format) embedded in the jar, selectable from a drop-down menu, that correspond to several common sensor configurations. It is also possible to load in other response files from the 'load custom response' option in a manner similar to SEED files described above, the default directory being the 'responses' folder in the same folder as the jar file. Note that clearing a SEED file also clears out the corresponding response.
 
 ### Output
+
 Plots of the input files used in a sensor test can be output in PNG, as can the output of a given sensor test, using the corresponding buttons in each panel. Both can be compiled into a single-page PDF of all currently displayed data using the button at the bottom of the program.
 
 ### Usage
@@ -99,7 +101,6 @@ This program also allows for extracting a response file embedded in the program,
 ### Further Work / Known Issues
 
 Currently the application does its best to show the complete range among all data, there are some issues in doing so. If there are three SEED files loaded and the first two SEED files have more data than the third, then when switching to a test using only two inputs, the entire range of the first two sensors should be visible. However, if there are loaded inputs not included in a test and a new file is loaded in one of the input slots, it must still have a time range in common with the unused inputs. While not ideal behavior, it prevents additional bugs from handling non-matching time ranges if a test using the non-active data is selected again.
-
 
 ## DISCLAIMER
 
