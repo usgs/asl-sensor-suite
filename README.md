@@ -90,7 +90,6 @@ Orthogonality takes in four inputs, two each from sensors known or assumed to be
 
 The input files have a specific order: the first and third inputs are for north-facing sensors, and the second and fourth are for east-facing sensors. As noted above, the first two sensors are assumed to be 90 degrees apart for the purpose of the test; the second two sensors' orientation is what is solved for.
 
-
 #### Response
 
 This plots 1-3 different response attenuation and phase curves (Bode plots) for given response files. The image generated from this plot will include both plots, though the program can only display one at a time (selectable with the drop-down menu in the bottom-left of the panel). Units of frequency (Hz, default) or period can be selected by the selection box on the bottom-right, much like with the self-noise plot.
@@ -101,7 +100,6 @@ This program also allows for extracting a response file embedded in the program,
 
 Currently the application does its best to show the complete range among all data, there are some issues in doing so. If there are three SEED files loaded and the first two SEED files have more data than the third, then when switching to a test using only two inputs, the entire range of the first two sensors should be visible. However, if there are loaded inputs not included in a test and a new file is loaded in one of the input slots, it must still have a time range in common with the unused inputs. While not ideal behavior, it prevents additional bugs from handling non-matching time ranges if a test using the non-active data is selected again.
 
-Most sensors have a specific response related to the calibration signal produced by their calibration coils. These responses are necessary for producing accurate plots of the calculated response from a calibration, but do not yet exist as part of the program. As a result, trying to solve for poles from a random calibration is likely to produce incorrect results for sensors that require calibration response correction. The KS54000 is an example of a sensor that does not require such correction, and results using the calibration test with one is much closer to expectation.
 
 ## DISCLAIMER
 

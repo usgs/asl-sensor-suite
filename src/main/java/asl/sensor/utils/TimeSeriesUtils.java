@@ -761,7 +761,7 @@ public class TimeSeriesUtils {
   private static long getTrimmedStartTime(List<Long> sortedTimes, long trimTo) {
     long start = trimTo;
     for (long time : sortedTimes) {
-      if (time > start) {
+      if (time >= start) {
         start = time;
         break;
       }
@@ -843,9 +843,6 @@ public class TimeSeriesUtils {
             continue;
           }
           
-          // long gap = timeNext - timeNow;
-          // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
-          // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
           while (timeNext - timeNow > interval) {
             timeList.add(mean);
             // why use mean value? puts the value in gaps as the center of
@@ -854,13 +851,8 @@ public class TimeSeriesUtils {
           }
         }
       }
-
     }
-
     
-    // demean the input to remove DC offset before adding it to the data
-    // List<Number> listOut = TimeSeriesUtils.demean( timeList );
-    // since we've demeaned the data while adding it in, don't need to do that
     db = new DataBlock(timeList, interval, filter, blockStart);
     return db;
     
