@@ -433,19 +433,11 @@ extends Experiment implements ParameterValidator {
     XYSeries fitResidPhase = new XYSeries("Phase of fit residual");
     
     InstrumentResponse init = ds.getResponse(sensorOutIdx);
-    Complex[] initTerms = init.applyResponseToInput(freqs);
     
     fitResponse = fitResponse.buildResponseFromFitVector(
         fitParams, lowFreq, numZeros);
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
-    
-    Complex[] fitTerms = fitResponse.applyResponseToInput(freqs);
-    
-    // get the values at 1Hz for the curves to use for scaling
-    // boy isn't this syntax beautiful
-    Complex init1Hz = init.applyResponseToInput(new double[]{1.})[0];
-    Complex fit1Hz = init.applyResponseToInput(new double[]{1.})[0];
     
     fireStateChange("Compiling data...");
     
@@ -456,17 +448,18 @@ extends Experiment implements ParameterValidator {
       fitMag.add(freqs[i], fitValues[i]);
       fitArg.add(freqs[i], fitValues[argIdx]);
       
-      Complex scaledInit = initTerms[i].subtract(init1Hz);
-      Complex scaledFit = fitTerms[i].subtract(fit1Hz);
+      // Complex scaledInit = initTerms[i].subtract(init1Hz);
+      // Complex scaledFit = fitTerms[i].subtract(fit1Hz);
       
-      double initMagDbl = scaledInit.abs();
-      double fitMagDbl = scaledFit.abs();
-      double obsMagDbl = obsdAmps[i];
-      if (obsMagDbl == 0.) {
-        obsMagDbl = Double.MIN_VALUE;
+      double initAmpNumer = Math.pow(10, initialValues[i]/10);
+      double fitAmpNumer = Math.pow(10, fitValues[i]/10); 
+      
+      double obsAmpDbl = obsdAmps[i];
+      if (obsAmpDbl == 0.) {
+        obsAmpDbl = Double.MIN_VALUE;
       }
-      double errInitMag = 100. * (initMagDbl - obsMagDbl) / obsMagDbl; 
-      double errFitMag = 100. * (fitMagDbl - obsMagDbl) / obsMagDbl; 
+      double errInitMag = 100. * (initAmpNumer - obsAmpDbl) / obsAmpDbl; 
+      double errFitMag = 100. * (fitAmpNumer - obsAmpDbl) / obsAmpDbl; 
       initResidMag.add(freqs[i], errInitMag);
       fitResidMag.add(freqs[i], errFitMag);
       
