@@ -65,6 +65,21 @@ public class RandomizedPanel extends ExperimentPanel {
     StringBuilder sb = new StringBuilder();
     DecimalFormat df = new DecimalFormat("#.#####");
     
+    StringBuilder csvPoles = new StringBuilder();
+    StringBuilder csvZeros = new StringBuilder();
+    StringBuilder csvTitle = new StringBuilder();
+    DecimalFormat csvFormat = new DecimalFormat("+#.####;-#.####");
+    
+    final int COL_WIDTH = 9;
+    String[] columns = new String[]{"Init", "Fit", "Diff", "Mean", "PctDiff"};
+    for (String column : columns) {
+      StringBuilder paddedColumn = new StringBuilder(column);
+      while ( paddedColumn.length() < COL_WIDTH ) {
+        paddedColumn.append(" "); // add a space
+      }
+      csvTitle.append( paddedColumn );
+    }
+    
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();
     List<Complex> fitZ = rnd.getFitZeros();
@@ -75,6 +90,7 @@ public class RandomizedPanel extends ExperimentPanel {
     
     sb.append("Pole and zero values, given as period (s):\n \n");
     sb.append("Poles:\n");
+    
     for (int i = 0; i < fitP.size(); ++i) {
       
       double fitDenom = fitP.get(i).abs();
@@ -107,6 +123,66 @@ public class RandomizedPanel extends ExperimentPanel {
     
     if (!solverNotRun) {
       sb.append(fitText);
+      
+      // get statistics for differences between initial and solved parameters
+      csvPoles = new StringBuilder("POLE VARIABLES, AS CSV:\n");
+      csvPoles.append(csvTitle);
+      csvPoles.append("\n");
+      
+      for (int i = 0; i < fitP.size(); ++i) {
+        double realPartFit = fitP.get(i).getReal();
+        double imagPartFit = fitP.get(i).getImaginary();
+        
+        double realPartInit = initP.get(i).getReal();
+        double imagPartInit = initP.get(i).getImaginary();
+        
+        // make sure sign of the imaginary parts are the same
+        if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
+          imagPartFit *= -1;
+        }
+        
+        double realDiff = realPartInit - realPartFit;
+        double imagDiff = imagPartInit - imagPartFit;
+        
+        double realAvg = (realPartInit + realPartFit) / 2.;
+        double imagAvg = (imagPartInit + imagPartFit) / 2.;
+        
+        double realPct = realDiff * 100 / realPartFit;
+        double imagPct = imagDiff * 100 / imagPartFit;
+        
+        // INIT, FIT, DIFF, AVG, PCT
+        
+        double[] realRow = new double[]
+            {realPartInit, realPartFit, realDiff, realAvg, realPct};
+        
+        double[] imagRow = new double[]
+            {imagPartInit, imagPartFit, imagDiff, imagAvg, imagPct};
+        
+        for (double colNumber : realRow) {
+          String column = csvFormat.format(colNumber);
+          StringBuilder paddedColumn = new StringBuilder(column);
+          while ( paddedColumn.length() < COL_WIDTH ) {
+            paddedColumn.append(" "); // add a space
+          }
+          csvPoles.append( paddedColumn );
+        }
+        csvPoles.append("\n");
+        
+        for (double colNumber : imagRow) {
+          String column = csvFormat.format(colNumber);
+          StringBuilder paddedColumn = new StringBuilder(column);
+          while ( paddedColumn.length() < COL_WIDTH ) {
+            paddedColumn.append(" "); // add a space
+          }
+          csvPoles.append( paddedColumn );
+        }
+        csvPoles.append("\n");
+        
+        if (imagPartFit != 0.) {
+          ++i; // skip complex conjugate
+        }
+      }
+      
     }
         
     initText = new StringBuilder();
@@ -147,7 +223,70 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append(initText);
     if (!solverNotRun) {
       sb.append(fitText);
+      
+      // get statistics for differences between initial and solved parameters
+      if ( fitZ.size() > 0 ) {
+        csvZeros = new StringBuilder("ZERO VARIABLES, AS CSV:\n");
+        csvZeros.append(csvTitle);
+        csvZeros.append("\n");
+      }
+
+      
+      for (int i = 0; i < fitZ.size(); ++i) {
+        double realPartFit = fitZ.get(i).getReal();
+        double imagPartFit = fitZ.get(i).getImaginary();
+        
+        double realPartInit = initZ.get(i).getReal();
+        double imagPartInit = initZ.get(i).getImaginary();
+        
+        // make sure sign of the imaginary parts are the same
+        if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
+          imagPartFit *= -1;
+        }
+        
+        double realDiff = realPartInit - realPartFit;
+        double imagDiff = imagPartInit - imagPartFit;
+        
+        double realAvg = (realPartInit + realPartFit) / 2.;
+        double imagAvg = (imagPartInit + imagPartFit) / 2.;
+        
+        double realPct = realDiff * 100 / realPartFit;
+        double imagPct = imagDiff * 100 / imagPartFit;
+        
+        double[] realRow = new double[]
+            {realPartInit, realPartFit, realDiff, realAvg, realPct};
+        
+        double[] imagRow = new double[]
+            {imagPartInit, imagPartFit, imagDiff, imagAvg, imagPct};
+        
+        for (double colNumber : realRow) {
+          String column = csvFormat.format(colNumber);
+          StringBuilder paddedColumn = new StringBuilder(column);
+          while ( paddedColumn.length() < COL_WIDTH ) {
+            paddedColumn.append(" "); // add a space
+          }
+          csvZeros.append( paddedColumn );
+        }
+        csvZeros.append("\n");
+        
+        for (double colNumber : imagRow) {
+          String column = csvFormat.format(colNumber);
+          StringBuilder paddedColumn = new StringBuilder(column);
+          while ( paddedColumn.length() < COL_WIDTH ) {
+            paddedColumn.append(" "); // add a space
+          }
+          csvZeros.append( paddedColumn );
+        }
+        csvZeros.append("\n");
+        
+        if (imagPartFit != 0.) {
+          ++i; // skip complex conjugate
+        }
+      }
     }
+    
+    sb.append(csvPoles);
+    sb.append(csvZeros);
     
     String[] out = new String[]{sb.toString()}; // just a single new page
     return out;
