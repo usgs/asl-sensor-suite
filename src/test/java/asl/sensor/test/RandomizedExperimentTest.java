@@ -420,6 +420,8 @@ public class RandomizedExperimentTest {
       assertTrue( rCal.hasEnoughData(ds) );
       rCal.runExperimentOnData(ds);
       
+      double bestResid = rCal.getFitResidual();
+      
       int width = 1280;
       int height = 960;
       
@@ -462,6 +464,15 @@ public class RandomizedExperimentTest {
       ir.setName("Best-fit params");
       ds.setResponse(1, ir);
       rCal.runExperimentOnData(ds);
+      
+      // residual from other code's best-fit parameters
+      // compare to best-fit residual and assume difference is < 5%
+      double expectedResid = rCal.getInitResidual();
+      
+      double pctDiff = 
+          Math.abs( 100 * (bestResid - expectedResid) / bestResid );
+      
+      assertTrue("PCT DIFF EXPECTED <5%, GOT " + pctDiff, pctDiff < 5);
 
       // add initial curve from expected fit params to report
       XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);
