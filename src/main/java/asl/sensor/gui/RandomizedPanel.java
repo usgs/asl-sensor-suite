@@ -148,7 +148,13 @@ public class RandomizedPanel extends ExperimentPanel {
         double imagAvg = (imagPartInit + imagPartFit) / 2.;
         
         double realPct = realDiff * 100 / realPartFit;
+        if ( realPartFit == 0. ) {
+          realPct = 0.;
+        }
         double imagPct = imagDiff * 100 / imagPartFit;
+        if ( imagPartFit == 0. ) {
+          imagPct = 0.;
+        }
         
         // INIT, FIT, DIFF, AVG, PCT
         
@@ -251,7 +257,13 @@ public class RandomizedPanel extends ExperimentPanel {
         double imagAvg = (imagPartInit + imagPartFit) / 2.;
         
         double realPct = realDiff * 100 / realPartFit;
+        if ( realPartFit == 0. ) {
+          realPct = 0.;
+        }
         double imagPct = imagDiff * 100 / imagPartFit;
+        if ( imagPartFit == 0. ) {
+          imagPct = 0.;
+        }
         
         double[] realRow = new double[]
             {realPartInit, realPartFit, realDiff, realAvg, realPct};
