@@ -293,48 +293,63 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
           selFile = new File( selFile.getName() + ext);
         }
         
-        // start in the folder the pdf is saved, add data into a new
-        // subfolder for calibration data
         StringBuilder folderName = new StringBuilder( selFile.getParent() );
         folderName.append("/test_results/");
         folderName.append( selFile.getName().replace(".pdf","") );
         
-        File folder = new File( folderName.toString() );
-        if ( !folder.exists() ) {
-          System.out.println("Writing directory " + folderName);
-          folder.mkdirs();
-        }
-        
-        String textName = folderName + "/outputData.txt";
-        
-        try {
-          PrintWriter out = new PrintWriter(textName);
-          out.println(text);
-          out.close();
-        } catch (FileNotFoundException e2) {
-          System.out.println("Can't write the text");
-          e2.printStackTrace();
-        }
-        
-        for (int i = 0; i < charts.length; ++i) {
-          JFreeChart chart = charts[i];
-          String plotName = folderName + "/chart" + (i + 1) + ".png";
-          BufferedImage chartImage = 
-              ReportingUtils.chartsToImage(1280, 960, chart);
-          File plotPNG = new File(plotName);
-          try {
-            ImageIO.write(chartImage, "png", plotPNG);
-          } catch (IOException e1) {
-            e1.printStackTrace();
-          }
-        }
+        saveExperimentData( folderName.toString(), text, charts );
         
         plotsToPDF(selFile, ep, inputPlots);
       }
       return;
     }
 
-
+  }
+  
+  /**
+   * Saves data collected from an experiment to. Files will be written into
+   * a specified folder, with the format "Chart#.png" and all metadata in a
+   * single file referred to as "outputData.txt". 
+   * @param folderName Folder to write data into, presumably something like a 
+   * user's home directory, but inside a subdirectory of format
+   * "test_results/[Experiment-specified filename]".
+   * @param text Text output from an experiment
+   * @param charts Array of charts produced from the experiment
+   */
+  public static void 
+  saveExperimentData(String folderName, String text, JFreeChart[] charts) {
+    // start in the folder the pdf is saved, add data into a new
+    // subfolder for calibration data
+    
+    File folder = new File( folderName.toString() );
+    if ( !folder.exists() ) {
+      System.out.println("Writing directory " + folderName);
+      folder.mkdirs();
+    }
+    
+    String textName = folderName + "/outputData.txt";
+    
+    try {
+      PrintWriter out = new PrintWriter(textName);
+      out.println(text);
+      out.close();
+    } catch (FileNotFoundException e2) {
+      System.out.println("Can't write the text");
+      e2.printStackTrace();
+    }
+    
+    for (int i = 0; i < charts.length; ++i) {
+      JFreeChart chart = charts[i];
+      String plotName = folderName + "/chart" + (i + 1) + ".png";
+      BufferedImage chartImage = 
+          ReportingUtils.chartsToImage(1280, 960, chart);
+      File plotPNG = new File(plotName);
+      try {
+        ImageIO.write(chartImage, "png", plotPNG);
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
   }
   
   /**
