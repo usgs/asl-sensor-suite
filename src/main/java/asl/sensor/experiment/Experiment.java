@@ -157,14 +157,6 @@ public abstract class Experiment {
   }
   
   /**
-   * Return newest status message produced by this program
-   * @return String representing status of program
-   */
-  public String getStatus() {
-    return status;
-  }
-  
-  /**
    * Return the plottable data for this experiment, populated in the backend
    * function of an implementing class; calling this class before running the
    * setData function / backend will produce initialization errors (NPE).
@@ -185,8 +177,9 @@ public abstract class Experiment {
   }
   
   /**
-   * Get the names of data sent into program (set during backend calculations)
-   * @return
+   * Get the names of data sent into program (set during backend calculations),
+   * mainly used in report metadata generation
+   * @return Names of data sent into the program (SNCLs, response filenames)
    */
   public List<String> getInputNames() {
     return dataNames;
@@ -198,6 +191,14 @@ public abstract class Experiment {
    */
   public long getStart() {
     return start;
+  }
+  
+  /**
+   * Return newest status message produced by this program
+   * @return String representing status of program
+   */
+  public String getStatus() {
+    return status;
   }
   
   /**

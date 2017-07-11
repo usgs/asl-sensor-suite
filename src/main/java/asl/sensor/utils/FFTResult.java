@@ -85,6 +85,7 @@ public class FFTResult {
   public static List<Number> 
   bandFilter(List<Number> toFilt, double sps, double low, double high) {
     
+    
     double[] toFFT = new double[toFilt.size()];
     
     for (int i = 0; i < toFFT.length; ++i) {
@@ -117,6 +118,9 @@ public class FFTResult {
   public static double[] 
   bandFilterWithCuts(double[] toFilt, double sps, double low, double high, 
                      double lowStop, double highStop) {
+    
+    System.out.println("FILTERING OPERATION OCCURRING");
+    
     Complex[] fft = simpleFFT(toFilt);
     
     int trim = fft.length/2 + 1;
@@ -189,159 +193,19 @@ public class FFTResult {
     Complex[] out = new Complex[freqs.length];
     Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
     Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
-    freqs = selfPSD.getFreqs();
     
     for (int j = 0; j < freqs.length; ++j) {
       Complex respMagnitude = 
           freqRespd1[j].multiply( freqRespd2[j].conjugate() );
+      
       if (respMagnitude.abs() == 0) {
         respMagnitude = new Complex(Double.MIN_VALUE, 0);
       }
       
       out[j] = results[j].divide(respMagnitude);
-      
     }
     
     return new FFTResult(out, freqs);
-    
-  }
-  
-  public static double[] demean(double[] dataSet) {
-    
-    List<Number> dataToProcess = new ArrayList<Number>();
-    
-    for (double number : dataSet) {
-      dataToProcess.add(number);
-    }
-    
-    demeanInPlace(dataToProcess);
-    
-    double[] out = new double[dataSet.length];
-    
-    for (int i = 0; i < out.length; ++i) {
-      out[i] = dataToProcess.get(i).doubleValue();
-    }
-    
-    return out;
-    
-  }
-  
-  /**
-   * Remove mean (constant value) from a dataset and include
-   * @param dataSet
-   * @return timeseries as numeric list with previous mean subtracted
-   */
-  public static List<Number> demean(List<Number> dataSet) {
-    List<Number> dataOut = new ArrayList<Number>(dataSet);
-    demeanInPlace(dataOut);
-    return dataOut;
-  }
-  
-  
-  /**
-   * In-place subtraction of mean from each point in an incoming data set.
-   * This is a necessary step in calculating the power-spectral density.
-   * @param dataSet The data to have the mean removed from.
-   */
-  public static void demeanInPlace(List<Number> dataSet) {
-    
-    // I'm always getting the demeaning tasks, huh?
-    
-    if(dataSet.size() == 0) return; // shouldn't happen but just in case
-    
-    double mean = 0.0;
-    
-    for(Number data : dataSet) {
-      mean += data.doubleValue();
-    }
-    
-    mean /= dataSet.size();
-    
-    for(int i = 0; i < dataSet.size(); ++i) {
-      // iterate over index rather than for-each cuz we must replace data
-      // ugly syntax because numeric data types are immutable
-      dataSet.set(i, dataSet.get(i).doubleValue() - mean);
-    }
-    
-    // test shows this works as in-place method
-  }
-  
-  /**
-   * Linear detrend applied to an array of doubles rather than a list.
-   * This operation is not done in-place.
-   * @param dataSet The double array to be detrended
-   * @return Array of doubles with linear detrend removed
-   */
-  public static double[] detrend (double[] dataSet) {
-    double sumX = 0.0;
-    double sumY = 0.0;
-    double sumXSqd = 0.0;
-    double sumXY = 0.0;
-    
-    for (int i = 0; i < dataSet.length; ++i) {
-      sumX += (double) i;
-      sumXSqd += (double) i * (double) i;
-      double value = dataSet[i];
-      sumXY += value * (double) i;
-      sumY += value;
-    }
-    
-    // brackets here so you don't get confused thinking this should be
-    // algebraic division (in which case we'd just factor out the size term)
-    // 
-    
-    double del = sumXSqd - ( sumX * sumX / dataSet.length );
-    
-    double slope = sumXY - ( sumX * sumY / dataSet.length );
-    slope /= del;
-    
-    double yOffset = (sumXSqd * sumY) - (sumX * sumXY);
-    yOffset /= del * dataSet.length;
-    
-    double[] detrended = new double[dataSet.length];
-    
-    for (int i = 0; i < dataSet.length; ++i) {
-      detrended[i] = dataSet[i] - ( (slope * i) + yOffset);
-    }
-    
-    return detrended;
-  }
-  
-  /**
-   * In-place subtraction of trend from each point in an incoming data set.
-   * This is a necessary step in calculating the power-spectral density.
-   * @param dataSet The data to have the trend removed from.
-   */
-  public static void detrend(List<Number> dataSet) {
-    
-    double sumX = 0.0;
-    double sumY = 0.0;
-    double sumXSqd = 0.0;
-    double sumXY = 0.0;
-    
-    for (int i = 0; i < dataSet.size(); ++i) {
-      sumX += (double) i;
-      sumXSqd += (double) i * (double) i;
-      double value = dataSet.get(i).doubleValue();
-      sumXY += value * (double) i;
-      sumY += value;
-    }
-    
-    // brackets here so you don't get confused thinking this should be
-    // algebraic division (in which case we'd just factor out the size term)
-    // 
-    
-    double del = sumXSqd - ( sumX * sumX / dataSet.size() );
-    
-    double slope = sumXY - ( sumX * sumY / dataSet.size() );
-    slope /= del;
-    
-    double yOffset = (sumXSqd * sumY) - (sumX * sumXY);
-    yOffset /= del * dataSet.size();
-    
-    for (int i = 0; i < dataSet.size(); ++i) {
-      dataSet.set(i, dataSet.get(i).doubleValue() - ( (slope * i) + yOffset) );
-    }
     
   }
   
@@ -452,7 +316,7 @@ public class FFTResult {
     }
     
     FastFourierTransformer fft = 
-        new FastFourierTransformer(DftNormalization.UNITARY);
+        new FastFourierTransformer(DftNormalization.STANDARD);
     
     Complex[] frqDomn = fft.transform(toFFT, TransformType.FORWARD);
     
@@ -463,14 +327,60 @@ public class FFTResult {
    * Calculates the FFT of the timeseries data in a DataBlock
    * and returns the positive frequencies resulting from the FFT calculation
    * @param db DataBlock to get the timeseries data from
+   * @param mustFlip True if signal from sensor is inverted (for step cal)
    * @return Complex array of FFT values and double array of corresponding 
    * frequencies 
    */
-  public static FFTResult singleSidedFFT(DataBlock db) {
+  public static FFTResult singleSidedFFT(DataBlock db, boolean mustFlip) {
     
     double[] data = new double[db.size()];
     
-    boolean mustFlip = db.needsSignFlip();
+    for (int i = 0; i < db.size(); ++i) {
+      data[i] = db.getData().get(i).doubleValue();
+      
+      if (mustFlip) {
+        data[i] *= -1;
+      }
+    }
+    
+    data = TimeSeriesUtils.demean(data);
+    
+    // data = TimeSeriesUtils.normalize(data);
+    
+    Complex[] frqDomn = simpleFFT(data);
+    
+    int padding = frqDomn.length;
+    int singleSide = padding/2 + 1;
+    
+    double nyquist = db.getSampleRate() / 2;
+    double deltaFrq = nyquist / (singleSide - 1);
+    
+    Complex[] fftOut = new Complex[singleSide];
+    double[] frequencies = new double[singleSide];
+    
+    for (int i = 0; i < singleSide; ++i) {
+      fftOut[i] = frqDomn[i];
+      frequencies[i] = i * deltaFrq;
+    }
+    
+    System.out.println(frequencies[singleSide - 1]);
+    
+    return new FFTResult(fftOut, frequencies);
+    
+  }
+  
+  /**
+   * Calculates the FFT of the timeseries data in a DataBlock
+   * and returns the positive frequencies resulting from the FFT calculation
+   * @param db DataBlock to get the timeseries data from
+   * @param mustFlip True if signal from sensor is inverted (for step cal)
+   * @return Complex array of FFT values and double array of corresponding 
+   * frequencies 
+   */
+  public static FFTResult 
+  singleSidedFilteredFFT(DataBlock db, boolean mustFlip) {
+    
+    double[] data = new double[db.size()];
     
     for (int i = 0; i < db.size(); ++i) {
       data[i] = db.getData().get(i).doubleValue();
@@ -486,7 +396,7 @@ public class FFTResult {
     
     data = bandFilter(data, sps, 0.0, 0.1);
     
-    data = demean(data);
+    data = TimeSeriesUtils.demean(data);
     
     // data = TimeSeriesUtils.normalize(data);
     
@@ -495,9 +405,8 @@ public class FFTResult {
     int padding = frqDomn.length;
     int singleSide = padding/2 + 1;
     
-    double period = 1. / TimeSeriesUtils.ONE_HZ_INTERVAL;
-    period *= db.getInterval();
-    double deltaFrq = 1. / (period * padding);
+    double nyquist = db.getSampleRate() / 2;
+    double deltaFrq = nyquist / (singleSide - 1);
     
     Complex[] fftOut = new Complex[singleSide];
     double[] frequencies = new double[singleSide];
@@ -521,7 +430,7 @@ public class FFTResult {
    */
   public static double[] singleSidedInverseFFT(Complex[] freqDomn, int trim) {
     FastFourierTransformer fft = 
-        new FastFourierTransformer(DftNormalization.UNITARY);
+        new FastFourierTransformer(DftNormalization.STANDARD);
      
     int padding = (freqDomn.length - 1) * 2;
     
@@ -631,14 +540,14 @@ public class FFTResult {
       double[] toFFT2 = null;
       
       // demean and detrend work in-place on the list
-      demeanInPlace(data1Range);
-      detrend(data1Range);
+      TimeSeriesUtils.detrend(data1Range);
+      TimeSeriesUtils.demeanInPlace(data1Range);
       wss = cosineTaper(data1Range, TAPER_WIDTH);
       // presumably we only need the last value of wss
       
       if (!sameData) {
-        demeanInPlace(data2Range);
-        detrend(data2Range);
+        TimeSeriesUtils.demeanInPlace(data2Range);
+        TimeSeriesUtils.detrend(data2Range);
         wss = cosineTaper(data2Range, TAPER_WIDTH);
         toFFT2 = new double[padding];
       }
@@ -654,7 +563,6 @@ public class FFTResult {
       
       FastFourierTransformer fft = 
           new FastFourierTransformer(DftNormalization.STANDARD);
-
 
       Complex[] frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
       // use arraycopy now (as it's fast) to get the first half of the fft
@@ -763,6 +671,24 @@ public class FFTResult {
   }
   
   /**
+   * Return the value of the FFT at the given index
+   * @param idx Index to get the FFT value at
+   * @return FFT value at index
+   */
+  public Complex getFFT(int idx) {
+    return transform[idx];
+  }
+  
+  /**
+   * Get the frequency value at the given index
+   * @param idx Index to get the frequency value at
+   * @return Frequency value at index
+   */
+  public double getFreq(int idx) {
+    return freqs[idx];
+  }
+  
+  /**
    * Get the frequency range for the (previously calculated) FFT
    * @return Array of frequencies (doubles), matching index to each FFT point
    */
@@ -770,5 +696,13 @@ public class FFTResult {
     return freqs;
   }
   
+  /**
+   * Get the size of the complex array of FFT values, also the size of the
+   * double array of frequencies for the FFT at each index
+   * @return int representing size of thi's object's arrays
+   */
+  public int size() {
+    return transform.length;
+  }
   
 }

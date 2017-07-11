@@ -25,6 +25,7 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class NoiseNineExperiment extends NoiseExperiment {
 
+  private double[] northAngles, eastAngles;
   
   public NoiseNineExperiment() {
     super();
@@ -34,6 +35,9 @@ public class NoiseNineExperiment extends NoiseExperiment {
   
   @Override
   protected void backend(DataStore ds) {
+    
+    northAngles = new double[2];
+    eastAngles = new double[2];
     
     // NOTE: this may need to change in the event of a test using > 9 inputs
     for (int i = 0; i < 9; ++i) {
@@ -85,7 +89,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // angle should be set negative -- reference sensor is what we rotate
     aziStore.setData(2, north2Sensor);
     azi.runExperimentOnData(aziStore);
-    double north2Angle = -azi.getFitAngleRad();
+    northAngles[0] = -azi.getFitAngleRad();
     fireStateChange("Found orientation of second north sensor!");
     
     // add 90 degrees (pi/2 in radians) to get azimuth that will match the 
@@ -95,29 +99,29 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // rotation convention; this assumes it is a left-hand convention
     aziStore.setData(2, east2Sensor);
     azi.runExperimentOnData(aziStore);
-    double east2Angle = -azi.getFitAngleRad() + (3 * Math.PI / 2);
+    eastAngles[0] = -azi.getFitAngleRad() + (3 * Math.PI / 2);
     fireStateChange("Found orientation of second east sensor!");
     
     // same as above
     aziStore.setData(2, north3Sensor);
     azi.runExperimentOnData(aziStore);
-    double north3Angle = -azi.getFitAngleRad();
+    northAngles[1] = -azi.getFitAngleRad();
     fireStateChange("Found orientation of third north sensor!");
     
     aziStore.setData(2, east3Sensor);
     azi.runExperimentOnData(aziStore);
-    double east3Angle = -azi.getFitAngleRad() + (3 * Math.PI / 2);
+    eastAngles[1] = -azi.getFitAngleRad() + (3 * Math.PI / 2);
     fireStateChange("Found orientation of third east sensor!");
     
     // now to rotate the data according to these angles
     DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(north2Sensor, east2Sensor, north2Angle);
+        TimeSeriesUtils.rotate(north2Sensor, east2Sensor, northAngles[0]);
     DataBlock east2Rotated = 
-        TimeSeriesUtils.rotateX(north2Sensor, east2Sensor, east2Angle);
+        TimeSeriesUtils.rotateX(north2Sensor, east2Sensor, eastAngles[0]);
     DataBlock north3Rotated =
-        TimeSeriesUtils.rotate(north3Sensor, east3Sensor, north3Angle);
+        TimeSeriesUtils.rotate(north3Sensor, east3Sensor, northAngles[1]);
     DataBlock east3Rotated =
-        TimeSeriesUtils.rotateX(north3Sensor, east3Sensor, east3Angle);
+        TimeSeriesUtils.rotateX(north3Sensor, east3Sensor, eastAngles[1]);
     fireStateChange("All offset horizontal data rotated!");
     
     // set components into N,E,Z directional subcomponents
@@ -165,6 +169,34 @@ public class NoiseNineExperiment extends NoiseExperiment {
     
   }
 
+  /**
+   * Return array of angles (degree-valued) which north components have been
+   * rotated by, starting with the second component (1st north component is
+   * assumed to have zero rotation)
+   * @return double array representing angles in degrees
+   */
+  public double[] getNorthAngles() {
+    double[] returningNorth = new double[northAngles.length];
+    for (int i = 0; i < returningNorth.length; ++i) {
+      returningNorth[i] = Math.toDegrees(northAngles[i]);
+    }
+    return returningNorth;
+  }
+  
+  /**
+   * Return array of angles (degree-valued) which east components have been
+   * rotated by, starting with the second component (1st east component is
+   * assumed to have zero rotation)
+   * @return double array representing angles in degrees
+   */
+  public double[] getEastAngles() {
+    double[] returningEast = new double[eastAngles.length];
+    for (int i = 0; i < returningEast.length; ++i) {
+      returningEast[i] = Math.toDegrees(eastAngles[i]);
+    }
+    return returningEast;
+  }
+  
   @Override
   public int blocksNeeded() {
     return 9;

@@ -90,19 +90,169 @@ public class InstrumentResponse {
   }
   
   /**
-   * Determines whether or not the first pole is too low to fit even with
-   * a low-frequency random cal solver operation. Mainly an issue for
-   * the KS54000 RESP, since the damping curve is unusual.
-   * @return True if the initial pole is too low-frequency to add to fit.
+   * Extract the real and imaginary terms from a pole or zero in a RESP file
+   * @param line the line the zero or pole is found on in the file
+   * @param array the array of zeros and poles the term will be added to
    */
-  private boolean hasTooLowFreqPole() {
-    final double CUTOFF = 1. / 1000.;
-    if ( ( poles.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
-      // first two poles are low-frequency
-      return true;
+  private static void parseTermAsComplex(String line, Complex[] array) {
+    // reparse the line. why are we doing this? well,
+    // if a number is negative, only one space between it and prev. number
+    // and the previous split operation assumed > 2 spaces between numbers
+    String[] words = line.split("\\s+");
+
+
+    // index 0 is the identifier for the field types (used in switch-stmt)
+    // index 1 is where in the list this zero or pole is
+    // index 2 is the real part, and index 3 the imaginary
+    // indices 4 and 5 are error terms (ignored)    
+    int index = Integer.parseInt(words[1]);
+    double realPart = Double.parseDouble(words[2]);
+    double imagPart = Double.parseDouble(words[3]);
+    array[index] = new Complex(realPart, imagPart);
+  }
+  
+  private TransferFunction transferType;
+  
+  // gain values, indexed by stage
+  private List<Double> gain;
+  
+  // poles and zeros
+  private List<Complex> zeros;
+  
+  private List<Complex> poles;
+  
+  private String name;
+  private Unit unitType;
+  
+  private double normalization; // A0 normalization factor
+  
+  private double normalFreq; // cuz she's a normalFreq, normalFreq 
+  // (the A0 norm. factor's frequency) 
+  
+  /**
+   * Reads in a response from an already-accessed bufferedreader handle
+   * and assigns it to the name given (used with embedded response files)
+   * @param br Handle to a buffered reader of a given RESP file
+   * @param name Name of RESP file to be used internally 
+   * @throws IOException
+   */
+  public InstrumentResponse(BufferedReader br, String name) throws IOException {
+    
+    this.name = name;
+    
+    parserDriver(br);
+  }
+  /**
+   * Create a copy of an existing response object
+   * @param responseIn The response object to be copied
+   */
+  public InstrumentResponse(InstrumentResponse responseIn) {
+    transferType = responseIn.getTransferFunction();
+    
+    gain = new ArrayList<Double>( responseIn.getGain() );
+
+    zeros = new ArrayList<Complex>( responseIn.getZeros() );
+    poles = new ArrayList<Complex>( responseIn.getPoles() );
+    
+    unitType = responseIn.getUnits();
+    
+    normalization = Double.valueOf( responseIn.getNormalization() );
+    normalFreq = Double.valueOf( responseIn.getNormalizationFrequency() );
+    
+    name = responseIn.getName();
+  }
+  
+  /**
+   * Reads in an instrument response from a RESP file
+   * @param filename full path of the RESP file
+   * @throws IOException
+   */
+  public InstrumentResponse(String filename) throws IOException {
+    name = new File(filename).getName();
+    parseResponseFile(filename);
+  }
+  
+  /**
+   * Apply the values of this response object to a list of frequencies and
+   * return the resulting (complex) frequencies
+   * The response curve produced is in units of acceleration. Many of the
+   * experiments in the larger test suite expect frequency response curves that
+   * are in units of velocity, and so the resulting array will need to have
+   * its entries scaled by 2 * pi * f.
+   * @param frequencies inputted list of frequencies, such as FFT windows
+   * @return application of the response to those frequencies
+   */
+  public Complex[] applyResponseToInput(double[] frequencies) {
+   
+    Complex[] resps = new Complex[frequencies.length];
+    
+    // precalculate gain for scaling the response
+    double scale = 1.;
+    // stage 0 is sensitivity (supposed to be product of all gains)
+    // we will get scale by multiplying all gain stages except for it
+    for (int i = 1; i < gain.size(); ++i) {
+      scale *= gain.get(i);
     }
     
-    return false;
+    // how many times do we need to do integration?
+    // outUnits (acceleration) - inUnits
+    // i.e., if the units of this response are velocity, we integrate once
+    int integrations = Unit.ACCELERATION.getDifferentiations(unitType);
+    // unlike s (see below) this is always 2Pi
+    double integConstant = NumericUtils.TAU;
+    
+    for (int i = 0; i < frequencies.length; ++i) {
+     
+      double deltaFrq = frequencies[i];
+      
+      // pole-zero expansion
+      Complex s = new Complex( 0, deltaFrq*transferType.getFunction() );
+      
+      Complex numerator = Complex.ONE;
+      Complex denominator = Complex.ONE;
+      
+      for (Complex zero : zeros) {
+        numerator = numerator.multiply( s.subtract(zero) );
+      }
+      
+      for (Complex pole : poles) {
+        denominator = denominator.multiply( s.subtract(pole) );
+      }
+      
+      resps[i] = numerator.multiply(normalization).divide(denominator);
+      
+      if (integrations > 0) {
+        // i*omega; integration is I(w) x (iw)^n
+        Complex iw = new Complex(0.0, integConstant*deltaFrq);
+        for (int j = 1; j < Math.abs(integrations); j++){
+          iw = iw.multiply(iw);
+        }
+        resps[i] = resps[i].multiply(iw);
+      } else if (integrations < 0) { 
+        // a negative number of integrations 
+        // is a positive number of differentiations
+        // differentiation is I(w) / (-i/w)^n
+        Complex iw = new Complex(0.0, -1.0 / (integConstant*deltaFrq) );
+        for (int j = 1; j < Math.abs(integrations); j++){
+          iw = iw.multiply(iw);
+        }
+        resps[i] = iw.multiply(resps[i]);
+      }
+      
+      
+      // lastly, scale by the scale we chose (gain0 or gain1*gain2)
+      resps[i] = resps[i].multiply(scale);
+      
+      // unit conversion back out of acceleration
+      /*
+      double conversion =  frequencies[i]*2*Math.PI;
+      resps[i] = resps[i].multiply( resps[i].conjugate() );
+      resps[i] = resps[i].multiply( Math.pow(conversion, 2) );
+      */
+      
+    }
+    
+    return resps;
   }
   
   /**
@@ -116,13 +266,11 @@ public class InstrumentResponse {
    * and zeros
    * @param lowFreq True if the fit values are for low-frequency components
    * @param numZeros How much of the input parameter array is zero components
-   * @param nyquist Nyquist rate of cal data 
-   * (upper bound on poles/zeros being fit)
    * @return New InstrumentResponse with the fit values applied to it
    */
   public InstrumentResponse 
   buildResponseFromFitVector(double[] params, boolean lowFreq, 
-      int numZeros, double nyquist) {
+      int numZeros) {
     
     // first covert poles and zeros back to complex values to make this easier
     List<Complex> zerosAsComplex = new ArrayList<Complex>();
@@ -245,172 +393,6 @@ public class InstrumentResponse {
   }
   
   /**
-   * Extract the real and imaginary terms from a pole or zero in a RESP file
-   * @param line the line the zero or pole is found on in the file
-   * @param array the array of zeros and poles the term will be added to
-   */
-  private static void parseTermAsComplex(String line, Complex[] array) {
-    // reparse the line. why are we doing this? well,
-    // if a number is negative, only one space between it and prev. number
-    // and the previous split operation assumed > 2 spaces between numbers
-    String[] words = line.split("\\s+");
-
-
-    // index 0 is the identifier for the field types (used in switch-stmt)
-    // index 1 is where in the list this zero or pole is
-    // index 2 is the real part, and index 3 the imaginary
-    // indices 4 and 5 are error terms (ignored)    
-    int index = Integer.parseInt(words[1]);
-    double realPart = Double.parseDouble(words[2]);
-    double imagPart = Double.parseDouble(words[3]);
-    array[index] = new Complex(realPart, imagPart);
-  }
-  
-  private TransferFunction transferType;
-  
-  // gain values, indexed by stage
-  private List<Double> gain;
-  
-  // poles and zeros
-  private List<Complex> zeros;
-  private List<Complex> poles;
-  
-  private String name;
-  
-  private Unit unitType;
-  
-  private double normalization; // A0 normalization factor
-  private double normalFreq; // cuz she's a normalFreq, normalFreq 
-  // (the A0 norm. factor's frequency) 
-  
-  /**
-   * Reads in a response from an already-accessed bufferedreader handle
-   * and assigns it to the name given (used with embedded response files)
-   * @param br Handle to a buffered reader of a given RESP file
-   * @param name Name of RESP file to be used internally 
-   * @throws IOException
-   */
-  public InstrumentResponse(BufferedReader br, String name) throws IOException {
-    
-    this.name = name;
-    
-    parserDriver(br);
-  }
-  
-  /**
-   * Create a copy of an existing response object
-   * @param responseIn The response object to be copied
-   */
-  public InstrumentResponse(InstrumentResponse responseIn) {
-    transferType = responseIn.getTransferFunction();
-    
-    gain = new ArrayList<Double>( responseIn.getGain() );
-
-    zeros = new ArrayList<Complex>( responseIn.getZeros() );
-    poles = new ArrayList<Complex>( responseIn.getPoles() );
-    
-    unitType = responseIn.getUnits();
-    
-    normalization = Double.valueOf( responseIn.getNormalization() );
-    normalFreq = Double.valueOf( responseIn.getNormalizationFrequency() );
-    
-    name = responseIn.getName();
-  }
-  
-  /**
-   * Reads in an instrument response from a RESP file
-   * @param filename full path of the RESP file
-   * @throws IOException
-   */
-  public InstrumentResponse(String filename) throws IOException {
-    name = new File(filename).getName();
-    parseResponseFile(filename);
-  }
-  
-  /**
-   * Apply the values of this response object to a list of frequencies and
-   * return the resulting (complex) frequencies
-   * The response curve produced is in units of acceleration. Many of the
-   * experiments in the larger test suite expect frequency response curves that
-   * are in units of velocity, and so the resulting array will need to have
-   * its entries scaled by 2 * pi * f.
-   * @param frequencies inputted list of frequencies, such as FFT windows
-   * @return application of the response to those frequencies
-   */
-  public Complex[] applyResponseToInput(double[] frequencies) {
-   
-    Complex[] resps = new Complex[frequencies.length];
-    
-    // precalculate gain for scaling the response
-    double scale = 1.;
-    // stage 0 is sensitivity (supposed to be product of all gains)
-    // we will get scale by multiplying all gain stages except for it
-    for (int i = 1; i < gain.size(); ++i) {
-      scale *= gain.get(i);
-    }
-    
-    // how many times do we need to do integration?
-    // outUnits (acceleration) - inUnits
-    // i.e., if the units of this response are velocity, we integrate once
-    int integrations = Unit.ACCELERATION.getDifferentiations(unitType);
-    // unlike s (see below) this is always 2Pi
-    double integConstant = NumericUtils.TAU;
-    
-    for (int i = 0; i < frequencies.length; ++i) {
-     
-      double deltaFrq = frequencies[i];
-      
-      // pole-zero expansion
-      Complex s = new Complex( 0, deltaFrq*transferType.getFunction() );
-      
-      Complex numerator = Complex.ONE;
-      Complex denominator = Complex.ONE;
-      
-      for (Complex zero : zeros) {
-        numerator = numerator.multiply( s.subtract(zero) );
-      }
-      
-      for (Complex pole : poles) {
-        denominator = denominator.multiply( s.subtract(pole) );
-      }
-      
-      resps[i] = numerator.multiply(normalization).divide(denominator);
-      
-      if (integrations > 0) {
-        // i*omega; integration is I(w) x (iw)^n
-        Complex iw = new Complex(0.0, integConstant*deltaFrq);
-        for (int j = 1; j < Math.abs(integrations); j++){
-          iw = iw.multiply(iw);
-        }
-        resps[i] = resps[i].multiply(iw);
-      } else if (integrations < 0) { 
-        // a negative number of integrations 
-        // is a positive number of differentiations
-        // differentiation is I(w) / (-i/w)^n
-        Complex iw = new Complex(0.0, -1.0 / (integConstant*deltaFrq) );
-        for (int j = 1; j < Math.abs(integrations); j++){
-          iw = iw.multiply(iw);
-        }
-        resps[i] = iw.multiply(resps[i]);
-      }
-      
-      
-      // lastly, scale by the scale we chose (gain0 or gain1*gain2)
-      resps[i] = resps[i].multiply(scale);
-      
-      // unit conversion back out of acceleration
-      /*
-      double conversion =  frequencies[i]*2*Math.PI;
-      resps[i] = resps[i].multiply( resps[i].conjugate() );
-      resps[i] = resps[i].multiply( Math.pow(conversion, 2) );
-      */
-      
-    }
-    
-    return resps;
-  }
-  
-  /**
    * Get the gain stages of the RESP file. Stage x is at index x. That is,
    * the sensitivity is at 0, the sensor gain is at 1, and the digitizer
    * gain is at 2.
@@ -480,146 +462,21 @@ public class InstrumentResponse {
   }
   
   /**
-   * Create a RealVector of the components in the list of poles for this
-   * response, used for finding best-fit poles from a random calibration
-   * The complex numbers each representing a pole are split into their
-   * real and imaginary components (each a double), with the real components
-   * being set on even indices and imaginary components on the odd indices; 
-   * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
-   * single pole. Poles with non-zero imaginary components do not have their
-   * conjugate included in this vector in order to maintain constraints. 
-   * @param lowFreq True if the low-frequency poles are to be fit
-   * @param nyquist Nyquist rate of data (upper bound on high-freq poles to fit)
-   * @return RealVector with fittable pole values
+   * Determines whether or not the first pole is too low to fit even with
+   * a low-frequency random cal solver operation. Mainly an issue for
+   * the KS54000 RESP, since the damping curve is unusual.
+   * @return True if the initial pole is too low-frequency to add to fit.
    */
-  public RealVector polesToVector(boolean lowFreq, double nyquist) {
-    // first, sort poles by magnitude
-    NumericUtils.complexMagnitudeSorter(poles);
-    
-    // create a list of doubles that are the non-conjugate elements from list
-    // of poles, to convert to array and then vector format
-    List<Double> componentList = new ArrayList<Double>();
-    
-    // starting index for poles, shift up one if lowest-freq pole is TOO low
-    int start = 0;
-    if ( hasTooLowFreqPole() ) {
-      start = 1;
+  private boolean hasTooLowFreqPole() {
+    final double CUTOFF = 1. / 1000.;
+    if ( ( poles.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
+      // first two poles are low-frequency
+      return true;
     }
     
-    for (int i = start; i < poles.size(); ++i) {
-      
-      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU < 1. ) ) {
-        // don't include poles below 1Hz in high-frequency calibration
-        continue;
-      }
-      if ( lowFreq && ( poles.get(i).abs() / NumericUtils.TAU > 1. ) ) {
-        // only do low frequency calibrations on poles up to 
-        break;
-      }
-      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU >= nyquist ) ) {
-        // don't fit poles above nyquist rate of sensor output
-        break;
-      }
-      
-      // a complex is just two doubles representing real and imaginary lengths
-      double realPart = poles.get(i).getReal();
-      double imagPart = poles.get(i).getImaginary();
-      
-      componentList.add(realPart);
-      componentList.add(imagPart);
-      
-      if (imagPart != 0.) {
-        // next value is complex conjugate of this one, so skip it
-        ++i;
-      } else if ( (i + 1) < poles.size() &&
-          poles.get(i + 1).getImaginary() == 0. && 
-          realPart == poles.get(i + 1).getReal() ) {
-        // two values with zero imaginary are duplicated in the list
-        // again, we skip this one
-        ++i;
-      }
-      
-    }
-    
-    // turn into array to be turned into vector
-    // can't use toArray because List doesn't use primitive double objects
-    double[] responseVariables = new double[componentList.size()];
-    for (int i = 0; i < responseVariables.length; ++i) {
-      responseVariables[i] = componentList.get(i);
-    }
-    
-    return MatrixUtils.createRealVector(responseVariables);
+    return false;
   }
   
-  /**
-   * Create a RealVector of the components in the list of zeros for this
-   * response, used for finding best-fit zeros from a random calibration
-   * The complex numbers each representing a zero are split into their
-   * real and imaginary components (each a double), with the real components
-   * being set on even indices and imaginary components on the odd indices; 
-   * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
-   * single zero. Zeros with non-zero imaginary components do not have their
-   * conjugate included in this vector in order to maintain constraints. 
-   * @param lowFreq True if the low-frequency zeros are to be fit
-   * @param nyquist Nyquist rate of data (upper bound on high-freq zeros to fit)
-   * @return RealVector with fittable zero values
-   */
-  public RealVector zerosToVector(boolean lowFreq, double nyquist) {
-    NumericUtils.complexMagnitudeSorter(zeros);
-    
-    // create a list of doubles that are the non-conjugate elements from list
-    // of poles, to convert to array and then vector format
-    List<Double> componentList = new ArrayList<Double>();
-    
-    for (int i = 0; i < zeros.size(); ++i) {
-      
-      if ( zeros.get(i).abs() == 0. ) {
-        // ignore zeros that are literally zero-valued
-        continue;
-      }
-      if ( lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU > 1. ) ) {
-        // only do low frequency calibrations on zeros up to 1Hz
-        break;
-      }
-      
-      double cutoffChecker = zeros.get(i).abs() / NumericUtils.TAU;
-      
-      if ( !lowFreq && ( cutoffChecker < 1. ) ) {
-        // don't include zeros > 1Hz in high-frequency calibration
-        continue;
-      }
-      if ( !lowFreq && ( cutoffChecker > nyquist) ) {
-        // don't fit zeros above nyquist rate of sensor output
-        break;
-      }
-      
-      double realPart = zeros.get(i).getReal();
-      double imagPart = zeros.get(i).getImaginary();
-      componentList.add(realPart);
-      componentList.add(imagPart);
-      
-      if (imagPart != 0.) {
-        // next value is complex conjugate of this one, so skip it
-        ++i;
-      } else if ( (i + 1) < zeros.size() && 
-          zeros.get(i + 1).getImaginary() == 0. && 
-          realPart == zeros.get(i + 1).getReal() ) {
-        // two values with zero imaginary are duplicated in the list
-        // again, we skip this one
-        ++i;
-      }
-    }
-
-    // turn into array to be turned into vector
-    // can't use toArray because List doesn't use primitive double objects
-    double[] responseVariables = new double[componentList.size()];
-    for (int i = 0; i < responseVariables.length; ++i) {
-      responseVariables[i] = componentList.get(i);
-    }
-    
-    return MatrixUtils.createRealVector(responseVariables);
-  }
-
   /**
    * Read in each line of a response and parse and store relevant lines
    * according to the hex value at the start of the line
@@ -790,6 +647,81 @@ public class InstrumentResponse {
     }
     
   }
+
+  /**
+   * Create a RealVector of the components in the list of poles for this
+   * response, used for finding best-fit poles from a random calibration
+   * The complex numbers each representing a pole are split into their
+   * real and imaginary components (each a double), with the real components
+   * being set on even indices and imaginary components on the odd indices; 
+   * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
+   * single pole. Poles with non-zero imaginary components do not have their
+   * conjugate included in this vector in order to maintain constraints. 
+   * @param lowFreq True if the low-frequency poles are to be fit
+   * @param nyquist Nyquist rate of data (upper bound on high-freq poles to fit)
+   * @return RealVector with fittable pole values
+   */
+  public RealVector polesToVector(boolean lowFreq, double nyquist) {
+    // first, sort poles by magnitude
+    NumericUtils.complexMagnitudeSorter(poles);
+    
+    double peak = .8 * nyquist;
+    
+    
+    // create a list of doubles that are the non-conjugate elements from list
+    // of poles, to convert to array and then vector format
+    List<Double> componentList = new ArrayList<Double>();
+    
+    // starting index for poles, shift up one if lowest-freq pole is TOO low
+    int start = 0;
+    if ( hasTooLowFreqPole() ) {
+      start = 1;
+    }
+    
+    for (int i = start; i < poles.size(); ++i) {
+      
+      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU < 1. ) ) {
+        // don't include poles below 1Hz in high-frequency calibration
+        continue;
+      }
+      if ( lowFreq && ( poles.get(i).abs() / NumericUtils.TAU > 1. ) ) {
+        // only do low frequency calibrations on poles up to 
+        break;
+      }
+      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU >= peak ) ) {
+        // don't fit poles above 80% of nyquist rate of sensor output
+        break;
+      }
+      
+      // a complex is just two doubles representing real and imaginary lengths
+      double realPart = poles.get(i).getReal();
+      double imagPart = poles.get(i).getImaginary();
+      
+      componentList.add(realPart);
+      componentList.add(imagPart);
+      
+      if (imagPart != 0.) {
+        // next value is complex conjugate of this one, so skip it
+        ++i;
+      } else if ( (i + 1) < poles.size() &&
+          poles.get(i + 1).getImaginary() == 0. && 
+          realPart == poles.get(i + 1).getReal() ) {
+        // two values with zero imaginary are duplicated in the list
+        // again, we skip this one
+        ++i;
+      }
+      
+    }
+    
+    // turn into array to be turned into vector
+    // can't use toArray because List doesn't use primitive double objects
+    double[] responseVariables = new double[componentList.size()];
+    for (int i = 0; i < responseVariables.length; ++i) {
+      responseVariables[i] = componentList.get(i);
+    }
+    
+    return MatrixUtils.createRealVector(responseVariables);
+  }
   
   /**
    * Set name of response file, used in some plot and report generation
@@ -798,7 +730,7 @@ public class InstrumentResponse {
   public void setName(String newName) {
     name = newName;
   }
-
+  
   /**
    * Replace the current poles of this response with new ones
    * @param poleList New poles to replace the current response poles with
@@ -806,7 +738,7 @@ public class InstrumentResponse {
   public void setPoles(List<Complex> poleList) {
     poles = poleList;
   }
-  
+
   /**
    * Set the list of zeros to a new list, such as after fitting from random cal
    * @param newZeros New list of zeros to assign this calibration
@@ -814,7 +746,7 @@ public class InstrumentResponse {
   public void setZeros(List<Complex> newZeros) {
     zeros = newZeros;
   }
-
+  
   /**
    * Output text report of this response file. Not same format as IRIS RESP.
    */
@@ -884,6 +816,77 @@ public class InstrumentResponse {
     }
     
     return sb.toString();
+  }
+
+  /**
+   * Create a RealVector of the components in the list of zeros for this
+   * response, used for finding best-fit zeros from a random calibration
+   * The complex numbers each representing a zero are split into their
+   * real and imaginary components (each a double), with the real components
+   * being set on even indices and imaginary components on the odd indices; 
+   * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
+   * single zero. Zeros with non-zero imaginary components do not have their
+   * conjugate included in this vector in order to maintain constraints. 
+   * @param lowFreq True if the low-frequency zeros are to be fit
+   * @param nyquist Nyquist rate of data (upper bound on high-freq zeros to fit)
+   * @return RealVector with fittable zero values
+   */
+  public RealVector zerosToVector(boolean lowFreq, double nyquist) {
+    NumericUtils.complexMagnitudeSorter(zeros);
+    
+    double peak = 0.8 * nyquist;
+    
+    // create a list of doubles that are the non-conjugate elements from list
+    // of poles, to convert to array and then vector format
+    List<Double> componentList = new ArrayList<Double>();
+    
+    for (int i = 0; i < zeros.size(); ++i) {
+      
+      if ( zeros.get(i).abs() == 0. ) {
+        // ignore zeros that are literally zero-valued
+        continue;
+      }
+      if ( lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU > 1. ) ) {
+        // only do low frequency calibrations on zeros up to 1Hz
+        break;
+      }
+      
+      double cutoffChecker = zeros.get(i).abs() / NumericUtils.TAU;
+      
+      if ( !lowFreq && ( cutoffChecker < 1. ) ) {
+        // don't include zeros > 1Hz in high-frequency calibration
+        continue;
+      }
+      if ( !lowFreq && ( cutoffChecker > peak) ) {
+        // don't fit zeros above 80% nyquist rate of sensor output
+        break;
+      }
+      
+      double realPart = zeros.get(i).getReal();
+      double imagPart = zeros.get(i).getImaginary();
+      componentList.add(realPart);
+      componentList.add(imagPart);
+      
+      if (imagPart != 0.) {
+        // next value is complex conjugate of this one, so skip it
+        ++i;
+      } else if ( (i + 1) < zeros.size() && 
+          zeros.get(i + 1).getImaginary() == 0. && 
+          realPart == zeros.get(i + 1).getReal() ) {
+        // two values with zero imaginary are duplicated in the list
+        // again, we skip this one
+        ++i;
+      }
+    }
+
+    // turn into array to be turned into vector
+    // can't use toArray because List doesn't use primitive double objects
+    double[] responseVariables = new double[componentList.size()];
+    for (int i = 0; i < responseVariables.length; ++i) {
+      responseVariables[i] = componentList.get(i);
+    }
+    
+    return MatrixUtils.createRealVector(responseVariables);
   }
 }
 

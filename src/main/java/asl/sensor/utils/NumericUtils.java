@@ -51,7 +51,14 @@ public class NumericUtils {
    * @return atan, between -pi and pi
    */
   public static double atanc(Complex c) {
-    return Math.atan2( -c.getImaginary(), c.getReal() );
+    
+    final double CUTOFF = 1./1000.;
+    
+    if ( c.abs() < CUTOFF) {
+      return 0.;
+    }
+    
+    return Math.atan2( c.getImaginary(), c.getReal() );
   }
   
   public static void complexMagnitudeSorter(List<Complex> complexes) {

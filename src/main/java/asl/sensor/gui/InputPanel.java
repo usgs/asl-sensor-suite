@@ -38,17 +38,21 @@ import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.JTextComponent;
 
+import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.IntervalMarker;
 import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
@@ -662,11 +666,11 @@ implements ActionListener, ChangeListener {
     
     // showRegionForGeneration();
     if ( zooms.numberOfBlocksSet() > 1 ) {
-      zooms.matchIntervals(activePlots);
+      // zooms.matchIntervals(activePlots); done at experiment level
       zooms.trimToCommonTime(activePlots);
     }
 
-    return zooms;
+    return new DataStore(zooms);
   }
   
   /**
@@ -690,7 +694,11 @@ implements ActionListener, ChangeListener {
   public String[] getResponseStrings(int[] indices) {
     String[] outStrings = new String[indices.length];
     for (int i = 0; i < indices.length; ++i) {
-      outStrings[i] = zooms.getResponse(indices[i]).toString();
+      int idx = indices[i];
+      if ( !ds.responseIsSet(idx) ) {
+        System.out.println("ERROR WITH RESP AT INDEX " + idx);
+      }
+      outStrings[i] = ds.getResponse(idx).toString();
     }
     return outStrings;
   }
@@ -804,8 +812,8 @@ implements ActionListener, ChangeListener {
               false, false, false);
 
           XYPlot xyp = (XYPlot) chart.getPlot();
+          
           DateAxis da = new DateAxis();
-
           SDF.setTimeZone( TimeZone.getTimeZone("UTC") );
           da.setLabel("UTC Time (Year.Day.Hour:Minute)");
           Font bold = da.getLabelFont();
@@ -815,6 +823,9 @@ implements ActionListener, ChangeListener {
           xyp.setDomainAxis(da);
           int colorIdx = idx % defaultColor.length;
           xyp.getRenderer().setSeriesPaint(0, defaultColor[colorIdx]);
+          
+          NumberAxis na = (NumberAxis) xyp.getRangeAxis();
+          na.setAutoRangeIncludesZero(false);
           
           return 0;
           // setData(idx, filePath, immutableFilter);
@@ -1092,6 +1103,25 @@ implements ActionListener, ChangeListener {
       xyp.addDomainMarker(startMarker);
       xyp.addDomainMarker(endMarker);
       
+      List<Pair<Long,Long>> gaps = zooms.getBlock(i).getGapBoundaries();
+      
+      XYDataset data = xyp.getDataset();
+      XYSeriesCollection xysc = (XYSeriesCollection) data;
+      double min = xysc.getDomainLowerBound(false);
+      double max = xysc.getDomainUpperBound(false);
+      
+      for (Pair<Long, Long> gapLoc : gaps) {
+        long divisor = TimeSeriesUtils.ONE_HZ_INTERVAL / 1000;
+        Double gapStart = gapLoc.getFirst().doubleValue() / divisor;
+        Double gapEnd = gapLoc.getSecond().doubleValue() / divisor;
+        if (gapEnd > min || gapStart < max) {
+          double start = Math.max(gapStart, min);
+          double end = Math.min(gapEnd, max);
+          Marker gapMarker = new IntervalMarker(start, end);
+          gapMarker.setPaint( Color.ORANGE );
+          xyp.addDomainMarker(gapMarker);
+        }
+      }
       chartPanels[i].repaint();
     }
     
@@ -1198,54 +1228,10 @@ implements ActionListener, ChangeListener {
         continue;
       }
       resetPlotZoom(i);
+      
     }
 
     setVerticalBars();
-    
-  }
-  
-  /**
-   * Verify that slider locations will not violate restrictions in location
-   * @param moveLeft True if left slider needs to move (false if right slider)
-   * @param newLocation Value to set slider to if within restrictions
-   */
-  private void validateSliderPlacement(boolean moveLeft, int newLocation) {
-    
-    int leftSliderValue, rightSliderValue;
-    
-    if (moveLeft) {
-      leftSliderValue = newLocation;
-      rightSliderValue = rightSlider.getValue();
-    } else {
-      leftSliderValue = leftSlider.getValue();
-      rightSliderValue = newLocation;
-    }
-    
-    if (leftSliderValue > rightSliderValue || 
-        leftSliderValue + MARGIN > rightSliderValue) {
-      
-      // (left slider must stay left of right slider by at least margin)
-      
-      if (moveLeft) {
-        // move left slider as close to right as possible
-        leftSliderValue = rightSliderValue - MARGIN;
-        if (leftSliderValue < 0) {
-          leftSliderValue = 0;
-          rightSliderValue = MARGIN;
-        }
-      } else {
-        // move right slider as close to left as possible
-        rightSliderValue = leftSliderValue + MARGIN;
-        if (rightSliderValue > SLIDER_MAX) {
-          rightSliderValue = SLIDER_MAX;
-          leftSliderValue = SLIDER_MAX - MARGIN;
-        }
-      }
-      
-    }
-    
-    rightSlider.setValue(rightSliderValue);
-    leftSlider.setValue(leftSliderValue);
     
   }
   
@@ -1327,6 +1313,51 @@ implements ActionListener, ChangeListener {
     }
     
     setVerticalBars(); // date display object's text gets updated here
+    
+  }
+  
+  /**
+   * Verify that slider locations will not violate restrictions in location
+   * @param moveLeft True if left slider needs to move (false if right slider)
+   * @param newLocation Value to set slider to if within restrictions
+   */
+  private void validateSliderPlacement(boolean moveLeft, int newLocation) {
+    
+    int leftSliderValue, rightSliderValue;
+    
+    if (moveLeft) {
+      leftSliderValue = newLocation;
+      rightSliderValue = rightSlider.getValue();
+    } else {
+      leftSliderValue = leftSlider.getValue();
+      rightSliderValue = newLocation;
+    }
+    
+    if (leftSliderValue > rightSliderValue || 
+        leftSliderValue + MARGIN > rightSliderValue) {
+      
+      // (left slider must stay left of right slider by at least margin)
+      
+      if (moveLeft) {
+        // move left slider as close to right as possible
+        leftSliderValue = rightSliderValue - MARGIN;
+        if (leftSliderValue < 0) {
+          leftSliderValue = 0;
+          rightSliderValue = MARGIN;
+        }
+      } else {
+        // move right slider as close to left as possible
+        rightSliderValue = leftSliderValue + MARGIN;
+        if (rightSliderValue > SLIDER_MAX) {
+          rightSliderValue = SLIDER_MAX;
+          leftSliderValue = SLIDER_MAX - MARGIN;
+        }
+      }
+      
+    }
+    
+    rightSlider.setValue(rightSliderValue);
+    leftSlider.setValue(leftSliderValue);
     
   }
   

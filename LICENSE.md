@@ -3,7 +3,7 @@
 
 ### Sensor Test Suite
 
-	The Sensor Test Suite was created at the Albuquerque Seismological Laboratory.
+	The Sensor Test Suite was created under contract at the Albuquerque Seismological Laboratory. 
 
 	Licensed as CC0 v1.0. Full text included in cc0.md
 

@@ -85,20 +85,13 @@ extends Experiment implements ParameterValidator {
   private int normalIdx; // location of value to set to 0 in curves for scaling
   private int numZeros; // how many entries in parameter vector define zeros
   private int sensorOutIdx; // location to load response from?
+  private int numIterations; // how much the solver ran
   
   public RandomizedExperiment() {
     super();
     lowFreq = false;
     normalIdx = 0;
-  }
-  
-  /**
-   * Used to determine whether to run the solver or not; disabling the solver
-   * is useful for determining the quality of a given calibration function
-   * @return True if the solver is to be run
-   */
-  public boolean getSolverState() {
-    return SKIP_SOLVING;
+    numIterations = 0;
   }
   
   /*
@@ -113,9 +106,16 @@ extends Experiment implements ParameterValidator {
     DataBlock calib = ds.getXthLoadedBlock(1);
     sensorOutIdx = ds.getXthFullyLoadedIndex(1);
     
+    // if first data has response loaded erroneously, load in next data set
+    if (sensorOutIdx == 0) {
+      sensorOutIdx = ds.getXthFullyLoadedIndex(2);
+    }
+    
+    /*
     if ( ds.getBlock(sensorOutIdx).getName().equals( calib.getName() ) ) {
       sensorOutIdx = ds.getXthFullyLoadedIndex(2);
     }
+    */
 
     DataBlock sensorOut = ds.getBlock(sensorOutIdx);
     fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIdx) );
@@ -207,7 +207,8 @@ extends Experiment implements ParameterValidator {
     // applied response. make sure to use the correct units (velocity)
     Complex[] appResponse = fitResponse.applyResponseToInput(freqs);
     for (int i = 0; i < appResponse.length; ++i) {
-      appResponse[i] = appResponse[i].divide(NumericUtils.TAU * freqs[i]);
+      Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
+      appResponse[i] = appResponse[i].divide(scaleFactor);
     }
     
     // calculated response from deconvolving calibration from signal
@@ -218,7 +219,8 @@ extends Experiment implements ParameterValidator {
       Complex denom = denominatorPSDVals[i];
       estResponse[i] = numer.divide(denom);
       // convert from displacement to velocity
-      estResponse[i] = estResponse[i].multiply(NumericUtils.TAU * freqs[i]);
+      Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
+      estResponse[i] = estResponse[i].multiply(scaleFactor);
     }
     
     // next, normalize estimated response
@@ -237,6 +239,8 @@ extends Experiment implements ParameterValidator {
     
     // prevent discontinuities in angle plots
     double phiPrev = 0.;
+    
+    double[] obsdAmps = new double[estResponse.length];
     
     for (int i = 0; i < estResponse.length; ++i) {
       
@@ -259,6 +263,7 @@ extends Experiment implements ParameterValidator {
         observedResult[argIdx] = 0;
       } else {
         
+        obsdAmps[i] = estValMag / scaleValue.abs();
         observedResult[i] = 10 * Math.log10(estValMag);
         observedResult[i] -= subtractBy;
         
@@ -300,7 +305,7 @@ extends Experiment implements ParameterValidator {
     // System.out.println(maxMagWeight);
     
     // we have the candidate mag and phase, now to turn them into weight values
-    maxMagWeight = 10. / maxMagWeight;
+    maxMagWeight = 1000. / maxMagWeight; // scale factor to weight over phase
     maxArgWeight = 1./ maxArgWeight;
     
     // weight matrix
@@ -309,8 +314,20 @@ extends Experiment implements ParameterValidator {
       int argIdx = i + estResponse.length;
       // weights[i] = 1 / Math.pow(10, maxMagWeight);
       // weights[i] = 10000;
-      weights[i] = maxMagWeight; // scale by 100 due to peak adjustment
-      weights[argIdx] = maxArgWeight;
+      double denom = 1.;
+      if (!lowFreq) {
+        // give frequencies below 1 less weight in high-freq calibrations
+        denom = 100;
+      }
+      if (freqs[i] > 1.) {
+        denom = freqs[i];
+      }
+      if (freqs[i] > 10.) {
+        // for high enough freqs, make weighting (100/f^3) rather than 1/f;
+        denom *= Math.pow(freqs[i], 2) / 100;
+      }
+      weights[i] = maxMagWeight / denom;
+      weights[argIdx] = maxArgWeight / denom;
     }
     
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
@@ -339,19 +356,24 @@ extends Experiment implements ParameterValidator {
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       
+      int numIterations = 0;
+      
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
+        ++numIterations;
+        fireStateChange("Fitting, iteration count " + numIterations);
         Pair<RealVector, RealMatrix> pair = 
             jacobian(point);
         return pair;
       }
+      
     };
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
-        new EvaluationRmsChecker(1.0E-7, 1.0E-7);
+        new EvaluationRmsChecker(1.0E-12, 1.0E-12);
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-7).
-        withParameterRelativeTolerance(1.0E-7);
+        withCostRelativeTolerance(1.0E-12).
+        withParameterRelativeTolerance(1.0E-12);
     
     name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
@@ -384,9 +406,6 @@ extends Experiment implements ParameterValidator {
     double[] initialValues =
         jacobian.value(initialGuess).getFirst().toArray();
     
-    XYSeries initResidMag = new XYSeries("Input resp. mag residual");
-    XYSeries initResidPhase = new XYSeries("Input resp. phase residual");
-    
     RealVector finalResultVector;
 
     boolean dontSolve = getSolverState(); // true if we should NOT run solver
@@ -394,10 +413,11 @@ extends Experiment implements ParameterValidator {
     if (!dontSolve) {
       LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
       finalResultVector = optimum.getPoint();
+      numIterations = optimum.getIterations();
     } else {
       finalResultVector = initialGuess;
     }
-
+    
     LeastSquaresProblem.Evaluation optimum = lsp.evaluate(finalResultVector);
     fitResidual = optimum.getCost();
     double[] fitParams = optimum.getPoint().toArray();
@@ -405,14 +425,17 @@ extends Experiment implements ParameterValidator {
     double[] fitValues = 
         jacobian.value( optimum.getPoint() ).getFirst().toArray();
     
-    double[] initResidList = initEval.getResiduals().toArray();
-    double[] fitResidList = optimum.getResiduals().toArray();
+    // double[] initResidList = initEval.getResiduals().toArray();
+    // double[] fitResidList = optimum.getResiduals().toArray();
+    XYSeries initResidMag = new XYSeries("Amplitude of init. residual");
+    XYSeries initResidPhase = new XYSeries("Phase of init. residual");
+    XYSeries fitResidMag = new XYSeries("Amplitude of fit residual");
+    XYSeries fitResidPhase = new XYSeries("Phase of fit residual");
     
-    XYSeries fitResidMag = new XYSeries("Fit resp. mag sqd. error");
-    XYSeries fitResidPhase = new XYSeries("Fit resp. phase sqd. error");
+    InstrumentResponse init = ds.getResponse(sensorOutIdx);
     
     fitResponse = fitResponse.buildResponseFromFitVector(
-        fitParams, lowFreq, numZeros, nyquist);
+        fitParams, lowFreq, numZeros);
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
     
@@ -425,10 +448,24 @@ extends Experiment implements ParameterValidator {
       fitMag.add(freqs[i], fitValues[i]);
       fitArg.add(freqs[i], fitValues[argIdx]);
       
-      initResidMag.add( freqs[i], Math.pow(initResidList[i], 2) );
-      initResidPhase.add( freqs[i], Math.pow(initResidList[argIdx], 2) );
-      fitResidMag.add( freqs[i], Math.pow(fitResidList[i], 2) );
-      fitResidPhase.add( freqs[i], Math.pow(fitResidList[argIdx], 2) );
+      // Complex scaledInit = initTerms[i].subtract(init1Hz);
+      // Complex scaledFit = fitTerms[i].subtract(fit1Hz);
+      
+      double initAmpNumer = Math.pow(10, initialValues[i]/10);
+      double fitAmpNumer = Math.pow(10, fitValues[i]/10); 
+      
+      double obsAmpDbl = obsdAmps[i];
+      if (obsAmpDbl == 0.) {
+        obsAmpDbl = Double.MIN_VALUE;
+      }
+      double errInitMag = 100. * (initAmpNumer - obsAmpDbl) / obsAmpDbl; 
+      double errFitMag = 100. * (fitAmpNumer - obsAmpDbl) / obsAmpDbl; 
+      initResidMag.add(freqs[i], errInitMag);
+      fitResidMag.add(freqs[i], errFitMag);
+      
+      double observedPhase = observedResult[argIdx];
+      initResidPhase.add(freqs[i], initialValues[argIdx] - observedPhase);
+      fitResidPhase.add(freqs[i], fitValues[argIdx] - observedPhase);
     }
     
     XYSeriesCollection xysc = new XYSeriesCollection();
@@ -454,6 +491,9 @@ extends Experiment implements ParameterValidator {
     if (!dontSolve) {
       xysc.addSeries(fitResidMag);
     }
+    xySeriesData.add(xysc);
+    
+    xysc = new XYSeriesCollection();    
     xysc.addSeries(initResidPhase);
     if (!dontSolve) {
       xysc.addSeries(fitResidPhase);
@@ -481,10 +521,11 @@ extends Experiment implements ParameterValidator {
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
     
     // prevent terrible case where, say, only high-freq poles above nyquist rate
-    if (variables.length > 0) {
-      System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
+    if ( variables.length > 0) {
       testResp = fitResponse.buildResponseFromFitVector(
-          variables, lowFreq, numZeros, nyquist);
+          variables, lowFreq, numZeros);
+    } else {
+      System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
     }
     
     Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
@@ -494,8 +535,10 @@ extends Experiment implements ParameterValidator {
     curValue[0] = 0.;
     curValue[appliedCurve.length] = 0.;
     
+    
+    Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[normalIdx]);
     Complex scaleBy = 
-        appliedCurve[normalIdx].divide(NumericUtils.TAU * freqs[normalIdx]);
+        appliedCurve[normalIdx].divide(scaleFactor);
     double magScale = 10 * Math.log10( scaleBy.abs() );
     double argScale = NumericUtils.atanc(scaleBy);
     
@@ -518,7 +561,8 @@ extends Experiment implements ParameterValidator {
       
       // from acceleration to velocity
       Complex value = appliedCurve[i];
-      value = value.divide(NumericUtils.TAU * freqs[i]);
+      scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
+      value = value.divide(scaleFactor);
       
       // value = value.subtract(scaleBy);
       
@@ -554,7 +598,7 @@ extends Experiment implements ParameterValidator {
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    return fitPoles;
+    return getPoleSubList(fitPoles);
   }
   
   /**
@@ -570,7 +614,7 @@ extends Experiment implements ParameterValidator {
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    return fitZeros;
+    return getZeroSubList(fitZeros);
   }
   
   /**
@@ -578,7 +622,7 @@ extends Experiment implements ParameterValidator {
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    return initialPoles;
+    return getPoleSubList(initialPoles);
   }
   
   /**
@@ -586,9 +630,9 @@ extends Experiment implements ParameterValidator {
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    return initialZeros;
+    return getZeroSubList(initialZeros);
   }
-
+  
   /**
    * Get the residual value of the initial response parameters
    * @return the residual of the initial poles from fed-in response
@@ -598,6 +642,15 @@ extends Experiment implements ParameterValidator {
   }
 
   /**
+   * Get the number of times the algorithm iterated to produce the optimum
+   * response fit, from the underlying least squares solver
+   * @return the number of iterations
+   */
+  public int getIterations() {
+    return numIterations;
+  }
+  
+  /**
    * Trim down the poles to those within the range of those being fit
    * @param polesToTrim Either fit or input poles, sorted by frequency
    * @return Sublist of data to be fed to output reports
@@ -605,10 +658,12 @@ extends Experiment implements ParameterValidator {
   private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
     List<Complex> subList = new ArrayList<Complex>();  
     
+    double peak = .8 * nyquist;
+    
     for (int i = 0; i < polesToTrim.size(); ++i) {
       double freq = initialPoles.get(i).abs() / NumericUtils.TAU;
       
-      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
+      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > peak ) ) {
         break;
       }
       if (!lowFreq && freq < 1.) {
@@ -619,6 +674,15 @@ extends Experiment implements ParameterValidator {
     }
     
     return subList;
+  }
+
+  /**
+   * Used to determine whether to run the solver or not; disabling the solver
+   * is useful for determining the quality of a given calibration function
+   * @return True if the solver is to be run
+   */
+  public boolean getSolverState() {
+    return SKIP_SOLVING;
   }
   
   /**
@@ -633,10 +697,12 @@ extends Experiment implements ParameterValidator {
   private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
     List<Complex> subList = new ArrayList<Complex>();
     
+    double peak = .8 * nyquist;
+    
     for (int i = 0; i < zerosToTrim.size(); ++i) {
       double freq = initialZeros.get(i).abs() / NumericUtils.TAU;
       
-      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > nyquist ) ) {
+      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > peak ) ) {
         break;
       }
       if (!lowFreq && freq < 1. || freq == 0.) {
@@ -659,7 +725,6 @@ extends Experiment implements ParameterValidator {
    * approximation given a set of points to set as response. 
    * Mainly a wrapper for the evaluateResponse function.
    * @param variables Values to set the response's poles to
-   * @param numZeros How much of input vector is zeros of response
    * @return RealVector with evaluation at current response value and 
    * RealMatrix with forward difference of that response (Jacobian)
    */
@@ -698,7 +763,7 @@ extends Experiment implements ParameterValidator {
       double diffX = changedVars[i] + DELTA;
       
       // real-value pole components must be less than zero
-      if (i > numZeros && diffX > 0. && (i % 2) == 0.) {
+      if (diffX > 0. && (i % 2) == 0.) {
         diffX = 0.;
       }
       changedVars[i] = diffX;
@@ -756,7 +821,7 @@ extends Experiment implements ParameterValidator {
    * @return Vector of parameters but with components all negative
    */
   public RealVector validate(RealVector poleParams) {
-    for (int i = numZeros; i < poleParams.getDimension(); ++i) {
+    for (int i = 0; i < poleParams.getDimension(); ++i) {
       double value = poleParams.getEntry(i);
       if (value > 0 && (i % 2) == 0) {
         // even index means this is a real-value vector entry

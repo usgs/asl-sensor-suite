@@ -1,8 +1,11 @@
 package asl.sensor.input;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
 
+import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.utils.TimeSeriesUtils;
@@ -22,6 +25,7 @@ public class DataBlock {
   private long interval;
   private String name;
   private long startTime;
+  private List<Pair<Long, Long>> gapBoundaries;
   
   /**
    * Creates a copy of a given DataBlock, which has the same parameters
@@ -32,6 +36,7 @@ public class DataBlock {
     setData( new ArrayList<Number>( in.getData() ) );
     name = in.getName();
     setStartTime(in.getStartTime());
+    gapBoundaries = in.getGapBoundaries();
   }
   
   /**
@@ -55,6 +60,8 @@ public class DataBlock {
       setStartTime(start);
     }
     
+    gapBoundaries = in.getGapBoundaries();
+    
   }
   
   /**
@@ -70,6 +77,7 @@ public class DataBlock {
     setInterval(intervalIn);
     name = nameIn;
     setStartTime(timeIn);
+    gapBoundaries = new ArrayList<Pair<Long,Long>>();
   }
   
 
@@ -89,6 +97,10 @@ public class DataBlock {
    */
   public long getEndTime() {
     return startTime + ( interval * data.size() );
+  }
+  
+  public List<Pair<Long,Long>> getGapBoundaries() {
+    return gapBoundaries;
   }
   
   /**
@@ -132,25 +144,26 @@ public class DataBlock {
   /**
    * Converts an end time to the last index of data to include in a trimmed
    * data series  
-   * @param end Terminal cutoff point for data
-   * @return Index of last data point to include in trimmed subset
+   * @param end Terminal cutoff point for data (time, microseconds)
+   * @return Index of last data point to include in trimmed subset + 1
    */
   public int getTrimEndIndex(long end) {
-    int endIdx = data.size();
-    long endTime = getEndTime();
-    if (end < endTime && end > startTime) {
-      long diff = endTime - end;
-      // diff/interval is number of points from ending index, need to subtract
-      // (quick reminder that upper index of sublist method is exclusive)
-      endIdx = endIdx - (int) (diff / interval); // (end offset = size)
+    
+    int endIdx = 0;
+    for (int i = 0; i <= data.size(); ++i) {
+      endIdx = i; // exclusive upper bound, so iterate, then check above bound
+      if ( startTime + (i * interval) >= end ) {
+        break;
+      }
     }
     return endIdx;
+    
   }
 
   /**
    * Converts a start time to the first index of data to include in a trimmed
    * data series
-   * @param start Initial cutoff point for data
+   * @param start Initial cutoff point for data (time, microseconds)
    * @return Index of first data point to include in trimmed subset
    */
   public int getTrimStartIndex(long start) {
@@ -191,6 +204,11 @@ public class DataBlock {
    * @param newInterval The new interval (time between samples in microseconds)
    */
   public void resample(long newInterval) {
+    
+    if (interval == newInterval) {
+      return;
+    }
+    
     data = TimeSeriesUtils.decimate(data, interval, newInterval);
     interval = newInterval;
   }
@@ -205,6 +223,10 @@ public class DataBlock {
     data = dataIn;
   }
 
+  public void setGapLocations(List<Pair<Long, Long>> gapList) {
+    gapBoundaries = new ArrayList<Pair<Long, Long>>(gapList);
+  }
+  
   /**
    * Used to set the interval of the data (to be used, for example, when the
    * time series has had decimation applied)
@@ -234,6 +256,16 @@ public class DataBlock {
   }
   
   /**
+   * Get start time of data series as a Java calendar object
+   * @return Calendar object representing start time (UTC time zone)
+   */
+  public Calendar getStartCalendar() {
+    Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
+    cCal.setTimeInMillis( startTime / 1000 );
+    return cCal;
+  }
+
+  /**
    * Converts this object's time series data into a form plottable by a chart.
    * The format is a pair of data: the time of a sample and that sample's value.
    * @return JFreeChart XYSeries representation of the data
@@ -260,7 +292,7 @@ public class DataBlock {
     
     return out;
   }
-
+ 
   /**
    * Trim data to a given range (start time, end time)
    * @param start Start time to trim to in microseconds from epoch
@@ -270,7 +302,6 @@ public class DataBlock {
     
     int startIdx = getTrimStartIndex(start);
     int endIdx = getTrimEndIndex(end);
-    
     
     if ( startIdx == 0 && endIdx >= data.size() ){
       return;

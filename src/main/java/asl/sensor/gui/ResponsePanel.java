@@ -234,24 +234,29 @@ public class ResponsePanel extends ExperimentPanel {
   
   protected void drawCharts() {
 
-    int idx = plotSelection.getSelectedIndex();
-    
-    if (idx == 0) {
-      chart = magChart;
-    } else {
-      chart = argChart;
-    }
-    
+    plotSelection.setSelectedIndex(0);
+    chart = magChart;
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
     
   }
   
   @Override
+  public String[] getAdditionalReportPages() {
+    ResponseExperiment respExp = (ResponseExperiment) expResult;
+    InstrumentResponse[] irs = respExp.getResponses();
+    String[] pages = new String[irs.length];
+    for (int i = 0; i < pages.length; ++i) {
+      pages[i] = irs[i].toString();
+    }
+    return pages;
+  }
+  
+  @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{magChart, argChart};
   }
-  
+
   @Override
   /**
    * Produce the filename of the report generated from this experiment.
@@ -295,7 +300,7 @@ public class ResponsePanel extends ExperimentPanel {
     return xAxis;
     
   }
-
+  
   @Override
   public ValueAxis getYAxis() {
     
@@ -311,17 +316,6 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public int panelsNeeded() {
     return 3;
-  }
-  
-  @Override
-  public String[] getAdditionalReportPages() {
-    ResponseExperiment respExp = (ResponseExperiment) expResult;
-    InstrumentResponse[] irs = respExp.getResponses();
-    String[] pages = new String[irs.length];
-    for (int i = 0; i < pages.length; ++i) {
-      pages[i] = irs[i].toString();
-    }
-    return pages;
   }
   
   @Override
@@ -353,13 +347,10 @@ public class ResponsePanel extends ExperimentPanel {
         seriesColorMap.put(argName, toColor);
     }
     
-    argChart = buildChart(argSeries);
-    argChart.getXYPlot().setRangeAxis(degreeAxis);
-    // argChart.getXYPlot().setDomainAxis( getXAxis() );
-    
-    magChart = buildChart(magSeries);
-    magChart.getXYPlot().setRangeAxis(yAxis);
-    // argChart.getXYPlot().setDomainAxis( getXAxis() );
+    argChart = buildChart(argSeries, xAxis, degreeAxis);
+    argChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    magChart = buildChart(magSeries, xAxis, yAxis);
+    magChart.getXYPlot().getRangeAxis().setAutoRange(true);
   }
 
 }

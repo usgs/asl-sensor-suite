@@ -49,7 +49,7 @@ public class VScrollPanel extends JPanel implements Scrollable {
   @Override
   public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation,
       int direction) {
-    return 1;
+    return 10;
   }
 
   /**

@@ -86,8 +86,9 @@ public class ResponseExperiment extends Experiment {
       XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
       XYSeries argument = new XYSeries (name + " " + ARGUMENT);
       for (int i = 0; i < freqArray.length; ++i) {
-        
-        Complex tmp = result[i].divide(NumericUtils.TAU * freqArray[i]);
+        Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqArray[i]);
+        Complex tmp = result[i].divide(scaleFactor);
+        // Complex tmp = result[i].divide(NumericUtils.TAU * freqArray[i]);
         
         double phi = NumericUtils.atanc(tmp);
         phi = NumericUtils.unwrap(phi, phiPrev);
@@ -125,6 +126,10 @@ public class ResponseExperiment extends Experiment {
     return 0L;
   }
 
+  public InstrumentResponse[] getResponses() {
+    return responses.toArray( new InstrumentResponse[responses.size()] );
+  }
+  
   @Override
   public long getStart() {
     // there is no actual timeseries data used in this experiment
@@ -141,10 +146,6 @@ public class ResponseExperiment extends Experiment {
     }
     
     return false;
-  }
-  
-  public InstrumentResponse[] getResponses() {
-    return responses.toArray( new InstrumentResponse[responses.size()] );
   }
   
   /**

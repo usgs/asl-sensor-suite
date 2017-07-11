@@ -105,7 +105,7 @@ public class StepExperiment extends Experiment{
     double[] stepCalTrimmed = 
         Arrays.copyOfRange(stepCalFiltered, cutAmount, highBound);
     
-    stepCalSeries = FFTResult.demean(stepCalTrimmed);
+    stepCalSeries = TimeSeriesUtils.demean(stepCalTrimmed);
     
     stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
     
@@ -117,10 +117,9 @@ public class StepExperiment extends Experiment{
     // but we want the response and the data of the cal result
     sensorOutIdx = ds.getXthFullyLoadedIndex(1);
     
-    // if someone did load a raw cal with the response, then we wouldn't
-    // get a different block with the second call above, so we get the 
-    // next loaded block/response pair
-    if ( ds.getBlock(sensorOutIdx).getName().equals( stepCalRaw.getName() ) ) {
+    // if first data has response loaded erroneously, load in next data set
+    // (otherwise first data is first fully loaded index)
+    if ( sensorOutIdx == 0 ) {
       sensorOutIdx = ds.getXthFullyLoadedIndex(2);
     }
 
@@ -142,9 +141,13 @@ public class StepExperiment extends Experiment{
     
     double[] params = new double[]{f, h};
     
+    boolean needsFlip = sensorOutput.needsSignFlip();
+    
     // get FFT of datablock timeseries, deconvolve with response
     // single sided FFT includes lowpass filter, demean, and normalization
-    FFTResult sensorsFFT = FFTResult.singleSidedFFT(sensorOutput);
+
+    FFTResult sensorsFFT = 
+        FFTResult.singleSidedFilteredFFT(sensorOutput, needsFlip);
     // these values used in calculating the response deconvolution
     sensorFFTSeries = sensorsFFT.getFFT();
     freqs = sensorsFFT.getFreqs();
@@ -383,7 +386,7 @@ public class StepExperiment extends Experiment{
     double[] returnValue =  
         FFTResult.singleSidedInverseFFT(toDeconvolve, inverseTrim);
     
-    returnValue = FFTResult.demean(returnValue);
+    returnValue = TimeSeriesUtils.demean(returnValue);
     
     // attempt to filter out additional noise
     returnValue = 
