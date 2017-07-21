@@ -62,8 +62,10 @@ public class RandomizedPanel extends ExperimentPanel {
    * @return List of strings, each one representing a new page's worth of data
    */
   public static String[] getAdditionalReportPages(RandomizedExperiment rnd) {
+    
+    // TODO: refactor this now that period values are included in
+    // the inset portion of the report text instead of merely in the extra data
     StringBuilder sb = new StringBuilder();
-    DecimalFormat df = new DecimalFormat("#.#####");
     
     StringBuilder csvPoles = new StringBuilder();
     StringBuilder csvZeros = new StringBuilder();
@@ -87,147 +89,144 @@ public class RandomizedPanel extends ExperimentPanel {
     
     boolean solverNotRun = rnd.getSolverState();
     
-    if (!solverNotRun) {
-      
-      // get statistics for differences between initial and solved parameters
-      csvPoles = new StringBuilder("POLE VARIABLES, AS CSV:\n");
-      csvPoles.append(csvTitle);
-      csvPoles.append("\n");
-      
-      for (int i = 0; i < fitP.size(); ++i) {
-        double realPartFit = fitP.get(i).getReal();
-        double imagPartFit = fitP.get(i).getImaginary();
-        
-        double realPartInit = initP.get(i).getReal();
-        double imagPartInit = initP.get(i).getImaginary();
-        
-        // make sure sign of the imaginary parts are the same
-        if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
-          imagPartFit *= -1;
-        }
-        
-        double realDiff = realPartInit - realPartFit;
-        double imagDiff = imagPartInit - imagPartFit;
-        
-        double realAvg = (realPartInit + realPartFit) / 2.;
-        double imagAvg = (imagPartInit + imagPartFit) / 2.;
-        
-        double realPct = realDiff * 100 / realPartFit;
-        if ( realPartFit == 0. ) {
-          realPct = 0.;
-        }
-        double imagPct = imagDiff * 100 / imagPartFit;
-        if ( imagPartFit == 0. ) {
-          imagPct = 0.;
-        }
-        
-        // INIT, FIT, DIFF, AVG, PCT
-        
-        double[] realRow = new double[]
-            {realPartInit, realPartFit, realDiff, realAvg, realPct};
-        
-        double[] imagRow = new double[]
-            {imagPartInit, imagPartFit, imagDiff, imagAvg, imagPct};
-        
-        for (double colNumber : realRow) {
-          String column = csvFormat.format(colNumber);
-          StringBuilder paddedColumn = new StringBuilder(column);
-          while ( paddedColumn.length() < COL_WIDTH ) {
-            paddedColumn.append(" "); // add a space
-          }
-          csvPoles.append( paddedColumn );
-        }
-        csvPoles.append("\n");
-        
-        for (double colNumber : imagRow) {
-          String column = csvFormat.format(colNumber);
-          StringBuilder paddedColumn = new StringBuilder(column);
-          while ( paddedColumn.length() < COL_WIDTH ) {
-            paddedColumn.append(" "); // add a space
-          }
-          csvPoles.append( paddedColumn );
-        }
-        csvPoles.append("\n");
-        
-        if (imagPartFit != 0.) {
-          ++i; // skip complex conjugate
-        }
-      }
-      
-    }
-        
-    if (!solverNotRun) {
-
-      // get statistics for differences between initial and solved parameters
-      if ( fitZ.size() > 0 ) {
-        csvZeros = new StringBuilder("ZERO VARIABLES, AS CSV:\n");
-        csvZeros.append(csvTitle);
-        csvZeros.append("\n");
-      }
-
-      
-      for (int i = 0; i < fitZ.size(); ++i) {
-        double realPartFit = fitZ.get(i).getReal();
-        double imagPartFit = fitZ.get(i).getImaginary();
-        
-        double realPartInit = initZ.get(i).getReal();
-        double imagPartInit = initZ.get(i).getImaginary();
-        
-        // make sure sign of the imaginary parts are the same
-        if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
-          imagPartFit *= -1;
-        }
-        
-        double realDiff = realPartInit - realPartFit;
-        double imagDiff = imagPartInit - imagPartFit;
-        
-        double realAvg = (realPartInit + realPartFit) / 2.;
-        double imagAvg = (imagPartInit + imagPartFit) / 2.;
-        
-        double realPct = realDiff * 100 / realPartFit;
-        if ( realPartFit == 0. ) {
-          realPct = 0.;
-        }
-        double imagPct = imagDiff * 100 / imagPartFit;
-        if ( imagPartFit == 0. ) {
-          imagPct = 0.;
-        }
-        
-        double[] realRow = new double[]
-            {realPartInit, realPartFit, realDiff, realAvg, realPct};
-        
-        double[] imagRow = new double[]
-            {imagPartInit, imagPartFit, imagDiff, imagAvg, imagPct};
-        
-        for (double colNumber : realRow) {
-          String column = csvFormat.format(colNumber);
-          StringBuilder paddedColumn = new StringBuilder(column);
-          while ( paddedColumn.length() < COL_WIDTH ) {
-            paddedColumn.append(" "); // add a space
-          }
-          csvZeros.append( paddedColumn );
-        }
-        csvZeros.append("\n");
-        
-        for (double colNumber : imagRow) {
-          String column = csvFormat.format(colNumber);
-          StringBuilder paddedColumn = new StringBuilder(column);
-          while ( paddedColumn.length() < COL_WIDTH ) {
-            paddedColumn.append(" "); // add a space
-          }
-          csvZeros.append( paddedColumn );
-        }
-        csvZeros.append("\n");
-        
-        if (imagPartFit != 0.) {
-          ++i; // skip complex conjugate
-        }
-      }
+    if (solverNotRun) {
+      return new String[]{};
     }
     
+    // get statistics for differences between initial and solved parameters
+    csvPoles = new StringBuilder("POLE VARIABLES, AS CSV:\n");
+    csvPoles.append(csvTitle);
+    csvPoles.append("\n");
+
+    for (int i = 0; i < fitP.size(); ++i) {
+      double realPartFit = fitP.get(i).getReal();
+      double imagPartFit = fitP.get(i).getImaginary();
+
+      double realPartInit = initP.get(i).getReal();
+      double imagPartInit = initP.get(i).getImaginary();
+
+      // make sure sign of the imaginary parts are the same
+      if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
+        imagPartFit *= -1;
+      }
+
+      double realDiff = realPartInit - realPartFit;
+      double imagDiff = imagPartInit - imagPartFit;
+
+      double realAvg = (realPartInit + realPartFit) / 2.;
+      double imagAvg = (imagPartInit + imagPartFit) / 2.;
+
+      double realPct = realDiff * 100 / realPartFit;
+      if ( realPartFit == 0. ) {
+        realPct = 0.;
+      }
+      double imagPct = imagDiff * 100 / imagPartFit;
+      if ( imagPartFit == 0. ) {
+        imagPct = 0.;
+      }
+
+      // INIT, FIT, DIFF, AVG, PCT
+
+      double[] realRow = new double[]
+          {realPartInit, realPartFit, realDiff, realAvg, realPct};
+
+      double[] imagRow = new double[]
+          {imagPartInit, imagPartFit, imagDiff, imagAvg, imagPct};
+
+      for (double colNumber : realRow) {
+        String column = csvFormat.format(colNumber);
+        StringBuilder paddedColumn = new StringBuilder(column);
+        while ( paddedColumn.length() < COL_WIDTH ) {
+          paddedColumn.append(" "); // add a space
+        }
+        csvPoles.append( paddedColumn );
+      }
+      csvPoles.append("\n");
+
+      for (double colNumber : imagRow) {
+        String column = csvFormat.format(colNumber);
+        StringBuilder paddedColumn = new StringBuilder(column);
+        while ( paddedColumn.length() < COL_WIDTH ) {
+          paddedColumn.append(" "); // add a space
+        }
+        csvPoles.append( paddedColumn );
+      }
+      csvPoles.append("\n");
+
+      if (imagPartFit != 0.) {
+        ++i; // skip complex conjugate
+      }
+    }
+
+    // get statistics for differences between initial and solved parameters
+    if ( fitZ.size() > 0 ) {
+      csvZeros = new StringBuilder("ZERO VARIABLES, AS CSV:\n");
+      csvZeros.append(csvTitle);
+      csvZeros.append("\n");
+    }
+
+
+    for (int i = 0; i < fitZ.size(); ++i) {
+      double realPartFit = fitZ.get(i).getReal();
+      double imagPartFit = fitZ.get(i).getImaginary();
+
+      double realPartInit = initZ.get(i).getReal();
+      double imagPartInit = initZ.get(i).getImaginary();
+
+      // make sure sign of the imaginary parts are the same
+      if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
+        imagPartFit *= -1;
+      }
+
+      double realDiff = realPartInit - realPartFit;
+      double imagDiff = imagPartInit - imagPartFit;
+
+      double realAvg = (realPartInit + realPartFit) / 2.;
+      double imagAvg = (imagPartInit + imagPartFit) / 2.;
+
+      double realPct = realDiff * 100 / realPartFit;
+      if ( realPartFit == 0. ) {
+        realPct = 0.;
+      }
+      double imagPct = imagDiff * 100 / imagPartFit;
+      if ( imagPartFit == 0. ) {
+        imagPct = 0.;
+      }
+
+      double[] realRow = new double[]
+          {realPartInit, realPartFit, realDiff, realAvg, realPct};
+
+      double[] imagRow = new double[]
+          {imagPartInit, imagPartFit, imagDiff, imagAvg, imagPct};
+
+      for (double colNumber : realRow) {
+        String column = csvFormat.format(colNumber);
+        StringBuilder paddedColumn = new StringBuilder(column);
+        while ( paddedColumn.length() < COL_WIDTH ) {
+          paddedColumn.append(" "); // add a space
+        }
+        csvZeros.append( paddedColumn );
+      }
+      csvZeros.append("\n");
+
+      for (double colNumber : imagRow) {
+        String column = csvFormat.format(colNumber);
+        StringBuilder paddedColumn = new StringBuilder(column);
+        while ( paddedColumn.length() < COL_WIDTH ) {
+          paddedColumn.append(" "); // add a space
+        }
+        csvZeros.append( paddedColumn );
+      }
+      csvZeros.append("\n");
+
+      if (imagPartFit != 0.) {
+        ++i; // skip complex conjugate
+      }
+    }
+
     sb.append(csvPoles);
     sb.append(csvZeros);
-    
+
     String[] out = new String[]{sb.toString()}; // just a single new page
     return out;
   }
