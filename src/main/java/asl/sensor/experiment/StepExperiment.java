@@ -64,7 +64,9 @@ public class StepExperiment extends Experiment{
   
   private int sensorOutIdx;
   
-  final double STEP_FACTOR = 1E-5;
+  final double STEP_FACTOR = 1E-10;
+  final double F_TOLER = 1E-20;
+  final double X_TOLER = 1E-16;
   
   public StepExperiment() {
     super();
@@ -109,6 +111,25 @@ public class StepExperiment extends Experiment{
     
     stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
     
+    int rangeTemp = 100; // normalize calc step based on data within this range
+    for (int i = 0; i < 100; ++i) {
+      if (stepCalSeries[i] < 0. && stepCalSeries[i+1] > 0.) {
+        rangeTemp = i;
+        break;
+      }
+    }
+    final int rangeBound = rangeTemp; // final to play nice w/ jacobian func.
+    
+    int cornerTemp = 0; // location of end of step
+    for (int i = 0; i < stepCalSeries.length; ++i) {
+      if (stepCalSeries[i] > 0. && stepCalSeries[i+1] < 0.) {
+        cornerTemp = i;
+        break;
+      }
+    }
+    final int farCorner = cornerTemp;
+    
+    
     // FFTResult.detrend(toDetrend);
     
     // stepCalSeries = TimeSeriesUtils.normalize(filteredStepCal);
@@ -152,7 +173,7 @@ public class StepExperiment extends Experiment{
     sensorFFTSeries = sensorsFFT.getFFT();
     freqs = sensorsFFT.getFreqs();
     
-    double[] toPlot = calculate(params);
+    double[] toPlot = calculate(params, rangeBound, farCorner);
     
     long start = 0L; // was db.startTime();
     long now = start;
@@ -186,8 +207,11 @@ public class StepExperiment extends Experiment{
     // used to fit parameters
     MultivariateJacobianFunction jbn = new MultivariateJacobianFunction() {
       
+      final int rangeLimit = rangeBound;
+      final int cornerEnd = farCorner;
+      
       public Pair<RealVector, RealMatrix> value(RealVector point) {
-          return jacobian(point);
+          return jacobian(point, rangeLimit, cornerEnd);
       }
       
     };
@@ -208,10 +232,11 @@ public class StepExperiment extends Experiment{
     initResid = initEval.getRMS() * 100;
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-20).
-        withParameterRelativeTolerance(1.0E-15);
+        withCostRelativeTolerance(F_TOLER).
+        withParameterRelativeTolerance(X_TOLER);
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+    //LeastSquaresProblem.Evaluation optimum = lsp.evaluate(startVector);
     
     // System.out.println("FIT PARAMS RESIDUAL: " +  optimum.getRMS() );
     
@@ -222,7 +247,7 @@ public class StepExperiment extends Experiment{
     fCorr = newParams[0];
     hCorr = newParams[1];
     
-    double[] fitPlot = calculate(newParams);
+    double[] fitPlot = calculate(newParams, rangeBound, farCorner);
     // fitPlot = TimeSeriesUtils.normalize(fitPlot);
     start = 0L; // was db.startTime();
     now = start;
@@ -313,7 +338,7 @@ public class StepExperiment extends Experiment{
    * @return The timeseries resulting from deconvolution of the calculated
    * response from the sensor-input timeseries (done in frequency space)
    */
-  public double[] calculate(double[] beta) {
+  public double[] calculate(double[] beta, int normRange, int stepEnd) {
     
     // the original length of the timeseries data we've gotten the FFT of
     int inverseTrim = trimmedLength + 2 * cutAmount;
@@ -395,10 +420,11 @@ public class StepExperiment extends Experiment{
     // trim out the ends
     returnValue = Arrays.copyOfRange(returnValue, cutAmount, upperBound);
     
+    // TODO: deal with correctness of this code
     // normalize in order to fit the plot    
-    return TimeSeriesUtils.normalize(returnValue);
+    return scaleData(returnValue, normRange, stepEnd);
     
-    
+    // return returnValue;
   }
   
   /**
@@ -437,10 +463,14 @@ public class StepExperiment extends Experiment{
    * formed from a given corner and damping value
    * @param variables Vector with the corner and damping values from which the
    * derivatives are calculated
+   * @param normRange Range of data to get average over for normalization / 
+   * scaling
+   * @param stepEnd Index of data where far end of normalization curve is
    * @return The result at the passed-in point plus the approximate derivative
    * of these points, as a vector and matrix respectively
    */
-  private Pair<RealVector, RealMatrix> jacobian(RealVector variables) {
+  private Pair<RealVector, RealMatrix> 
+  jacobian(RealVector variables, int normRange, int stepEnd) {
     
     // approximate through forward differences
     double[][] jacobian = new double[trimmedLength][2];
@@ -450,9 +480,9 @@ public class StepExperiment extends Experiment{
     double f2 = f1 + STEP_FACTOR;
     double h2 = h1 + STEP_FACTOR;
     
-    double[] fInit = calculate(new double[]{f1, h1});
-    double[] diffOnF = calculate(new double[]{f2, h1});
-    double[] diffOnH = calculate(new double[]{f1, h2});
+    double[] fInit = calculate(new double[]{f1, h1}, normRange, stepEnd);
+    double[] diffOnF = calculate(new double[]{f2, h1}, normRange, stepEnd);
+    double[] diffOnH = calculate(new double[]{f1, h2}, normRange, stepEnd);
 
     for (int i = 0; i < trimmedLength; ++i) {
       jacobian[i][0] = (diffOnF[i] - fInit[i]) / STEP_FACTOR;
@@ -470,6 +500,35 @@ public class StepExperiment extends Experiment{
     // NOTE: not used by corresponding panel, overrides with active indices
     // of components in the combo-box
     return new int[]{sensorOutIdx};
+  }
+  
+  private double[] scaleData(double[] data, int range, int farCornerIdx) {
+    //System.out.println(farCornerIdx);
+    double[] scaled = new double[data.length];
+    
+    //System.out.println(data[farCornerIdx]);
+    
+    double lowerAvg = 0.; double upperAvg = 0.;
+    for (int i = 0; i <= range; ++i) {
+      int upperIndex = farCornerIdx - (i + 100);
+      lowerAvg += data[i];
+      upperAvg += data[upperIndex];
+      System.out.println(data[upperIndex]);
+    }
+    
+    lowerAvg /= (double) range;
+    upperAvg /= (double) range;
+    
+    System.out.println(upperAvg);
+    
+    // scale new data so range (lowerAverage, upperAverage) -> (-1, 1)
+    for (int i = 0; i < data.length; ++i) {
+      // scale to range (0,2) then to (-1, 1)
+      scaled[i] = 
+          ( 2. * (data[i] - lowerAvg) / (upperAvg - lowerAvg) ) - 1.;
+    }
+    
+    return scaled;
   }
   
 }

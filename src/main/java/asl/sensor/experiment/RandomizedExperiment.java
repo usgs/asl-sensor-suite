@@ -432,7 +432,7 @@ extends Experiment implements ParameterValidator {
     XYSeries fitResidMag = new XYSeries("Amplitude of fit residual");
     XYSeries fitResidPhase = new XYSeries("Phase of fit residual");
     
-    InstrumentResponse init = ds.getResponse(sensorOutIdx);
+    // InstrumentResponse init = ds.getResponse(sensorOutIdx);
     
     fitResponse = fitResponse.buildResponseFromFitVector(
         fitParams, lowFreq, numZeros);
