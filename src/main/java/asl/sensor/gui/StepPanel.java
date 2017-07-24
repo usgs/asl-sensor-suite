@@ -54,7 +54,7 @@ public class StepPanel extends ExperimentPanel {
     double fitDamping = fit[1];
     
     double cornerPrd = 1. / corner; 
-    double fitCornerPrd = 1. / corner;
+    double fitCornerPrd = 1. / fitCorner;
     
     DecimalFormat df = new DecimalFormat("#.######");
     

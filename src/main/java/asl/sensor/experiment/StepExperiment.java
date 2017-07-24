@@ -64,7 +64,7 @@ public class StepExperiment extends Experiment{
   
   private int sensorOutIdx;
   
-  final double STEP_FACTOR = 1E-16;
+  final double STEP_FACTOR = 1E-5;
   
   public StepExperiment() {
     super();
@@ -208,7 +208,7 @@ public class StepExperiment extends Experiment{
     initResid = initEval.getRMS() * 100;
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-15).
+        withCostRelativeTolerance(1.0E-20).
         withParameterRelativeTolerance(1.0E-15);
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
@@ -455,8 +455,8 @@ public class StepExperiment extends Experiment{
     double[] diffOnH = calculate(new double[]{f1, h2});
 
     for (int i = 0; i < trimmedLength; ++i) {
-      jacobian[i][0] = (diffOnF[i] - fInit[i]) / (f2 - f1);
-      jacobian[i][1] = (diffOnH[i] - fInit[i]) / (h2 - h1);
+      jacobian[i][0] = (diffOnF[i] - fInit[i]) / STEP_FACTOR;
+      jacobian[i][1] = (diffOnH[i] - fInit[i]) / STEP_FACTOR;
     }
     
     RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
