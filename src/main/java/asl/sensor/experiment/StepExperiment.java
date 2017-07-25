@@ -66,7 +66,7 @@ public class StepExperiment extends Experiment{
   
   final double STEP_FACTOR = 1E-10;
   final double F_TOLER = 1E-20;
-  final double X_TOLER = 1E-16;
+  final double X_TOLER = 1E-15;
   
   public StepExperiment() {
     super();
@@ -236,6 +236,8 @@ public class StepExperiment extends Experiment{
         withParameterRelativeTolerance(X_TOLER);
     
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+    // line below used to quickly disable solver
+    // comment out above assignment and uncomment that line to do so
     //LeastSquaresProblem.Evaluation optimum = lsp.evaluate(startVector);
     
     // System.out.println("FIT PARAMS RESIDUAL: " +  optimum.getRMS() );
