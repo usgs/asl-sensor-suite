@@ -65,8 +65,8 @@ public class StepExperiment extends Experiment{
   private int sensorOutIdx;
   
   final double STEP_FACTOR = 1E-10;
-  final double F_TOLER = 1E-20;
-  final double X_TOLER = 1E-15;
+  final double F_TOLER = 1E-10;
+  final double X_TOLER = 1E-10;
   
   public StepExperiment() {
     super();
