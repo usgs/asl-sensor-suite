@@ -66,6 +66,8 @@ Step calibration takes in a step input signal and the response to that signal fr
 
 The input files have a specific order: the step input signal must be placed first, though it does not use a response. The second input, then, is the output from the sensor of interest, and a response should be chosen to help guide the initial guess of the solver.
 
+Note that for the graphical output, the red curve represents the normalized step function used as input, the blue curve represents the calculated step gotten from deconvolving the response from the sensor output, and the green curve represents the calculated step using the best-fit response parameters. A good fit should have the green curve lined up as closely with the red curve as possible.
+
 #### Randomized calibration
 
 This function solves for poles to attempt to fit the response curve calculated from deconvolving the given calibration input from the sensor output. Low-frequency (the two lowest poles) and high-frequency (all other poles) are fitted to minimize the difference between the estimated response, based on the response specified for the sensor. The inputs follow the same structure as step calculation, though what response parameters are solved for is dependent on whether a high or low frequency calculation is chosen. Both the magnitude and argument (angle of the response curve along the real axis) of the response curve are displayed in plots, and saving the plot to an image will include both such plots.
@@ -74,13 +76,13 @@ When using embedded response files, it is strongly recommended to use an appropr
 
 Note that plots have been scaled in order to produce more representative fits of response curves. For high-frequency calibrations, the curves are all set to be equal to zero at 1 Hz; for low-frequency calibrations, this point occurs at 0.2 Hz.
 
-This function is still work-in-progress but has been tested with good results on several sensors.
-
 Older high-frequency cals may produce lots of noise on the high-frequency end confounding the solver, especially depending on how the calibration was produced.
 This program includes a second checker tab which does not run the solver for 
 response parameters, but can be used to determine whether or not the calculated response from the sensor output is good enough to be used for the solver. 
 Noisy calibrations or ones whose output otherwise varies significantly from the given nominal response may take a long time to solve or produce errors that lead to the solver being unable to converge on any solution. 
 IT IS STRONGLY ENCOURAGED TO RUN THE NO-SOLVER RANDOM CAL PANEL ON DATA THAT PRODUCES A CONVERGENCE ERROR DURING SOLVING IN ORDER TO DIAGNOSE POTENTIAL ISSUES WITH THE CALIBRATION ITSELF.
+
+Note also that for the graphical output, the red curve is the response curve of the RESP loaded into the program, the blue curve is the calculated response of the sensor by deconvolving the calibration input from the sensor output, and the green curve is a response curve using the best-fit poles and zeros. A good fit is one in which the green curve lines up with the blue curve as much as possible.
 
 #### Azimuth
 
