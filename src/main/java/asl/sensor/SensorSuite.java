@@ -212,15 +212,16 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     
     this.add(mainSplit, c);
     
-    c.fill = GridBagConstraints.BOTH;
+    c.fill = GridBagConstraints.VERTICAL;
     c.gridx = 0; c.gridy = 1;
     c.weightx = 1.0; c.weighty = 0.0;
     c.gridwidth = 1;
     
     // now add the buttons
-    savePDF = new JButton("Save input and output plots (PDF)");
+    savePDF = new JButton("Generate PDF report from current test");
     savePDF.setEnabled(false);
     savePDF.addActionListener(this);
+    c.anchor = GridBagConstraints.EAST;
     this.add(savePDF, c);
     c.gridx += 1;
 
@@ -228,8 +229,9 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     generate.setEnabled(false);
     generate.addActionListener(this);
     d = generate.getPreferredSize();
-    d.setSize( d.getWidth(), d.getHeight() * 2 );
-    generate.setPreferredSize(d);
+    d.setSize( d.getWidth(), d.getHeight() * 1.5 );
+    generate.setMinimumSize(d);
+    c.anchor = GridBagConstraints.WEST;
     this.add(generate, c);
     
     fc = new JFileChooser();
