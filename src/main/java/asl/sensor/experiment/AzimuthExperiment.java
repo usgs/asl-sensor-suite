@@ -169,6 +169,7 @@ public class AzimuthExperiment extends Experiment {
     // how much data we need (i.e., iteration length) to check 10 seconds
     // used when checking if alignment is off by 180 degrees
     int tenSecondsLength = (int)  ( testNorthBlock.getSampleRate() * 10 ) + 1;
+    int hundredSecLen = tenSecondsLength * 10;
     
     if (simpleCalc) {
       // used for orthogonality & multi-component self-noise and gain
@@ -300,7 +301,7 @@ public class AzimuthExperiment extends Experiment {
     List<Number> rotTimeSeries = rot.getData();
     List<Number> refTimeSeries = refNorthBlock.getData();
     
-    if ( alignedAntipolar(rotTimeSeries, refTimeSeries, tenSecondsLength) ) {
+    if ( alignedAntipolar(rotTimeSeries, refTimeSeries, hundredSecLen) ) {
       angle += Math.PI; // still in radians
       angle = angle % NumericUtils.TAU; // keep between 0 and 360
     }
