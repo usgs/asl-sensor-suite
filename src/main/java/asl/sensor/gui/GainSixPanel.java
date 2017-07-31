@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.text.DecimalFormat;
 
 import javax.swing.JComboBox;
 import javax.swing.event.ChangeEvent;
@@ -67,13 +66,12 @@ public class GainSixPanel extends GainPanel {
     sb.append("** CALCULATED GAIN: ");
     sb.append(calcGain);
     
-    DecimalFormat df = new DecimalFormat("#.###");
     if (plotIdx == 0) {
-      sb.append("\nNorth azimuth (deg): ");
-      sb.append( df.format( Math.toDegrees( gn.getNorthAzimuth() ) ) );
+      sb.append("\nNorth azimuth (rad): ");
+      sb.append( gn.getNorthAzimuth() );
     } else if (plotIdx == 1) {
-      sb.append("\nEast azimuth (deg): ");
-      sb.append( df.format( Math.toDegrees( gn.getEastAzimuth() ) ) );
+      sb.append("\nEast azimuth (rad): ");
+      sb.append( gn.getEastAzimuth() );
     }
     
     return sb.toString();
