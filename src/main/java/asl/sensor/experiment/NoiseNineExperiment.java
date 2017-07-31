@@ -80,16 +80,13 @@ public class NoiseNineExperiment extends NoiseExperiment {
     fireStateChange( sb.toString() );
     
     // set angles and then rotate data
-    AzimuthExperiment azi = new AzimuthExperiment();
-    azi.setSimple(true); // use rough estimate of coherence, no windowing
     DataStore aziStore = new DataStore();
     aziStore.setData(0, north1Sensor);
     aziStore.setData(1, east1Sensor);
     
     // angle should be set negative -- reference sensor is what we rotate
     aziStore.setData(2, north2Sensor);
-    azi.runExperimentOnData(aziStore);
-    northAngles[0] = -azi.getFitAngleRad();
+    northAngles[0] = -getAzimuth(aziStore);
     fireStateChange("Found orientation of second north sensor!");
     
     // add 90 degrees (pi/2 in radians) to get azimuth that will match the 
@@ -98,19 +95,16 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // there's inconsistency about whether to use a right- or left-hand
     // rotation convention; this assumes it is a left-hand convention
     aziStore.setData(2, east2Sensor);
-    azi.runExperimentOnData(aziStore);
-    eastAngles[0] = -azi.getFitAngleRad() + (3 * Math.PI / 2);
+    eastAngles[0] = -getAzimuth(aziStore) + (3 * Math.PI / 2);
     fireStateChange("Found orientation of second east sensor!");
     
     // same as above
     aziStore.setData(2, north3Sensor);
-    azi.runExperimentOnData(aziStore);
-    northAngles[1] = -azi.getFitAngleRad();
+    northAngles[1] = -getAzimuth(aziStore);
     fireStateChange("Found orientation of third north sensor!");
     
     aziStore.setData(2, east3Sensor);
-    azi.runExperimentOnData(aziStore);
-    eastAngles[1] = -azi.getFitAngleRad() + (3 * Math.PI / 2);
+    eastAngles[1] = -getAzimuth(aziStore) + (3 * Math.PI / 2);
     fireStateChange("Found orientation of third east sensor!");
     
     // now to rotate the data according to these angles
@@ -212,5 +206,10 @@ public class NoiseNineExperiment extends NoiseExperiment {
     return true;
   }
 
-
+  private double getAzimuth(DataStore ds) {
+    AzimuthExperiment azi = new AzimuthExperiment();
+    azi.setSimple(true); // do the faster angle calculation
+    azi.runExperimentOnData(ds);
+    return azi.getFitAngleRad();
+  }
 }

@@ -57,8 +57,6 @@ public class GainSixExperiment extends Experiment {
     InstrumentResponse vert2Resp = ds.getResponse(5);
     
     // now, rotate the first data into the second
-    AzimuthExperiment azi = new AzimuthExperiment();
-    azi.setSimple(true); // use rough estimate of coherence, no windowing
     DataStore aziStore = new DataStore();
     aziStore.setData(0, north1Sensor);
     aziStore.setData(1, east1Sensor);
@@ -66,19 +64,17 @@ public class GainSixExperiment extends Experiment {
     // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting second north sensor orientation...");
     aziStore.setData(2, north2Sensor);
-    azi.runExperimentOnData(aziStore);
-    north2Angle = -azi.getFitAngleRad();
+    north2Angle = -getAzimuth(aziStore);
 
     fireStateChange("Getting second east sensor orientation...");
     aziStore.setData(2, east2Sensor);
-    azi.runExperimentOnData(aziStore);
     // direction north angle should be if north and east truly orthogonal
     // then east component is x component of rotation in that direction
     // i.e., need to correct by 90 degrees to get rotation angle rather than
     // azimuth of east sensor
     // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other 
     // rotation direction
-    east2Angle = -azi.getFitAngleRad() + (3 * Math.PI / 2);
+    east2Angle = -getAzimuth(aziStore) + (3 * Math.PI / 2);
     
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
@@ -257,5 +253,10 @@ public class GainSixExperiment extends Experiment {
     return indices;
   }
   
-  
+  private double getAzimuth(DataStore ds) {
+    AzimuthExperiment azi = new AzimuthExperiment();
+    azi.setSimple(true); // do the faster angle calculation
+    azi.runExperimentOnData(ds);
+    return azi.getFitAngleRad();
+  }
 }

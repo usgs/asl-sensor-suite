@@ -229,7 +229,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     generate.setEnabled(false);
     generate.addActionListener(this);
     d = generate.getPreferredSize();
-    d.setSize( d.getWidth(), d.getHeight() * 1.5 );
+    d.setSize( d.getWidth() * 1.5, d.getHeight() * 1.5 );
     generate.setMinimumSize(d);
     c.anchor = GridBagConstraints.WEST;
     this.add(generate, c);

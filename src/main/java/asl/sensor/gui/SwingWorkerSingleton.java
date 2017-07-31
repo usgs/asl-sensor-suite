@@ -32,6 +32,10 @@ public class SwingWorkerSingleton {
     return worker;
   }
   
+  public static void cancel() {
+    worker.cancel(true);
+  }
+  
   /**
    * Used to run experiment panel's backend in the background as it should be
    * As long as this singleton is used to run an experiment, any currently
