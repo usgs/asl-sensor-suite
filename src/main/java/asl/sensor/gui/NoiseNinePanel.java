@@ -43,10 +43,10 @@ public class NoiseNinePanel extends NoisePanel {
     DecimalFormat df = new DecimalFormat("#.###");
     double[] angles = nne.getNorthAngles();
     StringBuilder sb = new StringBuilder();
-    sb.append("Angle of rotation of north sensor 2: ");
-    sb.append( df.format(angles[0]) );
-    sb.append("\nAngle of rotation of north sensor 3: ");
-    sb.append( df.format(angles[1]) );
+    sb.append("Angle of rotation of north sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of north sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
     return sb.toString();
   }
   
@@ -55,10 +55,10 @@ public class NoiseNinePanel extends NoisePanel {
     DecimalFormat df = new DecimalFormat("#.###");
     double[] angles = nne.getEastAngles();
     StringBuilder sb = new StringBuilder();
-    sb.append("Angle of rotation of east sensor 2: ");
-    sb.append( df.format(angles[0]) );
-    sb.append("\nAngle of rotation of east sensor 3: ");
-    sb.append( df.format(angles[1]) );
+    sb.append("Angle of rotation of east sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of east sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
     return sb.toString();
   }
   
