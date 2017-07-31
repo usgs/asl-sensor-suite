@@ -27,7 +27,7 @@ public class GainSixExperiment extends Experiment {
       componentBackends[i] = new GainExperiment();
     }
     
-    indices = new int[6]; // TODO: change to get set during backend
+    indices = new int[6]; // TODO: change to get set during backend?
     for (int i = 0; i < indices.length; ++i) {
       indices[i] = i;
     }
