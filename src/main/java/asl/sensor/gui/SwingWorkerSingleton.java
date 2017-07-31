@@ -78,7 +78,13 @@ public class SwingWorkerSingleton {
             epHandle.setDone(); 
           } 
         } catch (Exception ex) {
-          epHandle.displayErrorMessage( ex.getMessage() );
+          String text;
+          if ( ex.getMessage() == null ) {
+            text = "CANCELLED";
+          } else {
+            text = ex.getMessage();
+          }
+          epHandle.displayErrorMessage( text );
           ex.printStackTrace();
         }
       }
