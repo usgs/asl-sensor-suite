@@ -2,8 +2,10 @@ package asl.sensor.experiment;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
@@ -82,7 +84,7 @@ public class AzimuthExperiment extends Experiment {
   }
   private double offset = 0.;
   
-  private double angle;
+  private double angle, uncert;
   private double[] freqs;
   
   private double[] coherence;
@@ -200,15 +202,15 @@ public class AzimuthExperiment extends Experiment {
     
     // first double -- angle estimate over window
     // second double -- coherence from that estimate over the window
-    List<Pair<Double,Double>> angleCoherenceList = 
-        new ArrayList<Pair<Double, Double>> ();
+    Map<Long, Pair<Double,Double>> angleCoherenceMap = 
+        new HashMap<Long, Pair<Double, Double>> ();
     List<Double> sortedCoherence = new ArrayList<Double>();
     
     final long twoThouSecs = 2000L * TimeSeriesUtils.ONE_HZ_INTERVAL; 
     // 1000 ms per second, range length
     final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
     int numWindows = (int) ( (timeRange - twoThouSecs) / fiveHundSecs);
-    
+    // look at 2000s windows, sliding over 500s of data at a time
     for (int i = 0; i < numWindows; ++i) {
       StringBuilder sb = new StringBuilder();
       sb.append("Fitting angle over data in window ");
@@ -247,13 +249,19 @@ public class AzimuthExperiment extends Experiment {
       
       RealVector angleVectorWindow = optimumY.getPoint();
       double angleTemp = angleVectorWindow.getEntry(0);
-      RealVector resi = optimumY.getResiduals();
-      double errorEst = resi.getEntry(0);
-      angleCoherenceList.add( new Pair<Double, Double>(angleTemp, errorEst) );
-      sortedCoherence.add(errorEst);
+      
+      double coherenceAvg = 0;
+      for (double cVal : coherence) {
+        coherenceAvg += cVal;
+      }
+      coherenceAvg /= coherence.length;
+      
+      angleCoherenceMap.put(
+          wdStart, new Pair<Double, Double>(angleTemp, coherenceAvg) );
+      sortedCoherence.add(coherenceAvg);
     }
     
-    if (angleCoherenceList.size() < 1) {
+    if (angleCoherenceMap.size() < 1) {
       fireStateChange("Window size too small for good angle estimation...");
       angle = Math.toDegrees( angleVector.getEntry(0) );
     } else {
@@ -263,19 +271,33 @@ public class AzimuthExperiment extends Experiment {
       sortedCoherence = sortedCoherence.subList(0, maxBoundary);
       Set<Double> acceptableCoherences = new HashSet<Double>(sortedCoherence);
       
+      // store values for use in 
+      List<Double> acceptedVals = new ArrayList<Double>();
+      
       double averageAngle = 0.;
       int coherenceCount = 0;
       
-      for (Pair<Double, Double> angCoherePair : angleCoherenceList) {
+      for (Pair<Double, Double> angCoherePair : angleCoherenceMap.values()) {
         double angleTemp = angCoherePair.getFirst();
         double coherence = angCoherePair.getSecond();
         if ( acceptableCoherences.contains(coherence) ) {
           averageAngle += angleTemp;
+          acceptedVals.add(angleTemp);
           ++coherenceCount;
         }
       }
       
       averageAngle /= coherenceCount;
+      
+      uncert = 0.;
+      
+      // now get standard deviation
+      for (double angle : acceptedVals) {
+        uncert += Math.pow(angle - averageAngle, 2);
+      }
+      
+      uncert = Math.sqrt( uncert / (coherenceCount) );
+      uncert *= 2; // two-sigma gets us 95% confidence interval
       
       // do this calculation to get plot of freq/coherence, a side effect
       // of running evaluation at the given point; this will be plotted
@@ -325,13 +347,35 @@ public class AzimuthExperiment extends Experiment {
     xysc.addSeries(fromNorth);
     xySeriesData.add(xysc);
     
-    XYSeries coherenceSeries = new XYSeries("COHERENCE");
+    XYSeries coherenceSeries = new XYSeries("Per-freq. coherence of best-fit");
     for (int i = 0; i < freqs.length; ++i) {
       coherenceSeries.add(freqs[i], coherence[i]);
     }
     
-    xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
+    xysc = new XYSeriesCollection();
+    XYSeries timeMapAngle = new XYSeries("Best-fit angle per window");
+    XYSeries timeMapCoherence = new XYSeries("Coherence estimate per window");
+    xysc.addSeries(timeMapAngle);
+    xysc.addSeries(timeMapCoherence);
     
+    for ( long time : angleCoherenceMap.keySet() ) {
+      double angle = angleCoherenceMap.get(time).getFirst();
+      double coherence = angleCoherenceMap.get(time).getSecond();
+      timeMapCoherence.add(time, coherence);
+      timeMapAngle.add( time, Math.toDegrees(angle) );
+    }
+    
+    xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
+    xySeriesData.add( new XYSeriesCollection(timeMapAngle) );
+    xySeriesData.add( new XYSeriesCollection(timeMapCoherence) );
+  }
+  
+  /**
+   * Get the uncertainty of the angle 
+   * @return
+   */
+  public double getUncertainty() {
+    return Math.toDegrees(uncert);
   }
   
   @Override

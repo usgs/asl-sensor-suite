@@ -59,11 +59,11 @@ public class AzimuthTest {
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() / 1000 );
     cCal.set(Calendar.HOUR, 10);
     cCal.set(Calendar.MINUTE, 30);
-    System.out.println("start: " + sdf.format( cCal.getTime() ) );
+    //System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime() * 1000L;
     cCal.set(Calendar.HOUR, 15);
     cCal.set(Calendar.MINUTE, 00);
-    System.out.println("end: " + sdf.format( cCal.getTime() ) );
+    //System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
     ds.trimAll(start, end);
@@ -71,7 +71,7 @@ public class AzimuthTest {
     azi.runExperimentOnData(ds);
     
     System.out.println( azi.getFitAngle() );
-    assertEquals( azi.getFitAngle(), 16., 0.5 );
+    assertEquals( azi.getFitAngle(), 15.5, 0.5 );
     
   }
   
@@ -114,11 +114,11 @@ public class AzimuthTest {
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() / 1000 );
     cCal.set(Calendar.HOUR_OF_DAY, 12);
     cCal.set(Calendar.MINUTE, 00);
-    System.out.println("start: " + sdf.format( cCal.getTime() ) );
+    //System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime() * 1000L;
     cCal.set(Calendar.HOUR_OF_DAY, 14);
     cCal.set(Calendar.MINUTE, 00);
-    System.out.println("end: " + sdf.format( cCal.getTime() ) );
+    //System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
     ds.trimAll(start, end);

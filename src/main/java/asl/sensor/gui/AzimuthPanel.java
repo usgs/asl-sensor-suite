@@ -18,8 +18,13 @@ import javax.swing.SwingConstants;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PolarPlot;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.DefaultXYItemRenderer;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.XYSplineRenderer;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
@@ -43,7 +48,7 @@ public class AzimuthPanel extends ExperimentPanel {
   private static final long serialVersionUID = 4088024342809622854L;
   private static final DecimalFormat df = new DecimalFormat("#.###");
   JSpinner offsetSpinner;
-  JFreeChart angleChart, coherenceChart;
+  JFreeChart angleChart, coherenceChart, estimChart;
   
   JComboBox<String> chartSelector;
 
@@ -63,6 +68,7 @@ public class AzimuthPanel extends ExperimentPanel {
     chartSelector = new JComboBox<String>();
     chartSelector.addItem("Azimuth angle");
     chartSelector.addItem("Coherence");
+    chartSelector.addItem("Estimation");
     chartSelector.setSelectedItem(0);
     chartSelector.addActionListener(this);
     
@@ -83,7 +89,11 @@ public class AzimuthPanel extends ExperimentPanel {
     
     coherenceChart = 
         ChartFactory.createXYLineChart( expType.getName() + " Coherence",
-        "Frequency (Hz)", "Coherence", null);
+        "Frequency (Hz)", "Coherence of best-fit angle", null);
+    
+    estimChart = 
+        ChartFactory.createXYLineChart( expType.getName() + " Windowing",
+        "Window start", "Coherence, Angle", null);
     
     this.setLayout( new GridBagLayout() );
     
@@ -127,11 +137,8 @@ public class AzimuthPanel extends ExperimentPanel {
   public void actionPerformed(ActionEvent e) {
     
     if (e.getSource() == chartSelector) {
-      if ( chartSelector.getSelectedIndex() == 0 ) {
-        chart = angleChart;
-      } else {
-        chart = coherenceChart;
-      }
+      JFreeChart[] charts = getCharts();
+      chart = charts[chartSelector.getSelectedIndex()];
       chartPanel.setChart(chart);
       return;
     }
@@ -184,7 +191,7 @@ public class AzimuthPanel extends ExperimentPanel {
   
   @Override
   public JFreeChart[] getCharts() {
-    return new JFreeChart[]{angleChart, coherenceChart};
+    return new JFreeChart[]{angleChart, coherenceChart, estimChart};
   }
   
   @Override
@@ -192,10 +199,11 @@ public class AzimuthPanel extends ExperimentPanel {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     double value = az.getOffset();
     double angle = az.getFitAngle();
-    String angleStr = "FIT ANGLE: " + angle;
+    String angleStr = "FIT ANGLE: " + df.format(angle);
     double result = ( (value + angle) % 360 + 360) % 360;
 
-    angleStr += " + " + value + " = " + result;
+    angleStr += " + " + df.format(value) + " = " + df.format(result);
+    angleStr += " (+/- " + df.format( az.getUncertainty() ) + ")";
     return angleStr;
   }
   
@@ -231,11 +239,7 @@ public class AzimuthPanel extends ExperimentPanel {
     angleChart = ChartFactory.createPolarChart( expType.getName(),
         polars, true, true, false);
     
-    double angle = az.getFitAngle();
-    String angleStr = "FIT ANGLE: " + df.format(angle);
-    double result = ( (value + angle) % 360 + 360) % 360;
-    
-    angleStr += " + " + df.format(value) + " = " + df.format(result);
+    String angleStr = getInsetStrings();
     
     XYPlot xyp = (XYPlot) coherenceChart.getPlot();
     TextTitle title = new TextTitle(angleStr);
@@ -249,6 +253,34 @@ public class AzimuthPanel extends ExperimentPanel {
     PolarPlot plot = (PolarPlot) angleChart.getPlot();
     plot.clearCornerTextItems();
     plot.addCornerTextItem(angleStr);
+    
+    String titleEst = expType.getName() + " Accuracy Estimation";
+    estimChart = ChartFactory.createXYLineChart( titleEst,
+        "xaxis", "yaxis", xysc);
+    XYSeriesCollection angleEstim = allData.get(2);
+    XYSeriesCollection coherEstim = allData.get(3);
+    xyp = estimChart.getXYPlot();
+    xyp.setDataset(0, angleEstim);
+    xyp.setDataset(1, coherEstim);
+    xyp.setRenderer( 0, new DefaultXYItemRenderer() );
+    // set color of second dataset to be blue
+    XYItemRenderer renderer = new DefaultXYItemRenderer();
+    renderer.setSeriesPaint(0, Color.BLUE);
+    xyp.setRenderer(1, renderer);
+    xyp.setRangeAxis( 0, new NumberAxis("Angle est. (deg)") );
+    xyp.setRangeAxis( 1, new NumberAxis("Coherence est.") );
+    NumberAxis xAx = new NumberAxis("Time window start");
+    xAx.setAutoRangeIncludesZero(false);
+    xyp.setDomainAxis(xAx);
+    xyp.mapDatasetToRangeAxis(0, 0);
+    xyp.mapDatasetToRangeAxis(1, 1);
+    
+    /*
+    estimChart = 
+        new JFreeChart(expType.getName() + " Windowing", getFont(), xyp, true);
+    */
+    
+    chartSelector.setSelectedIndex(0);
   }
   
 }
