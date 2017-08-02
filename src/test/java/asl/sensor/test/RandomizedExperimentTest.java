@@ -472,7 +472,7 @@ public class RandomizedExperimentTest {
       double pctDiff = 
           Math.abs( 100 * (bestResid - expectedResid) / bestResid );
       
-      assertTrue("PCT DIFF EXPECTED <5%, GOT " + pctDiff, pctDiff < 5);
+      assertTrue("PCT DIFF EXPECTED <15%, GOT " + pctDiff, pctDiff < 15);
 
       // add initial curve from expected fit params to report
       XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);

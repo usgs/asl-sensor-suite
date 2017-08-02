@@ -485,7 +485,7 @@ public class FFTResult {
     // TODO: re-alter comment (changed in attempt to get better low-freq
     // random cal results to half the data, at 1/8 windows)
     
-    int range = list1.size()/2;
+    int range = list1.size()/8;
     int slider = range/4;
     
     // period is 1/sample rate in seconds
