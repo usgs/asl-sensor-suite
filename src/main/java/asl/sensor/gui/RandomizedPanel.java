@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
@@ -48,6 +49,7 @@ public class RandomizedPanel extends ExperimentPanel {
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   private static final Color[] COLOR_LIST = 
       new Color[]{Color.RED, Color.BLUE, Color.GREEN};
+  
   /**
    * 
    */
@@ -388,11 +390,8 @@ public class RandomizedPanel extends ExperimentPanel {
     return sb.toString();
   }
   private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis;
-  
   private JComboBox<String> plotSelection;
-
-  private JCheckBox lowFreqBox, showParams;
-
+  private JCheckBox lowFreqBox, showParams, freqSpace;
   private JFreeChart magChart, argChart, residAmpChart, residPhaseChart;
   
   public RandomizedPanel(ExperimentEnum exp) {
@@ -431,6 +430,9 @@ public class RandomizedPanel extends ExperimentPanel {
     showParams.setEnabled(false);
     showParams.addActionListener(this);
     
+    freqSpace = new JCheckBox("Use Hz units (req. regen)");
+    freqSpace.setSelected(true);
+    
     applyAxesToChart(); // now that we've got axes defined
     
     magChart = buildChart(null, xAxis, yAxis);
@@ -459,6 +461,7 @@ public class RandomizedPanel extends ExperimentPanel {
     checkBoxPanel.setLayout( new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS) );
     checkBoxPanel.add(lowFreqBox);
     checkBoxPanel.add(showParams);
+    checkBoxPanel.add(freqSpace);
     this.add(checkBoxPanel, gbc);
     
     gbc.gridx += 1;
@@ -478,8 +481,8 @@ public class RandomizedPanel extends ExperimentPanel {
     plotSelection.addItem(ARGUMENT);
     plotSelection.addItem("Residual amplitude plot");
     plotSelection.addItem("Residual phase plot");
-    this.add(plotSelection, gbc);
     plotSelection.addActionListener(this);
+    this.add(plotSelection, gbc);
   }
   
   @Override
@@ -667,6 +670,7 @@ public class RandomizedPanel extends ExperimentPanel {
     
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
     rndExp.setLowFreq(isLowFreq);
+    rndExp.useFreqUnits( freqSpace.isSelected() );
     expResult.runExperimentOnData(ds);
     
     String appendFreqTitle;

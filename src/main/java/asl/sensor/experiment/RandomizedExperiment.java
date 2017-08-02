@@ -80,6 +80,8 @@ extends Experiment implements ParameterValidator {
   private double[] freqs;
   private double nyquist;
   
+  private boolean freqSpace;
+  
   private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
   
   private int normalIdx; // location of value to set to 0 in curves for scaling
@@ -92,6 +94,15 @@ extends Experiment implements ParameterValidator {
     lowFreq = false;
     normalIdx = 0;
     numIterations = 0;
+    freqSpace = true;
+  }
+  
+  /**
+   * Set whether or not to plot in units of frequency (Hz) or period (s)
+   * @param setFreq true if plots should be in frequency units (Hz)
+   */
+  public void useFreqUnits(boolean setFreq) {
+    freqSpace = setFreq;
   }
   
   /*
@@ -442,11 +453,18 @@ extends Experiment implements ParameterValidator {
     fireStateChange("Compiling data...");
     
     for (int i = 0; i < freqs.length; ++i) {
+      double xValue;
+      if (freqSpace) {
+        xValue = freqs[i];
+      } else {
+        xValue = 1. / freqs[i];
+      }
+      
       int argIdx = freqs.length + i;
-      initMag.add(freqs[i], initialValues[i]);
-      initArg.add(freqs[i], initialValues[argIdx]);
-      fitMag.add(freqs[i], fitValues[i]);
-      fitArg.add(freqs[i], fitValues[argIdx]);
+      initMag.add(xValue, initialValues[i]);
+      initArg.add(xValue, initialValues[argIdx]);
+      fitMag.add(xValue, fitValues[i]);
+      fitArg.add(xValue, fitValues[argIdx]);
       
       // Complex scaledInit = initTerms[i].subtract(init1Hz);
       // Complex scaledFit = fitTerms[i].subtract(fit1Hz);
@@ -458,14 +476,15 @@ extends Experiment implements ParameterValidator {
       if (obsAmpDbl == 0.) {
         obsAmpDbl = Double.MIN_VALUE;
       }
+      
       double errInitMag = 100. * (initAmpNumer - obsAmpDbl) / obsAmpDbl; 
       double errFitMag = 100. * (fitAmpNumer - obsAmpDbl) / obsAmpDbl; 
-      initResidMag.add(freqs[i], errInitMag);
-      fitResidMag.add(freqs[i], errFitMag);
+      initResidMag.add(xValue, errInitMag);
+      fitResidMag.add(xValue, errFitMag);
       
       double observedPhase = observedResult[argIdx];
-      initResidPhase.add(freqs[i], initialValues[argIdx] - observedPhase);
-      fitResidPhase.add(freqs[i], fitValues[argIdx] - observedPhase);
+      initResidPhase.add(xValue, initialValues[argIdx] - observedPhase);
+      fitResidPhase.add(xValue, fitValues[argIdx] - observedPhase);
     }
     
     XYSeriesCollection xysc = new XYSeriesCollection();
