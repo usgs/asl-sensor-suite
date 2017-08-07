@@ -170,15 +170,16 @@ public class GainSixExperiment extends Experiment {
   }
   
   /**
-   * Get octave centered around peak of first (north) components. We assume
+   * Get octave centered around peak of vertical components. We assume
    * that all three component gain sets have their peaks at nearly the same
-   * points.
-   * @param idx Index of north component's data to use as reference
+   * points. The vertical sensors are most likely to be useful, as their
+   * data does not need to be rotated as with the north and east sensors.
+   * @param idx Index of vertical component data to use as reference
    * @return Upper and lower frequency bound of octave over given peak
    */
   public double[] getOctaveCenteredAtPeak(int idx) {
-    // we assume the first sensor is a good enough 
-    return componentBackends[0].getOctaveCenteredAtPeak(idx);
+    // we assume the vertical sensor, as it is not rotated, is
+    return componentBackends[2].getOctaveCenteredAtPeak(idx);
   }
 
 
@@ -193,19 +194,20 @@ public class GainSixExperiment extends Experiment {
   public double[][] getStatsFromFreqs(int idx, double low, double high) {
     double[][] result = new double[DIMS][];
     // vertical component requires no rotation
-    result[2] = componentBackends[2].getStatsFromFreqs(idx, low, high);
     
+    for (int i = 0; i < DIMS; ++i) {
+      result[i] = componentBackends[i].getStatsFromFreqs(idx, low, high);
+    }
+    
+    /*
+    // commented out if we don't actually need to revert from the calc values
     double meanAngle = (north2Angle + east2Angle) / 2;
-    // get north and east components and then rotate their gain as necessary
-    result[0] = componentBackends[0].getStatsFromFreqs(idx, low, high);
-    result[1] = componentBackends[1].getStatsFromFreqs(idx, low, high);
-    
+    // do we need to rotate the north and east components?
     // get the values we need for doing rotation
     double northRef = result[0][2];
     double northCalc = result[0][3];
     double eastRef = result[1][2];
     double eastCalc = result[1][3];
-    
     if ( idx == 0 ) {
       // the fixed data is being used as reference, un-rotate calc'd results
       double calcNish = (northCalc - eastCalc) / ( 2 * Math.cos(meanAngle) );
@@ -219,7 +221,7 @@ public class GainSixExperiment extends Experiment {
       result[0][2] = refNish;
       result[1][2] = refEish;
     }
-    
+    */
     return result;
   }
 

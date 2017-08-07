@@ -285,8 +285,15 @@ extends Experiment implements ParameterValidator {
         
       }
       
-      calcMag.add(freqs[i], observedResult[i]);
-      calcArg.add(freqs[i], observedResult[argIdx]);
+      double xAxis;
+      if (freqSpace) {
+        xAxis = freqs[i];
+      } else {
+        xAxis = 1. / freqs[i];
+      }
+      
+      calcMag.add(xAxis, observedResult[i]);
+      calcArg.add(xAxis, observedResult[argIdx]);
     }
     
     // want to set up weight-scaling for the input so rotation doesn't dominate
