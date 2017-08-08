@@ -143,11 +143,25 @@ extends Experiment implements ParameterValidator {
     // imaginary terms from the denominator due to multiplication with the
     // complex conjugate
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
-    
+    int windowSize, change;
     // also, use those frequencies to get the applied response to input
+    if (lowFreq) {
+      int maxLen = Math.max( sensorOut.size(), calib.size() );
+      windowSize = 2;
+      while (windowSize <= maxLen) {
+        windowSize *= 2;
+      }
+      windowSize *= 2;
+      change = windowSize;
+    } else {
+      windowSize = sensorOut.size() / 4;
+      change = windowSize / 4;
+    }
     
-    FFTResult numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
-    FFTResult denominatorPSD = FFTResult.spectralCalc(calib, calib);
+    FFTResult numeratorPSD = 
+        FFTResult.spectralCalc(sensorOut, calib, windowSize, change);
+    FFTResult denominatorPSD = 
+        FFTResult.spectralCalc(calib, calib, windowSize, change);
     freqs = numeratorPSD.getFreqs(); // should be same for both results
     
     // store nyquist rate of data because freqs will be trimmed down later

@@ -454,6 +454,7 @@ public class FFTResult {
     return timeSeries;
   }
   
+  
   /**
    * Helper function to calculate power spectral density / crosspower.
    * Takes in two time series data and produces the windowed FFT over each.
@@ -471,6 +472,22 @@ public class FFTResult {
    */
   public static FFTResult spectralCalc(DataBlock data1, DataBlock data2) {
 
+    List<Number> list1 = data1.getData();
+    
+    // divide into windows of 1/4, moving up 1/16 of the data at a time
+    // TODO: re-alter comment (changed in attempt to get better low-freq
+    // random cal results to half the data, at 1/8 windows)
+    
+    int range = list1.size()/4;
+    int slider = range/4;
+   
+    return spectralCalc(data1, data2, range, slider);
+    
+  }
+  
+  public static FFTResult spectralCalc(DataBlock data1, DataBlock data2, 
+      int range, int slider) {
+    
     // this is ugly logic here, but this saves us issues with looping
     // and calculating the same data twice
     boolean sameData = data1.getName().equals( data2.getName() );
@@ -481,25 +498,19 @@ public class FFTResult {
       list2 = data2.getData();
     }
     
-    // divide into windows of 1/4, moving up 1/16 of the data at a time
-    // TODO: re-alter comment (changed in attempt to get better low-freq
-    // random cal results to half the data, at 1/8 windows)
-    
-    int range = list1.size()/8;
-    int slider = range/4;
-    
     // period is 1/sample rate in seconds
     // since the interval data is just that multiplied by a large number
     // let's divide it by that large number to get our period
     
     // shouldn't need to worry about a cast here
-    double period = 1.0 / TimeSeriesUtils.ONE_HZ_INTERVAL;
-    period *= data1.getInterval();
     
     int padding = 2;
     while (padding < range) {
       padding *= 2;
     }
+    
+    double period = 1.0 / TimeSeriesUtils.ONE_HZ_INTERVAL;
+    period *= data1.getInterval();
     
     int singleSide = padding / 2 + 1;
     double deltaFreq = 1. / (padding * period);
