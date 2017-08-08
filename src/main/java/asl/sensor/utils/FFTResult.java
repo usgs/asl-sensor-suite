@@ -526,10 +526,12 @@ public class FFTResult {
       powSpectDens[i] = Complex.ZERO;
     }
     
-    while ( rangeEnd <= data1.size() ) {
+    while ( rangeStart < data1.size() ) {
       
       Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
       Complex[] fftResult2 = null;
+      
+      int upperBound = Math.min( rangeEnd, list1.size() );
       
       if (!sameData) {
         fftResult2 = new Complex[singleSide];
@@ -538,13 +540,13 @@ public class FFTResult {
       // give us a new list we can modify to get the data of
       List<Number> data1Range = 
           new ArrayList<Number>(
-              list1.subList(rangeStart, rangeEnd) );
+              list1.subList(rangeStart, upperBound) );
       List<Number> data2Range = null;
       
       if (!sameData) {
         data2Range = 
             new ArrayList<Number>(
-                list2.subList(rangeStart, rangeEnd) );
+                list2.subList(rangeStart, upperBound) );
       }
        
       // double arrays initialized with zeros, set as a power of two for FFT
