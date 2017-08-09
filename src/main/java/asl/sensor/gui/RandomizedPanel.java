@@ -292,25 +292,27 @@ public class RandomizedPanel extends ExperimentPanel {
         sbFit.append( df.format(fitPrd) );
         sbFit.append(" s)\n");
         numInLine = 0;
-      } else if ( i + 1 < fitP.size() ) {
-        // if there is still data, fit up to 4 in a line
-        // but separate conjugate pairs into their own line for space
-        if ( numInLine < MAX_LINE && initP.get(i + 1).getImaginary() == 0. ) {
-          sbInit.append(" (");
-          sbInit.append(initPrd);
-          sbInit.append(" s)");
-          sbFit.append(" (");
-          sbFit.append(fitPrd);
-          sbFit.append(" s)");
+      } else {
+        // if data does not have conjugate pair, put period next to pole value
+        // if there is still data, fit up to 4 poles in a line
+        // but still separate conjugate pairs into their own line for space
+        sbInit.append(" (");
+        sbInit.append( df.format(initPrd) );
+        sbInit.append(" s)");
+        sbFit.append(" (");
+        sbFit.append( df.format(fitPrd) );
+        sbFit.append(" s)");
+        
+        if ( i + 1 < fitP.size() && 
+             numInLine < MAX_LINE && 
+             initP.get(i + 1).getImaginary() == 0. ) {
+          // next value exists, is not part of a conjugate pair, and won't
+          // put more than 4 pole values in a single line
           sbInit.append(";   ");
           sbFit.append(";   ");
         } else {
-          sbInit.append(" (");
-          sbInit.append(initPrd);
-          sbInit.append(" s)\n");
-          sbFit.append(" (");
-          sbFit.append(fitPrd);
-          sbFit.append(" s)\n");
+          sbInit.append("\n");
+          sbFit.append("\n");
           numInLine = 0;
         }
       }
@@ -351,14 +353,19 @@ public class RandomizedPanel extends ExperimentPanel {
         sbFitZ.append( df.format(fitPrd) );
         sbFitZ.append(" s)\n");
         
-      } else { 
+      } else {
+        sbInitZ.append(" (");
+        sbInitZ.append( df.format(initPrd) );
+        sbInitZ.append(" s)");
+        sbFitZ.append(" (");
+        sbFitZ.append( df.format(fitPrd) );
+        sbFitZ.append(" s)");
         if ( i + 1 < fitZ.size() ) {
-          sbInitZ.append(" (");
-          sbInitZ.append( df.format(initPrd) );
-          sbInitZ.append(" s);   ");
-          sbFitZ.append(" (");
-          sbFitZ.append( df.format(fitPrd) );
-          sbFitZ.append(" s);   ");
+          sbInitZ.append("\n");
+          sbFitZ.append("\n");
+        } else {
+          sbInitZ.append(";   ");
+          sbFitZ.append(";   ");
         }
       }
     }
