@@ -20,6 +20,28 @@ public class RandomCalShell {
   public static void main(String[] args) {
     // TODO parse arguments and set up data structures to run operations
     
+    String msg = "PROGRAM STILL WIP. NO OUTPUT UNTIL FORMATTING AGREED ON.\n";
+    System.out.println(msg);
+    
+    if (args.length < 7) {
+      System.out.println("CANNOT RUN: TOO FEW ARGUMENTS.");
+      System.out.println("PROGRAM USAGE:");
+      StringBuilder sb = new StringBuilder();
+      sb.append("java -jar RandomCalWrapper[version].jar [args]\n");
+      sb.append("ARGUMENT ORDER:\n");
+      sb.append("* character 'H' or 'L' if cal");
+      sb.append(" is high or low period respectively\n");
+      sb.append("* location of file with cal input data\n");
+      sb.append("* location of file with sensor output\n");
+      sb.append("* location of RESP file for the sensor being tested\n");
+      sb.append("* start time of relevant data (format: ddd.hh:mm:ss.ms)\n");
+      sb.append("* end time of relevant data (same format)\n");
+      sb.append("* where output data should be saved\n");
+      System.out.println(sb);
+      return;
+    }
+    
+    
     // command line arg structure, by index:
     // 0. denotes whether or not calibration is high or low period
     // 1. location of file with cal input data

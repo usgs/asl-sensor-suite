@@ -13,7 +13,6 @@ repositories {
 }
 dependencies {
 
-	// 
 	// https://mvnrepository.com/artifact/org.jfree/jfreechart
 	compile group: 'org.jfree', name: 'jfreechart', version: '1.0.19'
 	
@@ -40,7 +39,16 @@ dependencies {
 
 }
 
-jar {
+task jarMain (type: Jar) {
+
+    baseName = rootProject.name
+
+    manifest {
+        attributes 'Implementation-Title': 'ASL Sensor Test Suite',
+                   'Implementation-Version': version,
+                   'Main-Class': mainClassName
+    }
+
     /* Adds all dependent libraries*/
     from {
         configurations.compile.collect {
@@ -51,12 +59,31 @@ jar {
         }
     }
 
-    manifest {
-        attributes 'Implementation-Title': 'ASL Sensor Test Suite',
-                   'Implementation-Version': version,
-                   'Main-Class': mainClassName
-    }
+    with jar
+
 }
+
+task jarCmd (type: Jar) {
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+        configurations.runtime.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+
+    baseName = 'RandomCalWrapper'
+
+    manifest {
+        attributes 'Implementation-Title': 'RandomCalSolver(cmd)',
+                   'Implementation-Version': version,
+                   'Main-Class': 'asl.sensor.RandomCalShell'
+    }
+
+    with jar
+}
+
 
 test {
     maxParallelForks = 4;
@@ -88,8 +115,15 @@ compileJava {
 }
 
 task copyJar(type: Copy) {
-	from jar
+	from jarMain
 	into rootDir
 }
 
-build.dependsOn copyJar
+
+task copyCmdJar(type: Copy) {
+	from jarCmd
+	into rootDir
+}
+
+
+build.dependsOn copyJar, copyCmdJar

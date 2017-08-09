@@ -357,6 +357,14 @@ extends Experiment implements ParameterValidator {
         } else {
           denom = 100;
         }
+      } else {
+        
+        if (freqs[i] < .01) {
+          denom = freqs[i];
+        } else {
+          denom = .01;
+        }
+        
       }
 
 
