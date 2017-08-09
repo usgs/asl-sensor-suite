@@ -1,5 +1,7 @@
 package asl.sensor.utils;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -32,6 +34,12 @@ public class NumericUtils {
       return (int) Math.signum( c1.abs() - c2.abs() );
     }
     
+  }
+  
+  public static void setInfinityPrintable(DecimalFormat df) {
+    DecimalFormatSymbols symbols = df.getDecimalFormatSymbols();
+    symbols.setInfinity("Inf.");
+    df.setDecimalFormatSymbols(symbols);
   }
   
   public static CpxMagComparator cmc;

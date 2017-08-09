@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
@@ -73,6 +72,7 @@ public class RandomizedPanel extends ExperimentPanel {
     StringBuilder csvZeros = new StringBuilder();
     StringBuilder csvTitle = new StringBuilder();
     DecimalFormat csvFormat = new DecimalFormat("+#.####;-#.####");
+    NumericUtils.setInfinityPrintable(csvFormat);
     
     final int COL_WIDTH = 9;
     String[] columns = new String[]{"Init", "Fit", "Diff", "Mean", "PctDiff"};
@@ -243,6 +243,7 @@ public class RandomizedPanel extends ExperimentPanel {
     final int MAX_LINE = 4; // maximum number of entries per line
     
     DecimalFormat df = new DecimalFormat("#.#####");
+    NumericUtils.setInfinityPrintable(df);
     ComplexFormat cf = new ComplexFormat(df);
     
     List<Complex> fitP = rnd.getFitPoles();
