@@ -594,6 +594,12 @@ extends Experiment implements ParameterValidator {
     double argScale = NumericUtils.atanc(scaleBy);
     
     double phiPrev = 0.;
+    if (lowFreq) {
+      int argIdx = appliedCurve.length / 2;
+      double startAngle = NumericUtils.atanc(appliedCurve[argIdx]);
+      // note that we are still in units of radians at this point
+      phiPrev = startAngle; // hopefully fix issue with phase scaling
+    }
     
     // System.out.println(appliedCurve[0]);
     // now, do scaling and create the result vector (or, rather, array)

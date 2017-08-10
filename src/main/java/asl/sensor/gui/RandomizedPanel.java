@@ -397,7 +397,7 @@ public class RandomizedPanel extends ExperimentPanel {
     
     return sb.toString();
   }
-  private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis;
+  private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis;
   private JComboBox<String> plotSelection;
   private JCheckBox lowFreqBox, showParams, freqSpace;
   private JFreeChart magChart, argChart, residAmpChart, residPhaseChart;
@@ -410,9 +410,11 @@ public class RandomizedPanel extends ExperimentPanel {
     
     String yAxisTitle = "10 * log10( RESP(f) )";
     String xAxisTitle = "Frequency (Hz)";
+    String prdAxisTitle = "Period (s)";
     String degreeAxisTitle = "phi(RESP(f))";
     
     xAxis = new LogarithmicAxis(xAxisTitle);
+    prdAxis = new LogarithmicAxis(prdAxisTitle);
     
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
@@ -650,9 +652,18 @@ public class RandomizedPanel extends ExperimentPanel {
   }
   
   @Override
+  public ValueAxis getXAxis() {
+    if ( null == plotSelection || freqSpace.isSelected() ) {
+      return xAxis;
+    } else {
+      return prdAxis;
+    }
+  }
+  
+  @Override
   public ValueAxis getYAxis() {
     
-    if ( null == plotSelection ) {
+    if (null == plotSelection) {
       return yAxis;
     }
     
@@ -705,11 +716,11 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
-    argChart = buildChart(argSeries, xAxis, degreeAxis);
+    argChart = buildChart(argSeries, getXAxis(), degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
     invertSeriesRenderingOrder( argChart );
     
-    magChart = buildChart(magSeries, xAxis, yAxis);
+    magChart = buildChart(magSeries, getXAxis(), yAxis);
     invertSeriesRenderingOrder( magChart );
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
@@ -741,7 +752,7 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(magChart, appendFreqTitle);
     
     // get residuals plot
-    residAmpChart = buildChart(xysc.get(2), xAxis, residAmpAxis);
+    residAmpChart = buildChart(xysc.get(2), getXAxis(), residAmpAxis);
     /*
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();
@@ -758,7 +769,7 @@ public class RandomizedPanel extends ExperimentPanel {
     residPlot.clearAnnotations();
     residPlot.addAnnotation(weightAnnot);
     */
-    residPhaseChart = buildChart(xysc.get(3), xAxis, residPhaseAxis);
+    residPhaseChart = buildChart(xysc.get(3), getXAxis(), residPhaseAxis);
     /*
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();
