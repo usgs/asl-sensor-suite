@@ -29,6 +29,7 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.FFTResult.TaperType;
 import asl.sensor.utils.NumericUtils;
 
 /**
@@ -144,6 +145,7 @@ extends Experiment implements ParameterValidator {
     // complex conjugate
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
     int windowSize, change;
+    TaperType taper;
     // also, use those frequencies to get the applied response to input
     if (lowFreq) {
       int maxLen = Math.max( sensorOut.size(), calib.size() );
@@ -153,15 +155,17 @@ extends Experiment implements ParameterValidator {
       }
       windowSize *= 2;
       change = windowSize;
+      taper = TaperType.MULT;
     } else {
       windowSize = sensorOut.size() / 4;
       change = windowSize / 4;
+      taper = TaperType.COS;
     }
     
     FFTResult numeratorPSD = 
-        FFTResult.spectralCalc(sensorOut, calib, windowSize, change);
+        FFTResult.spectralCalc(sensorOut, calib, windowSize, change, taper);
     FFTResult denominatorPSD = 
-        FFTResult.spectralCalc(calib, calib, windowSize, change);
+        FFTResult.spectralCalc(calib, calib, windowSize, change, taper);
     freqs = numeratorPSD.getFreqs(); // should be same for both results
     
     // store nyquist rate of data because freqs will be trimmed down later

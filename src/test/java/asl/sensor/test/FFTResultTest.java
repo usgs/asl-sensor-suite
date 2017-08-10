@@ -353,6 +353,33 @@ public class FFTResultTest {
   }
   
   @Test
+  public void testMultitaper() {
+    final int TAPERS = 12;
+    double[][] taper = FFTResult.getTaperSeries(2000, TAPERS);
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    for (int j = 0; j < taper[0].length; ++j) {
+      XYSeries xys = new XYSeries("Taper " + j);
+      for (int i = 0; i < taper.length; ++i) {
+        xys.add(i, taper[i][j]);
+      }
+      xysc.addSeries(xys);
+    }
+    
+    JFreeChart chart = 
+        ChartFactory.createXYLineChart("MULTITAPER", "taper series index", 
+            "taper value", xysc);
+    BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+    File file = new File("testResultImages/multitaper plot.png");
+    try {
+      ImageIO.write( bi, "png", file );
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
+  }
+  
+  @Test
   public void testDemeaning() {
     String dataFolderName = "data/random_cal/"; 
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
