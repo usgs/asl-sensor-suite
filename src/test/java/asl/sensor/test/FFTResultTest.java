@@ -352,7 +352,7 @@ public class FFTResultTest {
       
   }
   
-  @Test
+  // @Test
   public void testMultitaper() {
     final int TAPERS = 12;
     double[][] taper = FFTResult.getTaperSeries(2000, TAPERS);

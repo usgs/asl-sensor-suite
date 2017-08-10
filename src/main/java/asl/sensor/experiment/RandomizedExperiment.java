@@ -341,28 +341,26 @@ extends Experiment implements ParameterValidator {
     // System.out.println(maxMagWeight);
     
     // we have the candidate mag and phase, now to turn them into weight values
-    maxMagWeight = 1000. / maxMagWeight; // scale factor to weight over phase
-    maxArgWeight = 1./ maxArgWeight;
+    maxMagWeight = 1000. / maxMagWeight; // scale factor to weight over
+    if (maxArgWeight != 0.) {
+      maxArgWeight = 1./ maxArgWeight;
+    }
     
     // weight matrix
     double[] weights = new double[observedResult.length];
     for (int i = 0; i < estResponse.length; ++i) {
       int argIdx = i + estResponse.length;
-      // weights[i] = 1 / Math.pow(10, maxMagWeight);
-      // weights[i] = 10000;
-      double denom = 1.;
+      double denom;
       if (!lowFreq) {
+        denom = 100.;
         // give frequencies below 1 less weight in high-freq calibrations
         if (freqs[i] > 10.) {
           // for high enough freqs, make weighting (100/f^3) rather than 1/f;
-          denom *= Math.pow(freqs[i], 2) / 100;
+          denom *= Math.pow(freqs[i], 2) / 100.;
         } else if (freqs[i] > 1.) {
           denom = freqs[i];
-        } else {
-          denom = 100;
         }
       } else {
-        
         if (freqs[i] < .01) {
           denom = freqs[i];
         } else {
@@ -370,7 +368,6 @@ extends Experiment implements ParameterValidator {
         }
         
       }
-
 
       weights[i] = maxMagWeight / denom;
       weights[argIdx] = maxArgWeight / denom;
@@ -415,11 +412,11 @@ extends Experiment implements ParameterValidator {
     };
     
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
-        new EvaluationRmsChecker(1.0E-12, 1.0E-12);
+        new EvaluationRmsChecker(1.0E-14, 1.0E-14);
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-12).
-        withParameterRelativeTolerance(1.0E-12);
+        withCostRelativeTolerance(1.0E-14).
+        withParameterRelativeTolerance(1.0E-14);
     
     name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
@@ -879,8 +876,8 @@ extends Experiment implements ParameterValidator {
       double value = poleParams.getEntry(i);
       if (value > 0 && (i % 2) == 0) {
         // even index means this is a real-value vector entry
-        // if it's above zero, set it back to zero
-        poleParams.setEntry(i, 0.);
+        // if it's above zero, put it back below zero
+        poleParams.setEntry(i, -Double.MIN_VALUE);
       } else if (value > 0) {
         // this means the value is complex, we can multiply it by -1
         // this is ok for complex values since their conjugate is implied

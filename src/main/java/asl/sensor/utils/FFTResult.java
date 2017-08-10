@@ -491,7 +491,6 @@ public class FFTResult {
     return timeSeries;
   }
   
-  
   /**
    * Helper function to calculate power spectral density / crosspower.
    * Takes in two time series data and produces the windowed FFT over each.
@@ -512,13 +511,9 @@ public class FFTResult {
     List<Number> list1 = data1.getData();
     
     // divide into windows of 1/4, moving up 1/16 of the data at a time
-    // TODO: re-alter comment (changed in attempt to get better low-freq
-    // random cal results to half the data, at 1/8 windows)
-    
     int range = list1.size()/4;
     int slider = range/4;
     
-   
     return spectralCalc(data1, data2, range, slider, TaperType.COS);
     
   }
@@ -580,7 +575,7 @@ public class FFTResult {
       List<Number> data1Range = 
           new ArrayList<Number>(
               list1.subList(rangeStart, upperBound) );
-      List<Number> data2Range = null;
+      List<Number> data2Range = new ArrayList<Number>();
       
       if (!sameData) {
         data2Range = 
@@ -602,7 +597,6 @@ public class FFTResult {
         break;
       case MULT:
       default:
-        System.out.println("PERFORMING MULTITAPER");
         double[][] taperMat = getTaperSeries(data1Range.size(), TAPER_COUNT);
         for (int i = 0; i < data1Range.size(); ++i) {
           double point = data1Range.get(i).doubleValue();
@@ -610,7 +604,6 @@ public class FFTResult {
           for (int j = 0; j < taperMat[0].length; ++j) {
             sum += point * taperMat[i][j];
           }
-          System.out.println(sum / TAPER_COUNT);
           // need to re-assign point here; primitives not assigned by reference
           // point = data1Range.get(i).doubleValue();
           data1Range.set(i, sum / TAPER_COUNT);
@@ -635,7 +628,6 @@ public class FFTResult {
             for (int j = 0; j < taperMat[0].length; ++j) {
               sum += point * taperMat[i][j];
             }
-            System.out.println(sum);
             // need to re-assign point here; not evaluated by reference
             // point = data2Range.get(i).doubleValue();
             data2Range.set(i, sum / TAPER_COUNT);
@@ -644,7 +636,6 @@ public class FFTResult {
         }
         toFFT2 = new double[padding];
       }
-      
 
       for (int i = 0; i < data1Range.size(); ++i) {
         // no point in using arraycopy -- must make sure each Number's a double
