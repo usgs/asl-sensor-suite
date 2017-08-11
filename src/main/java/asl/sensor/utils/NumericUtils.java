@@ -50,6 +50,9 @@ public class NumericUtils {
    */
   public final static double TAU = Math.PI * 2; // radians in full circle
   
+  // used to limit the frequencies of the poles/zeros getting fit
+  public final static double PEAK_MULTIPLIER = 0.5;
+  
   /**
    * Get the two-component arctan of a complex number. A simpler way of calling
    * arctan2 using the real and imaginary components of a complex number

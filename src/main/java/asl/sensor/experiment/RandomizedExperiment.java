@@ -56,6 +56,8 @@ public class RandomizedExperiment
 extends Experiment implements ParameterValidator {
 
   private static final double DELTA = 1E-7;
+  public static final double PEAK_MULTIPLIER = 
+      NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
   
   // To whomever has to maintain this code after I'm gone:
   // I'm sorry, I'm so so sorry
@@ -715,7 +717,7 @@ extends Experiment implements ParameterValidator {
   private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
     List<Complex> subList = new ArrayList<Complex>();  
     
-    double peak = .8 * nyquist;
+    double peak = PEAK_MULTIPLIER * nyquist;
     
     for (int i = 0; i < polesToTrim.size(); ++i) {
       double freq = initialPoles.get(i).abs() / NumericUtils.TAU;
@@ -754,7 +756,7 @@ extends Experiment implements ParameterValidator {
   private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
     List<Complex> subList = new ArrayList<Complex>();
     
-    double peak = .8 * nyquist;
+    double peak = PEAK_MULTIPLIER * nyquist;
     
     for (int i = 0; i < zerosToTrim.size(); ++i) {
       double freq = initialZeros.get(i).abs() / NumericUtils.TAU;

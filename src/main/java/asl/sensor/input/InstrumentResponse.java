@@ -36,6 +36,8 @@ import asl.sensor.utils.NumericUtils;
  */
 public class InstrumentResponse {
 
+  private static final double PEAK_MULTIPLIER = 
+      NumericUtils.PEAK_MULTIPLIER;
   
   /**
    * Get one of the response files embedded in the program
@@ -665,7 +667,7 @@ public class InstrumentResponse {
     // first, sort poles by magnitude
     NumericUtils.complexMagnitudeSorter(poles);
     
-    double peak = .8 * nyquist;
+    double peak = PEAK_MULTIPLIER * nyquist;
     
     
     // create a list of doubles that are the non-conjugate elements from list
@@ -689,7 +691,7 @@ public class InstrumentResponse {
         break;
       }
       if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU >= peak ) ) {
-        // don't fit poles above 80% of nyquist rate of sensor output
+        // don't fit poles above fraction of nyquist rate of sensor output
         break;
       }
       
@@ -834,7 +836,7 @@ public class InstrumentResponse {
   public RealVector zerosToVector(boolean lowFreq, double nyquist) {
     NumericUtils.complexMagnitudeSorter(zeros);
     
-    double peak = 0.8 * nyquist;
+    double peak = PEAK_MULTIPLIER * nyquist;
     
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format

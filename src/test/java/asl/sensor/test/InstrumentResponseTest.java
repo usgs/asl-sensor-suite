@@ -18,6 +18,7 @@ import org.junit.Test;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.input.TransferFunction;
 import asl.sensor.input.Unit;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
@@ -90,6 +91,27 @@ public class InstrumentResponseTest {
     
     assertTrue( initPoles.size() == endPoles.size() );
     
+  }
+  
+  @Test
+  public void listPoles() {
+    InstrumentResponse ir;
+    try {
+      ir = InstrumentResponse.loadEmbeddedResponse("T-compact_Q330HR_BH_40");
+      for ( Complex pole : ir.getPoles() ) {
+        double poleFreq = pole.abs() / NumericUtils.TAU;
+        System.out.println("POLE " + poleFreq + " Hz");
+      }
+      for ( Complex zero : ir.getZeros() ) {
+        double zeroFreq = zero.abs() / NumericUtils.TAU;
+        System.out.println("ZERO " + zeroFreq + " Hz");
+      }
+      
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      fail();
+      e.printStackTrace();
+    }
   }
   
   @Test
