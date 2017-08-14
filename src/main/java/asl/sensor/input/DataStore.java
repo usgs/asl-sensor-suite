@@ -535,6 +535,21 @@ public class DataStore {
   }
   
   /**
+   * Set response of a sensor's dataseries by index, using an NRL response
+   * @param idx Index of plot for which response file matches
+   * @param embedName Name of NRL response
+   */
+  public void setEmbedResponse(int idx, String embedName) {
+    try {
+      responses[idx] = InstrumentResponse.loadEmbeddedResponse(embedName);
+      thisResponseIsSet[idx] = true;
+    } catch (IOException e) {
+      // Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+  
+  /**
    * Alias to blockIsSet function
    * @param idx Index of a datablock to check
    * @return True if a seed file has been loaded in there

@@ -172,7 +172,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   public double[] getNorthAngles() {
     double[] returningNorth = new double[northAngles.length];
     for (int i = 0; i < returningNorth.length; ++i) {
-      returningNorth[i] = Math.toDegrees(northAngles[i]);
+      returningNorth[i] = Math.toDegrees(northAngles[i]) % 360;
     }
     return returningNorth;
   }
@@ -186,7 +186,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   public double[] getEastAngles() {
     double[] returningEast = new double[eastAngles.length];
     for (int i = 0; i < returningEast.length; ++i) {
-      returningEast[i] = Math.toDegrees(eastAngles[i]);
+      returningEast[i] = Math.toDegrees(eastAngles[i]) % 360;
     }
     return returningEast;
   }

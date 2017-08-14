@@ -93,11 +93,11 @@ public class InstrumentResponseTest {
     
   }
   
-  @Test
+  // @Test
   public void listPoles() {
     InstrumentResponse ir;
     try {
-      ir = InstrumentResponse.loadEmbeddedResponse("T-compact_Q330HR_BH_40");
+      ir = InstrumentResponse.loadEmbeddedResponse("STS-6_Q330HR_BH_40_nocoil");
       for ( Complex pole : ir.getPoles() ) {
         double poleFreq = pole.abs() / NumericUtils.TAU;
         System.out.println("POLE " + poleFreq + " Hz");

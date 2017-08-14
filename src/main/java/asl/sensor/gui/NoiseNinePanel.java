@@ -247,7 +247,7 @@ public class NoiseNinePanel extends NoisePanel {
     
     eastChart = buildChart( expResult.getData().get(1) );
     eastChart.setTitle("Self-noise (EAST)");
-    xyp = northChart.getXYPlot();
+    xyp = eastChart.getXYPlot();
     angle = new TextTitle();
     temp = getEastChartString();
     angle.setText(temp);

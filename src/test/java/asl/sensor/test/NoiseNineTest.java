@@ -36,7 +36,7 @@ public class NoiseNineTest {
   String currentDir = System.getProperty("user.dir");
 
   public DataStore setUpTest(String folder, String[] types, String freqName, 
-      String[] components, String ending, String respName) {
+      String[] components, String ending, String respName, boolean isEmbed) {
     
     DataStore ds = new DataStore();
 
@@ -57,7 +57,11 @@ public class NoiseNineTest {
           e.printStackTrace();
         }
         ds.setData(indexInStore, fName, dataNames.get(0) );
-        ds.setResponse(indexInStore, respName);
+        if (isEmbed) {
+          ds.setEmbedResponse(indexInStore, respName);
+        } else {
+          ds.setResponse(indexInStore, respName);
+        }
       }
     }
 
@@ -75,7 +79,7 @@ public class NoiseNineTest {
     String respName = "responses/RESP.XX.MOFO.00.BHZ";
     
     DataStore ds = 
-        setUpTest(folder, types, freqName, components, ending, respName);
+        setUpTest(folder, types, freqName, components, ending, respName, false);
 
     SimpleDateFormat sdf = InputPanel.SDF;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
@@ -178,9 +182,10 @@ public class NoiseNineTest {
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};
     String ending = ".512.seed";
-    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
+    String respName = "STS-1_Q330HR_BH_20";
     
-    DataStore ds = setUpTest(folder, types, freqName, components, ending, respName);
+    DataStore ds = 
+        setUpTest(folder, types, freqName, components, ending, respName, true);
 
     SimpleDateFormat sdf = InputPanel.SDF;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );

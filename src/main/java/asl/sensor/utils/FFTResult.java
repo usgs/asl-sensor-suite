@@ -560,7 +560,7 @@ public class FFTResult {
       powSpectDens[i] = Complex.ZERO;
     }
     
-    while ( rangeStart < data1.size() ) {
+    do {
       
       Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
       Complex[] fftResult2 = null;
@@ -575,8 +575,8 @@ public class FFTResult {
       List<Number> data1Range = 
           new ArrayList<Number>(
               list1.subList(rangeStart, upperBound) );
-      List<Number> data2Range = new ArrayList<Number>();
       
+      List<Number> data2Range = data1Range;
       if (!sameData) {
         data2Range = 
             new ArrayList<Number>(
@@ -676,7 +676,7 @@ public class FFTResult {
       rangeStart  += slider;
       rangeEnd    += slider;
       
-    }
+    } while ( rangeEnd <= data1.size() );
     
     // normalization time!
     double psdNormalization = 2.0 * period / padding;
@@ -685,6 +685,7 @@ public class FFTResult {
     // code was
     
     psdNormalization /= windowCorrection;
+    System.out.println(segsProcessed);
     psdNormalization /= segsProcessed; // NOTE: divisor here should be 13
     
     double[] frequencies = new double[singleSide];
