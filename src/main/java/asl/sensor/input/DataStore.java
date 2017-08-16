@@ -112,7 +112,7 @@ public class DataStore {
    * @param end End time to trim to
    */
   public DataStore(DataStore ds, long start, long end, int upperBound) {
-    this(ds);
+    this(ds, upperBound);
     
     this.trimAll(start, end);
   }
