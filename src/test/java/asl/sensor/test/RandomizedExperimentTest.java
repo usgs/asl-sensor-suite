@@ -35,8 +35,10 @@ import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
+import asl.sensor.utils.FFTResult.TaperType;
 
 public class RandomizedExperimentTest {
 
@@ -396,6 +398,94 @@ public class RandomizedExperimentTest {
     return ds;
   }
 
+  @Test
+  public void subtestLowFreqPSDs() {
+    try {
+      DataStore ds = setUpTest3();
+      DataBlock cal = ds.getBlock(0);
+      DataBlock out = ds.getBlock(1);
+      int maxLen = Math.max( out.size(), cal.size() );
+      int windowSize = 2;
+      while (windowSize <= maxLen) {
+        windowSize *= 2;
+      }
+      windowSize *= 2;
+      int change = windowSize;
+      TaperType taper = TaperType.MULT;
+      FFTResult fft1 = 
+          FFTResult.spectralCalc(cal, out, windowSize, change, taper);
+      FFTResult fft2 =
+          FFTResult.spectralCalc(out, out, windowSize, change, taper);
+      Complex[] calSpec = fft1.getFFT();
+      Complex[] outSpec = fft2.getFFT();
+      double[] freqs = fft1.getFreqs();
+      XYSeries calXYS = new XYSeries("Calibration spectrum amplitude");
+      XYSeries outXYS = new XYSeries("Sensor out spectrum amplitude");
+      XYSeries divXYS = new XYSeries("Power-spectral division");
+      XYSeries subXYS = new XYSeries("Power-spectral dB subtraction");
+      for (int i = 0; i < freqs.length; ++i) {
+        if ( freqs[i] != 0 && 1/freqs[i] >= 100 && 1/freqs[i] <= 1000) {
+          double calDB = 10 * Math.log10( calSpec[i].abs() );
+          double outDB = 10 * Math.log10( outSpec[i].abs() );
+          calXYS.add( 1/freqs[i], calDB );
+          outXYS.add( 1/freqs[i], outDB );
+          divXYS.add( 1/freqs[i], 
+              10 * Math.log10( outSpec[i].divide(calSpec[i]).abs() ) );
+          subXYS.add( 1/freqs[i], outDB - calDB);
+        }
+      }
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(calXYS);
+      xysc.addSeries(outXYS);
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          "Low-Freq Cal Input verification",
+          "Frequency",
+          "Spectrum magnitude (log scale)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      
+      xysc = new XYSeriesCollection(divXYS);
+      xysc.addSeries(subXYS);
+      JFreeChart chart2 = ChartFactory.createXYLineChart(
+          "Low-Freq Cal Deconvolution verification",
+          "Frequency",
+          "Spectrum magnitude (log scale)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      LogarithmicAxis la = new LogarithmicAxis("Period (s)");
+      
+      chart.getXYPlot().setDomainAxis(la);
+      chart2.getXYPlot().setDomainAxis(la);
+      
+      int width = 1280; int height = 960;
+      
+      PDDocument pdf = new PDDocument();
+      ReportingUtils.chartsToPDFPage(width, height, pdf, chart, chart2);
+      
+      String currentDir = System.getProperty("user.dir");
+      String testResultFolder = currentDir + "/testResultImages/";
+      File dir = new File(testResultFolder);
+      if ( !dir.exists() ) {
+        dir.mkdir();
+      }
+      String testResult = 
+          testResultFolder + "Low-frequency-spectral-data.pdf";
+      pdf.save( new File(testResult) );
+      pdf.close();
+      System.out.println("Output result has been written");
+      
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+  }
   
   @Test
   public void testCalculationResult1() {

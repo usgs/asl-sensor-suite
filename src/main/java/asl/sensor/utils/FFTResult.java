@@ -514,7 +514,40 @@ public class FFTResult {
     int range = list1.size()/4;
     int slider = range/4;
     
-    return spectralCalc(data1, data2, range, slider, TaperType.COS);
+    FFTResult data = spectralCalc(data1, data2, range, slider, TaperType.COS);
+    Complex[] powSpectDens = data.getFFT();
+    double[] frequencies = data.getFreqs();
+    
+    // do smoothing over neighboring frequencies; values taken from 
+    // asl.timeseries' PSD function
+    int singleSide = frequencies.length;
+    int nSmooth = 11, nHalf = 5;
+    Complex[] psdCFSmooth = new Complex[singleSide];
+    
+    int iw = 0;
+    
+    for (iw = 0; iw < nHalf; ++iw) {
+      psdCFSmooth[iw] = powSpectDens[iw];
+    }
+    
+    // iw should be icenter of nsmooth point window
+    for (; iw < singleSide - nHalf; ++iw){
+      int k1 = iw - nHalf;
+      int k2 = iw + nHalf;
+      
+      Complex sumC = Complex.ZERO;
+      for (int k = k1; k < k2; ++k) {
+        sumC = sumC.add(powSpectDens[k]);
+      }
+      psdCFSmooth[iw] = sumC.divide((double) nSmooth);
+    }
+    
+    // copy remaining into smoothed array
+    for (; iw < singleSide; ++iw) {
+      psdCFSmooth[iw] = powSpectDens[iw];
+    }
+    
+    return new FFTResult(psdCFSmooth, frequencies);
     
   }
   
@@ -526,7 +559,7 @@ public class FFTResult {
     boolean sameData = data1.getName().equals( data2.getName() );
     
     List<Number> list1 = data1.getData();
-    List<Number> list2 = null;
+    List<Number> list2 = list1;
     if (!sameData) {
       list2 = data2.getData();
     }
@@ -563,7 +596,7 @@ public class FFTResult {
     do {
       
       Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
-      Complex[] fftResult2 = null;
+      Complex[] fftResult2 = fftResult1;
       
       int upperBound = Math.min( rangeEnd, list1.size() );
       
@@ -586,7 +619,7 @@ public class FFTResult {
       // double arrays initialized with zeros, set as a power of two for FFT
       // (i.e., effectively pre-padded on initialization)
       double[] toFFT1 = new double[padding];
-      double[] toFFT2 = null;
+      double[] toFFT2 = toFFT1;
       
       // demean and detrend work in-place on the list
       TimeSeriesUtils.detrend(data1Range);
@@ -597,15 +630,18 @@ public class FFTResult {
         break;
       case MULT:
       default:
+        wss = 0;
         double[][] taperMat = getTaperSeries(data1Range.size(), TAPER_COUNT);
         for (int i = 0; i < data1Range.size(); ++i) {
           double point = data1Range.get(i).doubleValue();
           double sum = 0.;
           for (int j = 0; j < taperMat[0].length; ++j) {
             sum += point * taperMat[i][j];
+            wss += Math.pow(taperMat[i][j], 2);
           }
           // need to re-assign point here; primitives not assigned by reference
           // point = data1Range.get(i).doubleValue();
+          wss /= TAPER_COUNT;
           data1Range.set(i, sum / TAPER_COUNT);
         }
         break;
@@ -621,6 +657,7 @@ public class FFTResult {
           break;
         case MULT:
         default:
+          // wss is already calculated above
           double[][] taperMat = getTaperSeries(data2Range.size(), TAPER_COUNT);
           for (int i = 0; i < data2Range.size(); ++i) {
             double point = data2Range.get(i).doubleValue();
@@ -652,8 +689,8 @@ public class FFTResult {
       // use arraycopy now (as it's fast) to get the first half of the fft
       System.arraycopy(frqDomn1, 0, fftResult1, 0, fftResult1.length);
       
-      Complex[] frqDomn2 = null;
-      if (toFFT2 != null) {
+      Complex[] frqDomn2 = frqDomn1;
+      if (!sameData) {
         frqDomn2 = fft.transform(toFFT2, TransformType.FORWARD);
         System.arraycopy(frqDomn2, 0, fftResult2, 0, fftResult2.length);
       }
@@ -662,7 +699,7 @@ public class FFTResult {
         
         Complex val1 = fftResult1[i];
         Complex val2 = val1;
-        if (fftResult2 != null) {
+        if (!sameData) {
           val2 = fftResult2[i];
         }
         
@@ -695,35 +732,7 @@ public class FFTResult {
       frequencies[i] = i * deltaFreq;
     }
     
-    // do smoothing over neighboring frequencies; values taken from 
-    // asl.timeseries' PSD function
-    int nSmooth = 11, nHalf = 5;
-    Complex[] psdCFSmooth = new Complex[singleSide];
-    
-    int iw = 0;
-    
-    for (iw = 0; iw < nHalf; ++iw) {
-      psdCFSmooth[iw] = powSpectDens[iw];
-    }
-    
-    // iw should be icenter of nsmooth point window
-    for (; iw < singleSide - nHalf; ++iw){
-      int k1 = iw - nHalf;
-      int k2 = iw + nHalf;
-      
-      Complex sumC = Complex.ZERO;
-      for (int k = k1; k < k2; ++k) {
-        sumC = sumC.add(powSpectDens[k]);
-      }
-      psdCFSmooth[iw] = sumC.divide((double) nSmooth);
-    }
-    
-    // copy remaining into smoothed array
-    for (; iw < singleSide; ++iw) {
-      psdCFSmooth[iw] = powSpectDens[iw];
-    }
-    
-    return new FFTResult(psdCFSmooth, frequencies);
+    return new FFTResult(powSpectDens, frequencies);
     
   }
   

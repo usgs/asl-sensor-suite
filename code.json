@@ -1,0 +1,29 @@
+{
+  "name": "asl_sensor_suite",
+  "organization": "U.S. Geological Survey",
+  "description": "Java program meant to be one-stop-shop for seismic sensor testing",
+  "status": "preliminary",
+  "homepage": "https://github.com",
+  "downloadURL": "https://github.com/usgs/asl_sensor_suite/archive/master.zip",
+
+  "openSourceProject": 1,
+  "license": "https://github.com/usgs/asl_sensor_suite/blob/master/LICENSE.md",
+  "vcs": "git",
+  "repository": "https://github.com/usgs/asl_sensor_suite.git",
+
+  "tags": [
+    "Seismic-Hazards",
+    "ASL"
+  ],
+  "languages": [
+    "English"
+  ],
+
+  "contact": {
+    "name": "Aaron Kearns",
+    "email": "akearns@usgs.gov"
+  },
+  "updated": {
+    "metadataLastUpdated": "15 Aug 2017"
+  }
+}

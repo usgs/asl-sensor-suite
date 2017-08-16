@@ -1,10 +1,9 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
@@ -192,20 +191,19 @@ extends Experiment implements ParameterValidator {
     // use variable-size data structures to prevent issues with rounding
     // based on calculation of where minimum index should exist
     List<Double> freqList = new LinkedList<Double>();
-    Map<Double, Complex> numPSDMap = new HashMap<Double, Complex>();
-    Map<Double, Complex> denomPSDMap = new HashMap<Double, Complex>();
+    int startIdx = -1;
     for (int i = 0; i < freqs.length; ++i) {
       
       if (freqs[i] < minFreq) {
         continue;
+      } else if (startIdx < 0) {
+        startIdx = i;
       }
       if (freqs[i] > maxFreq) {
         break;
       }
       
       freqList.add(freqs[i]);
-      numPSDMap.put(freqs[i], numeratorPSD.getFFT()[i]);
-      denomPSDMap.put(freqs[i], denominatorPSD.getFFT()[i]);
     }
     
     double zeroTarget; // frequency to set all curves to zero at
@@ -220,16 +218,20 @@ extends Experiment implements ParameterValidator {
     int len = freqList.size(); // length of trimmed frequencies
     freqs = new double[len];
     // trim the PSDs to the data in the trimmed frequency range
-    Complex[] numeratorPSDVals = new Complex[len];
-    Complex[] denominatorPSDVals = new Complex[len];
+
+    int endIdx = startIdx + len;
+    Complex[] numeratorPSDVals = 
+        Arrays.copyOfRange(numeratorPSD.getFFT(), startIdx, endIdx);
+    Complex[] denominatorPSDVals = 
+        Arrays.copyOfRange(denominatorPSD.getFFT(), startIdx, endIdx);
     
     for (int i = 0; i < len; ++i) {
       freqs[i] = freqList.get(i);
       
-      numeratorPSDVals[i] = numPSDMap.get(freqs[i]);
-      denominatorPSDVals[i] = denomPSDMap.get(freqs[i]);
+      // numeratorPSDVals[i] = numPSDMap.get(freqs[i]);
+      // denominatorPSDVals[i] = denomPSDMap.get(freqs[i]);
       
-      if ( freqs[i] == 1.0 || 
+      if ( freqs[i] == zeroTarget || 
           (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) {
         normalIdx = i;
       }
