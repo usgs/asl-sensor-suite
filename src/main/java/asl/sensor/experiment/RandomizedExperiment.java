@@ -28,7 +28,6 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.FFTResult.TaperType;
 import asl.sensor.utils.NumericUtils;
 
 /**
@@ -133,7 +132,7 @@ extends Experiment implements ParameterValidator {
     DataBlock sensorOut = ds.getBlock(sensorOutIdx);
     fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIdx) );
     
-    System.out.println(calib.size() + ", " + sensorOut.size());
+    // System.out.println(calib.size() + ", " + sensorOut.size());
     
     dataNames.add( calib.getName() );
     dataNames.add( sensorOut.getName() );
@@ -147,28 +146,16 @@ extends Experiment implements ParameterValidator {
     // imaginary terms from the denominator due to multiplication with the
     // complex conjugate
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
-    int windowSize, change;
-    TaperType taper;
     // also, use those frequencies to get the applied response to input
+    FFTResult numeratorPSD, denominatorPSD;
     if (lowFreq) {
-      int maxLen = Math.max( sensorOut.size(), calib.size() );
-      windowSize = 2;
-      while (windowSize <= maxLen) {
-        windowSize *= 2;
-      }
-      windowSize *= 2;
-      change = windowSize;
-      taper = TaperType.MULT;
+      numeratorPSD = FFTResult.spectralCalcMultitaper(sensorOut, calib);
+      denominatorPSD = FFTResult.spectralCalcMultitaper(calib, calib);
     } else {
-      windowSize = sensorOut.size() / 4;
-      change = windowSize / 4;
-      taper = TaperType.COS;
+      numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
+      denominatorPSD = FFTResult.spectralCalc(calib, calib);
     }
     
-    FFTResult numeratorPSD = 
-        FFTResult.spectralCalc(sensorOut, calib, windowSize, change, taper);
-    FFTResult denominatorPSD = 
-        FFTResult.spectralCalc(calib, calib, windowSize, change, taper);
     freqs = numeratorPSD.getFreqs(); // should be same for both results
     
     // store nyquist rate of data because freqs will be trimmed down later

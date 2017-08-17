@@ -355,12 +355,12 @@ public class FFTResultTest {
   // @Test
   public void testMultitaper() {
     final int TAPERS = 12;
-    double[][] taper = FFTResult.getTaperSeries(2000, TAPERS);
+    double[][] taper = FFTResult.getMultitaperSeries(2000, TAPERS);
     XYSeriesCollection xysc = new XYSeriesCollection();
-    for (int j = 0; j < taper[0].length; ++j) {
+    for (int j = 0; j < taper.length; ++j) {
       XYSeries xys = new XYSeries("Taper " + j);
-      for (int i = 0; i < taper.length; ++i) {
-        xys.add(i, taper[i][j]);
+      for (int i = 0; i < taper[j].length; ++i) {
+        xys.add(i, taper[j][i]);
       }
       xysc.addSeries(xys);
     }

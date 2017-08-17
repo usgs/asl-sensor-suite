@@ -373,7 +373,7 @@ public class AzimuthExperiment extends Experiment {
   
   /**
    * Get the uncertainty of the angle 
-   * @return
+   * @return Uncertainty estimation of the current angle (from variance)
    */
   public double getUncertainty() {
     return Math.toDegrees(uncert);

@@ -572,6 +572,11 @@ public class DataStore {
         continue;
       }
       DataBlock db = getBlock(i);
+      
+      if ( end < db.getStartTime() || start > db.getEndTime() ) {
+        throw new IndexOutOfBoundsException("Time range invalid for some data");
+      }
+      
       if ( start < db.getStartTime() ) {
         start = db.getStartTime();
       }

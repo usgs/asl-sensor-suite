@@ -193,15 +193,24 @@ public class FFTResult {
     
   }
   
-  public static double[][] getTaperSeries(int winLen, int numTapers) {
-    double[][] taperMat = new double[winLen][numTapers];
+  /**
+   * Produce a multitaper series using a sine function for use in spectral
+   * calculations (i.e., specified when calculating PSD values)
+   * @param winLen Length of the window (how long the data is)
+   * @param numTapers Number of tapers to apply to the data
+   * @return 2D array with first dimension being the timeseries length and
+   * the second dimension being the taper count
+   */
+  public static double[][] getMultitaperSeries(int winLen, int numTapers) {
+    double[][] taperMat = new double[numTapers][winLen];
     
     double denom = winLen + 1;
     double scale = Math.sqrt(2 / denom);
     
-    for (int i = 0; i < winLen; ++i) {
-      for (int j = 0; j < numTapers; ++j) {
-        taperMat[i][j] = scale * Math.sin(Math.PI * (i + 1) * (j + 1) / denom);
+    // TODO: may need to check correct loop indices for efficiency
+    for (int j = 0; j < numTapers; ++j) {
+      for (int i = 0; i < winLen; ++i) {
+        taperMat[j][i] = scale * Math.sin(Math.PI * (i + 1) * (j + 1) / denom);
       }
     }
     
@@ -508,19 +517,150 @@ public class FFTResult {
    */
   public static FFTResult spectralCalc(DataBlock data1, DataBlock data2) {
 
+    // this is ugly logic here, but this saves us issues with looping
+    // and calculating the same data twice
+    boolean sameData = data1.getName().equals( data2.getName() );
+    
     List<Number> list1 = data1.getData();
+    List<Number> list2 = null;
+    if (!sameData) {
+      list2 = data2.getData();
+    }
     
     // divide into windows of 1/4, moving up 1/16 of the data at a time
+    
     int range = list1.size()/4;
     int slider = range/4;
     
-    FFTResult data = spectralCalc(data1, data2, range, slider, TaperType.COS);
-    Complex[] powSpectDens = data.getFFT();
-    double[] frequencies = data.getFreqs();
+    // period is 1/sample rate in seconds
+    // since the interval data is just that multiplied by a large number
+    // let's divide it by that large number to get our period
+    
+    // shouldn't need to worry about a cast here
+    double period = 1.0 / TimeSeriesUtils.ONE_HZ_INTERVAL;
+    period *= data1.getInterval();
+    
+    int padding = 2;
+    while (padding < range) {
+      padding *= 2;
+    }
+    
+    int singleSide = padding / 2 + 1;
+    double deltaFreq = 1. / (padding * period);
+    
+    Complex[] powSpectDens = new Complex[singleSide];
+    double wss = 0;
+    
+    int segsProcessed = 0;
+    int rangeStart = 0;
+    int rangeEnd = range;
+    
+    for (int i = 0; i < powSpectDens.length; ++i) {
+      powSpectDens[i] = Complex.ZERO;
+    }
+    
+    while ( rangeEnd <= data1.size() ) {
+      
+      Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
+      Complex[] fftResult2 = null;
+      
+      if (!sameData) {
+        fftResult2 = new Complex[singleSide];
+      }
+      
+      // give us a new list we can modify to get the data of
+      List<Number> data1Range = 
+          new ArrayList<Number>(
+              list1.subList(rangeStart, rangeEnd) );
+      List<Number> data2Range = null;
+      
+      if (!sameData) {
+        data2Range = 
+            new ArrayList<Number>(
+                list2.subList(rangeStart, rangeEnd) );
+      }
+       
+      // double arrays initialized with zeros, set as a power of two for FFT
+      // (i.e., effectively pre-padded on initialization)
+      double[] toFFT1 = new double[padding];
+      double[] toFFT2 = null;
+      
+      // demean and detrend work in-place on the list
+      TimeSeriesUtils.detrend(data1Range);
+      TimeSeriesUtils.demeanInPlace(data1Range);
+      wss = cosineTaper(data1Range, TAPER_WIDTH);
+      // presumably we only need the last value of wss
+      
+      if (!sameData) {
+        TimeSeriesUtils.demeanInPlace(data2Range);
+        TimeSeriesUtils.detrend(data2Range);
+        wss = cosineTaper(data2Range, TAPER_WIDTH);
+        toFFT2 = new double[padding];
+      }
+      
+
+      for (int i = 0; i < data1Range.size(); ++i) {
+        // no point in using arraycopy -- must make sure each Number's a double
+        toFFT1[i] = data1Range.get(i).doubleValue();
+        if (!sameData) {
+          toFFT2[i] = data2Range.get(i).doubleValue();
+        }
+      }
+      
+      FastFourierTransformer fft = 
+          new FastFourierTransformer(DftNormalization.STANDARD);
+
+      Complex[] frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
+      // use arraycopy now (as it's fast) to get the first half of the fft
+      System.arraycopy(frqDomn1, 0, fftResult1, 0, fftResult1.length);
+      
+      Complex[] frqDomn2 = null;
+      if (toFFT2 != null) {
+        frqDomn2 = fft.transform(toFFT2, TransformType.FORWARD);
+        System.arraycopy(frqDomn2, 0, fftResult2, 0, fftResult2.length);
+      }
+      
+
+      
+      for (int i = 0; i < singleSide; ++i) {
+        
+        Complex val1 = fftResult1[i];
+        Complex val2 = val1;
+        if (fftResult2 != null) {
+          val2 = fftResult2[i];
+        }
+        
+        powSpectDens[i] = 
+            powSpectDens[i].add( 
+                val1.multiply( 
+                    val2.conjugate() ) );
+      }
+      
+      ++segsProcessed;
+      rangeStart  += slider;
+      rangeEnd    += slider;
+      
+    }
+    
+    // normalization time!
+    
+    double psdNormalization = 2.0 * period / padding;
+    double windowCorrection = wss / (double) range;
+    // it only uses the last value of wss, but that was how the original
+    // code was
+    
+    psdNormalization /= windowCorrection;
+    psdNormalization /= segsProcessed; // NOTE: divisor here should be 13
+    
+    double[] frequencies = new double[singleSide];
+    
+    for (int i = 0; i < singleSide; ++i) {
+      powSpectDens[i] = powSpectDens[i].multiply(psdNormalization);
+      frequencies[i] = i * deltaFreq;
+    }
     
     // do smoothing over neighboring frequencies; values taken from 
     // asl.timeseries' PSD function
-    int singleSide = frequencies.length;
     int nSmooth = 11, nHalf = 5;
     Complex[] psdCFSmooth = new Complex[singleSide];
     
@@ -551,9 +691,14 @@ public class FFTResult {
     
   }
   
-  public static FFTResult spectralCalc(DataBlock data1, DataBlock data2, 
-      int range, int slider, TaperType taper) {
-    
+  /**
+   * Multitaper-based method for calculating PSD of data
+   * @param data1
+   * @param data2
+   * @return
+   */
+  public static FFTResult 
+  spectralCalcMultitaper(DataBlock data1, DataBlock data2) {
     // this is ugly logic here, but this saves us issues with looping
     // and calculating the same data twice
     boolean sameData = data1.getName().equals( data2.getName() );
@@ -564,14 +709,8 @@ public class FFTResult {
       list2 = data2.getData();
     }
     
-    // period is 1/sample rate in seconds
-    // since the interval data is just that multiplied by a large number
-    // let's divide it by that large number to get our period
-    
-    // shouldn't need to worry about a cast here
-    
     int padding = 2;
-    while (padding < range) {
+    while ( padding < ( data1.size() * 2 ) ) {
       padding *= 2;
     }
     
@@ -583,153 +722,96 @@ public class FFTResult {
     double deltaFreq = 1. / (padding * period);
     
     Complex[] powSpectDens = new Complex[singleSide];
-    double wss = 1.;
-    
-    int segsProcessed = 0;
-    int rangeStart = 0;
-    int rangeEnd = range;
     
     for (int i = 0; i < powSpectDens.length; ++i) {
       powSpectDens[i] = Complex.ZERO;
     }
+   
+    Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
+    Complex[] fftResult2 = fftResult1;
+    // instantiate FFT-calculating object
+    FastFourierTransformer fft = 
+        new FastFourierTransformer(DftNormalization.STANDARD);
     
-    do {
-      
-      Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
-      Complex[] fftResult2 = fftResult1;
-      
-      int upperBound = Math.min( rangeEnd, list1.size() );
-      
-      if (!sameData) {
-        fftResult2 = new Complex[singleSide];
-      }
-      
-      // give us a new list we can modify to get the data of
-      List<Number> data1Range = 
-          new ArrayList<Number>(
-              list1.subList(rangeStart, upperBound) );
-      
-      List<Number> data2Range = data1Range;
-      if (!sameData) {
-        data2Range = 
-            new ArrayList<Number>(
-                list2.subList(rangeStart, upperBound) );
-      }
-       
-      // double arrays initialized with zeros, set as a power of two for FFT
-      // (i.e., effectively pre-padded on initialization)
-      double[] toFFT1 = new double[padding];
-      double[] toFFT2 = toFFT1;
-      
-      // demean and detrend work in-place on the list
-      TimeSeriesUtils.detrend(data1Range);
-      TimeSeriesUtils.demeanInPlace(data1Range);
-      switch (taper) {
-      case COS:
-        wss = cosineTaper(data1Range, TAPER_WIDTH);
-        break;
-      case MULT:
-      default:
-        wss = 0;
-        double[][] taperMat = getTaperSeries(data1Range.size(), TAPER_COUNT);
-        for (int i = 0; i < data1Range.size(); ++i) {
-          double point = data1Range.get(i).doubleValue();
-          double sum = 0.;
-          for (int j = 0; j < taperMat[0].length; ++j) {
-            sum += point * taperMat[i][j];
-            wss += Math.pow(taperMat[i][j], 2);
-          }
-          // need to re-assign point here; primitives not assigned by reference
-          // point = data1Range.get(i).doubleValue();
-          wss /= TAPER_COUNT;
-          data1Range.set(i, sum / TAPER_COUNT);
-        }
-        break;
-      }
-      // presumably we only need the last value of wss
-      
-      if (!sameData) {
-        TimeSeriesUtils.demeanInPlace(data2Range);
-        TimeSeriesUtils.detrend(data2Range);
-        switch (taper) {
-        case COS:
-          wss = cosineTaper(data2Range, TAPER_WIDTH);
-          break;
-        case MULT:
-        default:
-          // wss is already calculated above
-          double[][] taperMat = getTaperSeries(data2Range.size(), TAPER_COUNT);
-          for (int i = 0; i < data2Range.size(); ++i) {
-            double point = data2Range.get(i).doubleValue();
-            double sum = 0.;
-            for (int j = 0; j < taperMat[0].length; ++j) {
-              sum += point * taperMat[i][j];
-            }
-            // need to re-assign point here; not evaluated by reference
-            // point = data2Range.get(i).doubleValue();
-            data2Range.set(i, sum / TAPER_COUNT);
-          }
-          break;
-        }
-        toFFT2 = new double[padding];
-      }
+    if (!sameData) {
+      fftResult2 = new Complex[singleSide];
+    }
+    
+    // give us a new list we can modify to get the data of
+    List<Number> data1Range = new ArrayList<Number>(list1);
+    List<Number> data2Range = data1Range;
+    if (!sameData) {
+      data2Range = new ArrayList<Number>(list2);
+    }
+    
+    // double arrays initialized with zeros, set as a power of two for FFT
+    // (i.e., effectively pre-padded on initialization)
+    double[] toFFT1 = new double[padding];
+    double[] toFFT2 = toFFT1;
+    Complex[] frqDomn1, frqDomn2;
+    
+    // demean and detrend work in-place on the list
+    TimeSeriesUtils.detrend(data1Range);
+    TimeSeriesUtils.demeanInPlace(data1Range);
 
+
+    double[][] taperMat = 
+        getMultitaperSeries(data1Range.size(), TAPER_COUNT);
+
+    for (int j = 0; j < taperMat.length; ++j) {
+      double[] taperCurve = taperMat[j];
+      double taperSum = 0.;
       for (int i = 0; i < data1Range.size(); ++i) {
-        // no point in using arraycopy -- must make sure each Number's a double
-        toFFT1[i] = data1Range.get(i).doubleValue();
-        if (!sameData) {
-          toFFT2[i] = data2Range.get(i).doubleValue();
-        }
+        taperSum += taperCurve[i];
+        double point = data1Range.get(i).doubleValue();
+        toFFT1[i] = point * taperMat[j][i];
       }
-      
-      FastFourierTransformer fft = 
-          new FastFourierTransformer(DftNormalization.STANDARD);
-
-      Complex[] frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
+      frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
       // use arraycopy now (as it's fast) to get the first half of the fft
       System.arraycopy(frqDomn1, 0, fftResult1, 0, fftResult1.length);
-      
-      Complex[] frqDomn2 = frqDomn1;
-      if (!sameData) {
-        frqDomn2 = fft.transform(toFFT2, TransformType.FORWARD);
-        System.arraycopy(frqDomn2, 0, fftResult2, 0, fftResult2.length);
+      for (int i = 0; i < fftResult1.length; ++i) {
+        fftResult1[i] = frqDomn1[i].add( fftResult1[i].divide(taperSum) );
       }
-      
-      for (int i = 0; i < singleSide; ++i) {
-        
-        Complex val1 = fftResult1[i];
-        Complex val2 = val1;
-        if (!sameData) {
-          val2 = fftResult2[i];
+    }
+
+    for (int i = 0; i < fftResult1.length; ++i) {
+      fftResult1[i] = fftResult1[i].divide(TAPER_COUNT);
+    }
+    
+    if (!sameData) {
+      TimeSeriesUtils.demeanInPlace(data2Range);
+      TimeSeriesUtils.detrend(data2Range);
+      for (int j = 0; j < taperMat.length; ++j) {
+        double[] taperCurve = taperMat[j];
+        double taperSum = 0.;
+        for (int i = 0; i < data2Range.size(); ++i) {
+          taperSum += taperCurve[i];
+          double point = data2Range.get(i).doubleValue();
+          toFFT2[i] = point * taperMat[j][i];
         }
-        
-        powSpectDens[i] = 
-            powSpectDens[i].add( 
-                val1.multiply( 
-                    val2.conjugate() ) );
+        frqDomn2 = fft.transform(toFFT2, TransformType.FORWARD);
+        // use arraycopy now (as it's fast) to get the first half of the fft
+        System.arraycopy(frqDomn2, 0, fftResult2, 0, fftResult2.length);
+        for (int i = 0; i < fftResult1.length; ++i) {
+          fftResult2[i] = frqDomn2[i].add( fftResult2[i].divide(taperSum) );
+        }
       }
-      
-      ++segsProcessed;
-      rangeStart  += slider;
-      rangeEnd    += slider;
-      
-    } while ( rangeEnd <= data1.size() );
-    
-    // normalization time!
-    double psdNormalization = 2.0 * period / padding;
-    double windowCorrection = wss / (double) range;
-    // it only uses the last value of wss, but that was how the original
-    // code was
-    
-    psdNormalization /= windowCorrection;
-    // System.out.println(segsProcessed);
-    psdNormalization /= segsProcessed; // NOTE: divisor here should be 13
+      for (int i = 0; i < fftResult1.length; ++i) {
+        fftResult2[i] = fftResult2[i].divide(TAPER_COUNT);
+      }
+    }
     
     double[] frequencies = new double[singleSide];
-    
     for (int i = 0; i < singleSide; ++i) {
-      powSpectDens[i] = powSpectDens[i].multiply(psdNormalization);
       frequencies[i] = i * deltaFreq;
+      Complex val1 = fftResult1[i];
+      Complex val2 = val1;
+      if (!sameData) {
+        val2 = fftResult2[i];
+      }
+      
+      powSpectDens[i] = 
+          powSpectDens[i].add( val1.multiply( val2.conjugate() ) );
     }
     
     return new FFTResult(powSpectDens, frequencies);
@@ -796,9 +878,20 @@ public class FFTResult {
     return transform.length;
   }
 
+  /**
+   * Enumerated type used to specify the type of taper used in spectral methods
+   * @author akearns
+   *
+   */
   public enum TaperType {
-    COS, // cosine taper
-    MULT; // multi-taper function
+    /**
+     * Cosine taper
+     */
+    COS,
+    /**
+     * Multitaper (Slepian series)
+     */
+    MULT;
   }
   
 }
