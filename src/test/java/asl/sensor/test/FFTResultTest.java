@@ -249,7 +249,7 @@ public class FFTResultTest {
       Pair<Long, Map<Long, Number>> dataMap = 
           TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
       DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
-      long interval = dataMap.getFirst();
+      // long interval = dataMap.getFirst();
       Map<Long, Number> timeSeriesMap = dataMap.getSecond();
       List<Long> times = new ArrayList<Long>( timeSeriesMap.keySet() );
       Collections.sort(times);
@@ -373,7 +373,6 @@ public class FFTResultTest {
     try {
       ImageIO.write( bi, "png", file );
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     }

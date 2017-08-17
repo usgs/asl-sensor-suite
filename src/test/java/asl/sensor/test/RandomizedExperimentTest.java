@@ -38,7 +38,6 @@ import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
-import asl.sensor.utils.FFTResult.TaperType;
 
 public class RandomizedExperimentTest {
 

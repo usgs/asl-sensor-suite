@@ -727,14 +727,20 @@ public class FFTResult {
       powSpectDens[i] = Complex.ZERO;
     }
    
-    Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
+    Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT result
+    for (int i = 0; i < fftResult1.length; ++i) {
+      fftResult1[i] = Complex.ZERO;
+    }
     Complex[] fftResult2 = fftResult1;
     // instantiate FFT-calculating object
     FastFourierTransformer fft = 
         new FastFourierTransformer(DftNormalization.STANDARD);
     
     if (!sameData) {
-      fftResult2 = new Complex[singleSide];
+      fftResult2 = new Complex[singleSide];    
+      for (int i = 0; i < fftResult2.length; ++i) {
+        fftResult2[i] = Complex.ZERO;
+      }
     }
     
     // give us a new list we can modify to get the data of
@@ -746,31 +752,27 @@ public class FFTResult {
     
     // double arrays initialized with zeros, set as a power of two for FFT
     // (i.e., effectively pre-padded on initialization)
-    double[] toFFT1 = new double[padding];
-    double[] toFFT2 = toFFT1;
-    Complex[] frqDomn1, frqDomn2;
+
+    double[][] taperMat = 
+        getMultitaperSeries(data1Range.size(), TAPER_COUNT);
     
     // demean and detrend work in-place on the list
     TimeSeriesUtils.detrend(data1Range);
     TimeSeriesUtils.demeanInPlace(data1Range);
-
-
-    double[][] taperMat = 
-        getMultitaperSeries(data1Range.size(), TAPER_COUNT);
-
+    // apply each taper, take FFT, and average the overall results
     for (int j = 0; j < taperMat.length; ++j) {
+      Complex[] frqDomn;
+      double[] toFFT = new double[padding];
       double[] taperCurve = taperMat[j];
       double taperSum = 0.;
       for (int i = 0; i < data1Range.size(); ++i) {
         taperSum += taperCurve[i];
         double point = data1Range.get(i).doubleValue();
-        toFFT1[i] = point * taperMat[j][i];
+        toFFT[i] = point * taperMat[j][i];
       }
-      frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
-      // use arraycopy now (as it's fast) to get the first half of the fft
-      System.arraycopy(frqDomn1, 0, fftResult1, 0, fftResult1.length);
+      frqDomn = fft.transform(toFFT, TransformType.FORWARD);
       for (int i = 0; i < fftResult1.length; ++i) {
-        fftResult1[i] = frqDomn1[i].add( fftResult1[i].divide(taperSum) );
+        fftResult1[i] = fftResult1[i].add( frqDomn[i].divide(taperSum) );
       }
     }
 
@@ -782,18 +784,18 @@ public class FFTResult {
       TimeSeriesUtils.demeanInPlace(data2Range);
       TimeSeriesUtils.detrend(data2Range);
       for (int j = 0; j < taperMat.length; ++j) {
+        double[] toFFT = new double[padding];
+        Complex[] frqDomn;
         double[] taperCurve = taperMat[j];
         double taperSum = 0.;
         for (int i = 0; i < data2Range.size(); ++i) {
           taperSum += taperCurve[i];
           double point = data2Range.get(i).doubleValue();
-          toFFT2[i] = point * taperMat[j][i];
+          toFFT[i] = point * taperMat[j][i];
         }
-        frqDomn2 = fft.transform(toFFT2, TransformType.FORWARD);
-        // use arraycopy now (as it's fast) to get the first half of the fft
-        System.arraycopy(frqDomn2, 0, fftResult2, 0, fftResult2.length);
+        frqDomn = fft.transform(toFFT, TransformType.FORWARD);
         for (int i = 0; i < fftResult1.length; ++i) {
-          fftResult2[i] = frqDomn2[i].add( fftResult2[i].divide(taperSum) );
+          fftResult2[i] = fftResult2[i].add( frqDomn[i].divide(taperSum) );;
         }
       }
       for (int i = 0; i < fftResult1.length; ++i) {
