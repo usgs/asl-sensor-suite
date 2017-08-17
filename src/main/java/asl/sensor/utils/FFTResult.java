@@ -400,7 +400,7 @@ public class FFTResult {
       frequencies[i] = i * deltaFrq;
     }
     
-    System.out.println(frequencies[singleSide - 1]);
+    // System.out.println(frequencies[singleSide - 1]);
     
     return new FFTResult(fftOut, frequencies);
     
@@ -722,7 +722,7 @@ public class FFTResult {
     // code was
     
     psdNormalization /= windowCorrection;
-    System.out.println(segsProcessed);
+    // System.out.println(segsProcessed);
     psdNormalization /= segsProcessed; // NOTE: divisor here should be 13
     
     double[] frequencies = new double[singleSide];

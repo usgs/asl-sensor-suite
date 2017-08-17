@@ -133,6 +133,8 @@ extends Experiment implements ParameterValidator {
     DataBlock sensorOut = ds.getBlock(sensorOutIdx);
     fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIdx) );
     
+    System.out.println(calib.size() + ", " + sensorOut.size());
+    
     dataNames.add( calib.getName() );
     dataNames.add( sensorOut.getName() );
     dataNames.add( fitResponse.getName() );

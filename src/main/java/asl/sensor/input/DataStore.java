@@ -572,8 +572,11 @@ public class DataStore {
         continue;
       }
       DataBlock db = getBlock(i);
-      if ( start < db.getStartTime() || end > db.getEndTime() ) {
-        throw new IndexOutOfBoundsException();
+      if ( start < db.getStartTime() ) {
+        start = db.getStartTime();
+      }
+      if ( end > db.getEndTime() ) {
+        end = db.getEndTime();
       }
     }
     
