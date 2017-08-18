@@ -766,7 +766,7 @@ public class FFTResult {
       double[] taperCurve = taperMat[j];
       double taperSum = 0.;
       for (int i = 0; i < data1Range.size(); ++i) {
-        taperSum += taperCurve[i];
+        taperSum += Math.abs(taperCurve[i]);
         double point = data1Range.get(i).doubleValue();
         toFFT[i] = point * taperMat[j][i];
       }
@@ -789,7 +789,7 @@ public class FFTResult {
         double[] taperCurve = taperMat[j];
         double taperSum = 0.;
         for (int i = 0; i < data2Range.size(); ++i) {
-          taperSum += taperCurve[i];
+          taperSum += Math.abs(taperCurve[i]);
           double point = data2Range.get(i).doubleValue();
           toFFT[i] = point * taperMat[j][i];
         }
