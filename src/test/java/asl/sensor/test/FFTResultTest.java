@@ -400,17 +400,49 @@ public class FFTResultTest {
       double[] toFFT = new double[size];
       int last = toFFT.length-1;
       double[] taperCurve = taper[j];
+      double taperSum = 0.;
       System.out.println(j + "-th taper curve first point: " + taperCurve[0]);
       System.out.println(j + "-th taper curve last point: " + taperCurve[last]);
       for (int i = 0; i < timeSeries.size(); ++i) {
+        taperSum += Math.abs(taperCurve[i]);
         double point = timeSeries.get(i).doubleValue();
         toFFT[i] = point * taperCurve[i];
       }
       System.out.println(j + "-th tapered-data first point: " + toFFT[0]);
       System.out.println(j + "-th tapered-data last point: " + toFFT[last]);
+      
       assertEquals(0., toFFT[0], 1E-15);
-
       assertEquals(0., toFFT[last], 1E-15);
+    }
+  }
+  
+  @Test
+  public void showMultitaperPlot() {
+    final int TAPERS = 12;
+    double[][] taper = FFTResult.getMultitaperSeries(2000, TAPERS);
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    for (int j = 0; j < taper.length; ++j) {
+      XYSeries xys = new XYSeries("Taper " + j);
+      double[] taperLine = taper[j];
+      //System.out.println("TAPER LINE LEN: " + taperLine.length);
+      //System.out.println("LAST VALUE: " + taperLine[taperLine.length - 1]);
+      for (int i = 0; i < taperLine.length; ++i) {
+        xys.add(i, taperLine[i]);
+      }
+      xysc.addSeries(xys);
+    }
+    
+    JFreeChart chart = 
+        ChartFactory.createXYLineChart("MULTITAPER", "taper series index", 
+            "taper value", xysc);
+    BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+    File file = new File("testResultImages/multitaper plot.png");
+    try {
+      ImageIO.write( bi, "png", file );
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
     }
   }
   
