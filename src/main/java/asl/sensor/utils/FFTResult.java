@@ -718,14 +718,22 @@ public class FFTResult {
       list2 = data2.getData();
     }
     
+    return spectralCalcMultitaper( list1, list2, data1.getInterval() );
+  }
+    
+  public static FFTResult 
+  spectralCalcMultitaper(List<Number> list1, List<Number> list2, long ivl) {
+    
+    boolean sameData = list1.equals(list2);
+    
     int padding = 2;
-    while ( padding < ( data1.size() ) ) {
+    while ( padding < ( list1.size() ) ) {
       padding *= 2;
     }
     
     final int TAPER_COUNT = 12;
     double period = 1.0 / TimeSeriesUtils.ONE_HZ_INTERVAL;
-    period *= data1.getInterval();
+    period *= ivl;
     
     int singleSide = padding / 2 + 1;
     double deltaFreq = 1. / (padding * period);
@@ -778,7 +786,7 @@ public class FFTResult {
       for (int i = 0; i < data1Range.size(); ++i) {
         taperSum += Math.abs(taperCurve[i]);
         double point = data1Range.get(i).doubleValue();
-        toFFT[i] = point * taperMat[j][i];
+        toFFT[i] = point * taperCurve[i];
       }
       frqDomn = fft.transform(toFFT, TransformType.FORWARD);
       for (int i = 0; i < fftResult1.length; ++i) {

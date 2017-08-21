@@ -43,7 +43,7 @@ import asl.sensor.utils.TimeSeriesUtils;
 public class FFTResultTest {
 
   @Test
-  public final void cosineTaperTest() throws Exception {
+  public void cosineTaperTest() throws Exception {
     Number[] x = { 5, 5, 5, 5, 5 };
     List<Number> toTaper = Arrays.asList(x);
     Double[] tapered = { 0d, 4.5d, 5d, 4.5d, 0d };
@@ -60,6 +60,34 @@ public class FFTResultTest {
     }
   }
   
+  
+  @Test
+  public void fftZerosTestWelch() {
+    long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
+    List<Number> data = new ArrayList<Number>();
+    for (int i = 0; i < 1000; ++i) {
+      data.add(0.);
+    }
+    FFTResult fftr = FFTResult.spectralCalc(data, data, interval);
+    Complex[] values = fftr.getFFT();
+    for (Complex c : values) {
+      assertTrue(c.equals(Complex.ZERO));
+    }
+  }
+  
+  @Test
+  public void fftZerosTestMultitaper() {
+    long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
+    List<Number> data = new ArrayList<Number>();
+    for (int i = 0; i < 1000; ++i) {
+      data.add(0.);
+    }
+    FFTResult fftr = FFTResult.spectralCalcMultitaper(data, data, interval);
+    Complex[] values = fftr.getFFT();
+    for (Complex c : values) {
+      assertTrue(c.equals(Complex.ZERO));
+    }
+  }
 
   
   @Test
@@ -354,29 +382,32 @@ public class FFTResultTest {
       
   }
   
-  // @Test
+  @Test
   public void testMultitaper() {
-    final int TAPERS = 12;
-    double[][] taper = FFTResult.getMultitaperSeries(2000, TAPERS);
-    XYSeriesCollection xysc = new XYSeriesCollection();
-    for (int j = 0; j < taper.length; ++j) {
-      XYSeries xys = new XYSeries("Taper " + j);
-      for (int i = 0; i < taper[j].length; ++i) {
-        xys.add(i, taper[j][i]);
+    int size = 2000;
+    List<Double> timeSeries = new ArrayList<Double>();
+    for (int i = 0; i < size; ++i) {
+      if (i % 2 == 0) {
+        timeSeries.add(-500.);
+      } else {
+        timeSeries.add(500.);
       }
-      xysc.addSeries(xys);
     }
     
-    JFreeChart chart = 
-        ChartFactory.createXYLineChart("MULTITAPER", "taper series index", 
-            "taper value", xysc);
-    BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
-    File file = new File("testResultImages/multitaper plot.png");
-    try {
-      ImageIO.write( bi, "png", file );
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
+    final int TAPERS = 12;
+    double[][] taper = FFTResult.getMultitaperSeries(size, TAPERS);
+    for (int j = 0; j < taper.length; ++j) {  
+      double[] toFFT = new double[size];
+      double[] taperCurve = taper[j];
+      System.out.println(j + "-th taper curve first point: " + taperCurve[0]);
+      for (int i = 0; i < timeSeries.size(); ++i) {
+        double point = timeSeries.get(i).doubleValue();
+        toFFT[i] = point * taperCurve[i];
+      }
+      System.out.println(j + "-th taper first point: " + toFFT[0]);
+      assertEquals(0., toFFT[0], 1E-15);
+      int last = toFFT.length-1;
+      assertEquals(0., toFFT[last], 1E-15);
     }
   }
   
