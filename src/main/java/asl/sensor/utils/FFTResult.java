@@ -204,13 +204,14 @@ public class FFTResult {
   public static double[][] getMultitaperSeries(int winLen, int numTapers) {
     double[][] taperMat = new double[numTapers][winLen];
     
-    double denom = winLen + 1;
+    double denom = winLen;
     double scale = Math.sqrt(2 / denom);
     
     // TODO: may need to check correct loop indices for efficiency
     for (int j = 0; j < numTapers; ++j) {
       for (int i = 0; i < winLen; ++i) {
-        taperMat[j][i] = scale * Math.sin(Math.PI * (i + 1) * (j + 1) / denom);
+        // TODO: figure out why the limits of this are off
+        taperMat[j][i] = scale * Math.sin(Math.PI * i * (j + 1) / denom);
       }
     }
     
@@ -772,7 +773,7 @@ public class FFTResult {
 
     double[][] taperMat = 
         getMultitaperSeries(data1Range.size(), TAPER_COUNT);
-    System.out.println("SIZES: " + padding + ", " + data1Range.size());
+    // System.out.println("SIZES: " + padding + ", " + data1Range.size());
     
     // demean and detrend work in-place on the list
     TimeSeriesUtils.detrend(data1Range);

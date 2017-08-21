@@ -336,7 +336,7 @@ public class FFTResultTest {
       double nyquist = sensor.getSampleRate() / 2;
       double deltaFrq = nyquist / (len - 1);
       
-      System.out.println("PEAK FREQ: " + (len - 1) * deltaFrq);
+      // System.out.println("PEAK FREQ: " + (len - 1) * deltaFrq);
 
       XYSeries meanSeries = new XYSeries(metaName + " w/ mean");
       XYSeries demeanSeries = new XYSeries(metaName + " demeaned");
@@ -398,15 +398,18 @@ public class FFTResultTest {
     double[][] taper = FFTResult.getMultitaperSeries(size, TAPERS);
     for (int j = 0; j < taper.length; ++j) {  
       double[] toFFT = new double[size];
+      int last = toFFT.length-1;
       double[] taperCurve = taper[j];
       System.out.println(j + "-th taper curve first point: " + taperCurve[0]);
+      System.out.println(j + "-th taper curve last point: " + taperCurve[last]);
       for (int i = 0; i < timeSeries.size(); ++i) {
         double point = timeSeries.get(i).doubleValue();
         toFFT[i] = point * taperCurve[i];
       }
-      System.out.println(j + "-th taper first point: " + toFFT[0]);
+      System.out.println(j + "-th tapered-data first point: " + toFFT[0]);
+      System.out.println(j + "-th tapered-data last point: " + toFFT[last]);
       assertEquals(0., toFFT[0], 1E-15);
-      int last = toFFT.length-1;
+
       assertEquals(0., toFFT[last], 1E-15);
     }
   }
@@ -494,7 +497,7 @@ public class FFTResultTest {
       
       double deltaFrqB = sensor.getSampleRate() / meanedFFT.length;
       
-      System.out.println("PEAK FREQ: " + deltaFrq * (numPoints - 1) );
+      // System.out.println("PEAK FREQ: " + deltaFrq * (numPoints - 1) );
       assertEquals(deltaFrq, deltaFrqB, 1E-7);
       
       for (int i = 1; i < numPoints; ++i) {
