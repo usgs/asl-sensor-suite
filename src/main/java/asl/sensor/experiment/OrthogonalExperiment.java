@@ -61,6 +61,7 @@ public class OrthogonalExperiment extends Experiment {
   @Override
   protected void backend(final DataStore ds) {
     
+    // TODO: refactor using faster access point for azimuth?
     long interval = ds.getXthLoadedBlock(1).getInterval();
     
     // assume the first two are the reference and the second two are the test?
@@ -77,12 +78,10 @@ public class OrthogonalExperiment extends Experiment {
     DataBlock testLH2Block = ds.getXthLoadedBlock(4);
     dataNames.add( testLH2Block.getName() );
     
-    List<Number> refLH1 = new ArrayList<Number>( refLH1Block.getData() );
-
-    List<Number> refLH2 = new ArrayList<Number>( refLH2Block.getData() );
-    List<Number> testLH1 = new ArrayList<Number>( testLH1Block.getData() );
-
-    List<Number> testLH2 = new ArrayList<Number>( testLH2Block.getData() );
+    List<Number> refLH1 = refLH1Block.getData();
+    List<Number> refLH2 = refLH2Block.getData();
+    List<Number> testLH1 = testLH1Block.getData();
+    List<Number> testLH2 = testLH2Block.getData();
     
     TimeSeriesUtils.detrend(refLH1);
     TimeSeriesUtils.detrend(refLH2);
@@ -119,12 +118,13 @@ public class OrthogonalExperiment extends Experiment {
     // to find angle between the other two datasets
     
     DataStore findTestX = new DataStore();
-    findTestX.setData(0, refLH1Block);
-    findTestX.setData(1, refLH2Block);
-    findTestX.setData(2, testLH2Block);
+    findTestX.setBlock(0, refLH1Block);
+    findTestX.setBlock(1, refLH2Block);
+    findTestX.setBlock(2, testLH2Block);
     DataStore findTestY = new DataStore(findTestX);
-    findTestY.setData(2, testLH1Block);
+    findTestY.setBlock(2, testLH1Block);
     
+    // TODO: FIX THIS
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.runExperimentOnData(findTestY);
     double angleY = azi.getFitAngle();

@@ -44,8 +44,8 @@ public class PhaseTest {
     DataBlock sensor = TimeSeriesUtils.getTimeSeries(sensOutName, metaName);
 
     DataStore ds = new DataStore();
-    ds.setData(0, calib);
-    ds.setData(1, sensor);
+    ds.setBlock(0, calib);
+    ds.setBlock(1, sensor);
     ds.setResponse(1, ir);
 
     return ds;
@@ -84,7 +84,7 @@ public class PhaseTest {
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTimeInMillis() * 1000L;
 
-    ds.trimAll(start, end);
+    ds.trim(start, end);
 
     return ds;
   }
@@ -125,7 +125,7 @@ public class PhaseTest {
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = ds.getBlock(0).getEndTime();
     
-    ds.trimAll(start, end);
+    ds.trim(start, end);
     
     return ds;
   }
@@ -160,7 +160,7 @@ public DataStore setUpTest4() throws IOException {
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
-    ds.trimAll(start, end);
+    ds.trim(start, end);
     
     return ds;
   }

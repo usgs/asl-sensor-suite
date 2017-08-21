@@ -522,10 +522,21 @@ public class FFTResult {
     boolean sameData = data1.getName().equals( data2.getName() );
     
     List<Number> list1 = data1.getData();
-    List<Number> list2 = null;
+    List<Number> list2 = list1;
     if (!sameData) {
       list2 = data2.getData();
     }
+    
+    long interval = data1.getInterval();
+    
+    return spectralCalc(list1, list2, interval);
+    
+  }
+    
+  public static FFTResult 
+  spectralCalc(List<Number> list1, List<Number> list2, long interval) {
+    
+    boolean sameData = list1.equals(list2);
     
     // divide into windows of 1/4, moving up 1/16 of the data at a time
     
@@ -538,7 +549,7 @@ public class FFTResult {
     
     // shouldn't need to worry about a cast here
     double period = 1.0 / TimeSeriesUtils.ONE_HZ_INTERVAL;
-    period *= data1.getInterval();
+    period *= interval;
     
     int padding = 2;
     while (padding < range) {
@@ -559,7 +570,7 @@ public class FFTResult {
       powSpectDens[i] = Complex.ZERO;
     }
     
-    while ( rangeEnd <= data1.size() ) {
+    while ( rangeEnd <= list1.size() ) {
       
       Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
       Complex[] fftResult2 = null;
@@ -619,8 +630,6 @@ public class FFTResult {
         frqDomn2 = fft.transform(toFFT2, TransformType.FORWARD);
         System.arraycopy(frqDomn2, 0, fftResult2, 0, fftResult2.length);
       }
-      
-
       
       for (int i = 0; i < singleSide; ++i) {
         
@@ -710,7 +719,7 @@ public class FFTResult {
     }
     
     int padding = 2;
-    while ( padding < ( data1.size() * 2 ) ) {
+    while ( padding < ( data1.size() ) ) {
       padding *= 2;
     }
     
@@ -755,6 +764,7 @@ public class FFTResult {
 
     double[][] taperMat = 
         getMultitaperSeries(data1Range.size(), TAPER_COUNT);
+    System.out.println("SIZES: " + padding + ", " + data1Range.size());
     
     // demean and detrend work in-place on the list
     TimeSeriesUtils.detrend(data1Range);

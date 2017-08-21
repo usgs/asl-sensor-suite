@@ -38,7 +38,7 @@ public class GainTest {
         fail();
         e.printStackTrace();
       }
-      ds.setData(i, fName, seriesName);
+      ds.setBlock(i, fName, seriesName);
     }
     
     folder = currentDir + "/responses/relativeGain/";
@@ -56,7 +56,7 @@ public class GainTest {
     Calendar end = (Calendar) start.clone();
     end.set(Calendar.HOUR_OF_DAY, 14);
     
-    ds.trimAll(start, end);
+    ds.trim(start, end);
     
     GainExperiment ge = new GainExperiment();
     ge.runExperimentOnData(ds);

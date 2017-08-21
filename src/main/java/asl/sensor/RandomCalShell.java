@@ -65,8 +65,8 @@ public class RandomCalShell {
       String outFilt = TimeSeriesUtils.getMplexNameList(args[2]).get(0);
       DataBlock outBlock = TimeSeriesUtils.getTimeSeries(args[2], outFilt);
       InstrumentResponse ir = new InstrumentResponse(args[3]);
-      ds.setData(0, calBlock);
-      ds.setData(1, outBlock);
+      ds.setBlock(0, calBlock);
+      ds.setBlock(1, outBlock);
       ds.setResponse(1, ir);
       
       SimpleDateFormat sdf = new SimpleDateFormat("D.H:m:s.S");
@@ -76,7 +76,7 @@ public class RandomCalShell {
       long start = Long.parseLong(args[4]) * 1000;
       long end = Long.parseLong(args[5]) * 1000;
       
-      ds.trimAll(start, end);
+      ds.trim(start, end);
       
       re.runExperimentOnData(ds);
       

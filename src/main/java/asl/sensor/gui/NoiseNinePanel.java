@@ -35,6 +35,24 @@ public class NoiseNinePanel extends NoisePanel {
    */
   private static final long serialVersionUID = -8049021432657749975L;
   protected JComboBox<String> plotSelection;
+
+  public static String getInsetString(NoiseNineExperiment exp) {
+    NoiseNineExperiment nne = (NoiseNineExperiment) exp;
+    DecimalFormat df = new DecimalFormat("#.###");
+    double[] angles = nne.getNorthAngles();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Angle of rotation of north sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of north sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
+    sb.append("\n");
+    angles = nne.getEastAngles();
+    sb.append("Angle of rotation of east sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of east sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
+    return sb.toString();
+  }
   
   protected JFreeChart northChart, eastChart, vertChart;
 

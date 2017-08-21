@@ -30,7 +30,7 @@ public class DataStoreTest {
   public void commonTimeTrimMatchesLength() {
     
     DataStore ds = new DataStore();
-    ds.setData(0, filename1, filter);
+    ds.setBlock(0, filename1, filter);
     
     int left = 250;
     int right = 750;
@@ -45,8 +45,8 @@ public class DataStoreTest {
     //  tested in DataBlockTest
     db.trim(loc1, loc2);
     
-    ds.setData(1, filename1, filter);
-    ds.setData(2, filename1, filter);
+    ds.setBlock(1, filename1, filter);
+    ds.setBlock(2, filename1, filter);
     
     // function under test
     ds.trimToCommonTime();
@@ -82,8 +82,8 @@ public class DataStoreTest {
     DataBlock block40Hz = new DataBlock(series40Hz, interval40Hz, "40", start);
     
     DataStore ds = new DataStore();
-    ds.setData(0, block25Hz);
-    ds.setData(1, block40Hz);
+    ds.setBlock(0, block25Hz);
+    ds.setBlock(1, block40Hz);
     ds.matchIntervals();
     
     assertEquals( ds.getBlock(1).getInterval(), interval25Hz );

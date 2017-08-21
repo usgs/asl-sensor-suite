@@ -41,93 +41,81 @@ public class GainSixExperiment extends Experiment {
       componentBackends[i] = new GainExperiment();
     }
     
+    long interval = ds.getBlock(0).getInterval();
+    long start = ds.getBlock(0).getStartTime();
+    long end = ds.getBlock(0).getEndTime();
+    
+    DataStore[] stores = new DataStore[DIMS];
+    
+    fireStateChange("Separating data into directional components...");
+    for (int i = 0; i < DIMS; ++i) {
+      stores[i] = new DataStore();
+      for (int j = 0; j < 2; ++j) {
+        stores[i].setBlock( j, ds.getBlock( i + (j * DIMS) ) );
+        stores[i].setResponse( j, ds.getResponse( i + (j * DIMS) ) );
+      }
+    }
+    
     //first get the first set of data (NSV), then second
-    DataBlock north1Sensor = ds.getBlock(0);
-    InstrumentResponse north1Resp = ds.getResponse(0);
-    DataBlock east1Sensor = ds.getBlock(1);
-    InstrumentResponse east1Resp = ds.getResponse(1);
-    DataBlock vert1Sensor = ds.getBlock(2);
-    InstrumentResponse vert1Resp = ds.getResponse(2);
+    List<Number> north1Sensor = ds.getBlock(0).getData();
+    List<Number> east1Sensor = ds.getBlock(1).getData();
     
-    DataBlock north2Sensor = ds.getBlock(3);
-    InstrumentResponse north2Resp = ds.getResponse(3);
-    DataBlock east2Sensor = ds.getBlock(4);
-    InstrumentResponse east2Resp = ds.getResponse(4);
-    DataBlock vert2Sensor = ds.getBlock(5);
-    InstrumentResponse vert2Resp = ds.getResponse(5);
-    
-    // now, rotate the first data into the second
-    DataStore aziStore = new DataStore();
-    aziStore.setData(0, north1Sensor);
-    aziStore.setData(1, east1Sensor);
+    List<Number> north2Sensor = ds.getBlock(3).getData();
+    List<Number> east2Sensor = ds.getBlock(4).getData();
     
     // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting second north sensor orientation...");
-    aziStore.setData(2, north2Sensor);
-    north2Angle = -getAzimuth(aziStore);
+    north2Angle = -getAzimuth(north1Sensor, east1Sensor, 
+        north2Sensor, interval, start, end);
 
     fireStateChange("Getting second east sensor orientation...");
-    aziStore.setData(2, east2Sensor);
     // direction north angle should be if north and east truly orthogonal
     // then east component is x component of rotation in that direction
     // i.e., need to correct by 90 degrees to get rotation angle rather than
     // azimuth of east sensor
     // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other 
     // rotation direction
-    east2Angle = -getAzimuth(aziStore) + (3 * Math.PI / 2);
+    east2Angle = -getAzimuth(north1Sensor, east1Sensor, 
+        east2Sensor, interval, start, end) + (3 * Math.PI / 2);
     
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
     DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(north2Sensor, east2Sensor, north2Angle);
+        TimeSeriesUtils.rotate(ds.getBlock(4), ds.getBlock(5), north2Angle);
+    stores[0].setBlock(1, north2Rotated);
     DataBlock east2Rotated = 
-        TimeSeriesUtils.rotateX(north2Sensor, east2Sensor, east2Angle);
+        TimeSeriesUtils.rotateX(ds.getBlock(4), ds.getBlock(5), east2Angle);
+    stores[1].setBlock(1, east2Rotated);
     
     // now get the datasets to plug into the datastore
-    DataStore northComponents = new DataStore();
-    northComponents.setData(0, north1Sensor);
-    northComponents.setResponse(0, north1Resp);
-    northComponents.setData(1, north2Rotated);
-    northComponents.setResponse(1, north2Resp);
+    String[] direction = new String[]{"north", "east", "vertical"};
     
-    DataStore eastComponents = new DataStore();
-    eastComponents.setData(0, east1Sensor);
-    eastComponents.setResponse(0, east1Resp);
-    eastComponents.setData(1, east2Rotated);
-    eastComponents.setResponse(1, east2Resp);
-    
-    DataStore vertComponents = new DataStore();
-    vertComponents.setData(0, vert1Sensor);
-    vertComponents.setResponse(0, vert1Resp);
-    vertComponents.setData(1, vert2Sensor);
-    vertComponents.setResponse(1, vert2Resp);
-    
-    fireStateChange("Running calculations on north components...");
-    componentBackends[0].runExperimentOnData(northComponents);
-    fireStateChange("Running calculations on east components...");
-    componentBackends[1].runExperimentOnData(eastComponents);
-    fireStateChange("Running calculations on vertical components...");
-    componentBackends[2].runExperimentOnData(vertComponents);
+    for (int i = 0; i < DIMS; ++i) {
+      
+      StringBuilder state = new StringBuilder("Running calculations on ");
+      state.append(direction[i]);
+      state.append(" components...");
+      fireStateChange( state.toString() );
+      
+      componentBackends[i].runExperimentOnData(stores[i]);
+      
+    }
     
     for (Experiment exp : componentBackends) {
       // each backend only has one plot's worth of data
       // but is formatted as a list of per-plot data, so we use addAll
       xySeriesData.addAll( exp.getData() );
       // also get the names of the data going in for use w/ PDF, metadata
+    }    
+
+    for (int j = 0; j < componentBackends.length; ++j) {
+      List<String> names = componentBackends[j].getInputNames();
+      for (int i = 0; i < names.size(); i += 2) {
+        dataNames.add( names.get(i) );
+        dataNames.add( names.get(i + 1) );
+      }
     }
-    
-    List<String> northNames = componentBackends[0].getInputNames();
-    List<String> eastNames = componentBackends[1].getInputNames();
-    List<String> vertNames = componentBackends[2].getInputNames();
-    
-    for (int i = 0; i < northNames.size(); i += 2) {
-      dataNames.add( northNames.get(i) );
-      dataNames.add( northNames.get(i + 1) );
-      dataNames.add( eastNames.get(i) );
-      dataNames.add( eastNames.get(i + 1) );
-      dataNames.add( vertNames.get(i) );
-      dataNames.add( vertNames.get(i + 1) );
-    }
+
     
   }
   
@@ -255,10 +243,12 @@ public class GainSixExperiment extends Experiment {
     return indices;
   }
   
-  private double getAzimuth(DataStore ds) {
+  private double getAzimuth(List<Number> n, List<Number> e, List<Number> r, 
+      long interval, long start, long end) {
+    // TODO: FIX THIS
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.setSimple(true); // do the faster angle calculation
-    azi.runExperimentOnData(ds);
+    azi.alternateEntryPoint(n, e, r, interval, start, end);
     return azi.getFitAngleRad();
   }
 }

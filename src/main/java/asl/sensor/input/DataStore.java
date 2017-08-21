@@ -114,7 +114,7 @@ public class DataStore {
   public DataStore(DataStore ds, long start, long end, int upperBound) {
     this(ds, upperBound);
     
-    this.trimAll(start, end);
+    this.trim(start, end, FILE_COUNT);
   }
   
   public boolean areAnyBlocksSet() {
@@ -409,7 +409,7 @@ public class DataStore {
    * @param idx Index to place the data into
    * @param db Datablock to place into idx
    */
-  public void setData(int idx, DataBlock db) {
+  public void setBlock(int idx, DataBlock db) {
     thisBlockIsSet[idx] = true;
     dataBlockArray[idx] = db;
     outToPlots[idx] = db.toXYSeries();
@@ -422,7 +422,7 @@ public class DataStore {
    * @param filepath Full address of file to be loaded in
    * @param nameFilter Station ID (SNCL) to load in from multiplexed file
    */
-  public void setData(int idx, String filepath, String nameFilter) {
+  public void setBlock(int idx, String filepath, String nameFilter) {
     
     try {
       DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
@@ -467,7 +467,7 @@ public class DataStore {
    * @param startTrim Time of initial data point in file to load
    * @param endTrim Time of last data point in file to load
    */
-  public void setData(int idx, String filepath, String nameFilter, 
+  public void setBlock(int idx, String filepath, String nameFilter, 
       long startTrim, long endTrim) {
     
     try {
@@ -558,16 +558,35 @@ public class DataStore {
     return thisBlockIsSet[idx];
   }
   
+  public void trim(Pair<Long, Long> times, int limit) 
+      throws IndexOutOfBoundsException{
+    trim( times.getFirst(), times.getSecond(), limit );
+  }
+  
+  public void untrim(int limit) {
+    for (int i = 0; i < limit; ++i) {
+      if (!thisBlockIsSet[i]) {
+        continue;
+      }
+      DataBlock data = dataBlockArray[i];
+      long start = data.getInitialStartTime();
+      long end = data.getInitialEndTime();
+      data.trim(start, end);
+    }
+    trimToCommonTime(limit);
+  }
+  
   /**
    * Trims all data blocks to be within a certain time range.
    * Used for getting a sub-range specified by sliding-bar window.
    * @param start Start time, relative to epoch (nanoseconds)
    * @param end End time, relative to epoch (nanoseconds)
    */
-  public void trimAll(long start, long end) throws IndexOutOfBoundsException {
-    
+  public void trim(long start, long end, int limit) 
+      throws IndexOutOfBoundsException {
+      
     // check that the time range is valid to trim all set data
-    for (int i = 0; i < FILE_COUNT; ++i) {
+    for (int i = 0; i < limit; ++i) {
       if (!thisBlockIsSet[i]) {
         continue;
       }
@@ -592,12 +611,18 @@ public class DataStore {
     }
   }
   
-  public void trimAll(Calendar start, Calendar end) {
-    
+  public void trim(Calendar start, Calendar end, int limit) {
     long startTime = start.getTimeInMillis() * 1000;
     long endTime = end.getTimeInMillis() * 1000;
-    trimAll(startTime, endTime);
-    
+    trim(startTime, endTime, limit);
+  }
+  
+  public void trim(Calendar start, Calendar end) {
+    trim(start, end, FILE_COUNT);
+  }
+  
+  public void trim(long start, long end) {
+    trim(start, end, FILE_COUNT);
   }
   
   /**
@@ -607,6 +632,27 @@ public class DataStore {
    */
   public void trimToCommonTime() {
     trimToCommonTime(FILE_COUNT);
+  }
+  
+  public Pair<Long, Long> getUntrimmedCommonTimeRange(int limit) {
+    long startTime = 0L, endTime = Long.MAX_VALUE;
+    
+    for (int i = 0; i < limit; ++i) {
+      DataBlock data = dataBlockArray[i];
+      if (!thisBlockIsSet[i]) {
+        continue;
+      }
+      long start = data.getInitialStartTime();
+      if (start > startTime) {
+        startTime = start;
+      }
+      long end = data.getInitialEndTime();
+      if (end < endTime) {
+        endTime = end;
+      }
+    }
+    
+    return new Pair<Long, Long>(startTime, endTime);
   }
   
   /**

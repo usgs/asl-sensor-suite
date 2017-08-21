@@ -124,7 +124,6 @@ implements ActionListener, ChangeListener {
   private int activePlots = FILE_COUNT; // how much data is being displayed
   
   private DataStore ds;
-  private DataStore zooms;
   private ChartPanel[] chartPanels = new ChartPanel[FILE_COUNT];
   private Color[] defaultColor = {
           ChartColor.LIGHT_RED, 
@@ -173,7 +172,6 @@ implements ActionListener, ChangeListener {
     GridBagConstraints gbc = new GridBagConstraints();
    
     ds = new DataStore();
-    zooms = new DataStore();
     
     gbc.weightx = 1.0;
     gbc.weighty = 1.0;
@@ -374,8 +372,7 @@ implements ActionListener, ChangeListener {
         // disable clearAll button if there's no other data loaded in
         clearAll.setEnabled( ds.isAnythingSet() );
         
-        zooms = new DataStore(ds);
-        zooms.trimToCommonTime();
+        ds.trimToCommonTime();
         
         showRegionForGeneration();
         
@@ -430,7 +427,6 @@ implements ActionListener, ChangeListener {
             InstrumentResponse ir = 
                 InstrumentResponse.loadEmbeddedResponse(fname);
             ds.setResponse(i, ir);
-            zooms.setResponse(i, ir);
             respFileNames[i].setText( ir.getName() );
             clear.setEnabled(true);
             clearAll.setEnabled(true);
@@ -449,7 +445,6 @@ implements ActionListener, ChangeListener {
             File file = fc.getSelectedFile();
             respDirectory = file.getParent();
             ds.setResponse(i, file.getAbsolutePath() );
-            zooms.setResponse(i, file.getAbsolutePath() );
             respFileNames[i].setText( file.getName() );
             clear.setEnabled(true);
             clearAll.setEnabled(true);
@@ -499,18 +494,15 @@ implements ActionListener, ChangeListener {
     }
     
     if ( e.getSource() == zoomIn ) {
-      
       showRegionForGeneration();
       return;
     }
     
     if ( e.getSource() == zoomOut ) {
-      
       // restore original loaded datastore
-      zooms = new DataStore(ds);
-      zooms.trimToCommonTime();
+      ds.untrim(activePlots);
       for (int i = 0; i < FILE_COUNT; ++i) {
-        if ( !zooms.blockIsSet(i) ) {
+        if ( !ds.blockIsSet(i) ) {
           continue;
         }
         resetPlotZoom(i);
@@ -536,7 +528,6 @@ implements ActionListener, ChangeListener {
    */
   public void clearAllData() {
     ds = new DataStore();
-    zooms = new DataStore();
     
     zoomIn.setEnabled(false);
     zoomOut.setEnabled(false);
@@ -665,12 +656,12 @@ implements ActionListener, ChangeListener {
   public DataStore getData() {
     
     // showRegionForGeneration();
-    if ( zooms.numberOfBlocksSet() > 1 ) {
+    if ( ds.numberOfBlocksSet() > 1 ) {
       // zooms.matchIntervals(activePlots); done at experiment level
-      zooms.trimToCommonTime(activePlots);
+      ds.trimToCommonTime(activePlots);
     }
 
-    return new DataStore(zooms);
+    return new DataStore(ds);
   }
   
   /**
@@ -789,19 +780,18 @@ implements ActionListener, ChangeListener {
         public Integer doInBackground() {
 
           try {
-            ds.setData(idx, filePath, immutableFilter);
+            ds.setBlock(idx, filePath, immutableFilter);
           } catch (RuntimeException e) {
             e.printStackTrace();
             caughtException = true;
             return 1;
           }
 
-          zooms = new DataStore(ds);
           // zooms.matchIntervals(activePlots);
-          zooms.trimToCommonTime(activePlots);
+          ds.trimToCommonTime(activePlots);
 
-          XYSeries ts = zooms.getPlotSeries(idx);
-          double sRate = zooms.getBlock(idx).getSampleRate();
+          XYSeries ts = ds.getPlotSeries(idx);
+          double sRate = ds.getBlock(idx).getSampleRate();
           String rateString = " (" + sRate + " Hz)";
           chart = ChartFactory.createXYLineChart(
               ts.getKey().toString() + rateString,
@@ -860,7 +850,7 @@ implements ActionListener, ChangeListener {
           clearButton[idx].setEnabled(true);
 
           for (int i = 0; i < FILE_COUNT; ++i) {
-            if ( !zooms.blockIsSet(i) ) {
+            if ( !ds.blockIsSet(i) ) {
               continue;
             }
             resetPlotZoom(i);
@@ -1022,9 +1012,10 @@ implements ActionListener, ChangeListener {
    * @param idx Index of appropriate chart/panel
    */
   private void resetPlotZoom(int idx) {
+    System.out.println("reset plot zoom");
     XYPlot xyp = chartPanels[idx].getChart().getXYPlot();
     XYSeriesCollection xys = new XYSeriesCollection();
-    xys.addSeries( zooms.getBlock(idx).toXYSeries() );
+    xys.addSeries( ds.getBlock(idx).toXYSeries() );
     xyp.setDataset( xys );
     xyp.getRenderer().setSeriesPaint(0,
         defaultColor[idx % defaultColor.length]);
@@ -1056,9 +1047,7 @@ implements ActionListener, ChangeListener {
    * @param filepath Full address of the file to be loaded in
    */
   public void setResponse(int idx, String filepath) {
-    
     ds.setResponse(idx, filepath);
-    zooms.setResponse(idx, filepath);
   }
 
   /**
@@ -1067,7 +1056,7 @@ implements ActionListener, ChangeListener {
    */
   public void setVerticalBars() {
     
-    if ( zooms.numberOfBlocksSet() < 1 ) {
+    if ( ds.numberOfBlocksSet() < 1 ) {
       return;
     }
     
@@ -1075,7 +1064,7 @@ implements ActionListener, ChangeListener {
     
     int leftValue = leftSlider.getValue();
     int rightValue = rightSlider.getValue();
-    DataBlock db = zooms.getXthLoadedBlock(1);
+    DataBlock db = ds.getXthLoadedBlock(1);
     long startMarkerLocation = getMarkerLocation(db, leftValue) / 1000;
     long endMarkerLocation = getMarkerLocation(db, rightValue) / 1000;
     
@@ -1087,7 +1076,7 @@ implements ActionListener, ChangeListener {
     endDate.addChangeListener(this);
     
     for (int i = 0; i < FILE_COUNT; ++i) {
-      if ( !zooms.blockIsSet(i) ) {
+      if ( !ds.blockIsSet(i) ) {
         continue;
       }
       
@@ -1103,7 +1092,7 @@ implements ActionListener, ChangeListener {
       xyp.addDomainMarker(startMarker);
       xyp.addDomainMarker(endMarker);
       
-      List<Pair<Long,Long>> gaps = zooms.getBlock(i).getGapBoundaries();
+      List<Pair<Long,Long>> gaps = ds.getBlock(i).getGapBoundaries();
       
       XYDataset data = xyp.getDataset();
       XYSeriesCollection xysc = (XYSeriesCollection) data;
@@ -1146,21 +1135,21 @@ implements ActionListener, ChangeListener {
     
     // get current time range of zoom data for resetting, if any data is loaded
     long start, end;
-    if ( zooms.areAnyBlocksSet() ) {
-      DataBlock db = zooms.getXthLoadedBlock(1);
+    if ( ds.areAnyBlocksSet() ) {
+      DataBlock db = ds.getXthLoadedBlock(1);
       start = db.getStartTime();
       end = db.getEndTime();
       
-      zooms = new DataStore(ds, activePlots);
-      zooms.trimToCommonTime(activePlots);
+      ds = new DataStore(ds, activePlots);
+      ds.trimToCommonTime(activePlots);
       // try to trim to current active time range if possible, otherwise fit
       // as much data as possible
-      db = zooms.getXthLoadedBlock(1);
+      db = ds.getXthLoadedBlock(1);
       // was the data zoomed in more than it is now?
       if ( start > db.getStartTime() || end < db.getEndTime() ) {
         try {
           // zooms won't be modified if an exception is thrown
-          zooms.trimAll(start, end);
+          ds.trim(start, end, activePlots);
           zoomOut.setEnabled(true);
         } catch (IndexOutOfBoundsException e) {
           // new time range not valid for all current data, show max range
@@ -1179,7 +1168,7 @@ implements ActionListener, ChangeListener {
 
 
     for (int i = 0; i < activePlots; ++i) {
-      if ( zooms.blockIsSet(i) ){
+      if ( ds.blockIsSet(i) ){
         resetPlotZoom(i);
       }
       
@@ -1191,7 +1180,7 @@ implements ActionListener, ChangeListener {
     leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
     setVerticalBars();
     
-    zoomIn.setEnabled( zooms.numberOfBlocksSet() > 0 );
+    zoomIn.setEnabled( ds.numberOfBlocksSet() > 0 );
     
     // using this test means the panel doesn't try to scroll when it's
     // only got a few inputs to deal with, when stuff is still pretty readable
@@ -1207,24 +1196,24 @@ implements ActionListener, ChangeListener {
    */
   public void showRegionForGeneration() {
     
-    if ( zooms.numberOfBlocksSet() < 1 ) {
+    if ( ds.numberOfBlocksSet() < 1 ) {
       return;
     }
     
     // get (any) loaded data block to map slider to domain boundary
     // all data should have the same range
-    DataBlock db = zooms.getXthLoadedBlock(1);
+    DataBlock db = ds.getXthLoadedBlock(1);
 
     if ( leftSlider.getValue() != 0 || rightSlider.getValue() != SLIDER_MAX ) {
       long start = getMarkerLocation(db, leftSlider.getValue() );
       long end = getMarkerLocation(db, rightSlider.getValue() );
-      zooms = new DataStore(ds, start, end, activePlots);
+      ds.trim(start, end, activePlots);
       leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
       zoomOut.setEnabled(true);
     }
     
     for (int i = 0; i < activePlots; ++i) {
-      if ( !zooms.blockIsSet(i) ) {
+      if ( !ds.blockIsSet(i) ) {
         continue;
       }
       resetPlotZoom(i);
@@ -1246,12 +1235,12 @@ implements ActionListener, ChangeListener {
     
     if ( e.getSource() == startDate ) {
       // if no data to do windowing on, don't bother
-      if ( zooms.numberOfBlocksSet() < 1 ) {
+      if ( ds.numberOfBlocksSet() < 1 ) {
         return;
       }
       
       long time = startDate.getTime();
-      DataBlock db = zooms.getXthLoadedBlock(1);
+      DataBlock db = ds.getXthLoadedBlock(1);
 
       long startTime = db.getStartTime() / 1000;
       // startValue is current value of left-side slider in ms
@@ -1278,12 +1267,12 @@ implements ActionListener, ChangeListener {
     
     if ( e.getSource() == endDate ) {
       // if no data to do windowing on, don't bother
-      if ( zooms.numberOfBlocksSet() < 1 ) {
+      if ( ds.numberOfBlocksSet() < 1 ) {
         return;
       }
       
       long time = endDate.getTime();
-      DataBlock db = zooms.getXthLoadedBlock(1);
+      DataBlock db = ds.getXthLoadedBlock(1);
 
       long endTime = db.getEndTime() / 1000;
 

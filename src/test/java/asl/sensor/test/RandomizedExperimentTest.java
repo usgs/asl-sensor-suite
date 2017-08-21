@@ -62,8 +62,8 @@ public class RandomizedExperimentTest {
     DataBlock sensor = TimeSeriesUtils.getTimeSeries(sensOutName, metaName);
 
     DataStore ds = new DataStore();
-    ds.setData(0, calib);
-    ds.setData(1, sensor);
+    ds.setBlock(0, calib);
+    ds.setBlock(1, sensor);
     ds.setResponse(1, ir);
     
     return ds;
@@ -280,7 +280,7 @@ public class RandomizedExperimentTest {
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
-    ds.trimAll(start, end);
+    ds.trim(start, end);
     
     return ds;
   }
@@ -316,7 +316,7 @@ public class RandomizedExperimentTest {
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
-    ds.trimAll(start, end);
+    ds.trim(start, end);
     
     return ds;
   }
@@ -357,7 +357,7 @@ public class RandomizedExperimentTest {
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = ds.getBlock(0).getEndTime();
     
-    ds.trimAll(start, end);
+    ds.trim(start, end);
     
     return ds;
   }
@@ -392,7 +392,7 @@ public class RandomizedExperimentTest {
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
-    ds.trimAll(start, end);
+    ds.trim(start, end);
     
     return ds;
   }
@@ -421,7 +421,7 @@ public class RandomizedExperimentTest {
       XYSeries divXYS = new XYSeries("Power-spectral division");
       XYSeries subXYS = new XYSeries("Power-spectral dB subtraction");
       for (int i = 0; i < freqs.length; ++i) {
-        if ( freqs[i] != 0 && 1/freqs[i] >= 100 && 1/freqs[i] <= 1000) {
+        if ( freqs[i] != 0 && freqs[i] <= .05 && freqs[i] >= .0001) {
           double calDB = 10 * Math.log10( calSpec[i].abs() );
           double outDB = 10 * Math.log10( outSpec[i].abs() );
           calXYS.add( 1/freqs[i], calDB );

@@ -1,5 +1,7 @@
 package asl.sensor.experiment;
 
+import java.util.List;
+
 import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataBlock;
@@ -25,6 +27,7 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class NoiseNineExperiment extends NoiseExperiment {
 
+  private static final int DIMS = 3;
   private double[] northAngles, eastAngles;
   
   public NoiseNineExperiment() {
@@ -46,120 +49,104 @@ public class NoiseNineExperiment extends NoiseExperiment {
       dataNames.add( ds.getResponse(i).getName() );
     }
     
+    DataStore[] stores = new DataStore[DIMS];
+    
+    for (int i = 0; i < DIMS; ++i) {
+      stores[i] = new DataStore();
+      for (int j = 0; j < 3; ++j) {
+        stores[i].setBlock( j, ds.getBlock( i + (j * DIMS) ) );
+        stores[i].setResponse( j, ds.getResponse( i + (j * DIMS) ) );
+      }
+    }
+    
     // get the components
     // why unroll the datastore's contents like this?
     // since we need to do the azimuth calculations with subsets of the data
     // and then rotate some of those sensors to get new datablocks
     // we can only compact the code so hard, and this is an easier arrangement
     // than, say, trying to index into a series of arraylists
-    DataBlock north1Sensor = ds.getBlock(0);
-    InstrumentResponse north1Resp = ds.getResponse(0);
-    DataBlock east1Sensor = ds.getBlock(1);
-    InstrumentResponse east1Resp = ds.getResponse(1);
-    DataBlock vert1Sensor = ds.getBlock(2);
-    InstrumentResponse vert1Resp = ds.getResponse(2);
+    List<Number> north1Sensor = ds.getBlock(0).getData();
+    List<Number> east1Sensor = ds.getBlock(1).getData();
     
-    DataBlock north2Sensor = ds.getBlock(3);
-    InstrumentResponse north2Resp = ds.getResponse(3);
-    DataBlock east2Sensor = ds.getBlock(4);
-    InstrumentResponse east2Resp = ds.getResponse(4);
-    DataBlock vert2Sensor = ds.getBlock(5);
-    InstrumentResponse vert2Resp = ds.getResponse(5);
+    List<Number> north2Sensor = ds.getBlock(3).getData();
+    List<Number> east2Sensor = ds.getBlock(4).getData();
     
-    DataBlock north3Sensor = ds.getBlock(6);
-    InstrumentResponse north3Resp = ds.getResponse(6);
-    DataBlock east3Sensor = ds.getBlock(7);
-    InstrumentResponse east3Resp = ds.getResponse(7);
-    DataBlock vert3Sensor = ds.getBlock(8);
-    InstrumentResponse vert3Resp = ds.getResponse(8);
+    List<Number> north3Sensor = ds.getBlock(6).getData();
+    List<Number> east3Sensor = ds.getBlock(7).getData();
     
+    long interval = ds.getBlock(0).getInterval();
+    long start = ds.getBlock(0).getStartTime();
+    long end = ds.getBlock(0).getEndTime();
     
     StringBuilder sb = new StringBuilder();
     sb.append("Beginning rotations (offset angle esimates)\n");
     sb.append("for second and third sets of horizontal (N, E) data...");
     fireStateChange( sb.toString() );
     
-    // set angles and then rotate data
-    DataStore aziStore = new DataStore();
-    aziStore.setData(0, north1Sensor);
-    aziStore.setData(1, east1Sensor);
-    
-    // angle should be set negative -- reference sensor is what we rotate
-    aziStore.setData(2, north2Sensor);
-    northAngles[0] = -getAzimuth(aziStore);
-    fireStateChange("Found orientation of second north sensor!");
-    
-    // add 90 degrees (pi/2 in radians) to get azimuth that will match the 
-    // north azimuth if north and east are truly orthogonal.
-    // technically we add 270 degrees, which is 90 degrees in opposite rotation
-    // there's inconsistency about whether to use a right- or left-hand
-    // rotation convention; this assumes it is a left-hand convention
-    aziStore.setData(2, east2Sensor);
-    eastAngles[0] = -getAzimuth(aziStore) + (3 * Math.PI / 2);
-    fireStateChange("Found orientation of second east sensor!");
-    
-    // same as above
-    aziStore.setData(2, north3Sensor);
-    northAngles[1] = -getAzimuth(aziStore);
-    fireStateChange("Found orientation of third north sensor!");
-    
-    aziStore.setData(2, east3Sensor);
-    eastAngles[1] = -getAzimuth(aziStore) + (3 * Math.PI / 2);
-    fireStateChange("Found orientation of third east sensor!");
+    // see also the rotation used in the 9-input self noise backend
+    fireStateChange("Getting second north sensor orientation...");
+    northAngles[0] = -getAzimuth(north1Sensor, east1Sensor, 
+        north2Sensor, interval, start, end);
+
+    fireStateChange("Getting second east sensor orientation...");
+    // direction north angle should be if north and east truly orthogonal
+    // then east component is x component of rotation in that direction
+    // i.e., need to correct by 90 degrees to get rotation angle rather than
+    // azimuth of east sensor
+    // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other 
+    // rotation direction
+    eastAngles[0] = -getAzimuth(north1Sensor, east1Sensor, 
+        east2Sensor, interval, start, end) + (3 * Math.PI / 2);
     
     // now to rotate the data according to these angles
+    fireStateChange("Rotating data...");
     DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(north2Sensor, east2Sensor, northAngles[0]);
+        TimeSeriesUtils.rotate(ds.getBlock(4), ds.getBlock(5), northAngles[0]);
+    stores[0].setBlock(1, north2Rotated);
     DataBlock east2Rotated = 
-        TimeSeriesUtils.rotateX(north2Sensor, east2Sensor, eastAngles[0]);
+        TimeSeriesUtils.rotateX(ds.getBlock(4), ds.getBlock(5), eastAngles[0]);
+    stores[1].setBlock(1, east2Rotated);
+    
+    // see also the rotation used in the 9-input self noise backend
+    fireStateChange("Getting third north sensor orientation...");
+    northAngles[1] = -getAzimuth(north1Sensor, east1Sensor, 
+        north3Sensor, interval, start, end);
+
+    fireStateChange("Getting third east sensor orientation...");
+    // direction north angle should be if north and east truly orthogonal
+    // then east component is x component of rotation in that direction
+    // i.e., need to correct by 90 degrees to get rotation angle rather than
+    // azimuth of east sensor
+    // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other 
+    // rotation direction
+    eastAngles[1] = -getAzimuth(north1Sensor, east1Sensor, 
+        east3Sensor, interval, start, end) + (3 * Math.PI / 2);
+    
+    
+    // now to rotate the data according to these angles
+    fireStateChange("Rotating data...");
     DataBlock north3Rotated =
-        TimeSeriesUtils.rotate(north3Sensor, east3Sensor, northAngles[1]);
-    DataBlock east3Rotated =
-        TimeSeriesUtils.rotateX(north3Sensor, east3Sensor, eastAngles[1]);
+        TimeSeriesUtils.rotate(ds.getBlock(7), ds.getBlock(8), northAngles[1]);
+    stores[0].setBlock(2, north3Rotated);
+    DataBlock east3Rotated = 
+        TimeSeriesUtils.rotateX(ds.getBlock(7), ds.getBlock(8), eastAngles[1]);
+    stores[1].setBlock(2, east3Rotated);
     fireStateChange("All offset horizontal data rotated!");
     
     // set components into N,E,Z directional subcomponents
     
-    DataStore northComponents = new DataStore();
-    northComponents.setData(0, north1Sensor);
-    northComponents.setResponse(0, north1Resp);
-    northComponents.setData(1, north2Rotated);
-    northComponents.setResponse(1, north2Resp);
-    northComponents.setData(2, north3Rotated);
-    northComponents.setResponse(2, north3Resp);
-    
-    DataStore eastComponents = new DataStore();
-    eastComponents.setData(0, east1Sensor);
-    eastComponents.setResponse(0, east1Resp);
-    eastComponents.setData(1, east2Rotated);
-    eastComponents.setResponse(1, east2Resp);
-    eastComponents.setData(2, east3Rotated);
-    eastComponents.setResponse(2, east3Resp);
-    
-    DataStore vertComponents = new DataStore();
-    vertComponents.setData(0, vert1Sensor);
-    vertComponents.setResponse(0, vert1Resp);
-    vertComponents.setData(1, vert2Sensor);
-    vertComponents.setResponse(1, vert2Resp);
-    vertComponents.setData(2, vert3Sensor);
-    vertComponents.setResponse(2, vert3Resp);
-    
     // get noise from each axis's data
     NoiseExperiment noiseExp = new NoiseExperiment();
-    fireStateChange("Calculating north noise components...");
     noiseExp.setFreqSpace(freqSpace);
-    noiseExp.runExperimentOnData(northComponents);
-    XYSeriesCollection northXYS = noiseExp.getData().get(0);
-    fireStateChange("Calculating east noise components...");
-    noiseExp.runExperimentOnData(eastComponents);
-    XYSeriesCollection eastXYS = noiseExp.getData().get(0);
-    fireStateChange("Calculating vertical noise components...");
-    noiseExp.runExperimentOnData(vertComponents);
-    XYSeriesCollection vertXYS = noiseExp.getData().get(0);
-
-    xySeriesData.add(northXYS);
-    xySeriesData.add(eastXYS);
-    xySeriesData.add(vertXYS);
+    String[] directions = new String[]{"north","east","vertical"};
+    for (int i = 0; i < DIMS; ++i) {
+      sb = new StringBuilder("Calculating ");
+      sb.append(directions[i]);
+      sb.append(" noise components...");
+      noiseExp.runExperimentOnData(stores[i]);
+      XYSeriesCollection xys = noiseExp.getData().get(0);
+      xySeriesData.add(xys);
+    }
     
   }
 
@@ -206,10 +193,13 @@ public class NoiseNineExperiment extends NoiseExperiment {
     return true;
   }
 
-  private double getAzimuth(DataStore ds) {
+  
+  private double getAzimuth(List<Number> n, List<Number> e, List<Number> r, 
+      long interval, long start, long end) {
+    // TODO: FIX THIS
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.setSimple(true); // do the faster angle calculation
-    azi.runExperimentOnData(ds);
+    azi.alternateEntryPoint(n, e, r, interval, start, end);
     return azi.getFitAngleRad();
   }
 }

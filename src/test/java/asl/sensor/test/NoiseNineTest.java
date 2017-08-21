@@ -56,7 +56,7 @@ public class NoiseNineTest {
           fail();
           e.printStackTrace();
         }
-        ds.setData(indexInStore, fName, dataNames.get(0) );
+        ds.setBlock(indexInStore, fName, dataNames.get(0) );
         if (isEmbed) {
           ds.setEmbedResponse(indexInStore, respName);
         } else {
@@ -98,7 +98,7 @@ public class NoiseNineTest {
     System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
-    ds.trimAll(start, end);
+    ds.trim(start, end, 9);
 
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
@@ -201,7 +201,7 @@ public class NoiseNineTest {
     System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
 
-    ds.trimAll(start, end);
+    ds.trim(start, end);
 
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
@@ -237,8 +237,8 @@ public class NoiseNineTest {
     }
 
     StringBuilder sb = new StringBuilder();
-    // sb.append( NoiseNinePanel.getInsetString(nne) );
-    // sb.append('\n');
+    String insets = NoiseNinePanel.getInsetString(nne);
+    sb.append('\n');
     sb.append( NoiseNinePanel.getTimeStampString(nne) );
     sb.append('\n');
     sb.append("INPUTTED FILES:");
@@ -256,7 +256,7 @@ public class NoiseNineTest {
 
     PDDocument pdf = new PDDocument();
     ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-    ReportingUtils.textToPDFPage( sb.toString(), pdf );
+    ReportingUtils.textListToPDFPages( pdf, insets, sb.toString() );
 
     String testResultFolder = currentDir + "/testResultImages/";
     File dir = new File(testResultFolder);

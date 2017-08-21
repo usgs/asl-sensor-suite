@@ -44,7 +44,7 @@ public class AzimuthTest {
         fail();
         e.printStackTrace();
       }
-      ds.setData(i, fName, seriesName);
+      ds.setBlock(i, fName, seriesName);
     }
     
     AzimuthExperiment azi = new AzimuthExperiment();
@@ -66,7 +66,7 @@ public class AzimuthTest {
     //System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
-    ds.trimAll(start, end);
+    ds.trim(start, end, 2);
     
     azi.runExperimentOnData(ds);
     
@@ -99,7 +99,7 @@ public class AzimuthTest {
         fail();
         e.printStackTrace();
       }
-      ds.setData(i, fName, seriesName);
+      ds.setBlock(i, fName, seriesName);
     }
     
     AzimuthExperiment azi = new AzimuthExperiment();
@@ -121,7 +121,7 @@ public class AzimuthTest {
     //System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
-    ds.trimAll(start, end);
+    ds.trim(start, end, 2);
     
     azi.runExperimentOnData(ds);
     

@@ -46,7 +46,7 @@ public class OrthogonalityTest {
         fail();
         e.printStackTrace();
       }
-      ds.setData(i, fName, seriesName);
+      ds.setBlock(i, fName, seriesName);
     }
     
     OrthogonalExperiment orth = new OrthogonalExperiment();
@@ -68,13 +68,13 @@ public class OrthogonalityTest {
     System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
-    ds.trimAll(start, end);
+    ds.trim(start, end);
     
     orth.runExperimentOnData(ds);
     
     System.out.println( orth.getFitAngle() );
     System.out.println( Arrays.toString( orth.getSolutionParams() ) );
-    assertEquals( orth.getFitAngle(), 94., 1. );
+    assertEquals( orth.getFitAngle(), 93., 1. );
     
   }
   

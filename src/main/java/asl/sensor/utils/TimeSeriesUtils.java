@@ -332,49 +332,24 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Return the locations of gaps in loaded data
-   * @param data Pair, first value is long representing interval and the
-   * second value is a map from longs representing time of a data sample
-   * to a numeric type representing the recorded value at that time
-   * @return Paired values representing the start and end points of time ranges
-   * where no data was available in the map
+   * Checks to see if the sensor's calibration is wired positively or not
+   * (i.e., if the result of a step-calibration is upside-down)
+   * @return True if sign appears to be incorrect compared to expected step cal
    */
-  public static 
-  List<Pair<Long, Long>> getGaps(Pair<Long, Map<Long, Number>> data) {
-    List<Pair<Long, Long>> gapList = new ArrayList<Pair<Long, Long>>();
+  public boolean needsSignFlip(List<Number> data) {
     
-    long interval = data.getFirst();
-    List<Long> times = new ArrayList<Long>( data.getSecond().keySet() );
-    Collections.sort(times);
-
-    for (int i = 0; i < times.size(); ++i) {
-      long timeNow = times.get(i);
-      if ( (i + 1) < times.size() ) {
-        long timeNext = times.get(i + 1);
-        // is there a discrepancy, and is it big enough for us to care?
-        if (timeNext - timeNow != interval) {
-          
-          if (timeNext - timeNow < interval / 2) {
-            System.out.println("SKIPPING POSSIBLE REPEATED VALUE");
-            continue;
-          }
-          
-          // it's a gap if it's more than twice the interval size
-          if (timeNext - timeNow  > interval * 2) {
-            gapList.add( new Pair<Long, Long>(timeNow, timeNext) );
-          }
-
-          // long gap = timeNext - timeNow;
-          // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
-          // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
-          while (timeNext - timeNow > interval * 2) {
-            timeNow += interval;
-          }
-        }
+    double max = Math.abs( data.get(0).doubleValue() );
+    int idx = 0;
+    
+    for (int i = 1; i < data.size() / 2; ++i) {
+      if ( Math.abs( data.get(i).doubleValue() ) > max ) {
+        max = Math.abs( data.get(i).doubleValue() );
+        idx = i;
       }
     }
     
-    return gapList;
+    return Math.signum( data.get(idx).doubleValue() ) < 0;
+    
   }
   
   /**
@@ -449,61 +424,6 @@ public class TimeSeriesUtils {
 
     return dataNames;
   }
-  
-  /**
-   * Get all contiguous ranges of data from a read-in time-value map
-   * @param data Pair, first value is long representing interval and the
-   * second value is a map from longs representing time of a data sample
-   * to a numeric type representing the recorded value at that time
-   * @return List of paired longs, representing the start and end times
-   * in microseconds of each contiguous range in the map
-   */
-  public static List<Pair<Long, Long>> 
-  getRanges(Pair<Long, Map<Long, Number>> data) {
-    
-    List<Pair<Long, Long>> gapList = getGaps(data);
-    
-    List<Long> times = new ArrayList<Long>( data.getSecond().keySet() );
-    Collections.sort(times);
-    
-    List<Pair<Long, Long>> contiguous = new ArrayList<Pair<Long, Long>>();
-    
-    // PairComparator sorts the gaps by start time
-    Collections.sort(gapList, new StartTimeComparator() );
-    long start = times.get(0);
-    long end = times.get( times.size() - 1 );
-    
-    if (gapList.size() == 0) {
-      contiguous.add( new Pair<Long, Long>(start, end) );
-      return contiguous;
-    }
-    
-    contiguous.add( new Pair<Long, Long>(start, gapList.get(0).getFirst() ) );
-    
-    for (int i = 0; i < gapList.size() - 1; ++i) {
-      contiguous.add( 
-          new Pair<Long, Long>( 
-              gapList.get(i).getSecond(), 
-              gapList.get(i + 1).getFirst() ) );
-    }
-    
-    Long last = gapList.get( gapList.size() - 1).getSecond();
-    contiguous.add( new Pair<Long, Long>(last, end) );
-    Collections.sort(contiguous, new StartTimeComparator() );
-    return contiguous;
-  }
-
-  /**
-   * Get range of contiguous data blocks in a file
-   * @param file Seed file to read in
-   * @param filter SNCL data representing relevant timeseries
-   * @return List of regions of data within which no time gaps exist
-   * @throws FileNotFoundException If file does not exist
-   */
-  public static List<Pair<Long, Long>> getRanges(String file, String filter) 
-      throws FileNotFoundException {
-    return getRanges( getTimeSeriesMap(file, filter) );
-  }
 
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
@@ -526,11 +446,9 @@ public class TimeSeriesUtils {
 
     // XYSeries xys = null;
     DataBlock db = null;
-    Pair<Long, Map<Long, Number>> intervalSeriesMapPair = 
+    Pair<Long, Map<Long, List<Number>>> intervalSeriesMapPair = 
         getTimeSeriesMap(filename, filter);
-    List<Pair<Long, Long>> gaps = getGaps(intervalSeriesMapPair);
     db = mapToTimeSeries(intervalSeriesMapPair, filter);
-    db.setGapLocations(gaps);
     return db;
 
   }
@@ -555,11 +473,9 @@ public class TimeSeriesUtils {
       throws FileNotFoundException {
     
     DataBlock db = null;
-    Pair<Long, Map<Long, Number>> intervalSeriesMapPair = 
+    Pair<Long, Map<Long, List<Number>>> intervalSeriesMapPair = 
         getTimeSeriesMap(filename, filter);
-    List<Pair<Long, Long>> gaps = getGaps(intervalSeriesMapPair);
     db = mapToTimeSeries(intervalSeriesMapPair, filter, range);
-    db.setGapLocations(gaps);
     return db;
   }
 
@@ -573,13 +489,14 @@ public class TimeSeriesUtils {
    * points from each given time value in the miniseed records
    * @throws FileNotFoundException if given file from filename cannot be read
    */
-  public static Pair<Long, Map<Long, Number>>
+  public static Pair< Long, Map< Long, List<Number> > >
    getTimeSeriesMap(String filename, String filter) 
       throws FileNotFoundException {
 
     long interval = 0L;
     DataInputStream dis;
-    Map<Long, Number> timeMap = new HashMap<Long, Number>();
+    
+    Map< Long, List<Number> > timeListMap = new HashMap<Long, List<Number> >();
     
     int byteSize = 512;
     try {
@@ -616,6 +533,8 @@ public class TimeSeriesUtils {
 
             // convert Btime to microseconds first as milliseconds
             long start = bt.convertToCalendar().getTimeInMillis();
+            
+            List<Number> blockPoints = new ArrayList<Number>();
 
             // .1 ms = 100 microseconds
             start *= 1000;
@@ -641,38 +560,35 @@ public class TimeSeriesUtils {
             // otherwise the decompressed data gets converted (cloned) as
             // the other type instead
             int dataType = decomp.getType();
-            long timeOfData = start;
 
             switch (dataType) {
             case B1000Types.INTEGER:
               int[] decomArrayInt = decomp.getAsInt();
               for (int dataPoint : decomArrayInt ) {
-                timeMap.put(timeOfData,dataPoint);
-                timeOfData += interval;
+                blockPoints.add(dataPoint);
               }
               break;
             case B1000Types.FLOAT:
               float[] decomArrayFlt = decomp.getAsFloat();
               for (float dataPoint : decomArrayFlt ) {
-                timeMap.put(timeOfData,dataPoint);
-                timeOfData += interval;
+                blockPoints.add(dataPoint);
               }
               break;
             case B1000Types.SHORT:
               short[] decomArrayShr = decomp.getAsShort();
               for (short dataPoint : decomArrayShr ) {
-                timeMap.put(timeOfData,dataPoint);
-                timeOfData += interval;
+                blockPoints.add(dataPoint);
               }
               break;
             default:
               double[] decomArrayDbl = decomp.getAsDouble();
               for (double dataPoint : decomArrayDbl ) {
-                timeMap.put(timeOfData,dataPoint);
-                timeOfData += interval;
+                blockPoints.add(dataPoint);
               }
               break;
             }
+            
+            timeListMap.put(start, blockPoints);
 
           }
         } catch(EOFException e) {
@@ -698,7 +614,7 @@ public class TimeSeriesUtils {
       e.printStackTrace();
     }
 
-    return new Pair<Long, Map<Long, Number>>(interval, timeMap);
+    return new Pair<Long, Map<Long, List<Number>>>(interval, timeListMap);
   }
 
   /**
@@ -738,8 +654,8 @@ public class TimeSeriesUtils {
    * @param filter String with SNCL (station, network, channel, location) data
    * @return DataBlock with the given timeseries and metadata
    */
-  public static 
-  DataBlock mapToTimeSeries(Pair<Long, Map<Long, Number>> data, String filter) {
+  public static DataBlock 
+  mapToTimeSeries(Pair<Long, Map<Long, List<Number>>> data, String filter) {
     
     // use max range instead of a trim region
     // TODO: likely will need to change range in year 2038
@@ -780,80 +696,14 @@ public class TimeSeriesUtils {
    * @return DataBlock consisting of timeseries data within given range
    */
   public static DataBlock 
-  mapToTimeSeries(Pair<Long, Map<Long, Number>> data, String filter, 
+  mapToTimeSeries(Pair<Long, Map<Long, List<Number>>> data, String filter, 
       Pair<Long, Long> range) {
     
-    long start = Math.min( range.getFirst(), range.getSecond() );
-    long end = Math.max( range.getFirst(), range.getSecond() );
-    
     long interval = data.getFirst();
-    Map<Long, Number> timeMap = data.getSecond();
+    Map<Long, List<Number>> timeMap = data.getSecond();
     DataBlock db;
     
-    // get data mean
-    double mean = 0.;
-    for ( Number sample : timeMap.values() ) {
-      mean += sample.doubleValue();
-    }
-    
-    mean /= timeMap.values().size();
-
-    // now we have all the data in a convenient map timestamp -> value
-    // which we can then convert into an easy array
-    List<Long> times = new ArrayList<Long>( timeMap.keySet() );
-    Collections.sort(times);
-    
-    long blockStart = getTrimmedStartTime(times, start); 
-    // data can't start before first sample
-    // this is necessary since we use this value as start time of data block
-   
-    // read in data from the records as long as they exist
-    // if no data exists (there's a gap in the record), set value to 0
-    // this is done to handle cases where multiplexed files have non-matching
-    // gaps and similar issues that previous code was not able to handle
-
-    List<Number> timeList = new ArrayList<Number>();
-    
-    for (int i = 0; i < times.size(); ++i) {
-      long timeNow = times.get(i);
-      
-      if (timeNow < start) {
-        continue;
-      } else if (timeNow > end) {
-        break;
-      }
-      
-      // do a demean here so that we can add 0-values to empty points
-      // without those values affecting the removal of a DC offset later
-      timeList.add( timeMap.get(timeNow).doubleValue() );
-
-      if ( (i + 1) < times.size() ) {
-        long timeNext = times.get(i + 1);
-        // is there a discrepancy, and is it big enough for us to care?
-        if (timeNext - timeNow != interval) {
-          
-          if (timeNext - timeNow < interval / 2) {
-            System.out.println("SKIPPING POSSIBLE REPEATED VALUE");
-            continue;
-          }
-          
-          if (timeNext - timeNow > interval && 
-              timeNext - timeNow < interval * 1.75) {
-            System.out.println("CORRECTING SMALL TIME ROUNDING ERROR");
-            continue;
-          }
-          
-          while (timeNext - timeNow > interval) {
-            timeList.add(mean);
-            // why use mean value? puts the value in gaps as the center of
-            // data -- useful if the data has a large DC offset
-            timeNow += interval;
-          }
-        }
-      }
-    }
-    
-    db = new DataBlock(timeList, interval, filter, blockStart);
+    db = new DataBlock(timeMap, interval, filter);
     return db;
     
   }
@@ -922,19 +772,8 @@ public class TimeSeriesUtils {
     DataBlock rotated = new DataBlock(north);
     List<Number> northData = north.getData();
     List<Number> eastData = east.getData();
-    List<Number> rotatedData = new ArrayList<Number>();
 
-    // clockwise rotation matrix!! That's why things are so screwy
-    double sinTheta = Math.sin(ang);
-    double cosTheta = Math.cos(ang);
-
-    for (int i = 0; i < northData.size(); ++i) {
-      rotatedData.add( 
-          northData.get(i).doubleValue() * cosTheta - 
-          eastData.get(i).doubleValue() * sinTheta );
-    }
-
-    rotated.setData(rotatedData);
+    rotated.setData( rotate(northData, eastData, ang) );
 
     return rotated;
   }
@@ -953,19 +792,7 @@ public class TimeSeriesUtils {
     DataBlock rotated = new DataBlock(east); // use east component metadata
     List<Number> northData = north.getData();
     List<Number> eastData = east.getData();
-    List<Number> rotatedData = new ArrayList<Number>();
-
-    double sinTheta = Math.sin(ang);
-    double cosTheta = Math.cos(ang);
-
-    for (int i = 0; i < northData.size(); ++i) {
-      rotatedData.add( 
-          eastData.get(i).doubleValue() * cosTheta + 
-          northData.get(i).doubleValue() * sinTheta );
-    }
-
-    rotated.setData(rotatedData);
-
+    rotated.setData( rotateX(northData, eastData, ang) );
     return rotated;
   }
 
@@ -990,6 +817,41 @@ public class TimeSeriesUtils {
     }
 
     return upsamp;
+  }
+
+  public static List<Number> 
+  rotateX(List<Number> northData, List<Number> eastData, double ang) {
+    List<Number> rotatedData = new ArrayList<Number>();
+
+    double sinTheta = Math.sin(ang);
+    double cosTheta = Math.cos(ang);
+
+    for (int i = 0; i < northData.size(); ++i) {
+      rotatedData.add( 
+          eastData.get(i).doubleValue() * cosTheta + 
+          northData.get(i).doubleValue() * sinTheta );
+    }
+
+
+    return rotatedData;
+  }
+  
+  public static List<Number> 
+  rotate(List<Number> northData, List<Number> eastData, double ang) {
+    List<Number> rotatedData = new ArrayList<Number>();
+
+    // clockwise rotation matrix!! That's why things are so screwy
+    double sinTheta = Math.sin(ang);
+    double cosTheta = Math.cos(ang);
+
+    for (int i = 0; i < northData.size(); ++i) {
+      rotatedData.add( 
+          northData.get(i).doubleValue() * cosTheta - 
+          eastData.get(i).doubleValue() * sinTheta );
+    }
+
+
+    return rotatedData;
   }
 
 }
