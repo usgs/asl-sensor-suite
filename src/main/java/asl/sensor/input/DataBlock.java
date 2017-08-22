@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -451,29 +452,34 @@ public class DataBlock {
     int startingPoint = 0;
     int cursor;
     while ( startingPoint < startTimes.size() ) {
+      List<double[]> toMerge = new ArrayList<double[]>();
       long currentTime = startTimes.get(startingPoint);
+
       double[] currentSeries = dataMap.get(currentTime);
-      long lastTimeInList = 
+      toMerge.add(currentSeries);
+      long timeAtSublistEnd = 
           currentTime + ( currentSeries.length * interval );
       
       cursor = startingPoint + 1;
       long nextTime = startTimes.get(cursor);
-      long difference = Math.abs(nextTime - lastTimeInList);
+      long difference = Math.abs(nextTime - timeAtSublistEnd);
       
       while ( difference < (interval / 4) ) {
         double[] nextGroup = dataMap.get(nextTime);
-        
-        currentSeries = TimeSeriesUtils.addAll(currentSeries, nextGroup);
-        lastTimeInList = nextTime + ( nextGroup.length * interval );
+        toMerge.add(nextGroup);
+        // currentSeries = TimeSeriesUtils.addAll(currentSeries, nextGroup);
+        timeAtSublistEnd = nextTime + ( nextGroup.length * interval );
         ++cursor;
         if ( cursor >= startTimes.size() ) {
           break;
         }
         nextTime = startTimes.get(cursor);
-        difference = Math.abs(nextTime - lastTimeInList);
+        difference = Math.abs(nextTime - timeAtSublistEnd);
       }
       
-      mergedMap.put(currentTime, currentSeries);
+      double[] contiguousSeries = TimeSeriesUtils.concatAll(toMerge);
+      
+      mergedMap.put(currentTime, contiguousSeries);
       startingPoint = cursor + 1;
       
     }

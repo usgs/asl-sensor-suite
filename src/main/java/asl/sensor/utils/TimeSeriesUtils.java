@@ -208,10 +208,61 @@ public class TimeSeriesUtils {
     
   }
   
-  public static double[] addAll(double[] arr1, double[] arr2) {
-    double[] result = new double[arr1.length + arr2.length];
-    System.arraycopy(arr1, 0, result, 0, arr1.length);
-    System.arraycopy(arr2, 0, result, arr1.length, arr2.length);
+  public static double[] concatAll(double[]... arrs) {
+    
+    if (arrs.length == 0) {
+      return new double[]{};
+    }
+    
+    if (arrs.length == 1) {
+      return arrs[0];
+    }
+    
+    int len = 0;
+    for (double[] arr : arrs) {
+      len += arr.length;
+    }
+    
+    double[] result = new double[len];
+    int start = 0;
+    for (double[] arr : arrs) {
+      if (arr.length == 0) {
+        continue;
+      }
+      int end = arr.length;
+      System.arraycopy(arr, 0, result, start, end);
+      start += end;
+    }
+    
+    return result;
+  }
+  
+  public static double[] concatAll(List<double[]> arrs) {
+    
+    if (arrs.size() == 0) {
+      return new double[]{};
+    }
+    
+    if (arrs.size() == 1) {
+      return arrs.get(0);
+    }
+    
+    int len = 0;
+    for (double[] arr : arrs) {
+      len += arr.length;
+    }
+    
+    double[] result = new double[len];
+    int start = 0;
+    for (double[] arr : arrs) {
+      if (arr.length == 0) {
+        continue;
+      }
+      int end = arr.length;
+      System.arraycopy(arr, 0, result, start, end);
+      start += end;
+    }
+    
     return result;
   }
 
@@ -668,6 +719,7 @@ public class TimeSeriesUtils {
     
     long interval = data.getFirst();
     Map<Long, double[]> timeMap = data.getSecond();
+    // TODO: trim timeMap according to range
     DataBlock db;
     
     db = new DataBlock(timeMap, interval, filter);
