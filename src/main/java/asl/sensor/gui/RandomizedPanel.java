@@ -414,7 +414,7 @@ public class RandomizedPanel extends ExperimentPanel {
     String degreeAxisTitle = "phi(RESP(f))";
     
     xAxis = new LogarithmicAxis(xAxisTitle);
-    prdAxis = new LogarithmicAxis(prdAxisTitle);
+    prdAxis = new NumberAxis(prdAxisTitle);
     
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);

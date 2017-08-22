@@ -114,6 +114,8 @@ extends Experiment implements ParameterValidator {
   @Override
   protected void backend(DataStore ds) {
     
+    normalIdx = 1;
+    
     // construct response plot
     DataBlock calib = ds.getXthLoadedBlock(1);
     sensorOutIdx = ds.getXthFullyLoadedIndex(1);
@@ -209,19 +211,21 @@ extends Experiment implements ParameterValidator {
     // trim the PSDs to the data in the trimmed frequency range
 
     int endIdx = startIdx + len;
+    System.out.println("INDICES: " + startIdx + "," + endIdx);
     Complex[] numeratorPSDVals = 
         Arrays.copyOfRange(numeratorPSD.getFFT(), startIdx, endIdx);
     Complex[] denominatorPSDVals = 
         Arrays.copyOfRange(denominatorPSD.getFFT(), startIdx, endIdx);
     
     for (int i = 0; i < len; ++i) {
+      
       freqs[i] = freqList.get(i);
       
       // numeratorPSDVals[i] = numPSDMap.get(freqs[i]);
       // denominatorPSDVals[i] = denomPSDMap.get(freqs[i]);
       
-      if ( freqs[i] == zeroTarget || 
-          (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) {
+      if ( freqs[i] == zeroTarget || ( i > 0 &&
+          (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) ) {
         normalIdx = i;
       }
     }
@@ -302,7 +306,7 @@ extends Experiment implements ParameterValidator {
       } else {
         xAxis = 1. / freqs[i];
       }
-      
+      System.out.println( xAxis + "," + observedResult[i] );
       calcMag.add(xAxis, observedResult[i]);
       calcArg.add(xAxis, observedResult[argIdx]);
     }

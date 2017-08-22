@@ -71,7 +71,7 @@ public class AzimuthTest {
     azi.runExperimentOnData(ds);
     
     System.out.println( azi.getFitAngle() );
-    assertEquals( azi.getFitAngle(), 15.5, 0.5 );
+    assertEquals( 16.0, azi.getFitAngle(), 0.5 );
     
   }
   
@@ -126,7 +126,7 @@ public class AzimuthTest {
     azi.runExperimentOnData(ds);
     
     System.out.println( azi.getFitAngle() );
-    assertEquals( azi.getFitAngle(), 0., 0.75 );
+    assertEquals( 0., azi.getFitAngle(), 0.75 );
     
   }
 

@@ -65,14 +65,14 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // and then rotate some of those sensors to get new datablocks
     // we can only compact the code so hard, and this is an easier arrangement
     // than, say, trying to index into a series of arraylists
-    List<Number> north1Sensor = ds.getBlock(0).getData();
-    List<Number> east1Sensor = ds.getBlock(1).getData();
+    double[] north1Sensor = ds.getBlock(0).getData();
+    double[] east1Sensor = ds.getBlock(1).getData();
     
-    List<Number> north2Sensor = ds.getBlock(3).getData();
-    List<Number> east2Sensor = ds.getBlock(4).getData();
+    double[] north2Sensor = ds.getBlock(3).getData();
+    double[] east2Sensor = ds.getBlock(4).getData();
     
-    List<Number> north3Sensor = ds.getBlock(6).getData();
-    List<Number> east3Sensor = ds.getBlock(7).getData();
+    double[] north3Sensor = ds.getBlock(6).getData();
+    double[]east3Sensor = ds.getBlock(7).getData();
     
     long interval = ds.getBlock(0).getInterval();
     long start = ds.getBlock(0).getStartTime();
@@ -121,7 +121,6 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // rotation direction
     eastAngles[1] = -getAzimuth(north1Sensor, east1Sensor, 
         east3Sensor, interval, start, end) + (3 * Math.PI / 2);
-    
     
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
@@ -194,7 +193,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   
-  private double getAzimuth(List<Number> n, List<Number> e, List<Number> r, 
+  private double getAzimuth(double[] n, double[] e, double[] r, 
       long interval, long start, long end) {
     // TODO: FIX THIS
     AzimuthExperiment azi = new AzimuthExperiment();

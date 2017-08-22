@@ -44,19 +44,17 @@ public class FFTResultTest {
 
   @Test
   public void cosineTaperTest() throws Exception {
-    Number[] x = { 5, 5, 5, 5, 5 };
-    List<Number> toTaper = Arrays.asList(x);
-    Double[] tapered = { 0d, 4.5d, 5d, 4.5d, 0d };
+    double[] x = { 5, 5, 5, 5, 5 };
+    double[] toTaper = x.clone();
+    double[] tapered = { 0d, 4.5d, 5d, 4.5d, 0d };
 
     double power = FFTResult.cosineTaper(toTaper, 0.25);
     
     assertEquals(new Double(Math.round(power)), new Double(4));
     
     for (int i = 0; i < x.length; i++) {
-      // round to the first decimal (multiply by 10, round, divide by 10)
-      Double result = 
-          new Double(Math.round(toTaper.get(i).doubleValue()*10d)/10d);
-      assertEquals(result, tapered[i]);
+      // precision to nearest tenth?
+      assertEquals(toTaper[i], tapered[i], 0.1);
     }
   }
   
@@ -64,9 +62,10 @@ public class FFTResultTest {
   @Test
   public void fftZerosTestWelch() {
     long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
-    List<Number> data = new ArrayList<Number>();
-    for (int i = 0; i < 1000; ++i) {
-      data.add(0.);
+    double[] data = new double[1000];
+    // likely unnecessary loop, double arrays initialized at 0
+    for (int i = 0; i < data.length; ++i) {
+      data[i] = 0.;
     }
     FFTResult fftr = FFTResult.spectralCalc(data, data, interval);
     Complex[] values = fftr.getFFT();
@@ -78,9 +77,10 @@ public class FFTResultTest {
   @Test
   public void fftZerosTestMultitaper() {
     long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
-    List<Number> data = new ArrayList<Number>();
-    for (int i = 0; i < 1000; ++i) {
-      data.add(0.);
+    double[] data = new double[1000];
+    // likely unnecessary loop, double arrays initialized at 0
+    for (int i = 0; i < data.length; ++i) {
+      data[i] = 0.;
     }
     FFTResult fftr = FFTResult.spectralCalcMultitaper(data, data, interval);
     Complex[] values = fftr.getFFT();
@@ -156,12 +156,13 @@ public class FFTResultTest {
     long timeStart = 0L;
     String name1 = "XX_FAKE_LH1_00";
     String name2 = "XX_FAKE_LH2_00";
-    List<Number> timeSeries = new ArrayList<Number>();
-    List<Number> secondSeries = new ArrayList<Number>();
+    int len = 10000;
+    double[] timeSeries = new double[len];
+    double[] secondSeries = new double[len];
     
-    for (int i = 0; i < 10000; ++i) {
-      timeSeries.add( Math.sin(i) );
-      secondSeries.add( Math.sin(i) + Math.sin(2 * i) );
+    for (int i = 0; i < len; ++i) {
+      timeSeries[i] = Math.sin(i);
+      secondSeries[i] = Math.sin(i) + Math.sin(2 * i);
     }
     
     DataBlock db = new DataBlock(timeSeries, interval, name1, timeStart);
@@ -274,11 +275,11 @@ public class FFTResultTest {
     String metaName;
     try {
       metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
-      Pair<Long, Map<Long, List<Number>>> dataMap = 
+      Pair<Long, Map<Long, double[]>> dataMap = 
           TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
       DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
       // long interval = dataMap.getFirst();
-      Map<Long, List<Number>> timeSeriesMap = dataMap.getSecond();
+      Map<Long, double[]> timeSeriesMap = dataMap.getSecond();
       List<Long> times = new ArrayList<Long>( timeSeriesMap.keySet() );
       Collections.sort(times);
       long initTime = times.get(0);
@@ -323,10 +324,10 @@ public class FFTResultTest {
       // System.out.println(endTime+","+sensor.getEndTime());
 
       double[] timeSeriesArrayMean = new double[timeSeriesList.size()];
-      double[] timeSeriesArrayDemean = new double[timeSeriesList.size()];
+      double[] timeSeriesArrayDemean = sensor.getData();
       for (int i = 0; i < timeSeriesArrayMean.length; ++i) {
         timeSeriesArrayMean[i] = timeSeriesList.get(i);
-        timeSeriesArrayDemean[i] = sensor.getData().get(i).doubleValue();
+        // timeSeriesArrayDemean[i] = sensor.getData()[i];
       }
       
       Complex[] withMeanFFT = FFTResult.simpleFFT(timeSeriesArrayMean);
@@ -411,8 +412,8 @@ public class FFTResultTest {
       System.out.println(j + "-th tapered-data first point: " + toFFT[0]);
       System.out.println(j + "-th tapered-data last point: " + toFFT[last]);
       
-      assertEquals(0., toFFT[0], 1E-15);
-      assertEquals(0., toFFT[last], 1E-15);
+      assertEquals(0., toFFT[0], 1E-10);
+      assertEquals(0., toFFT[last], 1E-10);
     }
   }
   
@@ -455,7 +456,7 @@ public class FFTResultTest {
     String metaName;
     try {
       metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
-      Pair<Long, Map<Long, List<Number>>> dataMap = 
+      Pair<Long, Map<Long, double[]>> dataMap = 
           TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
       DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
       
@@ -463,7 +464,7 @@ public class FFTResultTest {
       XYSeries meaned = new XYSeries(metaName + "FFT, mean kept");
       XYSeries demeaned = new XYSeries(metaName + "FFT, mean removed");
       
-      Map<Long, List<Number>> map = dataMap.getSecond();
+      Map<Long, double[]> map = dataMap.getSecond();
       
       int padding = 2;
       while (padding < sensor.size()) {
@@ -515,10 +516,12 @@ public class FFTResultTest {
       
       assertEquals(arrIdx, sensor.size());
       
-      double[] demeanedTimeSeries = new double[padding];
+      double[] demeanedTimeSeries = sensor.getData();
+      /*
       for (int i = 0; i < sensor.size(); ++i) {
-        demeanedTimeSeries[i] = sensor.getData().get(i).doubleValue();
+        demeanedTimeSeries[i] = sensor.getData()[i];
       }
+      */
       
       Complex[] meanedFFT = FFTResult.simpleFFT(meanedTimeSeries);
       Complex[] demeanedFFT = FFTResult.simpleFFT(demeanedTimeSeries);

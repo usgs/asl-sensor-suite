@@ -124,7 +124,7 @@ implements ActionListener, ChangeListener {
   private int activePlots = FILE_COUNT; // how much data is being displayed
   
   private DataStore ds;
-  private ChartPanel[] chartPanels = new ChartPanel[FILE_COUNT];
+  private ChartPanel[] chartPanels;
   private Color[] defaultColor = {
           ChartColor.LIGHT_RED, 
           ChartColor.LIGHT_BLUE, 
@@ -141,17 +141,15 @@ implements ActionListener, ChangeListener {
   
   private EditableDateDisplayPanel startDate, endDate;
       
-  private JButton[] seedLoaders  = new JButton[FILE_COUNT];
-  private JTextComponent[] seedFileNames = 
-      new JTextComponent[FILE_COUNT];
-  private JButton[] respLoaders  = new JButton[FILE_COUNT];
-  private JTextComponent[] respFileNames = 
-      new JTextComponent[FILE_COUNT];
-  private JButton[] clearButton = new JButton[FILE_COUNT];
+  private JButton[] seedLoaders;
+  private JTextComponent[] seedFileNames;
+  private JButton[] respLoaders;
+  private JTextComponent[] respFileNames;
+  private JButton[] clearButton;
   
-  private JLabel[] channelType = new JLabel[FILE_COUNT];
+  private JLabel[] channelType;
   
-  private JPanel[] chartSubpanels = new JPanel[FILE_COUNT];
+  private JPanel[] chartSubpanels;
   
   // used to store current directory locations
   private String seedDirectory = "data";
@@ -167,6 +165,15 @@ implements ActionListener, ChangeListener {
    * the inputted data plots into a single PNG file.
    */
   public InputPanel() {
+    
+    chartPanels = new ChartPanel[FILE_COUNT];
+    seedLoaders = new JButton[FILE_COUNT];
+    seedFileNames = new JTextComponent[FILE_COUNT];
+    respFileNames = new JTextComponent[FILE_COUNT];
+    respLoaders = new JButton[FILE_COUNT];
+    clearButton = new JButton[FILE_COUNT];
+    channelType = new JLabel[FILE_COUNT];
+    chartSubpanels = new JPanel[FILE_COUNT];
     
     this.setLayout( new GridBagLayout() );
     GridBagConstraints gbc = new GridBagConstraints();
@@ -788,9 +795,11 @@ implements ActionListener, ChangeListener {
           }
 
           // zooms.matchIntervals(activePlots);
-          ds.trimToCommonTime(activePlots);
-
-          XYSeries ts = ds.getPlotSeries(idx);
+          ds.untrim(activePlots);
+          
+          XYSeries ts = ds.getBlock(idx).toXYSeries();
+          System.out.println("XY SERIES NAME");
+          System.out.println(ts.getKey());
           double sRate = ds.getBlock(idx).getSampleRate();
           String rateString = " (" + sRate + " Hz)";
           chart = ChartFactory.createXYLineChart(
@@ -800,6 +809,8 @@ implements ActionListener, ChangeListener {
               new XYSeriesCollection(ts),
               PlotOrientation.VERTICAL,
               false, false, false);
+          
+          System.out.println("Got chart");
 
           XYPlot xyp = (XYPlot) chart.getPlot();
           

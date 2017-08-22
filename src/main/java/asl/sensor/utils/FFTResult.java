@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.math3.complex.Complex;
@@ -119,7 +120,7 @@ public class FFTResult {
   bandFilterWithCuts(double[] toFilt, double sps, double low, double high, 
                      double lowStop, double highStop) {
     
-    System.out.println("FILTERING OPERATION OCCURRING");
+    // System.out.println("FILTERING OPERATION OCCURRING");
     
     Complex[] fft = simpleFFT(toFilt);
     
@@ -153,21 +154,21 @@ public class FFTResult {
    * @param taperW Width of taper to be used
    * @return Value corresponding to power loss from application of taper.
    */
-  public static double cosineTaper(List<Number> dataSet, double taperW) {
+  public static double cosineTaper(double[] dataSet, double taperW) {
     
-    double ramp = taperW * dataSet.size();
+    double ramp = taperW * dataSet.length;
     double taper;
     double wss = 0.0; // represents power loss
     
     for (int i = 0; i < ramp; i++) {
       taper = 0.5 * (1.0 - Math.cos( (double) i * Math.PI / ramp) );
-      dataSet.set(i, dataSet.get(i).doubleValue() * taper);
-      int idx = dataSet.size()-i-1;
-      dataSet.set(idx, dataSet.get(idx).doubleValue() * taper );
+      dataSet[i] *= taper;
+      int idx = dataSet.length-i-1;
+      dataSet[idx] *= taper;
       wss += 2.0 * taper * taper;
     }
     
-    wss += ( dataSet.size() - (2 * ramp) );
+    wss += ( dataSet.length - (2 * ramp) );
     
     return wss;
   }
@@ -204,7 +205,7 @@ public class FFTResult {
   public static double[][] getMultitaperSeries(int winLen, int numTapers) {
     double[][] taperMat = new double[numTapers][winLen];
     
-    double denom = winLen;
+    double denom = winLen - 1;
     double scale = Math.sqrt(2 / denom);
     
     // TODO: may need to check correct loop indices for efficiency
@@ -253,7 +254,29 @@ public class FFTResult {
     }
     
     return new FFTResult(out, freqs);
+  }
+  
+  public static FFTResult crossPower(double[] data1, double[] data2,
+      InstrumentResponse ir1, InstrumentResponse ir2, long interval) {
+    FFTResult selfPSD = spectralCalc(data1, data2, interval);
+    Complex[] results = selfPSD.getFFT();
+    double[] freqs = selfPSD.getFreqs();
+    Complex[] out = new Complex[freqs.length];
+    Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
+    Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
     
+    for (int j = 0; j < freqs.length; ++j) {
+      Complex respMagnitude = 
+          freqRespd1[j].multiply( freqRespd2[j].conjugate() );
+      
+      if (respMagnitude.abs() == 0) {
+        respMagnitude = new Complex(Double.MIN_VALUE, 0);
+      }
+      
+      out[j] = results[j].divide(respMagnitude);
+    }
+    
+    return new FFTResult(out, freqs);
   }
   
   /**
@@ -380,11 +403,9 @@ public class FFTResult {
    */
   public static FFTResult singleSidedFFT(DataBlock db, boolean mustFlip) {
     
-    double[] data = new double[db.size()];
+    double[] data = db.getData().clone();
     
     for (int i = 0; i < db.size(); ++i) {
-      data[i] = db.getData().get(i).doubleValue();
-      
       if (mustFlip) {
         data[i] *= -1;
       }
@@ -427,11 +448,9 @@ public class FFTResult {
   public static FFTResult 
   singleSidedFilteredFFT(DataBlock db, boolean mustFlip) {
     
-    double[] data = new double[db.size()];
+    double[] data = db.getData().clone();
     
     for (int i = 0; i < db.size(); ++i) {
-      data[i] = db.getData().get(i).doubleValue();
-      
       if (mustFlip) {
         data[i] *= -1;
       }
@@ -522,8 +541,8 @@ public class FFTResult {
     // and calculating the same data twice
     boolean sameData = data1.getName().equals( data2.getName() );
     
-    List<Number> list1 = data1.getData();
-    List<Number> list2 = list1;
+    double[] list1 = data1.getData();
+    double[] list2 = list1;
     if (!sameData) {
       list2 = data2.getData();
     }
@@ -535,13 +554,13 @@ public class FFTResult {
   }
     
   public static FFTResult 
-  spectralCalc(List<Number> list1, List<Number> list2, long interval) {
+  spectralCalc(double[] list1, double[] list2, long interval) {
     
     boolean sameData = list1.equals(list2);
     
     // divide into windows of 1/4, moving up 1/16 of the data at a time
     
-    int range = list1.size()/4;
+    int range = list1.length/4;
     int slider = range/4;
     
     // period is 1/sample rate in seconds
@@ -571,7 +590,7 @@ public class FFTResult {
       powSpectDens[i] = Complex.ZERO;
     }
     
-    while ( rangeEnd <= list1.size() ) {
+    while ( rangeEnd <= list1.length ) {
       
       Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
       Complex[] fftResult2 = null;
@@ -581,15 +600,12 @@ public class FFTResult {
       }
       
       // give us a new list we can modify to get the data of
-      List<Number> data1Range = 
-          new ArrayList<Number>(
-              list1.subList(rangeStart, rangeEnd) );
-      List<Number> data2Range = null;
+      double[] data1Range = 
+          Arrays.copyOfRange(list1, rangeStart, rangeEnd);
+      double[] data2Range = null;
       
       if (!sameData) {
-        data2Range = 
-            new ArrayList<Number>(
-                list2.subList(rangeStart, rangeEnd) );
+        data2Range = Arrays.copyOfRange(list2, rangeStart, rangeEnd);
       }
        
       // double arrays initialized with zeros, set as a power of two for FFT
@@ -610,12 +626,12 @@ public class FFTResult {
         toFFT2 = new double[padding];
       }
       
-
-      for (int i = 0; i < data1Range.size(); ++i) {
+      // TODO: this can clearly be refactored
+      for (int i = 0; i < data1Range.length; ++i) {
         // no point in using arraycopy -- must make sure each Number's a double
-        toFFT1[i] = data1Range.get(i).doubleValue();
+        toFFT1[i] = data1Range[i];
         if (!sameData) {
-          toFFT2[i] = data2Range.get(i).doubleValue();
+          toFFT2[i] = data2Range[i];
         }
       }
       
@@ -713,8 +729,8 @@ public class FFTResult {
     // and calculating the same data twice
     boolean sameData = data1.getName().equals( data2.getName() );
     
-    List<Number> list1 = data1.getData();
-    List<Number> list2 = list1;
+    double[] list1 = data1.getData();
+    double[] list2 = list1;
     if (!sameData) {
       list2 = data2.getData();
     }
@@ -723,12 +739,12 @@ public class FFTResult {
   }
     
   public static FFTResult 
-  spectralCalcMultitaper(List<Number> list1, List<Number> list2, long ivl) {
+  spectralCalcMultitaper(double[] list1, double[] list2, long ivl) {
     
     boolean sameData = list1.equals(list2);
     
     int padding = 2;
-    while ( padding < ( list1.size() ) ) {
+    while ( padding < list1.length ) {
       padding *= 2;
     }
     
@@ -762,17 +778,17 @@ public class FFTResult {
     }
     
     // give us a new list we can modify to get the data of
-    List<Number> data1Range = new ArrayList<Number>(list1);
-    List<Number> data2Range = data1Range;
+    double[] data1Range = list1.clone();
+    double[] data2Range = data1Range;
     if (!sameData) {
-      data2Range = new ArrayList<Number>(list2);
+      data2Range = list2.clone();
     }
     
     // double arrays initialized with zeros, set as a power of two for FFT
     // (i.e., effectively pre-padded on initialization)
 
     double[][] taperMat = 
-        getMultitaperSeries(data1Range.size(), TAPER_COUNT);
+        getMultitaperSeries(data1Range.length, TAPER_COUNT);
     // System.out.println("SIZES: " + padding + ", " + data1Range.size());
     
     // demean and detrend work in-place on the list
@@ -784,9 +800,9 @@ public class FFTResult {
       double[] toFFT = new double[padding];
       double[] taperCurve = taperMat[j];
       double taperSum = 0.;
-      for (int i = 0; i < data1Range.size(); ++i) {
+      for (int i = 0; i < data1Range.length; ++i) {
         taperSum += Math.abs(taperCurve[i]);
-        double point = data1Range.get(i).doubleValue();
+        double point = data1Range[i];
         toFFT[i] = point * taperCurve[i];
       }
       frqDomn = fft.transform(toFFT, TransformType.FORWARD);
@@ -807,9 +823,9 @@ public class FFTResult {
         Complex[] frqDomn;
         double[] taperCurve = taperMat[j];
         double taperSum = 0.;
-        for (int i = 0; i < data2Range.size(); ++i) {
+        for (int i = 0; i < data2Range.length; ++i) {
           taperSum += Math.abs(taperCurve[i]);
-          double point = data2Range.get(i).doubleValue();
+          double point = data2Range[i];
           toFFT[i] = point * taperMat[j][i];
         }
         frqDomn = fft.transform(toFFT, TransformType.FORWARD);

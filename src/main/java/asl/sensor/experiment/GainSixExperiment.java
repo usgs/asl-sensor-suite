@@ -57,11 +57,11 @@ public class GainSixExperiment extends Experiment {
     }
     
     //first get the first set of data (NSV), then second
-    List<Number> north1Sensor = ds.getBlock(0).getData();
-    List<Number> east1Sensor = ds.getBlock(1).getData();
+    double[] north1Sensor = ds.getBlock(0).getData();
+    double[] east1Sensor = ds.getBlock(1).getData();
     
-    List<Number> north2Sensor = ds.getBlock(3).getData();
-    List<Number> east2Sensor = ds.getBlock(4).getData();
+    double[] north2Sensor = ds.getBlock(3).getData();
+    double[] east2Sensor = ds.getBlock(4).getData();
     
     // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting second north sensor orientation...");
@@ -243,7 +243,7 @@ public class GainSixExperiment extends Experiment {
     return indices;
   }
   
-  private double getAzimuth(List<Number> n, List<Number> e, List<Number> r, 
+  private double getAzimuth(double[] n, double[] e, double[] r, 
       long interval, long start, long end) {
     // TODO: FIX THIS
     AzimuthExperiment azi = new AzimuthExperiment();

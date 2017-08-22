@@ -47,7 +47,6 @@ public class DataStore {
   public final static int FILE_COUNT = 9;
   private DataBlock[] dataBlockArray;
   private InstrumentResponse[] responses;
-  private XYSeries[] outToPlots; // used to cache graph data
   
   // these are used to check to make sure data has been loaded
   private boolean[] thisBlockIsSet;
@@ -60,11 +59,9 @@ public class DataStore {
   public DataStore() {
    dataBlockArray = new DataBlock[FILE_COUNT];
    responses = new InstrumentResponse[FILE_COUNT];
-   outToPlots = new XYSeries[FILE_COUNT];
    thisBlockIsSet = new boolean[FILE_COUNT];
    thisResponseIsSet = new boolean[FILE_COUNT];
    for (int i = 0; i < FILE_COUNT; ++i) {
-     outToPlots[i] = new XYSeries("(EMPTY) " + i);
      thisBlockIsSet[i] = false;
      thisResponseIsSet[i] = false;
    }
@@ -88,14 +85,12 @@ public class DataStore {
     responses = new InstrumentResponse[FILE_COUNT];
     thisBlockIsSet = new boolean[FILE_COUNT];
     thisResponseIsSet = new boolean[FILE_COUNT];
-    outToPlots = new XYSeries[FILE_COUNT];
     boolean[] setBlocks = ds.dataIsSet();
     boolean[] setResps = ds.responsesAreSet();
     for (int i = 0; i < upperBound; ++i) {
       if (setBlocks[i]) {
         dataBlockArray[i] = new DataBlock( ds.getBlock(i) );
         thisBlockIsSet[i] = true;
-        outToPlots[i] = ds.getPlotSeries(i);
       }
       if (setResps[i]) {
         responses[i] = ds.getResponse(i);
@@ -209,7 +204,7 @@ public class DataStore {
    * @return The time series data at given index, to be sent to a chart
    */
   public XYSeries getPlotSeries(int idx) {
-    return outToPlots[idx];
+    return dataBlockArray[idx].toXYSeries();
   }
   
   /**
@@ -221,9 +216,10 @@ public class DataStore {
    * double array of the frequencies
    */
   public synchronized FFTResult getPSD(int idx) {
-    DataBlock db = dataBlockArray[idx];
+    double[] data = dataBlockArray[idx].getData();
+    long interval = dataBlockArray[idx].getInterval();
     InstrumentResponse ir = responses[idx];
-    return FFTResult.crossPower(db, db, ir, ir);
+    return FFTResult.crossPower(data, data, ir, ir, interval);
   }
   
   /**
@@ -327,13 +323,14 @@ public class DataStore {
     long interval = 0;
     // first loop to get lowest-frequency data
     for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInterval() > interval ) {
-        interval = getBlock(i).getInterval();
+      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() > interval ) {
+        interval = getBlock(i).getInitialInterval();
       }
     }
     // second loop to downsample
     for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInterval() != interval ) {
+      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() != interval ) {
+        System.out.println("resampling");
         getBlock(i).resample(interval);
       }
     }
@@ -378,7 +375,6 @@ public class DataStore {
   public void removeData(int idx) {
     dataBlockArray[idx] = null;
     responses[idx] = null;
-    outToPlots[idx] = null;
     thisBlockIsSet[idx] = false;
     thisResponseIsSet[idx] = false;
   }
@@ -412,7 +408,6 @@ public class DataStore {
   public void setBlock(int idx, DataBlock db) {
     thisBlockIsSet[idx] = true;
     dataBlockArray[idx] = db;
-    outToPlots[idx] = db.toXYSeries();
   }
   
   /**
@@ -428,7 +423,6 @@ public class DataStore {
       DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
       thisBlockIsSet[idx] = true;
       dataBlockArray[idx] = xy;
-      outToPlots[idx] = xy.toXYSeries();
     } catch (FileNotFoundException e) {
       e.printStackTrace();
     }
@@ -447,7 +441,6 @@ public class DataStore {
             if (end < dataBlockArray[i].getStartTime() || 
                 start > dataBlockArray[i].getEndTime() ) {
               thisBlockIsSet[idx] = false;
-              outToPlots[idx] = null;
               dataBlockArray[idx] = null;
               throw new RuntimeException("Time range does not intersect");
             }
@@ -476,7 +469,6 @@ public class DataStore {
           TimeSeriesUtils.getTimeSeries(filepath, nameFilter, timeRange);
       thisBlockIsSet[idx] = true;
       dataBlockArray[idx] = xy;
-      outToPlots[idx] = xy.toXYSeries();
     } catch (FileNotFoundException e) {
       e.printStackTrace();
     }
@@ -499,7 +491,6 @@ public class DataStore {
               System.out.println(start+","+dataBlockArray[i].getEndTime());
               
               thisBlockIsSet[idx] = false;
-              outToPlots[idx] = null;
               dataBlockArray[idx] = null;
               throw new RuntimeException("Time range does not intersect");
             }
@@ -569,9 +560,8 @@ public class DataStore {
         continue;
       }
       DataBlock data = dataBlockArray[i];
-      long start = data.getInitialStartTime();
-      long end = data.getInitialEndTime();
-      data.trim(start, end);
+      // System.out.println( data.getName() );
+      data.untrim();
     }
     trimToCommonTime(limit);
   }
@@ -692,7 +682,7 @@ public class DataStore {
       }
       DataBlock data = dataBlockArray[i];
       data.trim(lastStartTime, firstEndTime);
-      outToPlots[i] = data.toXYSeries();
+      // outToPlots[i] = data.toXYSeries();
     }
     
   }

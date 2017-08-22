@@ -55,7 +55,7 @@ public class TimeSeriesUtils {
    * @param src The source frequency as interval between samples (microseconds)
    * @return A timeseries decimated to the correct frequency
    */
-  public static List<Number> decimate(List<Number> data, long src, long tgt){
+  public static double[] decimate(double[] data, long src, long tgt){
 
     // long tgt = ONE_HZ_INTERVAL; // target frequency
     // a sample lower than 1Hz frq has longer time between samples
@@ -83,35 +83,12 @@ public class TimeSeriesUtils {
     // with 1Hz that comes out as a ratio of 5/2, which won't
     // downsample neatly in some cases so we would first upsample,
     // filter out any noise terms, then downsample
-    List<Number> upped = upsample(data,upf);
-    List<Number> lpfed = lowPassFilter(upped, higherFreq, lowerFreq);
-    List<Number> down = downsample(lpfed,dnf);
+    double[] upped = upsample(data,upf);
+    double[] lpfed = lowPassFilter(upped, higherFreq, lowerFreq);
+    double[] down = downsample(lpfed,dnf);
 
     return down;
 
-  }
-
-  /**
-   * Remove the mean from some data
-   * @param dataSet timeseries array, double values
-   * @return same array but with the mean removed
-   */
-  public static double[] demean(double[] dataSet) {
-    
-    List<Number> dataToProcess = new ArrayList<Number>();
-    
-    for (double number : dataSet) {
-      dataToProcess.add(number);
-    }
-    
-    TimeSeriesUtils.demeanInPlace(dataToProcess);
-    
-    double[] out = new double[dataSet.length];
-    for (int i = 0; i < out.length; ++i) {
-      out[i] = dataToProcess.get(i).doubleValue();
-    }
-    return out;
-    
   }
 
   /**
@@ -119,8 +96,8 @@ public class TimeSeriesUtils {
    * @param dataSet
    * @return timeseries as numeric list with previous mean subtracted
    */
-  public static List<Number> demean(List<Number> dataSet) {
-    List<Number> dataOut = new ArrayList<Number>(dataSet);
+  public static double[] demean(double[] dataSet) {
+    double[] dataOut = dataSet.clone();
     TimeSeriesUtils.demeanInPlace(dataOut);
     return dataOut;
   }
@@ -130,11 +107,11 @@ public class TimeSeriesUtils {
    * This is a necessary step in calculating the power-spectral density.
    * @param dataSet The data to have the mean removed from.
    */
-  public static void demeanInPlace(List<Number> dataSet) {
+  public static void demeanInPlace(double[] dataSet) {
     
     // I'm always getting the demeaning tasks, huh?
     
-    if(dataSet.size() == 0) return; // shouldn't happen but just in case
+    if(dataSet.length == 0) return; // shouldn't happen but just in case
     
     double mean = 0.0;
     
@@ -142,12 +119,11 @@ public class TimeSeriesUtils {
       mean += data.doubleValue();
     }
     
-    mean /= dataSet.size();
+    mean /= dataSet.length;
     
-    for(int i = 0; i < dataSet.size(); ++i) {
+    for(int i = 0; i < dataSet.length; ++i) {
       // iterate over index rather than for-each cuz we must replace data
-      // ugly syntax because numeric data types are immutable
-      dataSet.set(i, dataSet.get(i).doubleValue() - mean);
+      dataSet[i] -= mean;
     }
     
     // test shows this works as in-place method
@@ -231,6 +207,13 @@ public class TimeSeriesUtils {
     }
     
   }
+  
+  public static double[] addAll(double[] arr1, double[] arr2) {
+    double[] result = new double[arr1.length + arr2.length];
+    System.arraycopy(arr1, 0, result, 0, arr1.length);
+    System.arraycopy(arr2, 0, result, arr1.length, arr2.length);
+    return result;
+  }
 
   /**
    * Downsamples data by a multiple of passed factor. Result is
@@ -240,11 +223,11 @@ public class TimeSeriesUtils {
    * @param factor The factor to decrease the size by
    * @return The downsampled series
    */
-  public static List<Number> downsample(List<Number> data, int factor){
+  public static double[] downsample(double[] data, int factor){
 
-    List<Number> downsamp = Arrays.asList(new Number[data.size()/factor]);
-    for(int i=0; i < downsamp.size(); i++){
-      downsamp.set( i, data.get(i*factor) ); 
+    double[] downsamp = new double[data.length/factor];
+    for(int i=0; i < downsamp.length; i++){
+      downsamp[i] = data[i*factor]; 
     }
 
     return downsamp;
@@ -446,7 +429,7 @@ public class TimeSeriesUtils {
 
     // XYSeries xys = null;
     DataBlock db = null;
-    Pair<Long, Map<Long, List<Number>>> intervalSeriesMapPair = 
+    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair = 
         getTimeSeriesMap(filename, filter);
     db = mapToTimeSeries(intervalSeriesMapPair, filter);
     return db;
@@ -473,7 +456,7 @@ public class TimeSeriesUtils {
       throws FileNotFoundException {
     
     DataBlock db = null;
-    Pair<Long, Map<Long, List<Number>>> intervalSeriesMapPair = 
+    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair = 
         getTimeSeriesMap(filename, filter);
     db = mapToTimeSeries(intervalSeriesMapPair, filter, range);
     return db;
@@ -489,14 +472,14 @@ public class TimeSeriesUtils {
    * points from each given time value in the miniseed records
    * @throws FileNotFoundException if given file from filename cannot be read
    */
-  public static Pair< Long, Map< Long, List<Number> > >
+  public static Pair<Long, Map<Long, double[]>>
    getTimeSeriesMap(String filename, String filter) 
       throws FileNotFoundException {
 
     long interval = 0L;
     DataInputStream dis;
     
-    Map< Long, List<Number> > timeListMap = new HashMap<Long, List<Number> >();
+    Map<Long, double[]> timeListMap = new HashMap<Long, double[]>();
     
     int byteSize = 512;
     try {
@@ -533,8 +516,6 @@ public class TimeSeriesUtils {
 
             // convert Btime to microseconds first as milliseconds
             long start = bt.convertToCalendar().getTimeInMillis();
-            
-            List<Number> blockPoints = new ArrayList<Number>();
 
             // .1 ms = 100 microseconds
             start *= 1000;
@@ -560,35 +541,39 @@ public class TimeSeriesUtils {
             // otherwise the decompressed data gets converted (cloned) as
             // the other type instead
             int dataType = decomp.getType();
+            double[] values = new double[dr.getHeader().getNumSamples()];
 
             switch (dataType) {
             case B1000Types.INTEGER:
               int[] decomArrayInt = decomp.getAsInt();
-              for (int dataPoint : decomArrayInt ) {
-                blockPoints.add(dataPoint);
+              for (int i = 0; i < decomArrayInt.length; ++i) {
+                Number dataPoint = decomArrayInt[i]; 
+                values[i] = dataPoint.doubleValue();
               }
               break;
             case B1000Types.FLOAT:
               float[] decomArrayFlt = decomp.getAsFloat();
-              for (float dataPoint : decomArrayFlt ) {
-                blockPoints.add(dataPoint);
+              for (int i = 0; i < decomArrayFlt.length; ++i) {
+                Number dataPoint = decomArrayFlt[i]; 
+                values[i] = dataPoint.doubleValue();
               }
               break;
             case B1000Types.SHORT:
               short[] decomArrayShr = decomp.getAsShort();
-              for (short dataPoint : decomArrayShr ) {
-                blockPoints.add(dataPoint);
+              for (int i = 0; i < decomArrayShr.length; ++i) {
+                Number dataPoint = decomArrayShr[i]; 
+                values[i] = dataPoint.doubleValue();
               }
               break;
             default:
               double[] decomArrayDbl = decomp.getAsDouble();
-              for (double dataPoint : decomArrayDbl ) {
-                blockPoints.add(dataPoint);
+              for (int i = 0; i < decomArrayDbl.length; ++i) {
+                values[i] = decomArrayDbl[i];
               }
               break;
             }
             
-            timeListMap.put(start, blockPoints);
+            timeListMap.put(start, values);
 
           }
         } catch(EOFException e) {
@@ -614,7 +599,7 @@ public class TimeSeriesUtils {
       e.printStackTrace();
     }
 
-    return new Pair<Long, Map<Long, List<Number>>>(interval, timeListMap);
+    return new Pair<Long, Map<Long, double[]>>(interval, timeListMap);
   }
 
   /**
@@ -623,8 +608,8 @@ public class TimeSeriesUtils {
    * @param sps         Samples per second
    * @return            The filtered data
    */
-  public static List<Number> 
-  lowPassFilter(List<Number> timeseries, double sps, double corner)
+  public static double[] 
+  lowPassFilter(double[] timeseries, double sps, double corner)
   {
 
     double fl = 0.;
@@ -655,7 +640,7 @@ public class TimeSeriesUtils {
    * @return DataBlock with the given timeseries and metadata
    */
   public static DataBlock 
-  mapToTimeSeries(Pair<Long, Map<Long, List<Number>>> data, String filter) {
+  mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter) {
     
     // use max range instead of a trim region
     // TODO: likely will need to change range in year 2038
@@ -678,11 +663,11 @@ public class TimeSeriesUtils {
    * @return DataBlock consisting of timeseries data within given range
    */
   public static DataBlock 
-  mapToTimeSeries(Pair<Long, Map<Long, List<Number>>> data, String filter, 
+  mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter, 
       Pair<Long, Long> range) {
     
     long interval = data.getFirst();
-    Map<Long, List<Number>> timeMap = data.getSecond();
+    Map<Long, double[]> timeMap = data.getSecond();
     DataBlock db;
     
     db = new DataBlock(timeMap, interval, filter);
@@ -751,12 +736,15 @@ public class TimeSeriesUtils {
    * given angle, facing north
    */
   public static DataBlock rotate(DataBlock north, DataBlock east, double ang) {
-    DataBlock rotated = new DataBlock(north);
-    List<Number> northData = north.getData();
-    List<Number> eastData = east.getData();
+    long start = north.getStartTime();
+    long interval = north.getInterval();
+    String name = north.getName();
+    
+    double[] northData = north.getData();
+    double[] eastData = east.getData();
 
-    rotated.setData( rotate(northData, eastData, ang) );
-
+    DataBlock rotated = 
+        new DataBlock(rotate(northData, eastData, ang), interval, name, start);
     return rotated;
   }
 
@@ -772,8 +760,8 @@ public class TimeSeriesUtils {
    */
   public static DataBlock rotateX(DataBlock north, DataBlock east, double ang) {
     DataBlock rotated = new DataBlock(east); // use east component metadata
-    List<Number> northData = north.getData();
-    List<Number> eastData = east.getData();
+    double[] northData = north.getData();
+    double[] eastData = east.getData();
     rotated.setData( rotateX(northData, eastData, ang) );
     return rotated;
   }
@@ -786,50 +774,48 @@ public class TimeSeriesUtils {
    * @param factor The factor to increase the size by
    * @return The upsampled series
    */
-  public static List<Number> upsample(List<Number> data, int factor){
+  public static double[] upsample(double[] data, int factor){
 
-    List<Number> upsamp = new ArrayList<Number>();
+    int newLength = data.length * factor;
+    
+    double[] upsamp = new double[newLength];
 
-    for(int i = 0; i < data.size() * factor; ++i) {
-      upsamp.add( new Double(0.) );
-    }
-
-    for(int i = 0; i < data.size(); ++i){
-      upsamp.set( i*factor, data.get(i) ); // index, element
+    for(int i = 0; i < data.length; ++i){
+      upsamp[i*factor] = data[i]; // index, element
     }
 
     return upsamp;
   }
 
-  public static List<Number> 
-  rotateX(List<Number> northData, List<Number> eastData, double ang) {
-    List<Number> rotatedData = new ArrayList<Number>();
+  public static double[]
+  rotateX(double[] northData, double[] eastData, double ang) {
+    double[] rotatedData = new double[northData.length];
 
     double sinTheta = Math.sin(ang);
     double cosTheta = Math.cos(ang);
 
-    for (int i = 0; i < northData.size(); ++i) {
-      rotatedData.add( 
-          eastData.get(i).doubleValue() * cosTheta + 
-          northData.get(i).doubleValue() * sinTheta );
+    for (int i = 0; i < northData.length; ++i) {
+      rotatedData[i] =  
+          eastData[i] * cosTheta + 
+          northData[i] * sinTheta;
     }
 
 
     return rotatedData;
   }
   
-  public static List<Number> 
-  rotate(List<Number> northData, List<Number> eastData, double ang) {
-    List<Number> rotatedData = new ArrayList<Number>();
+  public static double[] 
+  rotate(double[] northData, double[] eastData, double ang) {
+    double[] rotatedData = new double[northData.length];
 
     // clockwise rotation matrix!! That's why things are so screwy
     double sinTheta = Math.sin(ang);
     double cosTheta = Math.cos(ang);
 
-    for (int i = 0; i < northData.size(); ++i) {
-      rotatedData.add( 
-          northData.get(i).doubleValue() * cosTheta - 
-          eastData.get(i).doubleValue() * sinTheta );
+    for (int i = 0; i < northData.length; ++i) {
+      rotatedData[i] = 
+          northData[i] * cosTheta - 
+          eastData[i] * sinTheta;
     }
 
 

@@ -88,10 +88,7 @@ public class StepExperiment extends Experiment{
     trimmedLength = stepCalRaw.size();
     long interval = stepCalRaw.getInterval();
     
-    double[] stepCalUnfiltered = new double[stepCalRaw.size()];
-    for (int i = 0; i < trimmedLength; ++i) {
-      stepCalUnfiltered[i] = stepCalRaw.getData().get(i).doubleValue();
-    }
+    double[] stepCalUnfiltered = stepCalRaw.getData().clone();
     
     sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
     

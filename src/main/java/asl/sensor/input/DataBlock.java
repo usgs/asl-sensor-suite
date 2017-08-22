@@ -1,6 +1,7 @@
 package asl.sensor.input;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,9 +28,9 @@ public class DataBlock {
   private long interval, targetInterval;
   private String name;
   private long startTime, endTime;
-  private Map<Long, List<Number>> dataMap;
+  private Map<Long, double[]> dataMap;
   private long trimmedStart, trimmedEnd;
-  private List<Number> cachedTimeSeries;
+  private double[] cachedTimeSeries;
   boolean rebuildList;
   
   /**
@@ -75,7 +76,7 @@ public class DataBlock {
   }
   
   public 
-  DataBlock(Map<Long, List<Number>> dataIn, long intervalIn, String nameIn) {
+  DataBlock(Map<Long, double[]> dataIn, long intervalIn, String nameIn) {
     interval = intervalIn;
     targetInterval = intervalIn;
     
@@ -85,7 +86,7 @@ public class DataBlock {
     trimmedStart = startTime;
     // TODO: this is wrong
     long lastListStart = times.get( times.size() - 1 );
-    int pointsToEnd = dataIn.get(lastListStart).size();
+    int pointsToEnd = dataIn.get(lastListStart).length;
     endTime = lastListStart + (pointsToEnd * intervalIn);
     trimmedEnd = endTime;
     
@@ -97,50 +98,60 @@ public class DataBlock {
   }
   
   public 
-  DataBlock(List<Number> dataIn, long intervalIn, String nameIn, long start) {
+  DataBlock(double[] dataIn, long intervalIn, String nameIn, long start) {
     interval = intervalIn;
     targetInterval = intervalIn;
     startTime = start;
-    dataMap = new HashMap<Long, List<Number>>();
+    dataMap = new HashMap<Long, double[]>();
     dataMap.put( startTime, dataIn );
     
     trimmedStart = startTime;
-    endTime = interval * ( dataIn.size() - 1 );
+    endTime = startTime + (interval * dataIn.length);
     trimmedEnd = endTime;
     
     name = nameIn;
-    cachedTimeSeries = new ArrayList<Number>(dataIn);
+    cachedTimeSeries = dataIn;
+    /*
+    for (int i = 0; i < dataIn.size(); ++i) {
+      cachedTimeSeries[i] = dataIn.get(i).doubleValue();
+    }
+    */
     rebuildList = false;
   }
   
-  public Map<Long, List<Number>> getDataMap() {
+  public Map<Long, double[]> getDataMap() {
     return dataMap;
   }
   
-  public void setDataMap(Map<Long, List<Number>> dataMap) {
+  public void setDataMap(Map<Long, double[]> dataMap) {
     this.dataMap = dataMap;
     mergeContiguousTimes();
     rebuildList = true;
   }
   
-  public void setData(List<Number> data, long interval, long start) {
+  public void setData(double[] data, long interval, long start) {
     this.interval = interval;
     targetInterval = interval;
     startTime = start;
     trimmedStart = start;
-    dataMap = new HashMap<Long, List<Number>>();
-    for (int i = 0; i < data.size(); ++i) {
-      dataMap.put( startTime, data );
+    dataMap = new HashMap<Long, double[]>();
+    /*
+    List<Number> dataList = new ArrayList<Number>();
+    for (int i = 0; i < data.length; ++i) {
+      dataList.add(data[i]);
     }
-    endTime = interval * ( data.size() - 1 );
-    this.interval = interval;
-    rebuildList = true;
+    */
+    dataMap.put(startTime, data);
+    System.out.println(data.length - 1);
+    endTime = startTime + (interval * data.length);
+    trimmedEnd = endTime;
+    cachedTimeSeries = data;
+    rebuildList = false;
   }
   
-  public void setData(List<Number> data) {
+  public void setData(double[] data) {
     setData(data, targetInterval, trimmedStart);
-    interval = targetInterval;
-    rebuildList = true;
+    // interval = targetInterval;
   }
   
   public List<Pair<Long, Long>> getGapBoundaries() {
@@ -159,7 +170,7 @@ public class DataBlock {
       }
       
       if ( (i + 1) < times.size() ) {
-        long blockEnd = ( dataMap.get(timeNow).size() * interval ) + timeNow;
+        long blockEnd = ( dataMap.get(timeNow).length * interval ) + timeNow;
         long timeNext = times.get(i + 1);
         // is there a discrepancy, and is it big enough for us to care?
         if (timeNext - blockEnd > interval * 2) {
@@ -177,46 +188,27 @@ public class DataBlock {
    * @return True if initial step response is negative
    */
   public boolean needsSignFlip() {
-    List<Long> times = new ArrayList<Long>( dataMap.keySet() );
-    Collections.sort(times);
-    int timeIdx = 0;
-    for (int i = 0; i < times.size(); ++i) {
-      if (times.get(i) <= trimmedStart) {
-        if ( times.get(i + 1) > trimmedStart ) {
-          timeIdx = i;
-        }
-      } else {
-        break;
+    double[] temp = getData();
+    double max = Math.abs( temp[0] );
+    int idx = 0;
+    for (int i = 1; i < temp.length / 4; ++i) {
+      double candidate = Math.abs( temp[i] );
+      if ( candidate > max ) {
+        max = candidate;
+        idx = i;
       }
     }
     
-    long time = times.get(timeIdx);
-    List<Number> data = dataMap.get(time);
+    return temp[idx] < 0;
     
-    int startPoint =  
-        ( (int) ( trimmedStart - time ) ) / (int) interval;
-    
-    double max = 0.;
-    int maxPoint = startPoint;
-    
-    for (int i = startPoint; i < ( data.size() - startPoint) / 2; ++i) {
-      max = Math.max( max, Math.abs( data.get(i).doubleValue() ) );
-      maxPoint = i;
-    }
-    
-    return data.get(maxPoint).doubleValue() > 0;
   }
   
-  public List<Number> getData() {
+  public double[] getData() {
     
     if (!rebuildList) {
       return cachedTimeSeries;
     }
     
-    // WARNING: SKIP FACTOR > 0 SHOULD ONLY BE USED TO DISPLAY A REPRESENTATION
-    // OF THE DATA, NOT TO PRODUCE DATA TO SEND TO BACKENDS (USE DECIMATION)
-    
-    List<Number> dataOut = new ArrayList<Number>();
     List<Long> times = new ArrayList<Long>( dataMap.keySet() );
     Collections.sort(times);
     
@@ -228,15 +220,18 @@ public class DataBlock {
         (int) ( (trimmedEnd - trimmedStart) / (interval) );
     System.out.println("num. points: " + numPoints);
     
+    cachedTimeSeries = new double[numPoints];
+    int lastFilledIndex = 0;
+    
     for (int i = 0; i < times.size(); ++i) {
       
-      if ( dataOut.size() == numPoints ) {
+      if ( lastFilledIndex == numPoints ) {
         break;
       }
       
       int startIndex;
       long now = times.get(i);
-      List<Number> data = dataMap.get(now);
+      double[] data = dataMap.get(now);
       long next = -1;
       if ( i + 1 < times.size() ) {
         next = times.get(i + 1);
@@ -261,43 +256,51 @@ public class DataBlock {
         } else {
           startIndex = closeIdx + 1;
         }
-        System.out.println("index: " + startIndex);
+        // System.out.println("index: " + startIndex);
       } else {
         continue;
       }
       
-      System.out.println("Current list length: " + data.size());
+      // System.out.println("Current list length: " + data.size());
       
-      if ( startIndex < data.size() ) {
+      if ( startIndex < data.length ) {
         // make sure we are not in a gap to start with
-        int end = startIndex + ( numPoints - dataOut.size() );
+        int end = startIndex + ( numPoints - lastFilledIndex );
         // copy either up to our current end point, or the limit of the block
-        end = Math.min( data.size(), end );
-        dataOut.addAll( data.subList(startIndex, end) );
+        end = Math.min( data.length, end );
+        double[] sublist = Arrays.copyOfRange(data, startIndex, end);
+        /*
+        Number[] sublist = data.subList(startIndex, end).toArray(new Number[0]);
+        */
+        for (int j = 0; j < sublist.length; ++j, ++lastFilledIndex) {
+          cachedTimeSeries[lastFilledIndex] = sublist[j];
+        }
+        
       }
       
-      timeCursor = trimmedStart + ( interval * dataOut.size() );
+      timeCursor = trimmedStart + ( interval * lastFilledIndex );
       if ( next - timeCursor > (interval * 2) ) {
         // deal with any gaps between two parts of the list
-        while (timeCursor < next && dataOut.size() < numPoints) {
-          dataOut.add(0.);
+        while (timeCursor < next && lastFilledIndex < numPoints) {
+          cachedTimeSeries[lastFilledIndex] = 0.;
+          ++lastFilledIndex;
           timeCursor += interval;
         }
       }
     }
     
-    while (dataOut.size() < numPoints) {
-      dataOut.add(0.);
+    while (lastFilledIndex < numPoints) {
+      cachedTimeSeries[lastFilledIndex] = 0.;
+      ++lastFilledIndex;
     }
     
     if (interval != targetInterval) {
-      dataOut = TimeSeriesUtils.decimate(dataOut, interval, targetInterval);
+      cachedTimeSeries = 
+          TimeSeriesUtils.decimate(cachedTimeSeries, interval, targetInterval);
     }
     
-    cachedTimeSeries = dataOut;
     rebuildList = false;
-    
-    return dataOut;
+    return cachedTimeSeries;
     
   }
   
@@ -343,7 +346,7 @@ public class DataBlock {
    * @return Sample rate in Hz.
    */
   public double getSampleRate() {
-    return (double) TimeSeriesUtils.ONE_HZ_INTERVAL / (double) targetInterval;
+    return (double) TimeSeriesUtils.ONE_HZ_INTERVAL / (double) interval;
   }
 
   /**
@@ -371,7 +374,7 @@ public class DataBlock {
    */
   public void resample(long newInterval) {
     targetInterval = newInterval;
-    rebuildList = true;
+    rebuildList = rebuildList || (targetInterval != interval);
   }
   
   /**
@@ -402,16 +405,19 @@ public class DataBlock {
     // doing a quick decimation here on the displays for datapanel
     // so that we can do the sliding/zooming operations relatively expediently
     // trying to draw the charts with too much data slows it down terribly
-    List<Number> data = getData();
-    int skipFactor = data.size() / MAX_POINTS + 1; // must be >= 1
+    System.out.println(rebuildList);
+    double[] data = getData();
+    System.out.println(data.length);
+    
+    int skipFactor = data.length / MAX_POINTS + 1; // must be >= 1
     
     // 1000 milliseconds in a microsecond
     long divisor = TimeSeriesUtils.ONE_HZ_INTERVAL / 1000;
     
     XYSeries out = new XYSeries(name);
     long thisTime = trimmedStart;
-    for (int i = 0; i < data.size(); i+=skipFactor) {
-      Number point = data.get(i);
+    for (int i = 0; i < data.length; i+=skipFactor) {
+      double point = data[i];
       double xTime = (double) thisTime / divisor;
       out.add(xTime, point);
       thisTime += skipFactor*targetInterval;
@@ -429,7 +435,8 @@ public class DataBlock {
     
     trimmedStart = Math.max(startTime, start);
     trimmedEnd = Math.min(endTime, end);
-    rebuildList = true;
+    rebuildList = rebuildList ||
+        (startTime != trimmedStart) || (endTime != trimmedEnd);
     
   }
   
@@ -439,24 +446,25 @@ public class DataBlock {
     List<Long> startTimes = new ArrayList<Long>( dataMap.keySet() );
     Collections.sort(startTimes);
     
-    Map<Long, List<Number>> mergedMap = new HashMap<Long, List<Number>>();
+    Map<Long, double[]> mergedMap = new HashMap<Long, double[]>();
     
     int startingPoint = 0;
     int cursor;
     while ( startingPoint < startTimes.size() ) {
       long currentTime = startTimes.get(startingPoint);
-      List<Number> currentSeries = dataMap.get(currentTime);
+      double[] currentSeries = dataMap.get(currentTime);
       long lastTimeInList = 
-          currentTime + ( currentSeries.size() * interval );
+          currentTime + ( currentSeries.length * interval );
       
       cursor = startingPoint + 1;
       long nextTime = startTimes.get(cursor);
       long difference = Math.abs(nextTime - lastTimeInList);
       
       while ( difference < (interval / 4) ) {
-        List<Number> nextGroup = dataMap.get(nextTime);
-        currentSeries.addAll(nextGroup);
-        lastTimeInList = nextTime + ( nextGroup.size() * interval );
+        double[] nextGroup = dataMap.get(nextTime);
+        
+        currentSeries = TimeSeriesUtils.addAll(currentSeries, nextGroup);
+        lastTimeInList = nextTime + ( nextGroup.length * interval );
         ++cursor;
         if ( cursor >= startTimes.size() ) {
           break;
@@ -471,6 +479,14 @@ public class DataBlock {
     }
     
     dataMap = mergedMap;
+    
+  }
+
+  public void untrim() {
+    boolean regen = (trimmedStart != startTime) || (trimmedEnd != endTime);
+    trimmedStart = startTime;
+    trimmedEnd = endTime;
+    rebuildList = rebuildList || regen;
     
   }
   

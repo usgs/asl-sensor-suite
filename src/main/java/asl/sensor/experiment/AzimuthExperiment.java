@@ -1,6 +1,7 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -66,11 +67,11 @@ public class AzimuthExperiment extends Experiment {
    * (i.e., one signal is positive and one is negative)
    */
   public static boolean 
-  alignedAntipolar(List<Number> rot, List<Number> ref, int len) {
+  alignedAntipolar(double[] rot, double[] ref, int len) {
     int numSameSign = 0; int numDiffSign = 0;
     for (int i = 0; i < len; ++i) {
-      int sigRot = (int) Math.signum( (double) rot.get(i) );
-      int sigRef = (int) Math.signum( (double) ref.get(i) );
+      int sigRot = (int) Math.signum(rot[i]);
+      int sigRef = (int) Math.signum(ref[i]);
       
       if (sigRot - sigRef == 0) {
         ++numSameSign;
@@ -97,8 +98,8 @@ public class AzimuthExperiment extends Experiment {
   }
   
   protected void alternateEntryPoint(
-      List<Number> testNorth, List<Number> testEast, 
-      List<Number> refNorth, long interval, long start, long end) {
+      double[] testNorth, double[] testEast, 
+      double[] refNorth, long interval, long start, long end) {
     dataNames = new ArrayList<String>();
     dataNames.add( "N" );
     dataNames.add( "E" );
@@ -126,9 +127,9 @@ public class AzimuthExperiment extends Experiment {
     dataNames.add( testEastBlock.getName() );
     dataNames.add( refNorthBlock.getName() );
     
-    List<Number> testNorth = testNorthBlock.getData();
-    List<Number> testEast = testEastBlock.getData();
-    List<Number> refNorth = refNorthBlock.getData();
+    double[] testNorth = testNorthBlock.getData();
+    double[] testEast = testEastBlock.getData();
+    double[] refNorth = refNorthBlock.getData();
     
     // resampling should already have been done when loading in data
     long interval = testNorthBlock.getInterval();
@@ -147,8 +148,8 @@ public class AzimuthExperiment extends Experiment {
    * @param interval Time in nanoseconds between data samples
    */
   private void backend(
-      List<Number> testNorth, List<Number> testEast, 
-      List<Number> refNorth, long interval, long startTime, long endTime) {
+      double[] testNorth, double[] testEast, 
+      double[] refNorth, long interval, long startTime, long endTime) {
 
 
     TimeSeriesUtils.detrend(testNorth);
@@ -217,7 +218,7 @@ public class AzimuthExperiment extends Experiment {
       angle = tempAngle;
       
       // check if we need to rotate by 180 degrees
-      List<Number> rot = 
+      double[] rot = 
           TimeSeriesUtils.rotate(testNorth, testEast, angle);
       
       if ( alignedAntipolar(rot, refNorth, tenSecondsLength) ) {
@@ -265,9 +266,9 @@ public class AzimuthExperiment extends Experiment {
       int startIdx = (int) (wdStart / interval);
       int endIdx = (int) (wdEnd / interval);
       
-      List<Number> testNorthWin = testNorth.subList(startIdx, endIdx);
-      List<Number> testEastWin = testEast.subList(startIdx, endIdx);
-      List<Number> refNorthWin = refNorth.subList(startIdx, endIdx);
+      double[] testNorthWin = Arrays.copyOfRange(testNorth, startIdx, endIdx);
+      double[] testEastWin = Arrays.copyOfRange(testEast, startIdx, endIdx);
+      double[] refNorthWin = Arrays.copyOfRange(refNorth, startIdx, endIdx);
       
       jacobian = 
           getJacobianFunction(testNorthWin, testEastWin, refNorthWin, interval);
@@ -354,9 +355,9 @@ public class AzimuthExperiment extends Experiment {
     // would be inverted from the original. so get 10 seconds of data and check
     // to see if the data is all on the same side of 0.
     
-    List<Number> rotTimeSeries = 
+    double[] rotTimeSeries = 
         TimeSeriesUtils.rotate(testNorth, testEast, angle);
-    List<Number> refTimeSeries = refNorth;
+    double[] refTimeSeries = refNorth;
     
     if ( alignedAntipolar(rotTimeSeries, refTimeSeries, hundredSecLen) ) {
       angle += Math.PI; // still in radians
@@ -451,15 +452,15 @@ public class AzimuthExperiment extends Experiment {
    * @return jacobian function to fit an angle of max coherence of this data
    */
   private MultivariateJacobianFunction 
-  getJacobianFunction(List<Number> l1, List<Number> l2, List<Number> l3, 
+  getJacobianFunction(double[] l1, double[] l2, double[] l3, 
       long interval) {
     
     // make my func the j-func, I want that func-y stuff
     MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
 
-      final List<Number> finalTestNorth = l1;
-      final List<Number> finalTestEast = l2;
-      final List<Number> finalRefNorth = l3;
+      final double[] finalTestNorth = l1;
+      final double[] finalTestEast = l2;
+      final double[] finalRefNorth = l3;
       final long finalInterval = interval;
 
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
@@ -502,9 +503,9 @@ public class AzimuthExperiment extends Experiment {
    */
   private Pair<RealVector, RealMatrix> jacobian(
       final RealVector point, 
-      final List<Number> refNorth,
-      final List<Number> testNorth, 
-      final List<Number> testEast,
+      final double[] refNorth,
+      final double[] testNorth, 
+      final double[] testEast,
       final long interval) {
     
     double theta = ( point.getEntry(0) );
@@ -514,7 +515,7 @@ public class AzimuthExperiment extends Experiment {
     double lowFreq = 1./18.;
     double highFreq = 1./3.;
     
-    List<Number> testRotated = 
+    double[] testRotated = 
         TimeSeriesUtils.rotate(testNorth, testEast, theta);
     
     FFTResult crossPower = 
@@ -578,7 +579,7 @@ public class AzimuthExperiment extends Experiment {
         MatrixUtils.createRealVector(new double[]{meanCoherence});
     
     double thetaDelta = theta + diff;
-    List<Number> rotateDelta = 
+    double[] rotateDelta = 
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
     
     crossPower = FFTResult.spectralCalc(refNorth, rotateDelta, interval);

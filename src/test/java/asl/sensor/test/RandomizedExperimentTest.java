@@ -36,6 +36,7 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
@@ -474,6 +475,101 @@ public class RandomizedExperimentTest {
       }
       String testResult = 
           testResultFolder + "Low-frequency-spectral-data.pdf";
+      pdf.save( new File(testResult) );
+      pdf.close();
+      System.out.println("Output result has been written");
+      
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+  }
+  
+  @Test
+  public void subtestLowFreqPSDsMAJO() {
+    try {
+      String calname = "./data/random_cal_lowfrq/BC0.512.seed";
+      String outname = "./data/random_cal_lowfrq/BHZ.512.seed";
+      String calMplex = TimeSeriesUtils.getMplexNameList(calname).get(0);
+      String outMplex = TimeSeriesUtils.getMplexNameList(outname).get(0);
+      DataBlock cal = TimeSeriesUtils.getTimeSeries(calname, calMplex);
+      DataBlock out = TimeSeriesUtils.getTimeSeries(outname, outMplex);
+      long start = Math.max(cal.getStartTime(), out.getStartTime());
+      long end = Math.min(cal.getEndTime(), out.getEndTime());
+      cal.trim(start, end);
+      out.trim(start, end);
+      int maxLen = Math.max( out.size(), cal.size() );
+      int windowSize = 2;
+      while (windowSize <= maxLen) {
+        windowSize *= 2;
+      }
+      windowSize *= 2;
+      FFTResult fft1 = 
+          FFTResult.spectralCalcMultitaper(cal, out);
+      FFTResult fft2 =
+          FFTResult.spectralCalcMultitaper(out, out);
+      Complex[] calSpec = fft1.getFFT();
+      Complex[] outSpec = fft2.getFFT();
+      double[] freqs = fft1.getFreqs();
+      XYSeries calXYS = new XYSeries("Cal vs out cross-amplitude");
+      XYSeries outXYS = new XYSeries("Out vs out cross-amplitude");
+      XYSeries calPXYS = new XYSeries("Cal vs out cross-phase");
+      XYSeries outPXYS = new XYSeries("Out vs out cross-phase");
+      for (int i = 0; i < freqs.length; ++i) {
+        if ( freqs[i] != 0 && freqs[i] <= .05 && freqs[i] >= .0001) {
+          double calDB = 10 * Math.log10( calSpec[i].abs() );
+          double outDB = 10 * Math.log10( outSpec[i].abs() );
+          double calP = NumericUtils.atanc(calSpec[i]);
+          double outP = NumericUtils.atanc(outSpec[i]);
+          calXYS.add( 1/freqs[i], calDB );
+          outXYS.add( 1/freqs[i], outDB );
+          calPXYS.add( 1/freqs[i], calP );
+          outPXYS.add( 1/freqs[i], outP);
+        }
+      }
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(calXYS);
+      xysc.addSeries(outXYS);
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          "Low-Freq Cal Input verification",
+          "Frequency",
+          "Spectrum magnitude (log scale)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      
+      xysc = new XYSeriesCollection(calPXYS);
+      xysc.addSeries(outPXYS);
+      JFreeChart chart2 = ChartFactory.createXYLineChart(
+          "Low-Freq Cal Deconvolution verification",
+          "Frequency",
+          "Spectrum magnitude (log scale)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      LogarithmicAxis la = new LogarithmicAxis("Period (s)");
+      
+      chart.getXYPlot().setDomainAxis(la);
+      chart2.getXYPlot().setDomainAxis(la);
+      
+      int width = 1280; int height = 960;
+      
+      PDDocument pdf = new PDDocument();
+      ReportingUtils.chartsToPDFPage(width, height, pdf, chart, chart2);
+      
+      String currentDir = System.getProperty("user.dir");
+      String testResultFolder = currentDir + "/testResultImages/";
+      File dir = new File(testResultFolder);
+      if ( !dir.exists() ) {
+        dir.mkdir();
+      }
+      String testResult = 
+          testResultFolder + "Low-frequency-spectral-data_MAJO.pdf";
       pdf.save( new File(testResult) );
       pdf.close();
       System.out.println("Output result has been written");

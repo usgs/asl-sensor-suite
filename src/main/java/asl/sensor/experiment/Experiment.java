@@ -13,6 +13,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * This function defines template patterns for each type of sensor experiment
@@ -146,6 +147,7 @@ public abstract class Experiment {
    * @param newStatus Status change message to notify listeners of
    */
   protected void fireStateChange(String newStatus) {
+    System.out.println(newStatus);
     status = newStatus;
     ChangeListener[] lsners = eventHelper.getListeners(ChangeListener.class);
     if (lsners != null && lsners.length > 0) {
@@ -255,26 +257,9 @@ public abstract class Experiment {
 
     dataNames = new ArrayList<String>();
     
-    long interval = db.getInterval();
-    
-    final DataBlock[] dataIn = ds.getData();
-    
     xySeriesData = new ArrayList<XYSeriesCollection>();
     
-    // int length = dataIn[0].size();
-    for (final DataBlock data : dataIn) {
-      
-      if ( data == null) {
-        // we can have null blocks, but can't get interval from a null block
-        continue;
-      }
-      
-      if ( data.getInterval() != interval ) {
-        fireStateChange("Downsampling data...");
-        // System.out.println( interval+","+data.getInterval() );
-        ds.matchIntervals();
-      }
-    }
+    ds.matchIntervals();
     
     fireStateChange("Beginning calculations...");
     

@@ -16,24 +16,31 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import javax.imageio.ImageIO;
 
 import org.apache.commons.math3.util.Pair;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
+import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.B1000Types;
@@ -63,6 +70,167 @@ public class TimeSeriesUtilsTest {
     } catch (Exception e) {
       assertNull(e);
     }
+  }
+  
+  @Test
+  public void timeDataCorrect() {
+    String fname = "./data/random_cal_lowfrq/BHZ.512.seed";
+    try {
+      String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
+      DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
+      long start = db.getStartTime();
+      Calendar cCal = getStartCalendar(start);
+      SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
+      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+      String inputDate = sdf.format( cCal.getTime() );
+      // System.out.println(inputDate);
+      String correctDate = "2017.08.02 | 00:00:00.019";
+      assertEquals(inputDate, correctDate);
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+  
+  @Test
+  public void firstSampleCorrect() {
+    String fname = "./data/random_cal_lowfrq/BHZ.512.seed";
+    try {
+      String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
+      DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
+      long start = db.getStartTime();
+      Map<Long, double[]> timeseries = db.getDataMap();
+      double[] firstContiguous = timeseries.get(start);
+      long sum = 0;
+      for (Number n : firstContiguous) {
+        sum += n.longValue();
+      }
+      assertEquals(2902991374L, sum);
+      // assertEquals( 1652432L, firstContiguous[0], 0.1 );
+      System.out.println(timeseries.get(start)[0]);
+      
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+  
+  @Test
+  public void showsTimeSeriesCal() {
+    String fname = "./data/random_cal_lowfrq/BC0.512.seed";
+    showsTimeSeries(fname, "BC0");
+  }
+  
+  @Test
+  public void showsTimeSeriesOut() {
+    String fname = "./data/random_cal_lowfrq/BHZ.512.seed";
+    showsTimeSeries(fname, "BHZ");
+  }
+  
+  public void showsTimeSeries(String fname, String annot) {
+
+    try {
+      String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
+      DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
+      Map<Long, double[]> timeseries = db.getDataMap();
+      List<Long> timeList = new ArrayList<Long>( timeseries.keySet() );
+      Collections.sort(timeList);
+      StringBuilder sb = new StringBuilder();
+      for ( Long time : timeList ) {
+        
+        Calendar cCal = getStartCalendar(time);
+        SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
+        sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+        String inputDate = sdf.format( cCal.getTime() );
+        
+        double[] contiguous = timeseries.get(time);
+        // long tstamp = time / 1000;
+        sb.append("Contiguous block of data at " + inputDate + ":\n");
+        for (Number n : contiguous) {
+          sb.append("\t"+n+"\n");
+        }
+        sb.append("\n");
+      }
+      
+      String currentDir = System.getProperty("user.dir");
+      String testResultFolder = currentDir + "/testResultImages/";
+      File dir = new File(testResultFolder);
+      if ( !dir.exists() ) {
+        dir.mkdir();
+      }
+      String testResult = 
+          testResultFolder + "Time-Series_MAJO_" + annot + ".txt";
+      
+      PrintWriter out = new PrintWriter(testResult);
+      out.println( sb.toString() );
+      out.close();
+      
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
+  }
+  
+  public Calendar getStartCalendar(long time) {
+    SimpleDateFormat sdf = InputPanel.SDF;
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+
+    cCal.setTimeInMillis(time / 1000);
+    return cCal;
+  }
+  
+  @Test
+  public void producePlotReadIn() {
+    try {
+      String calname = "./data/random_cal_lowfrq/BC0.512.seed";
+      String outname = "./data/random_cal_lowfrq/BHZ.512.seed";
+      String calMplex = TimeSeriesUtils.getMplexNameList(calname).get(0);
+      String outMplex = TimeSeriesUtils.getMplexNameList(outname).get(0);
+      DataBlock cal = TimeSeriesUtils.getTimeSeries(calname, calMplex);
+      DataBlock out = TimeSeriesUtils.getTimeSeries(outname, outMplex);
+      long start = Math.max(cal.getStartTime(), out.getStartTime());
+      long end = Math.min(cal.getEndTime(), out.getEndTime());
+      cal.trim(start, end);
+      out.trim(start, end);
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries( cal.toXYSeries() );
+      xysc.addSeries( out.toXYSeries() );
+      
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          "MAJO calibration and output data",
+          "Time",
+          "Signal data (counts)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      
+      int width = 1280; int height = 960;
+      PDDocument pdf = new PDDocument();
+      ReportingUtils.chartsToPDFPage(width, height, pdf, chart);
+      
+      String currentDir = System.getProperty("user.dir");
+      String testResultFolder = currentDir + "/testResultImages/";
+      File dir = new File(testResultFolder);
+      if ( !dir.exists() ) {
+        dir.mkdir();
+      }
+      String testResult = 
+          testResultFolder + "Time-Series_MAJO.pdf";
+      pdf.save( new File(testResult) );
+      pdf.close();
+      
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+
+    
+    
   }
   
   /*
@@ -178,10 +346,10 @@ public class TimeSeriesUtilsTest {
     long interval40Hz = (TimeSeriesUtils.ONE_HZ_INTERVAL / 40);
     long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
     
-    List<Number> timeSeries = new ArrayList<Number>();
+    double[] timeSeries = new double[160];
     
     for (int i = 0; i < 160; ++i) {
-      timeSeries.add(i);
+      timeSeries[i] = i;
     }
     
     // System.out.println(timeSeries);
@@ -190,9 +358,9 @@ public class TimeSeriesUtilsTest {
     
     // System.out.println(timeSeries);
     
-    assertEquals(timeSeries.size(), 4);
-    for (int i = 0; i < timeSeries.size(); ++i) {
-      assertEquals(timeSeries.get(i).doubleValue(), 40. * i, 0.5);
+    assertEquals(timeSeries.length, 4);
+    for (int i = 0; i < timeSeries.length; ++i) {
+      assertEquals(timeSeries[i], 40. * i, 0.5);
     }
   }
   
@@ -266,7 +434,7 @@ public class TimeSeriesUtilsTest {
       
       DataBlock testAgainst = 
           TimeSeriesUtils.getTimeSeries(filename1, nameList.get(0) );
-      assertEquals( data.size(), testAgainst.getData().size() );
+      assertEquals( data.size(), testAgainst.getData().length );
       
     } catch (FileNotFoundException e) {
       assertNull(e);
@@ -387,15 +555,15 @@ public class TimeSeriesUtilsTest {
     // tests that demean does what it says it does and that
     // the results are applied in-place
     
-    Number[] numbers = {1,2,3,4,5};
+    double[] numbers = {1,2,3,4,5};
     
-    List<Number> numList = Arrays.asList(numbers);
-    List<Number> demeaned = new ArrayList<Number>(numList);
+    double[] numList = numbers.clone();
+    double[] demeaned = numList.clone();
     
     TimeSeriesUtils.demeanInPlace(demeaned);
     
-    for (int i = 0; i < numList.size(); ++i) {
-      assertEquals(demeaned.get(i), numList.get(i).doubleValue()-3);
+    for (int i = 0; i < numList.length; ++i) {
+      assertEquals(demeaned[i], numList[i]-3, 1E-15);
     }
     
   }
@@ -445,9 +613,9 @@ public class TimeSeriesUtilsTest {
     String metaName;
     try {
       metaName = TimeSeriesUtils.getMplexNameList(fileName).get(0);
-      Pair<Long, Map<Long, List<Number>>> data = 
+      Pair<Long, Map<Long, double[]>> data = 
           TimeSeriesUtils.getTimeSeriesMap(fileName, metaName);
-      Map<Long, List<Number>> map = data.getSecond();
+      Map<Long, double[]> map = data.getSecond();
       
       List<Long> times = new ArrayList<Long>( map.keySet() );
       Collections.sort(times);

@@ -67,15 +67,15 @@ public class DataStoreTest {
     long start = 0;
     
     // range of 4 seconds
-    List<Number> series25Hz = new ArrayList<Number>();
-    List<Number> series40Hz = new ArrayList<Number>();
+    double[] series25Hz = new double[100];
+    double[] series40Hz = new double[160];
     
     for (int i = 0; i < 100; ++i) {
-      series25Hz.add( new Double( i * Math.sin(i) ) );
+      series25Hz[i] = i * Math.sin(i);
     }
     
     for (int i = 0; i < 160; ++i) {
-      series40Hz.add( new Double( i * Math.sin(i) ) );
+      series40Hz[i] = i * Math.sin(i);
     }
     
     DataBlock block25Hz = new DataBlock(series25Hz, interval25Hz, "25", start);

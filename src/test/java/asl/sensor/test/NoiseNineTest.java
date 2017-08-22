@@ -27,6 +27,7 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.NoiseNineExperiment;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.NoiseNinePanel;
+import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
@@ -64,7 +65,7 @@ public class NoiseNineTest {
         }
       }
     }
-
+    
     return ds;
     
   }
@@ -93,13 +94,20 @@ public class NoiseNineTest {
     System.out.println( "start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime() * 1000L;
     cCal.set(Calendar.HOUR_OF_DAY, 13);
-    cCal.set(Calendar.MINUTE, 0);
+    cCal.set(Calendar.MINUTE, 00);
     cCal.set(Calendar.SECOND, 0);
     System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
     
-    ds.trim(start, end, 9);
+    ds.trim(start, end, DataStore.FILE_COUNT);
+    // ds.matchIntervals();
 
+    // trim down internal representation of the data to avoid memory errors
+    for (int i = 0; i < 9; ++i) {
+      DataBlock db = ds.getBlock(i);
+      db.setData( db.getData() );
+    }
+    
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
     nne.runExperimentOnData(ds);
@@ -197,12 +205,20 @@ public class NoiseNineTest {
     System.out.println( "start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime() * 1000L;
     cCal.set(Calendar.HOUR, 8);
-    cCal.set(Calendar.MINUTE, 30);
+    cCal.set(Calendar.MINUTE, 00);
     System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime() * 1000L;
 
     ds.trim(start, end);
+    // ds.matchIntervals();
 
+    // trim down internal representation of the data to avoid memory errors
+    for (int i = 0; i < 9; ++i) {
+      DataBlock db = ds.getBlock(i);
+      db.setData( db.getData() );
+      System.out.println( db.size() );
+    }
+    
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
     nne.runExperimentOnData(ds);
