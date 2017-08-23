@@ -1094,7 +1094,6 @@ implements ActionListener, ChangeListener {
       XYPlot xyp = chartPanels[i].getChart().getXYPlot();
       xyp.clearDomainMarkers();
       
-      // divide by 1000 here to get time value in ms
       Marker startMarker = new ValueMarker(startMarkerLocation);
       startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
       Marker endMarker = new ValueMarker(endMarkerLocation);
@@ -1111,9 +1110,8 @@ implements ActionListener, ChangeListener {
       double max = xysc.getDomainUpperBound(false);
       
       for (Pair<Long, Long> gapLoc : gaps) {
-        long divisor = TimeSeriesUtils.ONE_HZ_INTERVAL;
-        Double gapStart = gapLoc.getFirst().doubleValue() / divisor;
-        Double gapEnd = gapLoc.getSecond().doubleValue() / divisor;
+        Double gapStart = gapLoc.getFirst().doubleValue();
+        Double gapEnd = gapLoc.getSecond().doubleValue();
         if (gapEnd > min || gapStart < max) {
           double start = Math.max(gapStart, min);
           double end = Math.min(gapEnd, max);
@@ -1216,8 +1214,8 @@ implements ActionListener, ChangeListener {
     DataBlock db = ds.getXthLoadedBlock(1);
 
     if ( leftSlider.getValue() != 0 || rightSlider.getValue() != SLIDER_MAX ) {
-      long start = getMarkerLocation(db, leftSlider.getValue() );
-      long end = getMarkerLocation(db, rightSlider.getValue() );
+      long start = getMarkerLocation( db, leftSlider.getValue() );
+      long end = getMarkerLocation( db, rightSlider.getValue() );
       ds.trim(start, end, activePlots);
       leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
       zoomOut.setEnabled(true);

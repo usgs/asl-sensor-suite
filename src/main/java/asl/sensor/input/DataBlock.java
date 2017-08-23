@@ -411,13 +411,11 @@ public class DataBlock {
     
     int skipFactor = data.length / MAX_POINTS + 1; // must be >= 1
     
-    long divisor = TimeSeriesUtils.ONE_HZ_INTERVAL;
-    
     XYSeries out = new XYSeries(name);
     long thisTime = trimmedStart;
     for (int i = 0; i < data.length; i+=skipFactor) {
       double point = data[i];
-      double xTime = (double) thisTime / divisor;
+      double xTime = (double) thisTime;
       out.add(xTime, point);
       thisTime += skipFactor*targetInterval;
     }

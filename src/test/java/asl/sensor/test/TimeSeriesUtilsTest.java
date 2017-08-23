@@ -109,7 +109,7 @@ public class TimeSeriesUtilsTest {
         sum += n.longValue();
       }
       assertEquals(2902991374L, sum);
-      // assertEquals( 1652432L, firstContiguous[0], 0.1 );
+      assertEquals(1652432, firstContiguous.length);
       // System.out.println(timeseries.get(start)[0]);
       
     } catch (FileNotFoundException e) {
