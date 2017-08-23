@@ -51,9 +51,6 @@ public class NoiseNineExperiment extends NoiseExperiment {
     for (int i = 0; i < DIMS; ++i) {
       stores[i] = new DataStore();
       for (int j = 0; j < 3; ++j) {
-        System.out.println("Experiment: " + i);
-        System.out.println("Data in series: " + j);
-        System.out.println("Data block: " + (i + (j * DIMS)));
         stores[i].setBlock( j, ds.getBlock( i + (j * DIMS) ) );
         stores[i].setResponse( j, ds.getResponse( i + (j * DIMS) ) );
       }

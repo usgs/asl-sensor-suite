@@ -798,8 +798,8 @@ implements ActionListener, ChangeListener {
           ds.untrim(activePlots);
           
           XYSeries ts = ds.getBlock(idx).toXYSeries();
-          System.out.println("XY SERIES NAME");
-          System.out.println(ts.getKey());
+          //System.out.println("XY SERIES NAME");
+          //System.out.println(ts.getKey());
           double sRate = ds.getBlock(idx).getSampleRate();
           String rateString = " (" + sRate + " Hz)";
           chart = ChartFactory.createXYLineChart(
@@ -810,7 +810,7 @@ implements ActionListener, ChangeListener {
               PlotOrientation.VERTICAL,
               false, false, false);
           
-          System.out.println("Got chart");
+          // System.out.println("Got chart");
 
           XYPlot xyp = (XYPlot) chart.getPlot();
           
@@ -1023,7 +1023,7 @@ implements ActionListener, ChangeListener {
    * @param idx Index of appropriate chart/panel
    */
   private void resetPlotZoom(int idx) {
-    System.out.println("reset plot zoom");
+    // System.out.println("reset plot zoom");
     XYPlot xyp = chartPanels[idx].getChart().getXYPlot();
     XYSeriesCollection xys = new XYSeriesCollection();
     xys.addSeries( ds.getBlock(idx).toXYSeries() );

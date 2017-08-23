@@ -122,13 +122,25 @@ public class NoiseNineTest {
     xAxis.setLabelFont(bold);
     String yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
     String[] orientations = new String[]{" (North)", " (East)", " (Vertical)"};
-
+    
     for (int i = 0; i < xysc.size(); ++i) {
+      
+      // make sure each series is populated with data from correct orientation
+      // i.e., BH1s for north, BH2s for south, etc.
+      String check = freqName + components[i];
+      XYSeriesCollection coll = xysc.get(i);
+      // has 3 components, so do 3 checks
+      // nlnm, nhnm should be 4th and 5th entries in data
+      for (int j = 0; j < 3; ++j) {
+        String key = (String) coll.getSeriesKey(j);
+        assertTrue(key.contains(check));
+      }
+      
       jfcl[i] = ChartFactory.createXYLineChart(
           ExperimentEnum.RANDM.getName() + orientations[i],
           xAxisTitle,
           yAxisTitle,
-          xysc.get(i),
+          coll,
           PlotOrientation.VERTICAL,
           true,
           false,
