@@ -1,12 +1,9 @@
 package asl.sensor.experiment;
 
-import java.util.List;
-
 import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.TimeSeriesUtils;
 
 /**
@@ -195,7 +192,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   
   private double getAzimuth(double[] n, double[] e, double[] r, 
       long interval, long start, long end) {
-    // TODO: FIX THIS
+    // TODO: MAKE SURE THIS WORKS
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.setSimple(true); // do the faster angle calculation
     azi.alternateEntryPoint(n, e, r, interval, start, end);

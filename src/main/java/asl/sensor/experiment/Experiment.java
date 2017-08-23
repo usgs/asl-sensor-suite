@@ -13,7 +13,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * This function defines template patterns for each type of sensor experiment
@@ -147,7 +146,7 @@ public abstract class Experiment {
    * @param newStatus Status change message to notify listeners of
    */
   protected void fireStateChange(String newStatus) {
-    System.out.println(newStatus);
+    // System.out.println(newStatus);
     status = newStatus;
     ChangeListener[] lsners = eventHelper.getListeners(ChangeListener.class);
     if (lsners != null && lsners.length > 0) {

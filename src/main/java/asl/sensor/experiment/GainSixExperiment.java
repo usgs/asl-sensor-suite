@@ -6,7 +6,6 @@ import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.TimeSeriesUtils;
 
 public class GainSixExperiment extends Experiment {

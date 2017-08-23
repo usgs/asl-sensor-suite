@@ -27,7 +27,6 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.NoiseNineExperiment;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.NoiseNinePanel;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
@@ -103,10 +102,12 @@ public class NoiseNineTest {
     // ds.matchIntervals();
 
     // trim down internal representation of the data to avoid memory errors
+    /*
     for (int i = 0; i < 9; ++i) {
       DataBlock db = ds.getBlock(i);
       db.setData( db.getData() );
     }
+    */
     
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
@@ -213,11 +214,13 @@ public class NoiseNineTest {
     // ds.matchIntervals();
 
     // trim down internal representation of the data to avoid memory errors
+    /*
     for (int i = 0; i < 9; ++i) {
       DataBlock db = ds.getBlock(i);
       db.setData( db.getData() );
       System.out.println( db.size() );
     }
+    */
     
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );

@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -143,7 +142,7 @@ public class DataBlock {
     }
     */
     dataMap.put(startTime, data);
-    System.out.println(data.length - 1);
+    // System.out.println(data.length - 1);
     endTime = startTime + (interval * data.length);
     trimmedEnd = endTime;
     cachedTimeSeries = data;
@@ -219,7 +218,7 @@ public class DataBlock {
     // off-by-one errors later on
     int numPoints = 
         (int) ( (trimmedEnd - trimmedStart) / (interval) );
-    System.out.println("num. points: " + numPoints);
+    // System.out.println("num. points: " + numPoints);
     
     cachedTimeSeries = new double[numPoints];
     int lastFilledIndex = 0;
@@ -249,7 +248,7 @@ public class DataBlock {
         // than the interval length, i.e., a millisecond or two
         int closeIdx = (int) ( (timeCursor - now) / interval );
         // this is the index rounded down
-        long candidateTime = now + (interval * closeIdx);
+        long candidateTime = now + (closeIdx * interval);
         long nextSample = candidateTime + interval;
         if ( Math.abs(timeCursor - candidateTime) 
             <= Math.abs(timeCursor - nextSample) ) {
@@ -406,9 +405,9 @@ public class DataBlock {
     // doing a quick decimation here on the displays for datapanel
     // so that we can do the sliding/zooming operations relatively expediently
     // trying to draw the charts with too much data slows it down terribly
-    System.out.println(rebuildList);
+    // System.out.println(rebuildList);
     double[] data = getData();
-    System.out.println(data.length);
+    // System.out.println(data.length);
     
     int skipFactor = data.length / MAX_POINTS + 1; // must be >= 1
     

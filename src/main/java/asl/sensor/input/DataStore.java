@@ -330,7 +330,7 @@ public class DataStore {
     // second loop to downsample
     for (int i = 0; i < limit; ++i) {
       if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() != interval ) {
-        System.out.println("resampling");
+        // System.out.println("resampling");
         getBlock(i).resample(interval);
       }
     }
@@ -487,8 +487,8 @@ public class DataStore {
             if (end < dataBlockArray[i].getStartTime() || 
                 start > dataBlockArray[i].getEndTime() ) {
               
-              System.out.println(end+","+dataBlockArray[i].getStartTime());
-              System.out.println(start+","+dataBlockArray[i].getEndTime());
+              //System.out.println(end+","+dataBlockArray[i].getStartTime());
+              //System.out.println(start+","+dataBlockArray[i].getEndTime());
               
               thisBlockIsSet[idx] = false;
               dataBlockArray[idx] = null;

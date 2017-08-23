@@ -106,7 +106,8 @@ public class AzimuthExperiment extends Experiment {
     dataNames.add( "R" );
     simpleCalc = true;
     
-    backend(testNorth, testEast, refNorth, interval, start, end);
+    backend(testNorth.clone(), testEast.clone(), refNorth.clone(), 
+        interval, start, end);
   }
   
   protected void backend() {
@@ -216,6 +217,7 @@ public class AzimuthExperiment extends Experiment {
       // where a 'pretty good' estimate of the angle is all we need
       // just stop here, don't do windowing
       angle = tempAngle;
+      angle = angle % NumericUtils.TAU;
       
       // check if we need to rotate by 180 degrees
       double[] rot = 
