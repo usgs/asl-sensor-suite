@@ -312,7 +312,7 @@ public class DataBlock {
   /**
    * Returns the end time of the data, used mainly in getting range bounds
    * for things like setting end markers, etc.
-   * @return The time between two samples of data in microseconds
+   * @return The time between two samples of data in milliseconds
    */
   public long getEndTime() {
     return trimmedEnd;
@@ -321,7 +321,7 @@ public class DataBlock {
   /**
    * Get the interval of the data. The timestamp for a given data point in the
    * block can be calculated by startTime + (index * interval).
-   * @return The time between two samples of data in microseconds
+   * @return The time between two samples of data in milliseconds
    */
   public long getInterval() {
     return targetInterval;
@@ -342,7 +342,7 @@ public class DataBlock {
   
   /**
    * Return the sample rate of the data, in Hz. This is the inverse of the
-   * interval, scaled to be in seconds rather than microseconds.
+   * interval, scaled to be in seconds rather than milliseconds.
    * @return Sample rate in Hz.
    */
   public double getSampleRate() {
@@ -352,8 +352,8 @@ public class DataBlock {
   /**
    * Gives the start timestamp of the miniSEED data. This is a long compatible
    * with the Java System Library's Date and Calendar objects and expressed
-   * as microseconds from the UTC epoch
-   * @return When the miniSEED data logging started in microseconds 
+   * as milliseconds from the UTC epoch
+   * @return When the miniSEED data logging started in milliseconds 
    */
   public long getStartTime() {
     return trimmedStart;
@@ -370,7 +370,7 @@ public class DataBlock {
   /**
    * Adjust the target interval of the produced data. This will be used when
    * generating a new series of data from the time series map this object holds.
-   * @param newInterval The new interval (time between samples in microseconds)
+   * @param newInterval The new interval (time between samples in milliseconds)
    */
   public void resample(long newInterval) {
     targetInterval = newInterval;
@@ -380,7 +380,7 @@ public class DataBlock {
   /**
    * Used to set the interval of the data (to be used, for example, when the
    * time series has had decimation applied)
-   * @param interval The time between two samples of data in microseconds
+   * @param interval The time between two samples of data in milliseconds
    */
   public void setInterval(long interval) {
     this.interval = interval;
@@ -392,7 +392,7 @@ public class DataBlock {
    */
   public Calendar getStartCalendar() {
     Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
-    cCal.setTimeInMillis( startTime / 1000 );
+    cCal.setTimeInMillis(startTime);
     return cCal;
   }
 
@@ -411,8 +411,7 @@ public class DataBlock {
     
     int skipFactor = data.length / MAX_POINTS + 1; // must be >= 1
     
-    // 1000 milliseconds in a microsecond
-    long divisor = TimeSeriesUtils.ONE_HZ_INTERVAL / 1000;
+    long divisor = TimeSeriesUtils.ONE_HZ_INTERVAL;
     
     XYSeries out = new XYSeries(name);
     long thisTime = trimmedStart;
@@ -428,8 +427,8 @@ public class DataBlock {
  
   /**
    * Trim data to a given range (start time, end time)
-   * @param start Start time to trim to in microseconds from epoch
-   * @param end End time to trim to in microseconds from epoch
+   * @param start Start time to trim to in milliseconds from epoch
+   * @param end End time to trim to in milliseconds from epoch
    */
   public void trim(long start, long end) {
     
@@ -479,7 +478,7 @@ public class DataBlock {
       double[] contiguousSeries = TimeSeriesUtils.concatAll(toMerge);
       
       mergedMap.put(currentTime, contiguousSeries);
-      startingPoint = cursor + 1;
+      startingPoint = cursor;
       
     }
     

@@ -36,9 +36,10 @@ import edu.sc.seis.seisFile.mseed.SeedRecord;
 public class TimeSeriesUtils {
 
   /**
-   * Interval for data that has been sampled at 1 Hz in microseconds
+   * Interval for data that has been sampled at 1 Hz in milliseconds
    */
-  public final static long ONE_HZ_INTERVAL = 1000000L;
+  public final static long ONE_HZ_INTERVAL = 1000L;
+
   /**
    * Sample rate of a 1 Hz sample, in Hz, as a double (that is, 1.0)
    */
@@ -563,11 +564,8 @@ public class TimeSeriesUtils {
 
             Btime bt = dh.getStartBtime();
 
-            // convert Btime to microseconds first as milliseconds
+            // convert Btime to milliseconds
             long start = bt.convertToCalendar().getTimeInMillis();
-
-            // .1 ms = 100 microseconds
-            start *= 1000;
             // start += correction;
 
             int fact = dh.getSampleRateFactor();

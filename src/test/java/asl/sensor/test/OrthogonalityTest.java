@@ -58,15 +58,15 @@ public class OrthogonalityTest {
     // sdf.setLenient(false);
     
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() / 1000 );
+    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     cCal.set(Calendar.HOUR, 7);
     // cCal.set(Calendar.MINUTE, 30);
     System.out.println("start: " + sdf.format( cCal.getTime() ) );
-    long start = cCal.getTime().getTime() * 1000L;
+    long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 13);
     cCal.set(Calendar.MINUTE, 00);
     System.out.println("end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime() * 1000L;
+    long end = cCal.getTime().getTime();
     
     ds.trim(start, end);
     

@@ -76,7 +76,7 @@ public class RandomizedExperimentTest {
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() / 1000 );
+    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     return cCal;
   }
   
@@ -275,11 +275,11 @@ public class RandomizedExperimentTest {
     
     cCal.set(Calendar.MINUTE, 36);
     cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime() * 1000L;
+    long start = cCal.getTime().getTime();
     
     cCal.set(Calendar.MINUTE, 41);
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime() * 1000L;
+    long end = cCal.getTime().getTime();
     
     ds.trim(start, end);
     
@@ -308,14 +308,14 @@ public class RandomizedExperimentTest {
     
     cCal.set(Calendar.MINUTE, 52);
     cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime() * 1000L;
+    long start = cCal.getTime().getTime();
     
     int hour = cCal.get(Calendar.HOUR);
     cCal.set(Calendar.HOUR, hour + 1);
     cCal.set(Calendar.MINUTE, 12);
     
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime() * 1000L;
+    long end = cCal.getTime().getTime();
     
     ds.trim(start, end);
     
@@ -345,7 +345,7 @@ public class RandomizedExperimentTest {
     cCal.set(Calendar.HOUR_OF_DAY, 21);
     cCal.set(Calendar.MINUTE, 24);
     cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime() * 1000L;
+    long start = cCal.getTime().getTime();
     
     // commented out -- calibration ends when the data does
     //int hour = cCal.get(Calendar.HOUR);
@@ -387,11 +387,11 @@ public class RandomizedExperimentTest {
     cCal.set(Calendar.HOUR_OF_DAY, 20);
     cCal.set(Calendar.MINUTE, 16);
     cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime() * 1000L;
+    long start = cCal.getTime().getTime();
     
     cCal.set(Calendar.MINUTE, 26);
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime() * 1000L;
+    long end = cCal.getTime().getTime();
     
     ds.trim(start, end);
     

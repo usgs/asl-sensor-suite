@@ -602,8 +602,8 @@ public class DataStore {
   }
   
   public void trim(Calendar start, Calendar end, int limit) {
-    long startTime = start.getTimeInMillis() * 1000;
-    long endTime = end.getTimeInMillis() * 1000;
+    long startTime = start.getTimeInMillis();
+    long endTime = end.getTimeInMillis();
     trim(startTime, endTime, limit);
   }
   

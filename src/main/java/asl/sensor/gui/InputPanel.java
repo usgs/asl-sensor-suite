@@ -1076,8 +1076,8 @@ implements ActionListener, ChangeListener {
     int leftValue = leftSlider.getValue();
     int rightValue = rightSlider.getValue();
     DataBlock db = ds.getXthLoadedBlock(1);
-    long startMarkerLocation = getMarkerLocation(db, leftValue) / 1000;
-    long endMarkerLocation = getMarkerLocation(db, rightValue) / 1000;
+    long startMarkerLocation = getMarkerLocation(db, leftValue);
+    long endMarkerLocation = getMarkerLocation(db, rightValue);
     
     startDate.removeChangeListener(this);
     endDate.removeChangeListener(this);
@@ -1111,7 +1111,7 @@ implements ActionListener, ChangeListener {
       double max = xysc.getDomainUpperBound(false);
       
       for (Pair<Long, Long> gapLoc : gaps) {
-        long divisor = TimeSeriesUtils.ONE_HZ_INTERVAL / 1000;
+        long divisor = TimeSeriesUtils.ONE_HZ_INTERVAL;
         Double gapStart = gapLoc.getFirst().doubleValue() / divisor;
         Double gapEnd = gapLoc.getSecond().doubleValue() / divisor;
         if (gapEnd > min || gapStart < max) {
@@ -1253,12 +1253,13 @@ implements ActionListener, ChangeListener {
       long time = startDate.getTime();
       DataBlock db = ds.getXthLoadedBlock(1);
 
-      long startTime = db.getStartTime() / 1000;
+      long startTime = db.getStartTime();
       // startValue is current value of left-side slider in ms
 
       // assume current locations of sliders is valid
       int marginValue = rightSliderValue - MARGIN;
-      long marginTime = getMarkerLocation(db, marginValue) / 1000;
+      long marginTime = 
+          getMarkerLocation(db, marginValue);
 
       // fix boundary cases
       if (time < startTime) {
@@ -1268,7 +1269,7 @@ implements ActionListener, ChangeListener {
       }
      
       startDate.setValues(time);
-      int newLeftSliderValue = getSliderValue(db, time * 1000);
+      int newLeftSliderValue = getSliderValue(db, time);
       leftSlider.removeChangeListener(this);
       leftSlider.setValue(newLeftSliderValue); // already validated
       leftSlider.addChangeListener(this);
@@ -1285,10 +1286,10 @@ implements ActionListener, ChangeListener {
       long time = endDate.getTime();
       DataBlock db = ds.getXthLoadedBlock(1);
 
-      long endTime = db.getEndTime() / 1000;
+      long endTime = db.getEndTime();
 
       int marginValue = leftSliderValue + MARGIN;
-      long marginTime = getMarkerLocation(db, marginValue) / 1000;
+      long marginTime = getMarkerLocation(db, marginValue);
 
       // fix boundary cases
       if (time > endTime) {
@@ -1298,7 +1299,7 @@ implements ActionListener, ChangeListener {
       }
      
       endDate.setValues(time);
-      int newRightSliderValue = getSliderValue(db, time * 1000);
+      int newRightSliderValue = getSliderValue(db, time);
       rightSlider.removeChangeListener(this);
       rightSlider.setValue(newRightSliderValue); // already validated
       rightSlider.addChangeListener(this);

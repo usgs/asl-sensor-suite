@@ -1,4 +1,4 @@
-package asl.sensor.utils;
+/*package asl.sensor.utils;
 
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -30,9 +30,11 @@ public class DisplayableDateRange {
     df.setTimeZone( TimeZone.getTimeZone("UTC") );
     Calendar cCal = Calendar.getInstance( df.getTimeZone() );
     
-    cCal.setTimeInMillis( dateRangeInternals.getFirst() / 1000 );
+    cCal.setTimeInMillis( 
+        dateRangeInternals.getFirst() / TimeSeriesUtils.TIME_MULT );
     StringBuilder sb = new StringBuilder( df.format( cCal.getTime() ) );
-    cCal.setTimeInMillis( dateRangeInternals.getSecond() / 1000 );
+    cCal.setTimeInMillis( 
+        dateRangeInternals.getSecond() / TimeSeriesUtils.TIME_MULT );
     sb.append(" | ");
     sb.append( df.format( cCal.getTime() ) );
     sb.append("  ");
@@ -40,3 +42,4 @@ public class DisplayableDateRange {
     return sb.toString();
   }
 }
+*/

@@ -72,6 +72,15 @@ public class TimeSeriesUtilsTest {
     try {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
+      
+      Map<Long, double[]> dataMap = db.getDataMap();
+      List<Long> regions = new ArrayList<Long>( dataMap.keySet() );
+      Collections.sort(regions);
+      for (int i = 0; i < regions.size(); ++i) {
+        long time = regions.get(i);
+        System.out.println(dataMap.get(time).length);
+      }
+      
       long start = db.getStartTime();
       Calendar cCal = getStartCalendar(start);
       SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
@@ -101,7 +110,7 @@ public class TimeSeriesUtilsTest {
       }
       assertEquals(2902991374L, sum);
       // assertEquals( 1652432L, firstContiguous[0], 0.1 );
-      System.out.println(timeseries.get(start)[0]);
+      // System.out.println(timeseries.get(start)[0]);
       
     } catch (FileNotFoundException e) {
       // TODO Auto-generated catch block
@@ -171,7 +180,7 @@ public class TimeSeriesUtilsTest {
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
 
-    cCal.setTimeInMillis(time / 1000);
+    cCal.setTimeInMillis(time);
     return cCal;
   }
   

@@ -287,14 +287,14 @@ public class FFTResultTest {
       SimpleDateFormat sdf = InputPanel.SDF;
       sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
       Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-      cCal.setTimeInMillis( initTime / 1000L );
+      cCal.setTimeInMillis( initTime );
       cCal.set(Calendar.HOUR_OF_DAY, 20);
       cCal.set(Calendar.MINUTE, 16);
       cCal.set(Calendar.SECOND, 0);
       cCal.set(Calendar.MILLISECOND, 0);
-      long startTime = cCal.getTimeInMillis() * 1000L;
+      long startTime = cCal.getTimeInMillis();
       cCal.set(Calendar.MINUTE, 16 + 8); // match ringler's test case's window
-      long endTime = cCal.getTimeInMillis() * 1000L;
+      long endTime = cCal.getTimeInMillis();
 
       sensor.trim(startTime, endTime);
       System.out.println("Trimmed!");
