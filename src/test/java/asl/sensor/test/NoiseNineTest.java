@@ -142,6 +142,7 @@ public class NoiseNineTest {
       xyp.setDomainAxis( xAxis );
     }
 
+    String insets = NoiseNinePanel.getInsetString(nne);
     StringBuilder sb = new StringBuilder();
     // sb.append( NoiseNinePanel.getInsetString(nne) );
     // sb.append('\n');
@@ -162,7 +163,7 @@ public class NoiseNineTest {
 
     PDDocument pdf = new PDDocument();
     ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-    ReportingUtils.textToPDFPage( sb.toString(), pdf );
+    ReportingUtils.textListToPDFPages( pdf, insets, sb.toString() );
 
     String testResultFolder = currentDir + "/testResultImages/";
     File dir = new File(testResultFolder);

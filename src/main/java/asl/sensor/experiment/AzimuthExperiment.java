@@ -223,9 +223,12 @@ public class AzimuthExperiment extends Experiment {
       double[] rot = 
           TimeSeriesUtils.rotate(testNorth, testEast, angle);
       
-      if ( alignedAntipolar(rot, refNorth, tenSecondsLength) ) {
+      if ( alignedAntipolar(rot, refNorth, 2 * tenSecondsLength) ) {
         angle += Math.PI; // still in radians
       }
+      
+      angle = ( (angle % NumericUtils.TAU) + NumericUtils.TAU) 
+          % NumericUtils.TAU;
       
       return;
     }

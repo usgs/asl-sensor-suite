@@ -80,10 +80,10 @@ public class GainSixExperiment extends Experiment {
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
     DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(ds.getBlock(4), ds.getBlock(5), north2Angle);
+        TimeSeriesUtils.rotate(ds.getBlock(3), ds.getBlock(4), north2Angle);
     stores[0].setBlock(1, north2Rotated);
     DataBlock east2Rotated = 
-        TimeSeriesUtils.rotateX(ds.getBlock(4), ds.getBlock(5), east2Angle);
+        TimeSeriesUtils.rotateX(ds.getBlock(3), ds.getBlock(4), east2Angle);
     stores[1].setBlock(1, east2Rotated);
     
     // now get the datasets to plug into the datastore
