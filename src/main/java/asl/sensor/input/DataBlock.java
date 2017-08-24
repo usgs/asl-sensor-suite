@@ -149,14 +149,17 @@ public class DataBlock {
     
     List<Long> times = new ArrayList<Long>( dataMap.keySet() );
     Collections.sort(times);
-
+    // contiguous blocks must have been merged for this to work correctly!
     for (int i = 0; i < times.size(); ++i) {
       long timeNow = times.get(i);
       long blockEnd = dataMap.get(timeNow).length * interval + timeNow;
       boolean hasNext = (i + 1) < times.size();
       
       if (blockEnd < trimmedStart) {
+        // does data (re-)start before our trimmed region does?
+        // if not, data begins with a gap
         if (hasNext && times.get(i + 1) > trimmedStart) {
+          // does the next data point start before our region of interest ends?
           long gapEnd = Math.min( times.get(i+1), trimmedEnd );
           gapList.add( new Pair<Long, Long>(trimmedStart, gapEnd) );
         } else if (!hasNext) {
@@ -167,12 +170,13 @@ public class DataBlock {
       if (timeNow > trimmedEnd) {
         break;
       }
-      
+      // check if a gap exists completely inside our selection window
       if ( (i + 1) < times.size() ) {
         long timeNext = times.get(i + 1);
-        // is there a discrepancy, and is it big enough for us to care?
-        if (timeNext - blockEnd > interval * 2) {
-           gapList.add( new Pair<Long, Long>(blockEnd, timeNext) );
+        // is there a discrepancy, and is it big enough to be a gap?
+        if (timeNext - blockEnd > (3 * interval) / 2) {
+          long gapEnd = Math.min( timeNext, trimmedEnd );
+          gapList.add( new Pair<Long, Long>(blockEnd, gapEnd) );
         }
       }
     }
