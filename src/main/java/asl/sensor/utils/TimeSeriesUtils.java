@@ -485,6 +485,12 @@ public class TimeSeriesUtils {
     return db;
 
   }
+  
+  public static DataBlock getFirstTimeSeries(String filename) 
+      throws FileNotFoundException {
+    String filter = getMplexNameList(filename).get(0);
+    return getTimeSeries(filename, filter);
+  }
 
   /**
    * Reads in the time series data from a miniSEED file and produces it as a

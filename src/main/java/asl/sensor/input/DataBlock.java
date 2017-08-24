@@ -430,12 +430,21 @@ public class DataBlock {
    */
   public void trim(long start, long end) {
     
+    long temp = Math.min(start, end);
+    end = Math.max(start, end);
+    start = temp;
+    
     trimmedStart = Math.max(startTime, start);
     trimmedEnd = Math.min(endTime, end);
     rebuildList = rebuildList ||
         (startTime != trimmedStart) || (endTime != trimmedEnd);
     
   }
+  
+  public void trim(Calendar start, Calendar end) {
+    trim( start.getTimeInMillis(), end.getTimeInMillis() );
+  }
+  
   
   private void mergeContiguousTimes() {
     

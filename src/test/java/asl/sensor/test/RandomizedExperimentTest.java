@@ -508,29 +508,58 @@ public class RandomizedExperimentTest {
           FFTResult.spectralCalcMultitaper(cal, out);
       FFTResult fft2 =
           FFTResult.spectralCalcMultitaper(out, out);
+      
+      FFTResult fft3 =
+          FFTResult.spectralCalc(cal, out);
+      FFTResult fft4 =
+          FFTResult.spectralCalc(out, out);
       Complex[] calSpec = fft1.getFFT();
       Complex[] outSpec = fft2.getFFT();
-      double[] freqs = fft1.getFreqs();
-      XYSeries calXYS = new XYSeries("Cal vs out cross-amplitude");
-      XYSeries outXYS = new XYSeries("Out vs out cross-amplitude");
-      XYSeries calPXYS = new XYSeries("Cal vs out cross-phase");
-      XYSeries outPXYS = new XYSeries("Out vs out cross-phase");
-      for (int i = 0; i < freqs.length; ++i) {
-        if ( freqs[i] != 0 && freqs[i] <= .05 && freqs[i] >= .0001) {
+      double[] freqs1 = fft1.getFreqs();
+      
+      Complex[] calSpec2 = fft3.getFFT();
+      Complex[] outSpec2 = fft4.getFFT();
+      double[] freqs2 = fft3.getFreqs();
+      
+      XYSeries calXYS = new XYSeries("Cal vs out cross-amplitude MT");
+      XYSeries outXYS = new XYSeries("Out vs out cross-amplitude MT");
+      XYSeries calXYS2 = new XYSeries("Cal vs out cross-amplitude CT");
+      XYSeries outXYS2 = new XYSeries("Out vs out cross-amplitude CT");
+      XYSeries calPXYS = new XYSeries("Cal vs out cross-phase MT");
+      XYSeries outPXYS = new XYSeries("Out vs out cross-phase MT");
+      XYSeries calPXYS2 = new XYSeries("Cal vs out cross-phase CT");
+      XYSeries outPXYS2 = new XYSeries("Out vs out cross-phase CT");
+      for (int i = 0; i < freqs1.length; ++i) {
+        if ( freqs1[i] != 0 && freqs1[i] <= .05 && freqs1[i] >= .0001) {
           double calDB = 10 * Math.log10( calSpec[i].abs() );
           double outDB = 10 * Math.log10( outSpec[i].abs() );
           double calP = NumericUtils.atanc(calSpec[i]);
           double outP = NumericUtils.atanc(outSpec[i]);
-          calXYS.add( 1/freqs[i], calDB );
-          outXYS.add( 1/freqs[i], outDB );
-          calPXYS.add( 1/freqs[i], calP );
-          outPXYS.add( 1/freqs[i], outP);
+          calXYS.add( 1/freqs1[i], calDB );
+          outXYS.add( 1/freqs1[i], outDB );
+          calPXYS.add( 1/freqs1[i], calP );
+          outPXYS.add( 1/freqs1[i], outP);
+        }
+      }
+      
+      for (int i = 0; i < freqs2.length; ++i) {
+        if ( freqs2[i] != 0 && freqs2[i] <= .05 && freqs2[i] >= .0001) {
+          double calDB = 10 * Math.log10( calSpec2[i].abs() );
+          double outDB = 10 * Math.log10( outSpec2[i].abs() );
+          double calP = NumericUtils.atanc(calSpec2[i]);
+          double outP = NumericUtils.atanc(outSpec2[i]);
+          calXYS2.add( 1/freqs2[i], calDB );
+          outXYS2.add( 1/freqs2[i], outDB );
+          calPXYS2.add( 1/freqs2[i], calP );
+          outPXYS2.add( 1/freqs2[i], outP);
         }
       }
       
       XYSeriesCollection xysc = new XYSeriesCollection();
       xysc.addSeries(calXYS);
       xysc.addSeries(outXYS);
+      xysc.addSeries(calXYS2);
+      xysc.addSeries(outXYS2);
       JFreeChart chart = ChartFactory.createXYLineChart(
           "Low-Freq Cal Input verification",
           "Frequency",
@@ -541,8 +570,11 @@ public class RandomizedExperimentTest {
           false,
           false);
       
-      xysc = new XYSeriesCollection(calPXYS);
+      xysc = new XYSeriesCollection();
+      xysc.addSeries(calPXYS);
       xysc.addSeries(outPXYS);
+      xysc.addSeries(calPXYS2);
+      xysc.addSeries(outPXYS2);
       JFreeChart chart2 = ChartFactory.createXYLineChart(
           "Low-Freq Cal Deconvolution verification",
           "Frequency",

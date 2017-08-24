@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,7 +44,7 @@ import asl.sensor.utils.TimeSeriesUtils;
 public class FFTResultTest {
 
   @Test
-  public void cosineTaperTest() throws Exception {
+  public void cosineTaperTest() {
     double[] x = { 5, 5, 5, 5, 5 };
     double[] toTaper = x.clone();
     double[] tapered = { 0d, 4.5d, 5d, 4.5d, 0d };
@@ -58,6 +59,102 @@ public class FFTResultTest {
     }
   }
   
+  @Test
+  public void testAutomateRingler() {
+    String name = "data/random_cal_lowfrq/BHZ.512.seed";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
+
+      Calendar cal = db.getStartCalendar();
+      Calendar cal2 = db.getStartCalendar();
+      cal2.set(Calendar.HOUR_OF_DAY, 7);
+      cal2.set(Calendar.MINUTE, 30);
+      db.trim(cal, cal2);
+      
+      String dir = "testResultImages/ringlerTaperResults/";
+      File folder = new File(dir);
+      if ( !folder.exists() ) {
+        System.out.println("Writing directory " + dir);
+        folder.mkdirs();
+      }
+      
+      double[] data = db.getData();
+      int padding = 1;
+      while (padding < data.length) {
+        padding *= 2;
+      }
+      
+      double[] frequencies = new double[padding];
+      double deltaFreq = db.getSampleRate() / padding;
+      for (int i = 0; i < frequencies.length; ++i) {
+        frequencies[i] = deltaFreq * i;
+      }
+      
+      FastFourierTransformer fft = 
+          new FastFourierTransformer(DftNormalization.STANDARD);
+      
+      StringBuilder sb = new StringBuilder();
+      for (int i = 0; i < data.length; ++i) {
+        sb.append(data[i]);
+        if (i + 1 < data.length) {
+          sb.append("\n");
+        }
+      }
+      String dataOut = "raw_data_MAJO_BHZ.txt";
+      PrintWriter out = new PrintWriter(dir + dataOut);
+      out.println(sb.toString());
+      out.close();
+      
+      double[] cloned = data.clone();
+      TimeSeriesUtils.detrend(cloned);
+      TimeSeriesUtils.demeanInPlace(cloned);
+      double[][] tapers = FFTResult.getMultitaperSeries(data.length, 12);
+      for (int j = 0; j < tapers.length; ++j) {
+        double[] convert = new double[padding];
+        double[] taper = tapers[j];
+        sb = new StringBuilder();
+        for (int i = 0; i < data.length; ++i) {
+          convert[i] = cloned[i] * taper[i];
+          sb.append(cloned[i]);
+          sb.append(", ");
+          sb.append(taper[i]);
+          sb.append(", ");
+          sb.append(convert[i]);
+          if (i + 1 < data.length) {
+            sb.append("\n");
+          }
+        }
+        
+        String file = "taper_" + j + ".csv";
+        out = new PrintWriter(dir + file);
+        out.println(sb.toString());
+        out.close();
+        
+        Complex[] freqSpace = fft.transform(convert, TransformType.FORWARD);
+        file = "fft_" + j + ".csv";
+        sb = new StringBuilder();
+        int firstHalf = freqSpace.length / 2 + 1;
+        for (int i = 0; i < firstHalf; ++i) {
+          sb.append(frequencies[i]);
+          sb.append(", ");
+          sb.append(freqSpace[i].getReal());
+          sb.append(", ");
+          sb.append(freqSpace[i].getImaginary());
+          if (i + 1 < freqSpace.length) {
+            sb.append("\n");
+          }
+        }
+        out = new PrintWriter(dir + file);
+        out.println(sb.toString());
+        out.close();
+      }
+      
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
+  }
   
   @Test
   public void fftZerosTestWelch() {
@@ -399,28 +496,29 @@ public class FFTResultTest {
     double[][] taper = FFTResult.getMultitaperSeries(size, TAPERS);
     for (int j = 0; j < taper.length; ++j) {  
       double[] toFFT = new double[size];
-      int last = toFFT.length-1;
+      int l = toFFT.length-1; // last point
       double[] taperCurve = taper[j];
       double taperSum = 0.;
-      System.out.println(j + "-th taper curve first point: " + taperCurve[0]);
-      System.out.println(j + "-th taper curve last point: " + taperCurve[last]);
+      //System.out.println(j + "-th taper curve first point: " + taperCurve[0]);
+      //System.out.println(j + "-th taper curve last point: " + taperCurve[l]);
       for (int i = 0; i < timeSeries.size(); ++i) {
         taperSum += Math.abs(taperCurve[i]);
         double point = timeSeries.get(i).doubleValue();
         toFFT[i] = point * taperCurve[i];
       }
-      System.out.println(j + "-th tapered-data first point: " + toFFT[0]);
-      System.out.println(j + "-th tapered-data last point: " + toFFT[last]);
+      //System.out.println(j + "-th tapered-data first point: " + toFFT[0]);
+      //System.out.println(j + "-th tapered-data last point: " + toFFT[l]);
       
       assertEquals(0., toFFT[0], 1E-10);
-      assertEquals(0., toFFT[last], 1E-10);
+      assertEquals(0., toFFT[l], 1E-10);
     }
   }
   
   @Test
   public void showMultitaperPlot() {
     final int TAPERS = 12;
-    double[][] taper = FFTResult.getMultitaperSeries(2000, TAPERS);
+    StringBuilder sb = new StringBuilder();
+    double[][] taper = FFTResult.getMultitaperSeries(512, TAPERS);
     XYSeriesCollection xysc = new XYSeriesCollection();
     for (int j = 0; j < taper.length; ++j) {
       XYSeries xys = new XYSeries("Taper " + j);
@@ -429,16 +527,37 @@ public class FFTResultTest {
       //System.out.println("LAST VALUE: " + taperLine[taperLine.length - 1]);
       for (int i = 0; i < taperLine.length; ++i) {
         xys.add(i, taperLine[i]);
+        sb.append(taperLine[i]);
+        if ( i + 1 < taperLine.length) {
+          sb.append(", ");
+        }
       }
+      sb.append("\n");
       xysc.addSeries(xys);
     }
     
     JFreeChart chart = 
         ChartFactory.createXYLineChart("MULTITAPER", "taper series index", 
             "taper value", xysc);
+    
     BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
-    File file = new File("testResultImages/multitaper plot.png");
     try {
+      
+      String testResultFolder = "testResultImages/";
+      File folder = new File(testResultFolder);
+      if ( !folder.exists() ) {
+        System.out.println("Writing directory " + testResultFolder);
+        folder.mkdirs();
+      }
+      
+      File file = new File(testResultFolder + "multitaper plot.png");
+      
+      String testResult = 
+          testResultFolder + "multitaper_ascii.csv";
+      PrintWriter out = new PrintWriter(testResult);
+      out.println( sb.toString() );
+      out.close();
+      
       ImageIO.write( bi, "png", file );
     } catch (IOException e) {
       // TODO Auto-generated catch block
@@ -560,7 +679,7 @@ public class FFTResultTest {
         System.out.println("Writing directory " + folderName);
         folder.mkdirs();
       }
-      
+
       BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
       File file = new File("testResultImages/demeaning-FFT-test.png");
       ImageIO.write( bi, "png", file );

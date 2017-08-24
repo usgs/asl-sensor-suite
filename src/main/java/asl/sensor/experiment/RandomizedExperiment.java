@@ -211,7 +211,7 @@ extends Experiment implements ParameterValidator {
     // trim the PSDs to the data in the trimmed frequency range
 
     int endIdx = startIdx + len;
-    System.out.println("INDICES: " + startIdx + "," + endIdx);
+    // System.out.println("INDICES: " + startIdx + "," + endIdx);
     Complex[] numeratorPSDVals = 
         Arrays.copyOfRange(numeratorPSD.getFFT(), startIdx, endIdx);
     Complex[] denominatorPSDVals = 

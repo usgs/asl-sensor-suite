@@ -208,10 +208,10 @@ public class FFTResult {
     double denom = winLen - 1;
     double scale = Math.sqrt(2 / denom);
     
-    // TODO: may need to check correct loop indices for efficiency
+    // TODO: may need to check correct loop index order for efficiency
     for (int j = 0; j < numTapers; ++j) {
       for (int i = 0; i < winLen; ++i) {
-        // TODO: figure out why the limits of this are off
+        // is the rightmost value of the series nonzero because of precision? 
         taperMat[j][i] = scale * Math.sin(Math.PI * i * (j + 1) / denom);
       }
     }
@@ -796,7 +796,6 @@ public class FFTResult {
     TimeSeriesUtils.demeanInPlace(data1Range);
     // apply each taper, take FFT, and average the overall results
     for (int j = 0; j < taperMat.length; ++j) {
-      Complex[] frqDomn;
       double[] toFFT = new double[padding];
       double[] taperCurve = taperMat[j];
       double taperSum = 0.;
@@ -805,22 +804,20 @@ public class FFTResult {
         double point = data1Range[i];
         toFFT[i] = point * taperCurve[i];
       }
-      frqDomn = fft.transform(toFFT, TransformType.FORWARD);
+      Complex[] frqDomn = fft.transform(toFFT, TransformType.FORWARD);
       for (int i = 0; i < fftResult1.length; ++i) {
         fftResult1[i] = fftResult1[i].add( frqDomn[i].divide(taperSum) );
       }
     }
-
     for (int i = 0; i < fftResult1.length; ++i) {
       fftResult1[i] = fftResult1[i].divide(TAPER_COUNT);
     }
     
     if (!sameData) {
-      TimeSeriesUtils.demeanInPlace(data2Range);
       TimeSeriesUtils.detrend(data2Range);
+      TimeSeriesUtils.demeanInPlace(data2Range);
       for (int j = 0; j < taperMat.length; ++j) {
         double[] toFFT = new double[padding];
-        Complex[] frqDomn;
         double[] taperCurve = taperMat[j];
         double taperSum = 0.;
         for (int i = 0; i < data2Range.length; ++i) {
@@ -828,9 +825,9 @@ public class FFTResult {
           double point = data2Range[i];
           toFFT[i] = point * taperMat[j][i];
         }
-        frqDomn = fft.transform(toFFT, TransformType.FORWARD);
+        Complex[] frqDomn = fft.transform(toFFT, TransformType.FORWARD);
         for (int i = 0; i < fftResult1.length; ++i) {
-          fftResult2[i] = fftResult2[i].add( frqDomn[i].divide(taperSum) );;
+          fftResult2[i] = fftResult2[i].add( frqDomn[i].divide(taperSum) );
         }
       }
       for (int i = 0; i < fftResult1.length; ++i) {
@@ -913,22 +910,6 @@ public class FFTResult {
    */
   public int size() {
     return transform.length;
-  }
-
-  /**
-   * Enumerated type used to specify the type of taper used in spectral methods
-   * @author akearns
-   *
-   */
-  public enum TaperType {
-    /**
-     * Cosine taper
-     */
-    COS,
-    /**
-     * Multitaper (Slepian series)
-     */
-    MULT;
   }
   
 }
