@@ -150,7 +150,6 @@ public class FFTResultTest {
       }
       
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     }
@@ -168,6 +167,65 @@ public class FFTResultTest {
     Complex[] values = fftr.getFFT();
     for (Complex c : values) {
       assertTrue(c.equals(Complex.ZERO));
+    }
+  }
+  
+  //@Test TODO: uncomment this line once procedure understood
+  public void multitaperSmootherData() {
+    String name = "data/random_cal_lowfrq/BHZ.512.seed";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
+
+      Calendar cal = db.getStartCalendar();
+      Calendar cal2 = db.getStartCalendar();
+      cal2.set(Calendar.HOUR_OF_DAY, 7);
+      cal2.set(Calendar.MINUTE, 30);
+      db.trim(cal, cal2);
+      
+      FastFourierTransformer fft = 
+          new FastFourierTransformer(DftNormalization.STANDARD);
+      
+      int tCount = 12;
+      double[] data = db.getData();
+      double[][] tapers = FFTResult.getMultitaperSeries(data.length, tCount);
+      
+      // sum of smoothness of data
+      double[] smoothness = new double[tCount];
+      
+      int padding = 1;
+      while (padding < data.length) {
+        padding *= 2;
+      }
+      
+      for (int j = 0; j < tapers.length; ++j) {
+        double[] taper = tapers[j];
+        double[] taperedData = new double[padding];
+        double smoothSum = 0;
+        double taperSum = 0;
+        for (int i = 0; i < data.length; ++i) {
+          taperedData[i] = data[i] * taper[i];
+          taperSum += Math.abs(taper[i]);
+        }
+        Complex[] fftData = fft.transform(taperedData, TransformType.FORWARD);
+        for (int i = 1; i < fftData.length; ++i) {
+          fftData[i] = fftData[i].divide(taperSum);
+          Complex temp = fftData[i].subtract(fftData[i-1]);
+          smoothSum += temp.abs();
+        }
+        
+        smoothness[j] = smoothSum;
+      }
+      // smoother curves have lower value (less change between points)
+      boolean improving = true;
+      for (int i = 1; i < tCount; ++i) {
+        System.out.println(smoothness[i] + ", prev " + smoothness[i-1]);
+        improving &= smoothness[i] < smoothness[i-1];
+      }
+      assertTrue(improving);
+      
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      fail();
     }
   }
   
@@ -560,7 +618,6 @@ public class FFTResultTest {
       
       ImageIO.write( bi, "png", file );
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     }

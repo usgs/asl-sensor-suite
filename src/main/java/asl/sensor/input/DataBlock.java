@@ -163,14 +163,29 @@ public class DataBlock {
 
     for (int i = 0; i < times.size(); ++i) {
       long timeNow = times.get(i);
-      if (timeNow < trimmedStart) {
+      long blockEnd = dataMap.get(timeNow).length * interval + timeNow;
+      boolean hasNext = (i + 1) < times.size();
+      
+      if (blockEnd < trimmedStart) {
+        if (hasNext && times.get(i + 1) > trimmedStart) {
+          long gapEnd = Math.min( times.get(i+1), trimmedEnd );
+          gapList.add( new Pair<Long, Long>(trimmedStart, gapEnd) );
+        } else if (!hasNext) {
+          gapList.add( new Pair<Long, Long>(trimmedStart, trimmedEnd) );
+        }
         continue;
-      } else if (timeNow > trimmedEnd) {
+      }
+      if (timeNow > trimmedEnd) {
+        /*
+        if (gapList.size() == 0) {
+          gapList.add( new Pair<Long, Long>(trimmedStart, trimmedEnd) );
+          return gapList;
+        }
+        */
         break;
       }
       
       if ( (i + 1) < times.size() ) {
-        long blockEnd = ( dataMap.get(timeNow).length * interval ) + timeNow;
         long timeNext = times.get(i + 1);
         // is there a discrepancy, and is it big enough for us to care?
         if (timeNext - blockEnd > interval * 2) {
@@ -466,6 +481,15 @@ public class DataBlock {
           currentTime + ( currentSeries.length * interval );
       
       cursor = startingPoint + 1;
+      
+      if ( cursor >= startTimes.size() ) {
+        double[] contiguousSeries = TimeSeriesUtils.concatAll(toMerge);
+        mergedMap.put(currentTime, contiguousSeries);
+        startingPoint = cursor;
+        dataMap = mergedMap;
+        return;
+      }
+      
       long nextTime = startTimes.get(cursor);
       long difference = Math.abs(nextTime - timeAtSublistEnd);
       
@@ -483,7 +507,6 @@ public class DataBlock {
       }
       
       double[] contiguousSeries = TimeSeriesUtils.concatAll(toMerge);
-      
       mergedMap.put(currentTime, contiguousSeries);
       startingPoint = cursor;
       
