@@ -111,11 +111,6 @@ public class DataBlock {
     
     name = nameIn;
     cachedTimeSeries = dataIn;
-    /*
-    for (int i = 0; i < dataIn.size(); ++i) {
-      cachedTimeSeries[i] = dataIn.get(i).doubleValue();
-    }
-    */
     rebuildList = false;
   }
   
@@ -135,12 +130,6 @@ public class DataBlock {
     startTime = start;
     trimmedStart = start;
     dataMap = new HashMap<Long, double[]>();
-    /*
-    List<Number> dataList = new ArrayList<Number>();
-    for (int i = 0; i < data.length; ++i) {
-      dataList.add(data[i]);
-    }
-    */
     dataMap.put(startTime, data);
     // System.out.println(data.length - 1);
     endTime = startTime + (interval * data.length);
@@ -176,12 +165,6 @@ public class DataBlock {
         continue;
       }
       if (timeNow > trimmedEnd) {
-        /*
-        if (gapList.size() == 0) {
-          gapList.add( new Pair<Long, Long>(trimmedStart, trimmedEnd) );
-          return gapList;
-        }
-        */
         break;
       }
       
@@ -483,29 +466,60 @@ public class DataBlock {
       cursor = startingPoint + 1;
       
       if ( cursor >= startTimes.size() ) {
-        double[] contiguousSeries = TimeSeriesUtils.concatAll(toMerge);
-        mergedMap.put(currentTime, contiguousSeries);
-        startingPoint = cursor;
+        mergedMap.put(currentTime, currentSeries);
         dataMap = mergedMap;
         return;
       }
       
       long nextTime = startTimes.get(cursor);
-      long difference = Math.abs(nextTime - timeAtSublistEnd);
       
+      long difference = nextTime - timeAtSublistEnd;
       while ( difference < (interval / 4) ) {
-        double[] nextGroup = dataMap.get(nextTime);
-        toMerge.add(nextGroup);
-        // currentSeries = TimeSeriesUtils.addAll(currentSeries, nextGroup);
-        timeAtSublistEnd = nextTime + ( nextGroup.length * interval );
-        ++cursor;
-        if ( cursor >= startTimes.size() ) {
-          break;
+        
+        if (difference < 0) {
+          // duplicated data check
+          long diff = timeAtSublistEnd - nextTime; // take the difference
+          long mod = diff % interval; // round up if greater than 75% interval
+          
+          // division truncates; if the result would be, say, 1.9 as a decimal,
+          // then we should round up to 2 instead of start at 1 since this is
+          // common enough with timing differences between gaps
+          // whereas if this conditional was triggered beacuse the next block
+          // occurs at, say, 90% of the interval, then the difference is only
+          // 0.1 from the expected start and we copy everything anyway
+          int fstUndupIdx = (int) (diff / interval);
+          if (mod > 3 * interval / 4) {
+            ++fstUndupIdx;
+          }
+          
+          double[] next = dataMap.get(nextTime);
+          double[] truncated = 
+              Arrays.copyOfRange(next, fstUndupIdx, next.length);
+          toMerge.add(truncated);
+          timeAtSublistEnd = timeAtSublistEnd + (truncated.length * interval);
+          ++cursor;
+        } else {
+          // data not duplicated, so copy it all
+          double[] nextGroup = dataMap.get(nextTime);
+          toMerge.add(nextGroup);
+          // currentSeries = TimeSeriesUtils.addAll(currentSeries, nextGroup);
+          timeAtSublistEnd = nextTime + (nextGroup.length * interval);
+          ++cursor;
         }
+        
+        if ( cursor >= startTimes.size() ) {
+          double[] contiguousSeries = TimeSeriesUtils.concatAll(toMerge);
+          mergedMap.put(currentTime, contiguousSeries);
+          dataMap = mergedMap;
+          return;
+        }
+        
         nextTime = startTimes.get(cursor);
-        difference = Math.abs(nextTime - timeAtSublistEnd);
+        difference = nextTime - timeAtSublistEnd;
+        
       }
       
+      // end of the contiguous block. merge data and iterate
       double[] contiguousSeries = TimeSeriesUtils.concatAll(toMerge);
       mergedMap.put(currentTime, contiguousSeries);
       startingPoint = cursor;

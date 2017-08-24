@@ -100,15 +100,25 @@ public class FFTResultTest {
           sb.append("\n");
         }
       }
+      PrintWriter out;
+      /*
       String dataOut = "raw_data_MAJO_BHZ.txt";
-      PrintWriter out = new PrintWriter(dir + dataOut);
+      out = new PrintWriter(dir + dataOut);
       out.println(sb.toString());
       out.close();
-      
+      */
       double[] cloned = data.clone();
       TimeSeriesUtils.detrend(cloned);
       TimeSeriesUtils.demeanInPlace(cloned);
-      double[][] tapers = FFTResult.getMultitaperSeries(data.length, 12);
+      int taperCt = 12;
+      double[][] tapers = FFTResult.getMultitaperSeries(data.length, taperCt);
+      
+      int firstHalf = padding / 2 + 1;
+      Complex[] fftFinal = new Complex[firstHalf];
+      for (int i = 0; i < firstHalf; ++i) {
+        fftFinal[i] = Complex.ZERO;
+      }
+      
       for (int j = 0; j < tapers.length; ++j) {
         double[] convert = new double[padding];
         double[] taper = tapers[j];
@@ -133,8 +143,9 @@ public class FFTResultTest {
         Complex[] freqSpace = fft.transform(convert, TransformType.FORWARD);
         file = "fft_" + j + ".csv";
         sb = new StringBuilder();
-        int firstHalf = freqSpace.length / 2 + 1;
+        
         for (int i = 0; i < firstHalf; ++i) {
+          fftFinal[i] = fftFinal[i].add(freqSpace[i]);
           sb.append(frequencies[i]);
           sb.append(", ");
           sb.append(freqSpace[i].getReal());
@@ -148,6 +159,27 @@ public class FFTResultTest {
         out.println(sb.toString());
         out.close();
       }
+      
+      sb = new StringBuilder();
+      String outputFinal = "FFT_result.csv";
+      for (int i = 0; i < firstHalf; ++i) {
+        fftFinal[i] = fftFinal[i].divide(taperCt);
+        Complex cross = fftFinal[i].multiply( fftFinal[i].conjugate() );
+        sb.append(fftFinal[i].getReal());
+        sb.append(", ");
+        sb.append(fftFinal[i].getImaginary());
+        sb.append(", ");
+        sb.append(cross.getReal());
+        sb.append(", ");
+        sb.append(cross.getImaginary());
+        if (i + 1 < firstHalf) {
+          sb.append('\n');
+        }
+      }
+      
+      out = new PrintWriter(dir + outputFinal);
+      out.write(sb.toString());
+      out.close();
       
     } catch (FileNotFoundException e) {
       e.printStackTrace();
