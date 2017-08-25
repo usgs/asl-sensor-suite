@@ -146,7 +146,7 @@ public abstract class Experiment {
    * @param newStatus Status change message to notify listeners of
    */
   protected void fireStateChange(String newStatus) {
-    // System.out.println(newStatus);
+    // System.out.println(newStatus); uncomment to echo to terminal
     status = newStatus;
     ChangeListener[] lsners = eventHelper.getListeners(ChangeListener.class);
     if (lsners != null && lsners.length > 0) {

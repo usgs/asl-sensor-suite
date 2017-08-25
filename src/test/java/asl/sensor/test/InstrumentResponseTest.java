@@ -23,6 +23,27 @@ import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
 
+  // @Test
+  public void listPoles() {
+    InstrumentResponse ir;
+    try {
+      ir = InstrumentResponse.loadEmbeddedResponse("STS-6_Q330HR_BH_40_nocoil");
+      for ( Complex pole : ir.getPoles() ) {
+        double poleFreq = pole.abs() / NumericUtils.TAU;
+        System.out.println("POLE " + poleFreq + " Hz");
+      }
+      for ( Complex zero : ir.getZeros() ) {
+        double zeroFreq = zero.abs() / NumericUtils.TAU;
+        System.out.println("ZERO " + zeroFreq + " Hz");
+      }
+      
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      fail();
+      e.printStackTrace();
+    }
+  }
+  
   @Test
   public void testFileParse() {
     String filename = "./responses/RESP.XX.NS087..BHZ.STS1.20.2400";
@@ -64,57 +85,6 @@ public class InstrumentResponseTest {
   }
   
   @Test
-  public void vectorCreationRespectsDuplicatePoles() {
-    
-    InstrumentResponse ir;
-    try {
-      ir = 
-          InstrumentResponse.loadEmbeddedResponse("STS-5A_Q330HR_BH_40");
-      
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      fail();
-      e.printStackTrace();
-      return;
-    }
-    
-    List<Complex> initPoles = new ArrayList<Complex>( ir.getPoles() );
-    RealVector rv = ir.polesToVector(false, 100.);
-    Complex c = new Complex(-20, 0);
-    // poles at indices 2 and 3 are duplicated, have zero imaginary component
-    // set them to a new value to test array resetting with diff. values
-    initPoles.set(2, c);
-    initPoles.set(3, c);
-    // build new vector, is it the same?
-    List<Complex> endPoles = 
-        ir.buildResponseFromFitVector( rv.toArray(), false, 0 ).getPoles();
-    
-    assertTrue( initPoles.size() == endPoles.size() );
-    
-  }
-  
-  // @Test
-  public void listPoles() {
-    InstrumentResponse ir;
-    try {
-      ir = InstrumentResponse.loadEmbeddedResponse("STS-6_Q330HR_BH_40_nocoil");
-      for ( Complex pole : ir.getPoles() ) {
-        double poleFreq = pole.abs() / NumericUtils.TAU;
-        System.out.println("POLE " + poleFreq + " Hz");
-      }
-      for ( Complex zero : ir.getZeros() ) {
-        double zeroFreq = zero.abs() / NumericUtils.TAU;
-        System.out.println("ZERO " + zeroFreq + " Hz");
-      }
-      
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      fail();
-      e.printStackTrace();
-    }
-  }
-  
-  @Test
   public void testStringOutput() {
     
     String currentDir = System.getProperty("user.dir");
@@ -143,6 +113,36 @@ public class InstrumentResponseTest {
       // TODO Auto-generated catch block
       fail("Unexpected error trying to read response file");
     }
+  }
+  
+  @Test
+  public void vectorCreationRespectsDuplicatePoles() {
+    
+    InstrumentResponse ir;
+    try {
+      ir = 
+          InstrumentResponse.loadEmbeddedResponse("STS-5A_Q330HR_BH_40");
+      
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      fail();
+      e.printStackTrace();
+      return;
+    }
+    
+    List<Complex> initPoles = new ArrayList<Complex>( ir.getPoles() );
+    RealVector rv = ir.polesToVector(false, 100.);
+    Complex c = new Complex(-20, 0);
+    // poles at indices 2 and 3 are duplicated, have zero imaginary component
+    // set them to a new value to test array resetting with diff. values
+    initPoles.set(2, c);
+    initPoles.set(3, c);
+    // build new vector, is it the same?
+    List<Complex> endPoles = 
+        ir.buildResponseFromFitVector( rv.toArray(), false, 0 ).getPoles();
+    
+    assertTrue( initPoles.size() == endPoles.size() );
+    
   }
 
 }

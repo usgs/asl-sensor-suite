@@ -36,12 +36,6 @@ public class NumericUtils {
     
   }
   
-  public static void setInfinityPrintable(DecimalFormat df) {
-    DecimalFormatSymbols symbols = df.getDecimalFormatSymbols();
-    symbols.setInfinity("Inf.");
-    df.setDecimalFormatSymbols(symbols);
-  }
-  
   public static CpxMagComparator cmc;
   
   /**
@@ -50,7 +44,9 @@ public class NumericUtils {
    */
   public final static double TAU = Math.PI * 2; // radians in full circle
   
-  // used to limit the frequencies of the poles/zeros getting fit
+  /**
+   * used to limit the frequencies of the poles/zeros getting fit
+   */
   public final static double PEAK_MULTIPLIER = 0.5;
   
   /**
@@ -72,8 +68,24 @@ public class NumericUtils {
     return Math.atan2( c.getImaginary(), c.getReal() );
   }
   
+  /**
+   * Sort a list of complex values according to their magnitude. Used to 
+   * sort poles and zeros according to their period, which is a function of
+   * the magnitude.
+   * @param complexes List of complex numbers to sort
+   */
   public static void complexMagnitudeSorter(List<Complex> complexes) {
     Collections.sort(complexes, CpxMagComparator.instance);
+  }
+  
+  /**
+   * Sets decimalformat object so that infinity can be printed in a PDF document
+   * @param df DecimalFormat object to change the infinity symbol value of
+   */
+  public static void setInfinityPrintable(DecimalFormat df) {
+    DecimalFormatSymbols symbols = df.getDecimalFormatSymbols();
+    symbols.setInfinity("Inf.");
+    df.setDecimalFormatSymbols(symbols);
   }
   
   /**

@@ -61,6 +61,26 @@ public class PhaseTest {
     return cCal;
   }
 
+  @Test
+  public void quickNumericTest() {
+    // get a number as integer
+    Integer x = new Integer(123456);
+
+    // get a number as float
+    Float y = new Float(9876f);
+    
+    // get a number as double
+    Double u = new Double(12304566983.045);
+
+    // print their value as double
+    System.out.println("x as integer: " + x
+       + ", x as double: " + x.doubleValue());
+    System.out.println("y as float: " + y
+       + ", y as double: " + y.doubleValue());
+    System.out.println("u as double: " + u
+        + ", u as double: " + u.doubleValue());
+  }
+  
   public DataStore setUpTest1() throws IOException {
 
     List<String> fileList = new ArrayList<String>();
@@ -89,82 +109,82 @@ public class PhaseTest {
     return ds;
   }
   
-  public DataStore setUpTest3() throws IOException {
-    List<String> fileList = new ArrayList<String>();
-    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
-    String dataFolderName = "data/random_cal_3/"; 
-    String calName =  dataFolderName + "BC0.512.seed";
-    String sensOutName = dataFolderName + "00_BHZ.512.seed";
-    
-    fileList.add(respName);
-    fileList.add(calName);
-    fileList.add(sensOutName);
-    
-    DataStore ds = getFromList(fileList);
-    
-    // response we want is embedded
-    InstrumentResponse ir;
-    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
-    ds.setResponse(1, ir);
-    
-    Calendar cCal = getStartCalendar(ds);
-    
-    cCal.set(Calendar.HOUR_OF_DAY, 21);
-    cCal.set(Calendar.MINUTE, 24);
-    cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime();
-    
-    // commented out -- calibration ends when the data does
-    //int hour = cCal.get(Calendar.HOUR);
-    /*
-    cCal.set(Calendar.DAY_OF_YEAR, 4);
-    cCal.set(Calendar.HOUR_OF_DAY, 0);
-    cCal.set(Calendar.MINUTE, 0);
-    */
-    
-    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = ds.getBlock(0).getEndTime();
-    
-    ds.trim(start, end);
-    
-    return ds;
-  }
+public DataStore setUpTest3() throws IOException {
+  List<String> fileList = new ArrayList<String>();
+  String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
+  String dataFolderName = "data/random_cal_3/"; 
+  String calName =  dataFolderName + "BC0.512.seed";
+  String sensOutName = dataFolderName + "00_BHZ.512.seed";
   
-public DataStore setUpTest4() throws IOException {
-    
-    List<String> fileList = new ArrayList<String>();
-    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
-    String dataFolderName = "data/random_cal_4/"; 
-    String calName =  dataFolderName + "CB_BC0.512.seed";
-    String sensOutName = dataFolderName + "00_EHZ.512.seed";
-    
-    fileList.add(respName);
-    fileList.add(calName);
-    fileList.add(sensOutName);
-    
-    DataStore ds = getFromList(fileList);
-    
-    // response we want is embedded
-    InstrumentResponse ir;
-    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
-    ds.setResponse(1, ir);
-    
-    Calendar cCal = getStartCalendar(ds);
-    
-    cCal.set(Calendar.HOUR_OF_DAY, 20);
-    cCal.set(Calendar.MINUTE, 16);
-    cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime();
-    
-    cCal.set(Calendar.MINUTE, 26);
-    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime();
-    
-    ds.trim(start, end);
-    
-    return ds;
-  }
+  fileList.add(respName);
+  fileList.add(calName);
+  fileList.add(sensOutName);
+  
+  DataStore ds = getFromList(fileList);
+  
+  // response we want is embedded
+  InstrumentResponse ir;
+  ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
+  ds.setResponse(1, ir);
+  
+  Calendar cCal = getStartCalendar(ds);
+  
+  cCal.set(Calendar.HOUR_OF_DAY, 21);
+  cCal.set(Calendar.MINUTE, 24);
+  cCal.set(Calendar.SECOND, 0);
+  long start = cCal.getTime().getTime();
+  
+  // commented out -- calibration ends when the data does
+  //int hour = cCal.get(Calendar.HOUR);
+  /*
+  cCal.set(Calendar.DAY_OF_YEAR, 4);
+  cCal.set(Calendar.HOUR_OF_DAY, 0);
+  cCal.set(Calendar.MINUTE, 0);
+  */
+  
+  // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
+  long end = ds.getBlock(0).getEndTime();
+  
+  ds.trim(start, end);
+  
+  return ds;
+}
 
+  public DataStore setUpTest4() throws IOException {
+      
+      List<String> fileList = new ArrayList<String>();
+      String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
+      String dataFolderName = "data/random_cal_4/"; 
+      String calName =  dataFolderName + "CB_BC0.512.seed";
+      String sensOutName = dataFolderName + "00_EHZ.512.seed";
+      
+      fileList.add(respName);
+      fileList.add(calName);
+      fileList.add(sensOutName);
+      
+      DataStore ds = getFromList(fileList);
+      
+      // response we want is embedded
+      InstrumentResponse ir;
+      ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR_BH_40");
+      ds.setResponse(1, ir);
+      
+      Calendar cCal = getStartCalendar(ds);
+      
+      cCal.set(Calendar.HOUR_OF_DAY, 20);
+      cCal.set(Calendar.MINUTE, 16);
+      cCal.set(Calendar.SECOND, 0);
+      long start = cCal.getTime().getTime();
+      
+      cCal.set(Calendar.MINUTE, 26);
+      // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
+      long end = cCal.getTime().getTime();
+      
+      ds.trim(start, end);
+      
+      return ds;
+    }
+  
   @Test
   public void testFFTDriver() {
     int[] tests = new int[]{1,3,4};
@@ -344,26 +364,6 @@ public DataStore setUpTest4() throws IOException {
     }
 
     
-  }
-  
-  @Test
-  public void quickNumericTest() {
-    // get a number as integer
-    Integer x = new Integer(123456);
-
-    // get a number as float
-    Float y = new Float(9876f);
-    
-    // get a number as double
-    Double u = new Double(12304566983.045);
-
-    // print their value as double
-    System.out.println("x as integer: " + x
-       + ", x as double: " + x.doubleValue());
-    System.out.println("y as float: " + y
-       + ", y as double: " + y.doubleValue());
-    System.out.println("u as double: " + u
-        + ", u as double: " + u.doubleValue());
   }
 
 }

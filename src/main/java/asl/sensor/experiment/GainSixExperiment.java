@@ -124,6 +124,28 @@ public class GainSixExperiment extends Experiment {
   }
 
   /**
+   * Private function used to get the orientation of inputted data
+   * (Specifically, aligns the second east and north input with the first)
+   * Uses a simpler solver for the Azimuth data. May produce an angle that
+   * is 180 degrees off from expected due to use of coherence measurement
+   * and limited checking of antipolar alignment
+   * @param n Timeseries data from north-facing reference sensor
+   * @param e Timeseries data from east-facing reference sensor
+   * @param r Timeseries data from test sensor (either north or east)
+   * @param interval Sampling interval of the data
+   * @param start Start time of data
+   * @param end End time of data
+   * @return double representing radian-unit rotation angle of data
+   */
+  private double getAzimuth(double[] n, double[] e, double[] r, 
+      long interval, long start, long end) {
+    AzimuthExperiment azi = new AzimuthExperiment();
+    azi.setSimple(true); // do the faster angle calculation
+    azi.alternateEntryPoint(n, e, r, interval, start, end);
+    return azi.getFitAngleRad();
+  }
+  
+  /**
    * Get the rotation angle used to rotate the second input set's east sensor
    * Ideally this should be close to the value used for the north azimuth
    * @return Angle of second east sensor (radians) minus 90-degree offset 
@@ -135,6 +157,7 @@ public class GainSixExperiment extends Experiment {
     return east2Angle;
   }
   
+
   /**
    * Get the frequency bounds of the data to be given to charts
    * @return Array of form {low freq bound, high freq bound}
@@ -147,7 +170,6 @@ public class GainSixExperiment extends Experiment {
     return new double[]{xys.getMinX(), xys.getMaxX()};
   }
   
-
   /**
    * Get the rotation angle used to rotate the second input set's north sensor
    * @return Angle of second north sensor (radians)
@@ -155,7 +177,8 @@ public class GainSixExperiment extends Experiment {
   public double getNorthAzimuth() {
     return north2Angle;
   }
-  
+
+
   /**
    * Get octave centered around peak of vertical components. We assume
    * that all three component gain sets have their peaks at nearly the same
@@ -168,7 +191,6 @@ public class GainSixExperiment extends Experiment {
     // we assume the vertical sensor, as it is not rotated, is
     return componentBackends[2].getOctaveCenteredAtPeak(idx);
   }
-
 
   /**
    * Get the gain mean and deviation values from a specified peak
@@ -211,6 +233,7 @@ public class GainSixExperiment extends Experiment {
     */
     return result;
   }
+  
 
   /**
    * Get the gain mean and deviation values from the peak frequency of the 
@@ -225,7 +248,6 @@ public class GainSixExperiment extends Experiment {
     
   }
   
-
   @Override
   public boolean hasEnoughData(DataStore ds) {
     int needed = blocksNeeded();
@@ -240,14 +262,5 @@ public class GainSixExperiment extends Experiment {
   @Override
   public int[] listActiveResponseIndices() {
     return indices;
-  }
-  
-  private double getAzimuth(double[] n, double[] e, double[] r, 
-      long interval, long start, long end) {
-    // TODO: FIX THIS
-    AzimuthExperiment azi = new AzimuthExperiment();
-    azi.setSimple(true); // do the faster angle calculation
-    azi.alternateEntryPoint(n, e, r, interval, start, end);
-    return azi.getFitAngleRad();
   }
 }

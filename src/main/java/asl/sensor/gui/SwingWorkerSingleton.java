@@ -17,6 +17,10 @@ public class SwingWorkerSingleton {
   private static SwingWorker<Boolean, Void> worker;
   private static ExperimentPanel epHandle;
   
+  public static void cancel() {
+    worker.cancel(true);
+  }
+  
   /**
    * Get the result of running the swingworker, that is, completion status
    * @return True if the worker (i.e., experiment) completed successfully
@@ -30,10 +34,6 @@ public class SwingWorkerSingleton {
   
   public static SwingWorker<Boolean, Void> getInstance() {
     return worker;
-  }
-  
-  public static void cancel() {
-    worker.cancel(true);
   }
   
   /**

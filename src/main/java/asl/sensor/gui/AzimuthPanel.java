@@ -167,6 +167,7 @@ public class AzimuthPanel extends ExperimentPanel {
     
   }
 
+  @Override
   public void displayInfoMessage(String infoMsg) {
     
     if (chartSelector.getSelectedIndex() == 0) {

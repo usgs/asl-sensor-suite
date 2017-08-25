@@ -242,6 +242,32 @@ public class DataStore {
   }
   
   /**
+   * Expand data into the largest range of time specified by active inputs
+   * @param limit Highest index to find trimmed range for  
+   * @return Pair of data representing the longest common time length for data
+   */
+  public Pair<Long, Long> getUntrimmedCommonTimeRange(int limit) {
+    long startTime = 0L, endTime = Long.MAX_VALUE;
+    
+    for (int i = 0; i < limit; ++i) {
+      DataBlock data = dataBlockArray[i];
+      if (!thisBlockIsSet[i]) {
+        continue;
+      }
+      long start = data.getInitialStartTime();
+      if (start > startTime) {
+        startTime = start;
+      }
+      long end = data.getInitialEndTime();
+      if (end < endTime) {
+        endTime = end;
+      }
+    }
+    
+    return new Pair<Long, Long>(startTime, endTime);
+  }
+  
+  /**
    * Used to get the first, second, etc. data set loaded. Used when operations
    * reading in data don't require all the inputs to be loaded.
    * Requires both SEED and RESP to be loaded for this to be valid.
@@ -292,7 +318,7 @@ public class DataStore {
     String errMsg = "Not enough data loaded in (found " + count + ")";
     throw new IndexOutOfBoundsException(errMsg);
   }
-  
+
   /**
    * Checks if there is any data at all loaded into this object so far,
    * either data or response
@@ -313,7 +339,7 @@ public class DataStore {
   public void matchIntervals() {
     matchIntervals(FILE_COUNT);
   }
-
+  
   /**
    * Math the first [limit] inputs' intervals to the lowest-frequency used by
    * any of the blocks within that range
@@ -450,7 +476,7 @@ public class DataStore {
     }
     
   }
-  
+
   /**
    * Takes a loaded miniSEED data series and loads it in as a datablock into
    * this datastore object
@@ -500,7 +526,22 @@ public class DataStore {
     }
     
   }
-
+  
+  /**
+   * Set response of a sensor's dataseries by index, using an NRL response
+   * @param idx Index of plot for which response file matches
+   * @param embedName Name of NRL response
+   */
+  public void setEmbedResponse(int idx, String embedName) {
+    try {
+      responses[idx] = InstrumentResponse.loadEmbeddedResponse(embedName);
+      thisResponseIsSet[idx] = true;
+    } catch (IOException e) {
+      // Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+  
   /**
    * Place an already-constructed instrument response at the index idx 
    * @param idx index in this object to place the response at
@@ -526,21 +567,6 @@ public class DataStore {
   }
   
   /**
-   * Set response of a sensor's dataseries by index, using an NRL response
-   * @param idx Index of plot for which response file matches
-   * @param embedName Name of NRL response
-   */
-  public void setEmbedResponse(int idx, String embedName) {
-    try {
-      responses[idx] = InstrumentResponse.loadEmbeddedResponse(embedName);
-      thisResponseIsSet[idx] = true;
-    } catch (IOException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    }
-  }
-  
-  /**
    * Alias to blockIsSet function
    * @param idx Index of a datablock to check
    * @return True if a seed file has been loaded in there
@@ -549,21 +575,36 @@ public class DataStore {
     return thisBlockIsSet[idx];
   }
   
-  public void trim(Pair<Long, Long> times, int limit) 
-      throws IndexOutOfBoundsException{
-    trim( times.getFirst(), times.getSecond(), limit );
+  /**
+   * Trim all data according to calendar objects. Converts data into
+   * epoch millisecond longs and uses that to specify a trim range.
+   * @param start Start time to trim data to
+   * @param end End time to trim data to
+   */
+  public void trim(Calendar start, Calendar end) {
+    trim(start, end, FILE_COUNT);
   }
   
-  public void untrim(int limit) {
-    for (int i = 0; i < limit; ++i) {
-      if (!thisBlockIsSet[i]) {
-        continue;
-      }
-      DataBlock data = dataBlockArray[i];
-      // System.out.println( data.getName() );
-      data.untrim();
-    }
-    trimToCommonTime(limit);
+  /**
+   * Trim a given set of data according to calendar objects. Converts the data
+   * into epoch millisecond longs and uses that to specify a trim range.
+   * @param start Start time to trim data to
+   * @param end End time to trim data to
+   * @param limit Number of data portions to perform trim on
+   */
+  public void trim(Calendar start, Calendar end, int limit) {
+    long startTime = start.getTimeInMillis();
+    long endTime = end.getTimeInMillis();
+    trim(startTime, endTime, limit);
+  }
+  
+  /**
+   * Trim data according to epoch millisecond longs
+   * @param start Start time to trim data to
+   * @param end End time to trim data to
+   */
+  public void trim(long start, long end) {
+    trim(start, end, FILE_COUNT);
   }
   
   /**
@@ -601,18 +642,9 @@ public class DataStore {
     }
   }
   
-  public void trim(Calendar start, Calendar end, int limit) {
-    long startTime = start.getTimeInMillis();
-    long endTime = end.getTimeInMillis();
-    trim(startTime, endTime, limit);
-  }
-  
-  public void trim(Calendar start, Calendar end) {
-    trim(start, end, FILE_COUNT);
-  }
-  
-  public void trim(long start, long end) {
-    trim(start, end, FILE_COUNT);
+  public void trim(Pair<Long, Long> times, int limit) 
+      throws IndexOutOfBoundsException{
+    trim( times.getFirst(), times.getSecond(), limit );
   }
   
   /**
@@ -622,27 +654,6 @@ public class DataStore {
    */
   public void trimToCommonTime() {
     trimToCommonTime(FILE_COUNT);
-  }
-  
-  public Pair<Long, Long> getUntrimmedCommonTimeRange(int limit) {
-    long startTime = 0L, endTime = Long.MAX_VALUE;
-    
-    for (int i = 0; i < limit; ++i) {
-      DataBlock data = dataBlockArray[i];
-      if (!thisBlockIsSet[i]) {
-        continue;
-      }
-      long start = data.getInitialStartTime();
-      if (start > startTime) {
-        startTime = start;
-      }
-      long end = data.getInitialEndTime();
-      if (end < endTime) {
-        endTime = end;
-      }
-    }
-    
-    return new Pair<Long, Long>(startTime, endTime);
   }
   
   /**
@@ -685,5 +696,17 @@ public class DataStore {
       // outToPlots[i] = data.toXYSeries();
     }
     
+  }
+  
+  public void untrim(int limit) {
+    for (int i = 0; i < limit; ++i) {
+      if (!thisBlockIsSet[i]) {
+        continue;
+      }
+      DataBlock data = dataBlockArray[i];
+      // System.out.println( data.getName() );
+      data.untrim();
+    }
+    trimToCommonTime(limit);
   }
 }

@@ -45,6 +45,74 @@ public class TimeSeriesUtils {
    */
   public final static double ONE_HZ = 1.0;
 
+  public static double[] concatAll(double[]... arrs) {
+    
+    if (arrs.length == 0) {
+      return new double[]{};
+    }
+    
+    if (arrs.length == 1) {
+      return arrs[0];
+    }
+    
+    int len = 0;
+    for (double[] arr : arrs) {
+      len += arr.length;
+    }
+    
+    double[] result = new double[len];
+    int start = 0;
+    for (double[] arr : arrs) {
+      if (arr.length == 0) {
+        continue;
+      }
+      int end = arr.length;
+      System.arraycopy(arr, 0, result, start, end);
+      start += end;
+    }
+    
+    return result;
+  }
+
+  /**
+   * Merge a series of arrays into a single array in order. Used to concatenate
+   * all contiguous arrays in a data map. If the list is empty, an empty array
+   * is returned. If the list has one object, that object is returned. Otherwise
+   * a new array is constructed holding all the inputted arrays at once. The
+   * size of the combined array is equal to the total length of all arrays in
+   * the list.
+   * @param arrs List of arrays to merge all together into a single array
+   * @return Single array holding each array's data in sequence.
+   */
+  public static double[] concatAll(List<double[]> arrs) {
+    
+    if (arrs.size() == 0) {
+      return new double[]{};
+    }
+    
+    if (arrs.size() == 1) {
+      return arrs.get(0);
+    }
+    
+    int len = 0;
+    for (double[] arr : arrs) {
+      len += arr.length;
+    }
+    
+    double[] result = new double[len];
+    int start = 0;
+    for (double[] arr : arrs) {
+      if (arr.length == 0) {
+        continue;
+      }
+      int end = arr.length;
+      System.arraycopy(arr, 0, result, start, end);
+      start += end;
+    }
+    
+    return result;
+  }
+
   /**
    * Initial driver for the decimation utility
    * which takes a timeseries of unknown rate and
@@ -127,7 +195,7 @@ public class TimeSeriesUtils {
     
     // test shows this works as in-place method
   }
-
+  
   /**
    * Linear detrend applied to an array of doubles rather than a list.
    * This operation is not done in-place.
@@ -168,7 +236,7 @@ public class TimeSeriesUtils {
     
     return detrended;
   }
-
+  
   /**
    * In-place subtraction of trend from each point in an incoming data set.
    * This is a necessary step in calculating the power-spectral density.
@@ -205,64 +273,6 @@ public class TimeSeriesUtils {
       dataSet.set(i, dataSet.get(i).doubleValue() - ( (slope * i) + yOffset) );
     }
     
-  }
-  
-  public static double[] concatAll(double[]... arrs) {
-    
-    if (arrs.length == 0) {
-      return new double[]{};
-    }
-    
-    if (arrs.length == 1) {
-      return arrs[0];
-    }
-    
-    int len = 0;
-    for (double[] arr : arrs) {
-      len += arr.length;
-    }
-    
-    double[] result = new double[len];
-    int start = 0;
-    for (double[] arr : arrs) {
-      if (arr.length == 0) {
-        continue;
-      }
-      int end = arr.length;
-      System.arraycopy(arr, 0, result, start, end);
-      start += end;
-    }
-    
-    return result;
-  }
-  
-  public static double[] concatAll(List<double[]> arrs) {
-    
-    if (arrs.size() == 0) {
-      return new double[]{};
-    }
-    
-    if (arrs.size() == 1) {
-      return arrs.get(0);
-    }
-    
-    int len = 0;
-    for (double[] arr : arrs) {
-      len += arr.length;
-    }
-    
-    double[] result = new double[len];
-    int start = 0;
-    for (double[] arr : arrs) {
-      if (arr.length == 0) {
-        continue;
-      }
-      int end = arr.length;
-      System.arraycopy(arr, 0, result, start, end);
-      start += end;
-    }
-    
-    return result;
   }
 
   /**
@@ -365,24 +375,17 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Checks to see if the sensor's calibration is wired positively or not
-   * (i.e., if the result of a step-calibration is upside-down)
-   * @return True if sign appears to be incorrect compared to expected step cal
+   * Used to quickly get the first data in a file. This is useful if loading in
+   * data from a file that is known to not be multiplexed (i.e., containing
+   * only the data from a single channel).
+   * @param filename Filename of miniSEED data to load in
+   * @return Datablock representing the data inside the miniSEED
+   * @throws FileNotFoundException if given file from filename cannot be read
    */
-  public boolean needsSignFlip(List<Number> data) {
-    
-    double max = Math.abs( data.get(0).doubleValue() );
-    int idx = 0;
-    
-    for (int i = 1; i < data.size() / 2; ++i) {
-      if ( Math.abs( data.get(i).doubleValue() ) > max ) {
-        max = Math.abs( data.get(i).doubleValue() );
-        idx = i;
-      }
-    }
-    
-    return Math.signum( data.get(idx).doubleValue() ) < 0;
-    
+  public static DataBlock getFirstTimeSeries(String filename) 
+      throws FileNotFoundException {
+    String filter = getMplexNameList(filename).get(0);
+    return getTimeSeries(filename, filter);
   }
   
   /**
@@ -486,12 +489,6 @@ public class TimeSeriesUtils {
 
   }
   
-  public static DataBlock getFirstTimeSeries(String filename) 
-      throws FileNotFoundException {
-    String filter = getMplexNameList(filename).get(0);
-    return getTimeSeries(filename, filter);
-  }
-
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
    * list of Java numerics, which can be shorts, floats, doubles, or longs,
@@ -704,7 +701,7 @@ public class TimeSeriesUtils {
     return mapToTimeSeries(data, filter, range);
     
   }
- 
+
   /**
    * Convert loaded in time-value map to contiguous timeseries over a given
    * range.
@@ -728,7 +725,7 @@ public class TimeSeriesUtils {
     return db;
     
   }
-
+ 
   /** 
    * Scales data of an arbitrary range to lie within a [-1, 1] range
    * @param data Timeseries data
@@ -756,6 +753,11 @@ public class TimeSeriesUtils {
 
   }
 
+  /**
+   * Take a list of data and normalize it to the range [-1, 1].
+   * @param data List of samples to be normalized
+   * @return List of normalized samples
+   */
   public static List<Number> normalize(List<Number> data) {
     double max = Double.NEGATIVE_INFINITY;
     double min = Double.POSITIVE_INFINITY;
@@ -780,7 +782,7 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Rotates a north and east (known orthognal) set of data and produces a new
+   * Rotates a north and east (known orthogonal) set of data and produces a new
    * DataBlock along the north axis in the rotated coordinate system from
    * the given angle, clockwise (y' = y cos theta - x sin theta)
    * @param north Sensor assumed to point north
@@ -803,7 +805,38 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Rotates a north and east (known orthognal) set of data and produces a new
+   * Rotates a north and east (known orthogonal) timeseries and produces a new
+   * timeseries along the north axis in the rotated coordinate system from
+   * the given angle, clockwise (y' = y cos theta - x sin theta). Though the
+   * data given as input are not necessarily from a north-facing and 
+   * east-facing sensor, they are presumed to be orthogonal to each other.
+   * @param northData Timeseries data expected to point north
+   * @param eastData Timeseries assumed to point east, 
+   * orthogonal to north sensor
+   * @param ang Angle to rotate the data along
+   * @return New timeseries data rotated data along the
+   * given angle, facing north
+   */
+  public static double[] 
+  rotate(double[] northData, double[] eastData, double ang) {
+    double[] rotatedData = new double[northData.length];
+
+    // clockwise rotation matrix!! That's why things are so screwy
+    double sinTheta = Math.sin(ang);
+    double cosTheta = Math.cos(ang);
+
+    for (int i = 0; i < northData.length; ++i) {
+      rotatedData[i] = 
+          northData[i] * cosTheta - 
+          eastData[i] * sinTheta;
+    }
+
+
+    return rotatedData;
+  }
+
+  /**
+   * Rotates a north and east (known orthogonal) set of data and produces a new
    * DataBlock along the east axis in the rotated coordinate system from
    * the given angle, clockwise (x' = x cos theta + y sin theta)
    * @param north Sensor assumed to point north
@@ -818,6 +851,36 @@ public class TimeSeriesUtils {
     double[] eastData = east.getData();
     rotated.setData( rotateX(northData, eastData, ang) );
     return rotated;
+  }
+
+  /**
+   * Rotates a north and east (known orthogonal) timeseries and produces a new
+   * timeseries along the east axis in the rotated coordinate system from
+   * the given angle, clockwise (x' = x cos theta + y sin theta). Though the
+   * data given as input are not necessarily from a north-facing and 
+   * east-facing sensor, they are presumed to be orthogonal to each other.
+   * @param northData Timeseries data expected to point north
+   * @param eastData Timeseries assumed to point east, 
+   * orthogonal to north sensor
+   * @param ang Angle to rotate the data along
+   * @return New timeseries data rotated data along the
+   * given angle, facing east.
+   */
+  public static double[]
+  rotateX(double[] northData, double[] eastData, double ang) {
+    double[] rotatedData = new double[northData.length];
+
+    double sinTheta = Math.sin(ang);
+    double cosTheta = Math.cos(ang);
+
+    for (int i = 0; i < northData.length; ++i) {
+      rotatedData[i] =  
+          eastData[i] * cosTheta + 
+          northData[i] * sinTheta;
+    }
+
+
+    return rotatedData;
   }
 
   /**
@@ -840,40 +903,26 @@ public class TimeSeriesUtils {
 
     return upsamp;
   }
-
-  public static double[]
-  rotateX(double[] northData, double[] eastData, double ang) {
-    double[] rotatedData = new double[northData.length];
-
-    double sinTheta = Math.sin(ang);
-    double cosTheta = Math.cos(ang);
-
-    for (int i = 0; i < northData.length; ++i) {
-      rotatedData[i] =  
-          eastData[i] * cosTheta + 
-          northData[i] * sinTheta;
-    }
-
-
-    return rotatedData;
-  }
   
-  public static double[] 
-  rotate(double[] northData, double[] eastData, double ang) {
-    double[] rotatedData = new double[northData.length];
-
-    // clockwise rotation matrix!! That's why things are so screwy
-    double sinTheta = Math.sin(ang);
-    double cosTheta = Math.cos(ang);
-
-    for (int i = 0; i < northData.length; ++i) {
-      rotatedData[i] = 
-          northData[i] * cosTheta - 
-          eastData[i] * sinTheta;
+  /**
+   * Checks to see if the sensor's calibration is wired positively or not
+   * (i.e., if the result of a step-calibration is upside-down)
+   * @return True if sign appears to be incorrect compared to expected step cal
+   */
+  public boolean needsSignFlip(List<Number> data) {
+    
+    double max = Math.abs( data.get(0).doubleValue() );
+    int idx = 0;
+    
+    for (int i = 1; i < data.size() / 2; ++i) {
+      if ( Math.abs( data.get(i).doubleValue() ) > max ) {
+        max = Math.abs( data.get(i).doubleValue() );
+        idx = i;
+      }
     }
-
-
-    return rotatedData;
+    
+    return Math.signum( data.get(idx).doubleValue() ) < 0;
+    
   }
 
 }

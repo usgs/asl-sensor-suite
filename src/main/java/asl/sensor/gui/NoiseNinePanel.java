@@ -34,8 +34,11 @@ public class NoiseNinePanel extends NoisePanel {
    * 
    */
   private static final long serialVersionUID = -8049021432657749975L;
-  protected JComboBox<String> plotSelection;
-
+  /**
+   * Get string of data to used when building PDFs in specific circumstances
+   * @param exp Experiment to extract data from
+   * @return String representing experiment data (rotation angles)
+   */
   public static String getInsetString(NoiseNineExperiment exp) {
     NoiseNineExperiment nne = (NoiseNineExperiment) exp;
     DecimalFormat df = new DecimalFormat("#.###");
@@ -53,42 +56,11 @@ public class NoiseNinePanel extends NoisePanel {
     sb.append( df.format( Math.toDegrees(angles[1]) ) );
     return sb.toString();
   }
+
+  protected JComboBox<String> plotSelection;
   
   protected JFreeChart northChart, eastChart, vertChart;
 
-  private String getNorthChartString() {
-    NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
-    DecimalFormat df = new DecimalFormat("#.###");
-    double[] angles = nne.getNorthAngles();
-    StringBuilder sb = new StringBuilder();
-    sb.append("Angle of rotation of north sensor 2 (deg): ");
-    sb.append( df.format( Math.toDegrees(angles[0]) ) );
-    sb.append("\nAngle of rotation of north sensor 3 (deg): ");
-    sb.append( df.format( Math.toDegrees(angles[1]) ) );
-    return sb.toString();
-  }
-  
-  private String getEastChartString() {
-    NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
-    DecimalFormat df = new DecimalFormat("#.###");
-    double[] angles = nne.getEastAngles();
-    StringBuilder sb = new StringBuilder();
-    sb.append("Angle of rotation of east sensor 2 (deg): ");
-    sb.append( df.format( Math.toDegrees(angles[0]) ) );
-    sb.append("\nAngle of rotation of east sensor 3 (deg): ");
-    sb.append( df.format( Math.toDegrees(angles[1]) ) );
-    return sb.toString();
-  }
-  
-  @Override
-  public String getInsetStrings() {
-    StringBuilder sb = new StringBuilder( getNorthChartString() );
-    sb.append("\n");
-    sb.append( getEastChartString() );
-    sb.append("\n");
-    return sb.toString();
-  }
-  
   public NoiseNinePanel(ExperimentEnum exp) {
     super(exp);
     
@@ -162,7 +134,7 @@ public class NoiseNinePanel extends NoisePanel {
     revalidate();
     
   }
-
+  
   @Override
   public void actionPerformed(ActionEvent e) {
     
@@ -208,6 +180,39 @@ public class NoiseNinePanel extends NoisePanel {
   @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{northChart, eastChart, vertChart};
+  }
+
+  private String getEastChartString() {
+    NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
+    DecimalFormat df = new DecimalFormat("#.###");
+    double[] angles = nne.getEastAngles();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Angle of rotation of east sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of east sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
+    return sb.toString();
+  }
+  
+  @Override
+  public String getInsetStrings() {
+    StringBuilder sb = new StringBuilder( getNorthChartString() );
+    sb.append("\n");
+    sb.append( getEastChartString() );
+    sb.append("\n");
+    return sb.toString();
+  }
+  
+  private String getNorthChartString() {
+    NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
+    DecimalFormat df = new DecimalFormat("#.###");
+    double[] angles = nne.getNorthAngles();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Angle of rotation of north sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of north sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
+    return sb.toString();
   }
   
   @Override

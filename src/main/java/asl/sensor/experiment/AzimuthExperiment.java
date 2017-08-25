@@ -97,6 +97,16 @@ public class AzimuthExperiment extends Experiment {
     simpleCalc = false;
   }
   
+  /**
+   * Entry point for this experiment to guarantee the use of the simple solver
+   * and require less overhead, callable from another experiment
+   * @param testNorth timeseries data from presumed north-facing test sensor
+   * @param testEast timeseries data from presumed east-facing test sensor
+   * @param refNorth timeseries data from known north-facing sensor
+   * @param interval sampling interval of data
+   * @param start start time of data
+   * @param end end time of data
+   */
   protected void alternateEntryPoint(
       double[] testNorth, double[] testEast, 
       double[] refNorth, long interval, long start, long end) {
@@ -147,6 +157,8 @@ public class AzimuthExperiment extends Experiment {
    * @param testEast East-facing data to find azimuth of
    * @param refNorth North-facing data to use as reference
    * @param interval Time in nanoseconds between data samples
+   * @param startTime Start time of data
+   * @param endTime End time of data
    */
   private void backend(
       double[] testNorth, double[] testEast, 
@@ -415,19 +427,11 @@ public class AzimuthExperiment extends Experiment {
     xySeriesData.add( new XYSeriesCollection(timeMapCoherence) );
   }
   
-  /**
-   * Get the uncertainty of the angle 
-   * @return Uncertainty estimation of the current angle (from variance)
-   */
-  public double getUncertainty() {
-    return Math.toDegrees(uncert);
-  }
-  
   @Override
   public int blocksNeeded() {
     return 3;
   }
-
+  
   /**
    * Return the fit angle calculated by the backend in degrees
    * @return angle result in degrees
@@ -435,7 +439,7 @@ public class AzimuthExperiment extends Experiment {
   public double getFitAngle() {
     return Math.toDegrees(angle);
   }
-  
+
   /**
    * Return the fit angle calculated by the backend in radians
    * @return angle result in radians
@@ -445,15 +449,13 @@ public class AzimuthExperiment extends Experiment {
   }
   
   /**
-   * Returns the jacobian function for this object given input data blocks.
-   * The data blocks are set here because they are what will be rotated by
-   * the given angle (the realvector point is the angle).
-   * This allows us to fix the datablocks in question while varying the angle,
-   * and calling the jacobian on different datablocks, such as when finding
-   * the windows of maximum coherence.
-   * @param db1 Test north data block
-   * @param db2 Test east data block
-   * @param db3 Ref. north data block
+   * Returns the jacobian function for this object given input timeseries data.
+   * The timeseries are used as input to the rotation function.
+   * We take the inputs as fixed and rotate copies of the data to find the
+   * Jacobian of the data.
+   * @param l1 Data from the test sensor's north-facing component
+   * @param l2 Data from the test sensor's east-facing component
+   * @param l3 Data from the known north-facing sensor
    * @return jacobian function to fit an angle of max coherence of this data
    */
   private MultivariateJacobianFunction 
@@ -482,6 +484,14 @@ public class AzimuthExperiment extends Experiment {
   
   public double getOffset() {
     return ( (offset % 360) + 360 ) % 360;
+  }
+  
+  /**
+   * Get the uncertainty of the angle 
+   * @return Uncertainty estimation of the current angle (from variance)
+   */
+  public double getUncertainty() {
+    return Math.toDegrees(uncert);
   }
   
   @Override

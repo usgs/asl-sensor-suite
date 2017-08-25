@@ -45,7 +45,6 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * Panel used to display the data produced from a specified sensor test.
@@ -706,6 +705,9 @@ implements ActionListener, ChangeListener {
 
   }
   
+  /**
+   * Used to identify completion of an experiment to a containing thread
+   */
   public void setDone() {
     firePropertyChange("Backend completed", false, set);
     drawCharts();
