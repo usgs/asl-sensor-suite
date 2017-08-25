@@ -356,6 +356,7 @@ extends Experiment implements ParameterValidator {
         } else if (freqs[i] > 1.) {
           denom = freqs[i];
         }
+        
       } else {
         if (freqs[i] < .01) {
           denom = freqs[i];
@@ -365,8 +366,13 @@ extends Experiment implements ParameterValidator {
         
       }
 
-      weights[i] = maxMagWeight / denom;
       weights[argIdx] = maxArgWeight / denom;
+      // ad-hoc conditional to increase weighting on the tail of the amp curve
+      if (freqs[i] < 0.3) {
+        denom = 1E-2;
+      }
+      weights[i] = maxMagWeight / denom;
+
     }
     
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);

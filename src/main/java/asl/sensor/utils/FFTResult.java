@@ -795,13 +795,14 @@ public class FFTResult {
     TimeSeriesUtils.detrend(data1Range);
     TimeSeriesUtils.demeanInPlace(data1Range);
     // apply each taper, take FFT, and average the overall results
+    double[] data = data1Range;
     for (int j = 0; j < taperMat.length; ++j) {
       double[] toFFT = new double[padding];
       double[] taperCurve = taperMat[j];
       double taperSum = 0.;
-      for (int i = 0; i < data1Range.length; ++i) {
+      for (int i = 0; i < data.length; ++i) {
         taperSum += Math.abs(taperCurve[i]);
-        double point = data1Range[i];
+        double point = data[i];
         toFFT[i] = point * taperCurve[i];
       }
       Complex[] frqDomn = fft.transform(toFFT, TransformType.FORWARD);
@@ -816,21 +817,22 @@ public class FFTResult {
     if (!sameData) {
       TimeSeriesUtils.detrend(data2Range);
       TimeSeriesUtils.demeanInPlace(data2Range);
+      data = data2Range;
       for (int j = 0; j < taperMat.length; ++j) {
         double[] toFFT = new double[padding];
         double[] taperCurve = taperMat[j];
         double taperSum = 0.;
-        for (int i = 0; i < data2Range.length; ++i) {
+        for (int i = 0; i < data.length; ++i) {
           taperSum += Math.abs(taperCurve[i]);
-          double point = data2Range[i];
-          toFFT[i] = point * taperMat[j][i];
+          double point = data[i];
+          toFFT[i] = point * taperCurve[i];
         }
         Complex[] frqDomn = fft.transform(toFFT, TransformType.FORWARD);
-        for (int i = 0; i < fftResult1.length; ++i) {
+        for (int i = 0; i < fftResult2.length; ++i) {
           fftResult2[i] = fftResult2[i].add( frqDomn[i].divide(taperSum) );
         }
       }
-      for (int i = 0; i < fftResult1.length; ++i) {
+      for (int i = 0; i < fftResult2.length; ++i) {
         fftResult2[i] = fftResult2[i].divide(TAPER_COUNT);
       }
     }

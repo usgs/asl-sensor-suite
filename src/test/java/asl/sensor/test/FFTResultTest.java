@@ -59,7 +59,179 @@ public class FFTResultTest {
     }
   }
   
-  @Test
+  //@Test
+  public void testAutomateRingler2() {
+    String name = "data/random_cal_lowfrq/BHZ.512.seed";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
+
+      Calendar cal = db.getStartCalendar();
+      Calendar cal2 = db.getStartCalendar();
+      cal2.set(Calendar.HOUR_OF_DAY, 7);
+      cal2.set(Calendar.MINUTE, 30);
+      
+      name = "data/random_cal_lowfrq/BC0.512.seed";
+      db = TimeSeriesUtils.getFirstTimeSeries(name);
+      
+      db.trim(cal, cal2);
+      
+      String dir = "testResultImages/ringlerTaperResults2/";
+      File folder = new File(dir);
+      if ( !folder.exists() ) {
+        System.out.println("Writing directory " + dir);
+        folder.mkdirs();
+      }
+      
+      double[] data = db.getData();
+      int padding = 1;
+      while (padding < data.length) {
+        padding *= 2;
+      }
+      
+      double[] frequencies = new double[padding];
+      double deltaFreq = db.getSampleRate() / padding;
+      for (int i = 0; i < frequencies.length; ++i) {
+        frequencies[i] = deltaFreq * i;
+      }
+      
+      FastFourierTransformer fft = 
+          new FastFourierTransformer(DftNormalization.STANDARD);
+      
+      StringBuilder sb = new StringBuilder();
+      PrintWriter out;
+      
+      for (int i = 0; i < data.length; ++i) {
+        sb.append(data[i]);
+        if (i + 1 < data.length) {
+          sb.append("\n");
+        }
+      }
+      String dataOut = "raw_data_MAJO_BC0.txt";
+      out = new PrintWriter(dir + dataOut);
+      out.println(sb.toString());
+      out.close();
+      
+      double[] cloned = data.clone();
+      TimeSeriesUtils.detrend(cloned);
+      TimeSeriesUtils.demeanInPlace(cloned);
+      int taperCt = 12;
+      double[][] tapers = FFTResult.getMultitaperSeries(data.length, taperCt);
+      
+      int firstHalf = padding / 2 + 1;
+      Complex[] fftFinal = new Complex[firstHalf];
+      for (int i = 0; i < firstHalf; ++i) {
+        fftFinal[i] = Complex.ZERO;
+      }
+      
+      for (int j = 0; j < tapers.length; ++j) {
+        double[] convert = new double[padding];
+        double[] taper = tapers[j];
+        double taperSum = 0;
+        sb = new StringBuilder();
+        for (int i = 0; i < data.length; ++i) {
+          taperSum += Math.abs(taper[i]);
+          convert[i] = cloned[i] * taper[i];
+          
+          sb.append(cloned[i]);
+          sb.append(", ");
+          sb.append(taper[i]);
+          sb.append(", ");
+          sb.append(convert[i]);
+          if (i + 1 < data.length) {
+            sb.append("\n");
+          }
+          
+        }
+        
+        String file;
+        
+        file = "taper_" + j + ".csv";
+        out = new PrintWriter(dir + file);
+        out.println(sb.toString());
+        out.close();
+        
+        
+        Complex[] freqSpace = fft.transform(convert, TransformType.FORWARD);
+        file = "fft_" + j + ".csv";
+        sb = new StringBuilder();
+        
+        for (int i = 0; i < firstHalf; ++i) {
+          fftFinal[i] = fftFinal[i].add(freqSpace[i].divide(taperSum));
+          sb.append(frequencies[i]);
+          sb.append(", ");
+          sb.append(freqSpace[i].getReal());
+          sb.append(", ");
+          sb.append(freqSpace[i].getImaginary());
+          if (i + 1 < freqSpace.length) {
+            sb.append("\n");
+          }
+        }
+        out = new PrintWriter(dir + file);
+        out.println(sb.toString());
+        out.close();
+      }
+      
+      XYSeries xys = new XYSeries("PSD of MAJO LFQ - REF?");
+      XYSeries xysTest = new XYSeries("PSD of MAJO LFQ - TESTING");
+      FFTResult fftr = FFTResult.spectralCalcMultitaper(db, db);
+      Complex[] psdTest = fftr.getFFT();
+      double[] freqList = fftr.getFreqs();
+      for (int i = 1; freqList[i] < 0.1; ++i) {
+        xysTest.add(freqList[i], 10 * Math.log10(psdTest[i].abs()));
+      }
+      
+      sb = new StringBuilder();
+      String outputFinal = "FFT_result.csv";
+      for (int i = 0; i < firstHalf; ++i) {
+        double fq = frequencies[i];
+        fftFinal[i] = fftFinal[i].divide(taperCt);
+        Complex cross = fftFinal[i].multiply( fftFinal[i].conjugate() );
+        sb.append(fftFinal[i].getReal());
+        sb.append(", ");
+        sb.append(fftFinal[i].getImaginary());
+        sb.append(", ");
+        sb.append(cross.getReal());
+        sb.append(", ");
+        sb.append(cross.getImaginary());
+        if (i + 1 < firstHalf) {
+          sb.append('\n');
+        }
+        
+        if (i > 0 && fq < 0.1) {
+          xys.add( fq, 10 * Math.log10( cross.abs() ) );
+        }
+        
+      }
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(xys);
+      xysc.addSeries(xysTest);
+      
+      JFreeChart chart = 
+          ChartFactory.createXYLineChart("psd", "x", "y", xysc);
+      chart.getXYPlot().setDomainAxis(new LogarithmicAxis("frq"));
+      
+      BufferedImage bi = ReportingUtils.chartsToImage(640, 480, chart);
+      String currentDir = System.getProperty("user.dir");
+      String testResultFolder = currentDir + "/testResultImages/";
+      String testResult = 
+          testResultFolder + "PSD-MAJO-CAL.png";
+      File file = new File(testResult);
+      ImageIO.write(bi, "png", file);
+      
+      out = new PrintWriter(dir + outputFinal);
+      out.write(sb.toString());
+      out.close();
+      
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      fail();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+  
+  //@Test
   public void testAutomateRingler() {
     String name = "data/random_cal_lowfrq/BHZ.512.seed";
     try {
@@ -69,6 +241,9 @@ public class FFTResultTest {
       Calendar cal2 = db.getStartCalendar();
       cal2.set(Calendar.HOUR_OF_DAY, 7);
       cal2.set(Calendar.MINUTE, 30);
+      
+      name = "data/random_cal_lowfrq/BC0.512.seed";
+      
       db.trim(cal, cal2);
       
       String dir = "testResultImages/ringlerTaperResults/";
@@ -94,19 +269,19 @@ public class FFTResultTest {
           new FastFourierTransformer(DftNormalization.STANDARD);
       
       StringBuilder sb = new StringBuilder();
+      PrintWriter out;
+      
       for (int i = 0; i < data.length; ++i) {
         sb.append(data[i]);
         if (i + 1 < data.length) {
           sb.append("\n");
         }
       }
-      PrintWriter out;
-      /*
       String dataOut = "raw_data_MAJO_BHZ.txt";
       out = new PrintWriter(dir + dataOut);
       out.println(sb.toString());
       out.close();
-      */
+      
       double[] cloned = data.clone();
       TimeSeriesUtils.detrend(cloned);
       TimeSeriesUtils.demeanInPlace(cloned);
@@ -122,9 +297,12 @@ public class FFTResultTest {
       for (int j = 0; j < tapers.length; ++j) {
         double[] convert = new double[padding];
         double[] taper = tapers[j];
+        double taperSum = 0;
         sb = new StringBuilder();
         for (int i = 0; i < data.length; ++i) {
+          taperSum += Math.abs(taper[i]);
           convert[i] = cloned[i] * taper[i];
+          
           sb.append(cloned[i]);
           sb.append(", ");
           sb.append(taper[i]);
@@ -133,19 +311,23 @@ public class FFTResultTest {
           if (i + 1 < data.length) {
             sb.append("\n");
           }
+          
         }
         
-        String file = "taper_" + j + ".csv";
+        String file;
+        
+        file = "taper_" + j + ".csv";
         out = new PrintWriter(dir + file);
         out.println(sb.toString());
         out.close();
+        
         
         Complex[] freqSpace = fft.transform(convert, TransformType.FORWARD);
         file = "fft_" + j + ".csv";
         sb = new StringBuilder();
         
         for (int i = 0; i < firstHalf; ++i) {
-          fftFinal[i] = fftFinal[i].add(freqSpace[i]);
+          fftFinal[i] = fftFinal[i].add(freqSpace[i].divide(taperSum));
           sb.append(frequencies[i]);
           sb.append(", ");
           sb.append(freqSpace[i].getReal());
@@ -160,9 +342,19 @@ public class FFTResultTest {
         out.close();
       }
       
+      XYSeries xys = new XYSeries("PSD of MAJO LFQ - REF?");
+      XYSeries xysTest = new XYSeries("PSD of MAJO LFQ - TESTING");
+      FFTResult fftr = FFTResult.spectralCalcMultitaper(db, db);
+      Complex[] psdTest = fftr.getFFT();
+      double[] freqList = fftr.getFreqs();
+      for (int i = 1; freqList[i] < 0.1; ++i) {
+        xysTest.add(freqList[i], 10 * Math.log10(psdTest[i].abs()));
+      }
+      
       sb = new StringBuilder();
       String outputFinal = "FFT_result.csv";
       for (int i = 0; i < firstHalf; ++i) {
+        double fq = frequencies[i];
         fftFinal[i] = fftFinal[i].divide(taperCt);
         Complex cross = fftFinal[i].multiply( fftFinal[i].conjugate() );
         sb.append(fftFinal[i].getReal());
@@ -175,7 +367,28 @@ public class FFTResultTest {
         if (i + 1 < firstHalf) {
           sb.append('\n');
         }
+        
+        if (i > 0 && fq < 0.1) {
+          xys.add( fq, 10 * Math.log10( cross.abs() ) );
+        }
+        
       }
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(xys);
+      xysc.addSeries(xysTest);
+      
+      JFreeChart chart = 
+          ChartFactory.createXYLineChart("psd", "x", "y", xysc);
+      chart.getXYPlot().setDomainAxis(new LogarithmicAxis("frq"));
+      
+      BufferedImage bi = ReportingUtils.chartsToImage(640, 480, chart);
+      String currentDir = System.getProperty("user.dir");
+      String testResultFolder = currentDir + "/testResultImages/";
+      String testResult = 
+          testResultFolder + "PSD-MAJO.png";
+      File file = new File(testResult);
+      ImageIO.write(bi, "png", file);
       
       out = new PrintWriter(dir + outputFinal);
       out.write(sb.toString());
@@ -184,6 +397,8 @@ public class FFTResultTest {
     } catch (FileNotFoundException e) {
       e.printStackTrace();
       fail();
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
   
