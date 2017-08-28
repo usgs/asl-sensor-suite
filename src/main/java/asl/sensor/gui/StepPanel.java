@@ -15,10 +15,15 @@ import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.block.BlockContainer;
+import org.jfree.chart.block.FlowArrangement;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
+import org.jfree.ui.RectangleEdge;
+import org.jfree.ui.VerticalAlignment;
 
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.StepExperiment;
@@ -38,6 +43,7 @@ public class StepPanel extends ExperimentPanel {
    * 
    */
   private static final long serialVersionUID = 3693391540945130688L;
+  private static final int TITLE_IDX = 0;
 
   /**
    * Static helper method for getting the formatted inset string directly
@@ -46,6 +52,16 @@ public class StepPanel extends ExperimentPanel {
    * @return String format representation of data from the experiment
    */
   public static String getInsetString(StepExperiment sp) {  
+    String[] strings = getInsetStringList(sp);
+    StringBuilder sb = new StringBuilder();
+    for (String str: strings) {
+      sb.append(str);
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+  
+  private static String[] getInsetStringList(StepExperiment sp) {
     double[] rolloff = sp.getInitParams();
     double[] fit = sp.getFitParams();
     double corner = rolloff[0];
@@ -60,27 +76,28 @@ public class StepPanel extends ExperimentPanel {
     
     StringBuilder sb = new StringBuilder();
     sb.append("RESP parameters\n");
-    sb.append("corner frequency (Hz): ");
+    sb.append("Corner frequency (Hz): ");
     sb.append( df.format(corner) );
     sb.append(" (");
     sb.append( df.format(cornerPrd) );
     sb.append( " secs)");
     sb.append("\n");
-    sb.append("damping: ");
+    sb.append("Damping: ");
     sb.append( df.format(damping) );
     sb.append("\n");
-    sb.append("Best-fit parameters\n");
-    sb.append("corner frequency (Hz): ");
-    sb.append( df.format(fitCorner) );
-    sb.append(" (");
-    sb.append( df.format(fitCornerPrd) );
-    sb.append( " secs)");
-    sb.append("\n");
-    sb.append("damping: ");
-    sb.append( df.format(fitDamping) );
-    sb.append("\n");
-    return sb.toString();
     
+    StringBuilder sb2 = new StringBuilder();
+    sb2.append("Best-fit parameters\n");
+    sb2.append("Corner frequency (Hz): ");
+    sb2.append( df.format(fitCorner) );
+    sb2.append(" (");
+    sb2.append( df.format(fitCornerPrd) );
+    sb2.append( " secs)");
+    sb2.append("\n");
+    sb2.append("Damping: ");
+    sb2.append( df.format(fitDamping) );
+    sb2.append("\n");
+    return new String[]{sb.toString(), sb2.toString()};
   }
   
   private JComboBox<String> plotSelection;
@@ -270,6 +287,26 @@ public class StepPanel extends ExperimentPanel {
     return 2;
   }
   
+  private void setSubtitles() {
+    BlockContainer bc = new BlockContainer( new FlowArrangement() );
+    CompositeTitle ct = new CompositeTitle(bc);
+    String[] insets = getInsetStringList( (StepExperiment) expResult );
+    for (String inset : insets) {
+      TextTitle result = new TextTitle();
+      result.setText(inset);
+      // result.setFont( new Font("Dialog", Font.BOLD, 12) );
+      result.setBackgroundPaint(Color.white);
+      bc.add(result);
+    }
+
+
+    ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
+    ct.setPosition(RectangleEdge.BOTTOM);
+    for ( JFreeChart chart : getCharts() ) {
+      chart.addSubtitle(TITLE_IDX, ct);
+    }
+  }
+  
   /**
    * Pass in and retrieve data from the step experiment backend, to plot;
    * this is both the timeseries data as well as a title inset displaying
@@ -282,27 +319,18 @@ public class StepPanel extends ExperimentPanel {
     
     expResult.runExperimentOnData(ds);
     
-    TextTitle result = new TextTitle();
-    result.setText( getInsetStrings() );
-    result.setBackgroundPaint(Color.white);
-    
     XYSeriesCollection stepData = expResult.getData().get(0);
     stepChart = buildChart(stepData, xAxis, yAxis);
-    XYPlot xyp = stepChart.getXYPlot();
-    XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.5, result,
-        RectangleAnchor.RIGHT);
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
+
     
     XYSeriesCollection magData = expResult.getData().get(1);
     magChart = buildChart(magData, freqAxis, magAxis);
-    xyp = magChart.getXYPlot();
-    xyt = new XYTitleAnnotation(1., 0., result, RectangleAnchor.BOTTOM_RIGHT);
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
+
     
     XYSeriesCollection phaseData = expResult.getData().get(2);
     phaseChart = buildChart(phaseData, freqAxis, phaseAxis);
+    
+    setSubtitles();
   }
 
 }

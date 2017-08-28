@@ -24,6 +24,7 @@ import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.block.BlockContainer;
 import org.jfree.chart.block.CenterArrangement;
 import org.jfree.chart.block.ColumnArrangement;
+import org.jfree.chart.block.FlowArrangement;
 import org.jfree.chart.block.GridArrangement;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.CompositeTitle;
@@ -557,23 +558,20 @@ public class RandomizedPanel extends ExperimentPanel {
   }
   
   private void setSubtitles() {
-    BlockContainer bc = new BlockContainer( new GridArrangement(1, 3) );
+    BlockContainer bc = new BlockContainer( new FlowArrangement() );
+    CompositeTitle ct = new CompositeTitle(bc);
     String[] insets = getInsetStringsAsList();
     for (String inset : insets) {
       TextTitle result = new TextTitle();
       result.setText(inset);
-      result.setFont( new Font("Dialog", Font.BOLD, 10) );
+      // result.setFont( new Font("Dialog", Font.BOLD, 12) );
       result.setBackgroundPaint(Color.white);
-      result.setHorizontalAlignment(HorizontalAlignment.CENTER);
-      result.setVerticalAlignment(VerticalAlignment.CENTER);
-      result.setPosition(RectangleEdge.BOTTOM);
       bc.add(result);
     }
 
-    CompositeTitle ct = new CompositeTitle(bc);
-    // ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
-    // ct.setPosition(RectangleEdge.BOTTOM);
-    
+
+    ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
+    ct.setPosition(RectangleEdge.BOTTOM);
     for ( JFreeChart chart : getCharts() ) {
       chart.addSubtitle(TITLE_IDX, ct);
     }
