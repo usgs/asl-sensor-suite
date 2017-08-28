@@ -21,10 +21,19 @@ import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.block.BlockContainer;
+import org.jfree.chart.block.CenterArrangement;
+import org.jfree.chart.block.ColumnArrangement;
+import org.jfree.chart.block.GridArrangement;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.title.Title;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.HorizontalAlignment;
 import org.jfree.ui.RectangleAnchor;
+import org.jfree.ui.RectangleEdge;
+import org.jfree.ui.VerticalAlignment;
 
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.RandomizedExperiment;
@@ -48,6 +57,7 @@ public class RandomizedPanel extends ExperimentPanel {
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   private static final Color[] COLOR_LIST = 
       new Color[]{Color.RED, Color.BLUE, Color.GREEN};
+  private static final int TITLE_IDX = 0;
   
   /**
    * 
@@ -238,9 +248,9 @@ public class RandomizedPanel extends ExperimentPanel {
    * @param rnd RandomizedExperiment with data to be extracted
    * @return String format representation of data from the experiment
    */
-  public static String getInsetString(RandomizedExperiment rnd) {
+  public static String[] getInsetString(RandomizedExperiment rnd) {
     
-    final int MAX_LINE = 4; // maximum number of entries per line
+    final int MAX_LINE = 2; // maximum number of entries per line
     
     DecimalFormat df = new DecimalFormat("#.#####");
     NumericUtils.setInfinityPrintable(df);
@@ -252,7 +262,7 @@ public class RandomizedPanel extends ExperimentPanel {
     List<Complex> initZ = rnd.getInitialZeros();
     
     if (fitP == null) {
-      return "";
+      return new String[]{""};
     }
     
     boolean solverNotRun = rnd.getSolverState();
@@ -376,26 +386,27 @@ public class RandomizedPanel extends ExperimentPanel {
     sbInitZ.append("\n");
     sbFitZ.append("\n");
     
-    StringBuilder sb = new StringBuilder(sbInit);
+    
     if (!solverNotRun) {
-      sb.append(sbFit);
-    }
-    sb.append(sbInitZ);
-    if (!solverNotRun) {
-      sb.append(sbFitZ);
-    }
-    sb.append('\n');
-    sb.append("Residuals:");
-    sb.append('\n');
-    sb.append("Initial (nom. resp curve): ");
-    sb.append(initResid);
-    sb.append('\n');
-    if (!solverNotRun) {
-      sb.append("Best fit: ");
-      sb.append(fitResid);
+      sbInit.append(sbFit);
     }
     
-    return sb.toString();
+    if (!solverNotRun) {
+      sbInitZ.append(sbFitZ);
+    }
+    
+    StringBuilder sbR = new StringBuilder();
+    sbR.append("Residuals:");
+    sbR.append('\n');
+    sbR.append("Initial (nom. resp curve): ");
+    sbR.append(initResid);
+    sbR.append('\n');
+    if (!solverNotRun) {
+      sbR.append("Best fit: ");
+      sbR.append(fitResid);
+    }
+    
+    return new String[]{sbInit.toString(), sbInitZ.toString(), sbR.toString()};
   }
   private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis;
   private JComboBox<String> plotSelection;
@@ -522,36 +533,50 @@ public class RandomizedPanel extends ExperimentPanel {
     }
     
     if ( e.getSource() == showParams ) {
+      
+      if( !showParams.isSelected() ) {
+        for ( JFreeChart chart : getCharts() ) {
+          Title extra = chart.getSubtitle(TITLE_IDX);
+          chart.removeSubtitle(extra);
+        }
+      }
+
+      /*
       XYPlot xyp = magChart.getXYPlot();
       xyp.clearAnnotations();
-      
-      if ( showParams.isSelected() ) {    
-        String inset = getInsetStrings();
-        TextTitle result = new TextTitle();
-        result.setText(inset);
-        result.setBackgroundPaint(Color.white);
-        double x;
-        double y = 0.02;
-        RectangleAnchor ra;
-        // move text box left or right depending on which frequencies aren't
-        // being fitted
-        if ( lowFreqBox.isSelected() ) {
-          x = 1;
-          ra = RectangleAnchor.BOTTOM_RIGHT;
-        } else {
-          x = 0;
-          ra = RectangleAnchor.BOTTOM_LEFT;
-        }
-
-        XYTitleAnnotation xyt = 
-            new XYTitleAnnotation(x, y, result, ra);
-
-        xyp.addAnnotation(xyt);
+      */
+      if ( showParams.isSelected() ) {
+        setSubtitles();
+        
+        // xyp.addAnnotation(xyt);
       }
       
       return;
     }
     
+  }
+  
+  private void setSubtitles() {
+    BlockContainer bc = new BlockContainer( new GridArrangement(1, 3) );
+    String[] insets = getInsetStringsAsList();
+    for (String inset : insets) {
+      TextTitle result = new TextTitle();
+      result.setText(inset);
+      result.setFont( new Font("Dialog", Font.BOLD, 10) );
+      result.setBackgroundPaint(Color.white);
+      result.setHorizontalAlignment(HorizontalAlignment.CENTER);
+      result.setVerticalAlignment(VerticalAlignment.CENTER);
+      result.setPosition(RectangleEdge.BOTTOM);
+      bc.add(result);
+    }
+
+    CompositeTitle ct = new CompositeTitle(bc);
+    // ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
+    // ct.setPosition(RectangleEdge.BOTTOM);
+    
+    for ( JFreeChart chart : getCharts() ) {
+      chart.addSubtitle(TITLE_IDX, ct);
+    }
   }
   
   @Override
@@ -592,15 +617,26 @@ public class RandomizedPanel extends ExperimentPanel {
   }
   
   /**
-   * Used to get the text that will populate the inset box for the plots
-   * @return String to place in TextTitle
+   * Used to get the text that will represent the title text in the PDF result
    */
   @Override
   public String getInsetStrings() {
+    StringBuilder sb = new StringBuilder();
+    for (String str : getInsetStringsAsList()) {
+      sb.append(str);
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Produce arrays of pole, zero, and residual data for text titles
+   * @return Array of strings 
+   */
+  public String[] getInsetStringsAsList() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     return getInsetString(rnd);
   }
-  
   
   @Override
   public String getMetadataString() {
@@ -682,7 +718,7 @@ public class RandomizedPanel extends ExperimentPanel {
   protected void updateData(DataStore ds) {
     
     set = true;
-    showParams.setEnabled(false);
+    showParams.setSelected(false);
     
     final boolean isLowFreq = lowFreqBox.isSelected();
     seriesColorMap = new HashMap<String, Color>();
@@ -728,25 +764,6 @@ public class RandomizedPanel extends ExperimentPanel {
     TextTitle result = new TextTitle();
     result.setText(inset);
     result.setBackgroundPaint(Color.white);
-    double x;
-    double y = 0.02;
-    RectangleAnchor ra;
-    // move text box left or right depending on which frequencies aren't
-    // being fitted
-    if ( lowFreqBox.isSelected() ) {
-      x = 1;
-      ra = RectangleAnchor.BOTTOM_RIGHT;
-    } else {
-      x = 0;
-      ra = RectangleAnchor.BOTTOM_LEFT;
-    }
-    
-    XYTitleAnnotation xyt = 
-        new XYTitleAnnotation(x, y, result, ra);
-    
-    XYPlot xyp = magChart.getXYPlot();
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
     
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
@@ -786,6 +803,13 @@ public class RandomizedPanel extends ExperimentPanel {
     residPlot.clearAnnotations();
     residPlot.addAnnotation(weightAnnot);
     */
+    /*
+    for ( JFreeChart chart : getCharts() ) {
+      chart.addSubtitle( TITLE_IDX, result );
+    }
+    */
+    
+    setSubtitles();
   }
 
 }

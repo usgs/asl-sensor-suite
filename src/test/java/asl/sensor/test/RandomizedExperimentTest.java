@@ -428,7 +428,7 @@ public class RandomizedExperimentTest {
           calXYS.add( 1/freqs[i], calDB );
           outXYS.add( 1/freqs[i], outDB );
           divXYS.add( 1/freqs[i], 
-              10 * Math.log10( outSpec[i].divide(calSpec[i]).abs() ) );
+              10 * Math.log10( outSpec[i].divide(calSpec[i].abs()).abs() ) );
           subXYS.add( 1/freqs[i], outDB - calDB);
         }
       }

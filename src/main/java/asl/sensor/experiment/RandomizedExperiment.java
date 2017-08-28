@@ -234,7 +234,7 @@ extends Experiment implements ParameterValidator {
     Complex[] estResponse = new Complex[len];
     for (int i = 0; i < estResponse.length; ++i) {
       Complex numer = numeratorPSDVals[i];
-      Complex denom = denominatorPSDVals[i];
+      double denom = denominatorPSDVals[i].abs(); // phase is 0
       estResponse[i] = numer.divide(denom);
       // convert from displacement to velocity
       Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
