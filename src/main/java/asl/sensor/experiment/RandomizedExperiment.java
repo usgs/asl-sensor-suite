@@ -142,7 +142,7 @@ extends Experiment implements ParameterValidator {
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
     // also, use those frequencies to get the applied response to input
     FFTResult numeratorPSD, denominatorPSD;
-    if (lowFreq) {
+    if (false) { // clear out temporarily to see if Welch works ok
       numeratorPSD = FFTResult.spectralCalcMultitaper(sensorOut, calib);
       denominatorPSD = FFTResult.spectralCalcMultitaper(calib, calib);
     } else {

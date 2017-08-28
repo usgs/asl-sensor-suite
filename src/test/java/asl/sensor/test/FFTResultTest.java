@@ -169,7 +169,7 @@ public class FFTResultTest {
     
   }
   
-  //@Test TODO: uncomment this line once procedure understood
+  //@Test
   public void multitaperSmootherData() {
     String name = "data/random_cal_lowfrq/BHZ.512.seed";
     try {
@@ -377,7 +377,7 @@ public class FFTResultTest {
     
   }
   
-  //@Test
+  @Test
   public void testAutomateRingler() {
     String name = "data/random_cal_lowfrq/BHZ.512.seed";
     try {
@@ -488,14 +488,27 @@ public class FFTResultTest {
         out.close();
       }
       
-      XYSeries xys = new XYSeries("PSD of MAJO LFQ - REF?");
-      XYSeries xysTest = new XYSeries("PSD of MAJO LFQ - TESTING");
-      FFTResult fftr = FFTResult.spectralCalcMultitaper(db, db);
+      XYSeries xys = new XYSeries("PSD of MAJO LFQ - MULTI");
+      XYSeries xysTest = new XYSeries("PSD of MAJO LFQ - WELCH");
+      FFTResult fftr = FFTResult.spectralCalc(db, db);
+      
+      sb = new StringBuilder();
       Complex[] psdTest = fftr.getFFT();
       double[] freqList = fftr.getFreqs();
       for (int i = 1; freqList[i] < 0.1; ++i) {
+        sb.append(freqList[i]);
+        sb.append(", ");
+        sb.append(psdTest[i].getReal());
+        sb.append(", ");
+        sb.append(psdTest[i].getImaginary());
+        if (freqList[i+1] < 0.1) {
+          sb.append("\n");
+        }
         xysTest.add(freqList[i], 10 * Math.log10(psdTest[i].abs()));
       }
+      out = new PrintWriter(dir + "BHZ-welch-fft.csv");
+      out.println(sb.toString());
+      out.close();
       
       sb = new StringBuilder();
       String outputFinal = "FFT_result.csv";
@@ -548,7 +561,7 @@ public class FFTResultTest {
     }
   }
   
-  //@Test
+  @Test
   public void testAutomateRingler2() {
     String name = "data/random_cal_lowfrq/BHZ.512.seed";
     try {
@@ -660,14 +673,27 @@ public class FFTResultTest {
         out.close();
       }
       
-      XYSeries xys = new XYSeries("PSD of MAJO LFQ - REF?");
-      XYSeries xysTest = new XYSeries("PSD of MAJO LFQ - TESTING");
-      FFTResult fftr = FFTResult.spectralCalcMultitaper(db, db);
+      XYSeries xys = new XYSeries("PSD of MAJO LFQ - MULTI");
+      XYSeries xysTest = new XYSeries("PSD of MAJO LFQ - WELCH");
+      FFTResult fftr = FFTResult.spectralCalc(db, db);
+      
+      sb = new StringBuilder();
       Complex[] psdTest = fftr.getFFT();
       double[] freqList = fftr.getFreqs();
       for (int i = 1; freqList[i] < 0.1; ++i) {
+        sb.append(freqList[i]);
+        sb.append(", ");
+        sb.append(psdTest[i].getReal());
+        sb.append(", ");
+        sb.append(psdTest[i].getImaginary());
+        if (freqList[i+1] < 0.1) {
+          sb.append("\n");
+        }
         xysTest.add(freqList[i], 10 * Math.log10(psdTest[i].abs()));
       }
+      out = new PrintWriter(dir + "BC0-welch-fft.csv");
+      out.println(sb.toString());
+      out.close();
       
       sb = new StringBuilder();
       String outputFinal = "FFT_result.csv";
@@ -687,7 +713,8 @@ public class FFTResultTest {
         }
         
         if (i > 0 && fq < 0.1) {
-          xys.add( fq, 10 * Math.log10( cross.abs() ) );
+          xys.add( fq, 10 * Math.log10( fftFinal[i].abs() ) );
+          // xys.add( fq, 10 * Math.log10( cross.getReal() ) );
         }
         
       }

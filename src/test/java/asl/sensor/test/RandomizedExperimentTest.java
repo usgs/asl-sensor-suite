@@ -650,8 +650,12 @@ public class RandomizedExperimentTest {
       xAxis.setLabelFont(bold);
       
       StringBuilder sb = new StringBuilder();
-      sb.append( RandomizedPanel.getInsetString(rCal) );
-      sb.append('\n');
+      
+      String[] resultString = RandomizedPanel.getInsetString(rCal);
+      for (String resultPart : resultString) {
+        sb.append( resultPart );
+        sb.append('\n');
+      }
       sb.append( RandomizedPanel.getTimeStampString(rCal) );
       sb.append('\n');
       sb.append("Input files:\n");
@@ -695,7 +699,11 @@ public class RandomizedExperimentTest {
       XYSeries expectedInitialAngle = rCal.getData().get(1).getSeries(0);
       xysc.get(1).addSeries(expectedInitialAngle);
 
-      sb.append( RandomizedPanel.getInsetString(rCal) );
+      resultString = RandomizedPanel.getInsetString(rCal);
+      for (String resultPart : resultString) {
+        sb.append( resultPart );
+        sb.append('\n');
+      }
       
       for (int i = 0; i < jfcl.length; ++i) {
         
@@ -772,7 +780,11 @@ public class RandomizedExperimentTest {
       xAxis.setLabelFont(bold);
       
       StringBuilder sb = new StringBuilder();
-      sb.append( RandomizedPanel.getInsetString(rCal) );
+      String[] resultString = RandomizedPanel.getInsetString(rCal);
+      for (String resultPart : resultString) {
+        sb.append( resultPart );
+        sb.append('\n');
+      }
       sb.append('\n');
       sb.append( RandomizedPanel.getTimeStampString(rCal) );
       sb.append('\n');
@@ -865,7 +877,11 @@ public class RandomizedExperimentTest {
       xAxis.setLabelFont(bold);
       
       StringBuilder sb = new StringBuilder();
-      sb.append( RandomizedPanel.getInsetString(rCal) );
+      String[] resultString = RandomizedPanel.getInsetString(rCal);
+      for (String resultPart : resultString) {
+        sb.append( resultPart );
+        sb.append('\n');
+      }
       sb.append('\n');
       sb.append( RandomizedPanel.getTimeStampString(rCal) );
       sb.append('\n');
@@ -958,7 +974,11 @@ public class RandomizedExperimentTest {
       xAxis.setLabelFont(bold);
       
       StringBuilder sb = new StringBuilder();
-      sb.append( RandomizedPanel.getInsetString(rCal) );
+      String[] resultString = RandomizedPanel.getInsetString(rCal);
+      for (String resultPart : resultString) {
+        sb.append( resultPart );
+        sb.append('\n');
+      }
       sb.append('\n');
       sb.append( RandomizedPanel.getTimeStampString(rCal) );
       sb.append('\n');
