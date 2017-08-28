@@ -377,7 +377,7 @@ public class FFTResultTest {
     
   }
   
-  @Test
+  //@Test commented out because saves a lot of text data
   public void testAutomateRingler() {
     String name = "data/random_cal_lowfrq/BHZ.512.seed";
     try {
@@ -561,7 +561,7 @@ public class FFTResultTest {
     }
   }
   
-  @Test
+  //@Test commented out because saves a lot of text data
   public void testAutomateRingler2() {
     String name = "data/random_cal_lowfrq/BHZ.512.seed";
     try {
