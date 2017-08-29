@@ -6,13 +6,17 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.awt.Font;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
+
+import javax.imageio.ImageIO;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
@@ -212,10 +216,100 @@ public class RandomizedExperimentTest {
     
   }
   
-
+  @Test
+  public void testCrossPowerCalculations() {
+    String folder = "data/highfrq-majo/";
+    String calInFile = "CB_BC1.512.seed";
+    String sensorOutFile = "10_EHZ.512.seed";
+    try {
+      DataBlock cal = TimeSeriesUtils.getFirstTimeSeries(folder + calInFile);
+      DataBlock out = TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
+      
+      Calendar start = cal.getTrimmedStartCalendar();
+      Calendar end = cal.getTrimmedStartCalendar();
+      start.set(Calendar.HOUR_OF_DAY, 18);
+      start.set(Calendar.MINUTE, 20);
+      end.set(Calendar.HOUR_OF_DAY, 18);
+      end.set(Calendar.MINUTE, 35);
+      cal.trim(start, end);
+      out.trim(start, end);
+      
+      FFTResult numer = FFTResult.spectralCalc(out, cal);
+      FFTResult denom = FFTResult.spectralCalc(cal, cal);
+      
+      Complex[] numerFFT = numer.getFFT();
+      Complex[] denomFFT = denom.getFFT();
+      double[] freqs = numer.getFreqs();
+      
+      double minFreq = 30;
+      
+      XYSeries numXYS = new XYSeries("Nom FFT amp [out x cal]");
+      XYSeries denXYS = new XYSeries("Dnm FFT amp [cal x cal]");
+      XYSeries dcvXYS = new XYSeries("Deconvolution (nom/dnm), scaled to vel.");
+      double nyquist = cal.getSampleRate() / 2;
+      for (int i = 0; freqs[i] < .8 * nyquist; ++i) {
+        if (freqs[i] < minFreq) {
+          continue;
+        }
+        Complex scaleFreq = new Complex(0., NumericUtils.TAU * freqs[i]);
+        double dBNumer = 10 * Math.log10(numerFFT[i].abs());
+        double dBDenom = 10 * Math.log10(denomFFT[i].abs());
+        Complex div = numerFFT[i].divide(denomFFT[i].abs());
+        Complex todB = div.multiply(scaleFreq);
+        double dBDiv = 10 * Math.log10(todB.abs());
+        numXYS.add(freqs[i], dBNumer);
+        denXYS.add(freqs[i], dBDenom);
+        dcvXYS.add(freqs[i], dBDiv);
+      }
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(numXYS);
+      xysc.addSeries(denXYS);
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          "High-freq. Cal Deconvolution verification",
+          "Frequency",
+          "Spectrum magnitude (log scale)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      LogarithmicAxis la = new LogarithmicAxis("Freq. (Hz)");
+      chart.getXYPlot().setDomainAxis(la);
+      
+      xysc = new XYSeriesCollection();
+      xysc.addSeries(dcvXYS);
+      JFreeChart chart2 = ChartFactory.createXYLineChart(
+          "High-freq. Cal Deconvolution verification",
+          "Frequency",
+          "Spectrum magnitude (log scale)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      chart2.getXYPlot().setDomainAxis(la);      
+      
+      String pngFname = "testResultImages/MAJO-plot-highfreq-spectral.png";
+      int width = 1280; int height = 480;
+      BufferedImage bi = 
+          ReportingUtils.chartsToImage(width, height, chart, chart2);
+      File file = new File(pngFname);
+      ImageIO.write(bi, "png", file);
+      
+      
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      fail();
+    } catch (IOException e) {
+      e.printStackTrace();
+      fail();
+    }
+    
+  }
   
   @Test
-  public void ResponseSetCorrectlyLowFreq() {
+  public void responseSetCorrectlyLowFreq() {
     
     String fname = "responses/TST5_response.txt";
     

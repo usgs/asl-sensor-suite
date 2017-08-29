@@ -401,6 +401,16 @@ public class DataBlock {
   }
   
   /**
+   * Get the trimmed start time of the data 
+   * @return Calendar object representing start time (UTC time zone)
+   */
+  public Calendar getTrimmedStartCalendar() {
+    Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
+    cCal.setTimeInMillis(trimmedStart);
+    return cCal;
+  }
+  
+  /**
    * Gives the start timestamp of the trim window. This is a long compatible
    * with the Java System Library's Date and Calendar objects and expressed
    * as milliseconds from the UTC epoch
