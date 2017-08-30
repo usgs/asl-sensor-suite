@@ -399,14 +399,9 @@ extends Experiment implements ParameterValidator {
       
     };
     
-    /*
-    ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
-        new EvaluationRmsChecker(1.0E-14, 1.0E-14);
-    */
-    
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(1.0E-15).
-        withParameterRelativeTolerance(1.0E-16);
+        withParameterRelativeTolerance(1.0E-10);
     
     name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
@@ -424,7 +419,6 @@ extends Experiment implements ParameterValidator {
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
-        //checker(svc).
         build();
     
     fireStateChange("Built least-squares problem; evaluating intial guess...");
