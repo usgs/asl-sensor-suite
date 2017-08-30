@@ -53,7 +53,7 @@ import asl.sensor.utils.NumericUtils;
 public class RandomizedExperiment 
 extends Experiment implements ParameterValidator {
 
-  private static final double DELTA = 1E-7;
+  private static final double DELTA = 1E-11;
   public static final double PEAK_MULTIPLIER = 0.8;
       // NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
   
@@ -399,12 +399,14 @@ extends Experiment implements ParameterValidator {
       
     };
     
+    /*
     ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
         new EvaluationRmsChecker(1.0E-14, 1.0E-14);
+    */
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-14).
-        withParameterRelativeTolerance(1.0E-14);
+        withCostRelativeTolerance(1.0E-15).
+        withParameterRelativeTolerance(1.0E-16);
     
     name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
@@ -422,7 +424,7 @@ extends Experiment implements ParameterValidator {
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
-        checker(svc).
+        //checker(svc).
         build();
     
     fireStateChange("Built least-squares problem; evaluating intial guess...");
