@@ -136,7 +136,7 @@ extends Experiment implements ParameterValidator {
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
     // also, use those frequencies to get the applied response to input
     FFTResult numeratorPSD, denominatorPSD;
-    if (false) { // clear out temporarily to see if Welch works ok
+    if (false) { // clear out temporarily to see if Welch works ok (dead code)
       numeratorPSD = FFTResult.spectralCalcMultitaper(sensorOut, calib);
       denominatorPSD = FFTResult.spectralCalcMultitaper(calib, calib);
     } else {
@@ -338,7 +338,7 @@ extends Experiment implements ParameterValidator {
         // give frequencies below 1 less weight in high-freq calibrations
         if (freqs[i] > 10.) {
           // for high enough freqs, make weighting (100/f^3) rather than 1/f;
-          denom *= Math.pow(freqs[i], 2) / 100.;
+          denom = Math.pow(freqs[i], 3) / 100.;
         } else if (freqs[i] > 1.) {
           denom = freqs[i];
         }

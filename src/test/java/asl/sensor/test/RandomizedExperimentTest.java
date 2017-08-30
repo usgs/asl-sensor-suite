@@ -217,6 +217,81 @@ public class RandomizedExperimentTest {
   }
   
   @Test
+  public void testSingleSideFFTValues() {
+    // just to test to see how crosspower compares to single-side fft
+    String folder = "data/highfrq-majo/";
+    String calInFile = "CB_BC1.512.seed";
+    String sensorOutFile = "10_EHZ.512.seed";
+    try {
+      DataBlock cal = TimeSeriesUtils.getFirstTimeSeries(folder + calInFile);
+      DataBlock out = TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
+      
+      Calendar start = cal.getTrimmedStartCalendar();
+      Calendar end = cal.getTrimmedStartCalendar();
+      start.set(Calendar.HOUR_OF_DAY, 18);
+      start.set(Calendar.MINUTE, 20);
+      end.set(Calendar.HOUR_OF_DAY, 18);
+      end.set(Calendar.MINUTE, 35);
+      cal.trim(start, end);
+      out.trim(start, end);
+      
+      FFTResult outputSingleSide = FFTResult.singleSidedFFT(out, false);
+      FFTResult calSingleSide = FFTResult.singleSidedFFT(cal, false);
+      
+      Complex[] outputFFT = outputSingleSide.getFFT();
+      Complex[] calFFT = calSingleSide.getFFT();
+      double[] freqs = outputSingleSide.getFreqs();
+      
+      double minFreq = 30;
+      
+      XYSeries numXYS = new XYSeries("Nom FFT amp [out x cal]");
+      XYSeries denXYS = new XYSeries("Dnm FFT amp [cal x cal]");
+      double nyquist = cal.getSampleRate() / 2;
+      for (int i = 0; freqs[i] < .8 * nyquist; ++i) {
+        if (freqs[i] < minFreq) {
+          continue;
+        }
+        // Complex scaleFreq = new Complex(0., NumericUtils.TAU * freqs[i]);
+        double dBNumer = 10 * Math.log10(outputFFT[i].abs());
+        double dBDenom = 10 * Math.log10(calFFT[i].abs());
+        numXYS.add(freqs[i], dBNumer);
+        denXYS.add(freqs[i], dBDenom);
+      }
+      
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(numXYS);
+      xysc.addSeries(denXYS);
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          "High-freq. Cal Deconvolution verification",
+          "Frequency",
+          "Spectrum magnitude (log scale)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      LogarithmicAxis la = new LogarithmicAxis("Freq. (Hz)");
+      chart.getXYPlot().setDomainAxis(la);
+      
+      String pngFname = "testResultImages/MAJO-plot-singleside-rcal.png";
+      int width = 640; int height = 480;
+      BufferedImage bi = 
+          ReportingUtils.chartsToImage(width, height, chart);
+      File file = new File(pngFname);
+      ImageIO.write(bi, "png", file);
+      
+      
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      fail();
+    } catch (IOException e) {
+      e.printStackTrace();
+      fail();
+    }
+    
+  }
+  
+  @Test
   public void testCrossPowerCalculations() {
     String folder = "data/highfrq-majo/";
     String calInFile = "CB_BC1.512.seed";

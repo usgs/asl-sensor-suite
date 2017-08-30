@@ -376,7 +376,6 @@ public class FFTResultTest {
     }
     
   }
-  
   //@Test commented out because saves a lot of text data
   public void testAutomateRingler() {
     String name = "data/random_cal_lowfrq/BHZ.512.seed";
