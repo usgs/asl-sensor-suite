@@ -533,6 +533,8 @@ public class RandomizedPanel extends ExperimentPanel {
         for ( JFreeChart chart : getCharts() ) {
           Title extra = chart.getSubtitle(TITLE_IDX);
           chart.removeSubtitle(extra);
+          extra = chart.getSubtitle(TITLE_IDX);
+          chart.removeSubtitle(extra);
         }
       }
 
@@ -566,18 +568,18 @@ public class RandomizedPanel extends ExperimentPanel {
     TextTitle result = new TextTitle();
     RandomizedExperiment re = (RandomizedExperiment) expResult;
     int numIters = re.getIterations();
-    if (numIters > 0) {
-      StringBuilder sb = new StringBuilder("NUMBER OF ITERATIONS: ");
-      sb.append(numIters);
-      result.setText( sb.toString() );
-      result.setBackgroundPaint(Color.white);
-      bc.add(result);
-    }
+    StringBuilder sb = new StringBuilder("NUMBER OF ITERATIONS: ");
+    sb.append(numIters);
+    result.setText( sb.toString() );
+    result.setBackgroundPaint(Color.white);
 
     ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
     ct.setPosition(RectangleEdge.BOTTOM);
+    result.setVerticalAlignment(VerticalAlignment.BOTTOM);
+    result.setPosition(RectangleEdge.BOTTOM);
     for ( JFreeChart chart : getCharts() ) {
       chart.addSubtitle(TITLE_IDX, ct);
+      chart.addSubtitle(TITLE_IDX, result);
     }
   }
   
