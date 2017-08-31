@@ -107,6 +107,7 @@ extends Experiment implements ParameterValidator {
   protected void backend(DataStore ds) {
     
     normalIdx = 1;
+    numIterations = 0;
     
     // construct response plot
     DataBlock calib = ds.getBlock(0);
@@ -148,7 +149,10 @@ extends Experiment implements ParameterValidator {
     
     // store nyquist rate of data because freqs will be trimmed down later
     nyquist = sensorOut.getSampleRate() / 2.;
-    nyquist += .5; // increasing to prevent issues with pole frequency rounding 
+    
+    // slight increase to prevent issues with pole frequency rounding 
+    // commented out in hopes that any issues related to it have been excised
+    // nyquist += .5; 
     
     // trim frequency window in order to restrict range of response fits
     double minFreq, maxFreq;
@@ -387,8 +391,6 @@ extends Experiment implements ParameterValidator {
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       
-      int numIterations = 0;
-      
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         ++numIterations;
         fireStateChange("Fitting, iteration count " + numIterations);
@@ -454,10 +456,10 @@ extends Experiment implements ParameterValidator {
     
     // double[] initResidList = initEval.getResiduals().toArray();
     // double[] fitResidList = optimum.getResiduals().toArray();
-    XYSeries initResidMag = new XYSeries("Amplitude of init. residual");
-    XYSeries initResidPhase = new XYSeries("Phase of init. residual");
-    XYSeries fitResidMag = new XYSeries("Amplitude of fit residual");
-    XYSeries fitResidPhase = new XYSeries("Phase of fit residual");
+    XYSeries initResidMag = new XYSeries("Percent error of init. amplitude");
+    XYSeries initResidPhase = new XYSeries("Diff. with init phase");
+    XYSeries fitResidMag = new XYSeries("Percent error of fit amplitude");
+    XYSeries fitResidPhase = new XYSeries("Diff with fit phase");
     
     // InstrumentResponse init = ds.getResponse(sensorOutIdx);
     

@@ -563,6 +563,16 @@ public class RandomizedPanel extends ExperimentPanel {
       bc.add(result);
     }
 
+    TextTitle result = new TextTitle();
+    RandomizedExperiment re = (RandomizedExperiment) expResult;
+    int numIters = re.getIterations();
+    if (numIters > 0) {
+      StringBuilder sb = new StringBuilder("NUMBER OF ITERATIONS: ");
+      sb.append(numIters);
+      result.setText( sb.toString() );
+      result.setBackgroundPaint(Color.white);
+      bc.add(result);
+    }
 
     ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
     ct.setPosition(RectangleEdge.BOTTOM);
