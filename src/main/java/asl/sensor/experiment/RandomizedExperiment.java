@@ -87,7 +87,6 @@ extends Experiment implements ParameterValidator {
   
   private int normalIdx; // location of value to set to 0 in curves for scaling
   private int numZeros; // how many entries in parameter vector define zeros
-  private int sensorOutIdx; // location to load response from?
   private int numIterations; // how much the solver ran
   
   public RandomizedExperiment() {
@@ -842,7 +841,7 @@ extends Experiment implements ParameterValidator {
   public int[] listActiveResponseIndices() {
     // NOTE: not used by corresponding panel, overrides with active indices
     // of components in the combo-box
-    return new int[]{sensorOutIdx};
+    return new int[]{1};
   }
   
   /**

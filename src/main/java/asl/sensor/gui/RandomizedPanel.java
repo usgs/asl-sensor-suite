@@ -52,7 +52,7 @@ public class RandomizedPanel extends ExperimentPanel {
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   private static final Color[] COLOR_LIST = 
       new Color[]{Color.RED, Color.BLUE, Color.GREEN};
-  private static final int TITLE_IDX = 0;
+  private static final int TITLE_IDX = 0; // TODO: replace w/ title pointers
   
   /**
    * 
