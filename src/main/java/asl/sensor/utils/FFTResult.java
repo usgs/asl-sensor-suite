@@ -330,7 +330,7 @@ public class FFTResult {
     double[][] taperMat = new double[numTapers][winLen];
     
     double denom = winLen - 1;
-    double scale = Math.sqrt(2 / denom);
+    double scale = Math.sqrt( 2 / denom );
     
     // TODO: may need to check correct loop index order for efficiency
     for (int j = 0; j < numTapers; ++j) {
