@@ -54,8 +54,8 @@ public class RandomizedExperiment
 extends Experiment implements ParameterValidator {
 
   private static final double DELTA = 1E-11;
-  public static final double PEAK_MULTIPLIER = 0.8;
-      // NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
+  public static final double PEAK_MULTIPLIER = // 0.8;
+      NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
   
   // To whomever has to maintain this code after I'm gone:
   // I'm sorry, I'm so so sorry

@@ -47,7 +47,7 @@ public class NumericUtils {
   /**
    * used to limit the frequencies of the poles/zeros getting fit
    */
-  public final static double PEAK_MULTIPLIER = 0.5;
+  public final static double PEAK_MULTIPLIER = 0.8;
   
   /**
    * Get the two-component arctan of a complex number. A simpler way of calling
