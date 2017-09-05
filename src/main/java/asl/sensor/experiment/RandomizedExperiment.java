@@ -337,7 +337,7 @@ extends Experiment implements ParameterValidator {
       int argIdx = i + estResponse.length;
       double denom;
       if (!lowFreq) {
-        denom = 100.;
+        denom = freqs[i];
         // give frequencies below 1 less weight in high-freq calibrations
         if (freqs[i] > 10.) {
           // for high enough freqs, make weighting (100/f^3) rather than 1/f;
