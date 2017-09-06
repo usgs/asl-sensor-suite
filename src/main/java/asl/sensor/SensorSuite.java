@@ -337,13 +337,13 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
         
         File selFile = fc.getSelectedFile();
         saveDirectory = selFile.getParent();
-        if( !selFile.getName().endsWith( ext.toLowerCase() ) ) {
+        if( !selFile.getName().toLowerCase().endsWith(ext) ) {
           selFile = new File( selFile.getName() + ext);
         }
         
-        StringBuilder folderName = new StringBuilder( selFile.getParent() );
+        StringBuilder folderName = new StringBuilder(saveDirectory);
         folderName.append("/test_results/");
-        folderName.append( selFile.getName().replace(".pdf","") );
+        folderName.append( selFile.getName().replace(ext,"") );
         
         saveExperimentData( folderName.toString(), text, charts );
         

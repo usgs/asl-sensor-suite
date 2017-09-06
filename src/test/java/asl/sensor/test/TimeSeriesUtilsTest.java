@@ -66,6 +66,24 @@ public class TimeSeriesUtilsTest {
     }
   }
   
+  //@Test
+  public void testDataLocally() {
+    String fname = "./data/gitignoreme/HF_MAJO_10_EHZ.512.cut.seed";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(fname);
+      Map<Long, double[]> map = db.getDataMap();
+      System.out.println(db.getName());
+      for (long time : map.keySet()) {
+        System.out.println("START: " + time); 
+        System.out.println("\tLENGTH: " + map.get(time).length);
+      }
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
+  }
+  
   @Test
   public void canGetMultiplexDataNames() {
     String filename2 = "./data/cat.seed";
