@@ -73,6 +73,7 @@ public class TimeSeriesUtilsTest {
       DataBlock db = TimeSeriesUtils.getFirstTimeSeries(fname);
       Map<Long, double[]> map = db.getDataMap();
       System.out.println(db.getName());
+      System.out.println("\tSample interval: "+db.getInterval());
       for (long time : map.keySet()) {
         System.out.println("START: " + time); 
         System.out.println("\tLENGTH: " + map.get(time).length);

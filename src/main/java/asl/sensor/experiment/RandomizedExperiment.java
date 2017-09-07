@@ -337,7 +337,11 @@ extends Experiment implements ParameterValidator {
       int argIdx = i + estResponse.length;
       double denom;
       if (!lowFreq) {
-        denom = freqs[i]; // set everything to 1/f weighting
+        if (freqs[i] < 1) {
+          denom = 1; // weight everything up to 1Hz equally
+        } else {
+          denom = freqs[i]; // set everything (else) to 1/f weighting
+        }
       } else {
         if (freqs[i] < .01) {
           denom = freqs[i];
