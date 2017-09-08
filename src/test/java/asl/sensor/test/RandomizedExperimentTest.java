@@ -172,14 +172,22 @@ public class RandomizedExperimentTest {
         
         for (int i = start; i < poles.size(); ++i) {
           if ( poles.get(i).getImaginary() == 0 ) {
-            Complex c = new Complex(i, 0);
-            replacements.add(c);
+            Complex c = poles.get(i);
+            replacements.add(c.subtract(1));
+            int next = i+1;
+            while (next < poles.size() && poles.get(next).equals(c)) {
+              ++next; // skip duplicates
+            }
           } else {
-            Complex c = new Complex(i, i * i);
+            Complex c = poles.get(i);
+            c = c.subtract( new Complex(1, 1) );
             replacements.add(c);
             ++i;
           }
         }
+        
+        //System.out.println(poles);
+        //System.out.println(replacements);
         
         double[] newPoles = new double[replacements.size() * 2];
         for (int i = 0; i < newPoles.length; i += 2) {
@@ -193,6 +201,7 @@ public class RandomizedExperimentTest {
             ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
         
         List<Complex> testList = ir2.getPoles();
+        //System.out.println(testList);
         int offsetIdx = 0;
         for (int i = 0; i < poles.size(); ++i) {
           if (i < start) {
@@ -200,11 +209,15 @@ public class RandomizedExperimentTest {
           } else {
             Complex c = replacements.get(offsetIdx);
             assertTrue( testList.get(i).equals(c) );
-            assertFalse( poles.get(i).equals(c) );
             if ( poles.get(i).getImaginary() != 0 ) {
+              Complex c1 = new Complex(1, 1);
+              assertTrue(poles.get(i).equals( c.add(c1) ));
               ++i;
+              Complex c2 = new Complex(1, -1);
               assertTrue( testList.get(i).equals( c.conjugate() ) );
-              assertFalse( poles.get(i).equals( c.conjugate() ) );
+              assertTrue( poles.get(i).equals( c.conjugate().add(c2) ) );
+            } else {
+              assertTrue( poles.get(i).equals(c.add(1)) );
             }
             ++offsetIdx;
           }

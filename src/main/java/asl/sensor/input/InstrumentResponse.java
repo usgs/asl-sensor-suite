@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -119,9 +118,9 @@ public class InstrumentResponse {
   private List<Double> gain;
   
   // poles and zeros
-  private List<Complex> zeros;
+  private Map<Complex, Integer> zeros;
   
-  private List<Complex> poles;
+  private Map<Complex, Integer> poles;
   
   private String name;
   private Unit unitType;
@@ -153,8 +152,8 @@ public class InstrumentResponse {
     
     gain = new ArrayList<Double>( responseIn.getGain() );
 
-    zeros = new ArrayList<Complex>( responseIn.getZeros() );
-    poles = new ArrayList<Complex>( responseIn.getPoles() );
+    zeros = new HashMap<Complex, Integer>( responseIn.getZerosMap() );
+    poles = new HashMap<Complex, Integer>( responseIn.getPolesMap() );
     
     unitType = responseIn.getUnits();
     
@@ -162,6 +161,26 @@ public class InstrumentResponse {
     normalFreq = Double.valueOf( responseIn.getNormalizationFrequency() );
     
     name = responseIn.getName();
+  }
+  
+  private Map<Complex, Integer> getZerosMap() {
+    return zeros;
+  }
+  
+  private Map<Complex, Integer> getPolesMap() {
+    return poles;
+  }
+
+  private List<Complex> getSortedPoleKeys() {
+    ArrayList<Complex> list = new ArrayList<Complex>( poles.keySet() );
+    NumericUtils.complexMagnitudeSorter(list);
+    return list;
+  }
+  
+  private List<Complex> getSortedZeroKeys() {
+    ArrayList<Complex> list = new ArrayList<Complex>( zeros.keySet() );
+    NumericUtils.complexMagnitudeSorter(list);
+    return list;
   }
   
   /**
@@ -213,12 +232,18 @@ public class InstrumentResponse {
       Complex numerator = Complex.ONE;
       Complex denominator = Complex.ONE;
       
-      for (Complex zero : zeros) {
-        numerator = numerator.multiply( s.subtract(zero) );
+      for ( Complex zero : zeros.keySet() ) {
+        int count = zeros.get(zero); // number of times to apply zero
+        for (int j = 0; j < count; ++j) {
+          numerator = numerator.multiply( s.subtract(zero) );  
+        }
       }
       
-      for (Complex pole : poles) {
-        denominator = denominator.multiply( s.subtract(pole) );
+      for ( Complex pole : poles.keySet() ) {
+        int count = poles.get(pole);
+        for (int j = 0; j < count; ++j) {
+          denominator = denominator.multiply( s.subtract(pole) );
+        }
       }
       
       resps[i] = numerator.multiply(normalization).divide(denominator);
@@ -274,6 +299,10 @@ public class InstrumentResponse {
   buildResponseFromFitVector(double[] params, boolean lowFreq, 
       int numZeros) {
     
+    // get all distinct pole values as lists
+    List<Complex> zList = getSortedZeroKeys();
+    List<Complex> pList = getSortedPoleKeys();
+    
     // first covert poles and zeros back to complex values to make this easier
     List<Complex> zerosAsComplex = new ArrayList<Complex>();
     for (int i = 0; i < numZeros; i += 2) {
@@ -288,110 +317,116 @@ public class InstrumentResponse {
     }
     
     // fit the zeros
-    List<Complex> builtZeros = new ArrayList<Complex>();
+    Map<Complex, Integer> builtZeros = new HashMap<Complex, Integer>();
     
-    // first, add the literally zero values (no more than 2); these aren't fit
-    for (int i = 0; i < 2; ++i) {
-      Complex zero = zeros.get(i);
-      if ( zero.abs() > 0. ) {
-        break;
-      }
-      builtZeros.add(zero);
+    // first, add the literally zero values; these aren't fit
+    // (NOTE: we expect count to never be more than 2)
+    int start;
+    start = 0;
+    Complex firstZero = zList.get(0);
+    if (firstZero.abs() == 0.) {
+      start = 1;
+      int count = zeros.get(firstZero);
+      builtZeros.put(firstZero, count);
     }
     
     // add the low-frequency zeros from source if they're not being fit
     if (!lowFreq) {
       // add zeros until they reach the high-freq cutoff point
       // start from current index of data
-      for (int i = builtZeros.size(); i < zeros.size(); ++i) {
-        Complex zero = zeros.get(i);
+      for (int i = start; i < zList.size(); ++i) {
+        Complex zero = zList.get(i);
+        int count = zeros.get(zero);
         if ( zero.abs() / NumericUtils.TAU > 1. ) {
           // zeros after this point are high-frequency
           break;
         }
-        builtZeros.add(zero);
+        builtZeros.put(zero, count);
       }
     }
     
     // now add the zeros under consideration for fit
     // these are the high-frequency zeros if we're doing high-frequency cal
     // or the low-frequency zeros otherwise
+    int offset;
+    offset = builtZeros.size();
     for (int i = 0; i < zerosAsComplex.size(); ++i) {
-
+      Complex origZero = zList.get(i + offset);
+      int count = zeros.get(origZero);
       Complex zero = zerosAsComplex.get(i);
-      builtZeros.add(zero);
-      int idx = builtZeros.size() - 1;
+      builtZeros.put(zero, count);
       
       // add conjugate if it has one
       if ( zero.getImaginary() != 0. ) {
-        builtZeros.add( zero.conjugate() );
-      } else if ( idx + 1 < zeros.size() ) {
-        // if this response has two same-valued zeros, treat them as conjugates
-        double real = zeros.get(idx).getReal();
-        double realNext = zeros.get(idx + 1).getReal();
-        if (real == realNext) {
-          builtZeros.add(zero); // im-part is 0, zero is its own conjugate
-        }
+        builtZeros.put( zero.conjugate(), count );
+        ++offset; // skipping over the original conjugate pair
       }
     }
     
     // now add in all remaining zeros
-    for (int i = builtZeros.size(); i < zeros.size(); ++i) {
-      builtZeros.add( zeros.get(i) );
+    for (int i = builtZeros.size(); i < zList.size(); ++i) {
+      Complex zero = zList.get(i);
+      int count = zeros.get(zero);
+      builtZeros.put(zero, count);
     }
     
     // now do the same thing as the zeros but for the poles
-    List<Complex> builtPoles = new ArrayList<Complex>();
+    Map<Complex, Integer> builtPoles = new HashMap<Complex, Integer>();
     
     // low frequency poles not being fit added first (keeps list sorted)
     if (!lowFreq) {
       // first add low-frequency poles not getting fit by high-freq cal
-      for (int i = 0; i < poles.size(); ++i) {
-        Complex pole = poles.get(i);
+      for (int i = 0; i < pList.size(); ++i) {
+        Complex pole = pList.get(i);
         if ( pole.abs() / NumericUtils.TAU > 1. ) {
           break;
         }
-        builtPoles.add(pole);
+        int count = poles.get(pole);
+        builtPoles.put(pole, count);
       }
     } else if ( hasTooLowFreqPole() ) {
       // used in the odd KS54000 case, we don't fit the low-freq damping pole
-      builtPoles.add( poles.get(0) );
+      Complex pole = pList.get(0);
+      int count = poles.get(pole);
+      builtPoles.put(pole, count);
     }
     
+    offset = builtPoles.size();
     // now add the poles under consideration for fit as with zeros
     for (int i = 0; i < polesAsComplex.size(); ++i) {
+      Complex origPole = pList.get(i + offset);
+      int count = poles.get(origPole);
       Complex pole = polesAsComplex.get(i);
-      builtPoles.add(pole);
-      int idx = builtPoles.size() - 1;
+      builtPoles.put(pole, count);
       
       // add conjugate if it has one
       if ( pole.getImaginary() != 0. ) {
-        builtPoles.add( pole.conjugate() );
-      } else if ( idx + 1 < poles.size() ) {
-        // if this response has two same-valued zeros, treat them as conjugates
-        double real = poles.get(idx).getReal();
-        double realNext = poles.get(idx + 1).getReal();
-        if (real == realNext) {
-          builtPoles.add(pole); // im-part is 0, zero is its own conjugate
-        }
+        builtPoles.put( pole.conjugate(), count );
+        ++offset;
       }
     }
     
     // now add the poles that remain
-    for (int i = builtPoles.size(); i < poles.size(); ++i) {
-      builtPoles.add( poles.get(i) );
+    for (int i = builtPoles.size(); i < pList.size(); ++i) {
+      Complex pole = pList.get(i);
+      int count = poles.get(pole);
+      builtPoles.put(pole, count);
     }
-    
-    // NumericUtils.complexMagnitudeSorter(builtZeros);
-    // NumericUtils.complexMagnitudeSorter(builtPoles);
-
     
     // create a copy of this instrument response and set the new values
     InstrumentResponse out = new InstrumentResponse(this);
-    out.setZeros(builtZeros);
-    out.setPoles(builtPoles);
+    out.setZerosMap(builtZeros);
+    out.setPolesMap(builtPoles);
     return out;
     
+  }
+  
+  private void setZerosMap(Map<Complex, Integer> newZeros) {
+    zeros = newZeros;
+  }
+
+  private void setPolesMap(Map<Complex, Integer> newPoles) {
+    poles = newPoles;
   }
   
   /**
@@ -434,7 +469,15 @@ public class InstrumentResponse {
    * @return List of complex numbers; index y is the yth pole in response list
    */
   public List<Complex> getPoles() {
-    return poles;
+    List<Complex> pList = getSortedPoleKeys();
+    List<Complex> listOut = new ArrayList<Complex>();
+    for ( Complex p : pList ) {
+      int count = poles.get(p);
+      for (int i = 0; i < count; ++i) {
+        listOut.add(p);
+      }
+    }
+    return listOut;
   }
   
   /**
@@ -460,7 +503,15 @@ public class InstrumentResponse {
    * @return List of complex numbers; index y is the yth zero in response list
    */
   public List<Complex> getZeros() {
-    return zeros;
+    List<Complex> zList = getSortedZeroKeys();
+    List<Complex> listOut = new ArrayList<Complex>();
+    for (Complex z : zList) {
+      int count = zeros.get(z);
+      for (int i = 0; i < count; ++i) {
+        listOut.add(z);
+      }
+    }
+    return listOut;
   }
   
   /**
@@ -471,7 +522,8 @@ public class InstrumentResponse {
    */
   private boolean hasTooLowFreqPole() {
     final double CUTOFF = 1. / 1000.;
-    if ( ( poles.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
+    List<Complex> pList = getPoles();
+    if ( ( pList.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
       // first two poles are low-frequency
       return true;
     }
@@ -609,12 +661,9 @@ public class InstrumentResponse {
       gain.add( gainMap.get(stage) );
     }
     
-    // turn pole/zero arrays into lists
-    zeros = Arrays.asList(zerosArr);
-    NumericUtils.complexMagnitudeSorter(zeros);
-    
-    poles = Arrays.asList(polesArr);
-    NumericUtils.complexMagnitudeSorter(poles);
+    // turn pole/zero arrays into maps from pole values to # times repeated
+    setZeros(zerosArr);
+    setPoles(polesArr);
   }
   
   /**
@@ -665,7 +714,7 @@ public class InstrumentResponse {
    */
   public RealVector polesToVector(boolean lowFreq, double nyquist) {
     // first, sort poles by magnitude
-    NumericUtils.complexMagnitudeSorter(poles);
+    List<Complex> pList = getSortedPoleKeys();
     
     double peak = PEAK_MULTIPLIER * nyquist;
     
@@ -680,24 +729,24 @@ public class InstrumentResponse {
       start = 1;
     }
     
-    for (int i = start; i < poles.size(); ++i) {
+    for (int i = start; i < pList.size(); ++i) {
       
-      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU < 1. ) ) {
+      if ( !lowFreq && ( pList.get(i).abs() / NumericUtils.TAU < 1. ) ) {
         // don't include poles below 1Hz in high-frequency calibration
         continue;
       }
-      if ( lowFreq && ( poles.get(i).abs() / NumericUtils.TAU > 1. ) ) {
+      if ( lowFreq && ( pList.get(i).abs() / NumericUtils.TAU > 1. ) ) {
         // only do low frequency calibrations on poles up to 
         break;
       }
-      if ( !lowFreq && ( poles.get(i).abs() / NumericUtils.TAU >= peak ) ) {
+      if ( !lowFreq && ( pList.get(i).abs() / NumericUtils.TAU >= peak ) ) {
         // don't fit poles above fraction of nyquist rate of sensor output
         break;
       }
       
       // a complex is just two doubles representing real and imaginary lengths
-      double realPart = poles.get(i).getReal();
-      double imagPart = poles.get(i).getImaginary();
+      double realPart = pList.get(i).getReal();
+      double imagPart = pList.get(i).getImaginary();
       
       componentList.add(realPart);
       componentList.add(imagPart);
@@ -706,8 +755,8 @@ public class InstrumentResponse {
         // next value is complex conjugate of this one, so skip it
         ++i;
       } else if ( (i + 1) < poles.size() &&
-          poles.get(i + 1).getImaginary() == 0. && 
-          realPart == poles.get(i + 1).getReal() ) {
+          pList.get(i + 1).getImaginary() == 0. && 
+          realPart == pList.get(i + 1).getReal() ) {
         // two values with zero imaginary are duplicated in the list
         // again, we skip this one
         ++i;
@@ -738,15 +787,55 @@ public class InstrumentResponse {
    * @param poleList New poles to replace the current response poles with
    */
   public void setPoles(List<Complex> poleList) {
-    poles = poleList;
+    poles = new HashMap<Complex, Integer>();
+    for (Complex p : poleList) {
+      if ( poles.keySet().contains(p) ) {
+        int count = zeros.get(p) + 1;
+        poles.put(p, count);
+      } else {
+        poles.put(p, 1);
+      }
+    }
+  }
+  
+  public void setPoles(Complex[] poleList) {
+    poles = new HashMap<Complex, Integer>();
+    for (Complex p : poleList) {
+      if ( poles.keySet().contains(p) ) {
+        int count = poles.get(p) + 1;
+        poles.put(p, count);
+      } else {
+        poles.put(p, 1);
+      }
+    }
   }
 
   /**
    * Set the list of zeros to a new list, such as after fitting from random cal
    * @param newZeros New list of zeros to assign this calibration
    */
-  public void setZeros(List<Complex> newZeros) {
-    zeros = newZeros;
+  public void setZeros(List<Complex> zeroList) {
+    zeros = new HashMap<Complex, Integer>();
+    for (Complex z : zeroList) {
+      if ( zeros.keySet().contains(z) ) {
+        int count = zeros.get(z) + 1;
+        zeros.put(z, count);
+      } else {
+        zeros.put(z, 1);
+      }
+    }
+  }
+  
+  public void setZeros(Complex[] zeroList) {
+    zeros = new HashMap<Complex, Integer>();
+    for (Complex z : zeroList) {
+      if ( zeros.keySet().contains(z) ) {
+        int count = zeros.get(z) + 1;
+        zeros.put(z, count);
+      } else {
+        zeros.put(z, 1);
+      }
+    }
   }
   
   /**
@@ -799,21 +888,21 @@ public class InstrumentResponse {
     
     sb.append("Response zeros: ");
     sb.append('\n');
-    
-    for (int i = 0; i < zeros.size(); ++i) {
+    List<Complex> zList = getZeros();
+    for (int i = 0; i < zList.size(); ++i) {
       sb.append(i);
       sb.append(": ");
-      sb.append( cf.format( zeros.get(i) ) );
+      sb.append( cf.format( zList.get(i) ) );
       sb.append("\n");
     }
     
     sb.append("Response poles: ");
     sb.append('\n');
-    
-    for (int i = 0; i < poles.size(); ++i) {
+    List<Complex> pList = getPoles();
+    for (int i = 0; i < pList.size(); ++i) {
       sb.append(i);
       sb.append(": ");
-      sb.append( cf.format( poles.get(i) ) );
+      sb.append( cf.format( pList.get(i) ) );
       sb.append("\n");
     }
     
@@ -834,7 +923,7 @@ public class InstrumentResponse {
    * @return RealVector with fittable zero values
    */
   public RealVector zerosToVector(boolean lowFreq, double nyquist) {
-    NumericUtils.complexMagnitudeSorter(zeros);
+    List<Complex> zList = getSortedZeroKeys();
     
     double peak = PEAK_MULTIPLIER * nyquist;
     
@@ -844,16 +933,16 @@ public class InstrumentResponse {
     
     for (int i = 0; i < zeros.size(); ++i) {
       
-      if ( zeros.get(i).abs() == 0. ) {
+      if ( zList.get(i).abs() == 0. ) {
         // ignore zeros that are literally zero-valued
         continue;
       }
-      if ( lowFreq && ( zeros.get(i).abs() / NumericUtils.TAU > 1. ) ) {
+      if ( lowFreq && ( zList.get(i).abs() / NumericUtils.TAU > 1. ) ) {
         // only do low frequency calibrations on zeros up to 1Hz
         break;
       }
       
-      double cutoffChecker = zeros.get(i).abs() / NumericUtils.TAU;
+      double cutoffChecker = zList.get(i).abs() / NumericUtils.TAU;
       
       if ( !lowFreq && ( cutoffChecker < 1. ) ) {
         // don't include zeros > 1Hz in high-frequency calibration
@@ -864,8 +953,8 @@ public class InstrumentResponse {
         break;
       }
       
-      double realPart = zeros.get(i).getReal();
-      double imagPart = zeros.get(i).getImaginary();
+      double realPart = zList.get(i).getReal();
+      double imagPart = zList.get(i).getImaginary();
       componentList.add(realPart);
       componentList.add(imagPart);
       
@@ -873,8 +962,8 @@ public class InstrumentResponse {
         // next value is complex conjugate of this one, so skip it
         ++i;
       } else if ( (i + 1) < zeros.size() && 
-          zeros.get(i + 1).getImaginary() == 0. && 
-          realPart == zeros.get(i + 1).getReal() ) {
+          zList.get(i + 1).getImaginary() == 0. && 
+          realPart == zList.get(i + 1).getReal() ) {
         // two values with zero imaginary are duplicated in the list
         // again, we skip this one
         ++i;
