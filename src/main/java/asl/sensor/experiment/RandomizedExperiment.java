@@ -2,8 +2,10 @@ package asl.sensor.experiment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
@@ -632,7 +634,15 @@ extends Experiment implements ParameterValidator {
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    return getPoleSubList(fitPoles);
+    Set<Complex> unchanged = new HashSet<Complex>(fitPoles);
+    unchanged.retainAll( new HashSet<Complex>(initialPoles) );
+    List<Complex> poles = new ArrayList<Complex>();
+    for (Complex pole : fitPoles) {
+      if ( !unchanged.contains(pole) ) {
+        poles.add(pole);
+      }
+    }
+    return poles;
   }
   
   /**
@@ -648,7 +658,16 @@ extends Experiment implements ParameterValidator {
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    return getZeroSubList(fitZeros);
+    Set<Complex> unchanged = new HashSet<Complex>(fitZeros);
+    unchanged.retainAll( new HashSet<Complex>(initialZeros) );
+    List<Complex> zeros = new ArrayList<Complex>();
+    for (Complex zero : fitZeros) {
+      if( !unchanged.contains(zero) ) {
+        zeros.add(zero);
+      }
+    }
+    NumericUtils.complexMagnitudeSorter(zeros); 
+    return zeros;
   }
   
   /**
@@ -656,7 +675,15 @@ extends Experiment implements ParameterValidator {
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    return getPoleSubList(initialPoles);
+    Set<Complex> unchanged = new HashSet<Complex>(fitPoles);
+    unchanged.retainAll( new HashSet<Complex>(initialPoles) );
+    List<Complex> poles = new ArrayList<Complex>();
+    for (Complex pole : initialPoles) {
+      if ( !unchanged.contains(pole) ) {
+        poles.add(pole);
+      }
+    }
+    return poles;
   }
   
   /**
@@ -664,7 +691,16 @@ extends Experiment implements ParameterValidator {
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    return getZeroSubList(initialZeros);
+    Set<Complex> unchanged = new HashSet<Complex>(fitZeros);
+    unchanged.retainAll( new HashSet<Complex>(initialZeros) );
+    List<Complex> zeros = new ArrayList<Complex>();
+    for (Complex zero : initialZeros) {
+      if( !unchanged.contains(zero) ) {
+        zeros.add(zero);
+      }
+    }
+    NumericUtils.complexMagnitudeSorter(zeros); 
+    return zeros;
   }
   
   /**
@@ -726,27 +762,6 @@ extends Experiment implements ParameterValidator {
    */
   public double[] getWeights() {
     return new double[]{maxMagWeight, maxArgWeight};
-  }
-  
-  private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
-    List<Complex> subList = new ArrayList<Complex>();
-    
-    double peak = PEAK_MULTIPLIER * nyquist;
-    
-    for (int i = 0; i < zerosToTrim.size(); ++i) {
-      double freq = initialZeros.get(i).abs() / NumericUtils.TAU;
-      
-      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > peak ) ) {
-        break;
-      }
-      if (!lowFreq && freq < 1. || freq == 0.) {
-        continue;
-      }
-      
-      subList.add( zerosToTrim.get(i) );
-    }
-    
-    return subList;
   }
   
   @Override
