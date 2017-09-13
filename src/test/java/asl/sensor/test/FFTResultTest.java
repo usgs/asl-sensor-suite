@@ -64,11 +64,11 @@ public class FFTResultTest {
     }
   }
   
-  //@Test
+  @Test
   public void ohNoMorePrintFunctions() {
     
-    DecimalFormat df = new DecimalFormat(); // may need to tweak precision
-    ComplexFormat cf = new ComplexFormat(df);
+    // DecimalFormat df = new DecimalFormat(); // may need to tweak precision
+    ComplexFormat cf = new ComplexFormat("j");
     
     // intended to be not-quite line-by-line replication of the PSD operations
     // it is said that unit tests are meant to be atomic. this ain't that
@@ -188,7 +188,8 @@ public class FFTResultTest {
           Complex val1 = fftResult1[i];
           psdBin[i] = val1.multiply( val1.conjugate() );
 
-          psdBins.append(cf.format(psdBin[i]));
+          psdBins.append( psdBin[i].getReal() ); // imag part should be 0
+          assertEquals(psdBin[i].getImaginary(), 0., 1E-15);
           if (i + 1 < singleSide) {
             psdBins.append(", ");
           }
