@@ -101,6 +101,7 @@ implements ActionListener, ChangeListener {
   public static final int FILE_COUNT = DataStore.FILE_COUNT;
   
   private static final int MARGIN = 10; // min space of the two sliders
+  public static final int TIME_FACTOR = TimeSeriesUtils.TIME_FACTOR;
   public static final int SLIDER_MAX = 10000;
   
   /**
@@ -110,13 +111,13 @@ implements ActionListener, ChangeListener {
    * @return Long that represents start or end time matching slider's value
    */
   public static long getMarkerLocation(DataBlock db, int sliderValue) {
-    long start = db.getStartTime();
-    long len = db.getInterval() * db.size();
+    long start = db.getStartTime() / TIME_FACTOR;
+    long len = ( db.getInterval() / TIME_FACTOR ) * db.size();
     return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
   }
   
   public static int getSliderValue(DataBlock db, long timeStamp) {
-    long start = db.getStartTime();
+    long start = db.getStartTime() / TIME_FACTOR;
     long len = db.getInterval() * db.size();
     return (int) ( ( SLIDER_MAX * (timeStamp - start) ) / len );
   }

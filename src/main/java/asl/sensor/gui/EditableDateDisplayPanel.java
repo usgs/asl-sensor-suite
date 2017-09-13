@@ -13,6 +13,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
 
+import asl.sensor.utils.TimeSeriesUtils;
+
 /**
  * This panel presents an alternate means of range-trimming to the standard
  * slider. Given timeseries data, this produces x-axis values as time longs that
@@ -28,6 +30,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
    * 
    */
   private static final long serialVersionUID = -1649983797482938586L;
+  public static final int TIME_FACTOR = TimeSeriesUtils.TIME_FACTOR;
   
   private JSpinner year, day, hour, minute, second, millisecond;
   private JLabel yLabel, dLabel, hLabel, mLabel, sLabel, msLabel;
@@ -196,6 +199,8 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
    * @param timeStamp Time to set this panel to
    */
   public void setValues(long timeStamp) {
+    
+    timeStamp /= TIME_FACTOR;
     
     if ( timeStamp == getTime() ) {
       return; // don't do anything if no change is necessary

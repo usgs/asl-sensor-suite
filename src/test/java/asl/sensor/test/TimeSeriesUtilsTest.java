@@ -66,6 +66,11 @@ public class TimeSeriesUtilsTest {
     }
   }
   
+  @Test
+  public void checkBlockTimings() {
+    
+  }
+  
   //@Test
   public void testDataLocally() {
     String fname = "./data/gitignoreme/HF_MAJO_10_EHZ.512.cut.seed";
@@ -701,7 +706,7 @@ public class TimeSeriesUtilsTest {
         System.out.println(dataMap.get(time).length);
       }
       
-      long start = db.getStartTime();
+      long start = db.getStartTime() / TimeSeriesUtils.TIME_FACTOR;
       Calendar cCal = getStartCalendar(start);
       SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
       sdf.setTimeZone( TimeZone.getTimeZone("UTC") );

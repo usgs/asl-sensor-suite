@@ -47,6 +47,7 @@ import asl.sensor.utils.TimeSeriesUtils;
 public class DataBlock {
   
   private static final int MAX_POINTS = 100000;
+  public static final int TIME_FACTOR = TimeSeriesUtils.TIME_FACTOR;
   
   private long interval, targetInterval;
   private String name;
@@ -396,7 +397,7 @@ public class DataBlock {
    */
   public Calendar getStartCalendar() {
     Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
-    cCal.setTimeInMillis(startTime);
+    cCal.setTimeInMillis(startTime / TIME_FACTOR);
     return cCal;
   }
   
@@ -406,7 +407,7 @@ public class DataBlock {
    */
   public Calendar getTrimmedStartCalendar() {
     Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
-    cCal.setTimeInMillis(trimmedStart);
+    cCal.setTimeInMillis(trimmedStart / TIME_FACTOR);
     return cCal;
   }
   
@@ -648,7 +649,7 @@ public class DataBlock {
     long thisTime = trimmedStart;
     for (int i = 0; i < data.length; i+=skipFactor) {
       double point = data[i];
-      double xTime = (double) thisTime;
+      double xTime = (double) (thisTime / TIME_FACTOR);
       out.add(xTime, point);
       thisTime += skipFactor*targetInterval;
     }
@@ -662,7 +663,8 @@ public class DataBlock {
    * @param end End time to trim window to in milliseconds from epoch
    */
   public void trim(Calendar start, Calendar end) {
-    trim( start.getTimeInMillis(), end.getTimeInMillis() );
+    trim( start.getTimeInMillis() * TIME_FACTOR, 
+        end.getTimeInMillis() * TIME_FACTOR );
   }
   
   /**

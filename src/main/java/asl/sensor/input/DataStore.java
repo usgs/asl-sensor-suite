@@ -45,6 +45,7 @@ public class DataStore {
    * Defines the maximum number of plots to be shown
    */
   public final static int FILE_COUNT = 9;
+  public final static int TIME_FACTOR = TimeSeriesUtils.TIME_FACTOR;
   private DataBlock[] dataBlockArray;
   private InstrumentResponse[] responses;
   
@@ -593,8 +594,8 @@ public class DataStore {
    * @param limit Number of data portions to perform trim on
    */
   public void trim(Calendar start, Calendar end, int limit) {
-    long startTime = start.getTimeInMillis();
-    long endTime = end.getTimeInMillis();
+    long startTime = start.getTimeInMillis() * TIME_FACTOR;
+    long endTime = end.getTimeInMillis() * TIME_FACTOR;
     trim(startTime, endTime, limit);
   }
   

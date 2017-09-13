@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
@@ -21,7 +20,6 @@ import org.apache.commons.math3.linear.DiagonalMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.optim.ConvergenceChecker;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -718,32 +716,6 @@ extends Experiment implements ParameterValidator {
    */
   public int getIterations() {
     return numIterations;
-  }
-
-  /**
-   * Trim down the poles to those within the range of those being fit
-   * @param polesToTrim Either fit or input poles, sorted by frequency
-   * @return Sublist of data to be fed to output reports
-   */
-  private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
-    List<Complex> subList = new ArrayList<Complex>();  
-    
-    double peak = PEAK_MULTIPLIER * nyquist;
-    
-    for (int i = 0; i < polesToTrim.size(); ++i) {
-      double freq = initialPoles.get(i).abs() / NumericUtils.TAU;
-      
-      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > peak ) ) {
-        break;
-      }
-      if (!lowFreq && freq < 1.) {
-        continue; // ignore b
-      }
-      
-      subList.add( polesToTrim.get(i) );
-    }
-    
-    return subList;
   }
   
   /**

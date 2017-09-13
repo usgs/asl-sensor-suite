@@ -35,11 +35,16 @@ import edu.sc.seis.seisFile.mseed.SeedRecord;
  */
 public class TimeSeriesUtils {
 
-  /**
-   * Interval for data that has been sampled at 1 Hz in milliseconds
-   */
-  public final static long ONE_HZ_INTERVAL = 1000L;
 
+  /**
+   * Factor of precision over default level of time
+   */
+  public final static int TIME_FACTOR = 1;
+  /**
+   * Interval for data that has been sampled at 1 Hz in tenths-of-milliseconds
+   */
+  public final static long ONE_HZ_INTERVAL = 1000L * TIME_FACTOR;
+  
   /**
    * Sample rate of a 1 Hz sample, in Hz, as a double (that is, 1.0)
    */
@@ -558,18 +563,21 @@ public class TimeSeriesUtils {
               continue; // skip to next seedRecord
             }
 
-            // byte af = dh.getActivityFlags();
-            // byte correctionFlag = 0b00000010; // is there a time correction?
-            // int correction = 0;
-            // if ( (af & correctionFlag) != 0 ) {
-            //   correction = dh.getTimeCorrection();
-            // }
-
+            byte af = dh.getActivityFlags();
+            byte correctionFlag = 0b00000010; // is there a time correction?
+            int correction = 0;
+            if ( (af & correctionFlag) != 0 ) {
+              correction = dh.getTimeCorrection();
+            }
+            if (correction > 0) {
+              System.out.println("Time correction? " + correction);
+            }
             Btime bt = dh.getStartBtime();
 
             // convert Btime to milliseconds
             long start = bt.convertToCalendar().getTimeInMillis();
-            // start += correction;
+            start += correction / 10; // correction in tenths of millis
+            //start = (start * 10) + bt.getTenthMilli();
 
             int fact = dh.getSampleRateFactor();
             int mult = dh.getSampleRateMultiplier();
