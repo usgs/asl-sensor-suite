@@ -174,7 +174,7 @@ public class FFTResultTest {
         Complex[] frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
         fftOutput.append('[');
         for (int i = 0; i < frqDomn1.length; ++i) {
-          fftOutput.append(df.format(frqDomn1[i]));
+          fftOutput.append(cf.format(frqDomn1[i]));
           if (i + 1 < frqDomn1.length) {
             fftOutput.append(", ");
           }
