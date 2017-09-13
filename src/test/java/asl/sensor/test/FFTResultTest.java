@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +23,7 @@ import java.util.TimeZone;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
@@ -43,8 +45,31 @@ import asl.sensor.utils.TimeSeriesUtils;
 
 public class FFTResultTest {
 
-  @Test
+  
+  //@Test
+  public void testComplexDivision() {
+    // test is commented out because it is slow and unlikely to regress
+    // because i and j would be the most intractable possible iteration vars
+    for (int a = 1; a < 100000; ++a) {
+      for (int b = a; b < 100000; ++b) {
+        Complex numer = new Complex(a, b);
+        Complex denom = new Complex(b, -a);
+        Complex unit = numer.divide(numer); // expect 1
+        Complex imag = numer.divide(denom); // expect i
+        assertEquals(unit.getReal(), 1., 1E-15);
+        assertEquals(unit.getImaginary(), 0., 1E-15);
+        assertEquals(imag.getReal(), 0., 1E-15);
+        assertEquals(imag.getImaginary(), 1., 1E-15);
+      }
+    }
+  }
+  
+  //@Test
   public void ohNoMorePrintFunctions() {
+    
+    DecimalFormat df = new DecimalFormat(); // may need to tweak precision
+    ComplexFormat cf = new ComplexFormat(df);
+    
     // intended to be not-quite line-by-line replication of the PSD operations
     // it is said that unit tests are meant to be atomic. this ain't that
     String location = "testResultImages/psdOutputFiles/";
@@ -113,7 +138,9 @@ public class FFTResultTest {
       
       while ( rangeEnd <= list1.length ) {
         
-        String initValues, detrended, demeaned, tapered, fftOutput, psdBins;
+        String initValues, detrended, demeaned, tapered; 
+        StringBuilder fftOutput = new StringBuilder();
+        StringBuilder psdBins = new StringBuilder();
         
         Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
 
@@ -145,20 +172,30 @@ public class FFTResultTest {
             new FastFourierTransformer(DftNormalization.STANDARD);
 
         Complex[] frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
+        fftOutput.append('[');
+        for (int i = 0; i < frqDomn1.length; ++i) {
+          fftOutput.append(df.format(frqDomn1[i]));
+          if (i + 1 < frqDomn1.length) {
+            fftOutput.append(", ");
+          }
+        }
+        fftOutput.append(']');
         // use arraycopy now (as it's fast) to get the first half of the fft
         System.arraycopy(frqDomn1, 0, fftResult1, 0, fftResult1.length);
-        fftOutput = Arrays.toString(frqDomn1);
         Complex[] psdBin = new Complex[singleSide];
+        psdBins.append('[');
         for (int i = 0; i < singleSide; ++i) {
-          
           Complex val1 = fftResult1[i];
           psdBin[i] = val1.multiply( val1.conjugate() );
 
+          psdBins.append(cf.format(psdBin[i]));
+          if (i + 1 < singleSide) {
+            psdBins.append(", ");
+          }
+          
           powSpectDens[i] = powSpectDens[i].add(psdBin[i]);
         }
-        
-        psdBins = Arrays.toString(psdBin);
-        
+        psdBins.append(']');
         ++segsProcessed;
         rangeStart  += slider;
         rangeEnd    += slider;
