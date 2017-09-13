@@ -1,6 +1,7 @@
 package asl.sensor.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -11,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +70,10 @@ public class FFTResultTest {
   public void ohNoMorePrintFunctions() {
     
     // DecimalFormat df = new DecimalFormat(); // may need to tweak precision
-    ComplexFormat cf = new ComplexFormat("j");
+    NumberFormat nf = NumberFormat.getInstance();
+    nf.setGroupingUsed(false);
+    ComplexFormat cf = new ComplexFormat("j", nf);
+    assertFalse( cf.getImaginaryFormat().isGroupingUsed() );
     
     // intended to be not-quite line-by-line replication of the PSD operations
     // it is said that unit tests are meant to be atomic. this ain't that
@@ -240,13 +245,20 @@ public class FFTResultTest {
       
       double[] frequencies = new double[singleSide];
       
+      StringBuilder psdString = new StringBuilder('[');
       for (int i = 0; i < singleSide; ++i) {
         powSpectDens[i] = powSpectDens[i].multiply(psdNormalization);
+        psdString.append( powSpectDens[i].getReal() );
+        if (i + 1 < singleSide) {
+          psdString.append(", ");
+        }
+        assertEquals(powSpectDens[i].getImaginary(), 0., 1E-15);
         frequencies[i] = i * deltaFreq;
       }
+      psdString.append(']');
       
       out = new PrintWriter(pref + "-outputPSD.txt");
-      out.write( Arrays.toString(powSpectDens) );
+      out.write( psdString.toString() );
       out.close();
       // do smoothing over neighboring frequencies; values taken from 
       // asl.timeseries' PSD function
@@ -276,8 +288,16 @@ public class FFTResultTest {
         psdCFSmooth[iw] = powSpectDens[iw];
       }
 
+      StringBuilder smooth = new StringBuilder('[');
+      for (int i = 0; i < psdCFSmooth.length; ++i) {
+        Complex c = psdCFSmooth[i];
+        smooth.append(c.getReal());
+        assertEquals(c.getImaginary(), 0., 1E-15);
+        smooth.append(", ");
+      }
+      smooth.append(']');
       out = new PrintWriter(pref + "-smoothedPSD.txt");
-      out.write( Arrays.toString(psdCFSmooth) );
+      out.write( smooth.toString() );
       out.close();
       
     } catch (FileNotFoundException e) {
