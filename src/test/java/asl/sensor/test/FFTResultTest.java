@@ -214,9 +214,10 @@ public class FFTResultTest {
         sb.append(" WITH THE FOLLOWING FORMAT:\n");
         sb.append("1. RAW DATA GOING INTO PSD OF WINDOW SIZE\n");
         sb.append("2. DETRENDED DATA\n");
-        sb.append("3. DATA WITH COSINE TAPER APPLIED\n");
-        sb.append("4. OUTPUT OF FFT FOR MODIFIED DATA\n");
-        sb.append("5. BINNED PSD DATA (SHOULD BE REAL-VALUED ONLY)\n\n");
+        sb.append("3. DETREND + DEMEANED DATA\n");
+        sb.append("4. DATA WITH COSINE TAPER APPLIED\n");
+        sb.append("5. OUTPUT OF FFT FOR MODIFIED DATA\n");
+        sb.append("6. BINNED PSD DATA (SHOULD BE REAL-VALUED ONLY)\n\n");
         sb.append(initValues);
         sb.append("\n\n");
         sb.append(detrended);
