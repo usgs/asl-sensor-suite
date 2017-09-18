@@ -67,8 +67,11 @@ public class TimeSeriesUtilsTest {
   }
   
   @Test
-  public void checkBlockTimings() {
-    
+  public void dumbDivisionTest() {
+    int div = 12;
+    double num = 1.44;
+    double res = num / div;
+    assertEquals(0.12, res, 1E-10);
   }
   
   //@Test
@@ -150,25 +153,33 @@ public class TimeSeriesUtilsTest {
   }
   
   @Test
+  public final void testDemean1to9() throws Exception {
+    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    double[] expected = { -4d, -3d, -2d, -1d, 0d, 1d, 2d, 3d, 4d };
+    TimeSeriesUtils.demeanInPlace(x);
+    for (int i = 0; i < x.length; i++) {
+      assertEquals(x[i], expected[i], 1E-15);
+    }
+  }
+  
+  @Test
   public void detrendingCycleTest() {
     
-    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
+    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
         18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 
         3, 2, 1 };
     
-    List<Number> toDetrend = Arrays.asList(x);
+    // List<Number> toDetrend = Arrays.asList(x);
     
-    Number[] answer = { -9d, -8d, -7d, -6d, -5d, -4d, -3d, -2d, -1d, 0d, 1d, 2d,
+    double[] answer = { -9d, -8d, -7d, -6d, -5d, -4d, -3d, -2d, -1d, 0d, 1d, 2d,
         3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d, 9d, 8d, 7d, 6d, 5d, 4d, 3d, 2d, 1d, 0d,
         -1d, -2d, -3d, -4d, -5d, -6d, -7d, -8d, -9d };
 
     
-    TimeSeriesUtils.detrend(toDetrend);
+    x = TimeSeriesUtils.detrend(x);
     
     for (int i = 0; i < x.length; i++) {
-      assertEquals(
-          new Double(Math.round(x[i].doubleValue())), 
-          new Double(answer[i].doubleValue()));
+      assertEquals( x[i],  answer[i], 0.5);
     }
     
   }
@@ -185,6 +196,16 @@ public class TimeSeriesUtilsTest {
       assertEquals(num.doubleValue(), 0.0, 0.001);
     }
     
+  }
+  
+  @Test
+  public final void testDetrendLinear2() throws Exception {
+    double[] x = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+
+    x = TimeSeriesUtils.detrend(x);
+    for (int i = 0; i < x.length; i++) {
+      assertEquals(new Double(Math.round(x[i])), new Double(0));
+    }
   }
   
   public void 

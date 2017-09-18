@@ -73,6 +73,7 @@ public class RandomCalShell {
       sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
       
       // TODO: may need to create calendar by using sdf to parse date from args
+      // i.e., try parsing as long, then as date, then throw error
       long start = Long.parseLong(args[4]) * 1000;
       long end = Long.parseLong(args[5]) * 1000;
       

@@ -147,7 +147,7 @@ public class FFTResultTest {
         StringBuilder fftOutput = new StringBuilder();
         StringBuilder psdBins = new StringBuilder();
         
-        Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
+        Complex[] fftResult1 = new Complex[singleSide]; // first half FFT reslt
 
         // give us a new list we can modify to get the data of
         double[] data1Range = 
@@ -243,6 +243,7 @@ public class FFTResultTest {
       
       psdNormalization /= windowCorrection;
       psdNormalization /= segsProcessed; // NOTE: divisor here should be 13
+      assertEquals(13, segsProcessed);
       
       double[] frequencies = new double[singleSide];
       

@@ -187,8 +187,8 @@ public class TimeSeriesUtils {
     
     double mean = 0.0;
     
-    for(Number data : dataSet) {
-      mean += data.doubleValue();
+    for(double data : dataSet) {
+      mean += data;
     }
     
     mean /= dataSet.length;
@@ -886,7 +886,6 @@ public class TimeSeriesUtils {
           eastData[i] * cosTheta + 
           northData[i] * sinTheta;
     }
-
 
     return rotatedData;
   }

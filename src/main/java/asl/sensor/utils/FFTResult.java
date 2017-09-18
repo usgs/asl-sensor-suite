@@ -667,8 +667,7 @@ public class FFTResult {
     
     double psdNormalization = 2.0 * period / padding;
     double windowCorrection = wss / (double) range;
-    // it only uses the last value of wss, but that was how the original
-    // code was
+    // value of wss associated with taper parameters, not related to data
     
     psdNormalization /= windowCorrection;
     psdNormalization /= segsProcessed; // NOTE: divisor here should be 13
