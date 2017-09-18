@@ -83,8 +83,9 @@ public class NoiseExperiment extends Experiment {
     for (int i = 0; i < respIndices.length; ++i) {
       fireStateChange("Getting PSDs of series " + (i+1) + "...");
       // note that frequency is applied during the ds
-      spectra[i] = ds.getPSD(respIndices[i]).getFFT();
-      freqs = ds.getPSD(respIndices[i]).getFreqs();
+      FFTResult res = ds.getPSD(respIndices[i]);
+      spectra[i] = res.getFFT();
+      freqs = res.getFreqs();
     }
     
     addToPlot(ds, freqSpace, respIndices, xysc);
