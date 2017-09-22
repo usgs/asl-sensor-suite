@@ -6,8 +6,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,14 +35,88 @@ import edu.sc.seis.seisFile.mseed.SeedRecord;
  */
 public class TimeSeriesUtils {
 
+
   /**
-   * Interval for data that has been sampled at 1 Hz in microseconds
+   * Factor of precision over default level of time
    */
-  public final static long ONE_HZ_INTERVAL = 1000000L;
+  public final static int TIME_FACTOR = 1;
+  /**
+   * Interval for data that has been sampled at 1 Hz in tenths-of-milliseconds
+   */
+  public final static long ONE_HZ_INTERVAL = 1000L * TIME_FACTOR;
+  
   /**
    * Sample rate of a 1 Hz sample, in Hz, as a double (that is, 1.0)
    */
   public final static double ONE_HZ = 1.0;
+
+  public static double[] concatAll(double[]... arrs) {
+    
+    if (arrs.length == 0) {
+      return new double[]{};
+    }
+    
+    if (arrs.length == 1) {
+      return arrs[0];
+    }
+    
+    int len = 0;
+    for (double[] arr : arrs) {
+      len += arr.length;
+    }
+    
+    double[] result = new double[len];
+    int start = 0;
+    for (double[] arr : arrs) {
+      if (arr.length == 0) {
+        continue;
+      }
+      int end = arr.length;
+      System.arraycopy(arr, 0, result, start, end);
+      start += end;
+    }
+    
+    return result;
+  }
+
+  /**
+   * Merge a series of arrays into a single array in order. Used to concatenate
+   * all contiguous arrays in a data map. If the list is empty, an empty array
+   * is returned. If the list has one object, that object is returned. Otherwise
+   * a new array is constructed holding all the inputted arrays at once. The
+   * size of the combined array is equal to the total length of all arrays in
+   * the list.
+   * @param arrs List of arrays to merge all together into a single array
+   * @return Single array holding each array's data in sequence.
+   */
+  public static double[] concatAll(List<double[]> arrs) {
+    
+    if (arrs.size() == 0) {
+      return new double[]{};
+    }
+    
+    if (arrs.size() == 1) {
+      return arrs.get(0);
+    }
+    
+    int len = 0;
+    for (double[] arr : arrs) {
+      len += arr.length;
+    }
+    
+    double[] result = new double[len];
+    int start = 0;
+    for (double[] arr : arrs) {
+      if (arr.length == 0) {
+        continue;
+      }
+      int end = arr.length;
+      System.arraycopy(arr, 0, result, start, end);
+      start += end;
+    }
+    
+    return result;
+  }
 
   /**
    * Initial driver for the decimation utility
@@ -55,7 +127,7 @@ public class TimeSeriesUtils {
    * @param src The source frequency as interval between samples (microseconds)
    * @return A timeseries decimated to the correct frequency
    */
-  public static List<Number> decimate(List<Number> data, long src, long tgt){
+  public static double[] decimate(double[] data, long src, long tgt){
 
     // long tgt = ONE_HZ_INTERVAL; // target frequency
     // a sample lower than 1Hz frq has longer time between samples
@@ -83,35 +155,12 @@ public class TimeSeriesUtils {
     // with 1Hz that comes out as a ratio of 5/2, which won't
     // downsample neatly in some cases so we would first upsample,
     // filter out any noise terms, then downsample
-    List<Number> upped = upsample(data,upf);
-    List<Number> lpfed = lowPassFilter(upped, higherFreq, lowerFreq);
-    List<Number> down = downsample(lpfed,dnf);
+    double[] upped = upsample(data,upf);
+    double[] lpfed = lowPassFilter(upped, higherFreq, lowerFreq);
+    double[] down = downsample(lpfed,dnf);
 
     return down;
 
-  }
-
-  /**
-   * Remove the mean from some data
-   * @param dataSet timeseries array, double values
-   * @return same array but with the mean removed
-   */
-  public static double[] demean(double[] dataSet) {
-    
-    List<Number> dataToProcess = new ArrayList<Number>();
-    
-    for (double number : dataSet) {
-      dataToProcess.add(number);
-    }
-    
-    TimeSeriesUtils.demeanInPlace(dataToProcess);
-    
-    double[] out = new double[dataSet.length];
-    for (int i = 0; i < out.length; ++i) {
-      out[i] = dataToProcess.get(i).doubleValue();
-    }
-    return out;
-    
   }
 
   /**
@@ -119,8 +168,8 @@ public class TimeSeriesUtils {
    * @param dataSet
    * @return timeseries as numeric list with previous mean subtracted
    */
-  public static List<Number> demean(List<Number> dataSet) {
-    List<Number> dataOut = new ArrayList<Number>(dataSet);
+  public static double[] demean(double[] dataSet) {
+    double[] dataOut = dataSet.clone();
     TimeSeriesUtils.demeanInPlace(dataOut);
     return dataOut;
   }
@@ -130,29 +179,28 @@ public class TimeSeriesUtils {
    * This is a necessary step in calculating the power-spectral density.
    * @param dataSet The data to have the mean removed from.
    */
-  public static void demeanInPlace(List<Number> dataSet) {
+  public static void demeanInPlace(double[] dataSet) {
     
     // I'm always getting the demeaning tasks, huh?
     
-    if(dataSet.size() == 0) return; // shouldn't happen but just in case
+    if(dataSet.length == 0) return; // shouldn't happen but just in case
     
     double mean = 0.0;
     
-    for(Number data : dataSet) {
-      mean += data.doubleValue();
+    for(double data : dataSet) {
+      mean += data;
     }
     
-    mean /= dataSet.size();
+    mean /= dataSet.length;
     
-    for(int i = 0; i < dataSet.size(); ++i) {
+    for(int i = 0; i < dataSet.length; ++i) {
       // iterate over index rather than for-each cuz we must replace data
-      // ugly syntax because numeric data types are immutable
-      dataSet.set(i, dataSet.get(i).doubleValue() - mean);
+      dataSet[i] -= mean;
     }
     
     // test shows this works as in-place method
   }
-
+  
   /**
    * Linear detrend applied to an array of doubles rather than a list.
    * This operation is not done in-place.
@@ -193,7 +241,7 @@ public class TimeSeriesUtils {
     
     return detrended;
   }
-
+  
   /**
    * In-place subtraction of trend from each point in an incoming data set.
    * This is a necessary step in calculating the power-spectral density.
@@ -240,11 +288,11 @@ public class TimeSeriesUtils {
    * @param factor The factor to decrease the size by
    * @return The downsampled series
    */
-  public static List<Number> downsample(List<Number> data, int factor){
+  public static double[] downsample(double[] data, int factor){
 
-    List<Number> downsamp = Arrays.asList(new Number[data.size()/factor]);
-    for(int i=0; i < downsamp.size(); i++){
-      downsamp.set( i, data.get(i*factor) ); 
+    double[] downsamp = new double[data.length/factor];
+    for(int i=0; i < downsamp.length; i++){
+      downsamp[i] = data[i*factor]; 
     }
 
     return downsamp;
@@ -332,49 +380,17 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Return the locations of gaps in loaded data
-   * @param data Pair, first value is long representing interval and the
-   * second value is a map from longs representing time of a data sample
-   * to a numeric type representing the recorded value at that time
-   * @return Paired values representing the start and end points of time ranges
-   * where no data was available in the map
+   * Used to quickly get the first data in a file. This is useful if loading in
+   * data from a file that is known to not be multiplexed (i.e., containing
+   * only the data from a single channel).
+   * @param filename Filename of miniSEED data to load in
+   * @return Datablock representing the data inside the miniSEED
+   * @throws FileNotFoundException if given file from filename cannot be read
    */
-  public static 
-  List<Pair<Long, Long>> getGaps(Pair<Long, Map<Long, Number>> data) {
-    List<Pair<Long, Long>> gapList = new ArrayList<Pair<Long, Long>>();
-    
-    long interval = data.getFirst();
-    List<Long> times = new ArrayList<Long>( data.getSecond().keySet() );
-    Collections.sort(times);
-
-    for (int i = 0; i < times.size(); ++i) {
-      long timeNow = times.get(i);
-      if ( (i + 1) < times.size() ) {
-        long timeNext = times.get(i + 1);
-        // is there a discrepancy, and is it big enough for us to care?
-        if (timeNext - timeNow != interval) {
-          
-          if (timeNext - timeNow < interval / 2) {
-            System.out.println("SKIPPING POSSIBLE REPEATED VALUE");
-            continue;
-          }
-          
-          // it's a gap if it's more than twice the interval size
-          if (timeNext - timeNow  > interval * 2) {
-            gapList.add( new Pair<Long, Long>(timeNow, timeNext) );
-          }
-
-          // long gap = timeNext - timeNow;
-          // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
-          // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
-          while (timeNext - timeNow > interval * 2) {
-            timeNow += interval;
-          }
-        }
-      }
-    }
-    
-    return gapList;
+  public static DataBlock getFirstTimeSeries(String filename) 
+      throws FileNotFoundException {
+    String filter = getMplexNameList(filename).get(0);
+    return getTimeSeries(filename, filter);
   }
   
   /**
@@ -449,61 +465,6 @@ public class TimeSeriesUtils {
 
     return dataNames;
   }
-  
-  /**
-   * Get all contiguous ranges of data from a read-in time-value map
-   * @param data Pair, first value is long representing interval and the
-   * second value is a map from longs representing time of a data sample
-   * to a numeric type representing the recorded value at that time
-   * @return List of paired longs, representing the start and end times
-   * in microseconds of each contiguous range in the map
-   */
-  public static List<Pair<Long, Long>> 
-  getRanges(Pair<Long, Map<Long, Number>> data) {
-    
-    List<Pair<Long, Long>> gapList = getGaps(data);
-    
-    List<Long> times = new ArrayList<Long>( data.getSecond().keySet() );
-    Collections.sort(times);
-    
-    List<Pair<Long, Long>> contiguous = new ArrayList<Pair<Long, Long>>();
-    
-    // PairComparator sorts the gaps by start time
-    Collections.sort(gapList, new StartTimeComparator() );
-    long start = times.get(0);
-    long end = times.get( times.size() - 1 );
-    
-    if (gapList.size() == 0) {
-      contiguous.add( new Pair<Long, Long>(start, end) );
-      return contiguous;
-    }
-    
-    contiguous.add( new Pair<Long, Long>(start, gapList.get(0).getFirst() ) );
-    
-    for (int i = 0; i < gapList.size() - 1; ++i) {
-      contiguous.add( 
-          new Pair<Long, Long>( 
-              gapList.get(i).getSecond(), 
-              gapList.get(i + 1).getFirst() ) );
-    }
-    
-    Long last = gapList.get( gapList.size() - 1).getSecond();
-    contiguous.add( new Pair<Long, Long>(last, end) );
-    Collections.sort(contiguous, new StartTimeComparator() );
-    return contiguous;
-  }
-
-  /**
-   * Get range of contiguous data blocks in a file
-   * @param file Seed file to read in
-   * @param filter SNCL data representing relevant timeseries
-   * @return List of regions of data within which no time gaps exist
-   * @throws FileNotFoundException If file does not exist
-   */
-  public static List<Pair<Long, Long>> getRanges(String file, String filter) 
-      throws FileNotFoundException {
-    return getRanges( getTimeSeriesMap(file, filter) );
-  }
 
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
@@ -526,15 +487,13 @@ public class TimeSeriesUtils {
 
     // XYSeries xys = null;
     DataBlock db = null;
-    Pair<Long, Map<Long, Number>> intervalSeriesMapPair = 
+    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair = 
         getTimeSeriesMap(filename, filter);
-    List<Pair<Long, Long>> gaps = getGaps(intervalSeriesMapPair);
     db = mapToTimeSeries(intervalSeriesMapPair, filter);
-    db.setGapLocations(gaps);
     return db;
 
   }
-
+  
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
    * list of Java numerics, which can be shorts, floats, doubles, or longs,
@@ -555,11 +514,9 @@ public class TimeSeriesUtils {
       throws FileNotFoundException {
     
     DataBlock db = null;
-    Pair<Long, Map<Long, Number>> intervalSeriesMapPair = 
+    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair = 
         getTimeSeriesMap(filename, filter);
-    List<Pair<Long, Long>> gaps = getGaps(intervalSeriesMapPair);
     db = mapToTimeSeries(intervalSeriesMapPair, filter, range);
-    db.setGapLocations(gaps);
     return db;
   }
 
@@ -573,13 +530,14 @@ public class TimeSeriesUtils {
    * points from each given time value in the miniseed records
    * @throws FileNotFoundException if given file from filename cannot be read
    */
-  public static Pair<Long, Map<Long, Number>>
+  public static Pair<Long, Map<Long, double[]>>
    getTimeSeriesMap(String filename, String filter) 
       throws FileNotFoundException {
 
     long interval = 0L;
     DataInputStream dis;
-    Map<Long, Number> timeMap = new HashMap<Long, Number>();
+    
+    Map<Long, double[]> timeListMap = new HashMap<Long, double[]>();
     
     int byteSize = 512;
     try {
@@ -605,21 +563,21 @@ public class TimeSeriesUtils {
               continue; // skip to next seedRecord
             }
 
-            // byte af = dh.getActivityFlags();
-            // byte correctionFlag = 0b00000010; // is there a time correction?
-            // int correction = 0;
-            // if ( (af & correctionFlag) != 0 ) {
-            //   correction = dh.getTimeCorrection();
-            // }
-
+            byte af = dh.getActivityFlags();
+            byte correctionFlag = 0b00000010; // is there a time correction?
+            int correction = 0;
+            if ( (af & correctionFlag) != 0 ) {
+              correction = dh.getTimeCorrection();
+            }
+            if (correction > 0) {
+              System.out.println("Time correction? " + correction);
+            }
             Btime bt = dh.getStartBtime();
 
-            // convert Btime to microseconds first as milliseconds
+            // convert Btime to milliseconds
             long start = bt.convertToCalendar().getTimeInMillis();
-
-            // .1 ms = 100 microseconds
-            start *= 1000;
-            // start += correction;
+            start += correction / 10; // correction in tenths of millis
+            //start = (start * 10) + bt.getTenthMilli();
 
             int fact = dh.getSampleRateFactor();
             int mult = dh.getSampleRateMultiplier();
@@ -641,38 +599,39 @@ public class TimeSeriesUtils {
             // otherwise the decompressed data gets converted (cloned) as
             // the other type instead
             int dataType = decomp.getType();
-            long timeOfData = start;
+            double[] values = new double[dr.getHeader().getNumSamples()];
 
             switch (dataType) {
             case B1000Types.INTEGER:
               int[] decomArrayInt = decomp.getAsInt();
-              for (int dataPoint : decomArrayInt ) {
-                timeMap.put(timeOfData,dataPoint);
-                timeOfData += interval;
+              for (int i = 0; i < decomArrayInt.length; ++i) {
+                Number dataPoint = decomArrayInt[i]; 
+                values[i] = dataPoint.doubleValue();
               }
               break;
             case B1000Types.FLOAT:
               float[] decomArrayFlt = decomp.getAsFloat();
-              for (float dataPoint : decomArrayFlt ) {
-                timeMap.put(timeOfData,dataPoint);
-                timeOfData += interval;
+              for (int i = 0; i < decomArrayFlt.length; ++i) {
+                Number dataPoint = decomArrayFlt[i]; 
+                values[i] = dataPoint.doubleValue();
               }
               break;
             case B1000Types.SHORT:
               short[] decomArrayShr = decomp.getAsShort();
-              for (short dataPoint : decomArrayShr ) {
-                timeMap.put(timeOfData,dataPoint);
-                timeOfData += interval;
+              for (int i = 0; i < decomArrayShr.length; ++i) {
+                Number dataPoint = decomArrayShr[i]; 
+                values[i] = dataPoint.doubleValue();
               }
               break;
             default:
               double[] decomArrayDbl = decomp.getAsDouble();
-              for (double dataPoint : decomArrayDbl ) {
-                timeMap.put(timeOfData,dataPoint);
-                timeOfData += interval;
+              for (int i = 0; i < decomArrayDbl.length; ++i) {
+                values[i] = decomArrayDbl[i];
               }
               break;
             }
+            
+            timeListMap.put(start, values);
 
           }
         } catch(EOFException e) {
@@ -698,7 +657,7 @@ public class TimeSeriesUtils {
       e.printStackTrace();
     }
 
-    return new Pair<Long, Map<Long, Number>>(interval, timeMap);
+    return new Pair<Long, Map<Long, double[]>>(interval, timeListMap);
   }
 
   /**
@@ -707,8 +666,8 @@ public class TimeSeriesUtils {
    * @param sps         Samples per second
    * @return            The filtered data
    */
-  public static List<Number> 
-  lowPassFilter(List<Number> timeseries, double sps, double corner)
+  public static double[] 
+  lowPassFilter(double[] timeseries, double sps, double corner)
   {
 
     double fl = 0.;
@@ -738,8 +697,8 @@ public class TimeSeriesUtils {
    * @param filter String with SNCL (station, network, channel, location) data
    * @return DataBlock with the given timeseries and metadata
    */
-  public static 
-  DataBlock mapToTimeSeries(Pair<Long, Map<Long, Number>> data, String filter) {
+  public static DataBlock 
+  mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter) {
     
     // use max range instead of a trim region
     // TODO: likely will need to change range in year 2038
@@ -750,25 +709,7 @@ public class TimeSeriesUtils {
     return mapToTimeSeries(data, filter, range);
     
   }
-  
-  /**
-   * Get actual start time of block being trimmed
-   * @param sortedTimes List of times that have data with them in a seed file
-   * NOTE THAT THESE MUST BE SORTED
-   * @param trimTo Lower bound of time of data to include in datablock
-   * @return First time above lower bound that has data defined for it
-   */
-  private static long getTrimmedStartTime(List<Long> sortedTimes, long trimTo) {
-    long start = trimTo;
-    for (long time : sortedTimes) {
-      if (time >= start) {
-        start = time;
-        break;
-      }
-    }
-    return start;
-  }
- 
+
   /**
    * Convert loaded in time-value map to contiguous timeseries over a given
    * range.
@@ -780,84 +721,19 @@ public class TimeSeriesUtils {
    * @return DataBlock consisting of timeseries data within given range
    */
   public static DataBlock 
-  mapToTimeSeries(Pair<Long, Map<Long, Number>> data, String filter, 
+  mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter, 
       Pair<Long, Long> range) {
     
-    long start = Math.min( range.getFirst(), range.getSecond() );
-    long end = Math.max( range.getFirst(), range.getSecond() );
-    
     long interval = data.getFirst();
-    Map<Long, Number> timeMap = data.getSecond();
+    Map<Long, double[]> timeMap = data.getSecond();
+    // TODO: trim timeMap according to range
     DataBlock db;
     
-    // get data mean
-    double mean = 0.;
-    for ( Number sample : timeMap.values() ) {
-      mean += sample.doubleValue();
-    }
-    
-    mean /= timeMap.values().size();
-
-    // now we have all the data in a convenient map timestamp -> value
-    // which we can then convert into an easy array
-    List<Long> times = new ArrayList<Long>( timeMap.keySet() );
-    Collections.sort(times);
-    
-    long blockStart = getTrimmedStartTime(times, start); 
-    // data can't start before first sample
-    // this is necessary since we use this value as start time of data block
-   
-    // read in data from the records as long as they exist
-    // if no data exists (there's a gap in the record), set value to 0
-    // this is done to handle cases where multiplexed files have non-matching
-    // gaps and similar issues that previous code was not able to handle
-
-    List<Number> timeList = new ArrayList<Number>();
-    
-    for (int i = 0; i < times.size(); ++i) {
-      long timeNow = times.get(i);
-      
-      if (timeNow < start) {
-        continue;
-      } else if (timeNow > end) {
-        break;
-      }
-      
-      // do a demean here so that we can add 0-values to empty points
-      // without those values affecting the removal of a DC offset later
-      timeList.add( timeMap.get(timeNow).doubleValue() );
-
-      if ( (i + 1) < times.size() ) {
-        long timeNext = times.get(i + 1);
-        // is there a discrepancy, and is it big enough for us to care?
-        if (timeNext - timeNow != interval) {
-          
-          if (timeNext - timeNow < interval / 2) {
-            System.out.println("SKIPPING POSSIBLE REPEATED VALUE");
-            continue;
-          }
-          
-          if (timeNext - timeNow > interval && 
-              timeNext - timeNow < interval * 1.75) {
-            System.out.println("CORRECTING SMALL TIME ROUNDING ERROR");
-            continue;
-          }
-          
-          while (timeNext - timeNow > interval) {
-            timeList.add(mean);
-            // why use mean value? puts the value in gaps as the center of
-            // data -- useful if the data has a large DC offset
-            timeNow += interval;
-          }
-        }
-      }
-    }
-    
-    db = new DataBlock(timeList, interval, filter, blockStart);
+    db = new DataBlock(timeMap, interval, filter);
     return db;
     
   }
-
+ 
   /** 
    * Scales data of an arbitrary range to lie within a [-1, 1] range
    * @param data Timeseries data
@@ -885,6 +761,11 @@ public class TimeSeriesUtils {
 
   }
 
+  /**
+   * Take a list of data and normalize it to the range [-1, 1].
+   * @param data List of samples to be normalized
+   * @return List of normalized samples
+   */
   public static List<Number> normalize(List<Number> data) {
     double max = Double.NEGATIVE_INFINITY;
     double min = Double.POSITIVE_INFINITY;
@@ -909,7 +790,7 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Rotates a north and east (known orthognal) set of data and produces a new
+   * Rotates a north and east (known orthogonal) set of data and produces a new
    * DataBlock along the north axis in the rotated coordinate system from
    * the given angle, clockwise (y' = y cos theta - x sin theta)
    * @param north Sensor assumed to point north
@@ -919,28 +800,51 @@ public class TimeSeriesUtils {
    * given angle, facing north
    */
   public static DataBlock rotate(DataBlock north, DataBlock east, double ang) {
-    DataBlock rotated = new DataBlock(north);
-    List<Number> northData = north.getData();
-    List<Number> eastData = east.getData();
-    List<Number> rotatedData = new ArrayList<Number>();
+    long start = north.getStartTime();
+    long interval = north.getInterval();
+    String name = north.getName();
+    
+    double[] northData = north.getData();
+    double[] eastData = east.getData();
+
+    DataBlock rotated = 
+        new DataBlock(rotate(northData, eastData, ang), interval, name, start);
+    return rotated;
+  }
+
+  /**
+   * Rotates a north and east (known orthogonal) timeseries and produces a new
+   * timeseries along the north axis in the rotated coordinate system from
+   * the given angle, clockwise (y' = y cos theta - x sin theta). Though the
+   * data given as input are not necessarily from a north-facing and 
+   * east-facing sensor, they are presumed to be orthogonal to each other.
+   * @param northData Timeseries data expected to point north
+   * @param eastData Timeseries assumed to point east, 
+   * orthogonal to north sensor
+   * @param ang Angle to rotate the data along
+   * @return New timeseries data rotated data along the
+   * given angle, facing north
+   */
+  public static double[] 
+  rotate(double[] northData, double[] eastData, double ang) {
+    double[] rotatedData = new double[northData.length];
 
     // clockwise rotation matrix!! That's why things are so screwy
     double sinTheta = Math.sin(ang);
     double cosTheta = Math.cos(ang);
 
-    for (int i = 0; i < northData.size(); ++i) {
-      rotatedData.add( 
-          northData.get(i).doubleValue() * cosTheta - 
-          eastData.get(i).doubleValue() * sinTheta );
+    for (int i = 0; i < northData.length; ++i) {
+      rotatedData[i] = 
+          northData[i] * cosTheta - 
+          eastData[i] * sinTheta;
     }
 
-    rotated.setData(rotatedData);
 
-    return rotated;
+    return rotatedData;
   }
 
   /**
-   * Rotates a north and east (known orthognal) set of data and produces a new
+   * Rotates a north and east (known orthogonal) set of data and produces a new
    * DataBlock along the east axis in the rotated coordinate system from
    * the given angle, clockwise (x' = x cos theta + y sin theta)
    * @param north Sensor assumed to point north
@@ -951,22 +855,39 @@ public class TimeSeriesUtils {
    */
   public static DataBlock rotateX(DataBlock north, DataBlock east, double ang) {
     DataBlock rotated = new DataBlock(east); // use east component metadata
-    List<Number> northData = north.getData();
-    List<Number> eastData = east.getData();
-    List<Number> rotatedData = new ArrayList<Number>();
+    double[] northData = north.getData();
+    double[] eastData = east.getData();
+    rotated.setData( rotateX(northData, eastData, ang) );
+    return rotated;
+  }
+
+  /**
+   * Rotates a north and east (known orthogonal) timeseries and produces a new
+   * timeseries along the east axis in the rotated coordinate system from
+   * the given angle, clockwise (x' = x cos theta + y sin theta). Though the
+   * data given as input are not necessarily from a north-facing and 
+   * east-facing sensor, they are presumed to be orthogonal to each other.
+   * @param northData Timeseries data expected to point north
+   * @param eastData Timeseries assumed to point east, 
+   * orthogonal to north sensor
+   * @param ang Angle to rotate the data along
+   * @return New timeseries data rotated data along the
+   * given angle, facing east.
+   */
+  public static double[]
+  rotateX(double[] northData, double[] eastData, double ang) {
+    double[] rotatedData = new double[northData.length];
 
     double sinTheta = Math.sin(ang);
     double cosTheta = Math.cos(ang);
 
-    for (int i = 0; i < northData.size(); ++i) {
-      rotatedData.add( 
-          eastData.get(i).doubleValue() * cosTheta + 
-          northData.get(i).doubleValue() * sinTheta );
+    for (int i = 0; i < northData.length; ++i) {
+      rotatedData[i] =  
+          eastData[i] * cosTheta + 
+          northData[i] * sinTheta;
     }
 
-    rotated.setData(rotatedData);
-
-    return rotated;
+    return rotatedData;
   }
 
   /**
@@ -977,19 +898,38 @@ public class TimeSeriesUtils {
    * @param factor The factor to increase the size by
    * @return The upsampled series
    */
-  public static List<Number> upsample(List<Number> data, int factor){
+  public static double[] upsample(double[] data, int factor){
 
-    List<Number> upsamp = new ArrayList<Number>();
+    int newLength = data.length * factor;
+    
+    double[] upsamp = new double[newLength];
 
-    for(int i = 0; i < data.size() * factor; ++i) {
-      upsamp.add( new Double(0.) );
-    }
-
-    for(int i = 0; i < data.size(); ++i){
-      upsamp.set( i*factor, data.get(i) ); // index, element
+    for(int i = 0; i < data.length; ++i){
+      upsamp[i*factor] = data[i]; // index, element
     }
 
     return upsamp;
+  }
+  
+  /**
+   * Checks to see if the sensor's calibration is wired positively or not
+   * (i.e., if the result of a step-calibration is upside-down)
+   * @return True if sign appears to be incorrect compared to expected step cal
+   */
+  public boolean needsSignFlip(List<Number> data) {
+    
+    double max = Math.abs( data.get(0).doubleValue() );
+    int idx = 0;
+    
+    for (int i = 1; i < data.size() / 2; ++i) {
+      if ( Math.abs( data.get(i).doubleValue() ) > max ) {
+        max = Math.abs( data.get(i).doubleValue() );
+        idx = i;
+      }
+    }
+    
+    return Math.signum( data.get(idx).doubleValue() ) < 0;
+    
   }
 
 }

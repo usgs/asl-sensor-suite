@@ -3,6 +3,13 @@ package asl.sensor.gui;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.RandDebugExperiment;
 
+/**
+ * Used to determine possible flaws in response choice or data deconvolution
+ * that may prevent the solver for the response parameters from converging in
+ * a randomized calibration experiment.
+ * @author akearns
+ *
+ */
 public class RandDebugPanel extends RandomizedPanel {
 
   /**

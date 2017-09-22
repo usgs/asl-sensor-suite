@@ -347,9 +347,9 @@ public class ResponsePanel extends ExperimentPanel {
         seriesColorMap.put(argName, toColor);
     }
     
-    argChart = buildChart(argSeries, xAxis, degreeAxis);
+    argChart = buildChart(argSeries, getXAxis(), degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
-    magChart = buildChart(magSeries, xAxis, yAxis);
+    magChart = buildChart(magSeries, getXAxis(), yAxis);
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
   }
 

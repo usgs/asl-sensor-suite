@@ -30,6 +30,8 @@ For those who wish to compile and run this program with Eclipse, run the command
 The program will default to looking for SEED files in the "data" subdirectory in the same folder the jar is, if it exists. It is possible to choose a different folder, which will become the new default folder when loading in additional files. It will not, however, persist after the program is closed.
 SEED files must have an intersecting time range, which will be displayed when multiple files are loaded in. The bars below the input plots can be used to select a narrower range of data to zoom in on. Loading in a SEED file that does not have any common time range with the other data will produce an error; to reset the loaded SEED files, they can either be unloaded individually with a corresponding remove button for that data, or all data can be cleared out with the 'clear all' button.
 
+Note that orange bars in the input plots indicate the existence of gaps in some of the input files, such as in the case of calibration sequences, which usually have gaps between each calibration operation. While this program does not prevent running calculations over regions of data which include gaps, it is advised to select regions of data which do not contain these gaps, as doing so can lead to undesirable behavior from the program and faulty results due to timing issues as a result of padding.
+
 The program also comes with a number of response files (in RESP format) embedded in the jar, selectable from a drop-down menu, that correspond to several common sensor configurations. It is also possible to load in other response files from the 'load custom response' option in a manner similar to SEED files described above, the default directory being the 'responses' folder in the same folder as the jar file. Note that clearing a SEED file also clears out the corresponding response.
 
 ### Output
@@ -66,6 +68,8 @@ Step calibration takes in a step input signal and the response to that signal fr
 
 The input files have a specific order: the step input signal must be placed first, though it does not use a response. The second input, then, is the output from the sensor of interest, and a response should be chosen to help guide the initial guess of the solver.
 
+Note that for the graphical output, the red curve represents the normalized step function used as input, the blue curve represents the calculated step gotten from deconvolving the response from the sensor output, and the green curve represents the calculated step using the best-fit response parameters. A good fit should have the green curve lined up as closely with the red curve as possible.
+
 #### Randomized calibration
 
 This function solves for poles to attempt to fit the response curve calculated from deconvolving the given calibration input from the sensor output. Low-frequency (the two lowest poles) and high-frequency (all other poles) are fitted to minimize the difference between the estimated response, based on the response specified for the sensor. The inputs follow the same structure as step calculation, though what response parameters are solved for is dependent on whether a high or low frequency calculation is chosen. Both the magnitude and argument (angle of the response curve along the real axis) of the response curve are displayed in plots, and saving the plot to an image will include both such plots.
@@ -74,13 +78,13 @@ When using embedded response files, it is strongly recommended to use an appropr
 
 Note that plots have been scaled in order to produce more representative fits of response curves. For high-frequency calibrations, the curves are all set to be equal to zero at 1 Hz; for low-frequency calibrations, this point occurs at 0.2 Hz.
 
-This function is still work-in-progress but has been tested with good results on several sensors.
-
 Older high-frequency cals may produce lots of noise on the high-frequency end confounding the solver, especially depending on how the calibration was produced.
 This program includes a second checker tab which does not run the solver for 
 response parameters, but can be used to determine whether or not the calculated response from the sensor output is good enough to be used for the solver. 
 Noisy calibrations or ones whose output otherwise varies significantly from the given nominal response may take a long time to solve or produce errors that lead to the solver being unable to converge on any solution. 
 IT IS STRONGLY ENCOURAGED TO RUN THE NO-SOLVER RANDOM CAL PANEL ON DATA THAT PRODUCES A CONVERGENCE ERROR DURING SOLVING IN ORDER TO DIAGNOSE POTENTIAL ISSUES WITH THE CALIBRATION ITSELF.
+
+Note also that for the graphical output, the red curve is the response curve of the RESP loaded into the program, the blue curve is the calculated response of the sensor by deconvolving the calibration input from the sensor output, and the green curve is a response curve using the best-fit poles and zeros. A good fit is one in which the green curve lines up with the blue curve as much as possible.
 
 #### Azimuth
 
@@ -101,7 +105,3 @@ This program also allows for extracting a response file embedded in the program,
 ### Further Work / Known Issues
 
 Currently the application does its best to show the complete range among all data, there are some issues in doing so. If there are three SEED files loaded and the first two SEED files have more data than the third, then when switching to a test using only two inputs, the entire range of the first two sensors should be visible. However, if there are loaded inputs not included in a test and a new file is loaded in one of the input slots, it must still have a time range in common with the unused inputs. While not ideal behavior, it prevents additional bugs from handling non-matching time ranges if a test using the non-active data is selected again.
-
-## DISCLAIMER
-
-This software is preliminary or provisional and is subject to revision. It is being provided to meet the need for timely best science. The software has not received final approval by the U.S. Geological Survey (USGS). No warranty, expressed or implied, is made by the USGS or the U.S. Government as to the functionality of the software and related material nor shall the fact of release constitute any such warranty. The software is provided on the condition that neither the USGS nor the U.S. Government shall be held liable for any damages resulting from the authorized or unauthorized use of the software.

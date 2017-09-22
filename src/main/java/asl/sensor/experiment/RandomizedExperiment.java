@@ -1,13 +1,13 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
@@ -20,7 +20,6 @@ import org.apache.commons.math3.linear.DiagonalMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.optim.ConvergenceChecker;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -54,7 +53,9 @@ import asl.sensor.utils.NumericUtils;
 public class RandomizedExperiment 
 extends Experiment implements ParameterValidator {
 
-  private static final double DELTA = 1E-7;
+  private static final double DELTA = 1E-11;
+  public static final double PEAK_MULTIPLIER = // 0.8;
+      NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
   
   // To whomever has to maintain this code after I'm gone:
   // I'm sorry, I'm so so sorry
@@ -80,11 +81,12 @@ extends Experiment implements ParameterValidator {
   private double[] freqs;
   private double nyquist;
   
+  private boolean freqSpace;
+  
   private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
   
   private int normalIdx; // location of value to set to 0 in curves for scaling
   private int numZeros; // how many entries in parameter vector define zeros
-  private int sensorOutIdx; // location to load response from?
   private int numIterations; // how much the solver ran
   
   public RandomizedExperiment() {
@@ -92,6 +94,7 @@ extends Experiment implements ParameterValidator {
     lowFreq = false;
     normalIdx = 0;
     numIterations = 0;
+    freqSpace = true;
   }
   
   /*
@@ -102,14 +105,11 @@ extends Experiment implements ParameterValidator {
   @Override
   protected void backend(DataStore ds) {
     
-    // construct response plot
-    DataBlock calib = ds.getXthLoadedBlock(1);
-    sensorOutIdx = ds.getXthFullyLoadedIndex(1);
+    normalIdx = 1;
+    numIterations = 0;
     
-    // if first data has response loaded erroneously, load in next data set
-    if (sensorOutIdx == 0) {
-      sensorOutIdx = ds.getXthFullyLoadedIndex(2);
-    }
+    // construct response plot
+    DataBlock calib = ds.getBlock(0);
     
     /*
     if ( ds.getBlock(sensorOutIdx).getName().equals( calib.getName() ) ) {
@@ -117,8 +117,10 @@ extends Experiment implements ParameterValidator {
     }
     */
 
-    DataBlock sensorOut = ds.getBlock(sensorOutIdx);
-    fitResponse = new InstrumentResponse( ds.getResponse(sensorOutIdx) );
+    DataBlock sensorOut = ds.getBlock(1);
+    fitResponse = new InstrumentResponse( ds.getResponse(1) );
+    
+    // System.out.println(calib.size() + ", " + sensorOut.size());
     
     dataNames.add( calib.getName() );
     dataNames.add( sensorOut.getName() );
@@ -132,16 +134,24 @@ extends Experiment implements ParameterValidator {
     // imaginary terms from the denominator due to multiplication with the
     // complex conjugate
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
-    
     // also, use those frequencies to get the applied response to input
+    FFTResult numeratorPSD, denominatorPSD;
+    if (false) { // clear out temporarily to see if Welch works ok (dead code)
+      numeratorPSD = FFTResult.spectralCalcMultitaper(sensorOut, calib);
+      denominatorPSD = FFTResult.spectralCalcMultitaper(calib, calib);
+    } else {
+      numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
+      denominatorPSD = FFTResult.spectralCalc(calib, calib);
+    }
     
-    FFTResult numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
-    FFTResult denominatorPSD = FFTResult.spectralCalc(calib, calib);
     freqs = numeratorPSD.getFreqs(); // should be same for both results
     
     // store nyquist rate of data because freqs will be trimmed down later
     nyquist = sensorOut.getSampleRate() / 2.;
-    nyquist += .5; // increasing to prevent issues with pole frequency rounding 
+    
+    // slight increase to prevent issues with pole frequency rounding 
+    // commented out in hopes that any issues related to it have been excised
+    // nyquist += .5; 
     
     // trim frequency window in order to restrict range of response fits
     double minFreq, maxFreq;
@@ -153,7 +163,7 @@ extends Experiment implements ParameterValidator {
     } else {
       minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
       // get up to .8 of nyquist rate, again due to noise
-      maxFreq = 0.8 * nyquist;
+      maxFreq = PEAK_MULTIPLIER * nyquist;
     }
     
     // now trim frequencies to in range
@@ -161,20 +171,19 @@ extends Experiment implements ParameterValidator {
     // use variable-size data structures to prevent issues with rounding
     // based on calculation of where minimum index should exist
     List<Double> freqList = new LinkedList<Double>();
-    Map<Double, Complex> numPSDMap = new HashMap<Double, Complex>();
-    Map<Double, Complex> denomPSDMap = new HashMap<Double, Complex>();
+    int startIdx = -1;
     for (int i = 0; i < freqs.length; ++i) {
       
       if (freqs[i] < minFreq) {
         continue;
+      } else if (startIdx < 0) {
+        startIdx = i;
       }
       if (freqs[i] > maxFreq) {
         break;
       }
       
       freqList.add(freqs[i]);
-      numPSDMap.put(freqs[i], numeratorPSD.getFFT()[i]);
-      denomPSDMap.put(freqs[i], denominatorPSD.getFFT()[i]);
     }
     
     double zeroTarget; // frequency to set all curves to zero at
@@ -189,17 +198,23 @@ extends Experiment implements ParameterValidator {
     int len = freqList.size(); // length of trimmed frequencies
     freqs = new double[len];
     // trim the PSDs to the data in the trimmed frequency range
-    Complex[] numeratorPSDVals = new Complex[len];
-    Complex[] denominatorPSDVals = new Complex[len];
+
+    int endIdx = startIdx + len;
+    // System.out.println("INDICES: " + startIdx + "," + endIdx);
+    Complex[] numeratorPSDVals = 
+        Arrays.copyOfRange(numeratorPSD.getFFT(), startIdx, endIdx);
+    Complex[] denominatorPSDVals = 
+        Arrays.copyOfRange(denominatorPSD.getFFT(), startIdx, endIdx);
     
     for (int i = 0; i < len; ++i) {
+      
       freqs[i] = freqList.get(i);
       
-      numeratorPSDVals[i] = numPSDMap.get(freqs[i]);
-      denominatorPSDVals[i] = denomPSDMap.get(freqs[i]);
+      // numeratorPSDVals[i] = numPSDMap.get(freqs[i]);
+      // denominatorPSDVals[i] = denomPSDMap.get(freqs[i]);
       
-      if ( freqs[i] == 1.0 || 
-          (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) {
+      if ( freqs[i] == zeroTarget || ( i > 0 &&
+          (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) ) {
         normalIdx = i;
       }
     }
@@ -216,7 +231,7 @@ extends Experiment implements ParameterValidator {
     Complex[] estResponse = new Complex[len];
     for (int i = 0; i < estResponse.length; ++i) {
       Complex numer = numeratorPSDVals[i];
-      Complex denom = denominatorPSDVals[i];
+      double denom = denominatorPSDVals[i].abs(); // phase is 0
       estResponse[i] = numer.divide(denom);
       // convert from displacement to velocity
       Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
@@ -274,8 +289,14 @@ extends Experiment implements ParameterValidator {
         
       }
       
-      calcMag.add(freqs[i], observedResult[i]);
-      calcArg.add(freqs[i], observedResult[argIdx]);
+      double xAxis;
+      if (freqSpace) {
+        xAxis = freqs[i];
+      } else {
+        xAxis = 1. / freqs[i];
+      }
+      calcMag.add(xAxis, observedResult[i]);
+      calcArg.add(xAxis, observedResult[argIdx]);
     }
     
     // want to set up weight-scaling for the input so rotation doesn't dominate
@@ -305,29 +326,34 @@ extends Experiment implements ParameterValidator {
     // System.out.println(maxMagWeight);
     
     // we have the candidate mag and phase, now to turn them into weight values
-    maxMagWeight = 1000. / maxMagWeight; // scale factor to weight over phase
-    maxArgWeight = 1./ maxArgWeight;
+    maxMagWeight = 1000. / maxMagWeight; // scale factor to weight over
+    if (maxArgWeight != 0.) {
+      maxArgWeight = 1./ maxArgWeight;
+    }
     
     // weight matrix
     double[] weights = new double[observedResult.length];
     for (int i = 0; i < estResponse.length; ++i) {
       int argIdx = i + estResponse.length;
-      // weights[i] = 1 / Math.pow(10, maxMagWeight);
-      // weights[i] = 10000;
-      double denom = 1.;
+      double denom;
       if (!lowFreq) {
-        // give frequencies below 1 less weight in high-freq calibrations
-        denom = 100;
+        if (freqs[i] < 1) {
+          denom = 1; // weight everything up to 1Hz equally
+        } else {
+          denom = freqs[i]; // set everything (else) to 1/f weighting
+        }
+      } else {
+        if (freqs[i] < .01) {
+          denom = freqs[i];
+        } else {
+          denom = .01;
+        }
+        
       }
-      if (freqs[i] > 1.) {
-        denom = freqs[i];
-      }
-      if (freqs[i] > 10.) {
-        // for high enough freqs, make weighting (100/f^3) rather than 1/f;
-        denom *= Math.pow(freqs[i], 2) / 100;
-      }
-      weights[i] = maxMagWeight / denom;
+
       weights[argIdx] = maxArgWeight / denom;
+      weights[i] = maxMagWeight / denom;
+
     }
     
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
@@ -356,8 +382,6 @@ extends Experiment implements ParameterValidator {
     
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
       
-      int numIterations = 0;
-      
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         ++numIterations;
         fireStateChange("Fitting, iteration count " + numIterations);
@@ -368,12 +392,9 @@ extends Experiment implements ParameterValidator {
       
     };
     
-    ConvergenceChecker<LeastSquaresProblem.Evaluation> svc = 
-        new EvaluationRmsChecker(1.0E-12, 1.0E-12);
-    
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-12).
-        withParameterRelativeTolerance(1.0E-12);
+        withCostRelativeTolerance(1.0E-15).
+        withParameterRelativeTolerance(1.0E-10);
     
     name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
@@ -391,7 +412,6 @@ extends Experiment implements ParameterValidator {
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
-        checker(svc).
         build();
     
     fireStateChange("Built least-squares problem; evaluating intial guess...");
@@ -427,12 +447,12 @@ extends Experiment implements ParameterValidator {
     
     // double[] initResidList = initEval.getResiduals().toArray();
     // double[] fitResidList = optimum.getResiduals().toArray();
-    XYSeries initResidMag = new XYSeries("Amplitude of init. residual");
-    XYSeries initResidPhase = new XYSeries("Phase of init. residual");
-    XYSeries fitResidMag = new XYSeries("Amplitude of fit residual");
-    XYSeries fitResidPhase = new XYSeries("Phase of fit residual");
+    XYSeries initResidMag = new XYSeries("Percent error of init. amplitude");
+    XYSeries initResidPhase = new XYSeries("Diff. with init phase");
+    XYSeries fitResidMag = new XYSeries("Percent error of fit amplitude");
+    XYSeries fitResidPhase = new XYSeries("Diff with fit phase");
     
-    InstrumentResponse init = ds.getResponse(sensorOutIdx);
+    // InstrumentResponse init = ds.getResponse(sensorOutIdx);
     
     fitResponse = fitResponse.buildResponseFromFitVector(
         fitParams, lowFreq, numZeros);
@@ -442,11 +462,18 @@ extends Experiment implements ParameterValidator {
     fireStateChange("Compiling data...");
     
     for (int i = 0; i < freqs.length; ++i) {
+      double xValue;
+      if (freqSpace) {
+        xValue = freqs[i];
+      } else {
+        xValue = 1. / freqs[i];
+      }
+      
       int argIdx = freqs.length + i;
-      initMag.add(freqs[i], initialValues[i]);
-      initArg.add(freqs[i], initialValues[argIdx]);
-      fitMag.add(freqs[i], fitValues[i]);
-      fitArg.add(freqs[i], fitValues[argIdx]);
+      initMag.add(xValue, initialValues[i]);
+      initArg.add(xValue, initialValues[argIdx]);
+      fitMag.add(xValue, fitValues[i]);
+      fitArg.add(xValue, fitValues[argIdx]);
       
       // Complex scaledInit = initTerms[i].subtract(init1Hz);
       // Complex scaledFit = fitTerms[i].subtract(fit1Hz);
@@ -458,14 +485,15 @@ extends Experiment implements ParameterValidator {
       if (obsAmpDbl == 0.) {
         obsAmpDbl = Double.MIN_VALUE;
       }
+      
       double errInitMag = 100. * (initAmpNumer - obsAmpDbl) / obsAmpDbl; 
       double errFitMag = 100. * (fitAmpNumer - obsAmpDbl) / obsAmpDbl; 
-      initResidMag.add(freqs[i], errInitMag);
-      fitResidMag.add(freqs[i], errFitMag);
+      initResidMag.add(xValue, errInitMag);
+      fitResidMag.add(xValue, errFitMag);
       
       double observedPhase = observedResult[argIdx];
-      initResidPhase.add(freqs[i], initialValues[argIdx] - observedPhase);
-      fitResidPhase.add(freqs[i], fitValues[argIdx] - observedPhase);
+      initResidPhase.add(xValue, initialValues[argIdx] - observedPhase);
+      fitResidPhase.add(xValue, fitValues[argIdx] - observedPhase);
     }
     
     XYSeriesCollection xysc = new XYSeriesCollection();
@@ -543,6 +571,12 @@ extends Experiment implements ParameterValidator {
     double argScale = NumericUtils.atanc(scaleBy);
     
     double phiPrev = 0.;
+    if (lowFreq) {
+      int argIdx = appliedCurve.length / 2;
+      double startAngle = NumericUtils.atanc(appliedCurve[argIdx]);
+      // note that we are still in units of radians at this point
+      phiPrev = startAngle; // hopefully fix issue with phase scaling
+    }
     
     // System.out.println(appliedCurve[0]);
     // now, do scaling and create the result vector (or, rather, array)
@@ -598,7 +632,15 @@ extends Experiment implements ParameterValidator {
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    return getPoleSubList(fitPoles);
+    Set<Complex> unchanged = new HashSet<Complex>(fitPoles);
+    unchanged.retainAll( new HashSet<Complex>(initialPoles) );
+    List<Complex> poles = new ArrayList<Complex>();
+    for (Complex pole : fitPoles) {
+      if ( !unchanged.contains(pole) ) {
+        poles.add(pole);
+      }
+    }
+    return poles;
   }
   
   /**
@@ -614,7 +656,16 @@ extends Experiment implements ParameterValidator {
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    return getZeroSubList(fitZeros);
+    Set<Complex> unchanged = new HashSet<Complex>(fitZeros);
+    unchanged.retainAll( new HashSet<Complex>(initialZeros) );
+    List<Complex> zeros = new ArrayList<Complex>();
+    for (Complex zero : fitZeros) {
+      if( !unchanged.contains(zero) ) {
+        zeros.add(zero);
+      }
+    }
+    NumericUtils.complexMagnitudeSorter(zeros); 
+    return zeros;
   }
   
   /**
@@ -622,7 +673,15 @@ extends Experiment implements ParameterValidator {
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    return getPoleSubList(initialPoles);
+    Set<Complex> unchanged = new HashSet<Complex>(fitPoles);
+    unchanged.retainAll( new HashSet<Complex>(initialPoles) );
+    List<Complex> poles = new ArrayList<Complex>();
+    for (Complex pole : initialPoles) {
+      if ( !unchanged.contains(pole) ) {
+        poles.add(pole);
+      }
+    }
+    return poles;
   }
   
   /**
@@ -630,7 +689,16 @@ extends Experiment implements ParameterValidator {
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    return getZeroSubList(initialZeros);
+    Set<Complex> unchanged = new HashSet<Complex>(fitZeros);
+    unchanged.retainAll( new HashSet<Complex>(initialZeros) );
+    List<Complex> zeros = new ArrayList<Complex>();
+    for (Complex zero : initialZeros) {
+      if( !unchanged.contains(zero) ) {
+        zeros.add(zero);
+      }
+    }
+    NumericUtils.complexMagnitudeSorter(zeros); 
+    return zeros;
   }
   
   /**
@@ -640,7 +708,7 @@ extends Experiment implements ParameterValidator {
   public double getInitResidual() {
     return initialResidual;
   }
-
+  
   /**
    * Get the number of times the algorithm iterated to produce the optimum
    * response fit, from the underlying least squares solver
@@ -651,32 +719,6 @@ extends Experiment implements ParameterValidator {
   }
   
   /**
-   * Trim down the poles to those within the range of those being fit
-   * @param polesToTrim Either fit or input poles, sorted by frequency
-   * @return Sublist of data to be fed to output reports
-   */
-  private List<Complex> getPoleSubList(List<Complex> polesToTrim) {
-    List<Complex> subList = new ArrayList<Complex>();  
-    
-    double peak = .8 * nyquist;
-    
-    for (int i = 0; i < polesToTrim.size(); ++i) {
-      double freq = initialPoles.get(i).abs() / NumericUtils.TAU;
-      
-      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > peak ) ) {
-        break;
-      }
-      if (!lowFreq && freq < 1.) {
-        continue; // ignore b
-      }
-      
-      subList.add( polesToTrim.get(i) );
-    }
-    
-    return subList;
-  }
-
-  /**
    * Used to determine whether to run the solver or not; disabling the solver
    * is useful for determining the quality of a given calibration function
    * @return True if the solver is to be run
@@ -684,7 +726,7 @@ extends Experiment implements ParameterValidator {
   public boolean getSolverState() {
     return SKIP_SOLVING;
   }
-  
+
   /**
    * Get the values used to weight the residual calculation function.
    * The first value is the magnitude weighting, the second is phase.
@@ -692,27 +734,6 @@ extends Experiment implements ParameterValidator {
    */
   public double[] getWeights() {
     return new double[]{maxMagWeight, maxArgWeight};
-  }
-  
-  private List<Complex> getZeroSubList(List<Complex> zerosToTrim) {
-    List<Complex> subList = new ArrayList<Complex>();
-    
-    double peak = .8 * nyquist;
-    
-    for (int i = 0; i < zerosToTrim.size(); ++i) {
-      double freq = initialZeros.get(i).abs() / NumericUtils.TAU;
-      
-      if ( ( lowFreq && freq > 1. ) || ( !lowFreq && freq > peak ) ) {
-        break;
-      }
-      if (!lowFreq && freq < 1. || freq == 0.) {
-        continue;
-      }
-      
-      subList.add( zerosToTrim.get(i) );
-    }
-    
-    return subList;
   }
   
   @Override
@@ -799,7 +820,7 @@ extends Experiment implements ParameterValidator {
   public int[] listActiveResponseIndices() {
     // NOTE: not used by corresponding panel, overrides with active indices
     // of components in the combo-box
-    return new int[]{sensorOutIdx};
+    return new int[]{1};
   }
   
   /**
@@ -810,6 +831,14 @@ extends Experiment implements ParameterValidator {
    */
   public void setLowFreq(boolean lowFreq) {
     this.lowFreq = lowFreq;
+  }
+  
+  /**
+   * Set whether or not to plot in units of frequency (Hz) or period (s)
+   * @param setFreq true if plots should be in frequency units (Hz)
+   */
+  public void useFreqUnits(boolean setFreq) {
+    freqSpace = setFreq;
   }
  
   /**
@@ -825,8 +854,8 @@ extends Experiment implements ParameterValidator {
       double value = poleParams.getEntry(i);
       if (value > 0 && (i % 2) == 0) {
         // even index means this is a real-value vector entry
-        // if it's above zero, set it back to zero
-        poleParams.setEntry(i, 0.);
+        // if it's above zero, put it back below zero
+        poleParams.setEntry(i, -Double.MIN_VALUE);
       } else if (value > 0) {
         // this means the value is complex, we can multiply it by -1
         // this is ok for complex values since their conjugate is implied

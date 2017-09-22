@@ -159,13 +159,59 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
 
   }
   
+  /**
+   * Saves data collected from an experiment to. Files will be written into
+   * a specified folder, with the format "Chart#.png" and all metadata in a
+   * single file referred to as "outputData.txt". 
+   * @param folderName Folder to write data into, presumably something like a 
+   * user's home directory, but inside a subdirectory of format
+   * "test_results/[Experiment-specified filename]".
+   * @param text Text output from an experiment
+   * @param charts Array of charts produced from the experiment
+   */
+  public static void 
+  saveExperimentData(String folderName, String text, JFreeChart[] charts) {
+    // start in the folder the pdf is saved, add data into a new
+    // subfolder for calibration data
+    
+    File folder = new File( folderName.toString() );
+    if ( !folder.exists() ) {
+      System.out.println("Writing directory " + folderName);
+      folder.mkdirs();
+    }
+    
+    String textName = folderName + "/outputData.txt";
+    
+    try {
+      PrintWriter out = new PrintWriter(textName);
+      out.println(text);
+      out.close();
+    } catch (FileNotFoundException e2) {
+      System.out.println("Can't write the text");
+      e2.printStackTrace();
+    }
+    
+    for (int i = 0; i < charts.length; ++i) {
+      JFreeChart chart = charts[i];
+      String plotName = folderName + "/chart" + (i + 1) + ".png";
+      BufferedImage chartImage = 
+          ReportingUtils.chartsToImage(1280, 960, chart);
+      File plotPNG = new File(plotName);
+      try {
+        ImageIO.write(chartImage, "png", plotPNG);
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+  }
   private JFileChooser fc; // loads in files based on parameter
   private InputPanel inputPlots;
   private JTabbedPane tabbedPane; // holds set of experiment panels
   private JButton generate, savePDF; // run all calculations
+
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
-
+  
   /**
    * Creates the main window of the program when called
    * (Three main panels: the top panel for displaying the results
@@ -212,15 +258,16 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     
     this.add(mainSplit, c);
     
-    c.fill = GridBagConstraints.BOTH;
+    c.fill = GridBagConstraints.VERTICAL;
     c.gridx = 0; c.gridy = 1;
     c.weightx = 1.0; c.weighty = 0.0;
     c.gridwidth = 1;
     
     // now add the buttons
-    savePDF = new JButton("Save input and output plots (PDF)");
+    savePDF = new JButton("Generate PDF report from current test");
     savePDF.setEnabled(false);
     savePDF.addActionListener(this);
+    c.anchor = GridBagConstraints.EAST;
     this.add(savePDF, c);
     c.gridx += 1;
 
@@ -228,8 +275,9 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     generate.setEnabled(false);
     generate.addActionListener(this);
     d = generate.getPreferredSize();
-    d.setSize( d.getWidth(), d.getHeight() * 2 );
-    generate.setPreferredSize(d);
+    d.setSize( d.getWidth() * 1.5, d.getHeight() * 1.5 );
+    generate.setMinimumSize(d);
+    c.anchor = GridBagConstraints.WEST;
     this.add(generate, c);
     
     fc = new JFileChooser();
@@ -289,13 +337,13 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
         
         File selFile = fc.getSelectedFile();
         saveDirectory = selFile.getParent();
-        if( !selFile.getName().endsWith( ext.toLowerCase() ) ) {
+        if( !selFile.getName().toLowerCase().endsWith(ext) ) {
           selFile = new File( selFile.getName() + ext);
         }
         
-        StringBuilder folderName = new StringBuilder( selFile.getParent() );
+        StringBuilder folderName = new StringBuilder(saveDirectory);
         folderName.append("/test_results/");
-        folderName.append( selFile.getName().replace(".pdf","") );
+        folderName.append( selFile.getName().replace(ext,"") );
         
         saveExperimentData( folderName.toString(), text, charts );
         
@@ -304,52 +352,6 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       return;
     }
 
-  }
-  
-  /**
-   * Saves data collected from an experiment to. Files will be written into
-   * a specified folder, with the format "Chart#.png" and all metadata in a
-   * single file referred to as "outputData.txt". 
-   * @param folderName Folder to write data into, presumably something like a 
-   * user's home directory, but inside a subdirectory of format
-   * "test_results/[Experiment-specified filename]".
-   * @param text Text output from an experiment
-   * @param charts Array of charts produced from the experiment
-   */
-  public static void 
-  saveExperimentData(String folderName, String text, JFreeChart[] charts) {
-    // start in the folder the pdf is saved, add data into a new
-    // subfolder for calibration data
-    
-    File folder = new File( folderName.toString() );
-    if ( !folder.exists() ) {
-      System.out.println("Writing directory " + folderName);
-      folder.mkdirs();
-    }
-    
-    String textName = folderName + "/outputData.txt";
-    
-    try {
-      PrintWriter out = new PrintWriter(textName);
-      out.println(text);
-      out.close();
-    } catch (FileNotFoundException e2) {
-      System.out.println("Can't write the text");
-      e2.printStackTrace();
-    }
-    
-    for (int i = 0; i < charts.length; ++i) {
-      JFreeChart chart = charts[i];
-      String plotName = folderName + "/chart" + (i + 1) + ".png";
-      BufferedImage chartImage = 
-          ReportingUtils.chartsToImage(1280, 960, chart);
-      File plotPNG = new File(plotName);
-      try {
-        ImageIO.write(chartImage, "png", plotPNG);
-      } catch (IOException e1) {
-        e1.printStackTrace();
-      }
-    }
   }
   
   /**

@@ -4,9 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Test;
 
 import asl.sensor.gui.InputPanel;
@@ -30,7 +27,7 @@ public class DataStoreTest {
   public void commonTimeTrimMatchesLength() {
     
     DataStore ds = new DataStore();
-    ds.setData(0, filename1, filter);
+    ds.setBlock(0, filename1, filter);
     
     int left = 250;
     int right = 750;
@@ -45,8 +42,8 @@ public class DataStoreTest {
     //  tested in DataBlockTest
     db.trim(loc1, loc2);
     
-    ds.setData(1, filename1, filter);
-    ds.setData(2, filename1, filter);
+    ds.setBlock(1, filename1, filter);
+    ds.setBlock(2, filename1, filter);
     
     // function under test
     ds.trimToCommonTime();
@@ -67,23 +64,23 @@ public class DataStoreTest {
     long start = 0;
     
     // range of 4 seconds
-    List<Number> series25Hz = new ArrayList<Number>();
-    List<Number> series40Hz = new ArrayList<Number>();
+    double[] series25Hz = new double[100];
+    double[] series40Hz = new double[160];
     
     for (int i = 0; i < 100; ++i) {
-      series25Hz.add( new Double( i * Math.sin(i) ) );
+      series25Hz[i] = i * Math.sin(i);
     }
     
     for (int i = 0; i < 160; ++i) {
-      series40Hz.add( new Double( i * Math.sin(i) ) );
+      series40Hz[i] = i * Math.sin(i);
     }
     
     DataBlock block25Hz = new DataBlock(series25Hz, interval25Hz, "25", start);
     DataBlock block40Hz = new DataBlock(series40Hz, interval40Hz, "40", start);
     
     DataStore ds = new DataStore();
-    ds.setData(0, block25Hz);
-    ds.setData(1, block40Hz);
+    ds.setBlock(0, block25Hz);
+    ds.setBlock(1, block40Hz);
     ds.matchIntervals();
     
     assertEquals( ds.getBlock(1).getInterval(), interval25Hz );

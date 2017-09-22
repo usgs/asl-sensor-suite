@@ -1,7 +1,6 @@
 package asl.sensor.experiment;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
@@ -61,6 +60,7 @@ public class OrthogonalExperiment extends Experiment {
   @Override
   protected void backend(final DataStore ds) {
     
+    // TODO: refactor using faster access point for azimuth?
     long interval = ds.getXthLoadedBlock(1).getInterval();
     
     // assume the first two are the reference and the second two are the test?
@@ -77,12 +77,10 @@ public class OrthogonalExperiment extends Experiment {
     DataBlock testLH2Block = ds.getXthLoadedBlock(4);
     dataNames.add( testLH2Block.getName() );
     
-    List<Number> refLH1 = new ArrayList<Number>( refLH1Block.getData() );
-
-    List<Number> refLH2 = new ArrayList<Number>( refLH2Block.getData() );
-    List<Number> testLH1 = new ArrayList<Number>( testLH1Block.getData() );
-
-    List<Number> testLH2 = new ArrayList<Number>( testLH2Block.getData() );
+    double[] refLH1 = refLH1Block.getData();
+    double[] refLH2 = refLH2Block.getData();
+    double[] testLH1 = testLH1Block.getData();
+    double[] testLH2 = testLH2Block.getData();
     
     TimeSeriesUtils.detrend(refLH1);
     TimeSeriesUtils.detrend(refLH2);
@@ -103,28 +101,31 @@ public class OrthogonalExperiment extends Experiment {
     testLH1 = FFTResult.bandFilter(testLH1, sps, low, high);
     testLH2 = FFTResult.bandFilter(testLH2, sps, low, high);
     
-    int len = refLH1.size();
+    int len = refLH1.length;
     
-    double[] refYArr = new double[len];
-    double[] refXArr = new double[len];
-    double[] testYArr = new double[len];
+    double[] refYArr = Arrays.copyOfRange(refLH1, 0, len);
+    double[] refXArr = Arrays.copyOfRange(refLH2, 0, len);
+    double[] testYArr = Arrays.copyOfRange(testLH1, 0, len);
     
+    /*
     for (int i = 0; i < len; ++i) {
       refYArr[i] = refLH1.get(i).doubleValue();
       refXArr[i] = refLH2.get(i).doubleValue();
       testYArr[i] = testLH1.get(i).doubleValue();
     }
+    */
     
     // since refLH1 and refLH2 are orthogonal, can use them with azimuth logic
     // to find angle between the other two datasets
     
     DataStore findTestX = new DataStore();
-    findTestX.setData(0, refLH1Block);
-    findTestX.setData(1, refLH2Block);
-    findTestX.setData(2, testLH2Block);
+    findTestX.setBlock(0, refLH1Block);
+    findTestX.setBlock(1, refLH2Block);
+    findTestX.setBlock(2, testLH2Block);
     DataStore findTestY = new DataStore(findTestX);
-    findTestY.setData(2, testLH1Block);
+    findTestY.setBlock(2, testLH1Block);
     
+    // TODO: FIX THIS
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.runExperimentOnData(findTestY);
     double angleY = azi.getFitAngle();
@@ -143,15 +144,15 @@ public class OrthogonalExperiment extends Experiment {
       angle = (360-angle) % 360;
     }
     diffs = new double[2];
-    diffs[0] = angleX;
+    diffs[0] = angleY; // north
+    diffs[1] = angleX; // east
     diffs[0] = ( (diffs[0] % 360) + 360 ) % 360;
-    diffs[1] = angleY;
     diffs[1] = ( (diffs[1] % 360) + 360 ) % 360;
     
     // if x-plot chart way above y-plot, plot negative angle
-    if (diffs[1] > diffs[0]) {
-      diffs[1] -= 360;
-    }
+    //if (diffs[1] > diffs[0]) {
+    //  diffs[1] -= 360;
+    //}
     
     double timeAtPoint = 0.;
     double tick = interval / TimeSeriesUtils.ONE_HZ_INTERVAL;

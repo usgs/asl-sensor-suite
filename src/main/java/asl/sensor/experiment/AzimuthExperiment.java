@@ -1,9 +1,12 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.math3.complex.Complex;
@@ -64,11 +67,11 @@ public class AzimuthExperiment extends Experiment {
    * (i.e., one signal is positive and one is negative)
    */
   public static boolean 
-  alignedAntipolar(List<Number> rot, List<Number> ref, int len) {
+  alignedAntipolar(double[] rot, double[] ref, int len) {
     int numSameSign = 0; int numDiffSign = 0;
     for (int i = 0; i < len; ++i) {
-      int sigRot = (int) Math.signum( (double) rot.get(i) );
-      int sigRef = (int) Math.signum( (double) ref.get(i) );
+      int sigRot = (int) Math.signum(rot[i]);
+      int sigRef = (int) Math.signum(ref[i]);
       
       if (sigRot - sigRef == 0) {
         ++numSameSign;
@@ -82,7 +85,7 @@ public class AzimuthExperiment extends Experiment {
   }
   private double offset = 0.;
   
-  private double angle;
+  private double angle, uncert;
   private double[] freqs;
   
   private double[] coherence;
@@ -94,33 +97,86 @@ public class AzimuthExperiment extends Experiment {
     simpleCalc = false;
   }
   
+  /**
+   * Entry point for this experiment to guarantee the use of the simple solver
+   * and require less overhead, callable from another experiment
+   * @param testNorth timeseries data from presumed north-facing test sensor
+   * @param testEast timeseries data from presumed east-facing test sensor
+   * @param refNorth timeseries data from known north-facing sensor
+   * @param interval sampling interval of data
+   * @param start start time of data
+   * @param end end time of data
+   */
+  protected void alternateEntryPoint(
+      double[] testNorth, double[] testEast, 
+      double[] refNorth, long interval, long start, long end) {
+    dataNames = new ArrayList<String>();
+    dataNames.add( "N" );
+    dataNames.add( "E" );
+    dataNames.add( "R" );
+    simpleCalc = true;
+    
+    backend(testNorth.clone(), testEast.clone(), refNorth.clone(), 
+        interval, start, end);
+  }
+  
+  protected void backend() {
+    
+  }
+  
   @Override
   protected void backend(final DataStore ds) {
     
     // assume the first two are the reference and the second two are the test
     // we just need the timeseries, don't actually care about response
-    DataBlock testNorthBlock = new DataBlock( ds.getXthLoadedBlock(1) );
-    DataBlock testEastBlock = new DataBlock( ds.getXthLoadedBlock(2) );
-    DataBlock refNorthBlock = new DataBlock( ds.getXthLoadedBlock(3) );
+    DataBlock testNorthBlock = ds.getXthLoadedBlock(1);
+    DataBlock testEastBlock = ds.getXthLoadedBlock(2);
+    DataBlock refNorthBlock = ds.getXthLoadedBlock(3);
     
+    dataNames = new ArrayList<String>();
     dataNames.add( testNorthBlock.getName() );
     dataNames.add( testEastBlock.getName() );
     dataNames.add( refNorthBlock.getName() );
     
-    List<Number> testNorth = new ArrayList<Number>( testNorthBlock.getData() );
-    String northName = testNorthBlock.getName();
-    List<Number> testEast = new ArrayList<Number>( testEastBlock.getData() );
-    String eastName = testEastBlock.getName();
-    List<Number> refNorth = new ArrayList<Number>( refNorthBlock.getData() );
-    String refName = refNorthBlock.getName();
+    double[] testNorth = testNorthBlock.getData();
+    double[] testEast = testEastBlock.getData();
+    double[] refNorth = refNorthBlock.getData();
     
+    // resampling should already have been done when loading in data
+    long interval = testNorthBlock.getInterval();
+    long startTime = testNorthBlock.getStartTime();
+    long endTime = testNorthBlock.getEndTime();
+    
+    backend(testNorth, testEast, refNorth, interval, startTime, endTime);
+
+  }
+    
+  /**
+   * Backend library call for both datasets
+   * @param testNorth North-facing data to find azimuth of
+   * @param testEast East-facing data to find azimuth of
+   * @param refNorth North-facing data to use as reference
+   * @param interval Time in nanoseconds between data samples
+   * @param startTime Start time of data
+   * @param endTime End time of data
+   */
+  private void backend(
+      double[] testNorth, double[] testEast, 
+      double[] refNorth, long interval, long startTime, long endTime) {
+
+
+    TimeSeriesUtils.detrend(testNorth);
+    TimeSeriesUtils.detrend(testEast);
+    TimeSeriesUtils.detrend(refNorth);
+
+
     TimeSeriesUtils.detrend(testNorth);
     TimeSeriesUtils.detrend(testEast);
     TimeSeriesUtils.detrend(refNorth);
     
     // originally had normalization step here, but that harmed the estimates
     
-    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / testNorthBlock.getInterval();
+    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
     double low = 1./8;
     double high = 1./4;
     
@@ -128,12 +184,8 @@ public class AzimuthExperiment extends Experiment {
     testEast = FFTResult.bandFilter(testEast, sps, low, high);
     refNorth = FFTResult.bandFilter(refNorth, sps, low, high);
     
-    testNorthBlock.setData(testNorth);
-    testEastBlock.setData(testEast);
-    refNorthBlock.setData(refNorth);
-    
     MultivariateJacobianFunction jacobian = 
-        getJacobianFunction(testNorthBlock, testEastBlock, refNorthBlock);
+        getJacobianFunction(testNorth, testEast, refNorth, interval);
     
     // want mean coherence to be as close to 1 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
@@ -168,23 +220,27 @@ public class AzimuthExperiment extends Experiment {
     
     // how much data we need (i.e., iteration length) to check 10 seconds
     // used when checking if alignment is off by 180 degrees
-    int tenSecondsLength = (int)  ( testNorthBlock.getSampleRate() * 10 ) + 1;
+    int tenSecondsLength = (int)  ( sps * 10 ) + 1;
+    int hundredSecLen = tenSecondsLength * 10;
     
     if (simpleCalc) {
+      
       // used for orthogonality & multi-component self-noise and gain
       // where a 'pretty good' estimate of the angle is all we need
       // just stop here, don't do windowing
       angle = tempAngle;
+      angle = angle % NumericUtils.TAU;
       
       // check if we need to rotate by 180 degrees
-      DataBlock rot = 
-          TimeSeriesUtils.rotate(testNorthBlock, testEastBlock, angle);
-      List<Number> rotTimeSeries = rot.getData();
-      List<Number> refTimeSeries = refNorthBlock.getData();
+      double[] rot = 
+          TimeSeriesUtils.rotate(testNorth, testEast, angle);
       
-      if ( alignedAntipolar(rotTimeSeries, refTimeSeries, tenSecondsLength) ) {
+      if ( alignedAntipolar(rot, refNorth, 2 * tenSecondsLength) ) {
         angle += Math.PI; // still in radians
       }
+      
+      angle = ( (angle % NumericUtils.TAU) + NumericUtils.TAU) 
+          % NumericUtils.TAU;
       
       return;
     }
@@ -193,21 +249,19 @@ public class AzimuthExperiment extends Experiment {
     // now let's cut the data into 2000-sec windows with 500-sec overlap
     // store the angle and resulting correlation of each window
     // and then take the best-correlation angles and average them
-    long start = testNorthBlock.getStartTime();
-    long end = testNorthBlock.getEndTime();
-    long timeRange = end - start;
+    long timeRange = endTime - startTime;
     
     // first double -- angle estimate over window
     // second double -- coherence from that estimate over the window
-    List<Pair<Double,Double>> angleCoherenceList = 
-        new ArrayList<Pair<Double, Double>> ();
+    Map<Long, Pair<Double,Double>> angleCoherenceMap = 
+        new HashMap<Long, Pair<Double, Double>> ();
     List<Double> sortedCoherence = new ArrayList<Double>();
     
     final long twoThouSecs = 2000L * TimeSeriesUtils.ONE_HZ_INTERVAL; 
     // 1000 ms per second, range length
     final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
     int numWindows = (int) ( (timeRange - twoThouSecs) / fiveHundSecs);
-    
+    // look at 2000s windows, sliding over 500s of data at a time
     for (int i = 0; i < numWindows; ++i) {
       StringBuilder sb = new StringBuilder();
       sb.append("Fitting angle over data in window ");
@@ -222,15 +276,19 @@ public class AzimuthExperiment extends Experiment {
         break;
       }
       
-      long wdStart = fiveHundSecs * i + start; // start of 500s-sliding window
+      // get start and end indices from given times
+      long wdStart = fiveHundSecs * i; // start of 500s-sliding window
       long wdEnd = wdStart + twoThouSecs; // end of window (2000s long)
       
-      DataBlock testNorthWindow = new DataBlock(testNorthBlock, wdStart, wdEnd);
-      DataBlock testEastWindow = new DataBlock(testEastBlock, wdStart, wdEnd);
-      DataBlock refNorthWindow = new DataBlock(refNorthBlock, wdStart, wdEnd);
+      int startIdx = (int) (wdStart / interval);
+      int endIdx = (int) (wdEnd / interval);
+      
+      double[] testNorthWin = Arrays.copyOfRange(testNorth, startIdx, endIdx);
+      double[] testEastWin = Arrays.copyOfRange(testEast, startIdx, endIdx);
+      double[] refNorthWin = Arrays.copyOfRange(refNorth, startIdx, endIdx);
       
       jacobian = 
-          getJacobianFunction(testNorthWindow, testEastWindow, refNorthWindow);
+          getJacobianFunction(testNorthWin, testEastWin, refNorthWin, interval);
       
       LeastSquaresProblem findAngleWindow = new LeastSquaresBuilder().
           start(new double[]{tempAngle}).
@@ -246,13 +304,19 @@ public class AzimuthExperiment extends Experiment {
       
       RealVector angleVectorWindow = optimumY.getPoint();
       double angleTemp = angleVectorWindow.getEntry(0);
-      RealVector resi = optimumY.getResiduals();
-      double errorEst = resi.getEntry(0);
-      angleCoherenceList.add( new Pair<Double, Double>(angleTemp, errorEst) );
-      sortedCoherence.add(errorEst);
+      
+      double coherenceAvg = 0;
+      for (double cVal : coherence) {
+        coherenceAvg += cVal;
+      }
+      coherenceAvg /= coherence.length;
+      
+      angleCoherenceMap.put(
+          wdStart, new Pair<Double, Double>(angleTemp, coherenceAvg) );
+      sortedCoherence.add(coherenceAvg);
     }
     
-    if (angleCoherenceList.size() < 1) {
+    if (angleCoherenceMap.size() < 1) {
       fireStateChange("Window size too small for good angle estimation...");
       angle = Math.toDegrees( angleVector.getEntry(0) );
     } else {
@@ -262,19 +326,33 @@ public class AzimuthExperiment extends Experiment {
       sortedCoherence = sortedCoherence.subList(0, maxBoundary);
       Set<Double> acceptableCoherences = new HashSet<Double>(sortedCoherence);
       
+      // store values for use in 
+      List<Double> acceptedVals = new ArrayList<Double>();
+      
       double averageAngle = 0.;
       int coherenceCount = 0;
       
-      for (Pair<Double, Double> angCoherePair : angleCoherenceList) {
+      for (Pair<Double, Double> angCoherePair : angleCoherenceMap.values()) {
         double angleTemp = angCoherePair.getFirst();
         double coherence = angCoherePair.getSecond();
         if ( acceptableCoherences.contains(coherence) ) {
           averageAngle += angleTemp;
+          acceptedVals.add(angleTemp);
           ++coherenceCount;
         }
       }
       
       averageAngle /= coherenceCount;
+      
+      uncert = 0.;
+      
+      // now get standard deviation
+      for (double angle : acceptedVals) {
+        uncert += Math.pow(angle - averageAngle, 2);
+      }
+      
+      uncert = Math.sqrt( uncert / (coherenceCount) );
+      uncert *= 2; // two-sigma gets us 95% confidence interval
       
       // do this calculation to get plot of freq/coherence, a side effect
       // of running evaluation at the given point; this will be plotted
@@ -294,18 +372,20 @@ public class AzimuthExperiment extends Experiment {
     // would be inverted from the original. so get 10 seconds of data and check
     // to see if the data is all on the same side of 0.
     
-    DataBlock rot = 
-        TimeSeriesUtils.rotate(testNorthBlock, testEastBlock, angle);
+    double[] rotTimeSeries = 
+        TimeSeriesUtils.rotate(testNorth, testEast, angle);
+    double[] refTimeSeries = refNorth;
     
-    List<Number> rotTimeSeries = rot.getData();
-    List<Number> refTimeSeries = refNorthBlock.getData();
-    
-    if ( alignedAntipolar(rotTimeSeries, refTimeSeries, tenSecondsLength) ) {
+    if ( alignedAntipolar(rotTimeSeries, refTimeSeries, hundredSecLen) ) {
       angle += Math.PI; // still in radians
       angle = angle % NumericUtils.TAU; // keep between 0 and 360
     }
     
     double angleDeg = Math.toDegrees(angle);
+    
+    String northName = dataNames.get(0);
+    String eastName = dataNames.get(1);
+    String refName = dataNames.get(2);
     
     XYSeries ref = new XYSeries(northName + " rel. to reference");
     ref.add(offset + angleDeg, 0);
@@ -324,20 +404,34 @@ public class AzimuthExperiment extends Experiment {
     xysc.addSeries(fromNorth);
     xySeriesData.add(xysc);
     
-    XYSeries coherenceSeries = new XYSeries("COHERENCE");
+    XYSeries coherenceSeries = new XYSeries("Per-freq. coherence of best-fit");
     for (int i = 0; i < freqs.length; ++i) {
       coherenceSeries.add(freqs[i], coherence[i]);
     }
     
-    xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
+    xysc = new XYSeriesCollection();
+    XYSeries timeMapAngle = new XYSeries("Best-fit angle per window");
+    XYSeries timeMapCoherence = new XYSeries("Coherence estimate per window");
+    xysc.addSeries(timeMapAngle);
+    xysc.addSeries(timeMapCoherence);
     
+    for ( long time : angleCoherenceMap.keySet() ) {
+      double angle = angleCoherenceMap.get(time).getFirst();
+      double coherence = angleCoherenceMap.get(time).getSecond();
+      timeMapCoherence.add(time, coherence);
+      timeMapAngle.add( time, Math.toDegrees(angle) );
+    }
+    
+    xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
+    xySeriesData.add( new XYSeriesCollection(timeMapAngle) );
+    xySeriesData.add( new XYSeriesCollection(timeMapCoherence) );
   }
   
   @Override
   public int blocksNeeded() {
     return 3;
   }
-
+  
   /**
    * Return the fit angle calculated by the backend in degrees
    * @return angle result in degrees
@@ -345,7 +439,7 @@ public class AzimuthExperiment extends Experiment {
   public double getFitAngle() {
     return Math.toDegrees(angle);
   }
-  
+
   /**
    * Return the fit angle calculated by the backend in radians
    * @return angle result in radians
@@ -355,32 +449,33 @@ public class AzimuthExperiment extends Experiment {
   }
   
   /**
-   * Returns the jacobian function for this object given input data blocks.
-   * The data blocks are set here because they are what will be rotated by
-   * the given angle (the realvector point is the angle).
-   * This allows us to fix the datablocks in question while varying the angle,
-   * and calling the jacobian on different datablocks, such as when finding
-   * the windows of maximum coherence.
-   * @param db1 Test north data block
-   * @param db2 Test east data block
-   * @param db3 Ref. north data block
+   * Returns the jacobian function for this object given input timeseries data.
+   * The timeseries are used as input to the rotation function.
+   * We take the inputs as fixed and rotate copies of the data to find the
+   * Jacobian of the data.
+   * @param l1 Data from the test sensor's north-facing component
+   * @param l2 Data from the test sensor's east-facing component
+   * @param l3 Data from the known north-facing sensor
    * @return jacobian function to fit an angle of max coherence of this data
    */
   private MultivariateJacobianFunction 
-  getJacobianFunction(DataBlock db1, DataBlock db2, DataBlock db3) {
+  getJacobianFunction(double[] l1, double[] l2, double[] l3, 
+      long interval) {
     
     // make my func the j-func, I want that func-y stuff
     MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
 
-      final DataBlock finalTestNorthBlock = db1;
-      final DataBlock finalTestEastBlock = db2;
-      final DataBlock finalRefNorthBlock = db3;
+      final double[] finalTestNorth = l1;
+      final double[] finalTestEast = l2;
+      final double[] finalRefNorth = l3;
+      final long finalInterval = interval;
 
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         return jacobian(point, 
-            finalRefNorthBlock, 
-            finalTestNorthBlock, 
-            finalTestEastBlock);
+            finalRefNorth, 
+            finalTestNorth, 
+            finalTestEast,
+            finalInterval);
       }
     };
     
@@ -389,6 +484,14 @@ public class AzimuthExperiment extends Experiment {
   
   public double getOffset() {
     return ( (offset % 360) + 360 ) % 360;
+  }
+  
+  /**
+   * Get the uncertainty of the angle 
+   * @return Uncertainty estimation of the current angle (from variance)
+   */
+  public double getUncertainty() {
+    return Math.toDegrees(uncert);
   }
   
   @Override
@@ -415,9 +518,10 @@ public class AzimuthExperiment extends Experiment {
    */
   private Pair<RealVector, RealMatrix> jacobian(
       final RealVector point, 
-      final DataBlock refNorth,
-      final DataBlock testNorth, 
-      final DataBlock testEast) {
+      final double[] refNorth,
+      final double[] testNorth, 
+      final double[] testEast,
+      final long interval) {
     
     double theta = ( point.getEntry(0) );
     
@@ -426,11 +530,15 @@ public class AzimuthExperiment extends Experiment {
     double lowFreq = 1./18.;
     double highFreq = 1./3.;
     
-    DataBlock testRotated = TimeSeriesUtils.rotate(testNorth, testEast, theta);
+    double[] testRotated = 
+        TimeSeriesUtils.rotate(testNorth, testEast, theta);
     
-    FFTResult crossPower = FFTResult.spectralCalc(refNorth, testRotated);
-    FFTResult rotatedPower = FFTResult.spectralCalc(testRotated, testRotated);
-    FFTResult refPower = FFTResult.spectralCalc(refNorth, refNorth);
+    FFTResult crossPower = 
+        FFTResult.spectralCalc(refNorth, testRotated, interval);
+    FFTResult rotatedPower = 
+        FFTResult.spectralCalc(testRotated, testRotated, interval);
+    FFTResult refPower = 
+        FFTResult.spectralCalc(refNorth, refNorth, interval);
     
     freqs = crossPower.getFreqs();
     
@@ -486,11 +594,11 @@ public class AzimuthExperiment extends Experiment {
         MatrixUtils.createRealVector(new double[]{meanCoherence});
     
     double thetaDelta = theta + diff;
-    DataBlock rotateDelta = 
+    double[] rotateDelta = 
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
     
-    crossPower = FFTResult.spectralCalc(refNorth, rotateDelta);
-    rotatedPower = FFTResult.spectralCalc(rotateDelta, rotateDelta);
+    crossPower = FFTResult.spectralCalc(refNorth, rotateDelta, interval);
+    rotatedPower = FFTResult.spectralCalc(rotateDelta, rotateDelta, interval);
     crossPowerSeries = crossPower.getFFT();
     rotatedSeries = rotatedPower.getFFT();
     

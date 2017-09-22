@@ -102,13 +102,13 @@ implements ActionListener, ChangeListener {
     long startTime = expResult.getStart();
     long endTime = expResult.getEnd();
     if ( !(startTime == 0L && endTime == 0L) ) {
-      cCal.setTimeInMillis( startTime / 1000 );
+      cCal.setTimeInMillis(startTime);
       
       sb.append("Data start time:\n");
       sb.append( sdf.format( cCal.getTime() ) );
       sb.append('\n');
       
-      cCal.setTimeInMillis( endTime / 1000 );
+      cCal.setTimeInMillis(endTime);
       
       sb.append("Data end time:\n");
       sb.append( sdf.format( cCal.getTime() ) );
@@ -527,9 +527,9 @@ implements ActionListener, ChangeListener {
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     
     String date;
-    long time = expResult.getStart() / 1000;
+    long time = expResult.getStart();
     if (time > 0) {
-      date = sdf.format( time );
+      date = sdf.format(time);
     } else {
       Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
       date = sdf.format( cCal.getTime() );
@@ -705,6 +705,9 @@ implements ActionListener, ChangeListener {
 
   }
   
+  /**
+   * Used to identify completion of an experiment to a containing thread
+   */
   public void setDone() {
     firePropertyChange("Backend completed", false, set);
     drawCharts();
