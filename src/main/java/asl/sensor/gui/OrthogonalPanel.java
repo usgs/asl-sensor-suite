@@ -40,7 +40,7 @@ public class OrthogonalPanel extends ExperimentPanel {
     sb.append("Calculated angle between non-reference sensors:\n");
     sb.append(angle);
     sb.append('\n');
-    sb.append("Offset angles for LH1 and LH2 sensor outputs:\n");
+    sb.append("Calc. orientation angles for LH1 and LH2 sensor outputs:\n");
     sb.append( Arrays.toString(fit) );
     
     return sb.toString();
