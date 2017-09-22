@@ -26,6 +26,7 @@ public class DataPanelTest {
   public void getsCorrectTrimming() {
     int left = InputPanel.SLIDER_MAX / 4;
     int right = 3 * InputPanel.SLIDER_MAX / 4;
+    int farLeft = 0;
     
     System.out.println(left+","+right);
     
@@ -37,17 +38,22 @@ public class DataPanelTest {
       
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename1, name);
       long start = db.getStartTime();
+      long end = db.getEndTime();
       long interval = db.getInterval();
       // long end = db.getEndTime();
       int size = db.size();
       
       long timeRange = interval*size;
+      long timeRangeFromExtremes = end - start;
+      assertEquals(timeRange, timeRangeFromExtremes);
       
       long loc1 = InputPanel.getMarkerLocation(db, left);
       long loc2 = InputPanel.getMarkerLocation(db, right);
+      long loc3 = InputPanel.getMarkerLocation(db, farLeft);
       
+      assertEquals(loc3, start);
       assertEquals(loc2 - loc1, timeRange/2); // range is 3/4-1/4 = 1/2 of data
-      assertEquals(loc1, start + (interval * 1/4 * size) ); // correct start pt?
+      assertEquals(loc1, start + (interval * size / 4) ); // correct start pt?
     } catch (FileNotFoundException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();

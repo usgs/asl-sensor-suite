@@ -4,12 +4,17 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.text.DecimalFormat;
 
 import javax.swing.JComboBox;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYTitleAnnotation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.RectangleAnchor;
 
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
@@ -29,6 +34,29 @@ public class NoiseNinePanel extends NoisePanel {
    * 
    */
   private static final long serialVersionUID = -8049021432657749975L;
+  /**
+   * Get string of data to used when building PDFs in specific circumstances
+   * @param exp Experiment to extract data from
+   * @return String representing experiment data (rotation angles)
+   */
+  public static String getInsetString(NoiseNineExperiment exp) {
+    NoiseNineExperiment nne = (NoiseNineExperiment) exp;
+    DecimalFormat df = new DecimalFormat("#.###");
+    double[] angles = nne.getNorthAngles();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Angle of rotation of north sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of north sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
+    sb.append("\n");
+    angles = nne.getEastAngles();
+    sb.append("Angle of rotation of east sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of east sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
+    return sb.toString();
+  }
+
   protected JComboBox<String> plotSelection;
   
   protected JFreeChart northChart, eastChart, vertChart;
@@ -106,7 +134,7 @@ public class NoiseNinePanel extends NoisePanel {
     revalidate();
     
   }
-
+  
   @Override
   public void actionPerformed(ActionEvent e) {
     
@@ -153,6 +181,39 @@ public class NoiseNinePanel extends NoisePanel {
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{northChart, eastChart, vertChart};
   }
+
+  private String getEastChartString() {
+    NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
+    DecimalFormat df = new DecimalFormat("#.###");
+    double[] angles = nne.getEastAngles();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Angle of rotation of east sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of east sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
+    return sb.toString();
+  }
+  
+  @Override
+  public String getInsetStrings() {
+    StringBuilder sb = new StringBuilder( getNorthChartString() );
+    sb.append("\n");
+    sb.append( getEastChartString() );
+    sb.append("\n");
+    return sb.toString();
+  }
+  
+  private String getNorthChartString() {
+    NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
+    DecimalFormat df = new DecimalFormat("#.###");
+    double[] angles = nne.getNorthAngles();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Angle of rotation of north sensor 2 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[0]) ) );
+    sb.append("\nAngle of rotation of north sensor 3 (deg): ");
+    sb.append( df.format( Math.toDegrees(angles[1]) ) );
+    return sb.toString();
+  }
   
   @Override
   public int panelsNeeded() {
@@ -196,10 +257,28 @@ public class NoiseNinePanel extends NoisePanel {
     
     northChart = buildChart( expResult.getData().get(0) );
     northChart.setTitle("Self-noise (NORTH)");
+    XYPlot xyp = northChart.getXYPlot();
+    TextTitle angle = new TextTitle();
+    String temp = getNorthChartString();
+    angle.setText(temp);
+    angle.setBackgroundPaint(Color.white);
+    XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, angle,
+        RectangleAnchor.TOP_RIGHT);
+    xyp.clearAnnotations();
+    xyp.addAnnotation(xyt);
     System.out.println("North chart set!");
     
     eastChart = buildChart( expResult.getData().get(1) );
     eastChart.setTitle("Self-noise (EAST)");
+    xyp = eastChart.getXYPlot();
+    angle = new TextTitle();
+    temp = getEastChartString();
+    angle.setText(temp);
+    angle.setBackgroundPaint(Color.white);
+    xyt = new XYTitleAnnotation(0.98, 0.98, angle,
+        RectangleAnchor.TOP_RIGHT);
+    xyp.clearAnnotations();
+    xyp.addAnnotation(xyt);
     System.out.println("East chart set!");
     
     vertChart = buildChart( expResult.getData().get(2) );

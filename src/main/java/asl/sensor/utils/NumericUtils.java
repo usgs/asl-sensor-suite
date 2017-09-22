@@ -1,5 +1,7 @@
 package asl.sensor.utils;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -43,6 +45,11 @@ public class NumericUtils {
   public final static double TAU = Math.PI * 2; // radians in full circle
   
   /**
+   * used to limit the frequencies of the poles/zeros getting fit
+   */
+  public final static double PEAK_MULTIPLIER = 0.8;
+  
+  /**
    * Get the two-component arctan of a complex number. A simpler way of calling
    * arctan2 using the real and imaginary components of a complex number
    * (see Math.atan2 for more details). This is the angle of the complex number
@@ -51,11 +58,34 @@ public class NumericUtils {
    * @return atan, between -pi and pi
    */
   public static double atanc(Complex c) {
-    return Math.atan2( -c.getImaginary(), c.getReal() );
+    
+    final double CUTOFF = 1./1000.;
+    
+    if ( c.abs() < CUTOFF) {
+      return 0.;
+    }
+    
+    return Math.atan2( c.getImaginary(), c.getReal() );
   }
   
+  /**
+   * Sort a list of complex values according to their magnitude. Used to 
+   * sort poles and zeros according to their period, which is a function of
+   * the magnitude.
+   * @param complexes List of complex numbers to sort
+   */
   public static void complexMagnitudeSorter(List<Complex> complexes) {
     Collections.sort(complexes, CpxMagComparator.instance);
+  }
+  
+  /**
+   * Sets decimalformat object so that infinity can be printed in a PDF document
+   * @param df DecimalFormat object to change the infinity symbol value of
+   */
+  public static void setInfinityPrintable(DecimalFormat df) {
+    DecimalFormatSymbols symbols = df.getDecimalFormatSymbols();
+    symbols.setInfinity("Inf.");
+    df.setDecimalFormatSymbols(symbols);
   }
   
   /**

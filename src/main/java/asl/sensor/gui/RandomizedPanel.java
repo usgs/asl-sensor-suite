@@ -6,26 +6,29 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TimeZone;
 
+import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JPanel;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.block.BlockContainer;
+import org.jfree.chart.block.FlowArrangement;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.title.Title;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
+import org.jfree.ui.RectangleEdge;
+import org.jfree.ui.VerticalAlignment;
 
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.RandomizedExperiment;
@@ -49,6 +52,8 @@ public class RandomizedPanel extends ExperimentPanel {
   public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   private static final Color[] COLOR_LIST = 
       new Color[]{Color.RED, Color.BLUE, Color.GREEN};
+  private static final int TITLE_IDX = 0; // TODO: replace w/ title pointers
+  
   /**
    * 
    */
@@ -63,86 +68,172 @@ public class RandomizedPanel extends ExperimentPanel {
    * @return List of strings, each one representing a new page's worth of data
    */
   public static String[] getAdditionalReportPages(RandomizedExperiment rnd) {
+    
+    // TODO: refactor this now that period values are included in
+    // the inset portion of the report text instead of merely in the extra data
     StringBuilder sb = new StringBuilder();
-    DecimalFormat df = new DecimalFormat("#.#####");
+    
+    StringBuilder csvPoles = new StringBuilder();
+    StringBuilder csvZeros = new StringBuilder();
+    StringBuilder csvTitle = new StringBuilder();
+    DecimalFormat csvFormat = new DecimalFormat("+#.####;-#.####");
+    NumericUtils.setInfinityPrintable(csvFormat);
+    
+    final int COL_WIDTH = 9;
+    String[] columns = new String[]{"Init", "Fit", "Diff", "Mean", "PctDiff"};
+    for (String column : columns) {
+      StringBuilder paddedColumn = new StringBuilder(column);
+      while ( paddedColumn.length() < COL_WIDTH ) {
+        paddedColumn.append(" "); // add a space
+      }
+      csvTitle.append( paddedColumn );
+    }
     
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();
     List<Complex> fitZ = rnd.getFitZeros();
     List<Complex> initZ = rnd.getInitialZeros();
     
-    StringBuilder initText = new StringBuilder("Initial:\n");
-    StringBuilder fitText = new StringBuilder("Best fit:\n");
+    boolean solverNotRun = rnd.getSolverState();
     
-    sb.append("Pole and zero values, given as period (s):\n \n");
-    sb.append("Poles:\n");
+    if (solverNotRun) {
+      return new String[]{};
+    }
+    
+    // get statistics for differences between initial and solved parameters
+    csvPoles = new StringBuilder("POLE VARIABLES, AS CSV:\n");
+    csvPoles.append(csvTitle);
+    csvPoles.append("\n");
+
     for (int i = 0; i < fitP.size(); ++i) {
-      
-      double fitDenom = fitP.get(i).abs();
-      double initDenom = initP.get(i).abs();
-      
-      // prevent division by 0;
-      double fitPrd = 0.;
-      if (fitDenom != 0) {
-        fitPrd = NumericUtils.TAU / fitDenom;
-      }
-      double initPrd = 0.;
-      if (initDenom != 0) {
-        initPrd = NumericUtils.TAU / initDenom;
+      double realPartFit = fitP.get(i).getReal();
+      double imagPartFit = fitP.get(i).getImaginary();
+
+      double realPartInit = initP.get(i).getReal();
+      double imagPartInit = initP.get(i).getImaginary();
+
+      // make sure sign of the imaginary parts are the same
+      if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
+        imagPartFit *= -1;
       }
 
-      fitText.append( df.format(fitPrd) );
-      initText.append( df.format(initPrd) );
-      fitText.append("\n");
-      initText.append("\n");
-      
-      if ( fitP.get(i).getImaginary() != 0. ) {
-        // complex conjugate pole is at same period value, don't report
-        ++i;
+      double realDiff = realPartInit - realPartFit;
+      double imagDiff = imagPartInit - imagPartFit;
+
+      double realAvg = (realPartInit + realPartFit) / 2.;
+      double imagAvg = (imagPartInit + imagPartFit) / 2.;
+
+      double realPct = realDiff * 100 / realPartFit;
+      if ( realPartFit == 0. ) {
+        realPct = 0.;
+      }
+      double imagPct = imagDiff * 100 / imagPartFit;
+      if ( imagPartFit == 0. ) {
+        imagPct = 0.;
+      }
+
+      // INIT, FIT, DIFF, AVG, PCT
+
+      double[] realRow = new double[]
+          {realPartInit, realPartFit, realDiff, realAvg, realPct};
+
+      double[] imagRow = new double[]
+          {imagPartInit, imagPartFit, imagDiff, imagAvg, imagPct};
+
+      for (double colNumber : realRow) {
+        String column = csvFormat.format(colNumber);
+        StringBuilder paddedColumn = new StringBuilder(column);
+        while ( paddedColumn.length() < COL_WIDTH ) {
+          paddedColumn.append(" "); // add a space
+        }
+        csvPoles.append( paddedColumn );
+      }
+      csvPoles.append("\n");
+
+      for (double colNumber : imagRow) {
+        String column = csvFormat.format(colNumber);
+        StringBuilder paddedColumn = new StringBuilder(column);
+        while ( paddedColumn.length() < COL_WIDTH ) {
+          paddedColumn.append(" "); // add a space
+        }
+        csvPoles.append( paddedColumn );
+      }
+      csvPoles.append("\n");
+
+      if (imagPartFit != 0.) {
+        ++i; // skip complex conjugate
       }
     }
-    
-    sb.append(initText);
-    sb.append(fitText);
-        
-    initText = new StringBuilder();
-    fitText = new StringBuilder();
-    
+
+    // get statistics for differences between initial and solved parameters
     if ( fitZ.size() > 0 ) {
-      sb.append(" \nZeros:\n");
-      initText.append("Initial:\n");
-      fitText.append("Best fit:\n");
+      csvZeros = new StringBuilder("ZERO VARIABLES, AS CSV:\n");
+      csvZeros.append(csvTitle);
+      csvZeros.append("\n");
     }
+
 
     for (int i = 0; i < fitZ.size(); ++i) {
-      double fitDenom = fitZ.get(i).abs();
-      double initDenom = initZ.get(i).abs();
-      
-      // prevent division by 0;
-      double fitPrd = 0.;
-      if (fitDenom != 0) {
-        fitPrd = NumericUtils.TAU / fitDenom;
+      double realPartFit = fitZ.get(i).getReal();
+      double imagPartFit = fitZ.get(i).getImaginary();
+
+      double realPartInit = initZ.get(i).getReal();
+      double imagPartInit = initZ.get(i).getImaginary();
+
+      // make sure sign of the imaginary parts are the same
+      if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
+        imagPartFit *= -1;
       }
-      double initPrd = 0.;
-      if (initDenom != 0) {
-        initPrd = NumericUtils.TAU / initDenom;
+
+      double realDiff = realPartInit - realPartFit;
+      double imagDiff = imagPartInit - imagPartFit;
+
+      double realAvg = (realPartInit + realPartFit) / 2.;
+      double imagAvg = (imagPartInit + imagPartFit) / 2.;
+
+      double realPct = realDiff * 100 / realPartFit;
+      if ( realPartFit == 0. ) {
+        realPct = 0.;
       }
-      
-      fitText.append( df.format(fitPrd) );
-      initText.append( df.format(initPrd) );
-      fitText.append("\n");
-      initText.append("\n");
-      
-      if ( fitZ.get(i).getImaginary() != 0. ) {
-        // complex conjugate pole is at same period value, don't report
-        ++i;
+      double imagPct = imagDiff * 100 / imagPartFit;
+      if ( imagPartFit == 0. ) {
+        imagPct = 0.;
+      }
+
+      double[] realRow = new double[]
+          {realPartInit, realPartFit, realDiff, realAvg, realPct};
+
+      double[] imagRow = new double[]
+          {imagPartInit, imagPartFit, imagDiff, imagAvg, imagPct};
+
+      for (double colNumber : realRow) {
+        String column = csvFormat.format(colNumber);
+        StringBuilder paddedColumn = new StringBuilder(column);
+        while ( paddedColumn.length() < COL_WIDTH ) {
+          paddedColumn.append(" "); // add a space
+        }
+        csvZeros.append( paddedColumn );
+      }
+      csvZeros.append("\n");
+
+      for (double colNumber : imagRow) {
+        String column = csvFormat.format(colNumber);
+        StringBuilder paddedColumn = new StringBuilder(column);
+        while ( paddedColumn.length() < COL_WIDTH ) {
+          paddedColumn.append(" "); // add a space
+        }
+        csvZeros.append( paddedColumn );
+      }
+      csvZeros.append("\n");
+
+      if (imagPartFit != 0.) {
+        ++i; // skip complex conjugate
       }
     }
-    
-    // add the values of the zeros to the metadata page
-    sb.append(initText);
-    sb.append(fitText);
-    
+
+    sb.append(csvPoles);
+    sb.append(csvZeros);
+
     String[] out = new String[]{sb.toString()}; // just a single new page
     return out;
   }
@@ -152,9 +243,12 @@ public class RandomizedPanel extends ExperimentPanel {
    * @param rnd RandomizedExperiment with data to be extracted
    * @return String format representation of data from the experiment
    */
-  public static String getInsetString(RandomizedExperiment rnd) {
+  public static String[] getInsetString(RandomizedExperiment rnd) {
+    
+    final int MAX_LINE = 2; // maximum number of entries per line
     
     DecimalFormat df = new DecimalFormat("#.#####");
+    NumericUtils.setInfinityPrintable(df);
     ComplexFormat cf = new ComplexFormat(df);
     
     List<Complex> fitP = rnd.getFitPoles();
@@ -163,8 +257,10 @@ public class RandomizedPanel extends ExperimentPanel {
     List<Complex> initZ = rnd.getInitialZeros();
     
     if (fitP == null) {
-      return "";
+      return new String[]{""};
     }
+    
+    boolean solverNotRun = rnd.getSolverState();
     
     double initResid = rnd.getInitResidual();
     double fitResid = rnd.getFitResidual();
@@ -178,28 +274,49 @@ public class RandomizedPanel extends ExperimentPanel {
     int numInLine = 0;
     
     for (int i = 0; i < fitP.size(); ++i) {
-      sbInit.append( cf.format( initP.get(i) ) );
-      sbFit.append( cf.format( fitP.get(i) ) );
+      
+      Complex init = initP.get(i);
+      Complex fit = fitP.get(i);
+      double initPrd = NumericUtils.TAU / init.abs();
+      double fitPrd = NumericUtils.TAU / fit.abs();
+      
+      sbInit.append( cf.format(init) );
+      sbFit.append( cf.format(fit) );
       ++numInLine;
       // want to fit two to a line for paired values
       
-      if ( initP.get(i).getImaginary() != 0. ) {
+      if ( init.getImaginary() != 0. ) {
         ++i; // INCREMENT I TO GET THE CONJUGATE AND NOT DO REDUNDANT OPERATION
         sbInit.append(";  ");
         sbFit.append(";  ");
         sbInit.append( cf.format( initP.get(i) ) );
         sbFit.append( cf.format( fitP.get(i) ) );
-        sbInit.append("\n");
-        sbFit.append("\n");
+        sbInit.append(" (");
+        sbInit.append( df.format(initPrd) );
+        sbInit.append(" s)\n");
+        sbFit.append(" (");
+        sbFit.append( df.format(fitPrd) );
+        sbFit.append(" s)\n");
         numInLine = 0;
-      } else if ( i + 1 < fitP.size() ) {
-        // if there is still data, fit up to 4 in a line
-        // but separate conjugate pairs into their own line for space
-        if ( numInLine < 4 && initP.get(i + 1).getImaginary() == 0. ) {
+      } else {
+        // if data does not have conjugate pair, put period next to pole value
+        // if there is still data, fit up to 4 poles in a line
+        // but still separate conjugate pairs into their own line for space
+        sbInit.append(" (");
+        sbInit.append( df.format(initPrd) );
+        sbInit.append(" s)");
+        sbFit.append(" (");
+        sbFit.append( df.format(fitPrd) );
+        sbFit.append(" s)");
+        
+        if ( i + 1 < fitP.size() && 
+             numInLine < MAX_LINE && 
+             initP.get(i + 1).getImaginary() == 0. ) {
+          // next value exists, is not part of a conjugate pair, and won't
+          // put more than 4 pole values in a single line
           sbInit.append(";   ");
           sbFit.append(";   ");
         } else {
-          System.out.println(numInLine);
           sbInit.append("\n");
           sbFit.append("\n");
           numInLine = 0;
@@ -219,9 +336,14 @@ public class RandomizedPanel extends ExperimentPanel {
     }
     
     for (int i = 0; i < fitZ.size(); ++i) {
-
-      sbInitZ.append( cf.format( initZ.get(i) ) );
-      sbFitZ.append( cf.format( fitZ.get(i) ) );
+      
+      Complex init = initZ.get(i);
+      Complex fit = fitZ.get(i);
+      double initPrd = NumericUtils.TAU / init.abs();
+      double fitPrd = NumericUtils.TAU / fit.abs();
+      
+      sbInitZ.append( cf.format(init) );
+      sbFitZ.append( cf.format(fit) );
       
       // want to fit two to a line for paired values
       if ( initZ.get(i).getImaginary() != 0. ) {
@@ -229,12 +351,25 @@ public class RandomizedPanel extends ExperimentPanel {
         sbInitZ.append("; ");
         sbFitZ.append("; ");
         sbInitZ.append( cf.format( initZ.get(i) ) );
-        sbInitZ.append("\n");
         sbFitZ.append( cf.format( fitZ.get(i) ) );
-        sbFitZ.append("\n");
+        sbInitZ.append(" (");
+        sbInitZ.append( df.format(initPrd) );
+        sbInitZ.append(" s)\n");
+        sbFitZ.append(" (");
+        sbFitZ.append( df.format(fitPrd) );
+        sbFitZ.append(" s)\n");
         
-      } else { 
+      } else {
+        sbInitZ.append(" (");
+        sbInitZ.append( df.format(initPrd) );
+        sbInitZ.append(" s)");
+        sbFitZ.append(" (");
+        sbFitZ.append( df.format(fitPrd) );
+        sbFitZ.append(" s)");
         if ( i + 1 < fitZ.size() ) {
+          sbInitZ.append("\n");
+          sbFitZ.append("\n");
+        } else {
           sbInitZ.append(";   ");
           sbFitZ.append(";   ");
         }
@@ -246,26 +381,32 @@ public class RandomizedPanel extends ExperimentPanel {
     sbInitZ.append("\n");
     sbFitZ.append("\n");
     
-    StringBuilder sb = new StringBuilder( sbInit.append(sbFit) );
-    sb.append( sbInitZ.append(sbFitZ) );
-    sb.append('\n');
-    sb.append("Residuals:");
-    sb.append('\n');
-    sb.append("Initial (nom. resp curve): ");
-    sb.append(initResid);
-    sb.append('\n');
-    sb.append("Best fit: ");
-    sb.append(fitResid);
     
-    return sb.toString();
+    if (!solverNotRun) {
+      sbInit.append(sbFit);
+    }
+    
+    if (!solverNotRun) {
+      sbInitZ.append(sbFitZ);
+    }
+    
+    StringBuilder sbR = new StringBuilder();
+    sbR.append("Residuals:");
+    sbR.append('\n');
+    sbR.append("Initial (nom. resp curve): ");
+    sbR.append(initResid);
+    sbR.append('\n');
+    if (!solverNotRun) {
+      sbR.append("Best fit: ");
+      sbR.append(fitResid);
+    }
+    
+    return new String[]{sbInit.toString(), sbInitZ.toString(), sbR.toString()};
   }
-  private ValueAxis degreeAxis, residAxis;
-  
+  private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis;
   private JComboBox<String> plotSelection;
-
-  private JCheckBox lowFreqBox;
-
-  private JFreeChart magChart, argChart, residChart;
+  private JCheckBox lowFreqBox, showParams, freqSpace;
+  private JFreeChart magChart, argChart, residAmpChart, residPhaseChart;
   
   public RandomizedPanel(ExperimentEnum exp) {
     super(exp);
@@ -275,9 +416,11 @@ public class RandomizedPanel extends ExperimentPanel {
     
     String yAxisTitle = "10 * log10( RESP(f) )";
     String xAxisTitle = "Frequency (Hz)";
+    String prdAxisTitle = "Period (s)";
     String degreeAxisTitle = "phi(RESP(f))";
     
     xAxis = new LogarithmicAxis(xAxisTitle);
+    prdAxis = new NumberAxis(prdAxisTitle);
     
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
@@ -285,23 +428,33 @@ public class RandomizedPanel extends ExperimentPanel {
     degreeAxis = new NumberAxis(degreeAxisTitle);
     degreeAxis.setAutoRange(true);    
     
-    residAxis = new NumberAxis("Residual value per point");
+    residPhaseAxis = new NumberAxis("Phase error (degrees)");
+    residAmpAxis = new NumberAxis("Amplitude error (percentage)");
     
     ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     degreeAxis.setLabelFont(bold);
-    residAxis.setLabelFont(bold);
+    residPhaseAxis.setLabelFont(bold);
+    residAmpAxis.setLabelFont(bold);
     
     lowFreqBox = new JCheckBox("Low frequency calibration");
     lowFreqBox.setSelected(true);
+    
+    showParams = new JCheckBox("Show params");
+    showParams.setEnabled(false);
+    showParams.addActionListener(this);
+    
+    freqSpace = new JCheckBox("Use Hz units (req. regen)");
+    freqSpace.setSelected(true);
     
     applyAxesToChart(); // now that we've got axes defined
     
     magChart = buildChart(null, xAxis, yAxis);
     argChart = buildChart(null, xAxis, degreeAxis);
-    residChart = buildChart(null, xAxis, residAxis);
+    residPhaseChart = buildChart(null, xAxis, residPhaseAxis);
+    residAmpChart = buildChart(null, xAxis, residAmpAxis);
     
     // set the GUI components
     this.setLayout( new GridBagLayout() );
@@ -320,7 +473,12 @@ public class RandomizedPanel extends ExperimentPanel {
     gbc.anchor = GridBagConstraints.WEST;
     gbc.fill = GridBagConstraints.NONE;
     gbc.gridy += 1; gbc.gridx = 0;
-    this.add(lowFreqBox, gbc);
+    JPanel checkBoxPanel = new JPanel();
+    checkBoxPanel.setLayout( new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS) );
+    checkBoxPanel.add(lowFreqBox);
+    checkBoxPanel.add(showParams);
+    checkBoxPanel.add(freqSpace);
+    this.add(checkBoxPanel, gbc);
     
     gbc.gridx += 1;
     gbc.weightx = 1.0;
@@ -337,9 +495,10 @@ public class RandomizedPanel extends ExperimentPanel {
     plotSelection = new JComboBox<String>();
     plotSelection.addItem(MAGNITUDE);
     plotSelection.addItem(ARGUMENT);
-    plotSelection.addItem("Residuals plot");
-    this.add(plotSelection, gbc);
+    plotSelection.addItem("Residual amplitude plot");
+    plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
+    this.add(plotSelection, gbc);
   }
   
   @Override
@@ -360,7 +519,7 @@ public class RandomizedPanel extends ExperimentPanel {
       
       int idx = plotSelection.getSelectedIndex();
       JFreeChart[] charts = 
-          new JFreeChart[]{magChart, argChart, residChart};
+          new JFreeChart[]{magChart, argChart, residAmpChart, residPhaseChart};
       chart = charts[idx];
       chartPanel.setChart(chart);
       
@@ -368,12 +527,69 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
+    if ( e.getSource() == showParams ) {
+      
+      if( !showParams.isSelected() ) {
+        for ( JFreeChart chart : getCharts() ) {
+          Title extra = chart.getSubtitle(TITLE_IDX);
+          chart.removeSubtitle(extra);
+          extra = chart.getSubtitle(TITLE_IDX);
+          chart.removeSubtitle(extra);
+        }
+      }
+
+      /*
+      XYPlot xyp = magChart.getXYPlot();
+      xyp.clearAnnotations();
+      */
+      if ( showParams.isSelected() ) {
+        setSubtitles();
+        
+        // xyp.addAnnotation(xyt);
+      }
+      
+      return;
+    }
+    
+  }
+  
+  private void setSubtitles() {
+    BlockContainer bc = new BlockContainer( new FlowArrangement() );
+    CompositeTitle ct = new CompositeTitle(bc);
+    String[] insets = getInsetStringsAsList();
+    for (String inset : insets) {
+      TextTitle result = new TextTitle();
+      result.setText(inset);
+      // result.setFont( new Font("Dialog", Font.BOLD, 12) );
+      result.setBackgroundPaint(Color.white);
+      bc.add(result);
+    }
+
+    TextTitle result = new TextTitle();
+    RandomizedExperiment re = (RandomizedExperiment) expResult;
+    int numIters = re.getIterations();
+    StringBuilder sb = new StringBuilder("NUMBER OF ITERATIONS: ");
+    sb.append(numIters);
+    result.setText( sb.toString() );
+    result.setBackgroundPaint(Color.white);
+
+    ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
+    ct.setPosition(RectangleEdge.BOTTOM);
+    result.setVerticalAlignment(VerticalAlignment.BOTTOM);
+    result.setPosition(RectangleEdge.BOTTOM);
+    for ( JFreeChart chart : getCharts() ) {
+      chart.addSubtitle(TITLE_IDX, ct);
+      chart.addSubtitle(TITLE_IDX, result);
+    }
   }
   
   @Override
   protected void drawCharts() {
+    
     // just force the active plot at the start to be the amplitude plot
     plotSelection.setSelectedIndex(0);
+    showParams.setSelected(true);
+    showParams.setEnabled(true);
     chart = magChart;
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
@@ -405,20 +621,37 @@ public class RandomizedPanel extends ExperimentPanel {
   }
   
   /**
-   * Used to get the text that will populate the inset box for the plots
-   * @return String to place in TextTitle
+   * Used to get the text that will represent the title text in the PDF result
    */
   @Override
   public String getInsetStrings() {
+    StringBuilder sb = new StringBuilder();
+    for (String str : getInsetStringsAsList()) {
+      sb.append(str);
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Produce arrays of pole, zero, and residual data for text titles
+   * @return Array of strings 
+   */
+  public String[] getInsetStringsAsList() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     return getInsetString(rnd);
   }
-  
   
   @Override
   public String getMetadataString() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     StringBuilder sb = new StringBuilder();
+    
+    int iters = rnd.getIterations();
+    sb.append("Iteration count from solver: ");
+    sb.append(iters);
+    sb.append("\n");
+    
     sb.append( super.getMetadataString() );
     
     double[] weights = rnd.getWeights();
@@ -441,51 +674,42 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   public String getPDFFilename() {
     
-    String freq;
+    StringBuilder sb = new StringBuilder();
     if ( lowFreqBox.isSelected() ) {
-      freq = "LOW_FRQ";
+      sb.append("Low_Frq_");
     } else {
-      freq = "HIGH_FRQ";
+      sb.append("High_Frq_");
     }
     
-    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    // experiment has no time metadata to be associated with it, get time now
-    String date = sdf.format( cCal.getTime() );
+    sb.append( super.getPDFFilename() );
     
-    String test = expType.getName().replace(' ', '_');
-    
-    int idx = getIndexOfMainData(); // first resp in list
-    String name = expResult.getInputNames().get(idx);
-    
-    StringBuilder sb = new StringBuilder();
-    sb.append(test);
-    sb.append('_');
-    sb.append(freq);
-    sb.append('_');
-    sb.append(name);
-    sb.append('_');
-    sb.append(date);
-    sb.append(".pdf");
     return sb.toString();
-    
   }
   
   @Override
   public JFreeChart[] getSecondPageCharts() {
-    return new JFreeChart[]{residChart};
+    return new JFreeChart[]{residAmpChart, residPhaseChart};
+  }
+  
+  @Override
+  public ValueAxis getXAxis() {
+    if ( null == plotSelection || freqSpace.isSelected() ) {
+      return xAxis;
+    } else {
+      return prdAxis;
+    }
   }
   
   @Override
   public ValueAxis getYAxis() {
     
-    if ( null == plotSelection ) {
+    if (null == plotSelection) {
       return yAxis;
     }
     
     int idx = plotSelection.getSelectedIndex();
-    ValueAxis[] out = new ValueAxis[]{yAxis, degreeAxis, residAxis};
+    ValueAxis[] out = 
+        new ValueAxis[]{yAxis, degreeAxis, residAmpAxis, residPhaseAxis};
     return out[idx];
   }
 
@@ -498,12 +722,14 @@ public class RandomizedPanel extends ExperimentPanel {
   protected void updateData(DataStore ds) {
     
     set = true;
-
+    showParams.setSelected(false);
+    
     final boolean isLowFreq = lowFreqBox.isSelected();
     seriesColorMap = new HashMap<String, Color>();
     
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
     rndExp.setLowFreq(isLowFreq);
+    rndExp.useFreqUnits( freqSpace.isSelected() );
     expResult.runExperimentOnData(ds);
     
     String appendFreqTitle;
@@ -530,11 +756,11 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
-    argChart = buildChart(argSeries, xAxis, degreeAxis);
+    argChart = buildChart(argSeries, getXAxis(), degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
     invertSeriesRenderingOrder( argChart );
     
-    magChart = buildChart(magSeries, xAxis, yAxis);
+    magChart = buildChart(magSeries, getXAxis(), yAxis);
     invertSeriesRenderingOrder( magChart );
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     
@@ -542,31 +768,13 @@ public class RandomizedPanel extends ExperimentPanel {
     TextTitle result = new TextTitle();
     result.setText(inset);
     result.setBackgroundPaint(Color.white);
-    double x;
-    double y = 0.02;
-    RectangleAnchor ra;
-    // move text box left or right depending on which frequencies aren't
-    // being fitted
-    if ( lowFreqBox.isSelected() ) {
-      x = 1;
-      ra = RectangleAnchor.BOTTOM_RIGHT;
-    } else {
-      x = 0;
-      ra = RectangleAnchor.BOTTOM_LEFT;
-    }
-    
-    XYTitleAnnotation xyt = 
-        new XYTitleAnnotation(x, y, result, ra);
-    
-    XYPlot xyp = magChart.getXYPlot();
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
     
     appendChartTitle(argChart, appendFreqTitle);
     appendChartTitle(magChart, appendFreqTitle);
     
     // get residuals plot
-    residChart = buildChart(xysc.get(2), xAxis, residAxis);
+    residAmpChart = buildChart(xysc.get(2), getXAxis(), residAmpAxis);
+    /*
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();
     sb.append("Amplitude weighting: ");
@@ -577,10 +785,35 @@ public class RandomizedPanel extends ExperimentPanel {
     weightInset.setText( sb.toString() );
     weightInset.setBackgroundPaint(Color.white);
     XYTitleAnnotation weightAnnot = 
-        new XYTitleAnnotation(0, 0, weightInset, RectangleAnchor.BOTTOM_LEFT);
+        new XYTitleAnnotation(0, 1, weightInset, RectangleAnchor.TOP_LEFT);
     XYPlot residPlot = residChart.getXYPlot();
     residPlot.clearAnnotations();
     residPlot.addAnnotation(weightAnnot);
+    */
+    residPhaseChart = buildChart(xysc.get(3), getXAxis(), residPhaseAxis);
+    /*
+    double[] weights = rndExp.getWeights();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Amplitude weighting: ");
+    sb.append(weights[0]);
+    sb.append("\nPhase weighting: ");
+    sb.append(weights[1]);
+    TextTitle weightInset = new TextTitle();
+    weightInset.setText( sb.toString() );
+    weightInset.setBackgroundPaint(Color.white);
+    XYTitleAnnotation weightAnnot = 
+        new XYTitleAnnotation(0, 1, weightInset, RectangleAnchor.TOP_LEFT);
+    XYPlot residPlot = residChart.getXYPlot();
+    residPlot.clearAnnotations();
+    residPlot.addAnnotation(weightAnnot);
+    */
+    /*
+    for ( JFreeChart chart : getCharts() ) {
+      chart.addSubtitle( TITLE_IDX, result );
+    }
+    */
+    
+    setSubtitles();
   }
 
 }

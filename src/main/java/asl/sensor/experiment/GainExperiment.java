@@ -255,7 +255,7 @@ public class GainExperiment extends Experiment {
    * @param refIdx Index of first curve to be plotted (numerator PSD)
    * @param lowFq Lower-bound of frequency window of PSD
    * @param highFq Upper-bound of frequency window of PSD
-   * @return 2-entry array of form {mean, standard deviation}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
   public double[] getStatsFromFreqs(int refIdx, double lowFq, double highFq) {
     

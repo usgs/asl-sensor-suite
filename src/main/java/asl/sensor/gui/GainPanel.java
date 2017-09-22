@@ -85,11 +85,31 @@ implements ChangeListener {
     sb.append(calcGain);
     return sb.toString();
   }
+  /**
+   * Draws the lines marking the boundaries of the current window
+   * @param lowPrd lower x-axis value (period, in seconds)
+   * @param highPrd upper x-axis value (period, in seconds)
+   * @param chart Chart to add domain markers to
+   * @return XYPlot XYPlot with new domain markers set
+   */
+  protected static JFreeChart 
+  setDomainMarkers(double lowPrd, double highPrd, JFreeChart chart) {
+    XYPlot xyp = chart.getXYPlot();
+    xyp.clearDomainMarkers();
+    Marker startMarker = new ValueMarker(lowPrd);
+    startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+    Marker endMarker = new ValueMarker(highPrd);
+    endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+    xyp.addDomainMarker(startMarker);
+    xyp.addDomainMarker(endMarker);
+    return chart;
+  }
   protected JSlider leftSlider;
   protected JSlider rightSlider;
   protected JComboBox<String> refSeries;
-  protected JButton recalcButton;
   
+  protected JButton recalcButton;
+
   protected double low, high;
 
   /**
@@ -179,7 +199,7 @@ implements ChangeListener {
     this.add(save, gbc);
     
   }
-
+  
   /**
    * Calls functions to do replotting and stat recalculations when different
    * timeseries are selected or the recalculate button is hit
@@ -299,6 +319,7 @@ implements ChangeListener {
     return getInsetString(gn, refIdx, lowPrd, highPrd);
   }
   
+    
   @Override
   public String getMetadataString() {
 
@@ -320,8 +341,7 @@ implements ChangeListener {
     
     return sb.toString();
   }
-  
-    
+
   /**
    * Converts x-axis value from log scale to linear, to get slider position
    * @param prd period value marking data window boundary
@@ -331,6 +351,7 @@ implements ChangeListener {
     double scale = (high - low)/SLIDER_MAX; // recall slider range is 0 to 1000
     return (int) ( ( Math.log10(prd) - low ) / scale );
   }
+  
 
   /**
    * Converts the slider position to a logarithmic scale matching x-axis values
@@ -343,12 +364,11 @@ implements ChangeListener {
     return Math.pow(10, low + (scale * position) );
   }
   
-
   @Override
   public int panelsNeeded() {
     return 2;
   }
-  
+
   /**
    * Used to populate the comboboxes with the incoming data
    * @param ds DataStore object being processed 
@@ -371,26 +391,6 @@ implements ChangeListener {
     }
     
     refSeries.setSelectedIndex(0);
-  }
-
-  /**
-   * Draws the lines marking the boundaries of the current window
-   * @param lowPrd lower x-axis value (period, in seconds)
-   * @param highPrd upper x-axis value (period, in seconds)
-   * @param xyp plot displayed in this object's chart
-   * @return XYPlot XYPlot with new domain markers set
-   */
-  protected static JFreeChart 
-  setDomainMarkers(double lowPrd, double highPrd, JFreeChart chart) {
-    XYPlot xyp = chart.getXYPlot();
-    xyp.clearDomainMarkers();
-    Marker startMarker = new ValueMarker(lowPrd);
-    startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
-    Marker endMarker = new ValueMarker(highPrd);
-    endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
-    xyp.addDomainMarker(startMarker);
-    xyp.addDomainMarker(endMarker);
-    return chart;
   }
 
   /**

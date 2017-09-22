@@ -13,18 +13,33 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
 
+import asl.sensor.utils.TimeSeriesUtils;
+
+/**
+ * This panel presents an alternate means of range-trimming to the standard
+ * slider. Given timeseries data, this produces x-axis values as time longs that
+ * can be used to set data boundaries. The data is edited by manipulating
+ * calendar values from inside this object's spinners, each one corresponding
+ * to a date component between the year and the millisecond inclusive.
+ * @author akearns
+ *
+ */
 public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
   /**
    * 
    */
   private static final long serialVersionUID = -1649983797482938586L;
+  public static final int TIME_FACTOR = TimeSeriesUtils.TIME_FACTOR;
   
   private JSpinner year, day, hour, minute, second, millisecond;
   private JLabel yLabel, dLabel, hLabel, mLabel, sLabel, msLabel;
   private EventListenerList listeners;
-  private Calendar c;
+  private Calendar c; // holds the data for the current time
   
+  /**
+   * Constructor initializes components, layouts, and listeners.
+   */
   public EditableDateDisplayPanel() {
     
     listeners = new EventListenerList();
@@ -132,11 +147,75 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     
   }
   
+  /**
+   * Initialize a panel with a specific initial time value
+   * @param timeStamp Java epoch time (ms)
+   */
   public EditableDateDisplayPanel(long timeStamp) {
     this();
     setValues(timeStamp);
   }
 
+  /**
+   * Register a Swing component to be notified when this object changes
+   * (add it to the callback list)
+   * @param listener swing component to be notified of this panel's state
+   */
+  public void addChangeListener(ChangeListener listener) {
+    listeners.add(ChangeListener.class, listener);
+  }
+  
+  /**
+   * Notifies listening components that the state of this object has changed
+   */
+  private void fireStateChanged() {
+    ChangeListener[] lsners = listeners.getListeners(ChangeListener.class);
+    if (lsners != null && lsners.length > 0) {
+      ChangeEvent evt = new ChangeEvent(this);
+      for (ChangeListener lsnr : lsners) {
+        lsnr.stateChanged(evt);
+      }
+    }
+  }
+  
+  /**
+   * Get the time specified by this panel's components in milliseconds
+   * @return The time based on the calendar componets
+   */
+  public long getTime() {
+    return c.getTimeInMillis();
+  }
+  
+  /**
+   * Remove a Swing component from the list of active listeners to this panel
+   * @param listener Swing component no longer listening to this object
+   */
+  public void removeChangeListener(ChangeListener listener) {
+    listeners.remove(ChangeListener.class, listener);
+  }
+  
+  /**
+   * Convert time in milliseconds to calendar components to populate panel
+   * @param timeStamp Time to set this panel to
+   */
+  public void setValues(long timeStamp) {
+    
+    timeStamp /= TIME_FACTOR;
+    
+    if ( timeStamp == getTime() ) {
+      return; // don't do anything if no change is necessary
+    }
+    
+    c.setTimeInMillis(timeStamp);
+    year.setValue( c.get(Calendar.YEAR) );
+    day.setValue( c.get(Calendar.DAY_OF_YEAR) );
+    hour.setValue( c.get(Calendar.HOUR_OF_DAY) );
+    minute.setValue( c.get(Calendar.MINUTE) );
+    second.setValue( c.get(Calendar.SECOND) );
+    millisecond.setValue( c.get(Calendar.MILLISECOND) );
+    
+  }
+  
   @Override
   public void stateChanged(ChangeEvent e) {
     
@@ -155,44 +234,6 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     }
     
     fireStateChanged(); // percolate change in component up to any containers
-  }
-  
-  public void addChangeListener(ChangeListener listener) {
-    listeners.add(ChangeListener.class, listener);
-  }
-  
-  public void removeChangeListener(ChangeListener listener) {
-    listeners.remove(ChangeListener.class, listener);
-  }
-  
-  public void fireStateChanged() {
-    ChangeListener[] lsners = listeners.getListeners(ChangeListener.class);
-    if (lsners != null && lsners.length > 0) {
-      ChangeEvent evt = new ChangeEvent(this);
-      for (ChangeListener lsnr : lsners) {
-        lsnr.stateChanged(evt);
-      }
-    }
-  }
-  
-  public long getTime() {
-    return c.getTimeInMillis();
-  }
-  
-  public void setValues(long timeStamp) {
-    
-    if ( timeStamp == getTime() ) {
-      return; // don't do anything if no change is necessary
-    }
-    
-    c.setTimeInMillis(timeStamp);
-    year.setValue( c.get(Calendar.YEAR) );
-    day.setValue( c.get(Calendar.DAY_OF_YEAR) );
-    hour.setValue( c.get(Calendar.HOUR_OF_DAY) );
-    minute.setValue( c.get(Calendar.MINUTE) );
-    second.setValue( c.get(Calendar.SECOND) );
-    millisecond.setValue( c.get(Calendar.MILLISECOND) );
-    
   }
   
 }

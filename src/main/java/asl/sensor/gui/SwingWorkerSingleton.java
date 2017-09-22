@@ -17,8 +17,23 @@ public class SwingWorkerSingleton {
   private static SwingWorker<Boolean, Void> worker;
   private static ExperimentPanel epHandle;
   
-  private SwingWorkerSingleton() {
-    // empty constructor; worker is built when experiment is passed into it
+  public static void cancel() {
+    worker.cancel(true);
+  }
+  
+  /**
+   * Get the result of running the swingworker, that is, completion status
+   * @return True if the worker (i.e., experiment) completed successfully
+   * @throws InterruptedException
+   * @throws ExecutionException
+   */
+  public static boolean getCompleted() 
+      throws InterruptedException, ExecutionException {
+    return worker.get();
+  }
+  
+  public static SwingWorker<Boolean, Void> getInstance() {
+    return worker;
   }
   
   /**
@@ -67,7 +82,13 @@ public class SwingWorkerSingleton {
             epHandle.setDone(); 
           } 
         } catch (Exception ex) {
-          epHandle.displayErrorMessage( ex.getMessage() );
+          String text;
+          if ( ex.getMessage() == null ) {
+            text = "CANCELLED";
+          } else {
+            text = ex.getMessage();
+          }
+          epHandle.displayErrorMessage( text );
           ex.printStackTrace();
         }
       }
@@ -76,19 +97,8 @@ public class SwingWorkerSingleton {
     worker.execute();
   }
   
-  public static SwingWorker<Boolean, Void> getInstance() {
-    return worker;
-  }
-  
-  /**
-   * Get the result of running the swingworker, that is, completion status
-   * @return True if the worker (i.e., experiment) completed successfully
-   * @throws InterruptedException
-   * @throws ExecutionException
-   */
-  public static boolean getCompleted() 
-      throws InterruptedException, ExecutionException {
-    return worker.get();
+  private SwingWorkerSingleton() {
+    // empty constructor; worker is built when experiment is passed into it
   }
   
 }

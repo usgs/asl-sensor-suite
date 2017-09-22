@@ -38,17 +38,21 @@ import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.JTextComponent;
 
+import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.IntervalMarker;
 import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
@@ -97,6 +101,7 @@ implements ActionListener, ChangeListener {
   public static final int FILE_COUNT = DataStore.FILE_COUNT;
   
   private static final int MARGIN = 10; // min space of the two sliders
+  public static final int TIME_FACTOR = TimeSeriesUtils.TIME_FACTOR;
   public static final int SLIDER_MAX = 10000;
   
   /**
@@ -106,13 +111,13 @@ implements ActionListener, ChangeListener {
    * @return Long that represents start or end time matching slider's value
    */
   public static long getMarkerLocation(DataBlock db, int sliderValue) {
-    long start = db.getStartTime();
-    long len = db.getInterval() * db.size();
+    long start = db.getStartTime() / TIME_FACTOR;
+    long len = ( db.getInterval() / TIME_FACTOR ) * db.size();
     return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
   }
   
   public static int getSliderValue(DataBlock db, long timeStamp) {
-    long start = db.getStartTime();
+    long start = db.getStartTime() / TIME_FACTOR;
     long len = db.getInterval() * db.size();
     return (int) ( ( SLIDER_MAX * (timeStamp - start) ) / len );
   }
@@ -120,8 +125,7 @@ implements ActionListener, ChangeListener {
   private int activePlots = FILE_COUNT; // how much data is being displayed
   
   private DataStore ds;
-  private DataStore zooms;
-  private ChartPanel[] chartPanels = new ChartPanel[FILE_COUNT];
+  private ChartPanel[] chartPanels;
   private Color[] defaultColor = {
           ChartColor.LIGHT_RED, 
           ChartColor.LIGHT_BLUE, 
@@ -138,17 +142,15 @@ implements ActionListener, ChangeListener {
   
   private EditableDateDisplayPanel startDate, endDate;
       
-  private JButton[] seedLoaders  = new JButton[FILE_COUNT];
-  private JTextComponent[] seedFileNames = 
-      new JTextComponent[FILE_COUNT];
-  private JButton[] respLoaders  = new JButton[FILE_COUNT];
-  private JTextComponent[] respFileNames = 
-      new JTextComponent[FILE_COUNT];
-  private JButton[] clearButton = new JButton[FILE_COUNT];
+  private JButton[] seedLoaders;
+  private JTextComponent[] seedFileNames;
+  private JButton[] respLoaders;
+  private JTextComponent[] respFileNames;
+  private JButton[] clearButton;
   
-  private JLabel[] channelType = new JLabel[FILE_COUNT];
+  private JLabel[] channelType;
   
-  private JPanel[] chartSubpanels = new JPanel[FILE_COUNT];
+  private JPanel[] chartSubpanels;
   
   // used to store current directory locations
   private String seedDirectory = "data";
@@ -165,11 +167,19 @@ implements ActionListener, ChangeListener {
    */
   public InputPanel() {
     
+    chartPanels = new ChartPanel[FILE_COUNT];
+    seedLoaders = new JButton[FILE_COUNT];
+    seedFileNames = new JTextComponent[FILE_COUNT];
+    respFileNames = new JTextComponent[FILE_COUNT];
+    respLoaders = new JButton[FILE_COUNT];
+    clearButton = new JButton[FILE_COUNT];
+    channelType = new JLabel[FILE_COUNT];
+    chartSubpanels = new JPanel[FILE_COUNT];
+    
     this.setLayout( new GridBagLayout() );
     GridBagConstraints gbc = new GridBagConstraints();
    
     ds = new DataStore();
-    zooms = new DataStore();
     
     gbc.weightx = 1.0;
     gbc.weighty = 1.0;
@@ -370,8 +380,7 @@ implements ActionListener, ChangeListener {
         // disable clearAll button if there's no other data loaded in
         clearAll.setEnabled( ds.isAnythingSet() );
         
-        zooms = new DataStore(ds);
-        zooms.trimToCommonTime();
+        ds.trimToCommonTime();
         
         showRegionForGeneration();
         
@@ -426,7 +435,6 @@ implements ActionListener, ChangeListener {
             InstrumentResponse ir = 
                 InstrumentResponse.loadEmbeddedResponse(fname);
             ds.setResponse(i, ir);
-            zooms.setResponse(i, ir);
             respFileNames[i].setText( ir.getName() );
             clear.setEnabled(true);
             clearAll.setEnabled(true);
@@ -445,7 +453,6 @@ implements ActionListener, ChangeListener {
             File file = fc.getSelectedFile();
             respDirectory = file.getParent();
             ds.setResponse(i, file.getAbsolutePath() );
-            zooms.setResponse(i, file.getAbsolutePath() );
             respFileNames[i].setText( file.getName() );
             clear.setEnabled(true);
             clearAll.setEnabled(true);
@@ -495,18 +502,15 @@ implements ActionListener, ChangeListener {
     }
     
     if ( e.getSource() == zoomIn ) {
-      
       showRegionForGeneration();
       return;
     }
     
     if ( e.getSource() == zoomOut ) {
-      
       // restore original loaded datastore
-      zooms = new DataStore(ds);
-      zooms.trimToCommonTime();
+      ds.untrim(activePlots);
       for (int i = 0; i < FILE_COUNT; ++i) {
-        if ( !zooms.blockIsSet(i) ) {
+        if ( !ds.blockIsSet(i) ) {
           continue;
         }
         resetPlotZoom(i);
@@ -532,7 +536,6 @@ implements ActionListener, ChangeListener {
    */
   public void clearAllData() {
     ds = new DataStore();
-    zooms = new DataStore();
     
     zoomIn.setEnabled(false);
     zoomOut.setEnabled(false);
@@ -661,12 +664,12 @@ implements ActionListener, ChangeListener {
   public DataStore getData() {
     
     // showRegionForGeneration();
-    if ( zooms.numberOfBlocksSet() > 1 ) {
-      zooms.matchIntervals(activePlots);
-      zooms.trimToCommonTime(activePlots);
+    if ( ds.numberOfBlocksSet() > 1 ) {
+      // zooms.matchIntervals(activePlots); done at experiment level
+      ds.trimToCommonTime(activePlots);
     }
 
-    return zooms;
+    return new DataStore(ds);
   }
   
   /**
@@ -690,7 +693,11 @@ implements ActionListener, ChangeListener {
   public String[] getResponseStrings(int[] indices) {
     String[] outStrings = new String[indices.length];
     for (int i = 0; i < indices.length; ++i) {
-      outStrings[i] = zooms.getResponse(indices[i]).toString();
+      int idx = indices[i];
+      if ( !ds.responseIsSet(idx) ) {
+        System.out.println("ERROR WITH RESP AT INDEX " + idx);
+      }
+      outStrings[i] = ds.getResponse(idx).toString();
     }
     return outStrings;
   }
@@ -781,19 +788,20 @@ implements ActionListener, ChangeListener {
         public Integer doInBackground() {
 
           try {
-            ds.setData(idx, filePath, immutableFilter);
+            ds.setBlock(idx, filePath, immutableFilter);
           } catch (RuntimeException e) {
             e.printStackTrace();
             caughtException = true;
             return 1;
           }
 
-          zooms = new DataStore(ds);
           // zooms.matchIntervals(activePlots);
-          zooms.trimToCommonTime(activePlots);
-
-          XYSeries ts = zooms.getPlotSeries(idx);
-          double sRate = zooms.getBlock(idx).getSampleRate();
+          ds.untrim(activePlots);
+          
+          XYSeries ts = ds.getBlock(idx).toXYSeries();
+          //System.out.println("XY SERIES NAME");
+          //System.out.println(ts.getKey());
+          double sRate = ds.getBlock(idx).getSampleRate();
           String rateString = " (" + sRate + " Hz)";
           chart = ChartFactory.createXYLineChart(
               ts.getKey().toString() + rateString,
@@ -802,10 +810,12 @@ implements ActionListener, ChangeListener {
               new XYSeriesCollection(ts),
               PlotOrientation.VERTICAL,
               false, false, false);
+          
+          // System.out.println("Got chart");
 
           XYPlot xyp = (XYPlot) chart.getPlot();
+          
           DateAxis da = new DateAxis();
-
           SDF.setTimeZone( TimeZone.getTimeZone("UTC") );
           da.setLabel("UTC Time (Year.Day.Hour:Minute)");
           Font bold = da.getLabelFont();
@@ -815,6 +825,9 @@ implements ActionListener, ChangeListener {
           xyp.setDomainAxis(da);
           int colorIdx = idx % defaultColor.length;
           xyp.getRenderer().setSeriesPaint(0, defaultColor[colorIdx]);
+          
+          NumberAxis na = (NumberAxis) xyp.getRangeAxis();
+          na.setAutoRangeIncludesZero(false);
           
           return 0;
           // setData(idx, filePath, immutableFilter);
@@ -849,7 +862,7 @@ implements ActionListener, ChangeListener {
           clearButton[idx].setEnabled(true);
 
           for (int i = 0; i < FILE_COUNT; ++i) {
-            if ( !zooms.blockIsSet(i) ) {
+            if ( !ds.blockIsSet(i) ) {
               continue;
             }
             resetPlotZoom(i);
@@ -1011,9 +1024,10 @@ implements ActionListener, ChangeListener {
    * @param idx Index of appropriate chart/panel
    */
   private void resetPlotZoom(int idx) {
+    // System.out.println("reset plot zoom");
     XYPlot xyp = chartPanels[idx].getChart().getXYPlot();
     XYSeriesCollection xys = new XYSeriesCollection();
-    xys.addSeries( zooms.getBlock(idx).toXYSeries() );
+    xys.addSeries( ds.getBlock(idx).toXYSeries() );
     xyp.setDataset( xys );
     xyp.getRenderer().setSeriesPaint(0,
         defaultColor[idx % defaultColor.length]);
@@ -1045,9 +1059,7 @@ implements ActionListener, ChangeListener {
    * @param filepath Full address of the file to be loaded in
    */
   public void setResponse(int idx, String filepath) {
-    
     ds.setResponse(idx, filepath);
-    zooms.setResponse(idx, filepath);
   }
 
   /**
@@ -1056,7 +1068,7 @@ implements ActionListener, ChangeListener {
    */
   public void setVerticalBars() {
     
-    if ( zooms.numberOfBlocksSet() < 1 ) {
+    if ( ds.numberOfBlocksSet() < 1 ) {
       return;
     }
     
@@ -1064,9 +1076,9 @@ implements ActionListener, ChangeListener {
     
     int leftValue = leftSlider.getValue();
     int rightValue = rightSlider.getValue();
-    DataBlock db = zooms.getXthLoadedBlock(1);
-    long startMarkerLocation = getMarkerLocation(db, leftValue) / 1000;
-    long endMarkerLocation = getMarkerLocation(db, rightValue) / 1000;
+    DataBlock db = ds.getXthLoadedBlock(1);
+    long startMarkerLocation = getMarkerLocation(db, leftValue);
+    long endMarkerLocation = getMarkerLocation(db, rightValue);
     
     startDate.removeChangeListener(this);
     endDate.removeChangeListener(this);
@@ -1076,14 +1088,13 @@ implements ActionListener, ChangeListener {
     endDate.addChangeListener(this);
     
     for (int i = 0; i < FILE_COUNT; ++i) {
-      if ( !zooms.blockIsSet(i) ) {
+      if ( !ds.blockIsSet(i) ) {
         continue;
       }
       
       XYPlot xyp = chartPanels[i].getChart().getXYPlot();
       xyp.clearDomainMarkers();
       
-      // divide by 1000 here to get time value in ms
       Marker startMarker = new ValueMarker(startMarkerLocation);
       startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
       Marker endMarker = new ValueMarker(endMarkerLocation);
@@ -1092,6 +1103,24 @@ implements ActionListener, ChangeListener {
       xyp.addDomainMarker(startMarker);
       xyp.addDomainMarker(endMarker);
       
+      List<Pair<Long,Long>> gaps = ds.getBlock(i).getGapBoundaries();
+      
+      XYDataset data = xyp.getDataset();
+      XYSeriesCollection xysc = (XYSeriesCollection) data;
+      double min = xysc.getDomainLowerBound(false);
+      double max = xysc.getDomainUpperBound(false);
+      
+      for (Pair<Long, Long> gapLoc : gaps) {
+        Double gapStart = gapLoc.getFirst().doubleValue();
+        Double gapEnd = gapLoc.getSecond().doubleValue();
+        if (gapEnd > min || gapStart < max) {
+          double start = Math.max(gapStart, min);
+          double end = Math.min(gapEnd, max);
+          Marker gapMarker = new IntervalMarker(start, end);
+          gapMarker.setPaint( Color.ORANGE );
+          xyp.addDomainMarker(gapMarker);
+        }
+      }
       chartPanels[i].repaint();
     }
     
@@ -1116,21 +1145,21 @@ implements ActionListener, ChangeListener {
     
     // get current time range of zoom data for resetting, if any data is loaded
     long start, end;
-    if ( zooms.areAnyBlocksSet() ) {
-      DataBlock db = zooms.getXthLoadedBlock(1);
+    if ( ds.areAnyBlocksSet() ) {
+      DataBlock db = ds.getXthLoadedBlock(1);
       start = db.getStartTime();
       end = db.getEndTime();
       
-      zooms = new DataStore(ds, activePlots);
-      zooms.trimToCommonTime(activePlots);
+      ds = new DataStore(ds, activePlots);
+      ds.trimToCommonTime(activePlots);
       // try to trim to current active time range if possible, otherwise fit
       // as much data as possible
-      db = zooms.getXthLoadedBlock(1);
+      db = ds.getXthLoadedBlock(1);
       // was the data zoomed in more than it is now?
       if ( start > db.getStartTime() || end < db.getEndTime() ) {
         try {
           // zooms won't be modified if an exception is thrown
-          zooms.trimAll(start, end);
+          ds.trim(start, end, activePlots);
           zoomOut.setEnabled(true);
         } catch (IndexOutOfBoundsException e) {
           // new time range not valid for all current data, show max range
@@ -1149,7 +1178,7 @@ implements ActionListener, ChangeListener {
 
 
     for (int i = 0; i < activePlots; ++i) {
-      if ( zooms.blockIsSet(i) ){
+      if ( ds.blockIsSet(i) ){
         resetPlotZoom(i);
       }
       
@@ -1161,7 +1190,7 @@ implements ActionListener, ChangeListener {
     leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
     setVerticalBars();
     
-    zoomIn.setEnabled( zooms.numberOfBlocksSet() > 0 );
+    zoomIn.setEnabled( ds.numberOfBlocksSet() > 0 );
     
     // using this test means the panel doesn't try to scroll when it's
     // only got a few inputs to deal with, when stuff is still pretty readable
@@ -1177,30 +1206,113 @@ implements ActionListener, ChangeListener {
    */
   public void showRegionForGeneration() {
     
-    if ( zooms.numberOfBlocksSet() < 1 ) {
+    if ( ds.numberOfBlocksSet() < 1 ) {
       return;
     }
     
     // get (any) loaded data block to map slider to domain boundary
     // all data should have the same range
-    DataBlock db = zooms.getXthLoadedBlock(1);
+    DataBlock db = ds.getXthLoadedBlock(1);
 
     if ( leftSlider.getValue() != 0 || rightSlider.getValue() != SLIDER_MAX ) {
-      long start = getMarkerLocation(db, leftSlider.getValue() );
-      long end = getMarkerLocation(db, rightSlider.getValue() );
-      zooms = new DataStore(ds, start, end, activePlots);
+      long start = getMarkerLocation( db, leftSlider.getValue() );
+      long end = getMarkerLocation( db, rightSlider.getValue() );
+      ds.trim(start, end, activePlots);
       leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
       zoomOut.setEnabled(true);
     }
     
     for (int i = 0; i < activePlots; ++i) {
-      if ( !zooms.blockIsSet(i) ) {
+      if ( !ds.blockIsSet(i) ) {
         continue;
       }
       resetPlotZoom(i);
+      
     }
 
     setVerticalBars();
+    
+  }
+  
+  @Override
+  /**
+   * Handles changes in value by the sliders below the charts
+   */
+  public void stateChanged(ChangeEvent e) {
+    
+    int leftSliderValue = leftSlider.getValue();
+    int rightSliderValue = rightSlider.getValue();
+    
+    if ( e.getSource() == startDate ) {
+      // if no data to do windowing on, don't bother
+      if ( ds.numberOfBlocksSet() < 1 ) {
+        return;
+      }
+      
+      long time = startDate.getTime();
+      DataBlock db = ds.getXthLoadedBlock(1);
+
+      long startTime = db.getStartTime();
+      // startValue is current value of left-side slider in ms
+
+      // assume current locations of sliders is valid
+      int marginValue = rightSliderValue - MARGIN;
+      long marginTime = 
+          getMarkerLocation(db, marginValue);
+
+      // fix boundary cases
+      if (time < startTime) {
+        time = startTime;
+      } else if (time > marginTime) {
+        time = marginTime;
+      }
+     
+      startDate.setValues(time);
+      int newLeftSliderValue = getSliderValue(db, time);
+      leftSlider.removeChangeListener(this);
+      leftSlider.setValue(newLeftSliderValue); // already validated
+      leftSlider.addChangeListener(this);
+      setVerticalBars();
+      return;
+    }
+    
+    if ( e.getSource() == endDate ) {
+      // if no data to do windowing on, don't bother
+      if ( ds.numberOfBlocksSet() < 1 ) {
+        return;
+      }
+      
+      long time = endDate.getTime();
+      DataBlock db = ds.getXthLoadedBlock(1);
+
+      long endTime = db.getEndTime();
+
+      int marginValue = leftSliderValue + MARGIN;
+      long marginTime = getMarkerLocation(db, marginValue);
+
+      // fix boundary cases
+      if (time > endTime) {
+        time = endTime;
+      } else if (time < marginTime) {
+        time = marginTime;
+      }
+     
+      endDate.setValues(time);
+      int newRightSliderValue = getSliderValue(db, time);
+      rightSlider.removeChangeListener(this);
+      rightSlider.setValue(newRightSliderValue); // already validated
+      rightSlider.addChangeListener(this);
+      setVerticalBars();
+      return;
+    }
+    
+    if ( e.getSource() == leftSlider ) {
+      validateSliderPlacement(true, leftSliderValue);
+    } else if ( e.getSource() == rightSlider ) {
+      validateSliderPlacement(false, rightSliderValue);
+    }
+    
+    setVerticalBars(); // date display object's text gets updated here
     
   }
   
@@ -1246,87 +1358,6 @@ implements ActionListener, ChangeListener {
     
     rightSlider.setValue(rightSliderValue);
     leftSlider.setValue(leftSliderValue);
-    
-  }
-  
-  @Override
-  /**
-   * Handles changes in value by the sliders below the charts
-   */
-  public void stateChanged(ChangeEvent e) {
-    
-    int leftSliderValue = leftSlider.getValue();
-    int rightSliderValue = rightSlider.getValue();
-    
-    if ( e.getSource() == startDate ) {
-      // if no data to do windowing on, don't bother
-      if ( zooms.numberOfBlocksSet() < 1 ) {
-        return;
-      }
-      
-      long time = startDate.getTime();
-      DataBlock db = zooms.getXthLoadedBlock(1);
-
-      long startTime = db.getStartTime() / 1000;
-      // startValue is current value of left-side slider in ms
-
-      // assume current locations of sliders is valid
-      int marginValue = rightSliderValue - MARGIN;
-      long marginTime = getMarkerLocation(db, marginValue) / 1000;
-
-      // fix boundary cases
-      if (time < startTime) {
-        time = startTime;
-      } else if (time > marginTime) {
-        time = marginTime;
-      }
-     
-      startDate.setValues(time);
-      int newLeftSliderValue = getSliderValue(db, time * 1000);
-      leftSlider.removeChangeListener(this);
-      leftSlider.setValue(newLeftSliderValue); // already validated
-      leftSlider.addChangeListener(this);
-      setVerticalBars();
-      return;
-    }
-    
-    if ( e.getSource() == endDate ) {
-      // if no data to do windowing on, don't bother
-      if ( zooms.numberOfBlocksSet() < 1 ) {
-        return;
-      }
-      
-      long time = endDate.getTime();
-      DataBlock db = zooms.getXthLoadedBlock(1);
-
-      long endTime = db.getEndTime() / 1000;
-
-      int marginValue = leftSliderValue + MARGIN;
-      long marginTime = getMarkerLocation(db, marginValue) / 1000;
-
-      // fix boundary cases
-      if (time > endTime) {
-        time = endTime;
-      } else if (time < marginTime) {
-        time = marginTime;
-      }
-     
-      endDate.setValues(time);
-      int newRightSliderValue = getSliderValue(db, time * 1000);
-      rightSlider.removeChangeListener(this);
-      rightSlider.setValue(newRightSliderValue); // already validated
-      rightSlider.addChangeListener(this);
-      setVerticalBars();
-      return;
-    }
-    
-    if ( e.getSource() == leftSlider ) {
-      validateSliderPlacement(true, leftSliderValue);
-    } else if ( e.getSource() == rightSlider ) {
-      validateSliderPlacement(false, rightSliderValue);
-    }
-    
-    setVerticalBars(); // date display object's text gets updated here
     
   }
   

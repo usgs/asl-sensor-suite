@@ -55,6 +55,14 @@ import asl.sensor.utils.ReportingUtils;
  * implementing methods are suggested to override this in their constructor
  * (see existing classes such as GainPanel and NoisePanel for examples).
  * 
+ * This class also includes a number of utility functions used in report
+ * generation. This is done with the expectation that some (but not necessarily
+ * all) such functions will be overridden by an implementing class, such as
+ * functions for creating reports with multiple charts and ensuring that any
+ * and all text data relevant to the panel is included in a report. In addition
+ * there are methods to display on the panel the current status of the
+ * experiment based on calls to a status change report in the backend.
+ * 
  * @author akearns
  *
  */
@@ -94,19 +102,38 @@ implements ActionListener, ChangeListener {
     long startTime = expResult.getStart();
     long endTime = expResult.getEnd();
     if ( !(startTime == 0L && endTime == 0L) ) {
-      cCal.setTimeInMillis( startTime / 1000 );
+      cCal.setTimeInMillis(startTime);
       
       sb.append("Data start time:\n");
       sb.append( sdf.format( cCal.getTime() ) );
       sb.append('\n');
       
-      cCal.setTimeInMillis( endTime / 1000 );
+      cCal.setTimeInMillis(endTime);
       
       sb.append("Data end time:\n");
       sb.append( sdf.format( cCal.getTime() ) );
       sb.append('\n');
     }
     return sb.toString();
+  }
+  
+  /**
+   * Reverses an xyplot rendering order, allowing curves that would otherwise be
+   * at the background are inverted and placed in the foreground instead.
+   * That is, if a curve is to be rendered behind a different curve, it will be
+   * rendered instead with that series in front of the other curve.
+   * @param chart Chart with plot rendering order to be reversed. Must use
+   * an XY plot (i.e., is an XYLineSeries chart)
+   */
+  public static void invertSeriesRenderingOrder(JFreeChart chart) {
+    XYPlot xyp = chart.getXYPlot();
+    SeriesRenderingOrder sro = xyp.getSeriesRenderingOrder();
+    if ( sro.equals(SeriesRenderingOrder.FORWARD) ) {
+      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.REVERSE);
+    } else {
+      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
+    }
+    
   }
   
   protected JButton save;
@@ -133,13 +160,13 @@ implements ActionListener, ChangeListener {
   
   public String[] channelType;
     // used to give details in input panel about what users needs to load where
-  
   protected boolean set; // true if the experiment has run
+  
   protected String[] plotTheseInBold; // given in the implementing function
   // this is a String because bolded names are intended to be fixed
   // (i.e., NLNM, NHNM, not dependent on user input)
-  
   protected Map<String, Color> seriesColorMap;
+  
   protected Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
   
@@ -183,18 +210,6 @@ implements ActionListener, ChangeListener {
     this.setLayout( new BoxLayout(this, BoxLayout.Y_AXIS) );
     this.add(chartPanel);
     this.add(save);
-  }
-  
-  @Override
-  /**
-   * Used to print out status of the experiment backend onto the chart when
-   * the backend status changes
-   */
-  public void stateChanged(ChangeEvent e) {
-    if ( e.getSource() == expResult ) {
-      String info = expResult.getStatus();
-      displayInfoMessage(info);
-    }
   }
   
   /**
@@ -510,9 +525,15 @@ implements ActionListener, ChangeListener {
     
     SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    cCal.setTimeInMillis( expResult.getStart() / 1000 );
-    String date = sdf.format( cCal.getTime() );
+    
+    String date;
+    long time = expResult.getStart();
+    if (time > 0) {
+      date = sdf.format(time);
+    } else {
+      Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+      date = sdf.format( cCal.getTime() );
+    }
     
     // turn spaces into underscores
     String test = expType.getName().replace(' ', '_'); // name of experiment
@@ -548,7 +569,7 @@ implements ActionListener, ChangeListener {
    * Function to be overridden by implementing class that will add an extra
    * page to PDF reports including charts with less-essential data, such as
    * the plots of residual values over a range for parameter-fitting
-   * @return
+   * @return List of charts to show on a second page of PDF reports
    */
   public JFreeChart[] getSecondPageCharts() {
     return new JFreeChart[]{};
@@ -685,24 +706,25 @@ implements ActionListener, ChangeListener {
   }
   
   /**
-   * Reverses an xyplot rendering order, allowing curves that would otherwise be
-   * at the background are inverted and placed in the foreground instead.
-   * That is, if a curve is to be rendered behind a different curve, it will be
-   * rendered instead with that series in front of the other curve.
-   * @param chart Chart with plot rendering order to be reversed. Must use
-   * an XY plot (i.e., is an XYLineSeries chart)
+   * Used to identify completion of an experiment to a containing thread
    */
-  public static void invertSeriesRenderingOrder(JFreeChart chart) {
-    XYPlot xyp = chart.getXYPlot();
-    SeriesRenderingOrder sro = xyp.getSeriesRenderingOrder();
-    if ( sro.equals(SeriesRenderingOrder.FORWARD) ) {
-      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.REVERSE);
-    } else {
-      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
-    }
-    
+  public void setDone() {
+    firePropertyChange("Backend completed", false, set);
+    drawCharts();
   }
 
+  @Override
+  /**
+   * Used to print out status of the experiment backend onto the chart when
+   * the backend status changes
+   */
+  public void stateChanged(ChangeEvent e) {
+    if ( e.getSource() == expResult ) {
+      String info = expResult.getStatus();
+      displayInfoMessage(info);
+    }
+  }
+  
   /**
    * Function template for sending input to a backend fucntion and collecting
    * the corresponding data
@@ -711,10 +733,5 @@ implements ActionListener, ChangeListener {
   protected abstract void updateData(final DataStore ds);
   // details of how to run updateData are left up to the implementing panel
   // however, the boolean "set" should be set to true to enable PDF saving
-  
-  public void setDone() {
-    firePropertyChange("Backend completed", false, set);
-    drawCharts();
-  }
   
 }
