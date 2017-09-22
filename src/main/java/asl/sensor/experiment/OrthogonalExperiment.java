@@ -144,15 +144,15 @@ public class OrthogonalExperiment extends Experiment {
       angle = (360-angle) % 360;
     }
     diffs = new double[2];
-    diffs[0] = angleX;
+    diffs[0] = angleY; // north
+    diffs[1] = angleX; // east
     diffs[0] = ( (diffs[0] % 360) + 360 ) % 360;
-    diffs[1] = angleY;
     diffs[1] = ( (diffs[1] % 360) + 360 ) % 360;
     
     // if x-plot chart way above y-plot, plot negative angle
-    if (diffs[1] > diffs[0]) {
-      diffs[1] -= 360;
-    }
+    //if (diffs[1] > diffs[0]) {
+    //  diffs[1] -= 360;
+    //}
     
     double timeAtPoint = 0.;
     double tick = interval / TimeSeriesUtils.ONE_HZ_INTERVAL;
