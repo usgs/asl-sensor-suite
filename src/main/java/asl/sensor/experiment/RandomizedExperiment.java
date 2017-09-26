@@ -533,13 +533,6 @@ extends Experiment implements ParameterValidator {
       xysc.addSeries(fitResidPhase);
     }
     xySeriesData.add(xysc);
-    
-    if (OUTPUT_TO_TERMINAL) {
-      for (int i = 0; i < inputsPerCalculation.size(); ++i) {
-       System.out.println(inputsPerCalculation.get(i));
-       System.out.println(outputsPerCalculation.get(i));
-      }
-    }
 
     
   }
@@ -789,9 +782,17 @@ extends Experiment implements ParameterValidator {
     double[] mag = evaluateResponse(currentVars);
     
     if (PRINT_EVERYTHING) {
-      inputsPerCalculation.add(Arrays.toString(currentVars));
-      outputsPerCalculation.add(Arrays.toString(mag));
+      String in = Arrays.toString(currentVars);
+      String out = Arrays.toString(mag);
+      inputsPerCalculation.add(in);
+      outputsPerCalculation.add(out);
+      if (OUTPUT_TO_TERMINAL) {
+        System.out.println(in);
+        System.out.println(out);
+      }
     }
+    
+    
 
     
     double[][] jacobian = new double[mag.length][numVars];
