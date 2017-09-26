@@ -57,6 +57,11 @@ extends Experiment implements ParameterValidator {
   public static final double PEAK_MULTIPLIER = // 0.8;
       NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
   
+  // TODO: turn this damn thing off
+  public static final boolean PRINT_EVERYTHING = true;
+  // conditional used so that if PRINT_EVERYTHING is false, this won't work
+  public static final boolean OUTPUT_TO_TERMINAL = PRINT_EVERYTHING && true;
+  
   // To whomever has to maintain this code after I'm gone:
   // I'm sorry, I'm so so sorry
   // I suppose it's a little neater now that some functions are part of the
@@ -68,6 +73,9 @@ extends Experiment implements ParameterValidator {
   private List<Complex> fitPoles;
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
+  
+  private List<String> inputsPerCalculation;
+  private List<String> outputsPerCalculation;
   
   // when true, doesn't run solver, in event parameters have an issue
   // (does the solver seem to have frozen? try rebuilding with this as true,
@@ -105,6 +113,9 @@ extends Experiment implements ParameterValidator {
   @Override
   protected void backend(DataStore ds) {
     
+    inputsPerCalculation = new ArrayList<String>();
+    outputsPerCalculation = new ArrayList<String>();
+    
     normalIdx = 1;
     numIterations = 0;
     
@@ -136,13 +147,8 @@ extends Experiment implements ParameterValidator {
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
     // also, use those frequencies to get the applied response to input
     FFTResult numeratorPSD, denominatorPSD;
-    if (false) { // clear out temporarily to see if Welch works ok (dead code)
-      numeratorPSD = FFTResult.spectralCalcMultitaper(sensorOut, calib);
-      denominatorPSD = FFTResult.spectralCalcMultitaper(calib, calib);
-    } else {
-      numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
-      denominatorPSD = FFTResult.spectralCalc(calib, calib);
-    }
+    numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
+    denominatorPSD = FFTResult.spectralCalc(calib, calib);
     
     freqs = numeratorPSD.getFreqs(); // should be same for both results
     
@@ -528,6 +534,14 @@ extends Experiment implements ParameterValidator {
     }
     xySeriesData.add(xysc);
     
+    if (OUTPUT_TO_TERMINAL) {
+      for (int i = 0; i < inputsPerCalculation.size(); ++i) {
+       System.out.println(inputsPerCalculation.get(i));
+       System.out.println(outputsPerCalculation.get(i));
+      }
+    }
+
+    
   }
   
   @Override
@@ -668,6 +682,14 @@ extends Experiment implements ParameterValidator {
     return zeros;
   }
   
+  public List<String> getInputsToPrint() {
+    return inputsPerCalculation;
+  }
+  
+  public List<String> getOutputsToPrint() {
+    return outputsPerCalculation;
+  }
+  
   /**
    * Get poles used in input response, for reference against best-fit poles 
    * @return poles taken from initial response file
@@ -762,7 +784,15 @@ extends Experiment implements ParameterValidator {
       currentVars[i] = variables.getEntry(i);
     }
     
+
+    
     double[] mag = evaluateResponse(currentVars);
+    
+    if (PRINT_EVERYTHING) {
+      inputsPerCalculation.add(Arrays.toString(currentVars));
+      outputsPerCalculation.add(Arrays.toString(mag));
+    }
+
     
     double[][] jacobian = new double[mag.length][numVars];
     // now take the forward difference of each value 
