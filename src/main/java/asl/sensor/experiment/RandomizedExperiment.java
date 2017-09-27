@@ -843,6 +843,16 @@ extends Experiment implements ParameterValidator {
     RealVector result = MatrixUtils.createRealVector(mag);
     RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
     
+    for (int i = 0; i < jMat.getColumnDimension(); ++i) {
+      RealVector v = jMat.getColumnVector(i);
+      double norm = v.getNorm();
+      if ( Double.isNaN(norm) ) {
+        System.out.println("ERROR: the norm of col. " + i + " is NaN");
+      } else if ( Double.isInfinite(norm) ) {
+        System.out.println("ERROR: the norm of col. " + i + " is infinite");
+      }
+    }
+    
     return new Pair<RealVector, RealMatrix>(result, jMat);
     
   }
