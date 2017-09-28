@@ -921,7 +921,7 @@ extends Experiment implements ParameterValidator {
       if (value > 0 && (i % 2) == 0) {
         // even index means this is a real-value vector entry
         // if it's above zero, put it back below zero
-        poleParams.setEntry(i, -Double.MIN_VALUE);
+        poleParams.setEntry(i, -DELTA - Double.MIN_VALUE);
       } else if (value > 0) {
         // this means the value is complex, we can multiply it by -1
         // this is ok for complex values since their conjugate is implied
