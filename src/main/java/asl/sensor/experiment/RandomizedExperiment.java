@@ -841,24 +841,42 @@ extends Experiment implements ParameterValidator {
     
     RealVector result = MatrixUtils.createRealVector(mag);
     RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
-    
-    for (int i = 0; i < jMat.getColumnDimension(); ++i) {
-      RealVector v = jMat.getColumnVector(i);
-      double norm = v.getNorm();
-      if ( Double.isNaN(norm) ) {
-        System.out.println("ERROR: the norm of col. " + i + " is NaN");
-      } else if ( Double.isInfinite(norm) ) {
-        System.out.println("ERROR: the norm of col. " + i + " is infinite");
-      }
-      for (int j = 0; j < v.getDimension(); ++j) {
-        double value = v.getEntry(j);
-        if ( Double.isNaN(value) ) {
-          System.out.println("ERROR: entry " + j + "in col.vec. is NaN");
-        } else if ( Double.isInfinite(value) ) {
-          System.out.println("ERROR: entry " + j + "in col.vec. is infinity");
+    if (OUTPUT_TO_TERMINAL) {
+      for (int i = 0; i < jMat.getColumnDimension(); ++i) {
+        RealVector v = jMat.getColumnVector(i);
+        double norm = v.getNorm();
+        if ( Double.isNaN(norm) ) {
+          System.out.println("ERROR: the norm of col. " + i + " is NaN");
+          System.out.println("The value of the variable? " + currentVars[i]);
+          String type = "pole";
+          if (i < numZeros) {
+            type = "zero";
+          }
+          System.out.println("This variable is a " + type + ".");
+        } else if ( Double.isInfinite(norm) ) {
+          System.out.println("ERROR: the norm of col. " + i + " is infinite");
+          System.out.println("The value of the variable? " + currentVars[i]);
+          String type = "pole";
+          if (i < numZeros) {
+            type = "zero";
+          }
+          System.out.println("This variable is a " + type + ".");
         }
+
+        /*
+         * v is the jacobian for a given value
+        for (int j = 0; j < v.getDimension(); ++j) {
+          double value = v.getEntry(j);
+          if ( Double.isNaN(value) ) {
+            System.out.println("ERROR: entry " + j + "in col.vec. is NaN");
+          } else if ( Double.isInfinite(value) ) {
+            System.out.println("ERROR: entry " + j + "in col.vec. is infinity");
+          }
+        }
+        */
       }
     }
+    
     
     return new Pair<RealVector, RealMatrix>(result, jMat);
     
