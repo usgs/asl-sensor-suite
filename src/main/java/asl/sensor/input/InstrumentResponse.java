@@ -731,15 +731,16 @@ public class InstrumentResponse {
     
     for (int i = start; i < pList.size(); ++i) {
       
-      if ( !lowFreq && ( pList.get(i).abs() / NumericUtils.TAU < 1. ) ) {
+      double frq = pList.get(i).abs() / NumericUtils.TAU;
+      if ( !lowFreq && (frq < 1.) ) {
         // don't include poles below 1Hz in high-frequency calibration
         continue;
       }
-      if ( lowFreq && ( pList.get(i).abs() / NumericUtils.TAU > 1. ) ) {
+      if ( lowFreq && (frq > 1.) ) {
         // only do low frequency calibrations on poles up to 
         break;
       }
-      if ( !lowFreq && ( pList.get(i).abs() / NumericUtils.TAU >= peak ) ) {
+      if ( !lowFreq && (frq >= peak) ) {
         // don't fit poles above fraction of nyquist rate of sensor output
         break;
       }
@@ -752,14 +753,7 @@ public class InstrumentResponse {
       componentList.add(imagPart);
       
       if (imagPart != 0.) {
-        // next value is complex conjugate of this one, so skip it
-        ++i;
-      } else if ( (i + 1) < poles.size() &&
-          pList.get(i + 1).getImaginary() == 0. && 
-          realPart == pList.get(i + 1).getReal() ) {
-        // two values with zero imaginary are duplicated in the list
-        // again, we skip this one
-        ++i;
+        ++i; // skip complex conjuage
       }
       
     }
@@ -937,18 +931,18 @@ public class InstrumentResponse {
         // ignore zeros that are literally zero-valued
         continue;
       }
-      if ( lowFreq && ( zList.get(i).abs() / NumericUtils.TAU > 1. ) ) {
-        // only do low frequency calibrations on zeros up to 1Hz
-        break;
-      }
       
       double cutoffChecker = zList.get(i).abs() / NumericUtils.TAU;
       
-      if ( !lowFreq && ( cutoffChecker < 1. ) ) {
+      if ( lowFreq && (cutoffChecker > 1.) ) {
+        // only do low frequency calibrations on zeros up to 1Hz
+        break;
+      }
+      if ( !lowFreq && (cutoffChecker < 1.) ) {
         // don't include zeros > 1Hz in high-frequency calibration
         continue;
       }
-      if ( !lowFreq && ( cutoffChecker > peak) ) {
+      if ( !lowFreq && (cutoffChecker > peak) ) {
         // don't fit zeros above 80% nyquist rate of sensor output
         break;
       }
@@ -959,15 +953,9 @@ public class InstrumentResponse {
       componentList.add(imagPart);
       
       if (imagPart != 0.) {
-        // next value is complex conjugate of this one, so skip it
-        ++i;
-      } else if ( (i + 1) < zeros.size() && 
-          zList.get(i + 1).getImaginary() == 0. && 
-          realPart == zList.get(i + 1).getReal() ) {
-        // two values with zero imaginary are duplicated in the list
-        // again, we skip this one
         ++i;
       }
+      
     }
 
     // turn into array to be turned into vector

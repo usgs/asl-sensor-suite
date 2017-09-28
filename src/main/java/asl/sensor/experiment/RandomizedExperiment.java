@@ -59,7 +59,7 @@ extends Experiment implements ParameterValidator {
   
   // TODO: turn this damn thing off
   public static final boolean PRINT_EVERYTHING = true;
-  // conditional used so that if PRINT_EVERYTHING is false, this won't work
+  // bool logic used so that if PRINT_EVERYTHING is false, this won't work
   public static final boolean OUTPUT_TO_TERMINAL = PRINT_EVERYTHING && true;
   
   // To whomever has to maintain this code after I'm gone:
@@ -792,15 +792,14 @@ extends Experiment implements ParameterValidator {
       }
     }
     
-    
-
-    
     double[][] jacobian = new double[mag.length][numVars];
     // now take the forward difference of each value 
     for (int i = 0; i < numVars; ++i) {
       
       if (i % 2 == 1 && currentVars[i] == 0.) {
-        // this is a zero pole. don't bother changing it
+        // imaginary value already zero, don't change this
+        // we assume that if an imaginary value is NOT zero, it's close enough
+        // to its correct value that it won't get turned down to zero
         for (int j = 0; j < mag.length; ++j) {
           jacobian[j][i] = 0.;
         }
@@ -850,6 +849,14 @@ extends Experiment implements ParameterValidator {
         System.out.println("ERROR: the norm of col. " + i + " is NaN");
       } else if ( Double.isInfinite(norm) ) {
         System.out.println("ERROR: the norm of col. " + i + " is infinite");
+      }
+      for (int j = 0; j < v.getDimension(); ++j) {
+        double value = v.getEntry(j);
+        if ( Double.isNaN(value) ) {
+          System.out.println("ERROR: entry " + j + "in col.vec. is NaN");
+        } else if ( Double.isInfinite(value) ) {
+          System.out.println("ERROR: entry " + j + "in col.vec. is infinity");
+        }
       }
     }
     
