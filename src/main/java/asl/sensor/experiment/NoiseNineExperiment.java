@@ -64,10 +64,10 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // than, say, trying to index into a series of arraylists
     double[] north1Sensor = ds.getBlock(0).getData();
     double[] east1Sensor = ds.getBlock(1).getData();
-    
+    // index 2 is a vertical sensor
     double[] north2Sensor = ds.getBlock(3).getData();
     double[] east2Sensor = ds.getBlock(4).getData();
-    
+    // index 5 is a vertical sensor
     double[] north3Sensor = ds.getBlock(6).getData();
     double[]east3Sensor = ds.getBlock(7).getData();
     
@@ -99,7 +99,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
     DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(ds.getBlock(3), ds.getBlock(3), northAngles[0]);
+        TimeSeriesUtils.rotate(ds.getBlock(3), ds.getBlock(4), northAngles[0]);
     stores[0].setBlock(1, north2Rotated);
     DataBlock east2Rotated = 
         TimeSeriesUtils.rotateX(ds.getBlock(3), ds.getBlock(4), eastAngles[0]);

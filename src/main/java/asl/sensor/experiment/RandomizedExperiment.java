@@ -86,7 +86,7 @@ extends Experiment implements ParameterValidator {
   
   private InstrumentResponse fitResponse;
   
-  private double[] freqs, observedResult;
+  private double[] freqs, observedResult, weights;
   private double nyquist;
   
   private boolean freqSpace;
@@ -338,7 +338,7 @@ extends Experiment implements ParameterValidator {
     }
     
     // weight matrix
-    double[] weights = new double[observedResult.length];
+    weights = new double[observedResult.length];
     for (int i = 0; i < estResponse.length; ++i) {
       int argIdx = i + estResponse.length;
       double denom;
@@ -872,6 +872,15 @@ extends Experiment implements ParameterValidator {
           System.out.println("Values: " + numPositive + ", " + numNegative);
         }
       }
+      
+      // get the residual values and print that out
+      double resid = 0.;
+      for (int i = 0; i < mag.length; ++i) {
+        double sumSqd = Math.pow(mag[i] - observedResult[i], 2);
+        resid += weights[i] * sumSqd;
+        System.out.print("Current residual: " + resid);
+      }
+      
     }
     
     
