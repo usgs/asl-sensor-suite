@@ -86,7 +86,7 @@ extends Experiment implements ParameterValidator {
   
   private InstrumentResponse fitResponse;
   
-  private double[] freqs;
+  private double[] freqs, observedResult;
   private double nyquist;
   
   private boolean freqSpace;
@@ -256,7 +256,7 @@ extends Experiment implements ParameterValidator {
     
     // data to fit poles to; first half of data is magnitudes of resp (dB)
     // second half of data is angles of resp (radians, scaled)
-    double[] observedResult = new double[2 * estResponse.length];
+    observedResult = new double[2 * estResponse.length];
     
     // prevent discontinuities in angle plots
     double phiPrev = 0.;
@@ -381,6 +381,10 @@ extends Experiment implements ParameterValidator {
     //for (int i = 0; i < initialPoles.size(); ++i) {
     //  System.out.println( initialPoles.get(i).abs() / NumericUtils.TAU );
     //}
+    
+    if (OUTPUT_TO_TERMINAL) {
+      System.out.println( Arrays.toString(observedResult) );
+    }
     
     // now, solve for the response that gets us the best-fit response curve
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
@@ -842,38 +846,31 @@ extends Experiment implements ParameterValidator {
     RealVector result = MatrixUtils.createRealVector(mag);
     RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
     if (OUTPUT_TO_TERMINAL) {
-      for (int i = 0; i < jMat.getColumnDimension(); ++i) {
+      // currently only looking at data about the sign of the jacobian
+      int colDim = jMat.getColumnDimension();
+      for (int i = 0; i < colDim; ++i) {
         RealVector v = jMat.getColumnVector(i);
-        double norm = v.getNorm();
-        if ( Double.isNaN(norm) ) {
-          System.out.println("ERROR: the norm of col. " + i + " is NaN");
-          System.out.println("The value of the variable? " + currentVars[i]);
-          String type = "pole";
-          if (i < numZeros) {
-            type = "zero";
-          }
-          System.out.println("This variable is a " + type + ".");
-        } else if ( Double.isInfinite(norm) ) {
-          System.out.println("ERROR: the norm of col. " + i + " is infinite");
-          System.out.println("The value of the variable? " + currentVars[i]);
-          String type = "pole";
-          if (i < numZeros) {
-            type = "zero";
-          }
-          System.out.println("This variable is a " + type + ".");
-        }
-
-        /*
-         * v is the jacobian for a given value
-        for (int j = 0; j < v.getDimension(); ++j) {
-          double value = v.getEntry(j);
-          if ( Double.isNaN(value) ) {
-            System.out.println("ERROR: entry " + j + "in col.vec. is NaN");
-          } else if ( Double.isInfinite(value) ) {
-            System.out.println("ERROR: entry " + j + "in col.vec. is infinity");
+        int numPositive = 0;
+        int numNegative = 0;
+        for (int j = 0; j < v.getDimension(); ++j)  {
+          double entry = v.getEntry(j);
+          if (entry < 0.) {
+            ++numPositive;
+          } else if (entry > 0.) {
+            ++numNegative;
           }
         }
-        */
+        String init = "Jacobian value for variable " + i;
+        if (numPositive > numNegative) {
+          System.out.println(init + " is mostly positive.");
+          System.out.println("Values: " + numPositive + ", " + numNegative);
+        } else if (numPositive < numNegative) {
+          System.out.println(init + " is mostly negative.");
+          System.out.println("Values: " + numPositive + ", " + numNegative);
+        } else {
+          System.out.println(init + " has equal +/-.");
+          System.out.println("Values: " + numPositive + ", " + numNegative);
+        }
       }
     }
     
