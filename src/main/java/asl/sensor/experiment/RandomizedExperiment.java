@@ -878,8 +878,9 @@ extends Experiment implements ParameterValidator {
       for (int i = 0; i < mag.length; ++i) {
         double sumSqd = Math.pow(mag[i] - observedResult[i], 2);
         resid += weights[i] * sumSqd;
-        System.out.print("Current residual: " + resid);
       }
+      
+      System.out.println("Current residual: " + resid);
       
     }
     
