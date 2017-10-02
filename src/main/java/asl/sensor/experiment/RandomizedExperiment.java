@@ -58,7 +58,7 @@ extends Experiment implements ParameterValidator {
       NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
   
   // TODO: turn this damn thing off
-  public static final boolean PRINT_EVERYTHING = true;
+  public static final boolean PRINT_EVERYTHING = false;
   // bool logic used so that if PRINT_EVERYTHING is false, this won't work
   public static final boolean OUTPUT_TO_TERMINAL = PRINT_EVERYTHING && true;
   
@@ -643,15 +643,15 @@ extends Experiment implements ParameterValidator {
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    Set<Complex> unchanged = new HashSet<Complex>(fitPoles);
-    unchanged.retainAll( new HashSet<Complex>(initialPoles) );
-    List<Complex> poles = new ArrayList<Complex>();
-    for (Complex pole : fitPoles) {
-      if ( !unchanged.contains(pole) ) {
-        poles.add(pole);
+    List<Complex> polesOut = new ArrayList<Complex>();
+    Set<Complex> retain = new HashSet<Complex>(initialPoles);
+    retain.remove( new HashSet<Complex>( getInitialPoles() ) );
+    for (Complex c : fitPoles) {
+      if ( !retain.contains(c) ) {
+        polesOut.add(c);
       }
     }
-    return poles;
+    return polesOut;
   }
   
   /**
@@ -667,16 +667,16 @@ extends Experiment implements ParameterValidator {
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    Set<Complex> unchanged = new HashSet<Complex>(fitZeros);
-    unchanged.retainAll( new HashSet<Complex>(initialZeros) );
-    List<Complex> zeros = new ArrayList<Complex>();
-    for (Complex zero : fitZeros) {
-      if( !unchanged.contains(zero) ) {
-        zeros.add(zero);
+    
+    List<Complex> zerosOut = new ArrayList<Complex>();
+    Set<Complex> retain = new HashSet<Complex>(initialZeros);
+    retain.remove( new HashSet<Complex>( getInitialZeros() ) );
+    for (Complex c : fitZeros) {
+      if ( !retain.contains(c) ) {
+        zerosOut.add(c);
       }
     }
-    NumericUtils.complexMagnitudeSorter(zeros); 
-    return zeros;
+    return zerosOut;
   }
   
   public List<String> getInputsToPrint() {
@@ -692,15 +692,24 @@ extends Experiment implements ParameterValidator {
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    Set<Complex> unchanged = new HashSet<Complex>(fitPoles);
-    unchanged.retainAll( new HashSet<Complex>(initialPoles) );
-    List<Complex> poles = new ArrayList<Complex>();
-    for (Complex pole : initialPoles) {
-      if ( !unchanged.contains(pole) ) {
-        poles.add(pole);
+    double minPd, maxPd;
+    if (lowFreq) {
+      maxPd = 1000; // 1000s period
+      minPd = 0; // 20s period
+    } else {
+      maxPd = 5; // lower bound of .2 Hz (5s period) due to noise
+      // get up to .8 of nyquist rate, again due to noise
+      minPd = 1. / (PEAK_MULTIPLIER * nyquist);
+    }
+    List<Complex> polesOut = new ArrayList<Complex>();
+    for (Complex c : initialPoles) {
+      double pd = NumericUtils.TAU / c.abs();
+      if (pd <= maxPd && pd >= minPd) {
+        polesOut.add(c);
       }
     }
-    return poles;
+    
+    return polesOut;
   }
   
   /**
@@ -708,16 +717,24 @@ extends Experiment implements ParameterValidator {
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    Set<Complex> unchanged = new HashSet<Complex>(fitZeros);
-    unchanged.retainAll( new HashSet<Complex>(initialZeros) );
-    List<Complex> zeros = new ArrayList<Complex>();
-    for (Complex zero : initialZeros) {
-      if( !unchanged.contains(zero) ) {
-        zeros.add(zero);
+    double minPd, maxPd;
+    if (lowFreq) {
+      maxPd = 1000; // 1000s period
+      minPd = 20; // 20s period
+    } else {
+      maxPd = 5; // lower bound of .2 Hz (5s period) due to noise
+      // get up to .8 of nyquist rate, again due to noise
+      minPd = 1. / (PEAK_MULTIPLIER * nyquist);
+    }
+    List<Complex> zerosOut = new ArrayList<Complex>();
+    for (Complex c : initialZeros) {
+      double pd = NumericUtils.TAU / c.abs();
+      if (pd < maxPd && pd > minPd) {
+        zerosOut.add(c);
       }
     }
-    NumericUtils.complexMagnitudeSorter(zeros); 
-    return zeros;
+    
+    return zerosOut;
   }
   
   /**
@@ -815,7 +832,7 @@ extends Experiment implements ParameterValidator {
         changedVars[j] = currentVars[j];
       }
       
-      double diffX = changedVars[i] + DELTA;
+      double diffX = changedVars[i] - DELTA;
       
       // real-value pole components must be less than zero
       if (diffX > 0. && (i % 2) == 0.) {
@@ -830,8 +847,8 @@ extends Experiment implements ParameterValidator {
         if (changedVars[i] - currentVars[i] == 0.) {
           jacobian[j][i] = 0.;
         } else {
-          jacobian[j][i] = diffY[j] - mag[j];
-          jacobian[j][i] /= changedVars[i] - currentVars[i];
+          jacobian[j][i] = mag[j] - diffY[j];
+          jacobian[j][i] /= currentVars[i] - changedVars[i];
         }
         /*
         if ( (i % 2) == 0 && currentVars[i] > 0) {

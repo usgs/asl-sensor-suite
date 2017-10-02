@@ -873,6 +873,11 @@ public class RandomizedExperimentTest {
       double pctDiff = 
           Math.abs( 100 * (bestResid - expectedResid) / bestResid );
       
+      if (pctDiff > 15) {
+        System.out.println(rCal.getFitPoles());
+        System.out.println(rCal.getInitialPoles());
+        System.out.println(bestResid + ", " + expectedResid);
+      }
       assertTrue("PCT DIFF EXPECTED <15%, GOT " + pctDiff, pctDiff < 15);
 
       // add initial curve from expected fit params to report

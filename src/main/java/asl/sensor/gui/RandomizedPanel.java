@@ -282,45 +282,21 @@ public class RandomizedPanel extends ExperimentPanel {
       
       sbInit.append( cf.format(init) );
       sbFit.append( cf.format(fit) );
+      sbInit.append(" (");
+      sbInit.append( df.format(initPrd) );
+      sbInit.append(")");
+      sbFit.append(" (");
+      sbFit.append( df.format(fitPrd) );
+      sbFit.append(")");
       ++numInLine;
       // want to fit two to a line for paired values
-      
-      if ( init.getImaginary() != 0. ) {
-        ++i; // INCREMENT I TO GET THE CONJUGATE AND NOT DO REDUNDANT OPERATION
-        sbInit.append(";  ");
-        sbFit.append(";  ");
-        sbInit.append( cf.format( initP.get(i) ) );
-        sbFit.append( cf.format( fitP.get(i) ) );
-        sbInit.append(" (");
-        sbInit.append( df.format(initPrd) );
-        sbInit.append(" s)\n");
-        sbFit.append(" (");
-        sbFit.append( df.format(fitPrd) );
-        sbFit.append(" s)\n");
+      if (numInLine >= MAX_LINE) {
+        sbInit.append("\n");
+        sbFit.append("\n");
         numInLine = 0;
       } else {
-        // if data does not have conjugate pair, put period next to pole value
-        // if there is still data, fit up to 4 poles in a line
-        // but still separate conjugate pairs into their own line for space
-        sbInit.append(" (");
-        sbInit.append( df.format(initPrd) );
-        sbInit.append(" s)");
-        sbFit.append(" (");
-        sbFit.append( df.format(fitPrd) );
-        sbFit.append(" s)");
-        
-        if ( i + 1 < fitP.size() && 
-             numInLine < MAX_LINE && 
-             initP.get(i + 1).getImaginary() == 0. ) {
-          // next value exists, is not part of a conjugate pair, and won't
-          // put more than 4 pole values in a single line
-          sbInit.append(";   ");
-          sbFit.append(";   ");
-        } else {
-          sbInit.append("\n");
-          sbFit.append("\n");
-          numInLine = 0;
-        }
+        sbInit.append(", ");
+        sbFit.append(", ");
       }
     }
     
@@ -335,6 +311,7 @@ public class RandomizedPanel extends ExperimentPanel {
       sbFitZ.append("Fit zeros: \n");
     }
     
+    numInLine = 0;
     for (int i = 0; i < fitZ.size(); ++i) {
       
       Complex init = initZ.get(i);
@@ -345,35 +322,23 @@ public class RandomizedPanel extends ExperimentPanel {
       sbInitZ.append( cf.format(init) );
       sbFitZ.append( cf.format(fit) );
       
+      sbInitZ.append(" (");
+      sbInitZ.append( df.format(initPrd) );
+      sbInitZ.append(")");
+      sbFitZ.append(" (");
+      sbFitZ.append( df.format(fitPrd) );
+      sbFitZ.append(")");
+      ++numInLine;
       // want to fit two to a line for paired values
-      if ( initZ.get(i).getImaginary() != 0. ) {
-        ++i;
-        sbInitZ.append("; ");
-        sbFitZ.append("; ");
-        sbInitZ.append( cf.format( initZ.get(i) ) );
-        sbFitZ.append( cf.format( fitZ.get(i) ) );
-        sbInitZ.append(" (");
-        sbInitZ.append( df.format(initPrd) );
-        sbInitZ.append(" s)\n");
-        sbFitZ.append(" (");
-        sbFitZ.append( df.format(fitPrd) );
-        sbFitZ.append(" s)\n");
-        
+      if (numInLine >= MAX_LINE) {
+        sbInitZ.append("\n");
+        sbFitZ.append("\n");
+        numInLine = 0;
       } else {
-        sbInitZ.append(" (");
-        sbInitZ.append( df.format(initPrd) );
-        sbInitZ.append(" s)");
-        sbFitZ.append(" (");
-        sbFitZ.append( df.format(fitPrd) );
-        sbFitZ.append(" s)");
-        if ( i + 1 < fitZ.size() ) {
-          sbInitZ.append("\n");
-          sbFitZ.append("\n");
-        } else {
-          sbInitZ.append(";   ");
-          sbFitZ.append(";   ");
-        }
+        sbInitZ.append(", ");
+        sbFitZ.append(", ");
       }
+      
     }
     
     sbFit.append("\n");
