@@ -698,7 +698,7 @@ extends Experiment implements ParameterValidator {
       minPd = 0; // 20s period
     } else {
       maxPd = 5; // lower bound of .2 Hz (5s period) due to noise
-      // get up to .8 of nyquist rate, again due to noise
+      // get up to multiplier (.8?) of nyquist rate, again due to noise
       minPd = 1. / (PEAK_MULTIPLIER * nyquist);
     }
     List<Complex> polesOut = new ArrayList<Complex>();
@@ -722,8 +722,7 @@ extends Experiment implements ParameterValidator {
       maxPd = 1000; // 1000s period
       minPd = 20; // 20s period
     } else {
-      maxPd = 5; // lower bound of .2 Hz (5s period) due to noise
-      // get up to .8 of nyquist rate, again due to noise
+      maxPd = 5;
       minPd = 1. / (PEAK_MULTIPLIER * nyquist);
     }
     List<Complex> zerosOut = new ArrayList<Complex>();
