@@ -402,8 +402,16 @@ extends Experiment implements ParameterValidator {
       
     };
     
+    double costTolerance = 1.0E-15; 
+    // probably acceptable tolerance for clean low-frequency cals BUT
+    // high frequency cals are noisy and slow to converge
+    // so we use a higher tolerance to deal with that issue
+    if (!lowFreq) {
+      costTolerance = 1.0E-5;
+    }
+    
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1.0E-15).
+        withCostRelativeTolerance(costTolerance).
         withParameterRelativeTolerance(1.0E-10);
     
     name = fitResponse.getName();
