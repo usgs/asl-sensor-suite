@@ -53,9 +53,10 @@ import asl.sensor.utils.NumericUtils;
 public class RandomizedExperiment 
 extends Experiment implements ParameterValidator {
 
-  private static final double DELTA = 1E-11;
-  public static final double PEAK_MULTIPLIER = // 0.8;
-      NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
+  private static final double DELTA = 1E-12;
+  public static final double PEAK_MULTIPLIER = 0.5;
+      //NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
+      // NumericUtils.PEAK_MULTIPLIER 
   
   // TODO: turn this damn thing off
   public static final boolean PRINT_EVERYTHING = false;
@@ -403,16 +404,19 @@ extends Experiment implements ParameterValidator {
     };
     
     double costTolerance = 1.0E-15; 
+    double paramTolerance = 1.0E-10;
     // probably acceptable tolerance for clean low-frequency cals BUT
     // high frequency cals are noisy and slow to converge
     // so we use a higher tolerance to deal with that issue
     if (!lowFreq) {
+      System.out.println("USING LOOSER TOLERANCE VALUES");
       costTolerance = 1.0E-5;
+      paramTolerance = 1.0E-7;
     }
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(costTolerance).
-        withParameterRelativeTolerance(1.0E-10);
+        withParameterRelativeTolerance(paramTolerance);
     
     name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
@@ -903,9 +907,7 @@ extends Experiment implements ParameterValidator {
         double sumSqd = Math.pow(mag[i] - observedResult[i], 2);
         resid += weights[i] * sumSqd;
       }
-      
       System.out.println("Current residual: " + resid);
-      
     }
     
     
