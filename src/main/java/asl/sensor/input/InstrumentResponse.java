@@ -967,6 +967,7 @@ public class InstrumentResponse {
     
     return MatrixUtils.createRealVector(responseVariables);
   }
+  
 }
 
 

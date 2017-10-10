@@ -663,6 +663,7 @@ extends Experiment implements ParameterValidator {
         polesOut.add(c);
       }
     }
+    NumericUtils.complexRealsFirstSorter(polesOut);
     return polesOut;
   }
   
@@ -688,6 +689,7 @@ extends Experiment implements ParameterValidator {
         zerosOut.add(c);
       }
     }
+    NumericUtils.complexRealsFirstSorter(zerosOut);
     return zerosOut;
   }
   
@@ -720,7 +722,7 @@ extends Experiment implements ParameterValidator {
         polesOut.add(c);
       }
     }
-    
+    NumericUtils.complexRealsFirstSorter(polesOut);
     return polesOut;
   }
   
@@ -744,7 +746,7 @@ extends Experiment implements ParameterValidator {
         zerosOut.add(c);
       }
     }
-    
+    NumericUtils.complexRealsFirstSorter(zerosOut);
     return zerosOut;
   }
   
