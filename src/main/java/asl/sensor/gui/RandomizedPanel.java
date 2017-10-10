@@ -237,6 +237,39 @@ public class RandomizedPanel extends ExperimentPanel {
     String[] out = new String[]{sb.toString()}; // just a single new page
     return out;
   }
+  
+  public static String complexListToString(List<Complex> stringMe) {
+    final int MAX_LINE = 2; // maximum number of entries per line
+    
+    DecimalFormat df = new DecimalFormat("#.#####");
+    NumericUtils.setInfinityPrintable(df);
+    ComplexFormat cf = new ComplexFormat(df);
+    StringBuilder sb = new StringBuilder();
+    int numInLine = 0;
+    
+    for (int i = 0; i < stringMe.size(); ++i) {
+      
+      Complex c = stringMe.get(i);
+      double initPrd = NumericUtils.TAU / c.abs();
+      
+      sb.append( cf.format(c) );
+      sb.append(" (");
+      sb.append( df.format(initPrd) );
+      sb.append(")");
+      ++numInLine;
+      // want to fit two to a line for paired values
+      if (numInLine >= MAX_LINE) {
+        sb.append("\n");
+        numInLine = 0;
+      } else {
+        sb.append(", ");
+      }
+    }
+    
+    return sb.toString();
+  }
+  
+  
   /**
    * Static helper method for getting the formatted inset string directly
    * from a RandomizedExperiment
@@ -244,12 +277,6 @@ public class RandomizedPanel extends ExperimentPanel {
    * @return String format representation of data from the experiment
    */
   public static String[] getInsetString(RandomizedExperiment rnd) {
-    
-    final int MAX_LINE = 2; // maximum number of entries per line
-    
-    DecimalFormat df = new DecimalFormat("#.#####");
-    NumericUtils.setInfinityPrintable(df);
-    ComplexFormat cf = new ComplexFormat(df);
     
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();
@@ -271,35 +298,9 @@ public class RandomizedPanel extends ExperimentPanel {
     sbInit.append("Initial poles: \n");
     sbFit.append("Fit poles: \n");
     
-    int numInLine = 0;
-    
-    for (int i = 0; i < fitP.size(); ++i) {
-      
-      Complex init = initP.get(i);
-      Complex fit = fitP.get(i);
-      double initPrd = NumericUtils.TAU / init.abs();
-      double fitPrd = NumericUtils.TAU / fit.abs();
-      
-      sbInit.append( cf.format(init) );
-      sbFit.append( cf.format(fit) );
-      sbInit.append(" (");
-      sbInit.append( df.format(initPrd) );
-      sbInit.append(")");
-      sbFit.append(" (");
-      sbFit.append( df.format(fitPrd) );
-      sbFit.append(")");
-      ++numInLine;
-      // want to fit two to a line for paired values
-      if (numInLine >= MAX_LINE) {
-        sbInit.append("\n");
-        sbFit.append("\n");
-        numInLine = 0;
-      } else {
-        sbInit.append(", ");
-        sbFit.append(", ");
-      }
-    }
-    
+    sbInit.append( complexListToString(initP) );
+    sbFit.append( complexListToString(fitP) );
+     
     sbInit.append("\n");
     sbFit.append("\n");
     
@@ -311,41 +312,13 @@ public class RandomizedPanel extends ExperimentPanel {
       sbFitZ.append("Fit zeros: \n");
     }
     
-    numInLine = 0;
-    for (int i = 0; i < fitZ.size(); ++i) {
-      
-      Complex init = initZ.get(i);
-      Complex fit = fitZ.get(i);
-      double initPrd = NumericUtils.TAU / init.abs();
-      double fitPrd = NumericUtils.TAU / fit.abs();
-      
-      sbInitZ.append( cf.format(init) );
-      sbFitZ.append( cf.format(fit) );
-      
-      sbInitZ.append(" (");
-      sbInitZ.append( df.format(initPrd) );
-      sbInitZ.append(")");
-      sbFitZ.append(" (");
-      sbFitZ.append( df.format(fitPrd) );
-      sbFitZ.append(")");
-      ++numInLine;
-      // want to fit two to a line for paired values
-      if (numInLine >= MAX_LINE) {
-        sbInitZ.append("\n");
-        sbFitZ.append("\n");
-        numInLine = 0;
-      } else {
-        sbInitZ.append(", ");
-        sbFitZ.append(", ");
-      }
-      
-    }
+    sbInitZ.append( complexListToString(initZ) );
+    sbFitZ.append( complexListToString(fitZ) );
     
     sbFit.append("\n");
     sbInit.append("\n");
     sbInitZ.append("\n");
     sbFitZ.append("\n");
-    
     
     if (!solverNotRun) {
       sbInit.append(sbFit);
@@ -368,6 +341,7 @@ public class RandomizedPanel extends ExperimentPanel {
     
     return new String[]{sbInit.toString(), sbInitZ.toString(), sbR.toString()};
   }
+  
   private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis;
   private JComboBox<String> plotSelection;
   private JCheckBox lowFreqBox, showParams, freqSpace;
