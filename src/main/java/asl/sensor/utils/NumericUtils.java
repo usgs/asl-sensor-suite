@@ -87,11 +87,6 @@ public class NumericUtils {
   public final static double TAU = Math.PI * 2; // radians in full circle
   
   /**
-   * used to limit the frequencies of the poles/zeros getting fit
-   */
-  public final static double PEAK_MULTIPLIER = 0.8;
-  
-  /**
    * Get the two-component arctan of a complex number. A simpler way of calling
    * arctan2 using the real and imaginary components of a complex number
    * (see Math.atan2 for more details). This is the angle of the complex number
