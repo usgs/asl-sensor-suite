@@ -220,14 +220,22 @@ public class FFTResult {
     Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
     
     for (int j = 0; j < freqs.length; ++j) {
+      Complex scaleFactor = 
+          new Complex( 0.0, -1.0 / (NumericUtils.TAU * freqs[j]) );
+      Complex resp1 = freqRespd1[j].multiply(scaleFactor);
+      Complex resp2 = freqRespd2[j].multiply(scaleFactor);
+      
       Complex respMagnitude = 
-          freqRespd1[j].multiply( freqRespd2[j].conjugate() );
+          resp1.multiply( resp2.conjugate() );
+      
       
       if (respMagnitude.abs() == 0) {
         respMagnitude = new Complex(Double.MIN_VALUE, 0);
       }
       
       out[j] = results[j].divide(respMagnitude);
+      // Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[j]);
+      //out[j] = scaleFactor.multiply(out[j]);//.divide(scaleFactor);
     }
     
     return new FFTResult(out, freqs);
@@ -669,7 +677,8 @@ public class FFTResult {
     // normalization time!
     // System.out.println("PERIOD: " + period);
     // period = 1.0; // quick testing
-    double psdNormalization = 2.0 * period / padding;
+    double psdNormalization = period / padding; // was mult. by 2.0 previously
+    // removal of 2.0 here result of adding mult by 2 ~line 654
     double windowCorrection = wss / (double) range;
     // value of wss associated with taper parameters, not related to data
     

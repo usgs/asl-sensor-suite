@@ -215,13 +215,6 @@ extends Experiment implements ParameterValidator {
       }
     }
     
-    // applied response. make sure to use the correct units (velocity)
-    Complex[] appResponse = fitResponse.applyResponseToInput(freqs);
-    for (int i = 0; i < appResponse.length; ++i) {
-      Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
-      appResponse[i] = appResponse[i].divide(scaleFactor);
-    }
-    
     // calculated response from deconvolving calibration from signal
     // (this will be in displacement and need to be integrated)
     Complex[] estResponse = new Complex[freqs.length];
@@ -472,9 +465,6 @@ extends Experiment implements ParameterValidator {
       initialValues = new double[freqs.length * 2];
       fitValues = new double[freqs.length * 2];
       for (int i = 0; i < freqs.length; ++i) {
-        Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
-        init[i] = init[i].divide(scaleFactor);
-        fit[i] = fit[i].divide(scaleFactor);
         
         int argIdx = freqs.length + i;
         initialValues[i] = init[i].abs();
@@ -608,8 +598,7 @@ extends Experiment implements ParameterValidator {
     
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = freqs.length + i;
-      Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[i]);
-      Complex c = appliedCurve[i].divide(scaleFactor);
+      Complex c = appliedCurve[i];
       curValue[i] = c.abs();
       curValue[argIdx] = NumericUtils.atanc(c);
     }
@@ -763,8 +752,6 @@ extends Experiment implements ParameterValidator {
     for (int i = 0; i < numVars; ++i) {
       currentVars[i] = variables.getEntry(i);
     }
-    
-
     
     double[] mag = evaluateResponse(currentVars);
     

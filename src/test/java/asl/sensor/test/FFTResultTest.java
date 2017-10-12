@@ -41,6 +41,7 @@ import org.junit.Test;
 
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
+import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
@@ -63,6 +64,93 @@ public class FFTResultTest {
         assertEquals(imag.getReal(), 0., 1E-15);
         assertEquals(imag.getImaginary(), 1., 1E-15);
       }
+    }
+  }
+  
+  @Test
+  public void testPSDAndResp() {
+    String data1 = "data/testPSDandResp/00_LHZ.512.seed";
+    String data2 = "data/testPSDandResp/10_LHZ.512.seed";
+    String resp1 = "responses/testPSDandResp/RESP.IU.ANMO.00.LHZ";
+    String resp2 = "responses/testPSDandResp/RESP.IU.ANMO.10.LHZ";
+    try {
+      DataBlock db1 = TimeSeriesUtils.getFirstTimeSeries(data1);
+      DataBlock db2 = TimeSeriesUtils.getFirstTimeSeries(data2);
+      
+      InstrumentResponse ir1 = new InstrumentResponse(resp1);
+      InstrumentResponse ir2 = new InstrumentResponse(resp2);
+      
+      FFTResult psd1 = FFTResult.spectralCalc(db1, db1);
+      FFTResult psd2 = FFTResult.spectralCalc(db2, db2);
+      FFTResult psd1Resp = FFTResult.crossPower(db1, db1, ir1, ir1);
+      FFTResult psd2Resp = FFTResult.crossPower(db2, db2, ir2, ir2);
+      
+      double[] freqs = psd1.getFreqs();
+      StringBuilder[] sbs = new StringBuilder[5];
+      XYSeries xys1 = new XYSeries("00-LHZ PSD");
+      XYSeries xys2 = new XYSeries("10-LHZ PSD");
+      XYSeries xys3 = new XYSeries("00-LHZ PSD respified");
+      XYSeries xys4 = new XYSeries("10-LHZ PSD respified");
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(xys1);
+      xysc.addSeries(xys2);
+      xysc.addSeries(xys3);
+      xysc.addSeries(xys4);
+      for (int i = 0; i < sbs.length; ++i) {
+        sbs[i] = new StringBuilder();
+      }
+      for (int i = 0; i < freqs.length; ++i) {
+        sbs[0].append(freqs[i]);
+        double abs1 = 10*Math.log10( psd1.getFFT(i).abs() );
+        sbs[1].append(abs1);
+        double abs2 = 10*Math.log10( psd2.getFFT(i).abs() );
+        sbs[2].append(abs2);
+        double abs3 = 10*Math.log10( psd1Resp.getFFT(i).abs() );
+        sbs[3].append(abs3);
+
+        double abs4 = 10*Math.log10( psd2Resp.getFFT(i).abs() );
+        sbs[4].append(abs4);
+        
+        if (freqs[i] > .001) {
+          xys1.add(1/freqs[i], abs1);
+          xys2.add(1/freqs[i], abs2);
+          xys3.add(1/freqs[i], abs3);
+          xys4.add(1/freqs[i], abs4);
+        }
+
+        if (i + 1 < freqs.length) {
+          for (StringBuilder sb : sbs) {
+            sb.append(",\t");
+          }
+        }
+      }
+      
+      JFreeChart chart = ChartFactory.createXYLineChart("PSD test data",
+          "PSD (dB)", "", xysc);
+      chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Period (s)") );
+      BufferedImage bi = ReportingUtils.chartsToImage(640, 480, chart);
+      File chartOut = new File("testResultImages/ANMO-2017-002-PSD.png");
+      ImageIO.write(bi, "png", chartOut);
+      
+      StringBuilder sbOut = new StringBuilder();
+      for (StringBuilder sb : sbs) {
+        sbOut.append(sb);
+        sbOut.append("\n");
+      }
+      
+      String outname = "testResultImages/ANMO-2017-002-PSDTest.csv";
+      PrintWriter out = new PrintWriter(outname);
+      out.write( sbOut.toString() );
+      out.close();
+      
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
     }
   }
   

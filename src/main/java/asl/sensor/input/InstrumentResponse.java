@@ -250,6 +250,7 @@ public class InstrumentResponse {
       if (integrations > 0) {
         // i*omega; integration is I(w) x (iw)^n
         Complex iw = new Complex(0.0, integConstant*deltaFrq);
+        // start at 1 in these loops because we do mult. at least once
         for (int j = 1; j < Math.abs(integrations); j++){
           iw = iw.multiply(iw);
         }
@@ -269,7 +270,9 @@ public class InstrumentResponse {
       // lastly, scale by the scale we chose (gain0 or gain1*gain2)
       resps[i] = resps[i].multiply(scale);
       
-      // unit conversion back out of acceleration
+      // unit conversion into velocity
+      Complex scaleFactor = new Complex(0., NumericUtils.TAU * deltaFrq);
+      resps[i] = resps[i].divide(scaleFactor);
       /*
       double conversion =  frequencies[i]*2*Math.PI;
       resps[i] = resps[i].multiply( resps[i].conjugate() );

@@ -83,14 +83,12 @@ public abstract class Experiment {
         if (1/freqs[j] > 1.0E3) {
           continue;
         }
-
-        // unit conversion with response
-        Complex temp = resultPSD[j].multiply(Math.pow(2*Math.PI*freqs[j],4));
-
+        
+        double temp = 10 * Math.log10( resultPSD[j].abs() );
         if (freqSpace) {
-          powerSeries.add( freqs[j], 10*Math.log10( temp.abs() ) );
+          powerSeries.add(freqs[j], temp);
         } else {
-          powerSeries.add( 1/freqs[j], 10*Math.log10( temp.abs() ) );
+          powerSeries.add(1/freqs[j], temp);
         }
       }
 

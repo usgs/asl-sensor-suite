@@ -86,21 +86,18 @@ public class ResponseExperiment extends Experiment {
       XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
       XYSeries argument = new XYSeries (name + " " + ARGUMENT);
       for (int i = 0; i < freqArray.length; ++i) {
-        Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqArray[i]);
-        Complex tmp = result[i].divide(scaleFactor);
-        // Complex tmp = result[i].divide(NumericUtils.TAU * freqArray[i]);
-        
+        Complex tmp = result[i];
         double phi = NumericUtils.atanc(tmp);
         phi = NumericUtils.unwrap(phi, phiPrev);
         phiPrev = phi;
         phi = Math.toDegrees(phi);
-        double magAccel = tmp.abs();
+        double magAccel = 10 * Math.log10( tmp.abs() );
         if (freqSpace) {
-          magnitude.add( freqArray[i], 10 * Math.log10(magAccel) );
-          argument.add( freqArray[i], phi );
+          magnitude.add(freqArray[i], magAccel);
+          argument.add(freqArray[i], phi );
         } else {
-          magnitude.add( 1/freqArray[i], 10 * Math.log10(magAccel) );
-          argument.add( 1/freqArray[i], phi );
+          magnitude.add(1/freqArray[i], magAccel);
+          argument.add(1/freqArray[i], phi);
         }
       }
       
