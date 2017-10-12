@@ -217,7 +217,7 @@ public class InstrumentResponse {
     // how many times do we need to do integration?
     // outUnits (acceleration) - inUnits
     // i.e., if the units of this response are velocity, we integrate once
-    int integrations = Unit.ACCELERATION.getDifferentiations(unitType);
+    int diffs = Unit.VELOCITY.getDifferentiations(unitType);
     // unlike s (see below) this is always 2Pi
     double integConstant = NumericUtils.TAU;
     
@@ -247,20 +247,20 @@ public class InstrumentResponse {
       
       resps[i] = numerator.multiply(normalization).divide(denominator);
       
-      if (integrations > 0) {
+      if (diffs < 0) {
+        // a negative number of differentiations 
+        // is a positive number of integrations
         // i*omega; integration is I(w) x (iw)^n
         Complex iw = new Complex(0.0, integConstant*deltaFrq);
         // start at 1 in these loops because we do mult. at least once
-        for (int j = 1; j < Math.abs(integrations); j++){
+        for (int j = 1; j < Math.abs(diffs); j++){
           iw = iw.multiply(iw);
         }
         resps[i] = resps[i].multiply(iw);
-      } else if (integrations < 0) { 
-        // a negative number of integrations 
-        // is a positive number of differentiations
+      } else if (diffs > 0) { 
         // differentiation is I(w) / (-i/w)^n
         Complex iw = new Complex(0.0, -1.0 / (integConstant*deltaFrq) );
-        for (int j = 1; j < Math.abs(integrations); j++){
+        for (int j = 1; j < Math.abs(diffs); j++){
           iw = iw.multiply(iw);
         }
         resps[i] = iw.multiply(resps[i]);
@@ -269,16 +269,7 @@ public class InstrumentResponse {
       
       // lastly, scale by the scale we chose (gain0 or gain1*gain2)
       resps[i] = resps[i].multiply(scale);
-      
-      // unit conversion into velocity
-      Complex scaleFactor = new Complex(0., NumericUtils.TAU * deltaFrq);
-      resps[i] = resps[i].divide(scaleFactor);
-      /*
-      double conversion =  frequencies[i]*2*Math.PI;
-      resps[i] = resps[i].multiply( resps[i].conjugate() );
-      resps[i] = resps[i].multiply( Math.pow(conversion, 2) );
-      */
-      
+
     }
     
     return resps;

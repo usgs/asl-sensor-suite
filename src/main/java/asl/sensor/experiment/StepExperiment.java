@@ -512,13 +512,11 @@ public class StepExperiment extends Experiment{
       int upperIndex = farCornerIdx - (i + 100);
       lowerAvg += data[i];
       upperAvg += data[upperIndex];
-      System.out.println(data[upperIndex]);
     }
     
     lowerAvg /= (double) range;
     upperAvg /= (double) range;
     
-    System.out.println(upperAvg);
     
     // scale new data so range (lowerAverage, upperAverage) -> (-1, 1)
     for (int i = 0; i < data.length; ++i) {

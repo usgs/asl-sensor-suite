@@ -212,7 +212,6 @@ public class FFTResult {
       Complex respMagnitude = 
           resp1.multiply( resp2.conjugate() );
       
-      
       if (respMagnitude.abs() == 0) {
         respMagnitude = new Complex(Double.MIN_VALUE, 0);
       }
