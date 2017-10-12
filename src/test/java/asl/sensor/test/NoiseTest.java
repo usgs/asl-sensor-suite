@@ -100,11 +100,11 @@ public class NoiseTest {
     return xysc;
   }
   
-  //@Test
+  @Test
   public void testResultsData1PSD1() {
     int idx = 0;
-    double psdCheck = -154.63;
-    double noiseCheck = -155.52;
+    double psdCheck = -157.64;
+    double noiseCheck = -158.53;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest1();
@@ -150,11 +150,11 @@ public class NoiseTest {
     }
   }
   
-  //@Test
+  @Test
   public void testResultsData2PSD1() {
     int idx = 0;
-    double psdCheck = -155.67;
-    double noiseCheck = -156.62;
+    double psdCheck = -158.68;
+    double noiseCheck = -159.63;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest2();
@@ -194,11 +194,11 @@ public class NoiseTest {
     }
   }
   
-  //@Test
+  @Test
   public void testResultsData1PSD2() {
     int idx = 1;
-    double psdCheck = -156.04;
-    double noiseCheck = -157.78;
+    double psdCheck = -159.05;
+    double noiseCheck = -160.79;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest1();
@@ -238,11 +238,11 @@ public class NoiseTest {
     }
   }
  
-  //@Test
+  @Test
   public void testResultsData1PSD3() {
     int idx = 2;
-    double psdCheck = -152.55;
-    double noiseCheck = -153.32;
+    double psdCheck = -155.56;
+    double noiseCheck = -156.33;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest1();

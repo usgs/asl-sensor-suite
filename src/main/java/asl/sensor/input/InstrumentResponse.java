@@ -195,10 +195,9 @@ public class InstrumentResponse {
   /**
    * Apply the values of this response object to a list of frequencies and
    * return the resulting (complex) frequencies
-   * The response curve produced is in units of acceleration. Many of the
-   * experiments in the larger test suite expect frequency response curves that
-   * are in units of velocity, and so the resulting array will need to have
-   * its entries scaled by 2 * pi * f.
+   * The response curve produced is in units of velocity. Some results
+   * will need to have the produced response curve have acceleration units,
+   * which can be done by multiplying by the integration factors defined here.
    * @param frequencies inputted list of frequencies, such as FFT windows
    * @return application of the response to those frequencies
    */
@@ -214,9 +213,9 @@ public class InstrumentResponse {
       scale *= gain.get(i);
     }
     
-    // how many times do we need to do integration?
+    // how many times do we need to do differentiation?
     // outUnits (acceleration) - inUnits
-    // i.e., if the units of this response are velocity, we integrate once
+    // i.e., if the units of this response are acceleration, we integrate once
     int diffs = Unit.VELOCITY.getDifferentiations(unitType);
     // unlike s (see below) this is always 2Pi
     double integConstant = NumericUtils.TAU;

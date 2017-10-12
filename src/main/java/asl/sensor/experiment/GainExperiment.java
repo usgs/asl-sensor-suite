@@ -162,7 +162,8 @@ public class GainExperiment extends Experiment {
     
     gainStage1 = new double[NUMBER_TO_LOAD];
     otherGainStages = new double[NUMBER_TO_LOAD];
-
+    
+    fireStateChange("Accumulating gain values...");
     // InstrumentResponse[] resps = ds.getResponses();
     for (int i = 0; i < indices.length; ++i) {
       InstrumentResponse ir = ds.getResponse(indices[i]);
@@ -179,6 +180,7 @@ public class GainExperiment extends Experiment {
     ArrayList<DataBlock> blocksPlotting = new ArrayList<DataBlock>();
     
     for (int i = 0; i < indices.length; ++i) {
+      fireStateChange("Getting PSD " + i + "...");
       int idx = indices[i];
       fftResults[i] = ds.getPSD(idx);
       blocksPlotting.add( ds.getBlock(idx) );
@@ -191,6 +193,7 @@ public class GainExperiment extends Experiment {
     addToPlot(ds, false, indices, xysc); 
     // false, because we don't want to plot in frequency space
     
+    fireStateChange("Getting NLNM data...");
     xysc.addSeries( FFTResult.getLowNoiseModel(false) );
     
     xySeriesData.add(xysc);
@@ -239,8 +242,8 @@ public class GainExperiment extends Experiment {
       if (freqs[i] < 0.001) {
         continue;
       }
-      Complex temp = timeSeries[i].multiply(Math.pow(2*Math.PI*freqs[i],4));
-      double result = 10*Math.log10( temp.abs() );
+      
+      double result = 10*Math.log10( timeSeries[i].abs() );
       if ( result < Double.POSITIVE_INFINITY && result > max ) {
         max = result;
         index = i;

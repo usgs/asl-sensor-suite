@@ -92,13 +92,12 @@ public class ResponseExperiment extends Experiment {
         phiPrev = phi;
         phi = Math.toDegrees(phi);
         double magAccel = 10 * Math.log10( tmp.abs() );
+        double xVal = 1/freqArray[i];
         if (freqSpace) {
-          magnitude.add(freqArray[i], magAccel);
-          argument.add(freqArray[i], phi );
-        } else {
-          magnitude.add(1/freqArray[i], magAccel);
-          argument.add(1/freqArray[i], phi);
+          xVal = freqArray[i]; 
         }
+        magnitude.add(xVal, magAccel);
+        argument.add(xVal, phi);
       }
       
       mags.addSeries(magnitude);

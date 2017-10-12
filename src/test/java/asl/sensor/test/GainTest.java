@@ -66,7 +66,7 @@ public class GainTest {
     
     double[] stats = ge.getStatsFromPeak(0);
     double gain = stats[3];
-    System.out.println( Arrays.toString(stats) );
+    // System.out.println( Arrays.toString(stats) );
     assertEquals(11714., gain, 2.0);
     
   }

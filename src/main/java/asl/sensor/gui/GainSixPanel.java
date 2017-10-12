@@ -363,6 +363,9 @@ public class GainSixPanel extends GainPanel {
   @Override
   public void stateChanged(ChangeEvent e) {
     
+    super.stateChanged(e);
+    
+    /*
     // enforce slider boundaries, same as deriving class
     if ( e.getSource() == leftSlider ) {
       if ( leftSlider.getValue() > rightSlider.getValue() - 10 ) {
@@ -408,6 +411,7 @@ public class GainSixPanel extends GainPanel {
       }
       
     }
+    */
   }
   
   @Override

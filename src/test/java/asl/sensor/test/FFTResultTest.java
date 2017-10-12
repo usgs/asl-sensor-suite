@@ -33,6 +33,7 @@ import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.data.xy.XYSeries;
@@ -69,6 +70,7 @@ public class FFTResultTest {
   
   @Test
   public void testPSDAndResp() {
+    System.out.println("Running the test of ANMO's PSD");
     String data1 = "data/testPSDandResp/00_LHZ.512.seed";
     String data2 = "data/testPSDandResp/10_LHZ.512.seed";
     String resp1 = "responses/testPSDandResp/RESP.IU.ANMO.00.LHZ";
@@ -124,6 +126,11 @@ public class FFTResultTest {
         }
       }
       
+      XYSeriesCollection xysc2 = new XYSeriesCollection();
+      xysc2.addSeries(xys3);
+      xysc2.addSeries(xys4);
+      xysc2.addSeries( FFTResult.getLowNoiseModel(false) );
+      
       JFreeChart chart = ChartFactory.createXYLineChart("PSD test data",
           "PSD (dB)", "", xysc);
       chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Period (s)") );
@@ -141,6 +148,15 @@ public class FFTResultTest {
       PrintWriter out = new PrintWriter(outname);
       out.write( sbOut.toString() );
       out.close();
+      
+      chart = ChartFactory.createXYLineChart("PSD test data",
+          "PSD (dB)", "", xysc2);
+      chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Period (s)") );
+      NumberAxis na = (NumberAxis) chart.getXYPlot().getRangeAxis();
+      na.setAutoRangeIncludesZero(false);
+      bi = ReportingUtils.chartsToImage(640, 480, chart);
+      chartOut = new File("testResultImages/ANMO-2017-002-RESPD-PSD.png");
+      ImageIO.write(bi, "png", chartOut);
       
     } catch (FileNotFoundException e) {
       // TODO Auto-generated catch block

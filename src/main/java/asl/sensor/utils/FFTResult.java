@@ -204,6 +204,7 @@ public class FFTResult {
     Complex[] out = new Complex[freqs.length];
     
     for (int j = 0; j < freqs.length; ++j) {
+      // response curves in velocity, put them into acceleration
       Complex scaleFactor = 
           new Complex( 0.0, -1.0 / (NumericUtils.TAU * freqs[j]) );
       Complex resp1 = freqRespd1[j].multiply(scaleFactor);
@@ -673,6 +674,7 @@ public class FFTResult {
     double psdNormalization = period / padding; // was mult. by 2.0 previously
     // removal of 2.0 here result of adding mult by 2 ~line 654
     double windowCorrection = wss / (double) range;
+    // System.out.println("Window correction: " + windowCorrection);
     // value of wss associated with taper parameters, not related to data
     
     psdNormalization /= windowCorrection;
