@@ -88,6 +88,7 @@ public class NoiseExperiment extends Experiment {
       freqs = res.getFreqs();
     }
     
+    fireStateChange("Getting PSD values plot-ready...");
     addToPlot(ds, freqSpace, respIndices, xysc);
     
     String getting = "Getting crosspower of series ";

@@ -256,7 +256,7 @@ public abstract class Experiment {
     
     xySeriesData = new ArrayList<XYSeriesCollection>();
     
-    ds.matchIntervals();
+    ds.matchIntervals( blocksNeeded() );
     
     fireStateChange("Beginning calculations...");
     

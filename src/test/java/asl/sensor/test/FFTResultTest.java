@@ -107,7 +107,6 @@ public class FFTResultTest {
         sbs[2].append(abs2);
         double abs3 = 10*Math.log10( psd1Resp.getFFT(i).abs() );
         sbs[3].append(abs3);
-
         double abs4 = 10*Math.log10( psd2Resp.getFFT(i).abs() );
         sbs[4].append(abs4);
         

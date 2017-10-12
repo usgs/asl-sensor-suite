@@ -164,11 +164,9 @@ public class AzimuthExperiment extends Experiment {
       double[] testNorth, double[] testEast, 
       double[] refNorth, long interval, long startTime, long endTime) {
 
-
-    TimeSeriesUtils.detrend(testNorth);
-    TimeSeriesUtils.detrend(testEast);
-    TimeSeriesUtils.detrend(refNorth);
-
+    TimeSeriesUtils.demean(testNorth);
+    TimeSeriesUtils.demean(testEast);
+    TimeSeriesUtils.demean(refNorth);
 
     TimeSeriesUtils.detrend(testNorth);
     TimeSeriesUtils.detrend(testEast);

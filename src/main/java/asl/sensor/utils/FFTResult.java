@@ -192,32 +192,16 @@ public class FFTResult {
     FFTResult selfPSD = spectralCalc(data1, data2);
     Complex[] results = selfPSD.getFFT();
     double[] freqs = selfPSD.getFreqs();
-    Complex[] out = new Complex[freqs.length];
     Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
     Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
     
-    for (int j = 0; j < freqs.length; ++j) {
-      Complex respMagnitude = 
-          freqRespd1[j].multiply( freqRespd2[j].conjugate() );
-      
-      if (respMagnitude.abs() == 0) {
-        respMagnitude = new Complex(Double.MIN_VALUE, 0);
-      }
-      
-      out[j] = results[j].divide(respMagnitude);
-    }
-    
-    return new FFTResult(out, freqs);
+    return crossPower(results, freqs, freqRespd1, freqRespd2);
   }
   
-  public static FFTResult crossPower(double[] data1, double[] data2,
-      InstrumentResponse ir1, InstrumentResponse ir2, long interval) {
-    FFTResult selfPSD = spectralCalc(data1, data2, interval);
-    Complex[] results = selfPSD.getFFT();
-    double[] freqs = selfPSD.getFreqs();
+  private static FFTResult crossPower(Complex[] results, double[] freqs, 
+      Complex[] freqRespd1, Complex[] freqRespd2) {
+    
     Complex[] out = new Complex[freqs.length];
-    Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
-    Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
     
     for (int j = 0; j < freqs.length; ++j) {
       Complex scaleFactor = 
@@ -234,11 +218,21 @@ public class FFTResult {
       }
       
       out[j] = results[j].divide(respMagnitude);
-      // Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqs[j]);
-      //out[j] = scaleFactor.multiply(out[j]);//.divide(scaleFactor);
     }
     
     return new FFTResult(out, freqs);
+    
+  }
+  
+  public static FFTResult crossPower(double[] data1, double[] data2,
+      InstrumentResponse ir1, InstrumentResponse ir2, long interval) {
+    FFTResult selfPSD = spectralCalc(data1, data2, interval);
+    Complex[] results = selfPSD.getFFT();
+    double[] freqs = selfPSD.getFreqs();
+    Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
+    Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
+    
+    return crossPower(results, freqs, freqRespd1, freqRespd2);
   }
   
   /**

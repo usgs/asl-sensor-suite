@@ -216,7 +216,7 @@ public class DataStore {
    * @return Complex array of frequency values and a 
    * double array of the frequencies
    */
-  public synchronized FFTResult getPSD(int idx) {
+  public FFTResult getPSD(int idx) {
     double[] data = dataBlockArray[idx].getData();
     long interval = dataBlockArray[idx].getInterval();
     InstrumentResponse ir = responses[idx];

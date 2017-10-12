@@ -63,17 +63,8 @@ public class NoiseNineTest {
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end);
-    // ds.matchIntervals();
+    //ds.matchIntervals();
 
-    // trim down internal representation of the data to avoid memory errors
-    /*
-    for (int i = 0; i < 9; ++i) {
-      DataBlock db = ds.getBlock(i);
-      db.setData( db.getData() );
-      System.out.println( db.size() );
-    }
-    */
-    
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
     nne.runExperimentOnData(ds);

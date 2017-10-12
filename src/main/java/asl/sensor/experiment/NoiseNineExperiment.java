@@ -69,7 +69,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     double[] east2Sensor = ds.getBlock(4).getData();
     // index 5 is a vertical sensor
     double[] north3Sensor = ds.getBlock(6).getData();
-    double[]east3Sensor = ds.getBlock(7).getData();
+    double[] east3Sensor = ds.getBlock(7).getData();
     
     long interval = ds.getBlock(0).getInterval();
     long start = ds.getBlock(0).getStartTime();
