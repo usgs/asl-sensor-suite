@@ -167,17 +167,17 @@ public class GainExperiment extends Experiment {
     // InstrumentResponse[] resps = ds.getResponses();
     for (int i = 0; i < indices.length; ++i) {
       InstrumentResponse ir = ds.getResponse(indices[i]);
-      List<Double> gains = ir.getGain();
-      gainStage1[i] = gains.get(1);
+      double[] gains = ir.getGain();
+      gainStage1[i] = gains[1];
       double accumulator = 1.0;
-      for (int j = 2; j < gains.size(); ++j) {
-        accumulator *= gains.get(j);
+      for (int j = 2; j < gains.length; ++j) {
+        accumulator *= gains[j];
       }
       otherGainStages[i] = accumulator;
     }
     
     fftResults = new FFTResult[NUMBER_TO_LOAD];
-    ArrayList<DataBlock> blocksPlotting = new ArrayList<DataBlock>();
+    List<DataBlock> blocksPlotting = new ArrayList<DataBlock>();
     
     for (int i = 0; i < indices.length; ++i) {
       fireStateChange("Getting PSD " + i + "...");

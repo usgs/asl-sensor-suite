@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -114,7 +113,8 @@ public class InstrumentResponse {
   private TransferFunction transferType;
   
   // gain values, indexed by stage
-  private List<Double> gain;
+  private double[] gain;
+  private int numStages;
   
   // poles and zeros
   private Map<Complex, Integer> zeros;
@@ -132,6 +132,7 @@ public class InstrumentResponse {
   /**
    * Reads in a response from an already-accessed bufferedreader handle
    * and assigns it to the name given (used with embedded response files)
+   * Only the last epoch of a multi-epoch response file is used.
    * @param br Handle to a buffered reader of a given RESP file
    * @param name Name of RESP file to be used internally 
    * @throws IOException
@@ -149,7 +150,8 @@ public class InstrumentResponse {
   public InstrumentResponse(InstrumentResponse responseIn) {
     transferType = responseIn.getTransferFunction();
     
-    gain = new ArrayList<Double>( responseIn.getGain() );
+    gain = responseIn.getGain();
+    numStages = responseIn.getNumStages();
 
     zeros = new HashMap<Complex, Integer>( responseIn.getZerosMap() );
     poles = new HashMap<Complex, Integer>( responseIn.getPolesMap() );
@@ -162,6 +164,10 @@ public class InstrumentResponse {
     name = responseIn.getName();
   }
   
+  public int getNumStages() {
+    return numStages;
+  }
+
   private Map<Complex, Integer> getZerosMap() {
     return zeros;
   }
@@ -184,6 +190,7 @@ public class InstrumentResponse {
   
   /**
    * Reads in an instrument response from a RESP file
+   * If the RESP file has multiple epochs, only the last one is used.
    * @param filename full path of the RESP file
    * @throws IOException
    */
@@ -209,8 +216,8 @@ public class InstrumentResponse {
     double scale = 1.;
     // stage 0 is sensitivity (supposed to be product of all gains)
     // we will get scale by multiplying all gain stages except for it
-    for (int i = 1; i < gain.size(); ++i) {
-      scale *= gain.get(i);
+    for (int i = 1; i < gain.length; ++i) {
+      scale *= gain[i];
     }
     
     // how many times do we need to do differentiation?
@@ -221,7 +228,6 @@ public class InstrumentResponse {
     double integConstant = NumericUtils.TAU;
     
     for (int i = 0; i < frequencies.length; ++i) {
-     
       double deltaFrq = frequencies[i];
       
       // pole-zero expansion
@@ -268,7 +274,6 @@ public class InstrumentResponse {
       
       // lastly, scale by the scale we chose (gain0 or gain1*gain2)
       resps[i] = resps[i].multiply(scale);
-
     }
     
     return resps;
@@ -425,9 +430,9 @@ public class InstrumentResponse {
    * Get the gain stages of the RESP file. Stage x is at index x. That is,
    * the sensitivity is at 0, the sensor gain is at 1, and the digitizer
    * gain is at 2.
-   * @return List of all gain stages found in resp file, including stage 0
+   * @return Array of all gain stages found in resp file, including stage 0
    */
-  public List<Double> getGain() {
+  public double[] getGain() {
     return gain;
   }
   
@@ -523,6 +528,17 @@ public class InstrumentResponse {
     return false;
   }
   
+  private void initParams() {
+    numStages = 0;
+    double[] gains = new double[10];
+    for (int i = 0; i < gains.length; ++i) {
+      gains[i] = 1;
+    }
+    normalization = 0;
+    normalFreq = 0;
+    
+  }
+  
   /**
    * Read in each line of a response and parse and store relevant lines
    * according to the hex value at the start of the line
@@ -531,13 +547,18 @@ public class InstrumentResponse {
    */
   private void parserDriver(BufferedReader br) throws IOException {
     
-    String line = br.readLine();
-    
-    // <gain stage, gain value>
-    Map<Integer, Double> gainMap = new HashMap<Integer, Double>();
+    numStages = 0;
+    double[] gains = new double[10];
+    for (int i = 0; i < gains.length; ++i) {
+      gains[i] = 1;
+    }
+    normalization = 0;
+    normalFreq = 0;
     int gainStage = -1;
     Complex[] polesArr = null;
     Complex[] zerosArr = null;
+    
+    String line = br.readLine();
     
     while (line != null) {
       
@@ -557,6 +578,18 @@ public class InstrumentResponse {
         String hexIdentifier = words[0];
         
         switch (hexIdentifier) {
+        case "B052F22":
+          // NEW EPOCH REACHED. Clear out old data.
+          numStages = 0;
+          gains = new double[10];
+          for (int i = 0; i < gains.length; ++i) {
+            gains[i] = 1;
+          }
+          normalization = 0;
+          normalFreq = 0;
+          gainStage = -1;
+          polesArr = null;
+          zerosArr = null;
         case "B053F03":
           // transfer function type specified
           // first character of third component of words
@@ -625,6 +658,7 @@ public class InstrumentResponse {
           // gain stage sequence number; again, full third word as int
           // this is used to map the gain value to an index
           gainStage = Integer.parseInt(words[2]);
+          numStages = Math.max(numStages, gainStage);
           break;
         case "B058F04":
           
@@ -633,7 +667,8 @@ public class InstrumentResponse {
           // map allows us to read in the stages in whatever order
           // in the event they're not sorted in the response file
           // and allows us to have basically arbitrarily many stages
-          gainMap.put( gainStage, Double.parseDouble(words[2]) );
+          System.out.println(gainStage);
+          gains[gainStage] = Double.parseDouble(words[2]);
           
           // reset the stage to prevent data being overwritten
           gainStage = -1;
@@ -646,12 +681,8 @@ public class InstrumentResponse {
     } // end of file-read loop (EOF reached, line is null)
     
     // turn map of gain stages into list
-    List<Integer> stages = new ArrayList<Integer>( gainMap.keySet() );
-    Collections.sort( stages );
-    gain = new ArrayList<Double>();
-    for (int stage : stages) {
-      gain.add( gainMap.get(stage) );
-    }
+    gain = gains;
+    ++numStages; // offset by 1 to represent size of stored gain stages
     
     // turn pole/zero arrays into maps from pole values to # times repeated
     setZeros(zerosArr);
@@ -840,10 +871,10 @@ public class InstrumentResponse {
     sb.append("Gain stage values: ");
     sb.append('\n');
     
-    for (int i = 0; i < gain.size(); ++i) {
+    for (int i = 0; i < numStages; ++i) {
       sb.append(i);
       sb.append(": ");
-      sb.append( nf.format( gain.get(i) ) );
+      sb.append( nf.format(gain[i]) );
       sb.append("\n");
     }
     

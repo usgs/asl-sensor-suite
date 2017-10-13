@@ -59,9 +59,13 @@ public class InstrumentResponseTest {
       double nmf = Double.parseDouble("3.000000E-01");
       assertEquals( nmf, ir.getNormalizationFrequency(), 0.0001 );
       
-      Double[] gn = {2.400000e+03, 2.400000e+03, 1.000000e+00};
-      List<Double> gnL = Arrays.asList(gn);
-      assertTrue( gnL.equals(ir.getGain() ) );
+      double[] gn = {2.400000e+03, 2.400000e+03, 1.000000e+00};
+      int maxStage = ir.getNumStages();
+      assertEquals(maxStage, gn.length);
+      for (int i = 0; i < maxStage; ++i) {
+        assertEquals(gn[i], ir.getGain()[i], 1.);
+      }
+      //assertTrue( gnL.equals(ir.getGain() ) );
       
       assertEquals( Unit.VELOCITY, ir.getUnits() );
       
