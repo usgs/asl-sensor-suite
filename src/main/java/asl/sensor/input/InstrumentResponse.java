@@ -197,7 +197,7 @@ public class InstrumentResponse {
    * return the resulting (complex) frequencies
    * The response curve produced is in units of velocity. Some results
    * will need to have the produced response curve have acceleration units,
-   * which can be done by multiplying by the integration factors defined here.
+   * which can be done by multiplying by the integration factor defined here.
    * @param frequencies inputted list of frequencies, such as FFT windows
    * @return application of the response to those frequencies
    */
