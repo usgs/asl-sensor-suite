@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.complex.Complex;
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataBlock;
@@ -178,21 +179,22 @@ public class GainExperiment extends Experiment {
     
     fftResults = new FFTResult[NUMBER_TO_LOAD];
     List<DataBlock> blocksPlotting = new ArrayList<DataBlock>();
+    XYSeriesCollection xysc = new XYSeriesCollection();
+    xysc.setAutoWidth(true);
     
     for (int i = 0; i < indices.length; ++i) {
       fireStateChange("Getting PSD " + i + "...");
       int idx = indices[i];
+      String name = "PSD " + ds.getBlock(idx).getName() + " [" + idx +"]";
+      XYSeries xys = new XYSeries(name);
       fftResults[i] = ds.getPSD(idx);
+      Complex[] fft = fftResults[i].getFFT();
+      double[] freqs = fftResults[i].getFreqs();
+      // false, because we don't want to plot in frequency space
+      addToPlot(xys, fft, freqs, false, xysc);
       blocksPlotting.add( ds.getBlock(idx) );
     }
-    
-    XYSeriesCollection xysc = new XYSeriesCollection();
-    
-    xysc.setAutoWidth(true);
-    
-    addToPlot(ds, false, indices, xysc); 
-    // false, because we don't want to plot in frequency space
-    
+
     fireStateChange("Getting NLNM data...");
     xysc.addSeries( FFTResult.getLowNoiseModel(false) );
     

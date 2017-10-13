@@ -77,19 +77,15 @@ public class NoiseExperiment extends Experiment {
     Complex[][] spectra = new Complex[3][];
     double[] freqs = new double[1]; // initialize to prevent later errors
     
-    fireStateChange("Getting PSDs of each series...");
+
     
-    // initialize the values above to have relevant data
+    // gets the PSDs of each given index for given freqSpace
     for (int i = 0; i < respIndices.length; ++i) {
-      fireStateChange("Getting PSDs of series " + (i+1) + "...");
-      // note that frequency is applied during the ds
-      FFTResult res = ds.getPSD(respIndices[i]);
-      spectra[i] = res.getFFT();
-      freqs = res.getFreqs();
+      int idx = respIndices[i];
+      fireStateChange("Getting PSDs of data " + idx + "...");
+      addToPlot(ds, freqSpace, idx, xysc);
     }
-    
-    fireStateChange("Getting PSD values plot-ready...");
-    addToPlot(ds, freqSpace, respIndices, xysc);
+
     
     String getting = "Getting crosspower of series ";
     

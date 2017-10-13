@@ -64,39 +64,42 @@ public abstract class Experiment {
   public static void addToPlot(
       final DataStore ds,
       final boolean freqSpace,
-      final int[] indices,
+      final int idx,
+      XYSeriesCollection xysc) {
+
+    XYSeries powerSeries = 
+        new XYSeries( "PSD " + ds.getBlock(idx).getName() + " [" + idx +"]" );
+    
+    Complex[] resultPSD = ds.getPSD(idx).getFFT();
+    double[] freqs = ds.getPSD(idx).getFreqs();
+
+    addToPlot(powerSeries, resultPSD, freqs, freqSpace, xysc);
+  }
+  
+  public static void addToPlot(
+      final XYSeries powerSeries,
+      final Complex[] resultPSD,
+      final double[] freqs,
+      final boolean freqSpace,
       XYSeriesCollection xysc) {
     
-    // DataBlock[] dataIn = ds.getData();
-    
-    for (int i = 0; i < indices.length; ++i) {
-      
-      int idx = indices[i];
-      
-      XYSeries powerSeries = 
-          new XYSeries( "PSD " + ds.getBlock(idx).getName() + " [" + idx +"]" );
-
-      Complex[] resultPSD = ds.getPSD(idx).getFFT();
-      double[] freqs = ds.getPSD(idx).getFreqs();
-
-      for (int j = 0; j < freqs.length; ++j) {
-        if (1/freqs[j] > 1.0E3) {
-          continue;
-        }
-        
-        double temp = 10 * Math.log10( resultPSD[j].abs() );
-        if (freqSpace) {
-          powerSeries.add(freqs[j], temp);
-        } else {
-          powerSeries.add(1/freqs[j], temp);
-        }
+    for (int j = 0; j < freqs.length; ++j) {
+      if (1/freqs[j] > 1.0E3) {
+        continue;
       }
 
-      xysc.addSeries(powerSeries);
-
+      double temp = 10 * Math.log10( resultPSD[j].abs() );
+      if (freqSpace) {
+        powerSeries.add(freqs[j], temp);
+      } else {
+        powerSeries.add(1/freqs[j], temp);
+      }
     }
+
+    xysc.addSeries(powerSeries);
     
   }
+  
   long start;
   long end;
   protected List<XYSeriesCollection> xySeriesData;
