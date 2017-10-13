@@ -528,17 +528,6 @@ public class InstrumentResponse {
     return false;
   }
   
-  private void initParams() {
-    numStages = 0;
-    double[] gains = new double[10];
-    for (int i = 0; i < gains.length; ++i) {
-      gains[i] = 1;
-    }
-    normalization = 0;
-    normalFreq = 0;
-    
-  }
-  
   /**
    * Read in each line of a response and parse and store relevant lines
    * according to the hex value at the start of the line
@@ -661,13 +650,11 @@ public class InstrumentResponse {
           numStages = Math.max(numStages, gainStage);
           break;
         case "B058F04":
-          
           // should come immediately and only after the gain sequence number
           // again, it's the third full word, this time as a double
           // map allows us to read in the stages in whatever order
           // in the event they're not sorted in the response file
           // and allows us to have basically arbitrarily many stages
-          System.out.println(gainStage);
           gains[gainStage] = Double.parseDouble(words[2]);
           
           // reset the stage to prevent data being overwritten
