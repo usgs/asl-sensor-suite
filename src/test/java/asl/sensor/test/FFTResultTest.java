@@ -44,6 +44,7 @@ import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
@@ -88,7 +89,9 @@ public class FFTResultTest {
       FFTResult psd2Resp = FFTResult.crossPower(db2, db2, ir2, ir2);
       
       double[] freqs = psd1.getFreqs();
-      StringBuilder[] sbs = new StringBuilder[5];
+      Complex[] respCurve = ir1.applyResponseToInput(freqs);
+      double phiPrev = 0;
+      StringBuilder[] sbs = new StringBuilder[7];
       XYSeries xys1 = new XYSeries("00-LHZ PSD");
       XYSeries xys2 = new XYSeries("10-LHZ PSD");
       XYSeries xys3 = new XYSeries("00-LHZ PSD respified");
@@ -111,6 +114,12 @@ public class FFTResultTest {
         sbs[3].append(abs3);
         double abs4 = 10*Math.log10( psd2Resp.getFFT(i).abs() );
         sbs[4].append(abs4);
+        double abs5 = 10*Math.log10( respCurve[i].abs() ); 
+        sbs[5].append(abs5);
+        double phi = NumericUtils.atanc(respCurve[i]);
+        phi = NumericUtils.unwrap(phi, phiPrev);
+        phiPrev = phi;
+        sbs[6].append(phi);
         
         if (freqs[i] > .001) {
           xys1.add(1/freqs[i], abs1);
