@@ -89,11 +89,28 @@ public class InstrumentResponseTest {
   }
   
   @Test
+  public void testMultiEpoch() {
+    String currentDir = System.getProperty("user.dir");
+    String filename = currentDir + 
+        "/test-data/resp-parse/multiepoch.txt";
+    InstrumentResponse ir;
+    try {
+      ir = new InstrumentResponse(filename);
+      assertTrue( ir.getEpochsCounted() > 1 );
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+
+  }
+  
+  @Test
   public void testStringOutput() {
     
     String currentDir = System.getProperty("user.dir");
     String filename = currentDir + 
         "/test-data/resp-parse/RESP.XX.NS087..BHZ.STS1.20.2400";
+
 
     try {
       InstrumentResponse ir = new InstrumentResponse(filename);

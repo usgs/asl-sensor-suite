@@ -259,7 +259,7 @@ public class TimeSeriesUtilsTest {
   
   @Test
   public void firstSampleCorrect() {
-    String fname = "./data/random_cal_lowfrq/BHZ.512.seed";
+    String fname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
     try {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
@@ -275,13 +275,14 @@ public class TimeSeriesUtilsTest {
       // System.out.println(timeseries.get(start)[0]);
       
     } catch (FileNotFoundException e) {
+      fail();
       e.printStackTrace();
     }
   }
   
   @Test
   public void firstSampleCorrect2() {
-    String fname = "./data/random_cal_lowfrq/BC0.512.seed";
+    String fname = "./test-data/random_cal_lowfrq/BC0.512.seed";
     try {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
@@ -307,6 +308,7 @@ public class TimeSeriesUtilsTest {
       // System.out.println(timeseries.get(start)[0]);
       
     } catch (FileNotFoundException e) {
+      fail();
       e.printStackTrace();
     }
   }
@@ -406,8 +408,8 @@ public class TimeSeriesUtilsTest {
   @Test
   public void producePlotReadIn() {
     try {
-      String calname = "./data/random_cal_lowfrq/BC0.512.seed";
-      String outname = "./data/random_cal_lowfrq/BHZ.512.seed";
+      String calname = "./test-data/random_cal_lowfrq/BC0.512.seed";
+      String outname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
       String calMplex = TimeSeriesUtils.getMplexNameList(calname).get(0);
       String outMplex = TimeSeriesUtils.getMplexNameList(outname).get(0);
       DataBlock cal = TimeSeriesUtils.getTimeSeries(calname, calMplex);

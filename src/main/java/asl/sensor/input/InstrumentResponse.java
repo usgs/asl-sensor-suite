@@ -111,6 +111,7 @@ public class InstrumentResponse {
   }
   
   private TransferFunction transferType;
+  private int epochsCounted;
   
   // gain values, indexed by stage
   private double[] gain;
@@ -148,6 +149,7 @@ public class InstrumentResponse {
    * @param responseIn The response object to be copied
    */
   public InstrumentResponse(InstrumentResponse responseIn) {
+    epochsCounted = 1;
     transferType = responseIn.getTransferFunction();
     
     gain = responseIn.getGain();
@@ -527,6 +529,15 @@ public class InstrumentResponse {
     
     return false;
   }
+ 
+  /**
+   * Return the number of epochs found in the data, for use in warning
+   * if the user has loaded in a response with multiple epochs
+   * @return number of times 0xb052f22 lines were found in file
+   */
+  public int getEpochsCounted() {
+    return epochsCounted;
+  }
   
   /**
    * Read in each line of a response and parse and store relevant lines
@@ -535,6 +546,8 @@ public class InstrumentResponse {
    * @throws IOException if the reader cannot read the given file
    */
   private void parserDriver(BufferedReader br) throws IOException {
+    
+    epochsCounted = 0;
     
     numStages = 0;
     double[] gains = new double[10];
@@ -568,6 +581,7 @@ public class InstrumentResponse {
         
         switch (hexIdentifier) {
         case "B052F22":
+          ++epochsCounted;
           // NEW EPOCH REACHED. Clear out old data.
           numStages = 0;
           gains = new double[10];
