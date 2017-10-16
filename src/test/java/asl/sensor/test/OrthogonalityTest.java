@@ -26,7 +26,7 @@ public class OrthogonalityTest {
     DataStore ds = new DataStore();
     
     String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/data/orthogonality/";
+    String folder = currentDir + "/test-data/orthogonality/";
     String[] prefixes = new String[4];
     prefixes[0] = "00_LH1";
     prefixes[1] = "00_LH2";

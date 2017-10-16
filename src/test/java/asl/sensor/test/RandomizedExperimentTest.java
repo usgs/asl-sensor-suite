@@ -46,6 +46,7 @@ import asl.sensor.utils.TimeSeriesUtils;
 
 public class RandomizedExperimentTest {
 
+  String testRespName = "test-data/random_cal/RESP.XX.NS088..BHZ.STS1.360.2400";
   
   public DataStore getFromList(List<String> setUpFilenames) throws IOException {
     
@@ -86,7 +87,7 @@ public class RandomizedExperimentTest {
   
   @Test
   public void ResponseCorrectConvertedToVectorHighFreq() {
-    String fname = "responses/TST5_response.txt";
+    String fname = "test-data/resp-parse/TST5_response.txt";
     boolean lowFreq = false;
     InstrumentResponse ir;
     try {
@@ -128,7 +129,7 @@ public class RandomizedExperimentTest {
   
   @Test
   public void ResponseCorrectlyConvertedToVectorLowFreq() {
-    String fname = "responses/TST5_response.txt";
+    String fname = "test-data/resp-parse/TST5_response.txt";
     boolean lowFreq = true;
     InstrumentResponse ir;
     try {
@@ -154,7 +155,7 @@ public class RandomizedExperimentTest {
   @Test
   public void ResponseSetCorrectlyHighFreq() {
     
-    String fname = "responses/TST5_response.txt";
+    String fname = "test-data/resp-parse/TST5_response.txt";
     
     InstrumentResponse ir;
 
@@ -229,7 +230,7 @@ public class RandomizedExperimentTest {
     
   }
   
-  @Test
+  //@Test
   public void testSingleSideFFTValues() {
     // just to test to see how crosspower compares to single-side fft
     String folder = "data/highfrq-majo/";
@@ -237,7 +238,8 @@ public class RandomizedExperimentTest {
     String sensorOutFile = "10_EHZ.512.seed";
     try {
       DataBlock cal = TimeSeriesUtils.getFirstTimeSeries(folder + calInFile);
-      DataBlock out = TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
+      DataBlock out = 
+          TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
       
       Calendar start = cal.getTrimmedStartCalendar();
       Calendar end = cal.getTrimmedStartCalendar();
@@ -304,14 +306,15 @@ public class RandomizedExperimentTest {
     
   }
   
-  @Test
+  //@Test
   public void testCrossPowerCalculations() {
     String folder = "data/highfrq-majo/";
     String calInFile = "CB_BC1.512.seed";
     String sensorOutFile = "10_EHZ.512.seed";
     try {
       DataBlock cal = TimeSeriesUtils.getFirstTimeSeries(folder + calInFile);
-      DataBlock out = TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
+      DataBlock out = 
+          TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
       
       Calendar start = cal.getTrimmedStartCalendar();
       Calendar end = cal.getTrimmedStartCalendar();
@@ -399,7 +402,7 @@ public class RandomizedExperimentTest {
   @Test
   public void responseSetCorrectlyLowFreq() {
     
-    String fname = "responses/TST5_response.txt";
+    String fname = "test-data/resp-parse/TST5_response.txt";
     
       InstrumentResponse ir;
       try {
@@ -443,8 +446,8 @@ public class RandomizedExperimentTest {
   public DataStore setUpTest1() throws IOException {
     
     List<String> fileList = new ArrayList<String>();
-    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
-    String dataFolderName = "data/random_cal/"; 
+    String respName = testRespName;
+    String dataFolderName = "test-data/random_cal/"; 
     String calName =  dataFolderName + "_EC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     
@@ -470,8 +473,8 @@ public class RandomizedExperimentTest {
 
   public DataStore setUpTest2() throws IOException {
     List<String> fileList = new ArrayList<String>();
-    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
-    String dataFolderName = "data/random_cal_2/"; 
+    String respName = testRespName;
+    String dataFolderName = "test-data/random_cal_2/"; 
     String calName =  dataFolderName + "CB_BC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     
@@ -504,10 +507,10 @@ public class RandomizedExperimentTest {
     return ds;
   }
   
-  public DataStore setUpTest3() throws IOException {
+    public DataStore setUpTest3() throws IOException {
     List<String> fileList = new ArrayList<String>();
-    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
-    String dataFolderName = "data/random_cal_3/"; 
+    String respName = testRespName;
+    String dataFolderName = "test-data/random_cal_3/"; 
     String calName =  dataFolderName + "BC0.512.seed";
     String sensOutName = dataFolderName + "00_BHZ.512.seed";
     
@@ -548,8 +551,8 @@ public class RandomizedExperimentTest {
   public DataStore setUpTest4() throws IOException {
     
     List<String> fileList = new ArrayList<String>();
-    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
-    String dataFolderName = "data/random_cal_4/"; 
+    String respName = testRespName;
+    String dataFolderName = "test-data/random_cal_4/"; 
     String calName =  dataFolderName + "CB_BC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     
@@ -667,7 +670,7 @@ public class RandomizedExperimentTest {
     }
   }
   
-  @Test
+  //@Test
   public void subtestLowFreqPSDsMAJO() {
     try {
       String calname = "./data/random_cal_lowfrq/BC0.512.seed";

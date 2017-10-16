@@ -82,8 +82,14 @@ public class NoiseExperiment extends Experiment {
     // gets the PSDs of each given index for given freqSpace
     for (int i = 0; i < respIndices.length; ++i) {
       int idx = respIndices[i];
-      fireStateChange("Getting PSDs of data " + idx + "...");
-      addToPlot(ds, freqSpace, idx, xysc);
+      fireStateChange("Getting PSDs of data " + (idx + 1) + "...");
+      String name = "PSD " + ds.getBlock(idx).getName() + " [" + idx +"]";
+      XYSeries powerSeries = new XYSeries(name);
+      FFTResult psdCalc = ds.getPSD(idx);
+      Complex[] fft = psdCalc.getFFT();
+      spectra[i] = fft;
+      freqs = psdCalc.getFreqs();
+      addToPlot(powerSeries, fft, freqs, freqSpace, xysc);
     }
 
     

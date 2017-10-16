@@ -38,7 +38,7 @@ public class NoiseNineTest {
   @Test
   public void canRunAndPlotTest1() {
 
-    String folder = currentDir + "/data/noisenine/";
+    String folder = currentDir + "/test-data/noisenine/";
     String[] types = new String[]{"00","10","60"};;
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};
@@ -141,7 +141,7 @@ public class NoiseNineTest {
   
   @Test
   public void canRunAndPlotTest2() {
-    String folder = currentDir + "/data/noise_test/";
+    String folder = currentDir + "/test-data/noisenine-2/";
     String[] types = new String[]{"00","10","30"};
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};

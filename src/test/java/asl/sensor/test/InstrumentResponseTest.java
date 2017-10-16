@@ -46,7 +46,7 @@ public class InstrumentResponseTest {
   
   @Test
   public void testFileParse() {
-    String filename = "./responses/RESP.XX.NS087..BHZ.STS1.20.2400";
+    String filename = "./test-data/resp-parse/RESP.XX.NS087..BHZ.STS1.20.2400";
     
     try {
       InstrumentResponse ir = new InstrumentResponse(filename);
@@ -92,7 +92,8 @@ public class InstrumentResponseTest {
   public void testStringOutput() {
     
     String currentDir = System.getProperty("user.dir");
-    String filename = currentDir + "/responses/RESP.XX.NS087..BHZ.STS1.20.2400";
+    String filename = currentDir + 
+        "/test-data/resp-parse/RESP.XX.NS087..BHZ.STS1.20.2400";
 
     try {
       InstrumentResponse ir = new InstrumentResponse(filename);

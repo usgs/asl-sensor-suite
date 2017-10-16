@@ -3,6 +3,9 @@ package asl.sensor.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.FileNotFoundException;
 
 import org.junit.Test;
 
@@ -13,45 +16,51 @@ import asl.sensor.utils.TimeSeriesUtils;
 
 public class DataStoreTest {
 
-  public String network = "XX";
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
   
   public String fileID = station+"_"+location+"_"+channel;
-  public String filter = network + "_" + fileID;
   
-  public String filename1 = "./data/"+fileID+".512.seed";
+  public String filename1 = "./test-data/blocktrim/"+fileID+".512.seed";
   
   @Test
   public void commonTimeTrimMatchesLength() {
     
     DataStore ds = new DataStore();
-    ds.setBlock(0, filename1, filter);
+    DataBlock db;
+    try {
+      db = TimeSeriesUtils.getFirstTimeSeries(filename1);
+      String filter = db.getName();
+      ds.setBlock(0, db);
+      
+      int left = 250;
+      int right = 750;
+      
+      int oldSize = db.size();
+      
+      // tested in DataPanelTest
+      long loc1 = InputPanel.getMarkerLocation(db, left);
+      long loc2 = InputPanel.getMarkerLocation(db, right);
+      //  tested in DataBlockTest
+      db.trim(loc1, loc2);
+      
+      ds.setBlock(1, filename1, filter);
+      ds.setBlock(2, filename1, filter);
+      
+      // function under test
+      ds.trimToCommonTime();
+      
+      assertEquals( ds.getBlock(1).getStartTime(), loc1);
+      assertEquals( ds.getBlock(1).getEndTime(), loc2);
+      assertEquals( db.size(), ds.getBlock(1).size() );
+      assertNotEquals( db.size(), oldSize );
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
     
-    int left = 250;
-    int right = 750;
-    
-    DataBlock db = ds.getBlock(0);
-    
-    int oldSize = db.size();
-    
-    // tested in DataPanelTest
-    long loc1 = InputPanel.getMarkerLocation(db, left);
-    long loc2 = InputPanel.getMarkerLocation(db, right);
-    //  tested in DataBlockTest
-    db.trim(loc1, loc2);
-    
-    ds.setBlock(1, filename1, filter);
-    ds.setBlock(2, filename1, filter);
-    
-    // function under test
-    ds.trimToCommonTime();
-    
-    assertEquals( ds.getBlock(1).getStartTime(), loc1);
-    assertEquals( ds.getBlock(1).getEndTime(), loc2);
-    assertEquals( db.size(), ds.getBlock(1).size() );
-    assertNotEquals( db.size(), oldSize );
     
   }
   

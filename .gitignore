@@ -1,7 +1,7 @@
-# temporary data file created by program
+# data files created by program
 out.csv
 testResultImages/
-data/gitignoreme
+data/*
 
 # Mac
 .DS_Store

@@ -20,7 +20,7 @@ public class DataBlockTest {
   
   public String fileID = station+"_"+location+"_"+channel;
   
-  public String filename1 = "./data/"+fileID+".512.seed";
+  public String filename1 = "./test-data/blocktrim/"+fileID+".512.seed";
   
   @Test
   public void trimsCorrectly() {

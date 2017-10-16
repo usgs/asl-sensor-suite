@@ -69,7 +69,7 @@ public class FFTResultTest {
     }
   }
   
-  @Test
+  //@Test
   public void testPSDAndResp() {
     System.out.println("Running the test of ANMO's PSD");
     String data1 = "data/testPSDandResp/00_LHZ.512.seed";
@@ -168,17 +168,15 @@ public class FFTResultTest {
       ImageIO.write(bi, "png", chartOut);
       
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     }
   }
   
-  @Test
+  //@Test
   public void ohNoMorePrintFunctions() {
     
     // DecimalFormat df = new DecimalFormat(); // may need to tweak precision
@@ -415,7 +413,6 @@ public class FFTResultTest {
       out.close();
       
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     }
@@ -638,7 +635,7 @@ public class FFTResultTest {
     
   }
   
-  @Test
+  //@Test
   public void showMultitaperPlot() {
     final int TAPERS = 12;
     StringBuilder sb = new StringBuilder();
@@ -755,6 +752,7 @@ public class FFTResultTest {
     }
     
   }
+  
   //@Test commented out because saves a lot of text data
   public void testAutomateRingler() {
     String name = "data/random_cal_lowfrq/BHZ.512.seed";
@@ -1127,7 +1125,7 @@ public class FFTResultTest {
   
   //@Test
   public void testDemeaning() {
-    // temporarily commented out while I deal with this thing refactoring
+    // TODO: see about restoring this test case, because it has a real test
     String dataFolderName = "data/random_cal/"; 
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     
@@ -1148,8 +1146,6 @@ public class FFTResultTest {
       while (padding < sensor.size()) {
         padding *= 2;
       }
-      
-      // System.out.println(map.size()+", "+sensor.size());
       
       double[] meanedTimeSeries = new double[padding];
       List<Long> time = new ArrayList<Long>( map.keySet() );
@@ -1195,11 +1191,6 @@ public class FFTResultTest {
       assertEquals(arrIdx, sensor.size());
       
       double[] demeanedTimeSeries = sensor.getData();
-      /*
-      for (int i = 0; i < sensor.size(); ++i) {
-        demeanedTimeSeries[i] = sensor.getData()[i];
-      }
-      */
       
       Complex[] meanedFFT = FFTResult.simpleFFT(meanedTimeSeries);
       Complex[] demeanedFFT = FFTResult.simpleFFT(demeanedTimeSeries);
@@ -1271,11 +1262,11 @@ public class FFTResultTest {
       double[] toFFT = new double[size];
       int l = toFFT.length-1; // last point
       double[] taperCurve = taper[j];
-      double taperSum = 0.;
+      //double taperSum = 0.;
       //System.out.println(j + "-th taper curve first point: " + taperCurve[0]);
       //System.out.println(j + "-th taper curve last point: " + taperCurve[l]);
       for (int i = 0; i < timeSeries.size(); ++i) {
-        taperSum += Math.abs(taperCurve[i]);
+        // taperSum += Math.abs(taperCurve[i]);
         double point = timeSeries.get(i).doubleValue();
         toFFT[i] = point * taperCurve[i];
       }
@@ -1289,7 +1280,7 @@ public class FFTResultTest {
   
   @Test
   public void testTrimAndDemean() {
-    String dataFolderName = "data/random_cal_4/"; 
+    String dataFolderName = "test-data/random_cal_4/"; 
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     
     String metaName;

@@ -48,7 +48,13 @@ public class SpectrumExperiment extends Experiment {
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.setAutoWidth(true);
     
-    respIndices = new int[3]; // first 3 fully-loaded data sets
+    int loadedDataCount = 0;
+    for (int i = 0; i < 3; ++i) {
+      if ( ds.bothComponentsSet(i) ) {
+        ++loadedDataCount;
+      }
+    }
+    respIndices = new int[loadedDataCount];
     
     // get the first (index.length) seed/resp pairs. while we expect to
     // have the first three plots be the ones with loaded data, in general
