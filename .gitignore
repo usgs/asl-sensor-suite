@@ -2,7 +2,9 @@
 out.csv
 testResultImages/
 data/*
+!data/readme.txt
 responses/*
+!responses/readme.txt
 
 # Mac
 .DS_Store
