@@ -2,6 +2,7 @@
 out.csv
 testResultImages/
 data/*
+responses/*
 
 # Mac
 .DS_Store
