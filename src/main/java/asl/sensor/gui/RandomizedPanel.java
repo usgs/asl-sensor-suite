@@ -1,5 +1,6 @@
 package asl.sensor.gui;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -22,6 +23,8 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.block.BlockContainer;
 import org.jfree.chart.block.FlowArrangement;
+import org.jfree.chart.plot.Marker;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.TextTitle;
@@ -342,7 +345,8 @@ public class RandomizedPanel extends ExperimentPanel {
     return new String[]{sbInit.toString(), sbInitZ.toString(), sbR.toString()};
   }
   
-  private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis;
+  private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis,
+                    residXAxis, residPrdAxis;
   private JComboBox<String> plotSelection;
   private JCheckBox lowFreqBox, showParams, freqSpace;
   private JFreeChart magChart, argChart, residAmpChart, residPhaseChart;
@@ -415,6 +419,8 @@ public class RandomizedPanel extends ExperimentPanel {
     
     xAxis = new LogarithmicAxis(xAxisTitle);
     prdAxis = new LogarithmicAxis(prdAxisTitle);
+    residXAxis = new LogarithmicAxis(xAxisTitle);
+    residPrdAxis = new LogarithmicAxis(prdAxisTitle);
     
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
@@ -641,6 +647,14 @@ public class RandomizedPanel extends ExperimentPanel {
     }
   }
   
+  public ValueAxis getResidAxis() {
+    if ( null == plotSelection || freqSpace.isSelected() ) {
+      return residXAxis;
+    } else {
+      return residPrdAxis;
+    }
+  }
+  
   @Override
   public ValueAxis getYAxis() {
     
@@ -709,6 +723,13 @@ public class RandomizedPanel extends ExperimentPanel {
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
     invertSeriesRenderingOrder(magChart);
     
+    if (!isLowFreq) {
+      Marker maxFitMarker = new ValueMarker( rndExp.getMaxFitFrequency() );
+      maxFitMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      magChart.getXYPlot().addDomainMarker(maxFitMarker);
+      argChart.getXYPlot().addDomainMarker(maxFitMarker);
+    }
+    
     String inset = getInsetStrings();
     TextTitle result = new TextTitle();
     result.setText(inset);
@@ -718,7 +739,7 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(magChart, appendFreqTitle);
     
     // get residuals plot
-    residAmpChart = buildChart(xysc.get(2), getXAxis(), residAmpAxis);
+    residAmpChart = buildChart(xysc.get(2), getResidAxis(), residAmpAxis);
     /*
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();
@@ -735,7 +756,7 @@ public class RandomizedPanel extends ExperimentPanel {
     residPlot.clearAnnotations();
     residPlot.addAnnotation(weightAnnot);
     */
-    residPhaseChart = buildChart(xysc.get(3), getXAxis(), residPhaseAxis);
+    residPhaseChart = buildChart(xysc.get(3), getResidAxis(), residPhaseAxis);
     /*
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();

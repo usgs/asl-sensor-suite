@@ -289,7 +289,6 @@ extends Experiment implements ParameterValidator {
       calcArg.add(xAxis, observedResult[argIdx]);
     }
     
-    phiPrev = 0;
     for (int i = estResponse.length; i < plottedResponse.length; ++i) {
       Complex estValue = plottedResponse[i];
       // estValue = estValue.subtract(scaleValue);
@@ -392,11 +391,6 @@ extends Experiment implements ParameterValidator {
     numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
     
-    //System.out.println(nyquist);
-    //for (int i = 0; i < initialPoles.size(); ++i) {
-    //  System.out.println( initialPoles.get(i).abs() / NumericUtils.TAU );
-    //}
-    
     if (OUTPUT_TO_TERMINAL) {
       System.out.println( Arrays.toString(observedResult) );
     }
@@ -492,14 +486,14 @@ extends Experiment implements ParameterValidator {
     fitZeros = fitResponse.getZeros();
     
     fireStateChange("Getting extended resp curves for high-freq plots...");
-    freqs = freqsFull;
-    Complex[] init = initResponse.applyResponseToInput(freqs);
-    Complex[] fit = fitResponse.applyResponseToInput(freqs);
-    initialValues = new double[freqs.length * 2];
-    fitValues = new double[freqs.length * 2];
-    for (int i = 0; i < freqs.length; ++i) {
+    //freqs = freqsFull;
+    Complex[] init = initResponse.applyResponseToInput(freqsFull);
+    Complex[] fit = fitResponse.applyResponseToInput(freqsFull);
+    initialValues = new double[freqsFull.length * 2];
+    fitValues = new double[freqsFull.length * 2];
+    for (int i = 0; i < freqsFull.length; ++i) {
 
-      int argIdx = freqs.length + i;
+      int argIdx = freqsFull.length + i;
       initialValues[i] = init[i].abs();
       initialValues[argIdx] = NumericUtils.atanc(init[i]);
       fitValues[i] = fit[i].abs();
@@ -511,12 +505,12 @@ extends Experiment implements ParameterValidator {
 
     fireStateChange("Compiling data into plots...");
     
-    for (int i = 0; i < freqs.length; ++i) {
+    for (int i = 0; i < freqsFull.length; ++i) {
       double xValue;
       if (freqSpace) {
-        xValue = freqs[i];
+        xValue = freqsFull[i];
       } else {
-        xValue = 1. / freqs[i];
+        xValue = 1. / freqsFull[i];
       }
       
       int argIdx = initialValues.length / 2 + i;
@@ -582,6 +576,10 @@ extends Experiment implements ParameterValidator {
   @Override
   public int blocksNeeded() {
     return 2;
+  }
+  
+  public double getMaxFitFrequency() {
+    return freqs[freqs.length - 1];
   }
 
   private void scaleValues(double[] unrot) {
