@@ -34,7 +34,7 @@ import asl.sensor.utils.NumericUtils;
  */
 public class InstrumentResponse {
 
-  private static final double PEAK_MULTIPLIER = 0.8;
+  public static final double PEAK_MULTIPLIER = 0.8;
   
   /**
    * Get one of the response files embedded in the program

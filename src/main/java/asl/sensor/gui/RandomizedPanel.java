@@ -353,40 +353,7 @@ public class RandomizedPanel extends ExperimentPanel {
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
     
-    String yAxisTitle = "10 * log10( RESP(f) )";
-    String xAxisTitle = "Frequency (Hz)";
-    String prdAxisTitle = "Period (s)";
-    String degreeAxisTitle = "phi(RESP(f))";
-    
-    xAxis = new LogarithmicAxis(xAxisTitle);
-    prdAxis = new NumberAxis(prdAxisTitle);
-    
-    yAxis = new NumberAxis(yAxisTitle);
-    yAxis.setAutoRange(true);
-    
-    degreeAxis = new NumberAxis(degreeAxisTitle);
-    degreeAxis.setAutoRange(true);    
-    
-    residPhaseAxis = new NumberAxis("Phase error (degrees)");
-    residAmpAxis = new NumberAxis("Amplitude error (percentage)");
-    
-    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
-    xAxis.setLabelFont(bold);
-    yAxis.setLabelFont(bold);
-    degreeAxis.setLabelFont(bold);
-    residPhaseAxis.setLabelFont(bold);
-    residAmpAxis.setLabelFont(bold);
-    
-    lowFreqBox = new JCheckBox("Low frequency calibration");
-    lowFreqBox.setSelected(true);
-    
-    showParams = new JCheckBox("Show params");
-    showParams.setEnabled(false);
-    showParams.addActionListener(this);
-    
-    freqSpace = new JCheckBox("Use Hz units (req. regen)");
-    freqSpace.setSelected(true);
+    initAxes();
     
     applyAxesToChart(); // now that we've got axes defined
     
@@ -438,6 +405,43 @@ public class RandomizedPanel extends ExperimentPanel {
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
     this.add(plotSelection, gbc);
+  }
+  
+  private void initAxes() {
+    String yAxisTitle = "10 * log10( RESP(f) )";
+    String xAxisTitle = "Frequency (Hz)";
+    String prdAxisTitle = "Period (s)";
+    String degreeAxisTitle = "phi(RESP(f))";
+    
+    xAxis = new LogarithmicAxis(xAxisTitle);
+    prdAxis = new LogarithmicAxis(prdAxisTitle);
+    
+    yAxis = new NumberAxis(yAxisTitle);
+    yAxis.setAutoRange(true);
+    
+    degreeAxis = new NumberAxis(degreeAxisTitle);
+    degreeAxis.setAutoRange(true);    
+    
+    residPhaseAxis = new NumberAxis("Phase error (degrees)");
+    residAmpAxis = new NumberAxis("Amplitude error (percentage)");
+    
+    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
+    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    xAxis.setLabelFont(bold);
+    yAxis.setLabelFont(bold);
+    degreeAxis.setLabelFont(bold);
+    residPhaseAxis.setLabelFont(bold);
+    residAmpAxis.setLabelFont(bold);
+    
+    lowFreqBox = new JCheckBox("Low frequency calibration");
+    lowFreqBox.setSelected(true);
+    
+    showParams = new JCheckBox("Show params");
+    showParams.setEnabled(false);
+    showParams.addActionListener(this);
+    
+    freqSpace = new JCheckBox("Use Hz units (req. regen)");
+    freqSpace.setSelected(true);
   }
   
   @Override
@@ -524,15 +528,13 @@ public class RandomizedPanel extends ExperimentPanel {
   
   @Override
   protected void drawCharts() {
-    
     // just force the active plot at the start to be the amplitude plot
-    plotSelection.setSelectedIndex(0);
     showParams.setSelected(true);
     showParams.setEnabled(true);
     chart = magChart;
     chartPanel.setChart(chart);
+    plotSelection.setSelectedIndex(0);
     chartPanel.setMouseZoomable(true);
-    
   }
   
   @Override
@@ -660,6 +662,8 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   protected void updateData(DataStore ds) {
     
+    //initAxes();
+    
     set = true;
     showParams.setSelected(false);
     
@@ -695,13 +699,15 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
+    getXAxis().setAutoRange(true);
+    
     argChart = buildChart(argSeries, getXAxis(), degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
-    invertSeriesRenderingOrder( argChart );
+    invertSeriesRenderingOrder(argChart);
     
     magChart = buildChart(magSeries, getXAxis(), yAxis);
-    invertSeriesRenderingOrder( magChart );
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    invertSeriesRenderingOrder(magChart);
     
     String inset = getInsetStrings();
     TextTitle result = new TextTitle();
