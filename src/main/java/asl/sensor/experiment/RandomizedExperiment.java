@@ -53,7 +53,7 @@ public class RandomizedExperiment
 extends Experiment implements ParameterValidator {
 
   private static final double DELTA = 1E-12;
-  public static final double PEAK_MULTIPLIER = 0.5;
+  public static final double PEAK_MULTIPLIER = 0.8;
       //NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
       // NumericUtils.PEAK_MULTIPLIER 
   
@@ -415,7 +415,7 @@ extends Experiment implements ParameterValidator {
     double paramTolerance = 1.0E-10;
     // probably acceptable tolerance for clean low-frequency cals BUT
     // high frequency cals are noisy and slow to converge
-    // so we use a higher tolerance to deal with that issue
+    // so this branch is to enable using higher tolerance to deal with that
     if (!lowFreq) {
       costTolerance = 1.0E-15;
       paramTolerance = 1.0E-10;
@@ -426,6 +426,7 @@ extends Experiment implements ParameterValidator {
         withOrthoTolerance(1E-25).
         withParameterRelativeTolerance(paramTolerance);
     
+    // set up structures that will hold the initial and final response plots
     name = fitResponse.getName();
     XYSeries initMag = new XYSeries("Initial param (" + name + ") magnitude");
     XYSeries initArg = new XYSeries("Initial param (" + name + ") phase");
@@ -604,7 +605,7 @@ extends Experiment implements ParameterValidator {
   
   /**
    * Backend function to set instrument response according to current
-   * test variables (for best-fit calculation / forward difference) and
+   * test variables (for best-fit calculation / backward difference) and
    * produce a response from that result. The passed response is copied on
    * start and is not modified directly. Which values (poles) are modified
    * depends on high or low frequency calibration setting.
@@ -763,12 +764,12 @@ extends Experiment implements ParameterValidator {
   }
   
   /**
-   * Function to run evaluation and forward difference for Jacobian 
+   * Function to run evaluation and backward difference for Jacobian 
    * approximation given a set of points to set as response. 
    * Mainly a wrapper for the evaluateResponse function.
    * @param variables Values to set the response's poles to
    * @return RealVector with evaluation at current response value and 
-   * RealMatrix with forward difference of that response (Jacobian)
+   * RealMatrix with backward difference of that response (Jacobian)
    */
   private Pair<RealVector, RealMatrix> 
   jacobian(RealVector variables) {
@@ -797,7 +798,7 @@ extends Experiment implements ParameterValidator {
     }
     
     double[][] jacobian = new double[mag.length][numVars];
-    // now take the forward difference of each value 
+    // now take the backward difference of each value 
     for (int i = 0; i < numVars; ++i) {
       
       if (i % 2 == 1 && currentVars[i] == 0.) {
