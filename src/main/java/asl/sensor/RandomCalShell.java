@@ -16,16 +16,13 @@ import py4j.GatewayServer;
 
 public class RandomCalShell {
 
-  private RandomizedExperiment re;
-  private DataStore ds;
-
   public RandomCalShell() {
-    re = new RandomizedExperiment();
-    ds = new DataStore();
+    
   }
 
   /**
-   * Acquire data and run calibration over it
+   * Acquire data and run calibration over it.
+   * Returns the experiment (all data kept locally to maintain thread safety)
    * @param calFileName Filename of calibration signal
    * @param outFileName Filename of sensor output 
    * @param respName Filename of response to load in
@@ -33,13 +30,16 @@ public class RandomCalShell {
    * @param startTime Long representing ms-since-epoch of data start time
    * @param endTime Long representing ms-since-epoch of data end time
    * @param lowFreq True if a low-freq cal should be run
+   * @return The experiment the data was run on (for getting results)
    */
-  public void populateDataAndRun(String calFileName, String outFileName,
-      String respName, boolean respEmbd, long startTime, long endTime,
-      boolean lowFreq) {
+  public RandomizedExperiment populateDataAndRun(String calFileName, 
+      String outFileName, String respName, boolean respEmbd, long startTime, 
+      long endTime, boolean lowFreq) {
 
+    RandomizedExperiment re = new RandomizedExperiment();
+    
     try {
-      ds = new DataStore();
+      DataStore ds = new DataStore();
       String calFilt = TimeSeriesUtils.getMplexNameList(calFileName).get(0);
       DataBlock calBlock = TimeSeriesUtils.getTimeSeries(calFileName, calFilt);
       String outFilt = TimeSeriesUtils.getMplexNameList(outFileName).get(0);
@@ -64,15 +64,8 @@ public class RandomCalShell {
       e.printStackTrace();
     }
 
-  }
-  
-  /**
-   * Return the randomized experiment data is being run on.
-   * This should not be called until populateDataAndRun(..) has been.
-   * @return Randomized experiment, to enable reading the results.
-   */
-  public RandomizedExperiment getExperiment() {
     return re;
+    
   }
   
   public static void main(String[] args) {
