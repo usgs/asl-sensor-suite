@@ -758,6 +758,46 @@ extends Experiment implements ParameterValidator {
     return new double[]{maxMagWeight, maxArgWeight};
   }
   
+  /**
+   * Get the range of frequencies over which the data was plotted
+   * @return list of frequencies, sorted order
+   */
+  public double[] getFreqList() {
+    return freqs;
+  }
+  
+  /**
+   * Return a 2D array containing the values of the y-axis of each of the 
+   * plotted curves. The order is {input resp, calc resp, fit resp}.
+   * The second index is the y-values ordered by corresponding freq
+   * @return 2D array with each of the amplitude response curves
+   */
+  public double[][] getAmplitudesAsArrays() {
+    XYSeriesCollection mags = xySeriesData.get(0);
+    double[][] out = new double[mags.getSeriesCount()][];
+    for (int i = 0; i < out.length; ++i) {
+      XYSeries xys = mags.getSeries(i);
+      out[i] = xys.toArray()[1];
+    }
+    return out;
+  }
+  
+  /**
+   * Return a 2D array containing the values of the y-axis of each of the 
+   * plotted curves. The order is {input resp, calc resp, fit resp}.
+   * The second index is the y-values ordered by corresponding freq
+   * @return 2D array with each of the phase response curves
+   */
+  public double[][] getPhasesAsArrays() {
+    XYSeriesCollection phases = xySeriesData.get(0);
+    double[][] out = new double[phases.getSeriesCount()][];
+    for (int i = 0; i < out.length; ++i) {
+      XYSeries xys = phases.getSeries(i);
+      out[i] = xys.toArray()[1];
+    }
+    return out;
+  }
+  
   @Override
   public boolean hasEnoughData(DataStore ds) {
     return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
