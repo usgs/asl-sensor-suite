@@ -11,8 +11,6 @@ import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 import 
-org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import 
 org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.fitting.leastsquares.ParameterValidator;
 import org.apache.commons.math3.linear.DiagonalMatrix;
@@ -27,6 +25,7 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.LiterallyJustTheCommonsLMClass;
 import asl.sensor.utils.NumericUtils;
 
 /**
@@ -421,7 +420,7 @@ extends Experiment implements ParameterValidator {
       paramTolerance = 1.0E-10;
     }
     
-    LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
+    LeastSquaresOptimizer optimizer = new LiterallyJustTheCommonsLMClass().
         withCostRelativeTolerance(costTolerance).
         withOrthoTolerance(1E-25).
         withParameterRelativeTolerance(paramTolerance);

@@ -2,10 +2,6 @@ package asl.sensor;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.List;
-
-import org.apache.commons.math3.complex.Complex;
-import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.input.DataBlock;
