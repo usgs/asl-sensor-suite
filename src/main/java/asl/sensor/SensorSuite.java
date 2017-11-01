@@ -145,7 +145,19 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       pdf.save(file);
       pdf.close();
     } catch (IOException e) {
+      // if there's an error with formatting to PDF, try saving
+      // the raw data instead
       e.printStackTrace();
+      
+      String text = ep.getAllTextData();
+      JFreeChart[] charts = ep.getCharts();
+      String saveDirectory = file.getParent();
+      StringBuilder folderName = new StringBuilder(saveDirectory);
+      folderName.append("/test_results/");
+      folderName.append( file.getName().replace(".pdf","") );
+      
+      saveExperimentData( folderName.toString(), text, charts );
+      
     } finally {
       if (pdf != null) {
         try {
@@ -326,9 +338,6 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       fc.setDialogTitle("Save PDF report...");
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
       String defaultName = ep.getPDFFilename();
-
-      String text = ep.getAllTextData();
-      JFreeChart[] charts = ep.getCharts();
       
       fc.setSelectedFile( new File(defaultName) );
       int returnVal = fc.showSaveDialog(savePDF);
@@ -340,12 +349,6 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
         if( !selFile.getName().toLowerCase().endsWith(ext) ) {
           selFile = new File( selFile.getName() + ext);
         }
-        
-        StringBuilder folderName = new StringBuilder(saveDirectory);
-        folderName.append("/test_results/");
-        folderName.append( selFile.getName().replace(ext,"") );
-        
-        saveExperimentData( folderName.toString(), text, charts );
         
         plotsToPDF(selFile, ep, inputPlots);
       }
