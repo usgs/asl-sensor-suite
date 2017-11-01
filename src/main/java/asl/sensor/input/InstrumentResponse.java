@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,8 +34,7 @@ import asl.sensor.utils.NumericUtils;
  */
 public class InstrumentResponse {
 
-  private static final double PEAK_MULTIPLIER = 
-      NumericUtils.PEAK_MULTIPLIER;
+  public static final double PEAK_MULTIPLIER = 0.8;
   
   /**
    * Get one of the response files embedded in the program
@@ -113,9 +111,11 @@ public class InstrumentResponse {
   }
   
   private TransferFunction transferType;
+  private int epochsCounted;
   
   // gain values, indexed by stage
-  private List<Double> gain;
+  private double[] gain;
+  private int numStages;
   
   // poles and zeros
   private Map<Complex, Integer> zeros;
@@ -133,6 +133,7 @@ public class InstrumentResponse {
   /**
    * Reads in a response from an already-accessed bufferedreader handle
    * and assigns it to the name given (used with embedded response files)
+   * Only the last epoch of a multi-epoch response file is used.
    * @param br Handle to a buffered reader of a given RESP file
    * @param name Name of RESP file to be used internally 
    * @throws IOException
@@ -148,9 +149,11 @@ public class InstrumentResponse {
    * @param responseIn The response object to be copied
    */
   public InstrumentResponse(InstrumentResponse responseIn) {
+    epochsCounted = 1;
     transferType = responseIn.getTransferFunction();
     
-    gain = new ArrayList<Double>( responseIn.getGain() );
+    gain = responseIn.getGain();
+    numStages = responseIn.getNumStages();
 
     zeros = new HashMap<Complex, Integer>( responseIn.getZerosMap() );
     poles = new HashMap<Complex, Integer>( responseIn.getPolesMap() );
@@ -163,6 +166,10 @@ public class InstrumentResponse {
     name = responseIn.getName();
   }
   
+  public int getNumStages() {
+    return numStages;
+  }
+
   private Map<Complex, Integer> getZerosMap() {
     return zeros;
   }
@@ -185,6 +192,7 @@ public class InstrumentResponse {
   
   /**
    * Reads in an instrument response from a RESP file
+   * If the RESP file has multiple epochs, only the last one is used.
    * @param filename full path of the RESP file
    * @throws IOException
    */
@@ -196,10 +204,9 @@ public class InstrumentResponse {
   /**
    * Apply the values of this response object to a list of frequencies and
    * return the resulting (complex) frequencies
-   * The response curve produced is in units of acceleration. Many of the
-   * experiments in the larger test suite expect frequency response curves that
-   * are in units of velocity, and so the resulting array will need to have
-   * its entries scaled by 2 * pi * f.
+   * The response curve produced is in units of velocity. Some results
+   * will need to have the produced response curve have acceleration units,
+   * which can be done by multiplying by the integration factor defined here.
    * @param frequencies inputted list of frequencies, such as FFT windows
    * @return application of the response to those frequencies
    */
@@ -211,19 +218,18 @@ public class InstrumentResponse {
     double scale = 1.;
     // stage 0 is sensitivity (supposed to be product of all gains)
     // we will get scale by multiplying all gain stages except for it
-    for (int i = 1; i < gain.size(); ++i) {
-      scale *= gain.get(i);
+    for (int i = 1; i < gain.length; ++i) {
+      scale *= gain[i];
     }
     
-    // how many times do we need to do integration?
+    // how many times do we need to do differentiation?
     // outUnits (acceleration) - inUnits
-    // i.e., if the units of this response are velocity, we integrate once
-    int integrations = Unit.ACCELERATION.getDifferentiations(unitType);
+    // i.e., if the units of this response are acceleration, we integrate once
+    int diffs = Unit.VELOCITY.getDifferentiations(unitType);
     // unlike s (see below) this is always 2Pi
     double integConstant = NumericUtils.TAU;
     
     for (int i = 0; i < frequencies.length; ++i) {
-     
       double deltaFrq = frequencies[i];
       
       // pole-zero expansion
@@ -248,19 +254,20 @@ public class InstrumentResponse {
       
       resps[i] = numerator.multiply(normalization).divide(denominator);
       
-      if (integrations > 0) {
+      if (diffs < 0) {
+        // a negative number of differentiations 
+        // is a positive number of integrations
         // i*omega; integration is I(w) x (iw)^n
         Complex iw = new Complex(0.0, integConstant*deltaFrq);
-        for (int j = 1; j < Math.abs(integrations); j++){
+        // start at 1 in these loops because we do mult. at least once
+        for (int j = 1; j < Math.abs(diffs); j++){
           iw = iw.multiply(iw);
         }
         resps[i] = resps[i].multiply(iw);
-      } else if (integrations < 0) { 
-        // a negative number of integrations 
-        // is a positive number of differentiations
+      } else if (diffs > 0) { 
         // differentiation is I(w) / (-i/w)^n
         Complex iw = new Complex(0.0, -1.0 / (integConstant*deltaFrq) );
-        for (int j = 1; j < Math.abs(integrations); j++){
+        for (int j = 1; j < Math.abs(diffs); j++){
           iw = iw.multiply(iw);
         }
         resps[i] = iw.multiply(resps[i]);
@@ -269,14 +276,6 @@ public class InstrumentResponse {
       
       // lastly, scale by the scale we chose (gain0 or gain1*gain2)
       resps[i] = resps[i].multiply(scale);
-      
-      // unit conversion back out of acceleration
-      /*
-      double conversion =  frequencies[i]*2*Math.PI;
-      resps[i] = resps[i].multiply( resps[i].conjugate() );
-      resps[i] = resps[i].multiply( Math.pow(conversion, 2) );
-      */
-      
     }
     
     return resps;
@@ -433,9 +432,9 @@ public class InstrumentResponse {
    * Get the gain stages of the RESP file. Stage x is at index x. That is,
    * the sensitivity is at 0, the sensor gain is at 1, and the digitizer
    * gain is at 2.
-   * @return List of all gain stages found in resp file, including stage 0
+   * @return Array of all gain stages found in resp file, including stage 0
    */
-  public List<Double> getGain() {
+  public double[] getGain() {
     return gain;
   }
   
@@ -530,6 +529,15 @@ public class InstrumentResponse {
     
     return false;
   }
+ 
+  /**
+   * Return the number of epochs found in the data, for use in warning
+   * if the user has loaded in a response with multiple epochs
+   * @return number of times 0xb052f22 lines were found in file
+   */
+  public int getEpochsCounted() {
+    return epochsCounted;
+  }
   
   /**
    * Read in each line of a response and parse and store relevant lines
@@ -539,13 +547,20 @@ public class InstrumentResponse {
    */
   private void parserDriver(BufferedReader br) throws IOException {
     
-    String line = br.readLine();
+    epochsCounted = 0;
     
-    // <gain stage, gain value>
-    Map<Integer, Double> gainMap = new HashMap<Integer, Double>();
+    numStages = 0;
+    double[] gains = new double[10];
+    for (int i = 0; i < gains.length; ++i) {
+      gains[i] = 1;
+    }
+    normalization = 0;
+    normalFreq = 0;
     int gainStage = -1;
     Complex[] polesArr = null;
     Complex[] zerosArr = null;
+    
+    String line = br.readLine();
     
     while (line != null) {
       
@@ -565,6 +580,19 @@ public class InstrumentResponse {
         String hexIdentifier = words[0];
         
         switch (hexIdentifier) {
+        case "B052F22":
+          ++epochsCounted;
+          // NEW EPOCH REACHED. Clear out old data.
+          numStages = 0;
+          gains = new double[10];
+          for (int i = 0; i < gains.length; ++i) {
+            gains[i] = 1;
+          }
+          normalization = 0;
+          normalFreq = 0;
+          gainStage = -1;
+          polesArr = null;
+          zerosArr = null;
         case "B053F03":
           // transfer function type specified
           // first character of third component of words
@@ -633,15 +661,15 @@ public class InstrumentResponse {
           // gain stage sequence number; again, full third word as int
           // this is used to map the gain value to an index
           gainStage = Integer.parseInt(words[2]);
+          numStages = Math.max(numStages, gainStage);
           break;
         case "B058F04":
-          
           // should come immediately and only after the gain sequence number
           // again, it's the third full word, this time as a double
           // map allows us to read in the stages in whatever order
           // in the event they're not sorted in the response file
           // and allows us to have basically arbitrarily many stages
-          gainMap.put( gainStage, Double.parseDouble(words[2]) );
+          gains[gainStage] = Double.parseDouble(words[2]);
           
           // reset the stage to prevent data being overwritten
           gainStage = -1;
@@ -654,12 +682,8 @@ public class InstrumentResponse {
     } // end of file-read loop (EOF reached, line is null)
     
     // turn map of gain stages into list
-    List<Integer> stages = new ArrayList<Integer>( gainMap.keySet() );
-    Collections.sort( stages );
-    gain = new ArrayList<Double>();
-    for (int stage : stages) {
-      gain.add( gainMap.get(stage) );
-    }
+    gain = gains;
+    ++numStages; // offset by 1 to represent size of stored gain stages
     
     // turn pole/zero arrays into maps from pole values to # times repeated
     setZeros(zerosArr);
@@ -731,15 +755,16 @@ public class InstrumentResponse {
     
     for (int i = start; i < pList.size(); ++i) {
       
-      if ( !lowFreq && ( pList.get(i).abs() / NumericUtils.TAU < 1. ) ) {
+      double frq = pList.get(i).abs() / NumericUtils.TAU;
+      if ( !lowFreq && (frq < 1.) ) {
         // don't include poles below 1Hz in high-frequency calibration
         continue;
       }
-      if ( lowFreq && ( pList.get(i).abs() / NumericUtils.TAU > 1. ) ) {
+      if ( lowFreq && (frq > 1.) ) {
         // only do low frequency calibrations on poles up to 
         break;
       }
-      if ( !lowFreq && ( pList.get(i).abs() / NumericUtils.TAU >= peak ) ) {
+      if ( !lowFreq && (frq >= peak) ) {
         // don't fit poles above fraction of nyquist rate of sensor output
         break;
       }
@@ -752,14 +777,7 @@ public class InstrumentResponse {
       componentList.add(imagPart);
       
       if (imagPart != 0.) {
-        // next value is complex conjugate of this one, so skip it
-        ++i;
-      } else if ( (i + 1) < poles.size() &&
-          pList.get(i + 1).getImaginary() == 0. && 
-          realPart == pList.get(i + 1).getReal() ) {
-        // two values with zero imaginary are duplicated in the list
-        // again, we skip this one
-        ++i;
+        ++i; // skip complex conjuage
       }
       
     }
@@ -854,10 +872,10 @@ public class InstrumentResponse {
     sb.append("Gain stage values: ");
     sb.append('\n');
     
-    for (int i = 0; i < gain.size(); ++i) {
+    for (int i = 0; i < numStages; ++i) {
       sb.append(i);
       sb.append(": ");
-      sb.append( nf.format( gain.get(i) ) );
+      sb.append( nf.format(gain[i]) );
       sb.append("\n");
     }
     
@@ -937,18 +955,18 @@ public class InstrumentResponse {
         // ignore zeros that are literally zero-valued
         continue;
       }
-      if ( lowFreq && ( zList.get(i).abs() / NumericUtils.TAU > 1. ) ) {
-        // only do low frequency calibrations on zeros up to 1Hz
-        break;
-      }
       
       double cutoffChecker = zList.get(i).abs() / NumericUtils.TAU;
       
-      if ( !lowFreq && ( cutoffChecker < 1. ) ) {
+      if ( lowFreq && (cutoffChecker > 1.) ) {
+        // only do low frequency calibrations on zeros up to 1Hz
+        break;
+      }
+      if ( !lowFreq && (cutoffChecker < 1.) ) {
         // don't include zeros > 1Hz in high-frequency calibration
         continue;
       }
-      if ( !lowFreq && ( cutoffChecker > peak) ) {
+      if ( !lowFreq && (cutoffChecker > peak) ) {
         // don't fit zeros above 80% nyquist rate of sensor output
         break;
       }
@@ -959,15 +977,9 @@ public class InstrumentResponse {
       componentList.add(imagPart);
       
       if (imagPart != 0.) {
-        // next value is complex conjugate of this one, so skip it
-        ++i;
-      } else if ( (i + 1) < zeros.size() && 
-          zList.get(i + 1).getImaginary() == 0. && 
-          realPart == zList.get(i + 1).getReal() ) {
-        // two values with zero imaginary are duplicated in the list
-        // again, we skip this one
         ++i;
       }
+      
     }
 
     // turn into array to be turned into vector
@@ -979,6 +991,7 @@ public class InstrumentResponse {
     
     return MatrixUtils.createRealVector(responseVariables);
   }
+  
 }
 
 

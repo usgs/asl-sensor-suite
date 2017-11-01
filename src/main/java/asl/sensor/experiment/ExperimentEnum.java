@@ -20,6 +20,7 @@ public enum ExperimentEnum {
   RNDBG ("Rdm. cal. verification"),
   AZMTH ("Azimuth"),
   ORTHO ("Orthogonality"),
+  SPECT ("Power-spectrum"),
   RESPN ("Response");
 
   private String name;

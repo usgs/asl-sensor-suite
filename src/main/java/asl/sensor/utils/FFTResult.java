@@ -192,13 +192,26 @@ public class FFTResult {
     FFTResult selfPSD = spectralCalc(data1, data2);
     Complex[] results = selfPSD.getFFT();
     double[] freqs = selfPSD.getFreqs();
-    Complex[] out = new Complex[freqs.length];
     Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
     Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
     
+    return crossPower(results, freqs, freqRespd1, freqRespd2);
+  }
+  
+  private static FFTResult crossPower(Complex[] results, double[] freqs, 
+      Complex[] freqRespd1, Complex[] freqRespd2) {
+    
+    Complex[] out = new Complex[freqs.length];
+    
     for (int j = 0; j < freqs.length; ++j) {
+      // response curves in velocity, put them into acceleration
+      Complex scaleFactor = 
+          new Complex( 0.0, -1.0 / (NumericUtils.TAU * freqs[j]) );
+      Complex resp1 = freqRespd1[j].multiply(scaleFactor);
+      Complex resp2 = freqRespd2[j].multiply(scaleFactor);
+      
       Complex respMagnitude = 
-          freqRespd1[j].multiply( freqRespd2[j].conjugate() );
+          resp1.multiply( resp2.conjugate() );
       
       if (respMagnitude.abs() == 0) {
         respMagnitude = new Complex(Double.MIN_VALUE, 0);
@@ -208,6 +221,7 @@ public class FFTResult {
     }
     
     return new FFTResult(out, freqs);
+    
   }
   
   public static FFTResult crossPower(double[] data1, double[] data2,
@@ -215,22 +229,10 @@ public class FFTResult {
     FFTResult selfPSD = spectralCalc(data1, data2, interval);
     Complex[] results = selfPSD.getFFT();
     double[] freqs = selfPSD.getFreqs();
-    Complex[] out = new Complex[freqs.length];
     Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
     Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
     
-    for (int j = 0; j < freqs.length; ++j) {
-      Complex respMagnitude = 
-          freqRespd1[j].multiply( freqRespd2[j].conjugate() );
-      
-      if (respMagnitude.abs() == 0) {
-        respMagnitude = new Complex(Double.MIN_VALUE, 0);
-      }
-      
-      out[j] = results[j].divide(respMagnitude);
-    }
-    
-    return new FFTResult(out, freqs);
+    return crossPower(results, freqs, freqRespd1, freqRespd2);
   }
   
   /**
@@ -669,8 +671,10 @@ public class FFTResult {
     // normalization time!
     // System.out.println("PERIOD: " + period);
     // period = 1.0; // quick testing
-    double psdNormalization = 2.0 * period / padding;
+    double psdNormalization = period / padding; // was mult. by 2.0 previously
+    // removal of 2.0 here result of adding mult by 2 ~line 654
     double windowCorrection = wss / (double) range;
+    // System.out.println("Window correction: " + windowCorrection);
     // value of wss associated with taper parameters, not related to data
     
     psdNormalization /= windowCorrection;

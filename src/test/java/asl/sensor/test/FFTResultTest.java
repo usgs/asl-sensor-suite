@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,6 +32,7 @@ import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.data.xy.XYSeries;
@@ -41,7 +41,9 @@ import org.junit.Test;
 
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
+import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
@@ -66,7 +68,114 @@ public class FFTResultTest {
     }
   }
   
-  @Test
+  //@Test
+  public void testPSDAndResp() {
+    System.out.println("Running the test of ANMO's PSD");
+    String data1 = "data/testPSDandResp/00_LHZ.512.seed";
+    String data2 = "data/testPSDandResp/10_LHZ.512.seed";
+    String resp1 = "responses/testPSDandResp/RESP.IU.ANMO.00.LHZ";
+    String resp2 = "responses/testPSDandResp/RESP.IU.ANMO.10.LHZ";
+    try {
+      DataBlock db1 = TimeSeriesUtils.getFirstTimeSeries(data1);
+      DataBlock db2 = TimeSeriesUtils.getFirstTimeSeries(data2);
+      
+      InstrumentResponse ir1 = new InstrumentResponse(resp1);
+      InstrumentResponse ir2 = new InstrumentResponse(resp2);
+      
+      FFTResult psd1 = FFTResult.spectralCalc(db1, db1);
+      FFTResult psd2 = FFTResult.spectralCalc(db2, db2);
+      FFTResult psd1Resp = FFTResult.crossPower(db1, db1, ir1, ir1);
+      FFTResult psd2Resp = FFTResult.crossPower(db2, db2, ir2, ir2);
+      
+      double[] freqs = psd1.getFreqs();
+      Complex[] respCurve = ir1.applyResponseToInput(freqs);
+      double phiPrev = 0;
+      StringBuilder[] sbs = new StringBuilder[7];
+      XYSeries xys1 = new XYSeries("00-LHZ PSD");
+      XYSeries xys2 = new XYSeries("10-LHZ PSD");
+      XYSeries xys3 = new XYSeries("00-LHZ PSD respified");
+      XYSeries xys4 = new XYSeries("10-LHZ PSD respified");
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(xys1);
+      xysc.addSeries(xys2);
+      xysc.addSeries(xys3);
+      xysc.addSeries(xys4);
+      for (int i = 0; i < sbs.length; ++i) {
+        sbs[i] = new StringBuilder();
+      }
+      for (int i = 0; i < freqs.length; ++i) {
+        sbs[0].append(freqs[i]);
+        double abs1 = 10*Math.log10( psd1.getFFT(i).abs() );
+        sbs[1].append(abs1);
+        double abs2 = 10*Math.log10( psd2.getFFT(i).abs() );
+        sbs[2].append(abs2);
+        double abs3 = 10*Math.log10( psd1Resp.getFFT(i).abs() );
+        sbs[3].append(abs3);
+        double abs4 = 10*Math.log10( psd2Resp.getFFT(i).abs() );
+        sbs[4].append(abs4);
+        double abs5 = 10*Math.log10( respCurve[i].abs() ); 
+        sbs[5].append(abs5);
+        double phi = NumericUtils.atanc(respCurve[i]);
+        phi = NumericUtils.unwrap(phi, phiPrev);
+        phiPrev = phi;
+        sbs[6].append(phi);
+        
+        if (freqs[i] > .001) {
+          xys1.add(1/freqs[i], abs1);
+          xys2.add(1/freqs[i], abs2);
+          xys3.add(1/freqs[i], abs3);
+          xys4.add(1/freqs[i], abs4);
+        }
+
+        if (i + 1 < freqs.length) {
+          for (StringBuilder sb : sbs) {
+            sb.append(",\t");
+          }
+        }
+      }
+      
+      XYSeriesCollection xysc2 = new XYSeriesCollection();
+      xysc2.addSeries(xys3);
+      xysc2.addSeries(xys4);
+      xysc2.addSeries( FFTResult.getLowNoiseModel(false) );
+      
+      JFreeChart chart = ChartFactory.createXYLineChart("PSD test data",
+          "PSD (dB)", "", xysc);
+      chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Period (s)") );
+      BufferedImage bi = ReportingUtils.chartsToImage(640, 480, chart);
+      File chartOut = new File("testResultImages/ANMO-2017-002-PSD.png");
+      ImageIO.write(bi, "png", chartOut);
+      
+      StringBuilder sbOut = new StringBuilder();
+      for (StringBuilder sb : sbs) {
+        sbOut.append(sb);
+        sbOut.append("\n");
+      }
+      
+      String outname = "testResultImages/ANMO-2017-002-PSDTest.csv";
+      PrintWriter out = new PrintWriter(outname);
+      out.write( sbOut.toString() );
+      out.close();
+      
+      chart = ChartFactory.createXYLineChart("PSD test data",
+          "PSD (dB)", "", xysc2);
+      chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Period (s)") );
+      NumberAxis na = (NumberAxis) chart.getXYPlot().getRangeAxis();
+      na.setAutoRangeIncludesZero(false);
+      bi = ReportingUtils.chartsToImage(640, 480, chart);
+      chartOut = new File("testResultImages/ANMO-2017-002-RESPD-PSD.png");
+      ImageIO.write(bi, "png", chartOut);
+      
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      fail();
+    } catch (IOException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+  
+  //@Test
   public void ohNoMorePrintFunctions() {
     
     // DecimalFormat df = new DecimalFormat(); // may need to tweak precision
@@ -303,7 +412,6 @@ public class FFTResultTest {
       out.close();
       
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     }
@@ -526,7 +634,7 @@ public class FFTResultTest {
     
   }
   
-  @Test
+  //@Test
   public void showMultitaperPlot() {
     final int TAPERS = 12;
     StringBuilder sb = new StringBuilder();
@@ -643,6 +751,7 @@ public class FFTResultTest {
     }
     
   }
+  
   //@Test commented out because saves a lot of text data
   public void testAutomateRingler() {
     String name = "data/random_cal_lowfrq/BHZ.512.seed";
@@ -1015,7 +1124,7 @@ public class FFTResultTest {
   
   //@Test
   public void testDemeaning() {
-    // temporarily commented out while I deal with this thing refactoring
+    // TODO: see about restoring this test case, because it has a real test
     String dataFolderName = "data/random_cal/"; 
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     
@@ -1036,8 +1145,6 @@ public class FFTResultTest {
       while (padding < sensor.size()) {
         padding *= 2;
       }
-      
-      // System.out.println(map.size()+", "+sensor.size());
       
       double[] meanedTimeSeries = new double[padding];
       List<Long> time = new ArrayList<Long>( map.keySet() );
@@ -1083,11 +1190,6 @@ public class FFTResultTest {
       assertEquals(arrIdx, sensor.size());
       
       double[] demeanedTimeSeries = sensor.getData();
-      /*
-      for (int i = 0; i < sensor.size(); ++i) {
-        demeanedTimeSeries[i] = sensor.getData()[i];
-      }
-      */
       
       Complex[] meanedFFT = FFTResult.simpleFFT(meanedTimeSeries);
       Complex[] demeanedFFT = FFTResult.simpleFFT(demeanedTimeSeries);
@@ -1159,11 +1261,11 @@ public class FFTResultTest {
       double[] toFFT = new double[size];
       int l = toFFT.length-1; // last point
       double[] taperCurve = taper[j];
-      double taperSum = 0.;
+      //double taperSum = 0.;
       //System.out.println(j + "-th taper curve first point: " + taperCurve[0]);
       //System.out.println(j + "-th taper curve last point: " + taperCurve[l]);
       for (int i = 0; i < timeSeries.size(); ++i) {
-        taperSum += Math.abs(taperCurve[i]);
+        // taperSum += Math.abs(taperCurve[i]);
         double point = timeSeries.get(i).doubleValue();
         toFFT[i] = point * taperCurve[i];
       }
@@ -1177,7 +1279,7 @@ public class FFTResultTest {
   
   @Test
   public void testTrimAndDemean() {
-    String dataFolderName = "data/random_cal_4/"; 
+    String dataFolderName = "test-data/random_cal_4/"; 
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     
     String metaName;

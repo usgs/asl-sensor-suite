@@ -77,18 +77,21 @@ public class NoiseExperiment extends Experiment {
     Complex[][] spectra = new Complex[3][];
     double[] freqs = new double[1]; // initialize to prevent later errors
     
-    fireStateChange("Getting PSDs of each series...");
+
     
-    // initialize the values above to have relevant data
+    // gets the PSDs of each given index for given freqSpace
     for (int i = 0; i < respIndices.length; ++i) {
-      fireStateChange("Getting PSDs of series " + (i+1) + "...");
-      // note that frequency is applied during the ds
-      FFTResult res = ds.getPSD(respIndices[i]);
-      spectra[i] = res.getFFT();
-      freqs = res.getFreqs();
+      int idx = respIndices[i];
+      fireStateChange("Getting PSDs of data " + (idx + 1) + "...");
+      String name = "PSD " + ds.getBlock(idx).getName() + " [" + idx +"]";
+      XYSeries powerSeries = new XYSeries(name);
+      FFTResult psdCalc = ds.getPSD(idx);
+      Complex[] fft = psdCalc.getFFT();
+      spectra[i] = fft;
+      freqs = psdCalc.getFreqs();
+      addToPlot(powerSeries, fft, freqs, freqSpace, xysc);
     }
-    
-    addToPlot(ds, freqSpace, respIndices, xysc);
+
     
     String getting = "Getting crosspower of series ";
     
@@ -137,19 +140,15 @@ public class NoiseExperiment extends Experiment {
         
         // nii = pii - pij*hij
         Complex n11 = 
-            p11.subtract(
-                p21.multiply(p13).divide(p23) );
-        n11 = n11.multiply(Math.pow(2*Math.PI*freqs[i],4));
+            p11.subtract( p21.multiply(p13).divide(p23) );
         
         Complex n22 = 
             p22.subtract(
                 ( p23.conjugate() ).multiply(p21).divide( p13.conjugate() ) );
-        n22 = n22.multiply(Math.pow(2*Math.PI*freqs[i],4));
         
         Complex n33 = 
             p33.subtract(
                 p23.multiply( p13.conjugate() ).divide( p21 ) );
-        n33 = n33.multiply(Math.pow(2*Math.PI*freqs[i],4));
         
         // now get magnitude and convert to dB
         double plot1 = 10*Math.log10( n11.abs() );

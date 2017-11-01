@@ -38,7 +38,7 @@ public class NoiseNineTest {
   @Test
   public void canRunAndPlotTest1() {
 
-    String folder = currentDir + "/data/noisenine/";
+    String folder = currentDir + "/test-data/noisenine/";
     String[] types = new String[]{"00","10","60"};;
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};
@@ -63,17 +63,8 @@ public class NoiseNineTest {
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end);
-    // ds.matchIntervals();
+    //ds.matchIntervals();
 
-    // trim down internal representation of the data to avoid memory errors
-    /*
-    for (int i = 0; i < 9; ++i) {
-      DataBlock db = ds.getBlock(i);
-      db.setData( db.getData() );
-      System.out.println( db.size() );
-    }
-    */
-    
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
     nne.runExperimentOnData(ds);
@@ -150,12 +141,12 @@ public class NoiseNineTest {
   
   @Test
   public void canRunAndPlotTest2() {
-    String folder = currentDir + "/data/noise_test/";
+    String folder = currentDir + "/test-data/noisenine2/";
     String[] types = new String[]{"00","10","30"};
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};
     String ending = ".512.seed";
-    String respName = "responses/RESP.XX.MOFO.00.BHZ";
+    String respName = "test-data/noisenine2/RESP.XX.MOFO.00.BHZ";
     
     DataStore ds = 
         setUpTest(folder, types, freqName, components, ending, respName, false);
@@ -178,15 +169,6 @@ public class NoiseNineTest {
     long end = cCal.getTime().getTime();
     
     ds.trim(start, end, DataStore.FILE_COUNT);
-    // ds.matchIntervals();
-
-    // trim down internal representation of the data to avoid memory errors
-    /*
-    for (int i = 0; i < 9; ++i) {
-      DataBlock db = ds.getBlock(i);
-      db.setData( db.getData() );
-    }
-    */
     
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );

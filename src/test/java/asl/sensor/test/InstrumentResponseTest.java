@@ -46,7 +46,7 @@ public class InstrumentResponseTest {
   
   @Test
   public void testFileParse() {
-    String filename = "./responses/RESP.XX.NS087..BHZ.STS1.20.2400";
+    String filename = "./test-data/resp-parse/RESP.XX.NS087..BHZ.STS1.20.2400";
     
     try {
       InstrumentResponse ir = new InstrumentResponse(filename);
@@ -59,9 +59,13 @@ public class InstrumentResponseTest {
       double nmf = Double.parseDouble("3.000000E-01");
       assertEquals( nmf, ir.getNormalizationFrequency(), 0.0001 );
       
-      Double[] gn = {2.400000e+03, 2.400000e+03, 1.000000e+00};
-      List<Double> gnL = Arrays.asList(gn);
-      assertTrue( gnL.equals(ir.getGain() ) );
+      double[] gn = {2.400000e+03, 2.400000e+03, 1.000000e+00};
+      int maxStage = ir.getNumStages();
+      assertEquals(maxStage, gn.length);
+      for (int i = 0; i < maxStage; ++i) {
+        assertEquals(gn[i], ir.getGain()[i], 1.);
+      }
+      //assertTrue( gnL.equals(ir.getGain() ) );
       
       assertEquals( Unit.VELOCITY, ir.getUnits() );
       
@@ -85,10 +89,28 @@ public class InstrumentResponseTest {
   }
   
   @Test
+  public void testMultiEpoch() {
+    String currentDir = System.getProperty("user.dir");
+    String filename = currentDir + 
+        "/test-data/resp-parse/multiepoch.txt";
+    InstrumentResponse ir;
+    try {
+      ir = new InstrumentResponse(filename);
+      assertTrue( ir.getEpochsCounted() > 1 );
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
+
+  }
+  
+  @Test
   public void testStringOutput() {
     
     String currentDir = System.getProperty("user.dir");
-    String filename = currentDir + "/responses/RESP.XX.NS087..BHZ.STS1.20.2400";
+    String filename = currentDir + 
+        "/test-data/resp-parse/RESP.XX.NS087..BHZ.STS1.20.2400";
+
 
     try {
       InstrumentResponse ir = new InstrumentResponse(filename);

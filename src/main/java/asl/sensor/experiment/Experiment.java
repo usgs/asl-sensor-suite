@@ -64,41 +64,42 @@ public abstract class Experiment {
   public static void addToPlot(
       final DataStore ds,
       final boolean freqSpace,
-      final int[] indices,
+      final int idx,
+      XYSeriesCollection xysc) {
+
+    XYSeries powerSeries = 
+        new XYSeries( "PSD " + ds.getBlock(idx).getName() + " [" + idx +"]" );
+    
+    Complex[] resultPSD = ds.getPSD(idx).getFFT();
+    double[] freqs = ds.getPSD(idx).getFreqs();
+
+    addToPlot(powerSeries, resultPSD, freqs, freqSpace, xysc);
+  }
+  
+  public static void addToPlot(
+      final XYSeries powerSeries,
+      final Complex[] resultPSD,
+      final double[] freqs,
+      final boolean freqSpace,
       XYSeriesCollection xysc) {
     
-    // DataBlock[] dataIn = ds.getData();
-    
-    for (int i = 0; i < indices.length; ++i) {
-      
-      int idx = indices[i];
-      
-      XYSeries powerSeries = 
-          new XYSeries( "PSD " + ds.getBlock(idx).getName() + " [" + idx +"]" );
-
-      Complex[] resultPSD = ds.getPSD(idx).getFFT();
-      double[] freqs = ds.getPSD(idx).getFreqs();
-
-      for (int j = 0; j < freqs.length; ++j) {
-        if (1/freqs[j] > 1.0E3) {
-          continue;
-        }
-
-        // unit conversion with response
-        Complex temp = resultPSD[j].multiply(Math.pow(2*Math.PI*freqs[j],4));
-
-        if (freqSpace) {
-          powerSeries.add( freqs[j], 10*Math.log10( temp.abs() ) );
-        } else {
-          powerSeries.add( 1/freqs[j], 10*Math.log10( temp.abs() ) );
-        }
+    for (int j = 0; j < freqs.length; ++j) {
+      if (1/freqs[j] > 1.0E3) {
+        continue;
       }
 
-      xysc.addSeries(powerSeries);
-
+      double temp = 10 * Math.log10( resultPSD[j].abs() );
+      if (freqSpace) {
+        powerSeries.add(freqs[j], temp);
+      } else {
+        powerSeries.add(1/freqs[j], temp);
+      }
     }
+
+    xysc.addSeries(powerSeries);
     
   }
+  
   long start;
   long end;
   protected List<XYSeriesCollection> xySeriesData;
@@ -258,7 +259,7 @@ public abstract class Experiment {
     
     xySeriesData = new ArrayList<XYSeriesCollection>();
     
-    ds.matchIntervals();
+    ds.matchIntervals( blocksNeeded() );
     
     fireStateChange("Beginning calculations...");
     

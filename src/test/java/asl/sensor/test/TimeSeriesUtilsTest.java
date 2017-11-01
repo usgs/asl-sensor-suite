@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -25,11 +26,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+import javax.imageio.ImageIO;
+
 import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
@@ -54,7 +58,7 @@ public class TimeSeriesUtilsTest {
   
   public String fileID = station+"_"+location+"_"+channel;
   
-  public String filename1 = "./data/"+fileID+".512.seed";
+  public String filename1 = "./test-data/blocktrim/"+fileID+".512.seed";
   
   @Test
   public void canGetFile() {
@@ -87,7 +91,6 @@ public class TimeSeriesUtilsTest {
         System.out.println("\tLENGTH: " + map.get(time).length);
       }
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     }
@@ -95,7 +98,7 @@ public class TimeSeriesUtilsTest {
   
   @Test
   public void canGetMultiplexDataNames() {
-    String filename2 = "./data/cat.seed";
+    String filename2 = "./test-data/multiplex/cat.seed";
     Set<String> names;
     
     try {
@@ -200,7 +203,8 @@ public class TimeSeriesUtilsTest {
   
   @Test
   public final void testDetrendLinear2() throws Exception {
-    double[] x = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+    double[] x = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 
+        7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 
     x = TimeSeriesUtils.detrend(x);
     for (int i = 0; i < x.length; i++) {
@@ -255,7 +259,7 @@ public class TimeSeriesUtilsTest {
   
   @Test
   public void firstSampleCorrect() {
-    String fname = "./data/random_cal_lowfrq/BHZ.512.seed";
+    String fname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
     try {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
@@ -271,14 +275,14 @@ public class TimeSeriesUtilsTest {
       // System.out.println(timeseries.get(start)[0]);
       
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
+      fail();
       e.printStackTrace();
     }
   }
   
   @Test
   public void firstSampleCorrect2() {
-    String fname = "./data/random_cal_lowfrq/BC0.512.seed";
+    String fname = "./test-data/random_cal_lowfrq/BC0.512.seed";
     try {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
@@ -304,101 +308,10 @@ public class TimeSeriesUtilsTest {
       // System.out.println(timeseries.get(start)[0]);
       
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-  }
-  
-  /*
-  @Test
-  public void testDemeaning() {
-    
-    System.out.println("Running demeaning test...");
-    
-    String dataFolderName = "data/random_cal/"; 
-    String sensOutName = dataFolderName + "00_EHZ.512.seed";
-    
-    String metaName;
-    try {
-      metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
-      Pair<Long, Map<Long, Number>> dataMap = 
-          TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
-      DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
-      
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      XYSeriesCollection justDemeaned = new XYSeriesCollection();
-      XYSeries meaned = new XYSeries(metaName + " mean kept");
-      XYSeries meanedDbl = new XYSeries(metaName + " mean kept, conv. double");
-      XYSeries demeaned = new XYSeries(metaName + " mean removed");
-      
-      Map<Long, Number> map = dataMap.getSecond();
-      
-      // get only the last quarter of data so that the test runs faster
-      List<Long> times = new ArrayList<Long>(map.keySet());
-      Collections.sort(times);
-      int lastQuarterIdx = (times.size() * 3) / 4;
-      long lastQuarterTime = times.get(lastQuarterIdx);
-      
-      // System.out.println(times.size());
-      // System.out.println(sensor.size());
-      
-      for (int i = lastQuarterIdx; i < times.size(); ++i) {
-        long time = times.get(i);
-        meaned.add(time, map.get(time));
-        meanedDbl.add(time, map.get(time).doubleValue());
-      }
-      
-      long now = lastQuarterTime;
-      long interval = sensor.getInterval();
-      lastQuarterIdx = 
-          (int) ((lastQuarterTime - sensor.getStartTime()) / interval);
-      for (int i = lastQuarterIdx; i < sensor.size(); ++i) {
-        demeaned.add(now, sensor.getData().get(i));
-        now += interval;
-      }
-      
-      xysc.addSeries(meaned);
-      xysc.addSeries(meanedDbl);
-      xysc.addSeries(demeaned);
-      
-      justDemeaned.addSeries(demeaned);
-      
-      JFreeChart chart = ChartFactory.createXYLineChart(
-          "Test demeaning operation",
-          "epoch time in nanoseconds",
-          "data sample",
-          xysc);
-      
-      JFreeChart chart2 = ChartFactory.createXYLineChart(
-          "Test demeaning operation",
-          "epoch time in nanoseconds",
-          "data sample",
-          justDemeaned);
-      
-      String folderName = "testResultImages";
-      File folder = new File(folderName);
-      if ( !folder.exists() ) {
-        System.out.println("Writing directory " + folderName);
-        folder.mkdirs();
-      }
-      
-      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
-      BufferedImage bi2 = ReportingUtils.chartsToImage(1280, 960, chart2);
-      BufferedImage out = ReportingUtils.mergeBufferedImages(bi, bi2);
-      File file = new File("testResultImages/demeaning-test.png");
-      ImageIO.write(out, "png", file);
-      
-    } catch (FileNotFoundException e) {
-      fail();
-      e.printStackTrace();
-    } catch (IOException e) {
       fail();
       e.printStackTrace();
     }
-
   }
-  */
-  
   
   public Calendar getStartCalendar(long time) {
     SimpleDateFormat sdf = InputPanel.SDF;
@@ -470,8 +383,6 @@ public class TimeSeriesUtilsTest {
         
       }
       
-      
-      
       // quickly get the one name in the list
       Set<String> names = TimeSeriesUtils.getMplexNameSet(filename1);
       List<String> nameList = new ArrayList<String>(names);
@@ -497,8 +408,8 @@ public class TimeSeriesUtilsTest {
   @Test
   public void producePlotReadIn() {
     try {
-      String calname = "./data/random_cal_lowfrq/BC0.512.seed";
-      String outname = "./data/random_cal_lowfrq/BHZ.512.seed";
+      String calname = "./test-data/random_cal_lowfrq/BC0.512.seed";
+      String outname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
       String calMplex = TimeSeriesUtils.getMplexNameList(calname).get(0);
       String outMplex = TimeSeriesUtils.getMplexNameList(outname).get(0);
       DataBlock cal = TimeSeriesUtils.getTimeSeries(calname, calMplex);
@@ -636,7 +547,8 @@ public class TimeSeriesUtilsTest {
       for ( Long time : timeList ) {
         
         Calendar cCal = getStartCalendar(time);
-        SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
+        SimpleDateFormat sdf = 
+            new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
         sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
         String inputDate = sdf.format( cCal.getTime() );
         
@@ -663,7 +575,6 @@ public class TimeSeriesUtilsTest {
       out.close();
       
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     }
@@ -671,13 +582,13 @@ public class TimeSeriesUtilsTest {
   
   @Test
   public void showsTimeSeriesCal() {
-    String fname = "./data/random_cal_lowfrq/BC0.512.seed";
+    String fname = "./test-data/random_cal_lowfrq/BC0.512.seed";
     showsTimeSeries(fname, "BC0");
   }
   
   @Test
   public void showsTimeSeriesOut() {
-    String fname = "./data/random_cal_lowfrq/BHZ.512.seed";
+    String fname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
     showsTimeSeries(fname, "BHZ");
   }
   
@@ -690,7 +601,7 @@ public class TimeSeriesUtilsTest {
   
   @Test
   public void testInputParsing1() {
-    String dataFolderName = "data/random_cal/"; 
+    String dataFolderName = "test-data/random_cal/"; 
     String extension = "_EC0.512.seed";    
     String testID = "1_Cal";
     doInputParseTest(dataFolderName, extension, testID);
@@ -701,7 +612,7 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public void testInputParsing4() {
-    String dataFolderName = "data/random_cal_4/"; 
+    String dataFolderName = "test-data/random_cal_4/"; 
     String extension = "CB_BC0.512.seed";
     String testID = "4_Cal";
     doInputParseTest(dataFolderName, extension, testID);
@@ -714,7 +625,7 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public void timeDataCorrect() {
-    String fname = "./data/random_cal_lowfrq/BHZ.512.seed";
+    String fname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
     try {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
@@ -736,7 +647,6 @@ public class TimeSeriesUtilsTest {
       String correctDate = "2017.08.02 | 00:00:00.019";
       assertEquals(inputDate, correctDate);
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }

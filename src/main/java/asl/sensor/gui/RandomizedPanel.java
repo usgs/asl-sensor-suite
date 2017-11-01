@@ -1,5 +1,6 @@
 package asl.sensor.gui;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -22,6 +23,8 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.block.BlockContainer;
 import org.jfree.chart.block.FlowArrangement;
+import org.jfree.chart.plot.Marker;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.TextTitle;
@@ -237,6 +240,39 @@ public class RandomizedPanel extends ExperimentPanel {
     String[] out = new String[]{sb.toString()}; // just a single new page
     return out;
   }
+  
+  public static String complexListToString(List<Complex> stringMe) {
+    final int MAX_LINE = 2; // maximum number of entries per line
+    
+    DecimalFormat df = new DecimalFormat("#.#####");
+    NumericUtils.setInfinityPrintable(df);
+    ComplexFormat cf = new ComplexFormat(df);
+    StringBuilder sb = new StringBuilder();
+    int numInLine = 0;
+    
+    for (int i = 0; i < stringMe.size(); ++i) {
+      
+      Complex c = stringMe.get(i);
+      double initPrd = NumericUtils.TAU / c.abs();
+      
+      sb.append( cf.format(c) );
+      sb.append(" (");
+      sb.append( df.format(initPrd) );
+      sb.append(")");
+      ++numInLine;
+      // want to fit two to a line for paired values
+      if (numInLine >= MAX_LINE) {
+        sb.append("\n");
+        numInLine = 0;
+      } else {
+        sb.append(", ");
+      }
+    }
+    
+    return sb.toString();
+  }
+  
+  
   /**
    * Static helper method for getting the formatted inset string directly
    * from a RandomizedExperiment
@@ -244,12 +280,6 @@ public class RandomizedPanel extends ExperimentPanel {
    * @return String format representation of data from the experiment
    */
   public static String[] getInsetString(RandomizedExperiment rnd) {
-    
-    final int MAX_LINE = 2; // maximum number of entries per line
-    
-    DecimalFormat df = new DecimalFormat("#.#####");
-    NumericUtils.setInfinityPrintable(df);
-    ComplexFormat cf = new ComplexFormat(df);
     
     List<Complex> fitP = rnd.getFitPoles();
     List<Complex> initP = rnd.getInitialPoles();
@@ -271,59 +301,9 @@ public class RandomizedPanel extends ExperimentPanel {
     sbInit.append("Initial poles: \n");
     sbFit.append("Fit poles: \n");
     
-    int numInLine = 0;
-    
-    for (int i = 0; i < fitP.size(); ++i) {
-      
-      Complex init = initP.get(i);
-      Complex fit = fitP.get(i);
-      double initPrd = NumericUtils.TAU / init.abs();
-      double fitPrd = NumericUtils.TAU / fit.abs();
-      
-      sbInit.append( cf.format(init) );
-      sbFit.append( cf.format(fit) );
-      ++numInLine;
-      // want to fit two to a line for paired values
-      
-      if ( init.getImaginary() != 0. ) {
-        ++i; // INCREMENT I TO GET THE CONJUGATE AND NOT DO REDUNDANT OPERATION
-        sbInit.append(";  ");
-        sbFit.append(";  ");
-        sbInit.append( cf.format( initP.get(i) ) );
-        sbFit.append( cf.format( fitP.get(i) ) );
-        sbInit.append(" (");
-        sbInit.append( df.format(initPrd) );
-        sbInit.append(" s)\n");
-        sbFit.append(" (");
-        sbFit.append( df.format(fitPrd) );
-        sbFit.append(" s)\n");
-        numInLine = 0;
-      } else {
-        // if data does not have conjugate pair, put period next to pole value
-        // if there is still data, fit up to 4 poles in a line
-        // but still separate conjugate pairs into their own line for space
-        sbInit.append(" (");
-        sbInit.append( df.format(initPrd) );
-        sbInit.append(" s)");
-        sbFit.append(" (");
-        sbFit.append( df.format(fitPrd) );
-        sbFit.append(" s)");
-        
-        if ( i + 1 < fitP.size() && 
-             numInLine < MAX_LINE && 
-             initP.get(i + 1).getImaginary() == 0. ) {
-          // next value exists, is not part of a conjugate pair, and won't
-          // put more than 4 pole values in a single line
-          sbInit.append(";   ");
-          sbFit.append(";   ");
-        } else {
-          sbInit.append("\n");
-          sbFit.append("\n");
-          numInLine = 0;
-        }
-      }
-    }
-    
+    sbInit.append( complexListToString(initP) );
+    sbFit.append( complexListToString(fitP) );
+     
     sbInit.append("\n");
     sbFit.append("\n");
     
@@ -335,52 +315,13 @@ public class RandomizedPanel extends ExperimentPanel {
       sbFitZ.append("Fit zeros: \n");
     }
     
-    for (int i = 0; i < fitZ.size(); ++i) {
-      
-      Complex init = initZ.get(i);
-      Complex fit = fitZ.get(i);
-      double initPrd = NumericUtils.TAU / init.abs();
-      double fitPrd = NumericUtils.TAU / fit.abs();
-      
-      sbInitZ.append( cf.format(init) );
-      sbFitZ.append( cf.format(fit) );
-      
-      // want to fit two to a line for paired values
-      if ( initZ.get(i).getImaginary() != 0. ) {
-        ++i;
-        sbInitZ.append("; ");
-        sbFitZ.append("; ");
-        sbInitZ.append( cf.format( initZ.get(i) ) );
-        sbFitZ.append( cf.format( fitZ.get(i) ) );
-        sbInitZ.append(" (");
-        sbInitZ.append( df.format(initPrd) );
-        sbInitZ.append(" s)\n");
-        sbFitZ.append(" (");
-        sbFitZ.append( df.format(fitPrd) );
-        sbFitZ.append(" s)\n");
-        
-      } else {
-        sbInitZ.append(" (");
-        sbInitZ.append( df.format(initPrd) );
-        sbInitZ.append(" s)");
-        sbFitZ.append(" (");
-        sbFitZ.append( df.format(fitPrd) );
-        sbFitZ.append(" s)");
-        if ( i + 1 < fitZ.size() ) {
-          sbInitZ.append("\n");
-          sbFitZ.append("\n");
-        } else {
-          sbInitZ.append(";   ");
-          sbFitZ.append(";   ");
-        }
-      }
-    }
+    sbInitZ.append( complexListToString(initZ) );
+    sbFitZ.append( complexListToString(fitZ) );
     
     sbFit.append("\n");
     sbInit.append("\n");
     sbInitZ.append("\n");
     sbFitZ.append("\n");
-    
     
     if (!solverNotRun) {
       sbInit.append(sbFit);
@@ -403,7 +344,9 @@ public class RandomizedPanel extends ExperimentPanel {
     
     return new String[]{sbInit.toString(), sbInitZ.toString(), sbR.toString()};
   }
-  private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis;
+  
+  private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis,
+                    residXAxis, residPrdAxis;
   private JComboBox<String> plotSelection;
   private JCheckBox lowFreqBox, showParams, freqSpace;
   private JFreeChart magChart, argChart, residAmpChart, residPhaseChart;
@@ -414,40 +357,7 @@ public class RandomizedPanel extends ExperimentPanel {
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
     
-    String yAxisTitle = "10 * log10( RESP(f) )";
-    String xAxisTitle = "Frequency (Hz)";
-    String prdAxisTitle = "Period (s)";
-    String degreeAxisTitle = "phi(RESP(f))";
-    
-    xAxis = new LogarithmicAxis(xAxisTitle);
-    prdAxis = new NumberAxis(prdAxisTitle);
-    
-    yAxis = new NumberAxis(yAxisTitle);
-    yAxis.setAutoRange(true);
-    
-    degreeAxis = new NumberAxis(degreeAxisTitle);
-    degreeAxis.setAutoRange(true);    
-    
-    residPhaseAxis = new NumberAxis("Phase error (degrees)");
-    residAmpAxis = new NumberAxis("Amplitude error (percentage)");
-    
-    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
-    xAxis.setLabelFont(bold);
-    yAxis.setLabelFont(bold);
-    degreeAxis.setLabelFont(bold);
-    residPhaseAxis.setLabelFont(bold);
-    residAmpAxis.setLabelFont(bold);
-    
-    lowFreqBox = new JCheckBox("Low frequency calibration");
-    lowFreqBox.setSelected(true);
-    
-    showParams = new JCheckBox("Show params");
-    showParams.setEnabled(false);
-    showParams.addActionListener(this);
-    
-    freqSpace = new JCheckBox("Use Hz units (req. regen)");
-    freqSpace.setSelected(true);
+    initAxes();
     
     applyAxesToChart(); // now that we've got axes defined
     
@@ -499,6 +409,45 @@ public class RandomizedPanel extends ExperimentPanel {
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
     this.add(plotSelection, gbc);
+  }
+  
+  private void initAxes() {
+    String yAxisTitle = "10 * log10( RESP(f) )";
+    String xAxisTitle = "Frequency (Hz)";
+    String prdAxisTitle = "Period (s)";
+    String degreeAxisTitle = "phi(RESP(f))";
+    
+    xAxis = new LogarithmicAxis(xAxisTitle);
+    prdAxis = new LogarithmicAxis(prdAxisTitle);
+    residXAxis = new LogarithmicAxis(xAxisTitle);
+    residPrdAxis = new LogarithmicAxis(prdAxisTitle);
+    
+    yAxis = new NumberAxis(yAxisTitle);
+    yAxis.setAutoRange(true);
+    
+    degreeAxis = new NumberAxis(degreeAxisTitle);
+    degreeAxis.setAutoRange(true);    
+    
+    residPhaseAxis = new NumberAxis("Phase error (degrees)");
+    residAmpAxis = new NumberAxis("Amplitude error (percentage)");
+    
+    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
+    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    xAxis.setLabelFont(bold);
+    yAxis.setLabelFont(bold);
+    degreeAxis.setLabelFont(bold);
+    residPhaseAxis.setLabelFont(bold);
+    residAmpAxis.setLabelFont(bold);
+    
+    lowFreqBox = new JCheckBox("Low frequency calibration");
+    lowFreqBox.setSelected(true);
+    
+    showParams = new JCheckBox("Show params");
+    showParams.setEnabled(false);
+    showParams.addActionListener(this);
+    
+    freqSpace = new JCheckBox("Use Hz units (req. regen)");
+    freqSpace.setSelected(true);
   }
   
   @Override
@@ -585,15 +534,13 @@ public class RandomizedPanel extends ExperimentPanel {
   
   @Override
   protected void drawCharts() {
-    
     // just force the active plot at the start to be the amplitude plot
-    plotSelection.setSelectedIndex(0);
     showParams.setSelected(true);
     showParams.setEnabled(true);
     chart = magChart;
     chartPanel.setChart(chart);
+    plotSelection.setSelectedIndex(0);
     chartPanel.setMouseZoomable(true);
-    
   }
   
   @Override
@@ -700,6 +647,14 @@ public class RandomizedPanel extends ExperimentPanel {
     }
   }
   
+  public ValueAxis getResidAxis() {
+    if ( null == plotSelection || freqSpace.isSelected() ) {
+      return residXAxis;
+    } else {
+      return residPrdAxis;
+    }
+  }
+  
   @Override
   public ValueAxis getYAxis() {
     
@@ -720,6 +675,8 @@ public class RandomizedPanel extends ExperimentPanel {
 
   @Override
   protected void updateData(DataStore ds) {
+    
+    //initAxes();
     
     set = true;
     showParams.setSelected(false);
@@ -756,13 +713,22 @@ public class RandomizedPanel extends ExperimentPanel {
       
     }
     
+    getXAxis().setAutoRange(true);
+    
     argChart = buildChart(argSeries, getXAxis(), degreeAxis);
     argChart.getXYPlot().getRangeAxis().setAutoRange(true);
-    invertSeriesRenderingOrder( argChart );
+    invertSeriesRenderingOrder(argChart);
     
     magChart = buildChart(magSeries, getXAxis(), yAxis);
-    invertSeriesRenderingOrder( magChart );
     magChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    invertSeriesRenderingOrder(magChart);
+    
+    if (!isLowFreq) {
+      Marker maxFitMarker = new ValueMarker( rndExp.getMaxFitFrequency() );
+      maxFitMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      magChart.getXYPlot().addDomainMarker(maxFitMarker);
+      argChart.getXYPlot().addDomainMarker(maxFitMarker);
+    }
     
     String inset = getInsetStrings();
     TextTitle result = new TextTitle();
@@ -773,7 +739,7 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(magChart, appendFreqTitle);
     
     // get residuals plot
-    residAmpChart = buildChart(xysc.get(2), getXAxis(), residAmpAxis);
+    residAmpChart = buildChart(xysc.get(2), getResidAxis(), residAmpAxis);
     /*
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();
@@ -790,7 +756,7 @@ public class RandomizedPanel extends ExperimentPanel {
     residPlot.clearAnnotations();
     residPlot.addAnnotation(weightAnnot);
     */
-    residPhaseChart = buildChart(xysc.get(3), getXAxis(), residPhaseAxis);
+    residPhaseChart = buildChart(xysc.get(3), getResidAxis(), residPhaseAxis);
     /*
     double[] weights = rndExp.getWeights();
     StringBuilder sb = new StringBuilder();

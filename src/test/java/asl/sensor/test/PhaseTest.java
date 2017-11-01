@@ -24,6 +24,8 @@ import asl.sensor.utils.TimeSeriesUtils;
 
 public class PhaseTest {
 
+  String testRespName = "test-data/random_cal/RESP.XX.NS088..BHZ.STS1.360.2400";
+  
   public DataStore getFromList(List<String> setUpFilenames) throws IOException {
 
     String respName = setUpFilenames.get(0);
@@ -84,8 +86,8 @@ public class PhaseTest {
   public DataStore setUpTest1() throws IOException {
 
     List<String> fileList = new ArrayList<String>();
-    String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
-    String dataFolderName = "data/random_cal/"; 
+    String dataFolderName = "test-data/random_cal/";
+    String respName = testRespName;
     String calName =  dataFolderName + "_EC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
 
@@ -111,8 +113,8 @@ public class PhaseTest {
   
 public DataStore setUpTest3() throws IOException {
   List<String> fileList = new ArrayList<String>();
-  String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
-  String dataFolderName = "data/random_cal_3/"; 
+  String respName = testRespName;
+  String dataFolderName = "test-data/random_cal_3/"; 
   String calName =  dataFolderName + "BC0.512.seed";
   String sensOutName = dataFolderName + "00_BHZ.512.seed";
   
@@ -153,8 +155,8 @@ public DataStore setUpTest3() throws IOException {
   public DataStore setUpTest4() throws IOException {
       
       List<String> fileList = new ArrayList<String>();
-      String respName = "responses/RESP.XX.NS088..BHZ.STS1.360.2400";
-      String dataFolderName = "data/random_cal_4/"; 
+      String respName = testRespName;
+      String dataFolderName = "test-data/random_cal_4/"; 
       String calName =  dataFolderName + "CB_BC0.512.seed";
       String sensOutName = dataFolderName + "00_EHZ.512.seed";
       
