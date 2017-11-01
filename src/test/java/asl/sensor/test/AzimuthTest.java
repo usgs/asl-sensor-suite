@@ -25,7 +25,7 @@ public class AzimuthTest {
     DataStore ds = new DataStore();
     
     String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/data/azi/";
+    String folder = currentDir + "/test-data/azi/";
     String[] prefixes = new String[3];
     prefixes[0] = "00_LH1";
     prefixes[1] = "00_LH2";
@@ -80,7 +80,7 @@ public class AzimuthTest {
     DataStore ds = new DataStore();
     
     String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/data/azimuth/";
+    String folder = currentDir + "/test-data/azi-norot/";
     String[] prefixes = new String[3];
     prefixes[0] = "00_LH1";
     prefixes[1] = "00_LH2";

@@ -31,9 +31,51 @@ public class NumericUtils {
     
     @Override
     public int compare(Complex c1, Complex c2) {
+      if( c1.abs() == c2.abs() ) {
+        Double r1 = c1.getReal();
+        Double r2 = c2.getReal();
+        if (r1 != r2) {
+          return r1.compareTo(r2);
+        } else {
+          return (int) Math.signum( c1.getImaginary() - c2.getImaginary() );          
+        }
+      }
       return (int) Math.signum( c1.abs() - c2.abs() );
     }
     
+  }
+  
+  /**
+   * Complex comparator ordering by magnitude but listing all real-values first
+   * And then sorting complex numbers according to real value first, and then
+   * by imaginary value if the real values match.
+   * @author akearns
+   *
+   */
+  public static class CpxRealComparator implements Comparator<Complex> {
+    public static final CpxRealComparator instance = new CpxRealComparator();
+    
+    private CpxRealComparator() {
+      
+    }
+    
+    @Override
+    public int compare(Complex c1, Complex c2) {
+      
+      if( c1.getImaginary() == 0. && c2.getImaginary() == 0. ) {
+        return (int) Math.signum( c1.getReal() - c2.getReal() );
+      } else if ( c1.getImaginary() == 0. ) {
+        return -1;
+      } else if ( c2.getImaginary() == 0. ) {
+        return 1;
+      } else {
+        if( c1.getReal() == c2.getReal() ) {
+          return (int) Math.signum( c1.getImaginary() - c2.getImaginary() );
+        } else {
+          return (int) Math.signum( c1.getReal() - c2.getReal() );
+        }
+      }
+    }
   }
   
   public static CpxMagComparator cmc;
@@ -43,11 +85,6 @@ public class NumericUtils {
    * The number of radians in a full circle.
    */
   public final static double TAU = Math.PI * 2; // radians in full circle
-  
-  /**
-   * used to limit the frequencies of the poles/zeros getting fit
-   */
-  public final static double PEAK_MULTIPLIER = 0.8;
   
   /**
    * Get the two-component arctan of a complex number. A simpler way of calling
@@ -76,6 +113,16 @@ public class NumericUtils {
    */
   public static void complexMagnitudeSorter(List<Complex> complexes) {
     Collections.sort(complexes, CpxMagComparator.instance);
+  }
+  
+  /**
+   * Sort a list of complex values so that pure real numbers appear first.
+   * The real and complex numbers are then each sorted according to their real
+   * value, and then by their imaginary value.
+   * @param complexes
+   */
+  public static void complexRealsFirstSorter(List<Complex> complexes) {
+    Collections.sort(complexes, CpxRealComparator.instance);
   }
   
   /**

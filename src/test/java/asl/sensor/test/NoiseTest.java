@@ -39,7 +39,7 @@ public class NoiseTest {
   }
   
   public XYSeriesCollection setUpTest1() throws FileNotFoundException {
-    String folder = "data/noise_1/";
+    String folder = "test-data/noise_1/";
     String[] data = new String[3];
     data[0] = "00_BH0.512.seed";
     data[1] = "10_BH0.512.seed";
@@ -70,7 +70,7 @@ public class NoiseTest {
   }
   
   public XYSeriesCollection setUpTest2() throws FileNotFoundException {
-    String folder = "data/noise_1Hz/";
+    String folder = "test-data/noise_1Hz/";
     String[] data = new String[3];
     data[0] = "00_LH0.512.seed";
     data[1] = "10_LH0.512.seed";
@@ -103,8 +103,8 @@ public class NoiseTest {
   @Test
   public void testResultsData1PSD1() {
     int idx = 0;
-    double psdCheck = -154.63;
-    double noiseCheck = -155.52;
+    double psdCheck = -157.64;
+    double noiseCheck = -158.53;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest1();
@@ -135,12 +135,12 @@ public class NoiseTest {
       }
       psdResults /= psdPoints;
       noiseResults /= noisePoints;
-      /*
+      
       System.out.println(psdResults + "," + noiseResults);
       System.out.println(psdCheck + "," + noiseCheck);
       System.out.println("PSD DIFF: " + Math.abs(psdResults - psdCheck));
       System.out.println("NOISE DIFF: " + Math.abs(noiseResults - noiseCheck));
-      */
+      
       assertEquals(noiseCheck, noiseResults, 1E-2);
       assertEquals(psdCheck, psdResults, 1E-2);
       
@@ -153,8 +153,8 @@ public class NoiseTest {
   @Test
   public void testResultsData2PSD1() {
     int idx = 0;
-    double psdCheck = -155.67;
-    double noiseCheck = -156.62;
+    double psdCheck = -158.68;
+    double noiseCheck = -159.63;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest2();
@@ -197,8 +197,8 @@ public class NoiseTest {
   @Test
   public void testResultsData1PSD2() {
     int idx = 1;
-    double psdCheck = -156.04;
-    double noiseCheck = -157.78;
+    double psdCheck = -159.05;
+    double noiseCheck = -160.79;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest1();
@@ -241,8 +241,8 @@ public class NoiseTest {
   @Test
   public void testResultsData1PSD3() {
     int idx = 2;
-    double psdCheck = -152.55;
-    double noiseCheck = -153.32;
+    double psdCheck = -155.56;
+    double noiseCheck = -156.33;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest1();

@@ -608,15 +608,6 @@ public class DataBlock {
     mergeContiguousTimes();
     rebuildList = true;
   }
-  
-  /**
-   * Used to set the initial sampling interval of the data. To change the output
-   * sampling rate of the data, use the resample method instead @see #resample
-   * @param interval The time between two samples of data in milliseconds
-   */
-  public void setInterval(long interval) {
-    this.interval = interval;
-  }
 
   /**
    * Return the length of datapoints to be contained in the continuous data

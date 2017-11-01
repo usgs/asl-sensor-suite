@@ -412,6 +412,8 @@ implements ChangeListener {
   @Override
   public void stateChanged(ChangeEvent e) {
     
+    super.stateChanged(e);
+    
     // enforce slider boundaries
     if ( e.getSource() == leftSlider ) {
       if ( leftSlider.getValue() > rightSlider.getValue() - 10 ) {

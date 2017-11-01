@@ -435,6 +435,9 @@ implements ActionListener, ChangeListener {
             InstrumentResponse ir = 
                 InstrumentResponse.loadEmbeddedResponse(fname);
             ds.setResponse(i, ir);
+            
+            respEpochWarn(ir);
+            
             respFileNames[i].setText( ir.getName() );
             clear.setEnabled(true);
             clearAll.setEnabled(true);
@@ -453,6 +456,7 @@ implements ActionListener, ChangeListener {
             File file = fc.getSelectedFile();
             respDirectory = file.getParent();
             ds.setResponse(i, file.getAbsolutePath() );
+            respEpochWarn( ds.getResponse(i) );
             respFileNames[i].setText( file.getName() );
             clear.setEnabled(true);
             clearAll.setEnabled(true);
@@ -1053,13 +1057,18 @@ implements ActionListener, ChangeListener {
   }
 
   /**
-   * Parent function to load in a response file to this panel's
-   * DataStore object
-   * @param idx Index of the file/chart this response corresponds to
-   * @param filepath Full address of the file to be loaded in
+   * Warn user if response has too many epochs
+   * @param ir InstrumentResponse that was read-in
    */
-  public void setResponse(int idx, String filepath) {
-    ds.setResponse(idx, filepath);
+  private void respEpochWarn(InstrumentResponse ir) {
+    System.out.println("EPOCHS: " + ir.getEpochsCounted());
+    if ( ir.getEpochsCounted() > 1 ) {
+      String name = ir.getName();
+      String warning = "NOTE: Response " + name + " has multiple epochs.\n";
+      warning += "Only the last epoch will be parsed in.";
+      JDialog jd = new JDialog();
+      JOptionPane.showMessageDialog(jd, warning);
+    }
   }
 
   /**

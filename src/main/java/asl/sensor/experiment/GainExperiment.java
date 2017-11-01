@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.complex.Complex;
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataBlock;
@@ -162,35 +163,39 @@ public class GainExperiment extends Experiment {
     
     gainStage1 = new double[NUMBER_TO_LOAD];
     otherGainStages = new double[NUMBER_TO_LOAD];
-
+    
+    fireStateChange("Accumulating gain values...");
     // InstrumentResponse[] resps = ds.getResponses();
     for (int i = 0; i < indices.length; ++i) {
       InstrumentResponse ir = ds.getResponse(indices[i]);
-      List<Double> gains = ir.getGain();
-      gainStage1[i] = gains.get(1);
+      double[] gains = ir.getGain();
+      gainStage1[i] = gains[1];
       double accumulator = 1.0;
-      for (int j = 2; j < gains.size(); ++j) {
-        accumulator *= gains.get(j);
+      for (int j = 2; j < gains.length; ++j) {
+        accumulator *= gains[j];
       }
       otherGainStages[i] = accumulator;
     }
     
     fftResults = new FFTResult[NUMBER_TO_LOAD];
-    ArrayList<DataBlock> blocksPlotting = new ArrayList<DataBlock>();
-    
-    for (int i = 0; i < indices.length; ++i) {
-      int idx = indices[i];
-      fftResults[i] = ds.getPSD(idx);
-      blocksPlotting.add( ds.getBlock(idx) );
-    }
-    
+    List<DataBlock> blocksPlotting = new ArrayList<DataBlock>();
     XYSeriesCollection xysc = new XYSeriesCollection();
-    
     xysc.setAutoWidth(true);
     
-    addToPlot(ds, false, indices, xysc); 
-    // false, because we don't want to plot in frequency space
-    
+    for (int i = 0; i < indices.length; ++i) {
+      fireStateChange("Getting PSD " + i + "...");
+      int idx = indices[i];
+      String name = "PSD " + ds.getBlock(idx).getName() + " [" + idx +"]";
+      XYSeries xys = new XYSeries(name);
+      fftResults[i] = ds.getPSD(idx);
+      Complex[] fft = fftResults[i].getFFT();
+      double[] freqs = fftResults[i].getFreqs();
+      // false, because we don't want to plot in frequency space
+      addToPlot(xys, fft, freqs, false, xysc);
+      blocksPlotting.add( ds.getBlock(idx) );
+    }
+
+    fireStateChange("Getting NLNM data...");
     xysc.addSeries( FFTResult.getLowNoiseModel(false) );
     
     xySeriesData.add(xysc);
@@ -239,8 +244,8 @@ public class GainExperiment extends Experiment {
       if (freqs[i] < 0.001) {
         continue;
       }
-      Complex temp = timeSeries[i].multiply(Math.pow(2*Math.PI*freqs[i],4));
-      double result = 10*Math.log10( temp.abs() );
+      
+      double result = 10*Math.log10( timeSeries[i].abs() );
       if ( result < Double.POSITIVE_INFINITY && result > max ) {
         max = result;
         index = i;

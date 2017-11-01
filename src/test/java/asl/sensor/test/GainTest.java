@@ -5,6 +5,7 @@ import static org.junit.Assert.fail;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 
 import org.junit.Test;
@@ -21,7 +22,7 @@ public class GainTest {
     DataStore ds = new DataStore();
     
     String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/data/relativeGain/";
+    String folder = currentDir + "/test-data/relativeGain/";
     String[] prefixes = new String[2];
     prefixes[0] = "00_BHZ";
     prefixes[1] = "10_BHZ";
@@ -42,9 +43,10 @@ public class GainTest {
       ds.setBlock(i, fName, seriesName);
     }
     
-    folder = currentDir + "/responses/relativeGain/";
+    folder = currentDir + "/test-data/relativeGain/";
     String[] rnames = new String[2];
     rnames[0] = "RESP.IU.ANMO.00.BHZ_gainx100";
+    //rnames[0] = "RESP.IU.ANMO.00.BHZ";
     rnames[1] = "RESP.IU.ANMO.10.BHZ";
     
     for (int i = 0; i < rnames.length; ++i) {
@@ -64,8 +66,8 @@ public class GainTest {
     
     double[] stats = ge.getStatsFromPeak(0);
     double gain = stats[3];
-    System.out.println(gain);
-    assertEquals(gain, 11714., 2.0);
+    // System.out.println( Arrays.toString(stats) );
+    assertEquals(11714., gain, 2.0);
     
   }
 }

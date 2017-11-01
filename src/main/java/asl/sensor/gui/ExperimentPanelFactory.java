@@ -39,6 +39,8 @@ public class ExperimentPanelFactory {
       return new ResponsePanel(exp);
     case RNDBG:
       return new RandDebugPanel(exp);
+    case SPECT:
+      return new SpectrumPanel(exp);
     default:
       // this shouldn't happen unless someone added to the enum
       // and forgot to follow-through on implementation
