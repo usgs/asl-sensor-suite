@@ -1,19 +1,17 @@
 package asl.sensor;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.TimeSeriesUtils;
+import java.io.IOException;
 import py4j.GatewayServer;
+import py4j.Py4JNetworkException;
 
 public class RandomCalShell {
 
   public RandomCalShell() {
-    
   }
 
   /**
@@ -54,19 +52,20 @@ public class RandomCalShell {
 
       re.setLowFreq(lowFreq);
       re.runExperimentOnData(ds);
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
     }
-
     return re;
-    
   }
   
   public static void main(String[] args) {
-    GatewayServer gatewayServer = new GatewayServer( new RandomCalShell() );
-    gatewayServer.start();
+    GatewayServer gatewayServer = new GatewayServer(new RandomCalShell());
+    try {
+      gatewayServer.start();
+    } catch (Py4JNetworkException e){
+      System.out.println("Already Running: Closing process");
+      System.exit(0);
+    }
     System.out.println("Gateway Server Started");
   }
 
