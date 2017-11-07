@@ -6,6 +6,8 @@ data/*
 responses/*
 !responses/readme.txt
 
+.idea/
+
 # Mac
 .DS_Store
 
