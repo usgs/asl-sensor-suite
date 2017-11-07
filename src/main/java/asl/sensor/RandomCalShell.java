@@ -68,7 +68,7 @@ public class RandomCalShell {
     String[] data = RandomizedPanel.getInsetString(exp);
     StringBuilder sb = new StringBuilder();
     for (String dataPart : data) {
-      sb.append(data);
+      sb.append(dataPart);
       sb.append('\n');
     }
     return sb.toString();

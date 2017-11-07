@@ -2,6 +2,7 @@ package asl.sensor.utils;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -133,6 +134,39 @@ public class NumericUtils {
     DecimalFormatSymbols symbols = df.getDecimalFormatSymbols();
     symbols.setInfinity("Inf.");
     df.setDecimalFormatSymbols(symbols);
+  }
+  
+  public static Complex[] multipointMovingAverage(Complex[] nums, int points) {
+    Complex[] out = new Complex[nums.length];
+    Complex[] cached = new Complex[points];
+    for (int i = 0; i < cached.length; ++i) {
+     cached[i] = Complex.ZERO;
+    }
+    Complex windowedAverage = Complex.ZERO;
+    for (int i = 0; i < nums.length; ++i) {
+      int cacheIdx = i % points;
+      Complex temp = cached[cacheIdx];
+      windowedAverage = windowedAverage.subtract(temp);
+      cached[cacheIdx] = nums[i].divide(points);
+      windowedAverage = windowedAverage.add(cached[cacheIdx]);
+      out[i] = windowedAverage;
+    }
+    return out;
+  }
+  
+  public static double[] multipointMovingAverage(double[] nums, int points) {
+    double[] out = new double[nums.length];
+    double[] cached = new double[points];
+    double windowedAverage = 0.;
+    for (int i = 0; i < nums.length; ++i) {
+      int cacheIdx = i % points;
+      double temp = cached[cacheIdx];
+      windowedAverage = windowedAverage - temp;
+      cached[cacheIdx] = nums[i] / points;
+      windowedAverage = windowedAverage + cached[cacheIdx];
+      out[i] = windowedAverage;
+    }
+    return out;
   }
   
   /**

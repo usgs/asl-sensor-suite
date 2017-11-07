@@ -226,8 +226,9 @@ extends Experiment implements ParameterValidator {
       // convert from displacement to velocity
       Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqsFull[i]);
       plottedResponse[i] = plottedResponse[i].multiply(scaleFactor);
-
     }
+    // 3-point moving average
+    plottedResponse = NumericUtils.multipointMovingAverage(plottedResponse, 3);
     Complex[] estResponse = 
         Arrays.copyOfRange(plottedResponse, 0, freqs.length);
     
