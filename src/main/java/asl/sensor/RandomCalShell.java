@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
@@ -62,6 +63,21 @@ public class RandomCalShell {
 
     return re;
     
+  }
+  
+  /**
+   * get all metadata from the function in a single file
+   * @param exp
+   * @return
+   */
+  public static String getMetadataFromExp(RandomizedExperiment exp) {
+    String[] data = RandomizedPanel.getInsetString(exp);
+    StringBuilder sb = new StringBuilder();
+    for (String dataPart : data) {
+      sb.append(data);
+      sb.append('\n');
+    }
+    return sb.toString();
   }
   
   public static void main(String[] args) {
