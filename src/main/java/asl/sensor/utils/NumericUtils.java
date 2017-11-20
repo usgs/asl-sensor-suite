@@ -47,7 +47,7 @@ public class NumericUtils {
   }
   
   /**
-   * Complex comparator ordering by magnitude but listing all real-values first
+   * Complex comparator ordering by magnitude but listing pure-real values first
    * And then sorting complex numbers according to real value first, and then
    * by imaginary value if the real values match.
    * @author akearns
