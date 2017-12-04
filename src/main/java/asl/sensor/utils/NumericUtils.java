@@ -32,6 +32,15 @@ public class NumericUtils {
     
     @Override
     public int compare(Complex c1, Complex c2) {
+      
+      if (null == c1 && null == c2) {
+        return 0;
+      } else if (null == c1) {
+        return -1;
+      } else if (null == c2) {
+        return 1;
+      }
+      
       if( c1.abs() == c2.abs() ) {
         Double r1 = c1.getReal();
         Double r2 = c2.getReal();
@@ -62,6 +71,14 @@ public class NumericUtils {
     
     @Override
     public int compare(Complex c1, Complex c2) {
+      
+      if (null == c1 && null == c2) {
+        return 0;
+      } else if (null == c1) {
+        return -1;
+      } else if (null == c2) {
+        return 1;
+      }
       
       if( c1.getImaginary() == 0. && c2.getImaginary() == 0. ) {
         return (int) Math.signum( c1.getReal() - c2.getReal() );
