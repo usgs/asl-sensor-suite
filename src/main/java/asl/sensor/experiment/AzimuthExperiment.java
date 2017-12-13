@@ -111,9 +111,9 @@ public class AzimuthExperiment extends Experiment {
       double[] testNorth, double[] testEast, 
       double[] refNorth, long interval, long start, long end) {
     dataNames = new ArrayList<String>();
-    dataNames.add( "N" );
-    dataNames.add( "E" );
-    dataNames.add( "R" );
+    dataNames.add("N");
+    dataNames.add("E");
+    dataNames.add("R");
     simpleCalc = true;
     
     backend(testNorth.clone(), testEast.clone(), refNorth.clone(), 
