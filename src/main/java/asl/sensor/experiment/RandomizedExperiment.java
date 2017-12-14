@@ -226,8 +226,12 @@ extends Experiment implements ParameterValidator {
       // convert from displacement to velocity
       Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqsFull[i]);
       plottedResponse[i] = plottedResponse[i].multiply(scaleFactor);
-
     }
+    // 3-point moving average
+    // plottedResponse = 
+    //    NumericUtils.multipointMovingAverage(plottedResponse, 3);
+    // the range over the fit is trimmed from the full plot
+    // (i.e., we may fit up to 50% of nyquist but display up to 80% in HF cals)
     Complex[] estResponse = 
         Arrays.copyOfRange(plottedResponse, 0, freqs.length);
     
@@ -492,7 +496,6 @@ extends Experiment implements ParameterValidator {
     initialValues = new double[freqsFull.length * 2];
     fitValues = new double[freqsFull.length * 2];
     for (int i = 0; i < freqsFull.length; ++i) {
-
       int argIdx = freqsFull.length + i;
       initialValues[i] = init[i].abs();
       initialValues[argIdx] = NumericUtils.atanc(init[i]);

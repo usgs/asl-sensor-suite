@@ -394,6 +394,21 @@ public class TimeSeriesUtils {
   }
   
   /**
+   * Used to quickly get the data in a list of files, where the first
+   * file's first data is the SNCL to filter on. This is useful if loading in
+   * data from files that are known to not be multiplexed (i.e., containing
+   * only the data from a single channel).
+   * @param filename Filename of miniSEED data to load in
+   * @return Datablock representing the data inside the miniSEED
+   * @throws FileNotFoundException if given file from filename cannot be read
+   */
+  public static DataBlock getFirstTimeSeries(String[] filenames) 
+      throws FileNotFoundException {
+    String filter = getMplexNameList(filenames[0]).get(0);
+    return getTimeSeries(filenames, filter);
+  }
+  
+  /**
    * Get the set of available data series in a multiplexed miniseed file.
    * Because the list is derived from the set, the result of this function
    * should have no duplicate entries.
@@ -468,8 +483,7 @@ public class TimeSeriesUtils {
 
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
-   * list of Java numerics, which can be shorts, floats, doubles, or longs,
-   * reflecting the format of the data in the file which can be any of these.
+   * list of doubles according to a given filter (to handle multiplexed data).
    * This is packaged into a data structure that also includes the file's
    * metadata (station, channel, etc.) and the start time and period between
    * samples.
@@ -493,6 +507,34 @@ public class TimeSeriesUtils {
     return db;
 
   }
+  
+  /**
+   * Reads in the time series data from miniSEED files and concatenates it as a
+   * list of doubles according to a given filter (to handle multiplexed data).
+   * This is packaged into a data structure that also includes the file's
+   * metadata (station, channel, etc.) and the start time and period between
+   * samples.
+   * Some of this code is based on the miniseed to float array example given
+   * in the repository for the included seisFile miniSEED parser library;
+   * see the src/.../examples folder under
+   * https://github.com/crotwell/seisFile/ for more
+   * @param filename Each entry is full path of each file to be loaded in
+   * @param filter Specifies which data to load in, for multiplexed files
+   * @return A structure containing the time series and metadata for the file
+   * @throws FileNotFoundException If file cannot be read in
+   */
+  public static DataBlock getTimeSeries(String[] filenames, String filter)
+      throws FileNotFoundException {
+
+    // XYSeries xys = null;
+    DataBlock db = null;
+    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair = 
+        getTimeSeriesMap(filenames, filter);
+    db = mapToTimeSeries(intervalSeriesMapPair, filter);
+    return db;
+
+  }
+  
   
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
@@ -533,128 +575,151 @@ public class TimeSeriesUtils {
   public static Pair<Long, Map<Long, double[]>>
    getTimeSeriesMap(String filename, String filter) 
       throws FileNotFoundException {
+    
+    return getTimeSeriesMap(new String[]{filename}, filter);
+    
+  }
 
+    
+  /**
+   * Read in multiple miniseed files and concatenate data as long as the data
+   * refers to the SNCL data according to the provided filter. If a file does
+   * not have any data matching the filter, then its contents will not be added.
+   * This is useful for concatenating data automatically from day-crossing
+   * calibration data.
+   * @param filenames List of miniseed data
+   * @param filter SNCL data of relevant channel to get data from
+   * @return Paired value, first entry of which is the interval between points
+   * given as a long and second of which is a map from sample times to data 
+   * points from each given time value in the miniseed records
+   * @throws FileNotFoundException
+   */
+  public static Pair<Long, Map<Long, double[]>>
+    getTimeSeriesMap(String[] filenames, String filter) 
+       throws FileNotFoundException {  
     long interval = 0L;
     DataInputStream dis;
     
     Map<Long, double[]> timeListMap = new HashMap<Long, double[]>();
     
-    int byteSize = 512;
-    try {
-      byteSize = getByteSize(filename);
-    } catch (FileNotFoundException e1) {
-      throw e1;
-    }
+    for (String filename : filenames) {
+      int byteSize = 512;
+      try {
+        byteSize = getByteSize(filename);
+      } catch (FileNotFoundException e1) {
+        throw e1;
+      }
 
-    try {
-      dis = new DataInputStream(  new FileInputStream(filename) );
+      try {
+        dis = new DataInputStream(  new FileInputStream(filename) );
 
-      while ( true ) {
+        while ( true ) {
 
-        try {
-          SeedRecord sr = SeedRecord.read(dis, byteSize);
-          if (sr instanceof DataRecord) {
-            DataRecord dr = (DataRecord)sr;
-            DataHeader dh = dr.getHeader();
-            String seriesID = extractName(dh);
+          try {
+            SeedRecord sr = SeedRecord.read(dis, byteSize);
+            if (sr instanceof DataRecord) {
+              DataRecord dr = (DataRecord)sr;
+              DataHeader dh = dr.getHeader();
+              String seriesID = extractName(dh);
 
-            if ( !seriesID.equals(filter) ){
-              // System.out.println(seriesID);
-              continue; // skip to next seedRecord
-            }
-
-            byte af = dh.getActivityFlags();
-            byte correctionFlag = 0b00000010; // is there a time correction?
-            int correction = 0;
-            if ( (af & correctionFlag) != 0 ) {
-              correction = dh.getTimeCorrection();
-            }
-            if (correction > 0) {
-              System.out.println("Time correction? " + correction);
-            }
-            Btime bt = dh.getStartBtime();
-
-            // convert Btime to milliseconds
-            long start = bt.convertToCalendar().getTimeInMillis();
-            start += correction / 10; // correction in tenths of millis
-            //start = (start * 10) + bt.getTenthMilli();
-
-            int fact = dh.getSampleRateFactor();
-            int mult = dh.getSampleRateMultiplier();
-
-            // we can assume interval is consistent through a file
-            if( fact > 0 && mult > 0) {
-              interval = ONE_HZ_INTERVAL / (fact * mult);
-            } else if (fact > 0 && mult < 0) {
-              interval = Math.abs( (ONE_HZ_INTERVAL * mult) / fact);
-            } else if (fact < 0 && mult > 0) {
-              interval = Math.abs( (ONE_HZ_INTERVAL * fact) / mult);
-            } else {
-              interval = ONE_HZ_INTERVAL * fact * mult;
-            }
-
-            DecompressedData decomp = dr.decompress();
-
-            // get the original datatype of the series (loads data faster)
-            // otherwise the decompressed data gets converted (cloned) as
-            // the other type instead
-            int dataType = decomp.getType();
-            double[] values = new double[dr.getHeader().getNumSamples()];
-
-            switch (dataType) {
-            case B1000Types.INTEGER:
-              int[] decomArrayInt = decomp.getAsInt();
-              for (int i = 0; i < decomArrayInt.length; ++i) {
-                Number dataPoint = decomArrayInt[i]; 
-                values[i] = dataPoint.doubleValue();
+              if ( !seriesID.equals(filter) ){
+                // System.out.println(seriesID);
+                continue; // skip to next seedRecord
               }
-              break;
-            case B1000Types.FLOAT:
-              float[] decomArrayFlt = decomp.getAsFloat();
-              for (int i = 0; i < decomArrayFlt.length; ++i) {
-                Number dataPoint = decomArrayFlt[i]; 
-                values[i] = dataPoint.doubleValue();
-              }
-              break;
-            case B1000Types.SHORT:
-              short[] decomArrayShr = decomp.getAsShort();
-              for (int i = 0; i < decomArrayShr.length; ++i) {
-                Number dataPoint = decomArrayShr[i]; 
-                values[i] = dataPoint.doubleValue();
-              }
-              break;
-            default:
-              double[] decomArrayDbl = decomp.getAsDouble();
-              for (int i = 0; i < decomArrayDbl.length; ++i) {
-                values[i] = decomArrayDbl[i];
-              }
-              break;
-            }
-            
-            timeListMap.put(start, values);
 
+              byte af = dh.getActivityFlags();
+              byte correctionFlag = 0b00000010; // is there a time correction?
+              int correction = 0;
+              if ( (af & correctionFlag) != 0 ) {
+                correction = dh.getTimeCorrection();
+              }
+              if (correction > 0) {
+                System.out.println("Time correction? " + correction);
+              }
+              Btime bt = dh.getStartBtime();
+
+              // convert Btime to milliseconds
+              long start = bt.convertToCalendar().getTimeInMillis();
+              start += correction / 10; // correction in tenths of millis
+              //start = (start * 10) + bt.getTenthMilli();
+
+              int fact = dh.getSampleRateFactor();
+              int mult = dh.getSampleRateMultiplier();
+
+              // we can assume interval is consistent through a file
+              if( fact > 0 && mult > 0) {
+                interval = ONE_HZ_INTERVAL / (fact * mult);
+              } else if (fact > 0 && mult < 0) {
+                interval = Math.abs( (ONE_HZ_INTERVAL * mult) / fact);
+              } else if (fact < 0 && mult > 0) {
+                interval = Math.abs( (ONE_HZ_INTERVAL * fact) / mult);
+              } else {
+                interval = ONE_HZ_INTERVAL * fact * mult;
+              }
+
+              DecompressedData decomp = dr.decompress();
+
+              // get the original datatype of the series (loads data faster)
+              // otherwise the decompressed data gets converted (cloned) as
+              // the other type instead
+              int dataType = decomp.getType();
+              double[] values = new double[dr.getHeader().getNumSamples()];
+
+              switch (dataType) {
+              case B1000Types.INTEGER:
+                int[] decomArrayInt = decomp.getAsInt();
+                for (int i = 0; i < decomArrayInt.length; ++i) {
+                  Number dataPoint = decomArrayInt[i]; 
+                  values[i] = dataPoint.doubleValue();
+                }
+                break;
+              case B1000Types.FLOAT:
+                float[] decomArrayFlt = decomp.getAsFloat();
+                for (int i = 0; i < decomArrayFlt.length; ++i) {
+                  Number dataPoint = decomArrayFlt[i]; 
+                  values[i] = dataPoint.doubleValue();
+                }
+                break;
+              case B1000Types.SHORT:
+                short[] decomArrayShr = decomp.getAsShort();
+                for (int i = 0; i < decomArrayShr.length; ++i) {
+                  Number dataPoint = decomArrayShr[i]; 
+                  values[i] = dataPoint.doubleValue();
+                }
+                break;
+              default:
+                double[] decomArrayDbl = decomp.getAsDouble();
+                for (int i = 0; i < decomArrayDbl.length; ++i) {
+                  values[i] = decomArrayDbl[i];
+                }
+                break;
+              }
+              
+              timeListMap.put(start, values);
+
+            }
+          } catch(EOFException e) {
+            break;
           }
-        } catch(EOFException e) {
-          break;
-        }
 
-      } // end infinite while loop (read until EOF)
+        } // end infinite while loop (read until EOF)
 
-    } catch (FileNotFoundException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (IOException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (SeedFormatException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (UnsupportedCompressionType e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (CodecException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
+      } catch (FileNotFoundException e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      } catch (IOException e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      } catch (SeedFormatException e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      } catch (UnsupportedCompressionType e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      } catch (CodecException e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      }
     }
 
     return new Pair<Long, Map<Long, double[]>>(interval, timeListMap);

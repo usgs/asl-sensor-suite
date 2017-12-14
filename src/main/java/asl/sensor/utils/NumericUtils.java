@@ -2,6 +2,7 @@ package asl.sensor.utils;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -31,6 +32,15 @@ public class NumericUtils {
     
     @Override
     public int compare(Complex c1, Complex c2) {
+      
+      if (null == c1 && null == c2) {
+        return 0;
+      } else if (null == c1) {
+        return -1;
+      } else if (null == c2) {
+        return 1;
+      }
+      
       if( c1.abs() == c2.abs() ) {
         Double r1 = c1.getReal();
         Double r2 = c2.getReal();
@@ -46,7 +56,7 @@ public class NumericUtils {
   }
   
   /**
-   * Complex comparator ordering by magnitude but listing all real-values first
+   * Complex comparator ordering by magnitude but listing pure-real values first
    * And then sorting complex numbers according to real value first, and then
    * by imaginary value if the real values match.
    * @author akearns
@@ -61,6 +71,14 @@ public class NumericUtils {
     
     @Override
     public int compare(Complex c1, Complex c2) {
+      
+      if (null == c1 && null == c2) {
+        return 0;
+      } else if (null == c1) {
+        return -1;
+      } else if (null == c2) {
+        return 1;
+      }
       
       if( c1.getImaginary() == 0. && c2.getImaginary() == 0. ) {
         return (int) Math.signum( c1.getReal() - c2.getReal() );
@@ -133,6 +151,39 @@ public class NumericUtils {
     DecimalFormatSymbols symbols = df.getDecimalFormatSymbols();
     symbols.setInfinity("Inf.");
     df.setDecimalFormatSymbols(symbols);
+  }
+  
+  public static Complex[] multipointMovingAverage(Complex[] nums, int points) {
+    Complex[] out = new Complex[nums.length];
+    Complex[] cached = new Complex[points];
+    for (int i = 0; i < cached.length; ++i) {
+     cached[i] = Complex.ZERO;
+    }
+    Complex windowedAverage = Complex.ZERO;
+    for (int i = 0; i < nums.length; ++i) {
+      int cacheIdx = i % points;
+      Complex temp = cached[cacheIdx];
+      windowedAverage = windowedAverage.subtract(temp);
+      cached[cacheIdx] = nums[i].divide(points);
+      windowedAverage = windowedAverage.add(cached[cacheIdx]);
+      out[i] = windowedAverage;
+    }
+    return out;
+  }
+  
+  public static double[] multipointMovingAverage(double[] nums, int points) {
+    double[] out = new double[nums.length];
+    double[] cached = new double[points];
+    double windowedAverage = 0.;
+    for (int i = 0; i < nums.length; ++i) {
+      int cacheIdx = i % points;
+      double temp = cached[cacheIdx];
+      windowedAverage = windowedAverage - temp;
+      cached[cacheIdx] = nums[i] / points;
+      windowedAverage = windowedAverage + cached[cacheIdx];
+      out[i] = windowedAverage;
+    }
+    return out;
   }
   
   /**

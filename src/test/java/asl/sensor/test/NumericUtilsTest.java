@@ -35,6 +35,16 @@ public class NumericUtilsTest {
       assertTrue( cs.get(i).equals(csl[i]) );
     }
   }
+  
+  @Test
+  public void movingAverageCorrectValues() {
+    double[] averaged = new double[]{1./3.,  1.0, 2.0, 3.0, 4.0};
+    double[] init = new double[]{1., 2., 3., 4., 5.};
+    double[] test = NumericUtils.multipointMovingAverage(init, 3);
+    for (int i = 0; i < test.length; ++i) {
+      assertEquals(averaged[i], test[i], 1E-25);
+    }
+  }
 
 }
   

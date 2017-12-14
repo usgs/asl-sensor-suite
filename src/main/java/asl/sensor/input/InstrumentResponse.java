@@ -180,13 +180,17 @@ public class InstrumentResponse {
 
   private List<Complex> getSortedPoleKeys() {
     ArrayList<Complex> list = new ArrayList<Complex>( poles.keySet() );
-    NumericUtils.complexMagnitudeSorter(list);
+    if (list.size() > 1) {
+      NumericUtils.complexMagnitudeSorter(list);
+    }
     return list;
   }
   
   private List<Complex> getSortedZeroKeys() {
     ArrayList<Complex> list = new ArrayList<Complex>( zeros.keySet() );
-    NumericUtils.complexMagnitudeSorter(list);
+    if ( list.size() > 1 ) {
+      NumericUtils.complexMagnitudeSorter(list);
+    }
     return list;
   }
   
