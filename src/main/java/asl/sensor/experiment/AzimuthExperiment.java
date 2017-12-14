@@ -70,8 +70,11 @@ public class AzimuthExperiment extends Experiment {
   public static boolean 
   alignedAntipolar(double[] rot, double[] ref, int len) {
     
+    double[] refTrim = Arrays.copyOfRange(ref, 0, len);
+    double[] rotTrim = Arrays.copyOfRange(rot, 0, len);
+    
     PearsonsCorrelation pc = new PearsonsCorrelation();
-    double cor = pc.correlation(ref, rot);
+    double cor = pc.correlation(refTrim, rotTrim);
     if (cor < 0) {
       return true;
     }

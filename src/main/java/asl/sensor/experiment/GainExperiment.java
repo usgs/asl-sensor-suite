@@ -220,7 +220,7 @@ public class GainExperiment extends Experiment {
     int max = freqs.length - 1;
     double peakFreq = freqs[center];
     
-    double lowFreq = Math.max( peakFreq / Math.sqrt(2), freqs[0] );
+    double lowFreq = Math.max( peakFreq / Math.sqrt(2), 0.001 );
     double highFreq = Math.min( peakFreq * Math.sqrt(2), freqs[max] );
     
     return new double[]{lowFreq, highFreq};
