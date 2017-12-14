@@ -19,6 +19,7 @@ org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -68,6 +69,16 @@ public class AzimuthExperiment extends Experiment {
    */
   public static boolean 
   alignedAntipolar(double[] rot, double[] ref, int len) {
+    
+    PearsonsCorrelation pc = new PearsonsCorrelation();
+    double cor = pc.correlation(ref, rot);
+    if (cor < 0) {
+      return true;
+    }
+
+    return false;
+    
+    /*
     int numSameSign = 0; int numDiffSign = 0;
     for (int i = 0; i < len; ++i) {
       int sigRot = (int) Math.signum(rot[i]);
@@ -81,6 +92,7 @@ public class AzimuthExperiment extends Experiment {
     }
     
     return numSameSign < numDiffSign;
+    */
     
   }
   private double offset = 0.;
