@@ -39,7 +39,7 @@ public class NoiseTest {
   }
   
   public XYSeriesCollection setUpTest1() throws FileNotFoundException {
-    String folder = "test-data/noise_1/";
+    String folder = "test-data/noise-neg159db/";
     String[] data = new String[3];
     data[0] = "00_BH0.512.seed";
     data[1] = "10_BH0.512.seed";
@@ -70,7 +70,7 @@ public class NoiseTest {
   }
   
   public XYSeriesCollection setUpTest2() throws FileNotFoundException {
-    String folder = "test-data/noise_1Hz/";
+    String folder = "test-data/noise-neg160db/";
     String[] data = new String[3];
     data[0] = "00_LH0.512.seed";
     data[1] = "10_LH0.512.seed";

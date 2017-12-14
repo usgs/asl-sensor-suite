@@ -1061,7 +1061,7 @@ implements ActionListener, ChangeListener {
    * @param ir InstrumentResponse that was read-in
    */
   private void respEpochWarn(InstrumentResponse ir) {
-    System.out.println("EPOCHS: " + ir.getEpochsCounted());
+    // System.out.println("EPOCHS: " + ir.getEpochsCounted());
     if ( ir.getEpochsCounted() > 1 ) {
       String name = ir.getName();
       String warning = "NOTE: Response " + name + " has multiple epochs.\n";

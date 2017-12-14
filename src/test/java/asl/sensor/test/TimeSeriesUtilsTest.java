@@ -601,7 +601,7 @@ public class TimeSeriesUtilsTest {
   
   @Test
   public void testInputParsing1() {
-    String dataFolderName = "test-data/random_cal/"; 
+    String dataFolderName = "test-data/random-high-32+70i/"; 
     String extension = "_EC0.512.seed";    
     String testID = "1_Cal";
     doInputParseTest(dataFolderName, extension, testID);
