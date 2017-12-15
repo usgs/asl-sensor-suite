@@ -55,21 +55,34 @@ import asl.sensor.utils.TimeSeriesUtils;
 public class AzimuthExperiment extends Experiment {
   
   /**
-   * Check if data is aligned antipolar or not (signs of data are inverted).
-   * This is done by getting a range of data and seeing whether more data
-   * have the same sign or different signs. This is necessary because the
-   * data is fit by coherence, which is optimized by both the angle x and the
-   * angle 180 + x, so the solver chooses the closest one to the initial angle.
+   * Check if data is aligned antipolar or not (signs of data are inverted)
+   * by determining if the Pearson's correlation metric is positive or not.
    * @param rot Data that has been rotated and may be 180 degrees off from
-   * correct orientation
+   * correct orientation (i.e., should but may not be aligned with reference)
+   * @param ref Data that is to be used as reference with known orientation
+   * @return True if more data analysed has opposite signs than matching signs
+   * (i.e., one signal is positive and one is negative)
+   */
+  public static boolean
+  alignedAntipolar(double[] rot, double[] ref) {
+    
+    int len = ref.length;
+    return alignedAntipolar(rot, ref, len);
+  }
+    
+  /**
+   * Check if data is aligned antipolar or not (signs of data are inverted)
+   * by determining if the Pearson's correlation metric is positive or not.
+   * @param rot Data that has been rotated and may be 180 degrees off from
+   * correct orientation (i.e., should but may not be aligned with reference)
    * @param ref Data that is to be used as reference with known orientation
    * @param len Amount of data to be analysed for sign matching
    * @return True if more data analysed has opposite signs than matching signs
    * (i.e., one signal is positive and one is negative)
    */
-  public static boolean 
+  public static boolean
   alignedAntipolar(double[] rot, double[] ref, int len) {
-    
+
     double[] refTrim = Arrays.copyOfRange(ref, 0, len);
     double[] rotTrim = Arrays.copyOfRange(rot, 0, len);
     
@@ -234,7 +247,7 @@ public class AzimuthExperiment extends Experiment {
     // how much data we need (i.e., iteration length) to check 10 seconds
     // used when checking if alignment is off by 180 degrees
     int tenSecondsLength = (int)  ( sps * 10 ) + 1;
-    int hundredSecLen = tenSecondsLength * 10;
+    // int hundredSecLen = tenSecondsLength * 10;
     
     if (simpleCalc) {
       
@@ -245,6 +258,7 @@ public class AzimuthExperiment extends Experiment {
       angle = angle % NumericUtils.TAU;
       
       // check if we need to rotate by 180 degrees
+      // (unlikely, assume in simple case sensors near-aligned)
       double[] rot = 
           TimeSeriesUtils.rotate(testNorth, testEast, angle);
       
@@ -389,7 +403,7 @@ public class AzimuthExperiment extends Experiment {
         TimeSeriesUtils.rotate(testNorth, testEast, angle);
     double[] refTimeSeries = refNorth;
     
-    if ( alignedAntipolar(rotTimeSeries, refTimeSeries, hundredSecLen) ) {
+    if ( alignedAntipolar(rotTimeSeries, refTimeSeries) ) {
       angle += Math.PI; // still in radians
       angle = angle % NumericUtils.TAU; // keep between 0 and 360
     }
