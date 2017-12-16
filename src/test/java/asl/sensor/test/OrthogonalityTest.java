@@ -74,7 +74,7 @@ public class OrthogonalityTest {
     
     System.out.println( orth.getFitAngle() );
     System.out.println( Arrays.toString( orth.getSolutionParams() ) );
-    assertEquals( 94., orth.getFitAngle(), 1. );
+    assertEquals( 95., orth.getFitAngle(), 1. );
     
   }
   
