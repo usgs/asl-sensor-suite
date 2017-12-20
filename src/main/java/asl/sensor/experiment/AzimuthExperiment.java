@@ -400,9 +400,11 @@ public class AzimuthExperiment extends Experiment {
     // would be inverted from the original. so get 10 seconds of data and check
     // to see if the data is all on the same side of 0.
     
+    /*
     double[] rotTimeSeries = 
         TimeSeriesUtils.rotate(testNorth, testEast, angle);
     double[] refTimeSeries = refNorth;
+    */
     
     /*
     if ( alignedAntipolar(rotTimeSeries, refTimeSeries, antipolarTrimLen) ) {
@@ -539,13 +541,13 @@ public class AzimuthExperiment extends Experiment {
   /**
    * Jacobian function for the azimuth solver. Takes in the directional
    * signal components (DataBlocks) and the angle to evaluate at and produces
-   * the coherence at that point and the forward difference
+   * the correlation at that point and the forward difference
    * @param point Current angle
    * @param refNorth Reference sensor, facing north
    * @param testNorth Test sensor, facing approximately north
    * @param testEast Test sensor, facing approximately east and orthogonal to
    * testNorth
-   * @return Coherence (RealVector) and forward difference 
+   * @return Correlation (RealVector) and forward difference 
    * approximation of the Jacobian (RealMatrix) at the current angle
    */
   private Pair<RealVector, RealMatrix> jacobian(
@@ -560,23 +562,26 @@ public class AzimuthExperiment extends Experiment {
     double theta = ( point.getEntry(0) );
     double thetaDelta = theta + diff;
     
+    // frequency range under examination (in Hz)
     double lowFreq = 1./18.;
     double highFreq = 1./3.;
     
-
+    // angles of rotation are x, x+dx respectively
     double[] testRotated = 
         TimeSeriesUtils.rotate(testNorth, testEast, theta);
     double[] rotatedDiff =
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
     
+    // take the power of each signal
     FFTResult rotatedPower = 
         FFTResult.spectralCalc(testRotated, testRotated, interval);
     FFTResult refPower = 
         FFTResult.spectralCalc(refNorth, refNorth, interval);
     FFTResult fdiffPower = 
         FFTResult.spectralCalc(rotatedDiff, rotatedDiff, interval);
-    double[] freqs = rotatedPower.getFreqs();
+    double[] freqs = rotatedPower.getFreqs(); // frequency range
     double deltaFrq = freqs[1];
+    // get the data under the frequency range as abs values
     int idx0 = (int) (lowFreq / deltaFrq);
     int idx1 = (int) Math.ceil(highFreq / deltaFrq);
     int len = idx1 - idx0;
@@ -601,7 +606,11 @@ public class AzimuthExperiment extends Experiment {
     double[][] jacobianArray = new double[][]{{change}};
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
     return new Pair<RealVector, RealMatrix>(valueVec, jacobian);
+    
     /*
+    // this is the old code that used a correlation calculation
+    // similar to how the cal solvers deconvolve responses
+    // commented out because it can't distinguish 180-out rotation
     FFTResult crossPower = 
         FFTResult.spectralCalc(refNorth, testRotated, interval);
     FFTResult rotatedPower = 
