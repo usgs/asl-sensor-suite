@@ -201,12 +201,16 @@ public class AzimuthPanel extends ExperimentPanel {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     double value = az.getOffset();
     double angle = az.getFitAngle();
-    String angleStr = "FIT ANGLE: " + df.format(angle);
+    StringBuilder angleStr = new StringBuilder();
+    angleStr.append( "FIT ANGLE: " + df.format(angle) );
     double result = ( (value + angle) % 360 + 360) % 360;
 
-    angleStr += " + " + df.format(value) + " = " + df.format(result);
-    angleStr += " (+/- " + df.format( az.getUncertainty() ) + ")";
-    return angleStr;
+    angleStr.append( " + " + df.format(value) + " = " + df.format(result) );
+    angleStr.append(" (+/- " + df.format( az.getUncertainty() ) + ")");
+    if( !az.hadEnoughPoints() ) {
+      angleStr.append(" | WARNING: SMALL RANGE");
+    }
+    return angleStr.toString();
   }
   
   @Override
@@ -231,7 +235,7 @@ public class AzimuthPanel extends ExperimentPanel {
     XYPlot xyp;
     
     expResult.runExperimentOnData(ds);
-    List<XYSeriesCollection> allData = expResult.getData();
+    List<XYSeriesCollection> allData = az.getData();
     XYSeriesCollection polars = allData.get(0);
     
     /*
@@ -260,7 +264,6 @@ public class AzimuthPanel extends ExperimentPanel {
     plot.clearCornerTextItems();
     plot.addCornerTextItem(angleStr);
     
-
     XYSeriesCollection angleEstim = allData.get(1);
     XYSeriesCollection coherEstim = allData.get(2);
     String titleEst = expType.getName() + " Accuracy Estimation";
@@ -276,11 +279,23 @@ public class AzimuthPanel extends ExperimentPanel {
     xyp.setRenderer(1, renderer);
     xyp.setRangeAxis( 0, new NumberAxis("Angle est. (deg)") );
     xyp.setRangeAxis( 1, new NumberAxis("Coherence est.") );
-    NumberAxis xAx = new NumberAxis("Time window start");
+    NumberAxis xAx = new NumberAxis("Time offset of window start (s)");
     xAx.setAutoRangeIncludesZero(false);
     xyp.setDomainAxis(xAx);
     xyp.mapDatasetToRangeAxis(0, 0);
     xyp.mapDatasetToRangeAxis(1, 1);
+    
+    if ( !az.hadEnoughPoints() ) {
+      xyp = estimChart.getXYPlot();
+      TextTitle result = new TextTitle();
+      result.setText("WARNING: NOT ENOUGH DATA FOR WINDOWED COHERENCE ESTIMATION");
+      result.setBackgroundPaint(Color.red);
+      result.setPaint(Color.white);
+      XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
+          RectangleAnchor.CENTER);
+      xyp.clearAnnotations();
+      xyp.addAnnotation(xyt);
+    }
     
     /*
     estimChart = 

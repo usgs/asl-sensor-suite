@@ -342,14 +342,15 @@ public class AzimuthExperiment extends Experiment {
       sortedCoherence.add(coherence);
     }
     
-    if (angleCoherenceMap.size() < 1) {
+    int minCoherences = 5;
+    if (angleCoherenceMap.size() < minCoherences) {
       fireStateChange("Window size too small for good angle estimation...");
-      angle = Math.toDegrees( angleVector.getEntry(0) );
+      angle = angleVector.getEntry(0);
     } else {
       // get the best-coherence estimations of angle and average them
       enoughPts = true;
       Collections.sort(sortedCoherence); // now it's actually sorted
-      int maxBoundary = Math.max(5, sortedCoherence.size() * 3 / 20);
+      int maxBoundary = Math.max(minCoherences, sortedCoherence.size() * 3 / 20);
       sortedCoherence = sortedCoherence.subList(0, maxBoundary);
       Set<Double> acceptableCoherences = new HashSet<Double>(sortedCoherence);
       
@@ -447,11 +448,13 @@ public class AzimuthExperiment extends Experiment {
     xysc.addSeries(timeMapCoherence);
     
     for ( long time : angleCoherenceMap.keySet() ) {
-      double angle = angleCoherenceMap.get(time).getFirst();
-      double coherence = angleCoherenceMap.get(time).getSecond();
-      timeMapCoherence.add(time, coherence);
-      timeMapAngle.add( time, Math.toDegrees(angle) );
+        long xVal = time / 1000;
+        double angle = angleCoherenceMap.get(time).getFirst();
+        double coherence = angleCoherenceMap.get(time).getSecond();
+        timeMapCoherence.add(xVal, coherence);
+        timeMapAngle.add( xVal, Math.toDegrees(angle) );
     }
+
     
     xySeriesData.add( new XYSeriesCollection(timeMapAngle) );
     xySeriesData.add( new XYSeriesCollection(timeMapCoherence) );
@@ -729,4 +732,11 @@ public class AzimuthExperiment extends Experiment {
     simpleCalc = isSimple;
   }
   
+  /**
+   * Returns true if there were enough points to do correlation windowing step
+   * @return Boolean that is true if correlation windows were taken
+   */
+  public boolean hadEnoughPoints() {
+    return enoughPts;
+  }
 }
