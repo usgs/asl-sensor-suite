@@ -41,7 +41,7 @@ public class TimeSeriesUtils {
    */
   public final static int TIME_FACTOR = 1;
   /**
-   * Interval for data that has been sampled at 1 Hz in tenths-of-milliseconds
+   * Interval for data that has been sampled at 1 Hz in milliseconds
    */
   public final static long ONE_HZ_INTERVAL = 1000L * TIME_FACTOR;
   
