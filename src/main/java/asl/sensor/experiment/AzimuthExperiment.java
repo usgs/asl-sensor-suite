@@ -345,7 +345,8 @@ public class AzimuthExperiment extends Experiment {
     int minCoherences = 5;
     if (angleCoherenceMap.size() < minCoherences) {
       fireStateChange("Window size too small for good angle estimation...");
-      angle = angleVector.getEntry(0);
+      double tau = NumericUtils.TAU;
+      angle = ( ( angleVector.getEntry(0) % tau) + tau ) % tau;
     } else {
       // get the best-coherence estimations of angle and average them
       enoughPts = true;
