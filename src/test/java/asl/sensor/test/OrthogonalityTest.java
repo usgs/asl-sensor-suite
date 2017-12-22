@@ -26,7 +26,7 @@ public class OrthogonalityTest {
     DataStore ds = new DataStore();
     
     String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/test-data/orthogonality/";
+    String folder = currentDir + "/test-data/orthog-94/";
     String[] prefixes = new String[4];
     prefixes[0] = "00_LH1";
     prefixes[1] = "00_LH2";
@@ -74,7 +74,7 @@ public class OrthogonalityTest {
     
     System.out.println( orth.getFitAngle() );
     System.out.println( Arrays.toString( orth.getSolutionParams() ) );
-    assertEquals( 94., orth.getFitAngle(), 1. );
+    assertEquals( 95., orth.getFitAngle(), 1. );
     
   }
   

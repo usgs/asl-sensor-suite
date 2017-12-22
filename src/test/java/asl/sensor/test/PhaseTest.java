@@ -86,7 +86,7 @@ public class PhaseTest {
   public DataStore setUpTest1() throws IOException {
 
     List<String> fileList = new ArrayList<String>();
-    String dataFolderName = "test-data/random_cal/";
+    String dataFolderName = "test-data/random-high-32+70i/";
     String respName = testRespName;
     String calName =  dataFolderName + "_EC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
@@ -187,7 +187,7 @@ public DataStore setUpTest3() throws IOException {
       return ds;
     }
   
-  @Test
+  //@Test
   public void testFFTDriver() {
     int[] tests = new int[]{1,3,4};
     // yes, folks, that's right, the abhorrent for-case paradigm

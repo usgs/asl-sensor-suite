@@ -54,22 +54,37 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class AzimuthExperiment extends Experiment {
   
-  /**
-   * Check if data is aligned antipolar or not (signs of data are inverted).
-   * This is done by getting a range of data and seeing whether more data
-   * have the same sign or different signs. This is necessary because the
-   * data is fit by coherence, which is optimized by both the angle x and the
-   * angle 180 + x, so the solver chooses the closest one to the initial angle.
+  /*
+   * Check if data is aligned antipolar or not (signs of data are inverted)
+   * by determining if the Pearson's correlation metric is positive or not.
    * @param rot Data that has been rotated and may be 180 degrees off from
-   * correct orientation
+   * correct orientation (i.e., should but may not be aligned with reference)
+   * @param ref Data that is to be used as reference with known orientation
+   * @return True if more data analysed has opposite signs than matching signs
+   * (i.e., one signal is positive and one is negative)
+   */
+  /*
+  public static boolean
+  alignedAntipolar(double[] rot, double[] ref) {
+    // TODO: add bandpass filter? what are the relevant frequencies?
+    int len = ref.length;
+    return alignedAntipolar(rot, ref, len);
+  }
+  */
+    
+  /**
+   * Check if data is aligned antipolar or not (signs of data are inverted)
+   * by determining if the Pearson's correlation metric is positive or not.
+   * @param rot Data that has been rotated and may be 180 degrees off from
+   * correct orientation (i.e., should but may not be aligned with reference)
    * @param ref Data that is to be used as reference with known orientation
    * @param len Amount of data to be analysed for sign matching
    * @return True if more data analysed has opposite signs than matching signs
    * (i.e., one signal is positive and one is negative)
    */
-  public static boolean 
+  public static boolean
   alignedAntipolar(double[] rot, double[] ref, int len) {
-    
+
     double[] refTrim = Arrays.copyOfRange(ref, 0, len);
     double[] rotTrim = Arrays.copyOfRange(rot, 0, len);
     
@@ -101,11 +116,12 @@ public class AzimuthExperiment extends Experiment {
   private double offset = 0.;
   
   private double angle, uncert;
-  private double[] freqs;
+  // private double[] freqs;
   
-  private double[] coherence;
+  // private double[] coherence;
   
   private boolean simpleCalc; // used for nine-noise calculation
+  private boolean enoughPts; // enough points in range for estimation?
   
   public AzimuthExperiment() {
     super();
@@ -133,10 +149,6 @@ public class AzimuthExperiment extends Experiment {
     
     backend(testNorth.clone(), testEast.clone(), refNorth.clone(), 
         interval, start, end);
-  }
-  
-  protected void backend() {
-    
   }
   
   @Override
@@ -179,6 +191,8 @@ public class AzimuthExperiment extends Experiment {
       double[] testNorth, double[] testEast, 
       double[] refNorth, long interval, long startTime, long endTime) {
 
+    enoughPts = false;
+    
     TimeSeriesUtils.demean(testNorth);
     TimeSeriesUtils.demean(testEast);
     TimeSeriesUtils.demean(refNorth);
@@ -204,12 +218,6 @@ public class AzimuthExperiment extends Experiment {
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
     
     
-    /*
-    // first is rel. tolerance, second is abs. tolerance
-    ConvergenceChecker<LeastSquaresProblem.Evaluation> cv = 
-        new EvaluationRmsChecker(1E-3, 1E-3);
-    */
-    
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
         model(jacobian).
@@ -217,12 +225,11 @@ public class AzimuthExperiment extends Experiment {
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
         lazyEvaluation(false).
-        //checker(cv).
         build();
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1E-15).
-        withParameterRelativeTolerance(1E-15);
+        withCostRelativeTolerance(1E-5).
+        withParameterRelativeTolerance(1E-5);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -233,8 +240,8 @@ public class AzimuthExperiment extends Experiment {
     
     // how much data we need (i.e., iteration length) to check 10 seconds
     // used when checking if alignment is off by 180 degrees
-    int tenSecondsLength = (int)  ( sps * 10 ) + 1;
-    int hundredSecLen = tenSecondsLength * 10;
+    // int tenSecondsLength = (int)  ( sps * 10 ) + 1;
+    // int antipolarTrimLen = tenSecondsLength * 100; // thousand secs?
     
     if (simpleCalc) {
       
@@ -244,13 +251,16 @@ public class AzimuthExperiment extends Experiment {
       angle = tempAngle;
       angle = angle % NumericUtils.TAU;
       
+      /*
       // check if we need to rotate by 180 degrees
+      // (unlikely, assume in simple case sensors near-aligned)
       double[] rot = 
           TimeSeriesUtils.rotate(testNorth, testEast, angle);
       
       if ( alignedAntipolar(rot, refNorth, 2 * tenSecondsLength) ) {
         angle += Math.PI; // still in radians
       }
+      */
       
       angle = ( (angle % NumericUtils.TAU) + NumericUtils.TAU) 
           % NumericUtils.TAU;
@@ -259,7 +269,7 @@ public class AzimuthExperiment extends Experiment {
     }
     
     // angleVector is our new best guess for the azimuth
-    // now let's cut the data into 2000-sec windows with 500-sec overlap
+    // now let's cut the data into 1000-sec windows with 500-sec overlap
     // store the angle and resulting correlation of each window
     // and then take the best-correlation angles and average them
     long timeRange = endTime - startTime;
@@ -285,9 +295,11 @@ public class AzimuthExperiment extends Experiment {
       
       fireStateChange(newStatus);
       
+      /*
       if (timeRange < 2 * twoThouSecs) {
         break;
       }
+      */
       
       // get start and end indices from given times
       long wdStart = fiveHundSecs * i; // start of 500s-sliding window
@@ -317,25 +329,29 @@ public class AzimuthExperiment extends Experiment {
       
       RealVector angleVectorWindow = optimumY.getPoint();
       double angleTemp = angleVectorWindow.getEntry(0);
-      
+      double coherence = jacobian.value(angleVectorWindow).getFirst().getEntry(0);
+      /*
       double coherenceAvg = 0;
       for (double cVal : coherence) {
         coherenceAvg += cVal;
       }
       coherenceAvg /= coherence.length;
-      
+      */
       angleCoherenceMap.put(
-          wdStart, new Pair<Double, Double>(angleTemp, coherenceAvg) );
-      sortedCoherence.add(coherenceAvg);
+          wdStart, new Pair<Double, Double>(angleTemp, coherence) );
+      sortedCoherence.add(coherence);
     }
     
-    if (angleCoherenceMap.size() < 1) {
+    int minCoherences = 5;
+    if (angleCoherenceMap.size() < minCoherences) {
       fireStateChange("Window size too small for good angle estimation...");
-      angle = Math.toDegrees( angleVector.getEntry(0) );
+      double tau = NumericUtils.TAU;
+      angle = ( ( angleVector.getEntry(0) % tau) + tau ) % tau;
     } else {
       // get the best-coherence estimations of angle and average them
-      Collections.sort(sortedCoherence);
-      int maxBoundary = Math.max(5, sortedCoherence.size() * 3 / 20);
+      enoughPts = true;
+      Collections.sort(sortedCoherence); // now it's actually sorted
+      int maxBoundary = Math.max(minCoherences, sortedCoherence.size() * 3 / 20);
       sortedCoherence = sortedCoherence.subList(0, maxBoundary);
       Set<Double> acceptableCoherences = new HashSet<Double>(sortedCoherence);
       
@@ -378,21 +394,23 @@ public class AzimuthExperiment extends Experiment {
       
     }
 
-    fireStateChange("Solver completed, checking if anti-polar...");
-    
+    fireStateChange("Solver completed! Producing plots...");
+
+    /*
     // solver produces angle of x, 180+x that is closer to reference
     // if angle is ~180 degrees away from reference in reality, then the signal
     // would be inverted from the original. so get 10 seconds of data and check
     // to see if the data is all on the same side of 0.
-    
+
     double[] rotTimeSeries = 
         TimeSeriesUtils.rotate(testNorth, testEast, angle);
     double[] refTimeSeries = refNorth;
-    
-    if ( alignedAntipolar(rotTimeSeries, refTimeSeries, hundredSecLen) ) {
+
+    if ( alignedAntipolar(rotTimeSeries, refTimeSeries, antipolarTrimLen) ) {
       angle += Math.PI; // still in radians
       angle = angle % NumericUtils.TAU; // keep between 0 and 360
     }
+    */
     
     double angleDeg = Math.toDegrees(angle);
     
@@ -417,10 +435,12 @@ public class AzimuthExperiment extends Experiment {
     xysc.addSeries(fromNorth);
     xySeriesData.add(xysc);
     
+    /*
     XYSeries coherenceSeries = new XYSeries("Per-freq. coherence of best-fit");
     for (int i = 0; i < freqs.length; ++i) {
       coherenceSeries.add(freqs[i], coherence[i]);
     }
+    */
     
     xysc = new XYSeriesCollection();
     XYSeries timeMapAngle = new XYSeries("Best-fit angle per window");
@@ -429,15 +449,17 @@ public class AzimuthExperiment extends Experiment {
     xysc.addSeries(timeMapCoherence);
     
     for ( long time : angleCoherenceMap.keySet() ) {
-      double angle = angleCoherenceMap.get(time).getFirst();
-      double coherence = angleCoherenceMap.get(time).getSecond();
-      timeMapCoherence.add(time, coherence);
-      timeMapAngle.add( time, Math.toDegrees(angle) );
+        long xVal = time / 1000;
+        double angle = angleCoherenceMap.get(time).getFirst();
+        double coherence = angleCoherenceMap.get(time).getSecond();
+        timeMapCoherence.add(xVal, coherence);
+        timeMapAngle.add( xVal, Math.toDegrees(angle) );
     }
+
     
-    xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
     xySeriesData.add( new XYSeriesCollection(timeMapAngle) );
     xySeriesData.add( new XYSeriesCollection(timeMapCoherence) );
+    // xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
   }
   
   @Override
@@ -520,13 +542,13 @@ public class AzimuthExperiment extends Experiment {
   /**
    * Jacobian function for the azimuth solver. Takes in the directional
    * signal components (DataBlocks) and the angle to evaluate at and produces
-   * the coherence at that point and the forward difference
+   * the correlation at that point and the forward difference
    * @param point Current angle
    * @param refNorth Reference sensor, facing north
    * @param testNorth Test sensor, facing approximately north
    * @param testEast Test sensor, facing approximately east and orthogonal to
    * testNorth
-   * @return Coherence (RealVector) and forward difference 
+   * @return Correlation (RealVector) and forward difference 
    * approximation of the Jacobian (RealMatrix) at the current angle
    */
   private Pair<RealVector, RealMatrix> jacobian(
@@ -536,16 +558,60 @@ public class AzimuthExperiment extends Experiment {
       final double[] testEast,
       final long interval) {
     
+    double diff = 1E-5;
+    
     double theta = ( point.getEntry(0) );
+    double thetaDelta = theta + diff;
     
-    double diff = 1E-2;
-    
+    // frequency range under examination (in Hz)
     double lowFreq = 1./18.;
     double highFreq = 1./3.;
     
+    // angles of rotation are x, x+dx respectively
     double[] testRotated = 
         TimeSeriesUtils.rotate(testNorth, testEast, theta);
+    double[] rotatedDiff =
+        TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
     
+    // take the power of each signal
+    FFTResult rotatedPower = 
+        FFTResult.spectralCalc(testRotated, testRotated, interval);
+    FFTResult refPower = 
+        FFTResult.spectralCalc(refNorth, refNorth, interval);
+    FFTResult fdiffPower = 
+        FFTResult.spectralCalc(rotatedDiff, rotatedDiff, interval);
+    double[] freqs = rotatedPower.getFreqs(); // frequency range
+    double deltaFrq = freqs[1];
+    // get the data under the frequency range as abs values
+    int idx0 = (int) (lowFreq / deltaFrq);
+    int idx1 = (int) Math.ceil(highFreq / deltaFrq);
+    int len = idx1 - idx0;
+    double[] rotPwr = new double[len];
+    double[] refPwr = new double[len];
+    double[] fdfPwr = new double[len];
+    for (int i = 0; i < len; ++i) {
+      int srcIdx = i + idx0;
+      double ref = refPower.getFFT(srcIdx).abs();
+      double rot = rotatedPower.getFFT(srcIdx).abs();
+      double dif = fdiffPower.getFFT(srcIdx).abs();
+      refPwr[i] = ref;
+      rotPwr[i] = rot;
+      fdfPwr[i] = dif;
+    }
+    
+    PearsonsCorrelation pc = new PearsonsCorrelation();
+    double value = pc.correlation(refPwr, rotPwr);
+    RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
+    double deltaY = pc.correlation(refPwr, fdfPwr);
+    double change = (deltaY - value) / diff;
+    double[][] jacobianArray = new double[][]{{change}};
+    RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
+    return new Pair<RealVector, RealMatrix>(valueVec, jacobian);
+    
+    /*
+    // this is the old code that used a correlation calculation
+    // similar to how the cal solvers deconvolve responses
+    // commented out because it can't distinguish 180-out rotation
     FFTResult crossPower = 
         FFTResult.spectralCalc(refNorth, testRotated, interval);
     FFTResult rotatedPower = 
@@ -644,6 +710,7 @@ public class AzimuthExperiment extends Experiment {
     RealMatrix jbn = MatrixUtils.createRealMatrix(jacobianArray);
     
     return new Pair<RealVector, RealMatrix>(curValue, jbn);
+    */
   }
 
   /**
@@ -666,4 +733,11 @@ public class AzimuthExperiment extends Experiment {
     simpleCalc = isSimple;
   }
   
+  /**
+   * Returns true if there were enough points to do correlation windowing step
+   * @return Boolean that is true if correlation windows were taken
+   */
+  public boolean hadEnoughPoints() {
+    return enoughPts;
+  }
 }

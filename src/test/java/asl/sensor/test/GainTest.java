@@ -22,7 +22,7 @@ public class GainTest {
     DataStore ds = new DataStore();
     
     String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/test-data/relativeGain/";
+    String folder = currentDir + "/test-data/relativeGain100/";
     String[] prefixes = new String[2];
     prefixes[0] = "00_BHZ";
     prefixes[1] = "10_BHZ";
@@ -43,7 +43,7 @@ public class GainTest {
       ds.setBlock(i, fName, seriesName);
     }
     
-    folder = currentDir + "/test-data/relativeGain/";
+    folder = currentDir + "/test-data/relativeGain100/";
     String[] rnames = new String[2];
     rnames[0] = "RESP.IU.ANMO.00.BHZ_gainx100";
     //rnames[0] = "RESP.IU.ANMO.00.BHZ";

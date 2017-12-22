@@ -46,7 +46,8 @@ public class AzimuthPanel extends ExperimentPanel {
   private static final long serialVersionUID = 4088024342809622854L;
   private static final DecimalFormat df = new DecimalFormat("#.###");
   JSpinner offsetSpinner;
-  JFreeChart angleChart, coherenceChart, estimChart;
+  JFreeChart angleChart, estimChart;
+  // JFreeChart coherenceChart;
   
   JComboBox<String> chartSelector;
 
@@ -65,7 +66,7 @@ public class AzimuthPanel extends ExperimentPanel {
     
     chartSelector = new JComboBox<String>();
     chartSelector.addItem("Azimuth angle");
-    chartSelector.addItem("Coherence");
+    //chartSelector.addItem("Coherence");
     chartSelector.addItem("Estimation");
     chartSelector.setSelectedItem(0);
     chartSelector.addActionListener(this);
@@ -85,9 +86,11 @@ public class AzimuthPanel extends ExperimentPanel {
     chart = angleChart;
     chartPanel.setChart(chart);
     
+    /*
     coherenceChart = 
         ChartFactory.createXYLineChart( expType.getName() + " Coherence",
         "Frequency (Hz)", "Coherence of best-fit angle", null);
+    */
     
     estimChart = 
         ChartFactory.createXYLineChart( expType.getName() + " Windowing",
@@ -190,7 +193,7 @@ public class AzimuthPanel extends ExperimentPanel {
   
   @Override
   public JFreeChart[] getCharts() {
-    return new JFreeChart[]{angleChart, coherenceChart, estimChart};
+    return new JFreeChart[]{angleChart, /*coherenceChart,*/ estimChart};
   }
   
   @Override
@@ -198,12 +201,16 @@ public class AzimuthPanel extends ExperimentPanel {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     double value = az.getOffset();
     double angle = az.getFitAngle();
-    String angleStr = "FIT ANGLE: " + df.format(angle);
+    StringBuilder angleStr = new StringBuilder();
+    angleStr.append( "FIT ANGLE: " + df.format(angle) );
     double result = ( (value + angle) % 360 + 360) % 360;
 
-    angleStr += " + " + df.format(value) + " = " + df.format(result);
-    angleStr += " (+/- " + df.format( az.getUncertainty() ) + ")";
-    return angleStr;
+    angleStr.append( " + " + df.format(value) + " = " + df.format(result) );
+    angleStr.append(" (+/- " + df.format( az.getUncertainty() ) + ")");
+    if( !az.hadEnoughPoints() ) {
+      angleStr.append(" | WARNING: SMALL RANGE");
+    }
+    return angleStr.toString();
   }
   
   @Override
@@ -225,21 +232,24 @@ public class AzimuthPanel extends ExperimentPanel {
     AzimuthExperiment az = (AzimuthExperiment) expResult;
     az.setOffset(value);
     
+    XYPlot xyp;
+    
     expResult.runExperimentOnData(ds);
-    
-    List<XYSeriesCollection> allData = expResult.getData();
-    
+    List<XYSeriesCollection> allData = az.getData();
     XYSeriesCollection polars = allData.get(0);
-    XYSeriesCollection xysc = allData.get(1);
     
+    /*
+    XYSeriesCollection xysc = allData.get(3); // coherence per-frequency
     coherenceChart = ChartFactory.createXYLineChart( 
         expType.getName() + " Coherence", "Frequency (Hz)", "Coherence", xysc);
+    */
     
     angleChart = ChartFactory.createPolarChart( expType.getName(),
         polars, true, true, false);
     
     String angleStr = getInsetStrings();
-    
+
+    /*
     XYPlot xyp = (XYPlot) coherenceChart.getPlot();
     TextTitle title = new TextTitle(angleStr);
     title.setBackgroundPaint(Color.white);
@@ -248,16 +258,17 @@ public class AzimuthPanel extends ExperimentPanel {
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
     // plot.addCornerTextItem(angleStr);
+    */
     
     PolarPlot plot = (PolarPlot) angleChart.getPlot();
     plot.clearCornerTextItems();
     plot.addCornerTextItem(angleStr);
     
+    XYSeriesCollection angleEstim = allData.get(1);
+    XYSeriesCollection coherEstim = allData.get(2);
     String titleEst = expType.getName() + " Accuracy Estimation";
     estimChart = ChartFactory.createXYLineChart( titleEst,
-        "xaxis", "yaxis", xysc);
-    XYSeriesCollection angleEstim = allData.get(2);
-    XYSeriesCollection coherEstim = allData.get(3);
+        "xaxis", "yaxis", angleEstim);
     xyp = estimChart.getXYPlot();
     xyp.setDataset(0, angleEstim);
     xyp.setDataset(1, coherEstim);
@@ -268,11 +279,23 @@ public class AzimuthPanel extends ExperimentPanel {
     xyp.setRenderer(1, renderer);
     xyp.setRangeAxis( 0, new NumberAxis("Angle est. (deg)") );
     xyp.setRangeAxis( 1, new NumberAxis("Coherence est.") );
-    NumberAxis xAx = new NumberAxis("Time window start");
+    NumberAxis xAx = new NumberAxis("Time offset of window start (s)");
     xAx.setAutoRangeIncludesZero(false);
     xyp.setDomainAxis(xAx);
     xyp.mapDatasetToRangeAxis(0, 0);
     xyp.mapDatasetToRangeAxis(1, 1);
+    
+    if ( !az.hadEnoughPoints() ) {
+      xyp = estimChart.getXYPlot();
+      TextTitle result = new TextTitle();
+      result.setText("WARNING: NOT ENOUGH DATA FOR WINDOWED COHERENCE ESTIMATION");
+      result.setBackgroundPaint(Color.red);
+      result.setPaint(Color.white);
+      XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
+          RectangleAnchor.CENTER);
+      xyp.clearAnnotations();
+      xyp.addAnnotation(xyt);
+    }
     
     /*
     estimChart = 

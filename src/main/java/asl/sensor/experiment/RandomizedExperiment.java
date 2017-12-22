@@ -667,6 +667,14 @@ extends Experiment implements ParameterValidator {
   }
   
   /**
+   * Provides a handle to the fit response object for parameter output
+   * @return the best-fit response
+   */
+  public InstrumentResponse getFitResponse() {
+    return fitResponse;
+  }
+  
+  /**
    * Get the zeros fitted from the experiment
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */

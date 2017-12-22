@@ -46,7 +46,7 @@ import asl.sensor.utils.TimeSeriesUtils;
 
 public class RandomizedExperimentTest {
 
-  String testRespName = "test-data/random_cal/RESP.XX.NS088..BHZ.STS1.360.2400";
+  String testRespName = "test-data/random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
   
   public DataStore getFromList(List<String> setUpFilenames) throws IOException {
     
@@ -447,7 +447,7 @@ public class RandomizedExperimentTest {
     
     List<String> fileList = new ArrayList<String>();
     String respName = testRespName;
-    String dataFolderName = "test-data/random_cal/"; 
+    String dataFolderName = "test-data/random-high-32+70i/"; 
     String calName =  dataFolderName + "_EC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     
