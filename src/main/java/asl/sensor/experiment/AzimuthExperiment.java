@@ -586,17 +586,21 @@ public class AzimuthExperiment extends Experiment {
     int idx0 = (int) (lowFreq / deltaFrq);
     int idx1 = (int) Math.ceil(highFreq / deltaFrq);
     int len = idx1 - idx0;
-    double[] rotPwr = new double[len];
-    double[] refPwr = new double[len];
-    double[] fdfPwr = new double[len];
+    double[] rotPwr = new double[len * 2];
+    double[] refPwr = new double[len * 2];
+    double[] fdfPwr = new double[len * 2];
     for (int i = 0; i < len; ++i) {
       int srcIdx = i + idx0;
-      double ref = refPower.getFFT(srcIdx).abs();
-      double rot = rotatedPower.getFFT(srcIdx).abs();
-      double dif = fdiffPower.getFFT(srcIdx).abs();
-      refPwr[i] = ref;
-      rotPwr[i] = rot;
-      fdfPwr[i] = dif;
+      int phsIdx = i + len;
+      Complex ref = refPower.getFFT(srcIdx);
+      Complex rot = rotatedPower.getFFT(srcIdx);
+      Complex dif = fdiffPower.getFFT(srcIdx);
+      refPwr[i] = ref.abs();
+      rotPwr[i] = rot.abs();
+      fdfPwr[i] = dif.abs();
+      refPwr[phsIdx] = NumericUtils.atanc(ref);
+      rotPwr[phsIdx] = NumericUtils.atanc(rot);
+      fdfPwr[phsIdx] = NumericUtils.atanc(dif);
     }
     
     PearsonsCorrelation pc = new PearsonsCorrelation();

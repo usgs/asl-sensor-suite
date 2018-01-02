@@ -128,7 +128,7 @@ public class OrthogonalExperiment extends Experiment {
     // TODO: FIX THIS
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.runExperimentOnData(findTestY);
-    double angleY = -azi.getFitAngle();
+    double angleY = -azi.getFitAngle(); // degrees
     azi.runExperimentOnData(findTestX);
     double angleX = -azi.getFitAngle();
     
