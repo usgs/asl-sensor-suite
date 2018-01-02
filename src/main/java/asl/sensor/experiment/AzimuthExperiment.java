@@ -193,13 +193,13 @@ public class AzimuthExperiment extends Experiment {
 
     enoughPts = false;
     
-    TimeSeriesUtils.demean(testNorth);
-    TimeSeriesUtils.demean(testEast);
-    TimeSeriesUtils.demean(refNorth);
+    double[] initTestNorth = TimeSeriesUtils.demean(testNorth);
+    double[] initTestEast = TimeSeriesUtils.demean(testEast);
+    double[] initRefNorth =TimeSeriesUtils.demean(refNorth);
 
-    TimeSeriesUtils.detrend(testNorth);
-    TimeSeriesUtils.detrend(testEast);
-    TimeSeriesUtils.detrend(refNorth);
+    initTestNorth = TimeSeriesUtils.detrend(initTestNorth);
+    initTestEast = TimeSeriesUtils.detrend(initTestEast);
+    initRefNorth = TimeSeriesUtils.detrend(initRefNorth);
     
     // originally had normalization step here, but that harmed the estimates
     
@@ -207,12 +207,12 @@ public class AzimuthExperiment extends Experiment {
     double low = 1./8;
     double high = 1./4;
     
-    testNorth = FFTResult.bandFilter(testNorth, sps, low, high);
-    testEast = FFTResult.bandFilter(testEast, sps, low, high);
-    refNorth = FFTResult.bandFilter(refNorth, sps, low, high);
+    initTestNorth = FFTResult.bandFilter(initTestNorth, sps, low, high);
+    initTestEast = FFTResult.bandFilter(initTestEast, sps, low, high);
+    initRefNorth = FFTResult.bandFilter(initRefNorth, sps, low, high);
     
     MultivariateJacobianFunction jacobian = 
-        getJacobianFunction(testNorth, testEast, refNorth, interval);
+        getJacobianFunction(initTestNorth, initTestEast, initRefNorth, interval);
     
     // want mean coherence to be as close to 1 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
@@ -228,8 +228,8 @@ public class AzimuthExperiment extends Experiment {
         build();
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1E-5).
-        withParameterRelativeTolerance(1E-5);
+        withCostRelativeTolerance(1E-7).
+        withParameterRelativeTolerance(1E-7);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -311,6 +311,14 @@ public class AzimuthExperiment extends Experiment {
       double[] testNorthWin = Arrays.copyOfRange(testNorth, startIdx, endIdx);
       double[] testEastWin = Arrays.copyOfRange(testEast, startIdx, endIdx);
       double[] refNorthWin = Arrays.copyOfRange(refNorth, startIdx, endIdx);
+      
+      testNorthWin = TimeSeriesUtils.detrend(testNorthWin);
+      testEastWin = TimeSeriesUtils.detrend(testEastWin);
+      refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
+      
+      testNorthWin = FFTResult.bandFilter(testNorthWin, sps, low, high);
+      testEastWin = FFTResult.bandFilter(testEastWin, sps, low, high);
+      refNorthWin = FFTResult.bandFilter(refNorthWin, sps, low, high);
       
       jacobian = 
           getJacobianFunction(testNorthWin, testEastWin, refNorthWin, interval);
@@ -495,7 +503,7 @@ public class AzimuthExperiment extends Experiment {
    */
   private MultivariateJacobianFunction 
   getJacobianFunction(double[] l1, double[] l2, double[] l3, 
-      long interval) {
+      long interval) {    
     
     // make my func the j-func, I want that func-y stuff
     MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
@@ -558,14 +566,14 @@ public class AzimuthExperiment extends Experiment {
       final double[] testEast,
       final long interval) {
     
-    double diff = 1E-5;
+    double diff = 1E-7;
     
     double theta = ( point.getEntry(0) );
     double thetaDelta = theta + diff;
     
-    // frequency range under examination (in Hz)
-    double lowFreq = 1./18.;
-    double highFreq = 1./3.;
+    // was the frequency range under examination (in Hz) when doing coherence
+    // double lowFreq = 1./18.;
+    // double highFreq = 1./3.;
     
     // angles of rotation are x, x+dx respectively
     double[] testRotated = 
@@ -573,46 +581,19 @@ public class AzimuthExperiment extends Experiment {
     double[] rotatedDiff =
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
     
-    // take the power of each signal
-    FFTResult rotatedPower = 
-        FFTResult.spectralCalc(testRotated, testRotated, interval);
-    FFTResult refPower = 
-        FFTResult.spectralCalc(refNorth, refNorth, interval);
-    FFTResult fdiffPower = 
-        FFTResult.spectralCalc(rotatedDiff, rotatedDiff, interval);
-    double[] freqs = rotatedPower.getFreqs(); // frequency range
-    double deltaFrq = freqs[1];
-    // get the data under the frequency range as abs values
-    int idx0 = (int) (lowFreq / deltaFrq);
-    int idx1 = (int) Math.ceil(highFreq / deltaFrq);
-    int len = idx1 - idx0;
-    double[] rotPwr = new double[len * 2];
-    double[] refPwr = new double[len * 2];
-    double[] fdfPwr = new double[len * 2];
-    for (int i = 0; i < len; ++i) {
-      int srcIdx = i + idx0;
-      int phsIdx = i + len;
-      Complex ref = refPower.getFFT(srcIdx);
-      Complex rot = rotatedPower.getFFT(srcIdx);
-      Complex dif = fdiffPower.getFFT(srcIdx);
-      refPwr[i] = ref.abs();
-      rotPwr[i] = rot.abs();
-      fdfPwr[i] = dif.abs();
-      refPwr[phsIdx] = NumericUtils.atanc(ref);
-      rotPwr[phsIdx] = NumericUtils.atanc(rot);
-      fdfPwr[phsIdx] = NumericUtils.atanc(dif);
-    }
-    
     PearsonsCorrelation pc = new PearsonsCorrelation();
-    double value = pc.correlation(refPwr, rotPwr);
+    double value = pc.correlation(refNorth, testRotated);
     RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
-    double deltaY = pc.correlation(refPwr, fdfPwr);
+    double deltaY = pc.correlation(refNorth, rotatedDiff);
     double change = (deltaY - value) / diff;
     double[][] jacobianArray = new double[][]{{change}};
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
     return new Pair<RealVector, RealMatrix>(valueVec, jacobian);
     
     /*
+    // was the frequency range under examination (in Hz) when doing coherence
+    double lowFreq = 1./18.;
+    double highFreq = 1./3.;     
     // this is the old code that used a correlation calculation
     // similar to how the cal solvers deconvolve responses
     // commented out because it can't distinguish 180-out rotation

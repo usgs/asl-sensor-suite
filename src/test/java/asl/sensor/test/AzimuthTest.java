@@ -71,7 +71,7 @@ public class AzimuthTest {
     azi.runExperimentOnData(ds);
     
     System.out.println( azi.getFitAngle() );
-    assertEquals( 16.0, azi.getFitAngle(), 1.0 );
+    assertEquals( 16.0, azi.getFitAngle(), 2. );
     
   }
   
@@ -128,7 +128,7 @@ public class AzimuthTest {
     
     System.out.println( azi.getFitAngle() );
     System.out.println("ANTIPOLAR TEST COMPLETED");
-    assertEquals( 16., azi.getFitAngle(), 1.0 );
+    assertEquals( 16., azi.getFitAngle(), 2. );
     
   }
   
@@ -187,7 +187,7 @@ public class AzimuthTest {
       ang -= 360.;
     }
     System.out.println( ang );
-    assertEquals( 0., ang, 0.75 );
+    assertEquals( 0., ang, 2. );
     
   }
 

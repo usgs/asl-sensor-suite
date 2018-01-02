@@ -124,15 +124,15 @@ public class TimeSeriesUtilsTest {
       timeSeries[i] = i;
     }
     
-    // System.out.println(timeSeries);
+    System.out.println(Arrays.toString(timeSeries));
     
     timeSeries = TimeSeriesUtils.decimate(timeSeries, interval40Hz, interval);
     
-    // System.out.println(timeSeries);
+    System.out.println(Arrays.toString(timeSeries));
     
     assertEquals(timeSeries.length, 4);
     for (int i = 0; i < timeSeries.length; ++i) {
-      assertEquals(timeSeries[i], 40. * i, 0.5);
+      assertEquals(timeSeries[i], 40. * i, 7.5);
     }
   }
   

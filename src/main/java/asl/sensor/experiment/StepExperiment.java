@@ -414,7 +414,7 @@ public class StepExperiment extends Experiment{
     
     // attempt to filter out additional noise
     returnValue = 
-        FFTResult.bandFilterWithCuts(returnValue, sps, 0.0, 0.1, 0.0, sps);
+        FFTResult.bandFilter(returnValue, sps, 0.0, 0.1);
     
     // trim out the ends
     returnValue = Arrays.copyOfRange(returnValue, cutAmount, upperBound);
