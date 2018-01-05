@@ -3,7 +3,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'application'
 
-version = '1.0.3'
+version = '1.0.4'
 
 mainClassName = 'asl.sensor.SensorSuite'
 // applicationDefaultJvmArgs = ["-Xms64m", "-Xmx30g"]
