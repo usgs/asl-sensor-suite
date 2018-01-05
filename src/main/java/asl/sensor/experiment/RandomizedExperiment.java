@@ -242,7 +242,7 @@ extends Experiment implements ParameterValidator {
     
     // scaling values, used to set curve values to 0 at 1Hz
     Complex scaleValue = estResponse[normalIdx];
-    double subtractBy = 10 * Math.log10( scaleValue.abs() );
+    double subtractBy = 20 * Math.log10( scaleValue.abs() );
     double rotateBy = NumericUtils.atanc(scaleValue);
     
     // data to fit poles to; first half of data is magnitudes of resp (dB)
@@ -273,7 +273,7 @@ extends Experiment implements ParameterValidator {
         observedResult[argIdx] = 0;
       } else {
         obsdAmps[i] = estValMag / scaleValue.abs();
-        observedResult[i] = 10 * Math.log10(estValMag);
+        observedResult[i] = 20 * Math.log10(estValMag);
         observedResult[i] -= subtractBy;
         
         double argument = phi;
@@ -310,7 +310,7 @@ extends Experiment implements ParameterValidator {
         argument = 0;
       } else {
         //estValMag /= scaleValue.abs();
-        estValMag = 10 * Math.log10(estValMag);
+        estValMag = 20 * Math.log10(estValMag);
         estValMag -= subtractBy;
         argument = phi;
       }
@@ -332,11 +332,11 @@ extends Experiment implements ParameterValidator {
     
     maxArgWeight = 1.; maxMagWeight = 0.;
     Complex weightScaler = estResponse[normalIdx];
-    double subtractWeight = 10 * Math.log10( weightScaler.abs() );
+    double subtractWeight = 20 * Math.log10( weightScaler.abs() );
     double rotateWeight = NumericUtils.atanc(weightScaler);
     for (int i = 0; i < estResponse.length; ++i) {
       // int argIdx = i + appResponse.length;
-      double magCandidate = 10 * Math.log10( estResponse[i].abs() );
+      double magCandidate = 20 * Math.log10( estResponse[i].abs() );
       magCandidate -= subtractWeight;
       double phiCandidate = Math.abs( NumericUtils.atanc(estResponse[i]) );
       phiCandidate -= rotateWeight;
@@ -587,7 +587,7 @@ extends Experiment implements ParameterValidator {
 
   private void scaleValues(double[] unrot) {
     int argStart = unrot.length / 2;
-    double unrotScaleAmp = 10*Math.log10(unrot[normalIdx]);
+    double unrotScaleAmp = 20 * Math.log10(unrot[normalIdx]);
     double unrotScaleArg = unrot[argStart + normalIdx];
     double phiPrev = 0;
     if (lowFreq) {
@@ -595,7 +595,7 @@ extends Experiment implements ParameterValidator {
     }
     for (int i = 0; i < argStart; ++i) {
       int argIdx = argStart + i;
-      double db = 10*Math.log10(unrot[i]);
+      double db = 20 * Math.log10(unrot[i]);
       unrot[i] = db - unrotScaleAmp;
       double phi = unrot[argIdx] - unrotScaleArg;
       phi = NumericUtils.unwrap(phi, phiPrev);

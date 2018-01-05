@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -26,14 +25,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
-import javax.imageio.ImageIO;
-
 import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
@@ -334,11 +330,11 @@ public class TimeSeriesUtilsTest {
       while ( true ) {
 
         try {
-          long interval = 0L;
+          // long interval = 0L;
           SeedRecord sr = SeedRecord.read(dis,4096);
           if(sr instanceof DataRecord) {
             DataRecord dr = (DataRecord)sr;
-            DataHeader dh = dr.getHeader();
+            // DataHeader dh = dr.getHeader();
            
             DecompressedData decomp = dr.decompress();
 

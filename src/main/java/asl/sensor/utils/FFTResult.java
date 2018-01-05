@@ -17,10 +17,7 @@ import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.InstrumentResponse;
-import uk.me.berndporr.iirj.Butterworth;
-import uk.me.berndporr.iirj.Cascade;
 import uk.me.berndporr.iirj.ChebyshevI;
-import uk.me.berndporr.iirj.ChebyshevII;
 
 /**
  * Holds the data returned from a power spectral density calculation
