@@ -4,56 +4,41 @@
 License
 =======
 
-Unless otherwise noted, This project is in the public domain in the United
-States because it contains materials that originally came from the United
-States Geological Survey, an agency of the United States Department of
-Interior. For more information, see the official USGS copyright policy at
-https://www2.usgs.gov/visual-id/credit_usgs.html#copyright
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Additionally, we waive copyright and related rights in the work
-worldwide through the CC0 1.0 Universal public domain dedication.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-
-CC0 1.0 Universal Summary
--------------------------
-
-This is a human-readable summary of the
-[Legal Code (read the full text)][1].
-
-
-### No Copyright
-
-The person who associated a work with this deed has dedicated the work to
-the public domain by waiving all of his or her rights to the work worldwide
-under copyright law, including all related and neighboring rights, to the
-extent allowed by law.
-
-You can copy, modify, distribute and perform the work, even for commercial
-purposes, all without asking permission.
-
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ### Other Information
 
-In no way are the patent or trademark rights of any person affected by CC0,
-nor are the rights that other persons may have in the work or in how the
-work is used, such as publicity or privacy rights.
+This project contains materials that originally came from the United
+States Geological Survey (USGS), an agency of the United States Department of
+Interior. For more information, see the official USGS copyright policy at
+https://www2.usgs.gov/visual-id/credit_usgs.html#copyright
 
-Unless expressly stated otherwise, the person who associated a work with
-this deed makes no warranties about the work, and disclaims liability for
-all uses of the work, to the fullest extent permitted by applicable law.
-When using or citing the work, you should not imply endorsement by the
-author or the affirmer.
+Code written by USGS employees is in the Public Domain in the United States.  
 
-[1]: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+As a collection, this software is licensed under the GPL.  
+[GNU/FSF guidance on the interaction of GPL code and US Government Code](https://www.gnu.org/licenses/gpl-faq.en.html#GPLUSGov)
+
+
 
 ### Sensor Test Suite
 
-	The Sensor Test Suite was created under contract at the Albuquerque Seismological Laboratory. 
-
-	Licensed as CC0 v1.0.
+	The Sensor Test Suite was created at the Albuquerque Seismological  
+	Laboratory. Authorship is noted in each file.
+	
 
 ### Libraries
-	Below are copyright notices for included libraries and exceptions to CC0
+	Below are copyright notices for included libraries:  
 
 ###### JFreeChart
 
@@ -84,8 +69,3 @@ author or the affirmer.
 	
 	URL: https://mvnrepository.com/artifact/commons-logging/commons-logging
 	License: Apache 2.0
-
-###### JUnit
-
-	URL: https://mvnrepository.com/artifact/junit/junit
-	License: Eclipse Public License (EPL) 1.0
