@@ -48,9 +48,7 @@ dependencies {
 }
 
 task jarMain(type: Jar) {
-
     baseName = rootProject.name
-
     manifest {
         attributes 'Implementation-Title': 'ASL Sensor Test Suite',
                 'Implementation-Version': version,
@@ -66,12 +64,18 @@ task jarMain(type: Jar) {
             it.isDirectory() ? it : zipTree(it)
         }
     }
-
     with jar
-
 }
 
-task jarCmd(type: Jar) {
+task jarServer(type: Jar) {
+    baseName = 'CalServer'
+
+    manifest {
+        attributes 'Implementation-Title': 'Calibration Processing Server(cmd)',
+                'Implementation-Version': version,
+                'Main-Class': 'asl.sensor.CalProcessingServer'
+    }
+
     from {
         configurations.compile.collect {
             it.isDirectory() ? it : zipTree(it)
@@ -80,15 +84,6 @@ task jarCmd(type: Jar) {
             it.isDirectory() ? it : zipTree(it)
         }
     }
-
-    baseName = 'RandomCalWrapper'
-
-    manifest {
-        attributes 'Implementation-Title': 'RandomCalSolver(cmd)',
-                'Implementation-Version': version,
-                'Main-Class': 'asl.sensor.RandomCalShell'
-    }
-
     with jar
 }
 
@@ -106,7 +101,7 @@ test {
     }
 }
 
-/*Turn off doclint since it is far too strict and breaks the javadoc everytime*/
+/*Turn off doclint since it is far too strict and breaks the javadoc every time*/
 if (JavaVersion.current().isJava8Compatible()) {
     allprojects {
         tasks.withType(Javadoc) {
@@ -129,10 +124,10 @@ task copyJar(type: Copy) {
 }
 
 
-task copyCmdJar(type: Copy) {
-    from jarCmd
+task copyServerJar(type: Copy) {
+    from jarServer
     into rootDir
 }
 
 
-build.dependsOn copyJar, copyCmdJar
+build.dependsOn copyJar, copyServerJar
