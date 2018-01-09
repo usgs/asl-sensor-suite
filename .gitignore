@@ -6,10 +6,8 @@ data/*
 responses/*
 !responses/readme.txt
 
-#.jar files
-*.jar
-
 .idea/
+out/
 
 # Mac
 .DS_Store
@@ -166,5 +164,4 @@ local.properties
 /.gradle/
 
 # jar files
-#
-.jar
+*.jar
