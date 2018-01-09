@@ -6,6 +6,9 @@ data/*
 responses/*
 !responses/readme.txt
 
+#.jar files
+*.jar
+
 .idea/
 
 # Mac
