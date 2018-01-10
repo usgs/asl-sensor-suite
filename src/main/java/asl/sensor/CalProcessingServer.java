@@ -29,9 +29,12 @@ import org.jfree.data.xy.XYSeriesCollection;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
+<<<<<<< HEAD:src/main/java/asl/sensor/CalProcessingServer.java
 /**
  * @author akearns
  */
+=======
+>>>>>>> ad27de6f62f4588000382b2b6766bd75e17b528d:src/main/java/asl/sensor/CalProcessingServer.java
 public class CalProcessingServer {
 
   public CalProcessingServer() {
@@ -42,15 +45,15 @@ public class CalProcessingServer {
    * Returns the experiment (all data kept locally to maintain thread safety)
    * @param calFileNameD1 Filename of calibration signal (day 1)
    * @param calFileNameD2 Filename of calibration signal (day 2)
-   * @param outFileName Filename of sensor output (day 1) 
-   * @param outFileName Filename of sensor output (day 2)
+   * @param outFileNameD1 Filename of sensor output (day 1)
+   * @param outFileNameD2 Filename of sensor output (day 2)
    * @param respName Filename of response to load in
    * @param respEmbd True if response is an embedded response in program
    * @param startTime Long representing ms-since-epoch of data start time
    * @param endTime Long representing ms-since-epoch of data end time
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
-   * @throw IOException If a string does not refer to a valid accessible file
+   * @throws IOException If a string does not refer to a valid accessible file
    */
   public RandData populateDataAndRun(String calFileNameD1, String calFileNameD2, 
       String outFileNameD1, String outFileNameD2, String respName, boolean respEmbd, long startTime,
@@ -88,7 +91,7 @@ public class CalProcessingServer {
    * @param endTime Long representing ms-since-epoch of data end time
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
-   * @throw IOException If a string does not refer to a valid accessible file
+   * @throws IOException If a string does not refer to a valid accessible file
    */
   public RandData populateDataAndRun(String calFileName, String outFileName, 
       String respName, boolean respEmbd, long startTime, long endTime, boolean lowFreq) 
@@ -123,7 +126,7 @@ public class CalProcessingServer {
     Complex[] fitZerosCpx = re.getFitResponse().getZeros().toArray(new Complex[]{});
     Complex[] fitPolesCpx = re.getFitResponse().getPoles().toArray(new Complex[]{});
     Complex[] initZerosCpx = ds.getResponse(1).getZeros().toArray(new Complex[]{});
-    Complex[] initPolesCpx = ds.getResponse(1).getZeros().toArray(new Complex[]{});
+    Complex[] initPolesCpx = ds.getResponse(1).getPoles().toArray(new Complex[]{});
     
     double[] zeros = new double[2 * fitZerosCpx.length];
     double[] initZeros = new double[zeros.length];
@@ -139,7 +142,7 @@ public class CalProcessingServer {
     for(int i = 0; i < fitPolesCpx.length; ++i) {
       int reIdx = 2 * i; int imIdx = reIdx + 1;
       poles[reIdx] = fitPolesCpx[i].getReal();
-      poles[imIdx] = fitZerosCpx[i].getImaginary();
+      poles[imIdx] = fitPolesCpx[i].getImaginary();
       initPoles[reIdx] = initPolesCpx[i].getReal();
       initPoles[imIdx] = initPolesCpx[i].getImaginary();
     }
