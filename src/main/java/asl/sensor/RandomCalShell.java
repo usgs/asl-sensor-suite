@@ -29,6 +29,9 @@ import org.jfree.data.xy.XYSeriesCollection;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
+/**
+ * @author akearns
+ */
 public class RandomCalShell {
 
   public RandomCalShell() {

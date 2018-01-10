@@ -22,6 +22,11 @@ import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.input.DataStore;
 
+/**
+ * Six-input extension for RelativeGain gui
+ * @author akearns
+ *
+ */
 public class GainSixPanel extends GainPanel {
   
   
