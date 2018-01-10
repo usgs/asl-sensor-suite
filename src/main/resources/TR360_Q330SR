@@ -45,7 +45,7 @@ B053F15-18     9  -7.20000E+03  -1.64700E+03  +0.00000E+00  +0.00000E+00
 #        +                  +---------------------------------------+                  +
 #        
 B058F03     Stage sequence number:                 1
-B058F04     Gain:                                  1.100000e+03
+B058F04     Gain:                                  1.187000e+03
 B058F05     Frequency of gain:                     2.000000e-02 HZ
 B058F06     Number of calibrations:                0
 #        
@@ -88,7 +88,7 @@ B058F06     Number of calibrations:                0
 #        +                  +---------------------------------------+                  +
 #        
 B058F03     Stage sequence number:                 0
-B058F04     Sensitivity:                           4.713734e+08
+B058F04     Sensitivity:                           4.978638e+08
 B058F05     Frequency of sensitivity:              2.000000e-02 HZ
 B058F06     Number of calibrations:                0
 #        
