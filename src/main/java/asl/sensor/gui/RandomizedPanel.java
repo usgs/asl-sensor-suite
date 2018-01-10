@@ -412,7 +412,7 @@ public class RandomizedPanel extends ExperimentPanel {
   }
   
   private void initAxes() {
-    String yAxisTitle = "10 * log10( RESP(f) )";
+    String yAxisTitle = "20 * log10( RESP(f) )";
     String xAxisTitle = "Frequency (Hz)";
     String prdAxisTitle = "Period (s)";
     String degreeAxisTitle = "phi(RESP(f))";
