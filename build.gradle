@@ -68,17 +68,13 @@ task jarMain(type: Jar) {
 }
 
 task jarServer(type: Jar) {
-<<<<<<< HEAD
-=======
     baseName = 'CalServer'
-
     manifest {
         attributes 'Implementation-Title': 'Calibration Processing Server(cmd)',
                 'Implementation-Version': version,
                 'Main-Class': 'asl.sensor.CalProcessingServer'
     }
 
->>>>>>> ad27de6f62f4588000382b2b6766bd75e17b528d
     from {
         configurations.compile.collect {
             it.isDirectory() ? it : zipTree(it)
@@ -87,18 +83,6 @@ task jarServer(type: Jar) {
             it.isDirectory() ? it : zipTree(it)
         }
     }
-<<<<<<< HEAD
-
-    baseName = 'CalServer'
-
-    manifest {
-        attributes 'Implementation-Title': 'Calibration Processing Server(cmd)',
-                'Implementation-Version': version,
-                'Main-Class': 'asl.sensor.CalProcessingServer'
-    }
-
-=======
->>>>>>> ad27de6f62f4588000382b2b6766bd75e17b528d
     with jar
 }
 
