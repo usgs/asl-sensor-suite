@@ -29,12 +29,9 @@ import org.jfree.data.xy.XYSeriesCollection;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
-<<<<<<< HEAD:src/main/java/asl/sensor/CalProcessingServer.java
 /**
  * @author akearns
  */
-=======
->>>>>>> ad27de6f62f4588000382b2b6766bd75e17b528d:src/main/java/asl/sensor/CalProcessingServer.java
 public class CalProcessingServer {
 
   public CalProcessingServer() {
