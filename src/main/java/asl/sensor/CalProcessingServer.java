@@ -32,9 +32,9 @@ import py4j.Py4JNetworkException;
 /**
  * @author akearns
  */
-public class RandomCalShell {
+public class CalProcessingServer {
 
-  public RandomCalShell() {
+  public CalProcessingServer() {
   }
   
   /**
@@ -267,7 +267,7 @@ public class RandomCalShell {
   }
   
   public static void main(String[] args) {
-    GatewayServer gatewayServer = new GatewayServer(new RandomCalShell());
+    GatewayServer gatewayServer = new GatewayServer(new CalProcessingServer());
     try {
       gatewayServer.start();
     } catch (Py4JNetworkException e){
