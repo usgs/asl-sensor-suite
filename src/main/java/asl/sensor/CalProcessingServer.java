@@ -13,9 +13,12 @@ import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -247,7 +250,25 @@ public class CalProcessingServer {
       pngByteArrays[i] = out.toByteArray();
     }
     
-    return new RandData(poles, zeros, initPoles, initZeros, pngByteArrays);
+    Map<String, List<Pair<Date, Date>>> gaps = re.getGapRegions();
+    String[] names = gaps.keySet().toArray(new String[]{});
+    Date[][] gapStarts = new Date[names.length][];
+    Date[][] gapEnds = new Date[names.length][];
+    for (int j = 0; j < names.length; ++j) {
+      String name = names[j];
+      List<Pair<Date, Date>> dates = gaps.get(name);
+      Date[] starts = new Date[dates.size()];
+      Date[] ends = new Date[dates.size()];
+      for (int i = 0; i < dates.size(); ++i) {
+        starts[i] = dates.get(i).getFirst();
+        ends[i] = dates.get(i).getSecond();
+      }
+      gapStarts[j] = starts;
+      gapEnds[j] = ends;
+    }
+    
+    return new RandData(poles, zeros, initPoles, initZeros, pngByteArrays, 
+        names, gapStarts, gapEnds);
     
   }
   
@@ -284,13 +305,20 @@ public class CalProcessingServer {
     private double[] fitPoles;
     private double[] fitZeros;
     private byte[][] pngs;
+    private String[] gapNameIdentifiers;
+    private Date[][] gapStarts;
+    private Date[][] gapEnds;
     
-    public RandData(double[] fp, double[] fz, double[] ip, double[] iz, byte[][] im) {
+    public RandData(double[] fp, double[] fz, double[] ip, double[] iz, byte[][] im, 
+        String[] nm, Date[][] gpa, Date[][] gpb) {
       fitPoles = fp;
       fitZeros = fz;
       initPoles = ip;
       initZeros = iz;
       pngs = im;
+      gapNameIdentifiers = nm;
+      gapStarts = gpa;
+      gapEnds = gpb;
     }
     
     public double[] getInitPoles() {
@@ -323,6 +351,18 @@ public class CalProcessingServer {
     
     public byte[] getPhaseErrorImage() {
       return pngs[3];
+    }
+    
+    public String[] getGapIdentifiers() {
+      return gapNameIdentifiers;
+    }
+    
+    public Date[][] getGapStartDates() {
+      return gapStarts;
+    }
+    
+    public Date[][] getGapEndDates() {
+      return gapEnds;
     }
   }
   
