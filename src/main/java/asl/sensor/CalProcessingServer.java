@@ -13,9 +13,12 @@ import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
@@ -363,6 +366,31 @@ public class CalProcessingServer {
     
     public Date[][] getGapEndDates() {
       return gapEnds;
+    }
+    
+    public String getGapInfoAsString() {
+      SimpleDateFormat sdf = new SimpleDateFormat("DD.HH:m:s");
+      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+      return getGapInfoAsString(sdf);
+    }
+    
+    public String getGapInfoAsString(DateFormat df) {
+      StringBuilder sb = new StringBuilder();
+      for (int j = 0; j < gapNameIdentifiers.length; ++j) {
+        sb.append(gapNameIdentifiers[j]);
+        sb.append(":\n");
+        for (int i = 0; i < gapStarts[j].length; ++i) {
+          sb.append("\t");
+          Date start = gapStarts[j][i];
+          Date end = gapEnds[j][i];
+          sb.append( df.format(start) );
+          sb.append("\t");
+          sb.append( df.format(end) );
+          sb.append("\n");
+        }
+        sb.append("\n");
+      }
+      return sb.toString();
     }
   }
   
