@@ -52,7 +52,7 @@ public class RandomizedExperiment
 extends Experiment implements ParameterValidator {
 
   private static final double DELTA = 1E-12;
-  public static final double PEAK_MULTIPLIER = 0.8;
+  public static final double PEAK_MULTIPLIER = 0.4;
       //NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
       // NumericUtils.PEAK_MULTIPLIER 
   
@@ -228,8 +228,7 @@ extends Experiment implements ParameterValidator {
       plottedResponse[i] = plottedResponse[i].multiply(scaleFactor);
     }
     // 3-point moving average
-    // plottedResponse = 
-    //    NumericUtils.multipointMovingAverage(plottedResponse, 3);
+    plottedResponse = NumericUtils.multipointMovingAverage(plottedResponse, 5);
     // the range over the fit is trimmed from the full plot
     // (i.e., we may fit up to 50% of nyquist but display up to 80% in HF cals)
     Complex[] estResponse = 

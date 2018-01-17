@@ -1,13 +1,16 @@
 package asl.sensor.experiment;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
 
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
@@ -109,6 +112,7 @@ public abstract class Experiment {
   // current set of experiments for this list: 
   // SEED, RESP (if used), SEED, RESP (if used), etc.
   // That is, place response files after their associated timeseries
+  protected Map<String, List<Pair<Date, Date>>> gapRegions;
   
   private EventListenerList eventHelper;
   
@@ -176,6 +180,17 @@ public abstract class Experiment {
    */
   public long getEnd() {
     return end;
+  }
+  
+  /**
+   * Returns a map from datablock name identifiers to pairs of dates
+   * representing regions within the given window where data does not exist
+   * Gaps in data can show up in experiments as noise or other glitches and
+   * may be evidence of a failing sensor in some cases
+   * @return Map from data names to 
+   */
+  public Map<String, List<Pair<Date, Date>>> getGapRegions() {
+    return gapRegions;
   }
   
   /**
@@ -260,6 +275,21 @@ public abstract class Experiment {
     xySeriesData = new ArrayList<XYSeriesCollection>();
     
     ds.matchIntervals( blocksNeeded() );
+    
+    gapRegions = new HashMap<String, List<Pair<Date, Date>>>();
+    for (int i = 0; i < blocksNeeded(); ++i) {
+      DataBlock block = ds.getBlock(i);
+      String name = block.getName();
+      // gaps already is calculated based on trimmed start and end times 
+      List<Pair<Long, Long>> gaps = block.getGapBoundaries();
+      List<Pair<Date, Date>> gapsAsDates = new ArrayList<Pair<Date, Date>>();
+      for (Pair<Long, Long> gap : gaps) {
+        Date start = new Date( gap.getFirst() );
+        Date end = new Date( gap.getSecond() );
+        gapsAsDates.add( new Pair<Date, Date>(start, end) );
+      }
+      gapRegions.put(name, gapsAsDates);
+    }
     
     fireStateChange("Beginning calculations...");
     

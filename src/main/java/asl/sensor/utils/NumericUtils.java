@@ -2,7 +2,6 @@ package asl.sensor.utils;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -10,7 +9,8 @@ import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 
 /**
- * Class containing methods to serve as math functions, mainly for angle calcs.
+ * Class containing methods to serve as math functions, mainly for angle calcs
+ * and operations (stats) on complex numbers
  * @author akearns
  *
  */
@@ -227,6 +227,61 @@ public class NumericUtils {
     }
     
     return out;
+  }
+
+  /**
+   * Get the mean of the PSD calculation within the specified range
+   * @param psd PSD calculation (frequency space / FFT)
+   * @param lower Starting index of window
+   * @param higher Ending index of window
+   * @return Mean of datapoints in the specific range
+   */
+  public static double getFFTMean(FFTResult psd, int lower, int higher) {
+    double result = 0;
+    int range = higher-lower;
+    
+    Complex[] data = psd.getFFT();
+    
+    for (int i = lower; i <= higher; ++i) {
+      if ( data[i].abs() >= Double.POSITIVE_INFINITY ) {
+        continue;
+      }
+      result += data[i].abs();
+    }
+    
+    return result/range; // since result is a double, no cast needed?
+    
+  }
+
+  /**
+   * PSD Standard deviation calculation given mean ratio and specified range
+   * (Get the result for mean calculation using the mean function before
+   * calling this calculation; does not call the function directly)
+   * @param fft1 first PSD (numerator) of relative gain standard deviation
+   * @param fft2 second PSD (denominator)
+   * @param meanRatio mean(fft1)/mean(fft2)
+   * @param lower Starting index of window (should be same used in mean calc)
+   * @param higher Ending index of window (should be same used in mean calc)
+   * @return double corresponding to standard deviation ratio over the window
+   */
+  public static double getFFTSDev(FFTResult fft1, FFTResult fft2, double meanRatio, 
+      int lower, int higher) {
+    Complex[] density1 = fft1.getFFT();
+    Complex[] density2 = fft2.getFFT();
+    double sigma = 0.;
+    for (int i = lower; i <= higher; ++i) {
+      double value1 = density1[i].abs();
+      double value2 = density2[i].abs();
+      
+      if (value1 >= Double.POSITIVE_INFINITY || 
+          value2 >= Double.POSITIVE_INFINITY) {
+        continue;
+      }
+      
+      sigma += Math.pow( (value1 / value2) - meanRatio, 2 );
+    }
+    
+    return Math.sqrt(sigma);
   }
   
 }

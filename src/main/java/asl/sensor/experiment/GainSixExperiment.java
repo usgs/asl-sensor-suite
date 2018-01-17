@@ -8,6 +8,14 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
 
+/**
+ * Augmented version of relative gain experiment that includes
+ * calculation of components in all 3 main dimensions; this will
+ * rotate north and east components into aligned orientation with
+ * the first sensor specified in the data store.
+ * @author akearns
+ *
+ */
 public class GainSixExperiment extends Experiment {
 
   private static final int DIMS = 3; // number of known space dimensions

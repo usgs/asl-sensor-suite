@@ -267,7 +267,7 @@ public class FFTResult {
       while (str != null) {
         String[] values = str.split("\\s+");
         double x = Double.parseDouble(values[0]); // period, in seconds
-        if (x > 1.0E3) {
+        if (x > 1.0E3 + 1) {
           break;
         }
         double y = Double.parseDouble(values[1]);
@@ -310,7 +310,7 @@ public class FFTResult {
       while (str != null) {
         String[] values = str.split("\\s+");
         double x = Double.parseDouble(values[0]); // period, in seconds
-        if (x > 1.0E3) {
+        if (x > 1.0E3 + 1) {
           break;
         }
         double y = Double.parseDouble(values[3]);

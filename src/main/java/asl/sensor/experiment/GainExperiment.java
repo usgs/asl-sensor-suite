@@ -11,6 +11,7 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * Gain experiment does tests to determine a relative gain value of a sensor's
@@ -60,63 +61,6 @@ public class GainExperiment extends Experiment {
     }
     
     return indices;
-  }
-  
-  /**
-   * Get the mean of the PSD calculation within the specified range
-   * @param psd PSD calculation (frequency space / FFT)
-   * @param lower Starting index of window
-   * @param higher Ending index of window
-   * @return Mean of datapoints in the specific range
-   */
-  private static double mean(FFTResult psd, int lower, int higher) {
-    double result = 0;
-    int range = higher-lower;
-    
-    Complex[] data = psd.getFFT();
-    
-    for (int i = lower; i <= higher; ++i) {
-      if ( data[i].abs() >= Double.POSITIVE_INFINITY ) {
-        continue;
-      }
-      result += data[i].abs();
-    }
-    
-    return result/range; // since result is a double, no cast needed?
-    
-  }
-  
-  /**
-   * PSD Standard deviation calculation given mean ratio and specified range
-   * (Get the result for mean calculation using the mean function before
-   * calling this calculation; does not call the function directly)
-   * @param fft1 first PSD (numerator) of relative gain standard deviation
-   * @param fft2 second PSD (denominator)
-   * @param meanRatio mean(fft1)/mean(fft2)
-   * @param lower Starting index of window (should be same used in mean calc)
-   * @param higher Ending index of window (should be same used in mean calc)
-   * @return double corresponding to standard deviation ratio over the window
-   */
-  private static double sdev(
-      FFTResult fft1, FFTResult fft2, 
-      double meanRatio, 
-      int lower, int higher) {
-    Complex[] density1 = fft1.getFFT();
-    Complex[] density2 = fft2.getFFT();
-    double sigma = 0.;
-    for (int i = lower; i <= higher; ++i) {
-      double value1 = density1[i].abs();
-      double value2 = density2[i].abs();
-      
-      if (value1 >= Double.POSITIVE_INFINITY || 
-          value2 >= Double.POSITIVE_INFINITY) {
-        continue;
-      }
-      
-      sigma += Math.pow( (value1 / value2) - meanRatio, 2 );
-    }
-    
-    return Math.sqrt(sigma);
   }
   
   private double[] gainStage1;
@@ -296,16 +240,16 @@ public class GainExperiment extends Experiment {
     FFTResult plot0 = fftResults[idx0];
     FFTResult plot1 = fftResults[idx1];
     
-    double mean0 = mean(plot0, lowBnd, higBnd);
+    double mean0 = NumericUtils.getFFTMean(plot0, lowBnd, higBnd);
     // since both datasets must have matching interval, PSDs have same freqs
-    double mean1 = mean(plot1, lowBnd, higBnd);
+    double mean1 = NumericUtils.getFFTMean(plot1, lowBnd, higBnd);
     
     // double MIN_VALUE field is effectively java's machine epsilon
     // calculate ratio and sigma over the range
     ratio = (mean0+Double.MIN_VALUE) / (mean1+Double.MIN_VALUE); 
       // added terms exist to prevent division by 0
     
-    sigma = sdev(plot0, plot1, ratio, lowBnd, higBnd);
+    sigma = NumericUtils.getFFTSDev(plot0, plot1, ratio, lowBnd, higBnd);
     
     double refGain = gainStage1[idx0];
     double calcGain = gainStage1[idx1]/Math.sqrt(ratio);
