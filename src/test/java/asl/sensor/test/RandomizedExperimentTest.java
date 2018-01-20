@@ -12,12 +12,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.TimeZone;
-
 import javax.imageio.ImageIO;
 
 import org.apache.commons.math3.complex.Complex;
@@ -36,7 +33,6 @@ import org.junit.Test;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
@@ -76,15 +72,6 @@ public class RandomizedExperimentTest {
     
     return ds;
     
-  }
-  
-  public Calendar getStartCalendar(DataStore ds) {
-    SimpleDateFormat sdf = InputPanel.SDF;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
-    return cCal;
   }
   
   @Test
@@ -458,7 +445,7 @@ public class RandomizedExperimentTest {
     fileList.add(sensOutName);
     
     DataStore ds = getFromList(fileList);   
-    Calendar cCal = getStartCalendar(ds);
+    Calendar cCal = TestUtils.getStartCalendar(ds);
     
     cCal.set(Calendar.MINUTE, 36);
     cCal.set(Calendar.SECOND, 0);
@@ -491,7 +478,7 @@ public class RandomizedExperimentTest {
     ir = InstrumentResponse.loadEmbeddedResponse("T-compact_Q330HR_BH_40");
     ds.setResponse(1, ir);
     
-    Calendar cCal = getStartCalendar(ds);
+    Calendar cCal = TestUtils.getStartCalendar(ds);
     
     cCal.set(Calendar.MINUTE, 52);
     cCal.set(Calendar.SECOND, 0);
@@ -527,7 +514,7 @@ public class RandomizedExperimentTest {
     ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR");
     ds.setResponse(1, ir);
     
-    Calendar cCal = getStartCalendar(ds);
+    Calendar cCal = TestUtils.getStartCalendar(ds);
     
     cCal.set(Calendar.HOUR_OF_DAY, 21);
     cCal.set(Calendar.MINUTE, 24);
@@ -569,7 +556,7 @@ public class RandomizedExperimentTest {
     ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR");
     ds.setResponse(1, ir);
     
-    Calendar cCal = getStartCalendar(ds);
+    Calendar cCal = TestUtils.getStartCalendar(ds);
     
     cCal.set(Calendar.HOUR_OF_DAY, 20);
     cCal.set(Calendar.MINUTE, 16);
@@ -871,7 +858,7 @@ public class RandomizedExperimentTest {
     fileList.add(sensOutName);
     
     DataStore ds = getFromList(fileList);   
-    Calendar cCal = getStartCalendar(ds);
+    Calendar cCal = TestUtils.getStartCalendar(ds);
     
     cCal.set(Calendar.HOUR_OF_DAY, 23);
     cCal.set(Calendar.MINUTE, 35);

@@ -9,20 +9,25 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.TimeZone;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
+import asl.sensor.gui.InputPanel;
+import asl.sensor.input.DataStore;
 
 public class TestUtils {
   
   private static String URL_HEADER = 
-      "https://code.usgs.gov/asl/sprockets/raw/master/";
+      "https://github.com/kschramm-usgs/sprockets/raw/master/";
   private static int LOGIN_PAGE_BYTE_SIZE = 7875;
   
   public static void 
-  downloadTestData(String urlLoc, String localLoc, String fName) 
+  downloadTestData(String urlLoc, String inName, String localLoc, String fName) 
   throws IOException {
-    String fullPath = URL_HEADER + urlLoc + fName;
+    System.out.println("Acquiring data from " + urlLoc);
+    String fullPath = URL_HEADER + urlLoc + inName;
     String localPath = "./test-data/sprockets/" + localLoc + fName;
 
     File target = new File(localPath);
@@ -64,7 +69,7 @@ public class TestUtils {
       assertEquals( connection.getResponseCode(), 200 );
       String loc = "PSD_calculation/SyntheticData/";
       String file = "XX_KAS.00_BHZ.seed";
-      downloadTestData(loc, "PSD/", file);
+      downloadTestData(loc, file, "PSD/", file);
     } catch (MalformedURLException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -75,6 +80,15 @@ public class TestUtils {
     
   }
   
+  public static Calendar getStartCalendar(DataStore ds) {
+    SimpleDateFormat sdf = InputPanel.SDF;
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    
+    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
+    return cCal;
+  }
+
   public static void makeTestDataDirectory() {
     File file = new File("./test-data/");
     if ( !file.exists() ) {

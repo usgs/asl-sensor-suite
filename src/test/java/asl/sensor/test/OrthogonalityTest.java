@@ -5,10 +5,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.TimeZone;
 
 import org.junit.Test;
@@ -19,6 +21,78 @@ import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
 
 public class OrthogonalityTest {
+  
+  @Test
+  public void identifiesOrthogonalFromSprockets() {
+    int[] days = new int[]{239, 243};
+    double[] fitAngles = new double[days.length];
+    // these are true for both test and ref data;
+    String data1 = "00_LH1.512.seed";
+    String data2 = "00_LH2.512.seed";
+    String test1 = "00_LH1.512.seed";
+    String test2 = "00_LH2.512.seed";
+    String testPrepend = "TEST-";
+    String refPrepend = "REF-";
+    for (int i = 0; i < days.length; ++i) {
+      int day = days[i];
+      String testURL = "orientation/sensor/orthogonal/"+day+"/";
+      String refURL = "orientation/sensor/reference/"+day+"/";
+      String testSubfolder = "is-orthogonal/"+day+"/";
+
+      try {
+        // download data (if it doesn't already exist locally)
+        // get reference data 1 and 2
+        TestUtils.downloadTestData(refURL, data1, testSubfolder, refPrepend+data1);
+        TestUtils.downloadTestData(refURL, data2, testSubfolder, refPrepend+data2);
+        // get test data 1 and 2
+        TestUtils.downloadTestData(testURL, test1, testSubfolder, testPrepend+data1);
+        TestUtils.downloadTestData(testURL, test2, testSubfolder, testPrepend+data2);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+        fail();
+      }
+      
+      DataStore ds = new DataStore();
+      // TODO: check if working under windows too?
+      String root = "./test-data/sprockets/" + testSubfolder;
+      try {
+        String filePre = root + refPrepend;
+        ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(filePre+data1) );
+        ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(filePre+data2) );
+        filePre = root + testPrepend;
+        ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(filePre+data1) );
+        ds.setBlock(3, TimeSeriesUtils.getFirstTimeSeries(filePre+data2) );
+        for (int j = 0; j < 4; ++j) {
+          System.out.println( ds.getBlock(j).getName() );
+        }
+        Calendar cCal = TestUtils.getStartCalendar(ds);
+        cCal.set(Calendar.HOUR_OF_DAY, 14);
+        cCal.set(Calendar.MINUTE, 0);
+        cCal.set(Calendar.SECOND, 0);
+        cCal.set(Calendar.MILLISECOND, 0);
+        long start = cCal.getTime().getTime();
+        cCal.set(Calendar.HOUR_OF_DAY, 18);
+        long end = cCal.getTime().getTime();
+        ds.trim(start, end);
+        OrthogonalExperiment oe = new OrthogonalExperiment();
+        oe.runExperimentOnData(ds);
+        fitAngles[i] = oe.getFitAngle();
+        System.out.println(Arrays.toString(oe.getSolutionParams()));
+      } catch (FileNotFoundException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+        fail();
+      }
+
+    }
+    boolean allEqual = true;
+    for (double fitAngle : fitAngles) {
+      System.out.println(fitAngle);
+      allEqual &= (90. - 3. < fitAngle) && (90. + 3. > fitAngle);
+    }
+    assertTrue(allEqual);
+  }
 
   @Test
   public void getsCorrectAngle() {
