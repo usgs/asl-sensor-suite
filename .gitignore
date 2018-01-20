@@ -5,7 +5,7 @@ data/*
 !data/readme.txt
 responses/*
 !responses/readme.txt
-
+test-data/sprockets/*
 .idea/
 out/
 

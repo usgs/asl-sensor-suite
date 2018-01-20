@@ -23,10 +23,12 @@ public class TestUtils {
       "https://github.com/kschramm-usgs/sprockets/raw/master/";
   private static int LOGIN_PAGE_BYTE_SIZE = 7875;
   
+  // inName and fName are separated to make it possible to rename output file
+  // to prevent collisions between data with the same filename from different inputs
   public static void 
   downloadTestData(String urlLoc, String inName, String localLoc, String fName) 
   throws IOException {
-    System.out.println("Acquiring data from " + urlLoc);
+    // System.out.println("Acquiring data from " + urlLoc);
     String fullPath = URL_HEADER + urlLoc + inName;
     String localPath = "./test-data/sprockets/" + localLoc + fName;
 
@@ -59,17 +61,26 @@ public class TestUtils {
   }
   
   // re-comment when repo made public
-  //@Test
+  @Test
   public void canGetTestData() {
+    
+    String loc = "PSD_calculation/SyntheticData/";
+    String file = "XX_KAS.00_BHZ.seed";
+    try {
+      downloadTestData(loc, file, "PSD/", file);
+    } catch (IOException e1) {
+      e1.printStackTrace();
+      fail();
+    }
+    
+    /* not usable because usgs gitlab and public github work differently 
     String fullPath = URL_HEADER;
     try {
       URL web = new URL(fullPath);
       HttpURLConnection connection = (HttpURLConnection) web.openConnection();
       connection.connect();
       assertEquals( connection.getResponseCode(), 200 );
-      String loc = "PSD_calculation/SyntheticData/";
-      String file = "XX_KAS.00_BHZ.seed";
-      downloadTestData(loc, file, "PSD/", file);
+
     } catch (MalformedURLException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -77,7 +88,7 @@ public class TestUtils {
       e.printStackTrace();
       fail();
     }
-    
+    */
   }
   
   public static Calendar getStartCalendar(DataStore ds) {
