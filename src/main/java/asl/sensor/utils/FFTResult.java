@@ -17,6 +17,7 @@ import org.jfree.data.xy.XYSeries;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.InstrumentResponse;
+import uk.me.berndporr.iirj.Butterworth;
 import uk.me.berndporr.iirj.ChebyshevI;
 
 /**
@@ -48,9 +49,9 @@ public class FFTResult {
   public static double[] 
   bandFilter(double[] toFilt, double sps, double low, double high) {
     
-    ChebyshevI casc = new ChebyshevI();
+    Butterworth casc = new Butterworth();
     // order 1 filter
-    casc.bandPass(1, sps, (high-low)/2, high-low, 1.);
+    casc.bandPass(2, sps, (high-low)/2, (high-low));
     
     double[] filtered = new double[toFilt.length];
     for (int i = 0; i < toFilt.length; ++i) {
@@ -84,6 +85,19 @@ public class FFTResult {
     return singleSidedInverseFFT(toInvert, toFilt.length);
     */
     
+  }
+  
+  public static double[] lowPassFilter(double[] toFilt, double sps, double corner) {
+    Butterworth casc = new Butterworth();
+    // order 1 filter
+    casc.lowPass(2, sps, corner);
+    
+    double[] filtered = new double[toFilt.length];
+    for (int i = 0; i < toFilt.length; ++i) {
+      filtered[i] = casc.filter(toFilt[i]);
+    }
+    
+    return filtered;
   }
   
   /**

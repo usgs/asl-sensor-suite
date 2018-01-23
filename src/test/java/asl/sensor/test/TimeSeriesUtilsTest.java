@@ -35,6 +35,7 @@ import org.junit.Test;
 
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
+import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.B1000Types;
@@ -122,13 +123,20 @@ public class TimeSeriesUtilsTest {
     
     System.out.println(Arrays.toString(timeSeries));
     
+    // set anti-aliasing frequency to HALF of sampling rate (i.e., nyq rate)
+    double[] filtered = FFTResult.lowPassFilter(timeSeries, 40., 0.5);
+    
+    System.out.println(Arrays.toString(filtered));
+    
     timeSeries = TimeSeriesUtils.decimate(timeSeries, interval40Hz, interval);
     
     System.out.println(Arrays.toString(timeSeries));
     
     assertEquals(timeSeries.length, 4);
     for (int i = 0; i < timeSeries.length; ++i) {
-      assertEquals(timeSeries[i], 40. * i, 7.5);
+      assertEquals(timeSeries[i], filtered[40 * i], 0.1);
+      // is the data nearly halfway between points?
+      assertEquals(timeSeries[i], Math.max(0., 40. * i - 20.), 3.0);
     }
   }
   

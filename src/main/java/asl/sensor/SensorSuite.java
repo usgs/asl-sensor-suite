@@ -321,7 +321,6 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       inputPlots.showRegionForGeneration();
       // pass the inputted data to the panels that handle them
       DataStore ds = inputPlots.getData();
-
       SwingWorkerSingleton.setInstance(ep, ds);
       SwingWorker<Boolean, Void> wkr = SwingWorkerSingleton.getInstance();
       wkr.execute();

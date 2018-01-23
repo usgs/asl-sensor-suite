@@ -148,15 +148,16 @@ public class TimeSeriesUtils {
     int dnf = (int)(tgt/gcd);
 
     double higherFreq = (1. / src) * upf * ONE_HZ_INTERVAL;
-    double lowerFreq = (1. / tgt) * ONE_HZ_INTERVAL / 2; 
+    double lowerFreq = (1. / tgt) * ONE_HZ_INTERVAL / 2;
     // nyquist rate of downsampled data
 
     // one valid sample rate for data is 2.5Hz
     // with 1Hz that comes out as a ratio of 5/2, which won't
     // downsample neatly in some cases so we would first upsample,
     // filter out any noise terms, then downsample
+    
     double[] upped = upsample(data,upf);
-    double[] lpfed = lowPassFilter(upped, higherFreq, lowerFreq);
+    double[] lpfed = FFTResult.lowPassFilter(upped, higherFreq, lowerFreq);
     double[] down = downsample(lpfed,dnf);
 
     return down;
@@ -723,34 +724,6 @@ public class TimeSeriesUtils {
     }
 
     return new Pair<Long, Map<Long, double[]>>(interval, timeListMap);
-  }
-
-  /**
-   * Implements low pass band filter
-   * @param timeseries  The data to be filtered
-   * @param sps         Samples per second
-   * @return            The filtered data
-   */
-  public static double[] 
-  lowPassFilter(double[] timeseries, double sps, double corner)
-  {
-
-    double fl = 0.;
-    double fh = corner;
-
-    return FFTResult.bandFilter(timeseries, sps, fl, fh);
-
-    /*
-    List<Number> timeseriesOut = new ArrayList<Number>();
-
-    for (int i = 0; i < timeseries.size(); ++i) {
-      double point = timeseriesFilter.get(i);
-      // System.out.println(point);
-      timeseriesOut.add(point);
-    }
-
-    return timeseriesOut;
-     */
   }
 
   /**

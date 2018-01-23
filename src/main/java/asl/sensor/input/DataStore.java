@@ -67,52 +67,37 @@ public class DataStore {
      thisResponseIsSet[i] = false;
    }
   }
+
   
   /**
-   * Create a full copy of the current datastore
+   * Create a copy of the current datastore
    * @param ds datastore to copy
    */
   public DataStore(DataStore ds) {
-    this(ds, FILE_COUNT);
-  }
-  
-  /**
-   * Create a copy of only some of the current datastore, up to upperBound
-   * @param ds datastore to copy
-   * @param upperBound max index to copy data from
-   */
-  public DataStore(DataStore ds, int upperBound) {
     dataBlockArray = new DataBlock[FILE_COUNT];
     responses = new InstrumentResponse[FILE_COUNT];
     thisBlockIsSet = new boolean[FILE_COUNT];
     thisResponseIsSet = new boolean[FILE_COUNT];
     boolean[] setBlocks = ds.dataIsSet();
     boolean[] setResps = ds.responsesAreSet();
-    for (int i = 0; i < upperBound; ++i) {
+    for (int i = 0; i < FILE_COUNT; ++i) {
       if (setBlocks[i]) {
         dataBlockArray[i] = new DataBlock( ds.getBlock(i) );
         thisBlockIsSet[i] = true;
       }
+      
       if (setResps[i]) {
         responses[i] = ds.getResponse(i);
         thisResponseIsSet[i] = true;
       }
     }
   }
+ 
   
   /**
-   * Create a copy of a datablock object that has been trimmed to a
-   * smaller range for the use of showing plot zooms, etc.
-   * @param ds DataStore object to be copied and trimmed from
-   * @param start Start time trim to
-   * @param end End time to trim to
+   * Determine if any data blocks in the data store has been initialized
+   * @return true if at least one datablock has been added to the store object
    */
-  public DataStore(DataStore ds, long start, long end, int upperBound) {
-    this(ds, upperBound);
-    
-    this.trim(start, end, FILE_COUNT);
-  }
-  
   public boolean areAnyBlocksSet() {
     
     for (int i = 0; i < FILE_COUNT; ++i) {

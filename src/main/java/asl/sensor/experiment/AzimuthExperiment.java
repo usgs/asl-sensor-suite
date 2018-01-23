@@ -35,7 +35,7 @@ import asl.sensor.utils.TimeSeriesUtils;
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
  * reference sensor assumed to be north. The rotation angle between the
  * reference sensor and the unknown components is solved for via least-squares
- * using the coherence calculation of the rotated and reference signal.
+ * using the correlation calculation of the rotated and reference signal.
  * The resulting angle, then, is the clockwise rotation from the reference.
  * If the angle of the reference is zero (i.e., pointing directly north),
  * the result of this calculation SHOULD be the value of the azimuth, using
@@ -46,8 +46,6 @@ import asl.sensor.utils.TimeSeriesUtils;
  * This calculation is mostly based on Ringler, Edwards, et al.,
  * 'Relative azimuth inversion by way of damped maximum correlation estimates',
  * Elsevier Computers and Geosciences 43 (2012)
- * but using coherence maximization rather than correlation to find optimized
- * angles.
  * @author akearns
  *
  */
@@ -203,8 +201,8 @@ public class AzimuthExperiment extends Experiment {
     // originally had normalization step here, but that harmed the estimates
     
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
-    double low = 1./8;
-    double high = 1./4;
+    double low = 1./8; // filter from 8 seconds interval
+    double high = 1./3; // up to 3 seconds interval
     
     initTestNorth = FFTResult.bandFilter(initTestNorth, sps, low, high);
     initTestEast = FFTResult.bandFilter(initTestEast, sps, low, high);
@@ -213,7 +211,7 @@ public class AzimuthExperiment extends Experiment {
     MultivariateJacobianFunction jacobian = 
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth, interval);
     
-    // want mean coherence to be as close to 1 as possible
+    // want mean correlation to be as close to 1 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
     
     
@@ -274,10 +272,10 @@ public class AzimuthExperiment extends Experiment {
     long timeRange = endTime - startTime;
     
     // first double -- angle estimate over window
-    // second double -- coherence from that estimate over the window
-    Map<Long, Pair<Double,Double>> angleCoherenceMap = 
+    // second double -- correlation from that estimate over the window
+    Map<Long, Pair<Double,Double>> angleCorrelationMap = 
         new HashMap<Long, Pair<Double, Double>> ();
-    List<Double> sortedCoherence = new ArrayList<Double>();
+    List<Double> sortedCorrelation = new ArrayList<Double>();
     
     final long twoThouSecs = 2000L * TimeSeriesUtils.ONE_HZ_INTERVAL; 
     // 1000 ms per second, range length
@@ -336,49 +334,46 @@ public class AzimuthExperiment extends Experiment {
       
       RealVector angleVectorWindow = optimumY.getPoint();
       double angleTemp = angleVectorWindow.getEntry(0);
-      double coherence = jacobian.value(angleVectorWindow).getFirst().getEntry(0);
-      /*
-      double coherenceAvg = 0;
-      for (double cVal : coherence) {
-        coherenceAvg += cVal;
-      }
-      coherenceAvg /= coherence.length;
-      */
-      angleCoherenceMap.put(
-          wdStart, new Pair<Double, Double>(angleTemp, coherence) );
-      sortedCoherence.add(coherence);
+      double correlation = jacobian.value(angleVectorWindow).getFirst().getEntry(0);
+
+      angleCorrelationMap.put(
+          wdStart, new Pair<Double, Double>(angleTemp, correlation) );
+      sortedCorrelation.add(correlation);
     }
     
-    int minCoherences = 5;
-    if (angleCoherenceMap.size() < minCoherences) {
+    int minCorrelations = 5;
+    if (angleCorrelationMap.size() < minCorrelations) {
       fireStateChange("Window size too small for good angle estimation...");
       double tau = NumericUtils.TAU;
       angle = ( ( angleVector.getEntry(0) % tau) + tau ) % tau;
     } else {
-      // get the best-coherence estimations of angle and average them
+      // get the best-correlation estimations of angle and average them
       enoughPts = true;
-      Collections.sort(sortedCoherence); // now it's actually sorted
-      int maxBoundary = Math.max(minCoherences, sortedCoherence.size() * 3 / 20);
-      sortedCoherence = sortedCoherence.subList(0, maxBoundary);
-      Set<Double> acceptableCoherences = new HashSet<Double>(sortedCoherence);
+      Collections.sort(sortedCorrelation);
+      Collections.reverse(sortedCorrelation); // sort from best to worst
+      int maxBoundary = Math.max(minCorrelations, sortedCorrelation.size() * 3 / 20);
+      System.out.println(sortedCorrelation.size() + ", " + maxBoundary);
+      // start from 0 because sort is descending order
+      sortedCorrelation = sortedCorrelation.subList(0, maxBoundary);
+      Set<Double> acceptableCorrelations = new HashSet<Double>(sortedCorrelation);
       
-      // store values for use in 
+      // store good values for use in std dev calculation
       List<Double> acceptedVals = new ArrayList<Double>();
       
       double averageAngle = 0.;
-      int coherenceCount = 0;
+      int correlationCount = 0;
       
-      for (Pair<Double, Double> angCoherePair : angleCoherenceMap.values()) {
+      for (Pair<Double, Double> angCoherePair : angleCorrelationMap.values()) {
         double angleTemp = angCoherePair.getFirst();
-        double coherence = angCoherePair.getSecond();
-        if ( acceptableCoherences.contains(coherence) ) {
+        double correlation = angCoherePair.getSecond();
+        if ( acceptableCorrelations.contains(correlation) ) {
           averageAngle += angleTemp;
           acceptedVals.add(angleTemp);
-          ++coherenceCount;
+          ++correlationCount;
         }
       }
       
-      averageAngle /= coherenceCount;
+      averageAngle /= correlationCount;
       
       uncert = 0.;
       
@@ -387,10 +382,10 @@ public class AzimuthExperiment extends Experiment {
         uncert += Math.pow(angle - averageAngle, 2);
       }
       
-      uncert = Math.sqrt( uncert / (coherenceCount) );
+      uncert = Math.sqrt( uncert / (correlationCount) );
       uncert *= 2; // two-sigma gets us 95% confidence interval
       
-      // do this calculation to get plot of freq/coherence, a side effect
+      // do this calculation to get plot of freq/correlation, a side effect
       // of running evaluation at the given point; this will be plotted
       RealVector angleVec = 
           MatrixUtils.createRealVector(new double[]{averageAngle});
@@ -442,31 +437,23 @@ public class AzimuthExperiment extends Experiment {
     xysc.addSeries(fromNorth);
     xySeriesData.add(xysc);
     
-    /*
-    XYSeries coherenceSeries = new XYSeries("Per-freq. coherence of best-fit");
-    for (int i = 0; i < freqs.length; ++i) {
-      coherenceSeries.add(freqs[i], coherence[i]);
-    }
-    */
-    
     xysc = new XYSeriesCollection();
     XYSeries timeMapAngle = new XYSeries("Best-fit angle per window");
-    XYSeries timeMapCoherence = new XYSeries("Coherence estimate per window");
+    XYSeries timeMapCorrelation = new XYSeries("Correlation estimate per window");
     xysc.addSeries(timeMapAngle);
-    xysc.addSeries(timeMapCoherence);
+    xysc.addSeries(timeMapCorrelation);
     
-    for ( long time : angleCoherenceMap.keySet() ) {
+    for ( long time : angleCorrelationMap.keySet() ) {
         long xVal = time / 1000;
-        double angle = angleCoherenceMap.get(time).getFirst();
-        double coherence = angleCoherenceMap.get(time).getSecond();
-        timeMapCoherence.add(xVal, coherence);
+        double angle = angleCorrelationMap.get(time).getFirst();
+        double correlation = angleCorrelationMap.get(time).getSecond();
+        timeMapCorrelation.add(xVal, correlation);
         timeMapAngle.add( xVal, Math.toDegrees(angle) );
     }
 
     
     xySeriesData.add( new XYSeriesCollection(timeMapAngle) );
-    xySeriesData.add( new XYSeriesCollection(timeMapCoherence) );
-    // xySeriesData.add( new XYSeriesCollection(coherenceSeries) );
+    xySeriesData.add( new XYSeriesCollection(timeMapCorrelation) );
   }
   
   @Override
@@ -498,7 +485,7 @@ public class AzimuthExperiment extends Experiment {
    * @param l1 Data from the test sensor's north-facing component
    * @param l2 Data from the test sensor's east-facing component
    * @param l3 Data from the known north-facing sensor
-   * @return jacobian function to fit an angle of max coherence of this data
+   * @return jacobian function to fit an angle of max correlation of this data
    */
   private MultivariateJacobianFunction 
   getJacobianFunction(double[] l1, double[] l2, double[] l3, 
@@ -589,112 +576,6 @@ public class AzimuthExperiment extends Experiment {
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
     return new Pair<RealVector, RealMatrix>(valueVec, jacobian);
     
-    /*
-    // was the frequency range under examination (in Hz) when doing coherence
-    double lowFreq = 1./18.;
-    double highFreq = 1./3.;     
-    // this is the old code that used a correlation calculation
-    // similar to how the cal solvers deconvolve responses
-    // commented out because it can't distinguish 180-out rotation
-    FFTResult crossPower = 
-        FFTResult.spectralCalc(refNorth, testRotated, interval);
-    FFTResult rotatedPower = 
-        FFTResult.spectralCalc(testRotated, testRotated, interval);
-    FFTResult refPower = 
-        FFTResult.spectralCalc(refNorth, refNorth, interval);
-    
-    freqs = crossPower.getFreqs();
-    
-    Complex[] crossPowerSeries = crossPower.getFFT();
-    Complex[] rotatedSeries = rotatedPower.getFFT();
-    Complex[] refSeries = refPower.getFFT();
-    
-    coherence = new double[crossPowerSeries.length];
-    
-    for (int i = 0; i < crossPowerSeries.length; ++i) {
-      Complex conj = crossPowerSeries[i].conjugate();
-      Complex numerator = crossPowerSeries[i].multiply(conj);
-      Complex denom = rotatedSeries[i].multiply(refSeries[i]);
-      coherence[i] = numerator.divide(denom).getReal();
-    }
-    
-    double peakVal = Double.NEGATIVE_INFINITY;
-    double peakFreq = 0;
-    
-    for (int i = 0; i < freqs.length; ++i) {
-      if (freqs[i] < lowFreq) {
-        continue;
-      } else if (freqs[i] > highFreq) {
-        break;
-      }
-      if (peakVal < coherence[i]) {
-        peakVal = coherence[i];
-        peakFreq = freqs[i];
-      }
-    }
-    
-    if (peakFreq / 2 > lowFreq) {
-      lowFreq = peakFreq / 2.;
-    }
-    
-    if (peakFreq * 2 < highFreq) {
-      highFreq = peakFreq * 2.;
-    }
-    
-    double meanCoherence = 0.;
-    int samples = 0;
-    
-    for (int i = 0; i < freqs.length; ++i) {
-      if (freqs[i] < highFreq && freqs[i] > lowFreq) {
-        meanCoherence += coherence[i];
-        ++samples;
-      }
-    }
-    
-    meanCoherence /= samples;
-    
-    RealVector curValue = 
-        MatrixUtils.createRealVector(new double[]{meanCoherence});
-    
-    double thetaDelta = theta + diff;
-    double[] rotateDelta = 
-        TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
-    
-    crossPower = FFTResult.spectralCalc(refNorth, rotateDelta, interval);
-    rotatedPower = FFTResult.spectralCalc(rotateDelta, rotateDelta, interval);
-    crossPowerSeries = crossPower.getFFT();
-    rotatedSeries = rotatedPower.getFFT();
-    
-    double fwdMeanCoherence = 0.;
-    samples = 0;
-    double[] fwdCoherence = new double[crossPowerSeries.length];
-    
-    for (int i = 0; i < crossPowerSeries.length; ++i) {
-      Complex conj = crossPowerSeries[i].conjugate();
-      Complex numerator = crossPowerSeries[i].multiply(conj);
-      Complex denom = rotatedSeries[i].multiply(refSeries[i]);
-      fwdCoherence[i] = numerator.divide(denom).getReal();
-      
-      if (freqs[i] < highFreq && freqs[i] > lowFreq) {
-        fwdMeanCoherence += fwdCoherence[i];
-        ++ samples;
-      }
-      
-    }
-    
-    fwdMeanCoherence /= (double) samples;
-    double deltaMean = (fwdMeanCoherence - meanCoherence) / diff;
-    
-    // System.out.println(deltaMean);
-    
-    double[][] jacobianArray = new double[1][1];
-    jacobianArray[0][0] = deltaMean;
-    
-    // we have only 1 variable, so jacobian is a matrix w/ single column
-    RealMatrix jbn = MatrixUtils.createRealMatrix(jacobianArray);
-    
-    return new Pair<RealVector, RealMatrix>(curValue, jbn);
-    */
   }
 
   /**

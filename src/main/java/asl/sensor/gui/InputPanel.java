@@ -1159,7 +1159,6 @@ implements ActionListener, ChangeListener {
       start = db.getStartTime();
       end = db.getEndTime();
       
-      ds = new DataStore(ds, activePlots);
       ds.trimToCommonTime(activePlots);
       // try to trim to current active time range if possible, otherwise fit
       // as much data as possible
