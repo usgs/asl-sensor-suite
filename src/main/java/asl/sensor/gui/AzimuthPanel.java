@@ -94,7 +94,7 @@ public class AzimuthPanel extends ExperimentPanel {
     
     estimChart = 
         ChartFactory.createXYLineChart( expType.getName() + " Windowing",
-        "Window start", "Coherence, Angle", null);
+        "Window start", "Correlation of aligned data, Angle of rotation", null);
     
     this.setLayout( new GridBagLayout() );
     
@@ -278,8 +278,8 @@ public class AzimuthPanel extends ExperimentPanel {
     renderer.setSeriesPaint(0, Color.BLUE);
     xyp.setRenderer(1, renderer);
     xyp.setRangeAxis( 0, new NumberAxis("Angle est. (deg)") );
-    xyp.setRangeAxis( 1, new NumberAxis("Coherence est.") );
-    NumberAxis xAx = new NumberAxis("Time offset of window start (s)");
+    xyp.setRangeAxis( 1, new NumberAxis("Correlation est. of best fit angle") );
+    NumberAxis xAx = new NumberAxis("Time from data start of (2000s) window (s)");
     xAx.setAutoRangeIncludesZero(false);
     xyp.setDomainAxis(xAx);
     xyp.mapDatasetToRangeAxis(0, 0);

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -19,6 +20,120 @@ import asl.sensor.utils.TimeSeriesUtils;
 
 public class AzimuthTest {
 
+  @Test
+  public void identifiesSprocketsAngle002() {
+    testsFromSprockets(2);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle005() {
+    testsFromSprockets(5);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle020() {
+    testsFromSprockets(20);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle090() {
+    testsFromSprockets(90);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle110() {
+    testsFromSprockets(110);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle180() {
+    testsFromSprockets(180);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle200() {
+    testsFromSprockets(200);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle270() {
+    testsFromSprockets(270);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle290() {
+    testsFromSprockets(290);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle355() {
+    testsFromSprockets(355);
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle358() {
+    testsFromSprockets(358);
+  }
+  
+  public void testsFromSprockets(int angle) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(angle);
+    // format for filenames is 002, 010, 358, etc.; prepend 0s if needed
+    while(sb.length() < 3) {
+      sb.insert(0, '0');
+    }
+    String data1 = "IU.ANMO.10.BH1";
+    String data2 = "IU.ANMO.10.BH2";
+    String refURL = "orientation/";
+    // orientation/rotation/[002, etc.]/
+    String testURL = refURL + "rotation/" + sb.toString() + "/";
+    
+
+    String refSubfolder = "azimuth-ANMO-reference/";
+    String testSubfolder = "azimuth-ANMO-" + sb.toString() + "/";
+    
+    try {
+      // get reference data if needed
+      TestUtils.downloadTestData(refURL, data1, refSubfolder, data1);
+      // only need one reference point to get the data
+      //TestUtils.downloadTestData(refURL, data2, refSubfolder, data2);
+      // get test data if needed
+      TestUtils.downloadTestData(testURL, data1, testSubfolder, data1);
+      TestUtils.downloadTestData(testURL, data2, testSubfolder, data2);
+    } catch (IOException e) {
+      e.printStackTrace();
+      fail();
+    }
+    
+    DataStore ds = new DataStore();
+    try {
+      String root = "./test-data/sprockets/";
+      testSubfolder = root + testSubfolder;
+      refSubfolder = root + refSubfolder;
+      ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
+      ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
+      ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
+      
+      ds.trimToCommonTime();
+      AzimuthExperiment ae = new AzimuthExperiment();
+      ae.runExperimentOnData(ds);
+      double fitAngle = ae.getFitAngle() - 180;
+      if (fitAngle > 180) {
+        fitAngle -= 360; // keep in range (-180, 180) for testing near 0 accurately
+      } else if (angle > 180) {
+        angle -= 360;
+      }
+      
+      System.out.println(sb.toString() + " | " + ( (fitAngle % 360) + 360) % 360 );
+      assertEquals((double) angle, fitAngle, 1.0);
+      
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      fail();
+    }
+    
+  }
+  
   @Test
   public void getsCorrectAngle() {
     

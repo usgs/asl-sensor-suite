@@ -474,10 +474,18 @@ public class DataBlock {
           }
           
           double[] next = dataMap.get(nextTime);
-          double[] truncated = 
-              Arrays.copyOfRange(next, fstUndupIdx, next.length);
-          toMerge.add(truncated);
-          timeAtSublistEnd = timeAtSublistEnd + (truncated.length * interval);
+          if (fstUndupIdx < next.length) {
+            // is there data between list end and current time cursor?
+            // there is some data where records are 100% redundant and
+            // have no data that can be loaded in from that record
+            // (the unduplicated index is past the length of the data)
+            // the conditional would be false -- and this would trigger an error
+            double[] truncated = 
+                Arrays.copyOfRange(next, fstUndupIdx, next.length);
+            toMerge.add(truncated);
+            timeAtSublistEnd = timeAtSublistEnd + (truncated.length * interval);
+          }
+
           ++cursor;
         } else {
           // data not duplicated, so copy it all

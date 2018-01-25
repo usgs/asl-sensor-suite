@@ -50,24 +50,6 @@ import asl.sensor.utils.TimeSeriesUtils;
  *
  */
 public class AzimuthExperiment extends Experiment {
-  
-  /*
-   * Check if data is aligned antipolar or not (signs of data are inverted)
-   * by determining if the Pearson's correlation metric is positive or not.
-   * @param rot Data that has been rotated and may be 180 degrees off from
-   * correct orientation (i.e., should but may not be aligned with reference)
-   * @param ref Data that is to be used as reference with known orientation
-   * @return True if more data analysed has opposite signs than matching signs
-   * (i.e., one signal is positive and one is negative)
-   */
-  /*
-  public static boolean
-  alignedAntipolar(double[] rot, double[] ref) {
-    // TODO: add bandpass filter? what are the relevant frequencies?
-    int len = ref.length;
-    return alignedAntipolar(rot, ref, len);
-  }
-  */
     
   /**
    * Check if data is aligned antipolar or not (signs of data are inverted)
@@ -198,7 +180,7 @@ public class AzimuthExperiment extends Experiment {
     initTestEast = TimeSeriesUtils.detrend(initTestEast);
     initRefNorth = TimeSeriesUtils.detrend(initRefNorth);
     
-    // originally had normalization step here, but that harmed the estimates
+    // should there be a normalization step here?
     
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
     double low = 1./8; // filter from 8 seconds interval
@@ -214,7 +196,6 @@ public class AzimuthExperiment extends Experiment {
     // want mean correlation to be as close to 1 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{1.});
     
-    
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
         model(jacobian).
@@ -225,8 +206,8 @@ public class AzimuthExperiment extends Experiment {
         build();
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1E-7).
-        withParameterRelativeTolerance(1E-7);
+        withCostRelativeTolerance(1E-9).
+        withParameterRelativeTolerance(1E-9);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -313,6 +294,13 @@ public class AzimuthExperiment extends Experiment {
       testEastWin = TimeSeriesUtils.detrend(testEastWin);
       refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
       
+      /*// cosine taper operation (note: unnecessary for fixed window size/interval)
+      double wid = 0.05; // taper width
+      FFTResult.cosineTaper(testNorthWin, wid);
+      FFTResult.cosineTaper(testEastWin, wid);
+      FFTResult.cosineTaper(refNorthWin, wid);
+      */
+      
       testNorthWin = FFTResult.bandFilter(testNorthWin, sps, low, high);
       testEastWin = FFTResult.bandFilter(testEastWin, sps, low, high);
       refNorthWin = FFTResult.bandFilter(refNorthWin, sps, low, high);
@@ -352,7 +340,6 @@ public class AzimuthExperiment extends Experiment {
       Collections.sort(sortedCorrelation);
       Collections.reverse(sortedCorrelation); // sort from best to worst
       int maxBoundary = Math.max(minCorrelations, sortedCorrelation.size() * 3 / 20);
-      System.out.println(sortedCorrelation.size() + ", " + maxBoundary);
       // start from 0 because sort is descending order
       sortedCorrelation = sortedCorrelation.subList(0, maxBoundary);
       Set<Double> acceptableCorrelations = new HashSet<Double>(sortedCorrelation);
@@ -552,7 +539,7 @@ public class AzimuthExperiment extends Experiment {
       final double[] testEast,
       final long interval) {
     
-    double diff = 1E-7;
+    double diff = 1E-12;
     
     double theta = ( point.getEntry(0) );
     double thetaDelta = theta + diff;
