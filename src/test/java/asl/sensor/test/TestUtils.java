@@ -99,6 +99,15 @@ public class TestUtils {
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     return cCal;
   }
+  
+  public static Calendar getEndCalendar(DataStore ds) {
+    SimpleDateFormat sdf = InputPanel.SDF;
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    
+    cCal.setTimeInMillis( ds.getBlock(0).getEndTime() );
+    return cCal;
+  }
 
   public static void makeTestDataDirectory() {
     File file = new File("./test-data/");

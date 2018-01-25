@@ -82,6 +82,7 @@ public class OrthogonalExperiment extends Experiment {
     double[] testLH1 = testLH1Block.getData();
     double[] testLH2 = testLH2Block.getData();
     
+    /*
     TimeSeriesUtils.detrend(refLH1);
     TimeSeriesUtils.detrend(refLH2);
     TimeSeriesUtils.detrend(testLH1);
@@ -100,13 +101,12 @@ public class OrthogonalExperiment extends Experiment {
     refLH2 = FFTResult.bandFilter(refLH2, sps, low, high);
     testLH1 = FFTResult.bandFilter(testLH1, sps, low, high);
     testLH2 = FFTResult.bandFilter(testLH2, sps, low, high);
-    
+    */
     int len = refLH1.length;
     
     double[] refYArr = Arrays.copyOfRange(refLH1, 0, len);
     double[] refXArr = Arrays.copyOfRange(refLH2, 0, len);
     double[] testYArr = Arrays.copyOfRange(testLH1, 0, len);
-    
     /*
     for (int i = 0; i < len; ++i) {
       refYArr[i] = refLH1.get(i).doubleValue();
@@ -131,7 +131,6 @@ public class OrthogonalExperiment extends Experiment {
     double angleY = -azi.getFitAngle(); // degrees
     azi.runExperimentOnData(findTestX);
     double angleX = -azi.getFitAngle();
-    
     
     angle = Math.abs(angleY - angleX);
     

@@ -193,27 +193,29 @@ public class AzimuthExperiment extends Experiment {
     MultivariateJacobianFunction jacobian = 
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth, interval);
     
-    // want mean correlation to be as close to 1 as possible
-    RealVector target = MatrixUtils.createRealVector(new double[]{1.});
+    // want (correlation-1+damping) to be as close to 0 as possible
+    RealVector target = MatrixUtils.createRealVector(new double[]{0});
     
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
         model(jacobian).
-        target(target).
+        target(new double[]{1}).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
         lazyEvaluation(false).
         build();
     
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1E-9).
-        withParameterRelativeTolerance(1E-9);
+        withCostRelativeTolerance(1E-5).
+        withParameterRelativeTolerance(1E-5);
     
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
     double tempAngle = angleVector.getEntry(0);
+    tempAngle = ( (tempAngle % NumericUtils.TAU) + NumericUtils.TAU) 
+        % NumericUtils.TAU;
     
-    String newStatus = "Found initial guess for angle";
+    String newStatus = "Found initial guess for angle: " + tempAngle;
     fireStateChange(newStatus);
     
     // how much data we need (i.e., iteration length) to check 10 seconds
@@ -227,21 +229,6 @@ public class AzimuthExperiment extends Experiment {
       // where a 'pretty good' estimate of the angle is all we need
       // just stop here, don't do windowing
       angle = tempAngle;
-      angle = angle % NumericUtils.TAU;
-      
-      /*
-      // check if we need to rotate by 180 degrees
-      // (unlikely, assume in simple case sensors near-aligned)
-      double[] rot = 
-          TimeSeriesUtils.rotate(testNorth, testEast, angle);
-      
-      if ( alignedAntipolar(rot, refNorth, 2 * tenSecondsLength) ) {
-        angle += Math.PI; // still in radians
-      }
-      */
-      
-      angle = ( (angle % NumericUtils.TAU) + NumericUtils.TAU) 
-          % NumericUtils.TAU;
       
       return;
     }
@@ -258,6 +245,11 @@ public class AzimuthExperiment extends Experiment {
         new HashMap<Long, Pair<Double, Double>> ();
     List<Double> sortedCorrelation = new ArrayList<Double>();
     
+    // the best correlation and azimuth angle producing that correlation
+    // for the purpose of providing damped estimates 
+    // (improves susceptibility to noise)
+    double bestCorr = jacobian.value(angleVector).getFirst().getEntry(0);
+    double bestTheta = tempAngle;
     final long twoThouSecs = 2000L * TimeSeriesUtils.ONE_HZ_INTERVAL; 
     // 1000 ms per second, range length
     final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
@@ -273,12 +265,6 @@ public class AzimuthExperiment extends Experiment {
       
       fireStateChange(newStatus);
       
-      /*
-      if (timeRange < 2 * twoThouSecs) {
-        break;
-      }
-      */
-      
       // get start and end indices from given times
       long wdStart = fiveHundSecs * i; // start of 500s-sliding window
       long wdEnd = wdStart + twoThouSecs; // end of window (2000s long)
@@ -290,23 +276,25 @@ public class AzimuthExperiment extends Experiment {
       double[] testEastWin = Arrays.copyOfRange(testEast, startIdx, endIdx);
       double[] refNorthWin = Arrays.copyOfRange(refNorth, startIdx, endIdx);
       
+      /*
       testNorthWin = TimeSeriesUtils.detrend(testNorthWin);
       testEastWin = TimeSeriesUtils.detrend(testEastWin);
       refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
       
-      /*// cosine taper operation (note: unnecessary for fixed window size/interval)
+      // cosine taper operation (note: unnecessary for fixed window size/interval)
       double wid = 0.05; // taper width
       FFTResult.cosineTaper(testNorthWin, wid);
       FFTResult.cosineTaper(testEastWin, wid);
       FFTResult.cosineTaper(refNorthWin, wid);
-      */
       
       testNorthWin = FFTResult.bandFilter(testNorthWin, sps, low, high);
       testEastWin = FFTResult.bandFilter(testEastWin, sps, low, high);
       refNorthWin = FFTResult.bandFilter(refNorthWin, sps, low, high);
+      */
       
       jacobian = 
-          getJacobianFunction(testNorthWin, testEastWin, refNorthWin, interval);
+          getJacobianFunction(testNorthWin, testEastWin, refNorthWin, interval, 
+                              bestCorr, bestTheta);    
       
       LeastSquaresProblem findAngleWindow = new LeastSquaresBuilder().
           start(new double[]{tempAngle}).
@@ -324,6 +312,12 @@ public class AzimuthExperiment extends Experiment {
       double angleTemp = angleVectorWindow.getEntry(0);
       double correlation = jacobian.value(angleVectorWindow).getFirst().getEntry(0);
 
+      if (correlation > bestCorr) {
+        bestCorr = correlation;
+        double tau = NumericUtils.TAU;
+        bestTheta = ( (angleTemp % tau) + tau) % tau;
+      }
+      
       angleCorrelationMap.put(
           wdStart, new Pair<Double, Double>(angleTemp, correlation) );
       sortedCorrelation.add(correlation);
@@ -434,7 +428,7 @@ public class AzimuthExperiment extends Experiment {
         long xVal = time / 1000;
         double angle = angleCorrelationMap.get(time).getFirst();
         double correlation = angleCorrelationMap.get(time).getSecond();
-        timeMapCorrelation.add(xVal, correlation);
+        timeMapCorrelation.add(xVal, 1 - correlation);
         timeMapAngle.add( xVal, Math.toDegrees(angle) );
     }
 
@@ -465,7 +459,7 @@ public class AzimuthExperiment extends Experiment {
   }
   
   /**
-   * Returns the jacobian function for this object given input timeseries data.
+   * Returns the jacobian function for initial estimate given input timeseries data.
    * The timeseries are used as input to the rotation function.
    * We take the inputs as fixed and rotate copies of the data to find the
    * Jacobian of the data.
@@ -478,6 +472,7 @@ public class AzimuthExperiment extends Experiment {
   getJacobianFunction(double[] l1, double[] l2, double[] l3, 
       long interval) {    
     
+    // make my func the j-func, I want that func-y stuff
     // make my func the j-func, I want that func-y stuff
     MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
 
@@ -492,6 +487,36 @@ public class AzimuthExperiment extends Experiment {
             finalTestNorth, 
             finalTestEast,
             finalInterval);
+      }
+    };
+    return jFunc; 
+  }
+  
+  // This is the damped jacobian function for windowed estimates
+  // we use a different cost function for initial estimate since using the
+  // squared correlation would make x, 180+x produce the same values
+  private MultivariateJacobianFunction 
+  getJacobianFunction(double[] l1, double[] l2, double[] l3, 
+      long interval, double cr, double th) {    
+    
+    // make my func the j-func, I want that func-y stuff
+    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
+
+      final double[] finalTestNorth = l1;
+      final double[] finalTestEast = l2;
+      final double[] finalRefNorth = l3;
+      final long finalInterval = interval;
+      final double bestCorr = cr;
+      final double bestTheta = th;
+
+      public Pair<RealVector, RealMatrix> value(final RealVector point) {
+        return jacobian(point, 
+            finalRefNorth, 
+            finalTestNorth, 
+            finalTestEast,
+            finalInterval,
+            bestCorr,
+            bestTheta);
       }
     };
     
@@ -532,6 +557,45 @@ public class AzimuthExperiment extends Experiment {
    * @return Correlation (RealVector) and forward difference 
    * approximation of the Jacobian (RealMatrix) at the current angle
    */
+  private Pair<RealVector, RealMatrix> jacobian(
+      final RealVector point, 
+      final double[] refNorth,
+      final double[] testNorth, 
+      final double[] testEast,
+      final long interval,
+      final double bestCorr,
+      final double bestTheta) {
+    
+    double diff = 1E-12;
+    
+    double theta = ( point.getEntry(0) );
+    double thetaDelta = theta + diff;
+    
+    // was the frequency range under examination (in Hz) when doing coherence
+    // double lowFreq = 1./18.;
+    // double highFreq = 1./3.;
+    
+    // angles of rotation are x, x+dx respectively
+    double[] testRotated = 
+        TimeSeriesUtils.rotate(testNorth, testEast, theta);
+    double[] rotatedDiff =
+        TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
+    
+    PearsonsCorrelation pc = new PearsonsCorrelation();
+    double value = pc.correlation(refNorth, testRotated);
+    double damping = (bestCorr - 1) * (theta - bestTheta);
+    value = Math.pow(value - 1 + damping, 2);
+    RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
+    double deltaY = pc.correlation(refNorth, rotatedDiff);
+    damping = (bestCorr - 1) * (thetaDelta - bestTheta);
+    deltaY = Math.pow(deltaY - 1 + damping, 2);
+    double change = (deltaY - value) / diff;
+    double[][] jacobianArray = new double[][]{{change}};
+    RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
+    return new Pair<RealVector, RealMatrix>(valueVec, jacobian);
+    
+  }
+  
   private Pair<RealVector, RealMatrix> jacobian(
       final RealVector point, 
       final double[] refNorth,
