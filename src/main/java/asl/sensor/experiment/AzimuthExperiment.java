@@ -50,48 +50,7 @@ import asl.sensor.utils.TimeSeriesUtils;
  *
  */
 public class AzimuthExperiment extends Experiment {
-    
-  /**
-   * Check if data is aligned antipolar or not (signs of data are inverted)
-   * by determining if the Pearson's correlation metric is positive or not.
-   * @param rot Data that has been rotated and may be 180 degrees off from
-   * correct orientation (i.e., should but may not be aligned with reference)
-   * @param ref Data that is to be used as reference with known orientation
-   * @param len Amount of data to be analysed for sign matching
-   * @return True if more data analysed has opposite signs than matching signs
-   * (i.e., one signal is positive and one is negative)
-   */
-  public static boolean
-  alignedAntipolar(double[] rot, double[] ref, int len) {
-
-    double[] refTrim = Arrays.copyOfRange(ref, 0, len);
-    double[] rotTrim = Arrays.copyOfRange(rot, 0, len);
-    
-    PearsonsCorrelation pc = new PearsonsCorrelation();
-    double cor = pc.correlation(refTrim, rotTrim);
-    if (cor < 0) {
-      return true;
-    }
-
-    return false;
-    
-    /*
-    int numSameSign = 0; int numDiffSign = 0;
-    for (int i = 0; i < len; ++i) {
-      int sigRot = (int) Math.signum(rot[i]);
-      int sigRef = (int) Math.signum(ref[i]);
-      
-      if (sigRot - sigRef == 0) {
-        ++numSameSign;
-      } else {
-        ++numDiffSign;
-      }
-    }
-    
-    return numSameSign < numDiffSign;
-    */
-    
-  }
+  
   private double offset = 0.;
   
   private double angle, uncert;
@@ -193,9 +152,6 @@ public class AzimuthExperiment extends Experiment {
     MultivariateJacobianFunction jacobian = 
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth, interval);
     
-    // want (correlation-1+damping) to be as close to 0 as possible
-    RealVector target = MatrixUtils.createRealVector(new double[]{0});
-    
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
         model(jacobian).
@@ -245,6 +201,9 @@ public class AzimuthExperiment extends Experiment {
         new HashMap<Long, Pair<Double, Double>> ();
     List<Double> sortedCorrelation = new ArrayList<Double>();
     
+    // want (correlation-1+damping) to be as close to 0 as possible
+    RealVector target = MatrixUtils.createRealVector(new double[]{0});
+    
     // the best correlation and azimuth angle producing that correlation
     // for the purpose of providing damped estimates 
     // (improves susceptibility to noise)
@@ -272,32 +231,16 @@ public class AzimuthExperiment extends Experiment {
       int startIdx = (int) (wdStart / interval);
       int endIdx = (int) (wdEnd / interval);
       
-      double[] testNorthWin = Arrays.copyOfRange(testNorth, startIdx, endIdx);
-      double[] testEastWin = Arrays.copyOfRange(testEast, startIdx, endIdx);
-      double[] refNorthWin = Arrays.copyOfRange(refNorth, startIdx, endIdx);
-      
-      /*
-      testNorthWin = TimeSeriesUtils.detrend(testNorthWin);
-      testEastWin = TimeSeriesUtils.detrend(testEastWin);
-      refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
-      
-      // cosine taper operation (note: unnecessary for fixed window size/interval)
-      double wid = 0.05; // taper width
-      FFTResult.cosineTaper(testNorthWin, wid);
-      FFTResult.cosineTaper(testEastWin, wid);
-      FFTResult.cosineTaper(refNorthWin, wid);
-      
-      testNorthWin = FFTResult.bandFilter(testNorthWin, sps, low, high);
-      testEastWin = FFTResult.bandFilter(testEastWin, sps, low, high);
-      refNorthWin = FFTResult.bandFilter(refNorthWin, sps, low, high);
-      */
+      double[] testNorthWin = Arrays.copyOfRange(initTestNorth, startIdx, endIdx);
+      double[] testEastWin = Arrays.copyOfRange(initTestEast, startIdx, endIdx);
+      double[] refNorthWin = Arrays.copyOfRange(initRefNorth, startIdx, endIdx);
       
       jacobian = 
           getJacobianFunction(testNorthWin, testEastWin, refNorthWin, interval, 
                               bestCorr, bestTheta);    
       
       LeastSquaresProblem findAngleWindow = new LeastSquaresBuilder().
-          start(new double[]{tempAngle}).
+          start(new double[]{bestTheta}).
           model(jacobian).
           target(target).
           maxEvaluations(Integer.MAX_VALUE).
@@ -318,12 +261,14 @@ public class AzimuthExperiment extends Experiment {
         bestTheta = ( (angleTemp % tau) + tau) % tau;
       }
       
+      double correctedCorrelation = 1 - correlation; // closer to 1 means better
       angleCorrelationMap.put(
-          wdStart, new Pair<Double, Double>(angleTemp, correlation) );
-      sortedCorrelation.add(correlation);
+          wdStart, new Pair<Double, Double>(angleTemp, correctedCorrelation) );
+      sortedCorrelation.add(correctedCorrelation);
     }
     
     int minCorrelations = 5;
+    // TODO: can refactor this to break out if numWindows is < 5
     if (angleCorrelationMap.size() < minCorrelations) {
       fireStateChange("Window size too small for good angle estimation...");
       double tau = NumericUtils.TAU;
@@ -347,7 +292,7 @@ public class AzimuthExperiment extends Experiment {
       for (Pair<Double, Double> angCoherePair : angleCorrelationMap.values()) {
         double angleTemp = angCoherePair.getFirst();
         double correlation = angCoherePair.getSecond();
-        if ( acceptableCorrelations.contains(correlation) ) {
+        if ( acceptableCorrelations.contains(correlation) && correlationCount < maxBoundary ) {
           averageAngle += angleTemp;
           acceptedVals.add(angleTemp);
           ++correlationCount;
@@ -427,8 +372,10 @@ public class AzimuthExperiment extends Experiment {
     for ( long time : angleCorrelationMap.keySet() ) {
         long xVal = time / 1000;
         double angle = angleCorrelationMap.get(time).getFirst();
+        double tau = NumericUtils.TAU;
+        angle = ( (angle % tau) + tau) % tau;
         double correlation = angleCorrelationMap.get(time).getSecond();
-        timeMapCorrelation.add(xVal, 1 - correlation);
+        timeMapCorrelation.add(xVal, correlation);
         timeMapAngle.add( xVal, Math.toDegrees(angle) );
     }
 

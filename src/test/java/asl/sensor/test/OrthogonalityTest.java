@@ -19,19 +19,20 @@ import asl.sensor.utils.TimeSeriesUtils;
 public class OrthogonalityTest {
 
 
-  // @Test commented out until I can better understand the issues here
+  // @Test // commented out until I can better understand the issues here
   public void identifiesSprocketsDay239AsOrtho() {
     DataStore ds;
     try {
       ds = getOrthogonalSprocketsData(239);
       Calendar stCal = TestUtils.getStartCalendar(ds);
-      stCal.set(Calendar.HOUR_OF_DAY, 2);
+      stCal.set(Calendar.HOUR_OF_DAY, 7);
       stCal.set(Calendar.MINUTE, 0);
       stCal.set(Calendar.SECOND, 0);
       stCal.set(Calendar.MILLISECOND, 0);
       long start = stCal.getTime().getTime();
-      Calendar edCal = TestUtils.getEndCalendar(ds);
-      System.out.println(edCal);
+      Calendar edCal = stCal;
+      edCal.set(Calendar.HOUR_OF_DAY, 11);
+      //Calendar edCal = TestUtils.getEndCalendar(ds);
       long end = edCal.getTime().getTime();
       ds.trim(start, end);
       identifiesOrthogonalFromSprockets(ds);
@@ -94,6 +95,9 @@ public class OrthogonalityTest {
     filePre = root + testPrepend;
     ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(filePre+data1) );
     ds.setBlock(3, TimeSeriesUtils.getFirstTimeSeries(filePre+data2) );
+    
+    System.out.println(ds.getBlock(2).getName());
+    System.out.println(ds.getBlock(3).getName());
     /*
       Calendar cCal = TestUtils.getStartCalendar(ds);
       cCal.set(Calendar.HOUR_OF_DAY, 13);

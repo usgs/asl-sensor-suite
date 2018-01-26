@@ -82,12 +82,13 @@ public class OrthogonalExperiment extends Experiment {
     double[] testLH1 = testLH1Block.getData();
     double[] testLH2 = testLH2Block.getData();
     
-    /*
-    TimeSeriesUtils.detrend(refLH1);
-    TimeSeriesUtils.detrend(refLH2);
-    TimeSeriesUtils.detrend(testLH1);
-    TimeSeriesUtils.detrend(testLH2);
     
+    refLH1 = TimeSeriesUtils.detrend(refLH1);
+    refLH2 = TimeSeriesUtils.detrend(refLH2);
+    testLH1 = TimeSeriesUtils.detrend(testLH1);
+    testLH2 = TimeSeriesUtils.detrend(testLH2);
+    
+    /*
     refLH1 = TimeSeriesUtils.normalize(refLH1);
     refLH2 = TimeSeriesUtils.normalize(refLH2);
     testLH1 = TimeSeriesUtils.normalize(testLH1);
@@ -125,7 +126,6 @@ public class OrthogonalExperiment extends Experiment {
     DataStore findTestY = new DataStore(findTestX);
     findTestY.setBlock(2, testLH1Block);
     
-    // TODO: FIX THIS
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.runExperimentOnData(findTestY);
     double angleY = -azi.getFitAngle(); // degrees
