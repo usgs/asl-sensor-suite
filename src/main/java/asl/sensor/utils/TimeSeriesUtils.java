@@ -542,7 +542,6 @@ public class TimeSeriesUtils {
 
   }
   
-  
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
    * list of Java numerics, which can be shorts, floats, doubles, or longs,

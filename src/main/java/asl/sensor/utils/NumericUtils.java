@@ -178,6 +178,13 @@ public class NumericUtils {
     return out;
   }
   
+  /**
+   * Perform a moving average on real-val. data, using the specified number of points to average at
+   * each point in the input
+   * @param nums Numeric data to be smoothed by use of moving average
+   * @param points Number of points to include in moving average
+   * @return Smoothed data resulting from performing the moving average on input data.
+   */
   public static double[] multipointMovingAverage(double[] nums, int points) {
     double[] out = new double[nums.length];
     double[] cached = new double[points];
