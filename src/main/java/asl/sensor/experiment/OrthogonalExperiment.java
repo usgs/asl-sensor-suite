@@ -17,7 +17,7 @@ import asl.sensor.utils.TimeSeriesUtils;
  * Finds the interior angle between two sensors of unknown orientation using
  * input from two sensors known to be orthogonal and at north and east
  * orientation. The result returns the relative orientation between angles
- * using the azimuth calculation as an intermediate step.
+ * using the (full, damped-windowed) azimuth calculation as an intermediate step.
  * (See AzimuthExperiment for details on how the best-fit angles are found)
  * @author akearns
  *
@@ -77,16 +77,17 @@ public class OrthogonalExperiment extends Experiment {
     DataBlock testLH2Block = ds.getXthLoadedBlock(4);
     dataNames.add( testLH2Block.getName() );
     
+    // this code is used to get the plotted difference between ref + test, ref + rotated test
     double[] refLH1 = refLH1Block.getData();
     double[] refLH2 = refLH2Block.getData();
     double[] testLH1 = testLH1Block.getData();
-    double[] testLH2 = testLH2Block.getData();
+    // double[] testLH2 = testLH2Block.getData();
     
     
     refLH1 = TimeSeriesUtils.detrend(refLH1);
     refLH2 = TimeSeriesUtils.detrend(refLH2);
     testLH1 = TimeSeriesUtils.detrend(testLH1);
-    testLH2 = TimeSeriesUtils.detrend(testLH2);
+    // testLH2 = TimeSeriesUtils.detrend(testLH2);
     
     /*
     refLH1 = TimeSeriesUtils.normalize(refLH1);

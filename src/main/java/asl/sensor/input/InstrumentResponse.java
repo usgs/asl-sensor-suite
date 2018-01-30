@@ -166,18 +166,34 @@ public class InstrumentResponse {
     name = responseIn.getName();
   }
   
+  /**
+   * Return the number of gain stages this response has
+   * @return number of gain stages
+   */
   public int getNumStages() {
     return numStages;
   }
 
+  /**
+   * Get each unique zero as a complex value and the number of times it appears in the response
+   * @return map from unique zeros to the number of times they each appear
+   */
   private Map<Complex, Integer> getZerosMap() {
     return zeros;
   }
   
+  /**
+   * Get each unique pole as a complex value and the number of times it appears in the response
+   * @return map from unique poles to the number of times they each appear
+   */
   private Map<Complex, Integer> getPolesMap() {
     return poles;
   }
 
+  /**
+   * Sort poles by magnitude, prioritizing poles with zero imaginary component
+   * @return sorted list of unique poles
+   */
   private List<Complex> getSortedPoleKeys() {
     ArrayList<Complex> list = new ArrayList<Complex>( poles.keySet() );
     if (list.size() > 1) {
@@ -186,6 +202,10 @@ public class InstrumentResponse {
     return list;
   }
   
+  /**
+   * Sort zeros by magnitude, prioritizing zeros with zero imaginary component
+   * @return sorted list of unique zeros
+   */
   private List<Complex> getSortedZeroKeys() {
     ArrayList<Complex> list = new ArrayList<Complex>( zeros.keySet() );
     if ( list.size() > 1 ) {
@@ -424,10 +444,18 @@ public class InstrumentResponse {
     
   }
   
+  /**
+   * Apply new zeros to this response object
+   * @param newZeros map from unique zeros to the number of times they appear in (modified) response
+   */
   private void setZerosMap(Map<Complex, Integer> newZeros) {
     zeros = newZeros;
   }
-
+  
+  /**
+   * Apply new poles to this response object
+   * @param newPoles map from unique poles to the number of times they appear in (modified) response
+   */
   private void setPolesMap(Map<Complex, Integer> newPoles) {
     poles = newPoles;
   }
@@ -805,8 +833,9 @@ public class InstrumentResponse {
   }
   
   /**
-   * Replace the current poles of this response with new ones
-   * @param poleList New poles to replace the current response poles with
+   * Replace the current poles of this response with new ones from a list
+   * @param poleList List of poles to replace the current response poles with (repeated poles listed 
+   * the number of times they appear)
    */
   public void setPoles(List<Complex> poleList) {
     poles = new HashMap<Complex, Integer>();
@@ -820,6 +849,11 @@ public class InstrumentResponse {
     }
   }
   
+  /**
+   * Replace the current poles of this response with new ones from an array
+   * @param poleList Array of poles to replace the current response poles with (repeated poles 
+   * listed by the number of times they appear)
+   */
   public void setPoles(Complex[] poleList) {
     poles = new HashMap<Complex, Integer>();
     for (Complex p : poleList) {
@@ -834,7 +868,8 @@ public class InstrumentResponse {
 
   /**
    * Set the list of zeros to a new list, such as after fitting from random cal
-   * @param newZeros New list of zeros to assign this calibration
+   * @param zeroList List of zeros to replace the current response poles with (repeated zeros listed 
+   * the number of times they appear)
    */
   public void setZeros(List<Complex> zeroList) {
     zeros = new HashMap<Complex, Integer>();
@@ -848,6 +883,11 @@ public class InstrumentResponse {
     }
   }
   
+  /**
+   * Set the list of zeros to a new array, such as after fitting from random cal
+   * @param zeroList Array of zeros to replace the current response poles with (repeated zeros 
+   * listed the number of times they appear)
+   */
   public void setZeros(Complex[] zeroList) {
     zeros = new HashMap<Complex, Integer>();
     for (Complex z : zeroList) {

@@ -278,7 +278,7 @@ public class CalProcessingServer {
   /**
    * get all metadata from the function in a single file
    * @param exp
-   * @return
+   * @return text representation of data from experiment
    */
   public static String getMetadataFromExp(RandomizedExperiment exp) {
     String[] data = RandomizedPanel.getInsetString(exp);

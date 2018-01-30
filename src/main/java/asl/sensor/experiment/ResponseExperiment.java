@@ -26,7 +26,7 @@ public class ResponseExperiment extends Experiment {
   public static final String MAGNITUDE = "Response amplitude";
   public static final String ARGUMENT = "Response phase";
   
-  private boolean freqSpace;
+  private boolean freqSpace; // choose between units of Hz or seconds (time between samples)
   
   private Set<InstrumentResponse> responses;
   

@@ -136,13 +136,13 @@ implements ActionListener, ChangeListener {
     
   }
   
-  protected JButton save;
+  protected JButton save; // easy access to saving output as png
   
   protected JFreeChart chart; // the chart shown in the panel
   
   protected ChartPanel chartPanel; // component used to hold the shown chart
   // (if an experiment has multiple charts to show, ideally each should be
-  // selectable through some sort of menu with the active menu option deciding
+  // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
   
   protected JFileChooser fc; // save image when image save button clicked

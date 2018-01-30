@@ -85,8 +85,8 @@ public class GainSixPanel extends GainPanel {
     return sb.toString();
   }
 
-  protected JFreeChart northChart, eastChart, vertChart;
-  protected JComboBox<String> plotSelection;
+  protected JFreeChart northChart, eastChart, vertChart; // gain result per dimensional component
+  protected JComboBox<String> plotSelection; // which chart to display in window?
 
   /**
    * Instantiate the panel, including sliders and stat calc button

@@ -72,6 +72,8 @@ import asl.sensor.utils.TimeSeriesUtils;
  * that is used to hold in the loaded data directly, and the other one is also
  * a DataStore object but has its data passed to the panel's input plots and
  * to experiment calculations.
+ * Some important functions this object has is to make sure that input data is all trimmed
+ * to the same region for use in experiment backends, and display time regions of interest
  * @author akearns
  *
  */
@@ -124,16 +126,16 @@ implements ActionListener, ChangeListener {
   
   private int activePlots = FILE_COUNT; // how much data is being displayed
   
-  private DataStore ds;
-  private ChartPanel[] chartPanels;
+  private DataStore ds; // holds data to be plotted in each chartpanel
+  private ChartPanel[] chartPanels; // show the data for a given input
   private Color[] defaultColor = {
           ChartColor.LIGHT_RED, 
           ChartColor.LIGHT_BLUE, 
-          ChartColor.LIGHT_GREEN };
-  private JButton save;
-  private JButton zoomIn;
-  private JButton zoomOut;
-  private JButton clearAll;
+          ChartColor.LIGHT_GREEN }; // control ordering of colors
+  private JButton save; // save every input of note in a png plot
+  private JButton zoomIn; // select a given window
+  private JButton zoomOut; // revert to full data region
+  private JButton clearAll; // remove all data
   private JFileChooser fc;
   private JPanel allCharts; // parent of the chartpanels, used for image saving
   private JSlider leftSlider;

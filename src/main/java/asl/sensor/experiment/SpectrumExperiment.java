@@ -7,7 +7,8 @@ import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 
 /**
- * Calculates PSD to get cross-power.
+ * Calculates PSD to get cross-power. Can be done on 1-3 different series of data; does not estimate
+ * noise parameters taken from these PSDs due to having such limited data.
  * Based on code in the seedscan timeseries package, see
  * https://github.com/usgs/seedscan/tree/master/src/main/java/asl/timeseries
  * @author akearns, jholland 

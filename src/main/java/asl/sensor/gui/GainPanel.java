@@ -232,7 +232,7 @@ implements ChangeListener {
     
   }
   
-  @Override
+
   /**
    * Given input data (including time series collection), get only the relevant
    * ones to display based on combo boxes and then do the statistics on those.
@@ -241,6 +241,7 @@ implements ChangeListener {
    * peak value's frequency. This function is called when new data is fed in 
    * or when the combo box active entries change
    */
+  @Override
   protected void drawCharts() {
     
     final int refIdx = refSeries.getSelectedIndex();

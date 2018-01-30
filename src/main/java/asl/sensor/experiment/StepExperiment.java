@@ -501,6 +501,14 @@ public class StepExperiment extends Experiment{
     return new int[]{sensorOutIdx};
   }
   
+  /**
+   * Control the range of data being added to the program (like normalization, but more elaborate
+   * in order to deal with notches on data corners or noise in the step response)
+   * @param data Data to be scaled down
+   * @param range Range of data to use as estimates for where to put the axis crossings
+   * @param farCornerIdx Index at the end of the pulse function
+   * @return scaled version of the input data
+   */
   private double[] scaleData(double[] data, int range, int farCornerIdx) {
     //System.out.println(farCornerIdx);
     double[] scaled = new double[data.length];

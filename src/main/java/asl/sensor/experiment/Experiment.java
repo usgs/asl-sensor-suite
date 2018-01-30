@@ -61,7 +61,7 @@ public abstract class Experiment {
    * @param ds DataStore to collect data from
    * @param freqSpace True if using units of Hz, False if units of s
    * (sample rate vs. interval between points)
-   * @param indices Specifies which of the data can be loaded in
+   * @param idx Specifies which of the datablocks in the datastore to get the data from
    * @param xysc
    */
   public static void addToPlot(
@@ -79,6 +79,18 @@ public abstract class Experiment {
     addToPlot(powerSeries, resultPSD, freqs, freqSpace, xysc);
   }
   
+  /**
+   *
+   * Helper function to add data from a PSD calculation (Complex freq. space series and 
+   * corresponding frequencies taken from the FFTResult object produced by the calculation)
+   * into an XYSeriesCollection to eventually be plotted.
+   * Used in both self-noise and relative gain calculations
+   * @param powerSeries XYSeries data to load given PSD calculations into
+   * @param resultPSD FFT data produced by the PSD
+   * @param freqs Frequency corresponding to PSD value at given index
+   * @param freqSpace True if using units of Hz, False if units of s
+   * @param xysc XYSeriesCollection the given XYSeries will be loaded into
+   */
   public static void addToPlot(
       final XYSeries powerSeries,
       final Complex[] resultPSD,
@@ -116,6 +128,9 @@ public abstract class Experiment {
   
   private EventListenerList eventHelper;
   
+  /**
+   * Initialize all fields common to experiment objects
+   */
   public Experiment() {
     start = 0L; end = 0L;
     dataNames = new ArrayList<String>();
@@ -133,7 +148,7 @@ public abstract class Experiment {
   }
   
   /**
-   * Abstract function that
+   * Abstract function that runs the calculations specific to a given procedure
    * (Overwritten by concrete experiments with specific operations)
    * @param ds Object containing the raw timeseries data to process
    */
@@ -148,6 +163,7 @@ public abstract class Experiment {
   
   /**
    * Update processing status and notify listeners of change
+   * (Used to show messages displaying the progress of the function on the GUI)
    * @param newStatus Status change message to notify listeners of
    */
   protected void fireStateChange(String newStatus) {
@@ -175,7 +191,7 @@ public abstract class Experiment {
   }
   
   /**
-   * Get the end time of the data sent into this experiment
+   * Get the end time of the data sent into this experiment, when timeseries data is used
    * @return End time, in microseconds
    */
   public long getEnd() {
@@ -187,7 +203,7 @@ public abstract class Experiment {
    * representing regions within the given window where data does not exist
    * Gaps in data can show up in experiments as noise or other glitches and
    * may be evidence of a failing sensor in some cases
-   * @return Map from data names to 
+   * @return Map from data names to list of paired values representing gap durations (start, end)
    */
   public Map<String, List<Pair<Date, Date>>> getGapRegions() {
     return gapRegions;
@@ -203,7 +219,7 @@ public abstract class Experiment {
   }
   
   /**
-   * Get the start time of the data sent into this experiment
+   * Get the start time of the data sent into this experiment, when timeseries data is used
    * @return Start time, in microseconds
    */
   public long getStart() {
@@ -212,6 +228,7 @@ public abstract class Experiment {
   
   /**
    * Return newest status message produced by this program
+   * (Used to get the actual status messages that should be displayed in the GUI while processing)
    * @return String representing status of program
    */
   public String getStatus() {
@@ -219,7 +236,9 @@ public abstract class Experiment {
   }
   
   /**
-   * Used to check if the current input has enough data to do the calculation
+   * Used to check if the current input has enough data to do the calculation.
+   * (i.e., if data requires 2 timeseries, check the first two datablocks in the datastore have
+   * data and return true if so)
    * @param ds DataStore to be fed into experiment calculation
    * @return True if there is enough data to be run
    */
@@ -237,6 +256,8 @@ public abstract class Experiment {
    
   /**
    * Remove changelistener from list of listeners notified on status change
+   * (Generally not used but may be useful for implementing forwarding status messages from data
+   * subcomponents)
    * @param listener Listener to remove from list
    */
   public void removeChangeListener(ChangeListener listener) {

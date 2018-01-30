@@ -153,6 +153,13 @@ public class NumericUtils {
     df.setDecimalFormatSymbols(symbols);
   }
   
+  /**
+   * Perform a moving average on complex data, using the specified number of points to average at
+   * each point in the input
+   * @param nums Complex data to be smoothed by use of moving average
+   * @param points Number of points to include in moving average
+   * @return Smoothed data resulting from performing the moving average on input data.
+   */
   public static Complex[] multipointMovingAverage(Complex[] nums, int points) {
     Complex[] out = new Complex[nums.length];
     Complex[] cached = new Complex[points];

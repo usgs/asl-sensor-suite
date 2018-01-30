@@ -150,7 +150,7 @@ public class AzimuthExperiment extends Experiment {
     initRefNorth = FFTResult.bandFilter(initRefNorth, sps, low, high);
     
     MultivariateJacobianFunction jacobian = 
-        getJacobianFunction(initTestNorth, initTestEast, initRefNorth, interval);
+        getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
     
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {0}).
@@ -236,8 +236,7 @@ public class AzimuthExperiment extends Experiment {
       double[] refNorthWin = Arrays.copyOfRange(initRefNorth, startIdx, endIdx);
       
       jacobian = 
-          getJacobianFunction(testNorthWin, testEastWin, refNorthWin, interval, 
-                              bestCorr, bestTheta);    
+          getJacobianFunction(testNorthWin, testEastWin, refNorthWin, bestCorr, bestTheta);    
       
       LeastSquaresProblem findAngleWindow = new LeastSquaresBuilder().
           start(new double[]{bestTheta}).
@@ -323,22 +322,6 @@ public class AzimuthExperiment extends Experiment {
     }
 
     fireStateChange("Solver completed! Producing plots...");
-
-    /*
-    // solver produces angle of x, 180+x that is closer to reference
-    // if angle is ~180 degrees away from reference in reality, then the signal
-    // would be inverted from the original. so get 10 seconds of data and check
-    // to see if the data is all on the same side of 0.
-
-    double[] rotTimeSeries = 
-        TimeSeriesUtils.rotate(testNorth, testEast, angle);
-    double[] refTimeSeries = refNorth;
-
-    if ( alignedAntipolar(rotTimeSeries, refTimeSeries, antipolarTrimLen) ) {
-      angle += Math.PI; // still in radians
-      angle = angle % NumericUtils.TAU; // keep between 0 and 360
-    }
-    */
     
     double angleDeg = Math.toDegrees(angle);
     
@@ -416,8 +399,7 @@ public class AzimuthExperiment extends Experiment {
    * @return jacobian function to fit an angle of max correlation of this data
    */
   private MultivariateJacobianFunction 
-  getJacobianFunction(double[] l1, double[] l2, double[] l3, 
-      long interval) {    
+  getJacobianFunction(double[] l1, double[] l2, double[] l3) {    
     
     // make my func the j-func, I want that func-y stuff
     // make my func the j-func, I want that func-y stuff
@@ -426,14 +408,12 @@ public class AzimuthExperiment extends Experiment {
       final double[] finalTestNorth = l1;
       final double[] finalTestEast = l2;
       final double[] finalRefNorth = l3;
-      final long finalInterval = interval;
 
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         return jacobian(point, 
             finalRefNorth, 
             finalTestNorth, 
-            finalTestEast,
-            finalInterval);
+            finalTestEast);
       }
     };
     return jFunc; 
@@ -443,8 +423,7 @@ public class AzimuthExperiment extends Experiment {
   // we use a different cost function for initial estimate since using the
   // squared correlation would make x, 180+x produce the same values
   private MultivariateJacobianFunction 
-  getJacobianFunction(double[] l1, double[] l2, double[] l3, 
-      long interval, double cr, double th) {    
+  getJacobianFunction(double[] l1, double[] l2, double[] l3, double cr, double th) {    
     
     // make my func the j-func, I want that func-y stuff
     MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
@@ -452,7 +431,6 @@ public class AzimuthExperiment extends Experiment {
       final double[] finalTestNorth = l1;
       final double[] finalTestEast = l2;
       final double[] finalRefNorth = l3;
-      final long finalInterval = interval;
       final double bestCorr = cr;
       final double bestTheta = th;
 
@@ -461,7 +439,6 @@ public class AzimuthExperiment extends Experiment {
             finalRefNorth, 
             finalTestNorth, 
             finalTestEast,
-            finalInterval,
             bestCorr,
             bestTheta);
       }
@@ -495,12 +472,16 @@ public class AzimuthExperiment extends Experiment {
   /**
    * Jacobian function for the azimuth solver. Takes in the directional
    * signal components (DataBlocks) and the angle to evaluate at and produces
-   * the correlation at that point and the forward difference
+   * a damped cost function based on best correlation (and the angle producing it) from previous
+   * data windows, each one fixed for a given window (not changing on recursive calls for the same
+   * set of input data).
    * @param point Current angle
    * @param refNorth Reference sensor, facing north
    * @param testNorth Test sensor, facing approximately north
    * @param testEast Test sensor, facing approximately east and orthogonal to
    * testNorth
+   * @param bestCorr Most recent best-result value for the correlation (from previous windows)
+   * @param bestTheta Most recent best-result value for the correlation (from previous windows)
    * @return Correlation (RealVector) and forward difference 
    * approximation of the Jacobian (RealMatrix) at the current angle
    */
@@ -509,7 +490,6 @@ public class AzimuthExperiment extends Experiment {
       final double[] refNorth,
       final double[] testNorth, 
       final double[] testEast,
-      final long interval,
       final double bestCorr,
       final double bestTheta) {
     
@@ -547,8 +527,7 @@ public class AzimuthExperiment extends Experiment {
       final RealVector point, 
       final double[] refNorth,
       final double[] testNorth, 
-      final double[] testEast,
-      final long interval) {
+      final double[] testEast) {
     
     double diff = 1E-12;
     
@@ -590,6 +569,8 @@ public class AzimuthExperiment extends Experiment {
    * is NOT done, and the initial least-squares guess gives us an answer.
    * When creating an instance of this object, this is set to false and only
    * needs to be explicitly set when a simple calculation is desired.
+   * This is used primarily when aligning data is done as part of a multi-input experiment
+   * (i.e., 9-input self-noise, 6-input relative gain)
    * @param isSimple True if a simple calculation should be done
    */
   public void setSimple(boolean isSimple) {

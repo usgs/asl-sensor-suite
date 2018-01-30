@@ -87,6 +87,13 @@ public class FFTResult {
     
   }
   
+  /**
+   * Apply a low pass filter to some timeseries data
+   * @param toFilt Data to be filtered
+   * @param sps Sample rate of the data in Hz
+   * @param corner Corner frequency of LPF
+   * @return lowpass-filtered timeseries data
+   */
   public static double[] lowPassFilter(double[] toFilt, double sps, double corner) {
     Butterworth casc = new Butterworth();
     // order 1 filter

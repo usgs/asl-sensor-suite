@@ -50,6 +50,11 @@ public class TimeSeriesUtils {
    */
   public final static double ONE_HZ = 1.0;
 
+  /**
+   * Merge arrays from multiple timeseries into a single object
+   * @param arrs Series of arrays
+   * @return All inputted arrays concatenated into a single array (can be specified as a 2D array)
+   */
   public static double[] concatAll(double[]... arrs) {
     
     if (arrs.length == 0) {
@@ -398,10 +403,10 @@ public class TimeSeriesUtils {
    * Used to quickly get the data in a list of files, where the first
    * file's first data is the SNCL to filter on. This is useful if loading in
    * data from files that are known to not be multiplexed (i.e., containing
-   * only the data from a single channel).
-   * @param filename Filename of miniSEED data to load in
-   * @return Datablock representing the data inside the miniSEED
-   * @throws FileNotFoundException if given file from filename cannot be read
+   * only the data from a single channel). Used mainly to load calibration spanning multiple days.
+   * @param filenames Filenames of miniSEED data to load in
+   * @return Datablock representing the data inside the miniSEEDs 
+   * @throws FileNotFoundException if given files from filenames cannot be read
    */
   public static DataBlock getFirstTimeSeries(String[] filenames) 
       throws FileNotFoundException {
@@ -413,7 +418,7 @@ public class TimeSeriesUtils {
    * Get the set of available data series in a multiplexed miniseed file.
    * Because the list is derived from the set, the result of this function
    * should have no duplicate entries.
-   * Because Java Sets do not specify ordering, this allows for indexing
+   * Because Java Sets do not specify ordering, conversion to list (which does) allows for indexing
    * operations to be performed on the returned data more easily.
    * @param filename Name of file to read in
    * @return List of strings corresponding to metadata of each data series
@@ -515,11 +520,12 @@ public class TimeSeriesUtils {
    * This is packaged into a data structure that also includes the file's
    * metadata (station, channel, etc.) and the start time and period between
    * samples.
+   * This method is used to handle data that may span multiple days (such as some calibrations).
    * Some of this code is based on the miniseed to float array example given
    * in the repository for the included seisFile miniSEED parser library;
    * see the src/.../examples folder under
    * https://github.com/crotwell/seisFile/ for more
-   * @param filename Each entry is full path of each file to be loaded in
+   * @param filenames Each entry is full path of each file to be loaded in
    * @param filter Specifies which data to load in, for multiplexed files
    * @return A structure containing the time series and metadata for the file
    * @throws FileNotFoundException If file cannot be read in

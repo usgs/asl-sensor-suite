@@ -628,6 +628,12 @@ public class DataStore {
     }
   }
   
+  /**
+   * Trim data to a region specified by pair of millisecond timestamps up to given input
+   * @param times Pair of timestamps, given in milliseconds (lower bound, upper bound)
+   * @param limit Number of datablocks to pair (1 only trims the first)
+   * @throws IndexOutOfBoundsException If time limit not a subset of data region
+   */
   public void trim(Pair<Long, Long> times, int limit) 
       throws IndexOutOfBoundsException{
     trim( times.getFirst(), times.getSecond(), limit );
@@ -684,6 +690,10 @@ public class DataStore {
     
   }
   
+  /**
+   * Zoom out on current data (include all available)
+   * @param limit Number of blocks to return to original time bounds
+   */
   public void untrim(int limit) {
     for (int i = 0; i < limit; ++i) {
       if (!thisBlockIsSet[i]) {
