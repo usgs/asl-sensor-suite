@@ -27,6 +27,7 @@ import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.LiterallyJustTheCommonsLMClass;
 import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * This experiment takes in a randomized calibration signal and the
@@ -153,7 +154,8 @@ extends Experiment implements ParameterValidator {
     freqs = numeratorPSD.getFreqs(); // should be same for both results
     
     // store nyquist rate of data because freqs will be trimmed down later
-    nyquist = sensorOut.getSampleRate() / 2.;
+    double nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
+    nyquist = nyquist / 2.;
     
     // trim frequency window in order to restrict range of response fits
     double minFreq, maxFreq, extFreq;

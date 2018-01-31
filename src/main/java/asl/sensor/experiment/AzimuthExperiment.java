@@ -53,6 +53,8 @@ public class AzimuthExperiment extends Experiment {
   
   private double offset = 0.;
   
+  private double latestCorrelation = 0.; // cache correlation estimates during windowing
+  
   private double angle, uncert;
   // private double[] freqs;
   
@@ -236,7 +238,7 @@ public class AzimuthExperiment extends Experiment {
       double[] refNorthWin = Arrays.copyOfRange(initRefNorth, startIdx, endIdx);
       
       jacobian = 
-          getJacobianFunction(testNorthWin, testEastWin, refNorthWin, bestCorr, bestTheta);    
+          getDampedJacobianFunction(testNorthWin, testEastWin, refNorthWin, bestCorr, bestTheta);    
       
       LeastSquaresProblem findAngleWindow = new LeastSquaresBuilder().
           start(new double[]{bestTheta}).
@@ -252,18 +254,18 @@ public class AzimuthExperiment extends Experiment {
       
       RealVector angleVectorWindow = optimumY.getPoint();
       double angleTemp = angleVectorWindow.getEntry(0);
-      double correlation = jacobian.value(angleVectorWindow).getFirst().getEntry(0);
-
+      
+      double correlation = latestCorrelation;
+      
       if (correlation > bestCorr) {
         bestCorr = correlation;
         double tau = NumericUtils.TAU;
         bestTheta = ( (angleTemp % tau) + tau) % tau;
       }
       
-      double correctedCorrelation = 1 - correlation; // closer to 1 means better
       angleCorrelationMap.put(
-          wdStart, new Pair<Double, Double>(angleTemp, correctedCorrelation) );
-      sortedCorrelation.add(correctedCorrelation);
+          wdStart, new Pair<Double, Double>(angleTemp, correlation) );
+      sortedCorrelation.add(correlation);
     }
     
     int minCorrelations = 5;
@@ -288,9 +290,23 @@ public class AzimuthExperiment extends Experiment {
       double averageAngle = 0.;
       int correlationCount = 0;
       
-      for (Pair<Double, Double> angCoherePair : angleCorrelationMap.values()) {
-        double angleTemp = angCoherePair.getFirst();
-        double correlation = angCoherePair.getSecond();
+      // deal with wraparound issue
+      double[] correlations = new double[angleCorrelationMap.size()];
+      double[] angles = new double[angleCorrelationMap.size()];
+      List<Pair<Double, Double>> angleCorrelationList = 
+          new ArrayList<Pair<Double, Double>>( angleCorrelationMap.values() );
+      
+      for (int i = 0; i < angleCorrelationList.size(); ++i) {
+        angles[i] = angleCorrelationList.get(i).getFirst();
+        correlations[i] = angleCorrelationList.get(i).getSecond();
+      }
+      
+      angles = NumericUtils.unwrapList(angles);
+      
+      for (int i = 0; i < angles.length; ++i) {
+        
+        double angleTemp = angles[i];
+        double correlation = correlations[i];
         if ( acceptableCorrelations.contains(correlation) && correlationCount < maxBoundary ) {
           averageAngle += angleTemp;
           acceptedVals.add(angleTemp);
@@ -356,7 +372,7 @@ public class AzimuthExperiment extends Experiment {
         long xVal = time / 1000;
         double angle = angleCorrelationMap.get(time).getFirst();
         double tau = NumericUtils.TAU;
-        angle = ( (angle % tau) + tau) % tau;
+        angle = angle % tau;
         double correlation = angleCorrelationMap.get(time).getSecond();
         timeMapCorrelation.add(xVal, correlation);
         timeMapAngle.add( xVal, Math.toDegrees(angle) );
@@ -422,8 +438,8 @@ public class AzimuthExperiment extends Experiment {
   // This is the damped jacobian function for windowed estimates
   // we use a different cost function for initial estimate since using the
   // squared correlation would make x, 180+x produce the same values
-  private MultivariateJacobianFunction 
-  getJacobianFunction(double[] l1, double[] l2, double[] l3, double cr, double th) {    
+  private MultivariateJacobianFunction
+  getDampedJacobianFunction(double[] l1, double[] l2, double[] l3, double cr, double th) {    
     
     // make my func the j-func, I want that func-y stuff
     MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
@@ -442,6 +458,7 @@ public class AzimuthExperiment extends Experiment {
             bestCorr,
             bestTheta);
       }
+
     };
     
     return jFunc; 
@@ -510,6 +527,7 @@ public class AzimuthExperiment extends Experiment {
     
     PearsonsCorrelation pc = new PearsonsCorrelation();
     double value = pc.correlation(refNorth, testRotated);
+    latestCorrelation = value;
     double damping = (bestCorr - 1) * (theta - bestTheta);
     value = Math.pow(value - 1 + damping, 2);
     RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});

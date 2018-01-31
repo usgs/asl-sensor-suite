@@ -9,7 +9,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 
@@ -128,6 +127,7 @@ public class OrthogonalExperiment extends Experiment {
     findTestY.setBlock(2, testLH1Block);
     
     AzimuthExperiment azi = new AzimuthExperiment();
+    azi.setSimple(false);
     azi.runExperimentOnData(findTestY);
     double angleY = -azi.getFitAngle(); // degrees
     azi.runExperimentOnData(findTestX);
