@@ -62,8 +62,7 @@ public class OrthogonalExperiment extends Experiment {
     // TODO: refactor using faster access point for azimuth?
     long interval = ds.getXthLoadedBlock(1).getInterval();
     
-    // assume the first two are the reference and the second two are the test?
-    
+    // assume the first two are the test and the second two are the reference?
     // we just need four timeseries, don't actually care about response
     DataBlock refLH1Block = ds.getXthLoadedBlock(1);
     String refName = refLH1Block.getName();
@@ -127,7 +126,7 @@ public class OrthogonalExperiment extends Experiment {
     findTestY.setBlock(2, testLH1Block);
     
     AzimuthExperiment azi = new AzimuthExperiment();
-    azi.setSimple(false);
+    azi.setSimple(false); // set to see if damped window estimates are hurting our results
     azi.runExperimentOnData(findTestY);
     double angleY = -azi.getFitAngle(); // degrees
     azi.runExperimentOnData(findTestX);

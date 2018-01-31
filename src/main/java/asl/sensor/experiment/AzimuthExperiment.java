@@ -96,6 +96,7 @@ public class AzimuthExperiment extends Experiment {
     
     // assume the first two are the reference and the second two are the test
     // we just need the timeseries, don't actually care about response
+    
     DataBlock testNorthBlock = ds.getXthLoadedBlock(1);
     DataBlock testEastBlock = ds.getXthLoadedBlock(2);
     DataBlock refNorthBlock = ds.getXthLoadedBlock(3);
@@ -105,16 +106,19 @@ public class AzimuthExperiment extends Experiment {
     dataNames.add( testEastBlock.getName() );
     dataNames.add( refNorthBlock.getName() );
     
-    double[] testNorth = testNorthBlock.getData();
-    double[] testEast = testEastBlock.getData();
-    double[] refNorth = refNorthBlock.getData();
-    
     // resampling should already have been done when loading in data
     long interval = testNorthBlock.getInterval();
     long startTime = testNorthBlock.getStartTime();
     long endTime = testNorthBlock.getEndTime();
     
-    backend(testNorth, testEast, refNorth, interval, startTime, endTime);
+    double[] testNorth = testNorthBlock.getData();
+    testNorth = TimeSeriesUtils.decimate(testNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    double[] testEast = testEastBlock.getData();
+    testEast = TimeSeriesUtils.decimate(testEast, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    double[] refNorth = refNorthBlock.getData();
+    refNorth = TimeSeriesUtils.decimate(refNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    
+    backend(testNorth, testEast, refNorth, TimeSeriesUtils.ONE_HZ_INTERVAL, startTime, endTime);
 
   }
     
