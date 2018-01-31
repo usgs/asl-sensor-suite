@@ -20,70 +20,133 @@ import asl.sensor.utils.TimeSeriesUtils;
 
 public class AzimuthTest {
 
-  @Test
-  public void identifiesSprocketsAngle002() {
-    testsFromSprockets(2);
+  public String getNoisyData() {
+    return "FUNA.00";
+  }
+  
+  public String getCleanData() {
+    return "ANMO.10";
   }
   
   @Test
-  public void identifiesSprocketsAngle005() {
-    testsFromSprockets(5);
+  public void identifiesSprocketsAngle002Clean() {
+    testsFromSprockets(2, getCleanData());
   }
   
   @Test
-  public void identifiesSprocketsAngle020() {
-    testsFromSprockets(20);
+  public void identifiesSprocketsAngle002Noisy() {
+    testsFromSprockets(2, getNoisyData());
   }
   
   @Test
-  public void identifiesSprocketsAngle090() {
-    testsFromSprockets(90);
+  public void identifiesSprocketsAngle005Clean() {
+    testsFromSprockets(5, getCleanData());
   }
   
   @Test
-  public void identifiesSprocketsAngle110() {
-    testsFromSprockets(110);
+  public void identifiesSprocketsAngle005Noisy() {
+    testsFromSprockets(5, getNoisyData());
   }
   
   @Test
-  public void identifiesSprocketsAngle180() {
-    testsFromSprockets(180);
+  public void identifiesSprocketsAngle020Clean() {
+    testsFromSprockets(20, getCleanData());
   }
   
   @Test
-  public void identifiesSprocketsAngle200() {
-    testsFromSprockets(200);
+  public void identifiesSprocketsAngle020Noisy() {
+    testsFromSprockets(20, getNoisyData());
   }
   
   @Test
-  public void identifiesSprocketsAngle270() {
-    testsFromSprockets(270);
+  public void identifiesSprocketsAngle090Clean() {
+    testsFromSprockets(90, getCleanData());
   }
   
   @Test
-  public void identifiesSprocketsAngle290() {
-    testsFromSprockets(290);
+  public void identifiesSprocketsAngle090Noisy() {
+    testsFromSprockets(90, getNoisyData());
   }
   
   @Test
-  public void identifiesSprocketsAngle355() {
-    testsFromSprockets(355);
+  public void identifiesSprocketsAngle110Clean() {
+    testsFromSprockets(110, getCleanData());
   }
   
   @Test
-  public void identifiesSprocketsAngle358() {
-    testsFromSprockets(358);
+  public void identifiesSprocketsAngle110Noisy() {
+    testsFromSprockets(110, getNoisyData());
   }
   
-  public void testsFromSprockets(int angle) {
+  @Test
+  public void identifiesSprocketsAngle180Clean() {
+    testsFromSprockets(180, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle180Noisy() {
+    testsFromSprockets(180, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle200Clean() {
+    testsFromSprockets(200, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle200Noisy() {
+    testsFromSprockets(200, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle270Clean() {
+    testsFromSprockets(270, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle270Noisy() {
+    testsFromSprockets(270, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle290Clean() {
+    testsFromSprockets(290, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle290Noisy() {
+    testsFromSprockets(290, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle355Clean() {
+    testsFromSprockets(355, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle355Noisy() {
+    testsFromSprockets(355, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle358Clean() {
+    testsFromSprockets(358, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle358Noisy() {
+    testsFromSprockets(358, getNoisyData());
+  }
+  
+  public void testsFromSprockets(int angle, String staCha) {
     StringBuilder sb = new StringBuilder();
     sb.append(angle);
     // format for filenames is 002, 010, 358, etc.; prepend 0s if needed
     while(sb.length() < 3) {
       sb.insert(0, '0');
     }
-    String data1 = "IU.ANMO.10.BH1";
-    String data2 = "IU.ANMO.10.BH2";
+    String data1 = "IU." + staCha + ".BH1";
+    String data2 = "IU." + staCha + ".BH2";
     String refURL = "orientation/";
     // orientation/rotation/[002, etc.]/
     String testURL = refURL + "rotation/" + sb.toString() + "/";
@@ -293,7 +356,7 @@ public class AzimuthTest {
     //System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
     
-    ds.trim(start, end, 2);
+    ds.trim(start, end);
     
     azi.runExperimentOnData(ds);
     double ang = azi.getFitAngle();
