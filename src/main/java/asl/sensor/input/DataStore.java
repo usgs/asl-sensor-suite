@@ -430,6 +430,18 @@ public class DataStore {
    * @param nameFilter Station ID (SNCL) to load in from multiplexed file
    */
   public void setBlock(int idx, String filepath, String nameFilter) {
+    setBlock(idx, filepath, nameFilter, FILE_COUNT);
+  }
+    
+  /**
+   * Takes a loaded miniSEED data series and loads it in as a datablock into
+   * this datastore object. Attempts to fit data in if it overlaps data that is currently unused
+   * @param idx The plot (range 0 to FILE_COUNT) to be given new data
+   * @param filepath Full address of file to be loaded in
+   * @param nameFilter Station ID (SNCL) to load in from multiplexed file
+   * @param activePlots Max index of active panel to check as active
+   */
+  public void setBlock(int idx, String filepath, String nameFilter, int activePlots) {
     
     try {
       DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
@@ -452,9 +464,16 @@ public class DataStore {
             // whole block either comes before or after the data set
             if (end < dataBlockArray[i].getStartTime() || 
                 start > dataBlockArray[i].getEndTime() ) {
-              thisBlockIsSet[idx] = false;
-              dataBlockArray[idx] = null;
-              throw new RuntimeException("Time range does not intersect");
+
+              if (i < activePlots) {
+                thisBlockIsSet[idx] = false;
+                dataBlockArray[idx] = null;
+                throw new RuntimeException("Time range does not intersect");
+              } else {
+                // unload data that we aren't currently using
+                thisBlockIsSet[i] = false;
+              }
+              
             }
           }
         }

@@ -794,7 +794,7 @@ implements ActionListener, ChangeListener {
         public Integer doInBackground() {
 
           try {
-            ds.setBlock(idx, filePath, immutableFilter);
+            ds.setBlock(idx, filePath, immutableFilter, activePlots);
           } catch (RuntimeException e) {
             e.printStackTrace();
             caughtException = true;
@@ -1186,10 +1186,15 @@ implements ActionListener, ChangeListener {
       zoomOut.setEnabled(false);
     }
 
-
+    // reset plot zoom if data is still there; clear out stale data from conflicting time ranges
     for (int i = 0; i < activePlots; ++i) {
       if ( ds.blockIsSet(i) ){
         resetPlotZoom(i);
+      } else {
+        instantiateChart(i);
+        clearButton[i].setEnabled(false);
+        seedFileNames[i].setText("NO FILE LOADED");
+        respFileNames[i].setText("NO FILE LOADED");
       }
       
       cont.add(chartSubpanels[i], contConstraints);

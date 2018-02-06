@@ -151,9 +151,8 @@ public class AzimuthTest {
     // orientation/rotation/[002, etc.]/
     String testURL = refURL + "rotation/" + sb.toString() + "/";
     
-
-    String refSubfolder = "azimuth-ANMO-reference/";
-    String testSubfolder = "azimuth-ANMO-" + sb.toString() + "/";
+    String refSubfolder = "orientation-reference/";
+    String testSubfolder = "azimuth-" + sb.toString() + "/";
     
     try {
       // get reference data if needed

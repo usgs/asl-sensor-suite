@@ -10,7 +10,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 import org.junit.Test;
-
+import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
@@ -18,6 +18,213 @@ import asl.sensor.utils.TimeSeriesUtils;
 
 public class OrthogonalityTest {
 
+  public String getNoisyData() {
+    return "FUNA.00";
+  }
+  
+  public String getCleanData() {
+    return "ANMO.10";
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle060Clean() {
+    testsFromSprockets(60, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle060Noisy() {
+    testsFromSprockets(60, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle080Clean() {
+    testsFromSprockets(80, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle080Noisy() {
+    testsFromSprockets(80, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle085Clean() {
+    testsFromSprockets(85, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle085Noisy() {
+    testsFromSprockets(85, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle087Clean() {
+    testsFromSprockets(87, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle087Noisy() {
+    testsFromSprockets(87, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle088Clean() {
+    testsFromSprockets(88, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle088Noisy() {
+    testsFromSprockets(88, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle089Clean() {
+    testsFromSprockets(89, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle089Noisy() {
+    testsFromSprockets(89, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle090Clean() {
+    testsFromSprockets(90, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle090Noisy() {
+    testsFromSprockets(90, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle091Clean() {
+    testsFromSprockets(91, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle091Noisy() {
+    testsFromSprockets(91, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle092Clean() {
+    testsFromSprockets(92, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle092Noisy() {
+    testsFromSprockets(92, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle100Clean() {
+    testsFromSprockets(100, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle100Noisy() {
+    testsFromSprockets(100, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle120Clean() {
+    testsFromSprockets(120, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle120Noisy() {
+    testsFromSprockets(120, getNoisyData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle270Clean() {
+    testsFromSprockets(270, getCleanData());
+  }
+  
+  @Test
+  public void identifiesSprocketsAngle270Noisy() {
+    testsFromSprockets(270, getNoisyData());
+  }
+  
+  public void testsFromSprockets(int angle, String staCha) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(angle);
+    // format for filenames is 002, 010, 358, etc.; prepend 0s if needed
+    while(sb.length() < 3) {
+      sb.insert(0, '0');
+    }
+    String data1 = "IU." + staCha + ".BH1";
+    String data2 = "IU." + staCha + ".BH2";
+    String refURL = "orientation/";
+    // orientation/rotation/[002, etc.]/
+    String testURL = refURL + "orthogonality/" + sb.toString() + "/";
+    
+    String refSubfolder = "orientation-reference/";
+    String testSubfolder = "orthogonality-" + sb.toString() + "/";
+    try {
+      // get reference data if needed
+      TestUtils.downloadTestData(refURL, data1, refSubfolder, data1);
+      TestUtils.downloadTestData(refURL, data2, refSubfolder, data2);
+      // get test data if needed
+      TestUtils.downloadTestData(testURL, data1, testSubfolder, data1);
+      TestUtils.downloadTestData(testURL, data2, testSubfolder, data2);
+    } catch (IOException e) {
+      e.printStackTrace();
+      fail();
+    }
+    
+    DataStore ds = new DataStore();
+    try {
+      String root = "./test-data/sprockets/";
+      testSubfolder = root + testSubfolder;
+      refSubfolder = root + refSubfolder;
+      
+      ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
+      ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data2) );
+      
+      ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
+      ds.setBlock(3, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
+      
+      Calendar cCal = TestUtils.getStartCalendar(ds);
+      cCal.set(Calendar.HOUR_OF_DAY, 10);
+      cCal.set(Calendar.MINUTE, 0);
+      cCal.set(Calendar.SECOND, 0);
+      cCal.set(Calendar.MILLISECOND, 0);
+      long start = cCal.getTime().getTime();
+      cCal.set(Calendar.HOUR_OF_DAY, 14);
+      long end = cCal.getTime().getTime();
+      
+      ds.trim(start, end);
+      
+      // ds.trimToCommonTime();
+      OrthogonalExperiment oe = new OrthogonalExperiment();
+      oe.runExperimentOnData(ds);
+      double fitAngle = oe.getFitAngle();
+      System.out.println( Arrays.toString(oe.getSolutionParams()) );
+      /*
+      if (fitAngle > 180) {
+        fitAngle -= 360; // keep in range (-180, 180) for testing near 0 accurately
+      } else if (angle > 180) {
+        angle -= 360;
+      }
+      */
+      
+      fitAngle = 180 - fitAngle; // back-azimuth correction
+      double expectedAngle = (double) angle;
+      if (expectedAngle > 180) {
+        expectedAngle = 360 - expectedAngle;
+      }
+      System.out.println(expectedAngle + " | " + fitAngle + " [" + sb.toString() + "]");
+      
+      assertEquals(expectedAngle, fitAngle, 1.0);
+      
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      fail();
+    }
+    
+  }
+  
   @Test
   public void getsCorrectAngle() {
 

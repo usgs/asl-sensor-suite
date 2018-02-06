@@ -81,6 +81,10 @@ public class OrthogonalExperiment extends Experiment {
     double[] testLH1 = testLH1Block.getData();
     // double[] testLH2 = testLH2Block.getData();
     
+    refLH1 = TimeSeriesUtils.decimate(refLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    refLH2 = TimeSeriesUtils.decimate(refLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    testLH1 = TimeSeriesUtils.decimate(testLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    // testLH2 = TimeSeriesUtils.decimate(testLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
     
     refLH1 = TimeSeriesUtils.detrend(refLH1);
     refLH2 = TimeSeriesUtils.detrend(refLH2);
@@ -127,8 +131,10 @@ public class OrthogonalExperiment extends Experiment {
     
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.setSimple(false); // set to see if damped window estimates are hurting our results
+    fireStateChange("Getting y (north sensor) angle");
     azi.runExperimentOnData(findTestY);
     double angleY = -azi.getFitAngle(); // degrees
+    fireStateChange("Getting x (east sensor) angle");
     azi.runExperimentOnData(findTestX);
     double angleX = -azi.getFitAngle();
     
@@ -157,6 +163,8 @@ public class OrthogonalExperiment extends Experiment {
     double timeAtPoint = 0.;
     double tick = interval / TimeSeriesUtils.ONE_HZ_INTERVAL;
     
+    fireStateChange("Getting plottable data...");
+    
     XYSeries diffSrs = new XYSeries("Diff(" + testName + ", " + refName + ")");
     XYSeries diffRotSrs = new XYSeries("Diff(" + testName + ", Rotated Ref.)");
     
@@ -164,7 +172,7 @@ public class OrthogonalExperiment extends Experiment {
     RealVector diffComponents = value(refX, refY, angleY);
     
     for (int i = 0; i < len; ++i) {
-      diffSrs.add (timeAtPoint, diffLH1.getEntry(i) );
+      diffSrs.add(timeAtPoint, diffLH1.getEntry(i) );
       diffRotSrs.add( timeAtPoint, diffComponents.getEntry(i) );
       
       timeAtPoint += tick;
@@ -174,6 +182,8 @@ public class OrthogonalExperiment extends Experiment {
     xysc.addSeries(diffSrs);
     xysc.addSeries(diffRotSrs);
     xySeriesData.add(xysc);
+    
+    fireStateChange("Done!");
     
   }
   
