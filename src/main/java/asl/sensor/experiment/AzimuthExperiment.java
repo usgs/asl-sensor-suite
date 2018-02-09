@@ -57,7 +57,7 @@ public class AzimuthExperiment extends Experiment {
   // private double[] freqs;
 
   // private double[] coherence;
-
+  private double[] correlations;
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
 
@@ -110,11 +110,8 @@ public class AzimuthExperiment extends Experiment {
     long endTime = testNorthBlock.getEndTime();
 
     double[] testNorth = testNorthBlock.getData();
-    testNorth = TimeSeriesUtils.decimate(testNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
     double[] testEast = testEastBlock.getData();
-    testEast = TimeSeriesUtils.decimate(testEast, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
     double[] refNorth = refNorthBlock.getData();
-    refNorth = TimeSeriesUtils.decimate(refNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
 
     backend(testNorth, testEast, refNorth, TimeSeriesUtils.ONE_HZ_INTERVAL, startTime, endTime);
 
@@ -137,9 +134,14 @@ public class AzimuthExperiment extends Experiment {
 
     enoughPts = false;
 
+    // does nothing if the data is already 1Hz sample rate
+    testNorth = TimeSeriesUtils.decimate(testNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    testEast = TimeSeriesUtils.decimate(testEast, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    refNorth = TimeSeriesUtils.decimate(refNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+
     double[] initTestNorth = TimeSeriesUtils.demean(testNorth);
     double[] initTestEast = TimeSeriesUtils.demean(testEast);
-    double[] initRefNorth =TimeSeriesUtils.demean(refNorth);
+    double[] initRefNorth = TimeSeriesUtils.demean(refNorth);
 
     initTestNorth = TimeSeriesUtils.detrend(initTestNorth);
     initTestEast = TimeSeriesUtils.detrend(initTestEast);
@@ -147,7 +149,8 @@ public class AzimuthExperiment extends Experiment {
 
     // should there be a normalization step here?
 
-    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
+    // data will be downsampled to 1 if > 1Hz rate, else will keep sample rate from input
+    double sps = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / interval);
     double low = 1./8; // filter from 8 seconds interval
     double high = 1./3; // up to 3 seconds interval
 
@@ -241,6 +244,14 @@ public class AzimuthExperiment extends Experiment {
       double[] testEastWin = Arrays.copyOfRange(initTestEast, startIdx, endIdx);
       double[] refNorthWin = Arrays.copyOfRange(initRefNorth, startIdx, endIdx);
 
+      testNorthWin = TimeSeriesUtils.detrend(testNorthWin);
+      testEastWin = TimeSeriesUtils.detrend(testEastWin);
+      refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
+
+      testNorthWin = FFTResult.bandFilter(testNorthWin, sps, low, high);
+      testEastWin = FFTResult.bandFilter(testEastWin, sps, low, high);
+      refNorthWin = FFTResult.bandFilter(refNorthWin, sps, low, high);
+
       jacobian =
           getDampedJacobianFunction(testNorthWin, testEastWin, refNorthWin, bestCorr, bestTheta);
 
@@ -293,7 +304,7 @@ public class AzimuthExperiment extends Experiment {
       List<Double> acceptedAngles = new ArrayList<Double>();
 
       // deal with wraparound issue
-      double[] correlations = new double[angleCorrelationMap.size()];
+      correlations = new double[angleCorrelationMap.size()];
       double[] angles = new double[angleCorrelationMap.size()];
       List<Pair<Double, Double>> angleCorrelationList =
           new ArrayList<Pair<Double, Double>>( angleCorrelationMap.values() );
@@ -490,6 +501,10 @@ public class AzimuthExperiment extends Experiment {
       }
     }
     return true;
+  }
+
+  public double[] getCorrelations() {
+    return correlations;
   }
 
   /**

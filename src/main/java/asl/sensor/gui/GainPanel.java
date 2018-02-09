@@ -8,13 +8,11 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -26,7 +24,6 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
@@ -40,17 +37,19 @@ import asl.sensor.input.DataStore;
  * @author akearns
  *
  */
-public class GainPanel extends ExperimentPanel 
+public class GainPanel extends ExperimentPanel
 implements ChangeListener {
 
-  
+
   private static final long serialVersionUID = 6697458429989867529L;
-  
+
   /**
    * Max value of slider (ranges from 0 to 1000, converted to log10 scale)
    */
   public static final int SLIDER_MAX = 1000;
-  
+  public static final double DEFAULT_UP_BOUND = 9.; // low bound is 9 seconds period
+  public static final double DEFAULT_LOW_BOUND = 3.;
+
   /**
    * Static helper method for getting the formatted inset string directly
    * from a GainExperiment
@@ -60,17 +59,17 @@ implements ChangeListener {
    * @param highPrd high period boundary to take stats over
    * @return String with data representation of experiment results (mean, sdev)
    */
-  public static String 
+  public static String
   getInsetString(GainExperiment gn, int refIdx, double lowPrd, double highPrd) {
 
-    double[] meanAndStdDev = 
+    double[] meanAndStdDev =
         gn.getStatsFromFreqs(refIdx, 1/lowPrd, 1/highPrd);
 
     double mean = meanAndStdDev[0];
     double sDev = meanAndStdDev[1];
     double refGain = meanAndStdDev[2];
     double calcGain = meanAndStdDev[3];
-    
+
     StringBuilder sb = new StringBuilder();
     sb.append("ratio: ");
     sb.append(mean);
@@ -92,8 +91,14 @@ implements ChangeListener {
    * @param chart Chart to add domain markers to
    * @return XYPlot XYPlot with new domain markers set
    */
-  protected static JFreeChart 
+  protected static JFreeChart
   setDomainMarkers(double lowPrd, double highPrd, JFreeChart chart) {
+
+    // make sure lower value is assigned to left, higher to right
+    double tempLow = Math.min(lowPrd, highPrd);
+    highPrd = Math.max(lowPrd, highPrd);
+    lowPrd = tempLow;
+
     XYPlot xyp = chart.getXYPlot();
     xyp.clearDomainMarkers();
     Marker startMarker = new ValueMarker(lowPrd);
@@ -107,7 +112,7 @@ implements ChangeListener {
   protected JSlider leftSlider;
   protected JSlider rightSlider;
   protected JComboBox<String> refSeries;
-  
+
   protected JButton recalcButton;
 
   protected double low, high;
@@ -119,13 +124,13 @@ implements ChangeListener {
   public GainPanel(ExperimentEnum exp) {
     // instantiate common components
     super(exp);
-    
+
     for (int i = 0; i < 2; ++i) {
       channelType[i] = "Input data (RESP required)";
     }
-    
+
     plotTheseInBold = new String[]{"NLNM"};
-    
+
     String xAxisTitle = "Period (s)";
     String yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
     xAxis = new LogarithmicAxis(xAxisTitle);
@@ -135,9 +140,9 @@ implements ChangeListener {
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
-    
+
     applyAxesToChart();
-    
+
     // instantiate unique components
     leftSlider = new JSlider(0, SLIDER_MAX, 0);
     leftSlider.addChangeListener(this);
@@ -145,34 +150,34 @@ implements ChangeListener {
     rightSlider = new JSlider(0, SLIDER_MAX, SLIDER_MAX);
     rightSlider.addChangeListener(this);
     rightSlider.setEnabled(false);
-    
+
     recalcButton = new JButton("Recalc over range");
     recalcButton.setEnabled(false);
     recalcButton.addActionListener(this);
-    
+
     // add dummy entries to the combo box, but don't let them get filled
     refSeries = new JComboBox<String>();
     refSeries.addActionListener(this);
     refSeries.setEnabled(false);
-    
+
     for (int i = 0; i < 2; ++i) {
       String out = "FILE NOT LOADED (" + i + ")";
       refSeries.addItem(out);
     }
 
     refSeries.setSelectedIndex(0);
-    
-    // create layout    
+
+    // create layout
     this.setLayout( new GridBagLayout() );
     GridBagConstraints gbc = new GridBagConstraints();
-    
+
     gbc.fill = GridBagConstraints.BOTH;
     gbc.gridx = 0; gbc.gridy = 0;
     gbc.weightx = 1.0; gbc.weighty = 1.0;
     gbc.gridwidth = 3;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
-    
+
     gbc.gridx = 0; gbc.gridy += 1;
     gbc.weighty = 0;
     gbc.gridwidth = 1;
@@ -188,7 +193,7 @@ implements ChangeListener {
     gbc.anchor = GridBagConstraints.WEST;
     gbc.weightx = 1;
     this.add(rightSlider, gbc);
-    
+
     gbc.gridx = 0; gbc.gridy += 1;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;
@@ -197,9 +202,9 @@ implements ChangeListener {
     gbc.gridx += 1;
     gbc.fill = GridBagConstraints.NONE;
     this.add(save, gbc);
-    
+
   }
-  
+
   /**
    * Calls functions to do replotting and stat recalculations when different
    * timeseries are selected or the recalculate button is hit
@@ -207,17 +212,17 @@ implements ChangeListener {
   @Override
   public void actionPerformed(ActionEvent e) {
     super.actionPerformed(e); // saving?
-    
+
     if ( e.getSource() == recalcButton ) {
-      
+
       setTitle();
-      
+
       recalcButton.setEnabled(false);
-      
+
       return;
-    } 
+    }
     if ( e.getSource() == refSeries ) {
-      
+
       // if we got here from removing the items from the list
       // (which happens when we load in new data)
       // don't do anything
@@ -227,29 +232,25 @@ implements ChangeListener {
 
       // if we selected a new series to plot, redraw the chart
       drawCharts();
-      
+
     }
-    
+
   }
-  
+
 
   /**
    * Given input data (including time series collection), get only the relevant
    * ones to display based on combo boxes and then do the statistics on those.
    * Because the range of the sliders is not necessarily set on switch,
-   * the statistics are calculated over the octave centered at the plotted 
-   * peak value's frequency. This function is called when new data is fed in 
+   * the statistics are calculated over the octave centered at the plotted
+   * peak value's frequency. This function is called when new data is fed in
    * or when the combo box active entries change
    */
   @Override
   protected void drawCharts() {
-    
+
     final int refIdx = refSeries.getSelectedIndex();
     final int idx1 = (refIdx + 1) % 2;
-
-
-    double lowPrd, highPrd;
-    double[] freqRange;
 
     int leftSliderValue, rightSliderValue;
     XYSeriesCollection xysc;
@@ -268,31 +269,32 @@ implements ChangeListener {
 
     GainExperiment gn = (GainExperiment) expResult;
 
+    /*
     // want to default to octave centered at highest value of fixed freq
     freqRange = gn.getOctaveCenteredAtPeak(refIdx);
 
     // get the locations (x-axis values) of frequency range as intervals
     lowPrd = Math.min(1/freqRange[0], 1/freqRange[1]);
     highPrd = Math.max(1/freqRange[0], 1/freqRange[1]);
+    */
 
     // since intervals of incoming data match, so too limits of plot
     // this is used in mapping scale of slider to x-axis values
     low = Math.log10( xys.getMinX() ); // value when slider is 0
     high = Math.log10( xys.getMaxX() ); // value when slider is 1000
-    leftSliderValue = mapPeriodToSlider(lowPrd);
-    rightSliderValue = mapPeriodToSlider(highPrd);
+    leftSliderValue = mapPeriodToSlider(DEFAULT_LOW_BOUND);
+    rightSliderValue = mapPeriodToSlider(DEFAULT_UP_BOUND);
 
     setChart(xysc);
 
     // obviously, set the chart
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(false);
-    
-    leftSlider.setValue(leftSliderValue);
-    rightSlider.setValue(rightSliderValue);
+
+    setSliderValues(leftSliderValue, rightSliderValue);
 
     // set the domain to match the boundaries of the octave centered at peak
-    chartPanel.setChart( setDomainMarkers(lowPrd, highPrd, chart) );
+    chartPanel.setChart( setDomainMarkers(DEFAULT_LOW_BOUND, DEFAULT_UP_BOUND, chart) );
 
     // and now set the sliders to match where that window is
     leftSlider.setEnabled(true);
@@ -302,25 +304,36 @@ implements ChangeListener {
     setTitle();
 
   }
-  
+
+  protected void setSliderValues(int leftSliderValue, int rightSliderValue) {
+
+    // enforce constraint that left slider value is the smaller one
+    int leftTemp = Math.min(leftSliderValue, rightSliderValue);
+    rightSliderValue = Math.max(leftSliderValue, rightSliderValue);
+    leftSliderValue = leftTemp;
+
+    leftSlider.setValue(leftSliderValue);
+    rightSlider.setValue(rightSliderValue);
+  }
+
   @Override
   public String getInsetStrings() {
     int leftPos = leftSlider.getValue();
     double lowPrd = mapSliderToPeriod(leftPos);
     int rightPos = rightSlider.getValue();
     double highPrd = mapSliderToPeriod(rightPos);
-    
+
     // remove old bars and draw the new ones
     // setDomainMarkers(lowPrd, highPrd, xyp);
-    
+
     int refIdx = refSeries.getSelectedIndex();
-    
+
     GainExperiment gn = (GainExperiment) expResult;
- 
+
     return getInsetString(gn, refIdx, lowPrd, highPrd);
   }
-  
-    
+
+
   @Override
   public String getMetadataString() {
 
@@ -329,17 +342,17 @@ implements ChangeListener {
     double lowPrd = mapSliderToPeriod(leftPos);
     int rightPos = rightSlider.getValue();
     double highPrd = mapSliderToPeriod(rightPos);
-    
+
     StringBuilder sb = new StringBuilder();
-    
+
     sb.append("Range used in stat calculation: ");
     sb.append(lowPrd);
     sb.append(" to ");
     sb.append(highPrd);
     sb.append('\n');
-    
+
     sb.append( super.getMetadataString() );
-    
+
     return sb.toString();
   }
 
@@ -352,7 +365,7 @@ implements ChangeListener {
     double scale = (high - low)/SLIDER_MAX; // recall slider range is 0 to 1000
     return (int) ( ( Math.log10(prd) - low ) / scale );
   }
-  
+
 
   /**
    * Converts the slider position to a logarithmic scale matching x-axis values
@@ -364,7 +377,7 @@ implements ChangeListener {
     double scale = (high - low)/SLIDER_MAX; // slider range is 0 to 1000
     return Math.pow(10, low + (scale * position) );
   }
-  
+
   @Override
   public int panelsNeeded() {
     return 2;
@@ -372,16 +385,16 @@ implements ChangeListener {
 
   /**
    * Used to populate the comboboxes with the incoming data
-   * @param ds DataStore object being processed 
+   * @param ds DataStore object being processed
    */
   private void setDataNames(DataStore ds) {
-    
+
     refSeries.setEnabled(false);
-    
+
     refSeries.removeAllItems();
-    
+
     Set<String> preventDuplicates = new HashSet<String>();
-    
+
     for (int i = 0; i < 2; ++i) {
       String name = ds.getBlock(i).getName();
       while ( preventDuplicates.contains(name) ) {
@@ -390,7 +403,7 @@ implements ChangeListener {
       preventDuplicates.add(name);
       refSeries.addItem(name);
     }
-    
+
     refSeries.setSelectedIndex(0);
   }
 
@@ -409,12 +422,12 @@ implements ChangeListener {
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
   }
-  
+
   @Override
   public void stateChanged(ChangeEvent e) {
-    
+
     super.stateChanged(e);
-    
+
     // enforce slider boundaries
     if ( e.getSource() == leftSlider ) {
       if ( leftSlider.getValue() > rightSlider.getValue() - 10 ) {
@@ -433,43 +446,43 @@ implements ChangeListener {
         }
       }
     }
-    
+
     if (e.getSource() == leftSlider || e.getSource() == rightSlider) {
-      
+
       // now we need to redraw the vertical bars
-      
+
       // new slider window means new results on calculation
       recalcButton.setEnabled(true);
-      
+
       // get plot (where we put the vertical bars)
       JFreeChart chart = chartPanel.getChart();
-      
+
       // clear out annotations to prevent issues with misleading data
       chart.getXYPlot().clearAnnotations();
-      
+
       // convert slider locations to (log-scale) frequency
       int leftPos = leftSlider.getValue();
       double lowPrd = mapSliderToPeriod(leftPos);
       int rightPos = rightSlider.getValue();
       double highPrd = mapSliderToPeriod(rightPos);
-      
+
       // remove old bars and draw the new ones
       chartPanel.setChart( setDomainMarkers(lowPrd, highPrd, chart) );
     }
   }
-  
+
   @Override
   protected void updateData(final DataStore ds) {
-    
+
     set = true;
-    
+
     setDataNames(ds);
-    
+
     expResult.runExperimentOnData(ds);
 
     // need to have 2 series for relative gain
     refSeries.setEnabled(true);
 
   }
-  
+
 }
