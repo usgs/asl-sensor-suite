@@ -113,7 +113,7 @@ public class AzimuthExperiment extends Experiment {
     double[] testEast = testEastBlock.getData();
     double[] refNorth = refNorthBlock.getData();
 
-    backend(testNorth, testEast, refNorth, TimeSeriesUtils.ONE_HZ_INTERVAL, startTime, endTime);
+    backend(testNorth, testEast, refNorth, interval, startTime, endTime);
 
   }
 
@@ -138,6 +138,8 @@ public class AzimuthExperiment extends Experiment {
     testNorth = TimeSeriesUtils.decimate(testNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
     testEast = TimeSeriesUtils.decimate(testEast, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
     refNorth = TimeSeriesUtils.decimate(refNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    // update the actual sample rate if data was above 1Hz sampling
+    interval = Math.max(interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
 
     double[] initTestNorth = TimeSeriesUtils.demean(testNorth);
     double[] initTestEast = TimeSeriesUtils.demean(testEast);
