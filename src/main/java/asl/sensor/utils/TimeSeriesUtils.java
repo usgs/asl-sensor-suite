@@ -983,25 +983,18 @@ public class TimeSeriesUtils {
     return upsamp;
   }
 
-  /**
-   * Checks to see if the sensor's calibration is wired positively or not
-   * (i.e., if the result of a step-calibration is upside-down)
-   * @return True if sign appears to be incorrect compared to expected step cal
-   */
-  public boolean needsSignFlip(List<Number> data) {
+  public static boolean needsSignFlip(double[] data) {
+    double maxAbs = Math.abs(data[0]);
+    double max = data[0];
 
-    double max = Math.abs( data.get(0).doubleValue() );
-    int idx = 0;
-
-    for (int i = 1; i < data.size() / 2; ++i) {
-      if ( Math.abs( data.get(i).doubleValue() ) > max ) {
-        max = Math.abs( data.get(i).doubleValue() );
-        idx = i;
+    for (int i = 1; i < data.length / 3; ++i) {
+      if ( Math.abs(data[i]) > maxAbs ) {
+        max = data[i];
+        maxAbs = Math.abs(data[i]);
       }
     }
 
-    return Math.signum( data.get(idx).doubleValue() ) < 0;
-
+    return max < 0;
   }
 
 }

@@ -390,10 +390,8 @@ public class StepExperiment extends Experiment{
     // trim out ringing, add offset to try to line up the calculated corner with step signal corner
     int trimOffset = 3 * (int) sps;
     returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);
-
+    // make sure data is correctly processed before returning -- demean and normalize
     returnValue = TimeSeriesUtils.demean(returnValue);
-
-    // normalize in order to fit the plot
     return TimeSeriesUtils.normalizeByMax(returnValue);
 
   }
