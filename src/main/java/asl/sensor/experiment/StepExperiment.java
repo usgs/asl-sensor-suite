@@ -3,7 +3,6 @@ package asl.sensor.experiment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.fitting.leastsquares.EvaluationRmsChecker;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
@@ -14,7 +13,6 @@ org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.optim.ConvergenceChecker;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -62,7 +60,7 @@ public class StepExperiment extends Experiment{
 
   private int sensorOutIdx; // used to keep track of response location for report generation
 
-  final double STEP_FACTOR = 1E-10;
+  final double STEP_FACTOR = 1E-12;
   final double F_TOLER = 1E-10;
   final double X_TOLER = 1E-10;
 
@@ -98,7 +96,7 @@ public class StepExperiment extends Experiment{
     int highBound = stepCalData.length - cutAmount;
     trimmedLength = highBound - cutAmount; // length - 2 * cutAmount
 
-    // actually trim the data and
+    // actually trim the data and demean, normalize
     stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.normalizeByMax(stepCalSeries);
@@ -177,9 +175,6 @@ public class StepExperiment extends Experiment{
     RealVector startVector = MatrixUtils.createRealVector(params);
     RealVector observedComponents = MatrixUtils.createRealVector(stepCalSeries);
 
-    ConvergenceChecker<LeastSquaresProblem.Evaluation> svc =
-        new EvaluationRmsChecker(1E-50, 1E-50);
-
     // used to fit parameters
     MultivariateJacobianFunction jbn = new MultivariateJacobianFunction() {
 
@@ -197,7 +192,6 @@ public class StepExperiment extends Experiment{
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
-        checker(svc).
         build();
 
     LeastSquaresProblem.Evaluation initEval = lsp.evaluate(startVector);
@@ -283,11 +277,11 @@ public class StepExperiment extends Experiment{
       phiFit = Math.toDegrees(phiFit);
 
       double magAccelIn = tmpIn.abs();
-      inMag.add( freqs[i], 10 * Math.log10(magAccelIn) );
+      inMag.add( freqs[i], 20 * Math.log10(magAccelIn) );
       inPhase.add(freqs[i], phiIn);
 
       double magAccelFit = tmpFit.abs();
-      fitMag.add( freqs[i], 10 * Math.log10(magAccelFit) );
+      fitMag.add( freqs[i], 20 * Math.log10(magAccelFit) );
       fitPhase.add(freqs[i], phiFit);
     }
 
@@ -319,8 +313,8 @@ public class StepExperiment extends Experiment{
 
     // the original length of the timeseries data we've gotten the FFT of
     int inverseTrim = trimmedLength + 2 * cutAmount;
-    // the upper bound on the returned data
-    int upperBound = inverseTrim - cutAmount;
+    // the upper bound on the returned data (trimmed length plus amount cut from start as offset)
+    int upperBound = trimmedLength + cutAmount;
 
     double f = params[0];
     double h = params[1];
@@ -393,8 +387,11 @@ public class StepExperiment extends Experiment{
 
     // attempt to filter out additional noise
     returnValue = FFTResult.bandFilter(returnValue, sps, 0.0, 0.1);
-    // trim out ringing
-    returnValue = Arrays.copyOfRange(returnValue, cutAmount, upperBound);
+    // trim out ringing, add offset to try to line up the calculated corner with step signal corner
+    int trimOffset = 3 * (int) sps;
+    returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);
+
+    returnValue = TimeSeriesUtils.demean(returnValue);
 
     // normalize in order to fit the plot
     return TimeSeriesUtils.normalizeByMax(returnValue);
