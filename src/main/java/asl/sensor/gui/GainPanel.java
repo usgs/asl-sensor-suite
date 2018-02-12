@@ -267,8 +267,6 @@ implements ChangeListener {
       xys = xysc.getSeries(1);
     }
 
-    GainExperiment gn = (GainExperiment) expResult;
-
     /*
     // want to default to octave centered at highest value of fixed freq
     freqRange = gn.getOctaveCenteredAtPeak(refIdx);
