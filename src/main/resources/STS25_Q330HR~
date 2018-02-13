@@ -18,28 +18,34 @@ B053F03     Transfer function type:                A
 B053F04     Stage sequence number:                 1
 B053F05     Response in units lookup:              M/S - Velocity in Meters Per Second
 B053F06     Response out units lookup:             V - Volts
-B053F07     A0 normalization factor:               +8.62829E+04
+B053F07     A0 normalization factor:               +4.55522E+01
 B053F08     Normalization frequency:               +2.00000E-02
-B053F09     Number of zeroes:                      2
-B053F14     Number of poles:                       5
+B053F09     Number of zeroes:                      6
+B053F14     Number of poles:                       7
 #              Complex zeroes:
 #              i  real          imag          real_error    imag_error
 B053F10-13     0  +0.00000E+00  +0.00000E+00  +0.00000E+00  +0.00000E+00
 B053F10-13     1  +0.00000E+00  +0.00000E+00  +0.00000E+00  +0.00000E+00
+B053F10-13     2  -9.42478E+00  +0.00000E+00  +0.00000E+00  +0.00000E+00
+B053F10-13     3  -6.28319E+02  +0.00000E+00  +0.00000E+00  +0.00000E+00
+B053F10-13     4  -5.65487E+02  +9.79452E+02  +0.00000E+00  +0.00000E+00
+B053F10-13     5  -5.65487E+02  -9.79452E+02  +0.00000E+00  +0.00000E+00
 #              Complex poles:
 #              i  real          imag          real_error    imag_error
-B053F15-18     0  -4.80040E-03  +0.00000E+00  +0.00000E+00  +0.00000E+00
-B053F15-18     1  -7.38854E-02  +0.00000E+00  +0.00000E+00  +0.00000E+00
-B053F15-18     2  -2.27121E+01  -2.71065E+01  +0.00000E+00  +0.00000E+00
-B053F15-18     3  -2.27121E+01  +2.71065E+01  +0.00000E+00  +0.00000E+00
-B053F15-18     4  -5.94313E+01  +0.00000E+00  +0.00000E+00  +0.00000E+00
+B053F15-18     0  -3.70000E-02  -3.70000E-02  +0.00000E+00  +0.00000E+00
+B053F15-18     1  -3.70000E-02  +3.70000E-02  +0.00000E+00  +0.00000E+00
+B053F15-18     2  -9.73894E+00  +0.00000E+00  +0.00000E+00  +0.00000E+00
+B053F15-18     3  -2.19911E+02  +1.38230E+02  +0.00000E+00  +0.00000E+00
+B053F15-18     4  -2.19911E+02  -1.38230E+02  +0.00000E+00  +0.00000E+00
+B053F15-18     5  -2.19911E+02  +6.84867E+02  +0.00000E+00  +0.00000E+00
+B053F15-18     6  -2.19911E+02  -6.84867E+02  +0.00000E+00  +0.00000E+00
 #        
 #        +                  +---------------------------------------+                  +
 #        +                  |       Channel Gain, NS088 ch BHZ      |                  +
 #        +                  +---------------------------------------+                  +
 #        
 B058F03     Stage sequence number:                 1
-B058F04     Gain:                                  1.628414e+03
+B058F04     Gain:                                  1.000000e+00
 B058F05     Frequency of gain:                     2.000000e-02 HZ
 B058F06     Number of calibrations:                0
 #        
@@ -73,7 +79,7 @@ B057F08     Correction applied (seconds):          0.00000E+00
 #        +                  +---------------------------------------+                  +
 #        
 B058F03     Stage sequence number:                 2
-B058F04     Gain:                                  1.677721e+06
+B058F04     Gain:                                  1.000000e+00
 B058F05     Frequency of gain:                     2.000000e-02 HZ
 B058F06     Number of calibrations:                0
 #        
@@ -82,7 +88,7 @@ B058F06     Number of calibrations:                0
 #        +                  +---------------------------------------+                  +
 #        
 B058F03     Stage sequence number:                 0
-B058F04     Sensitivity:                           2.732025e+09
+B058F04     Sensitivity:                           1.000000e+00
 B058F05     Frequency of sensitivity:              2.000000e-02 HZ
 B058F06     Number of calibrations:                0
-#       
+#        
