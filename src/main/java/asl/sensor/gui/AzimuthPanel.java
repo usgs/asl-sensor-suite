@@ -321,11 +321,6 @@ public class AzimuthPanel extends ExperimentPanel {
       xyp.addRangeMarker(1, highWater, Layer.BACKGROUND);
     }
 
-    /*
-    estimChart =
-        new JFreeChart(expType.getName() + " Windowing", getFont(), xyp, true);
-    */
-
     chartSelector.setSelectedIndex(0);
   }
 

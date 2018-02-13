@@ -1,13 +1,10 @@
 package asl.sensor.test;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.fail;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -18,15 +15,16 @@ import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
 
 public class TestUtils {
-  
-  private static String URL_HEADER = 
+
+  // may need to change this to deal with eventual migration to main usgs github
+  private static String URL_HEADER =
       "https://github.com/kschramm-usgs/sprockets/raw/master/";
   private static int LOGIN_PAGE_BYTE_SIZE = 7875;
-  
+
   // inName and fName are separated to make it possible to rename output file
   // to prevent collisions between data with the same filename from different inputs
-  public static void 
-  downloadTestData(String urlLoc, String inName, String localLoc, String fName) 
+  public static void
+  downloadTestData(String urlLoc, String inName, String localLoc, String fName)
   throws IOException {
     // System.out.println("Acquiring data from " + urlLoc);
     String fullPath = URL_HEADER + urlLoc + inName;
@@ -56,14 +54,13 @@ public class TestUtils {
         br.close();
       }
     }
-    
+
 
   }
-  
-  // re-comment when repo made public
+
   @Test
   public void canGetTestData() {
-    
+
     String loc = "PSD_calculation/SyntheticData/";
     String file = "XX_KAS.00_BHZ.seed";
     try {
@@ -72,39 +69,23 @@ public class TestUtils {
       e1.printStackTrace();
       fail();
     }
-    
-    /* not usable because usgs gitlab and public github work differently 
-    String fullPath = URL_HEADER;
-    try {
-      URL web = new URL(fullPath);
-      HttpURLConnection connection = (HttpURLConnection) web.openConnection();
-      connection.connect();
-      assertEquals( connection.getResponseCode(), 200 );
 
-    } catch (MalformedURLException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
-    */
   }
-  
+
   public static Calendar getStartCalendar(DataStore ds) {
     SimpleDateFormat sdf = InputPanel.SDF;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    
+
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     return cCal;
   }
-  
+
   public static Calendar getEndCalendar(DataStore ds) {
     SimpleDateFormat sdf = InputPanel.SDF;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    
+
     cCal.setTimeInMillis( ds.getBlock(0).getEndTime() );
     return cCal;
   }

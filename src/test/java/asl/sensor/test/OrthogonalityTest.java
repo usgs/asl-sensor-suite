@@ -1,6 +1,8 @@
 package asl.sensor.test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -8,9 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
-
 import org.junit.Test;
-import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
@@ -21,131 +21,131 @@ public class OrthogonalityTest {
   public String getNoisyData() {
     return "FUNA.00";
   }
-  
+
   public String getCleanData() {
     return "ANMO.10";
   }
-  
+
   @Test
   public void identifiesSprocketsAngle060Clean() {
     testsFromSprockets(60, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle060Noisy() {
     testsFromSprockets(60, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle080Clean() {
     testsFromSprockets(80, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle080Noisy() {
     testsFromSprockets(80, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle085Clean() {
     testsFromSprockets(85, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle085Noisy() {
     testsFromSprockets(85, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle087Clean() {
     testsFromSprockets(87, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle087Noisy() {
     testsFromSprockets(87, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle088Clean() {
     testsFromSprockets(88, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle088Noisy() {
     testsFromSprockets(88, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle089Clean() {
     testsFromSprockets(89, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle089Noisy() {
     testsFromSprockets(89, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle090Clean() {
     testsFromSprockets(90, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle090Noisy() {
     testsFromSprockets(90, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle091Clean() {
     testsFromSprockets(91, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle091Noisy() {
     testsFromSprockets(91, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle092Clean() {
     testsFromSprockets(92, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle092Noisy() {
     testsFromSprockets(92, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle100Clean() {
     testsFromSprockets(100, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle100Noisy() {
     testsFromSprockets(100, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle120Clean() {
     testsFromSprockets(120, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle120Noisy() {
     testsFromSprockets(120, getNoisyData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle270Clean() {
     testsFromSprockets(270, getCleanData());
   }
-  
+
   @Test
   public void identifiesSprocketsAngle270Noisy() {
     testsFromSprockets(270, getNoisyData());
   }
-  
+
   public void testsFromSprockets(int angle, String staCha) {
     StringBuilder sb = new StringBuilder();
     sb.append(angle);
@@ -158,7 +158,7 @@ public class OrthogonalityTest {
     String refURL = "orientation/";
     // orientation/rotation/[002, etc.]/
     String testURL = refURL + "orthogonality/" + sb.toString() + "/";
-    
+
     String refSubfolder = "orientation-reference/";
     String testSubfolder = "orthogonality-" + sb.toString() + "/";
     try {
@@ -172,19 +172,19 @@ public class OrthogonalityTest {
       e.printStackTrace();
       fail();
     }
-    
+
     DataStore ds = new DataStore();
     try {
       String root = "./test-data/sprockets/";
       testSubfolder = root + testSubfolder;
       refSubfolder = root + refSubfolder;
-      
+
       ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
       ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data2) );
-      
+
       ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
       ds.setBlock(3, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
-      
+
       Calendar cCal = TestUtils.getStartCalendar(ds);
       cCal.set(Calendar.HOUR_OF_DAY, 10);
       cCal.set(Calendar.MINUTE, 0);
@@ -193,9 +193,9 @@ public class OrthogonalityTest {
       long start = cCal.getTime().getTime();
       cCal.set(Calendar.HOUR_OF_DAY, 14);
       long end = cCal.getTime().getTime();
-      
+
       ds.trim(start, end);
-      
+
       // ds.trimToCommonTime();
       OrthogonalExperiment oe = new OrthogonalExperiment();
       oe.runExperimentOnData(ds);
@@ -208,23 +208,23 @@ public class OrthogonalityTest {
         angle -= 360;
       }
       */
-      
+
       fitAngle = 180 - fitAngle; // back-azimuth correction
-      double expectedAngle = (double) angle;
+      double expectedAngle = angle;
       if (expectedAngle > 180) {
         expectedAngle = 360 - expectedAngle;
       }
       System.out.println(expectedAngle + " | " + fitAngle + " [" + sb.toString() + "]");
-      
+
       assertEquals(expectedAngle, fitAngle, 1.0);
-      
+
     } catch (FileNotFoundException e) {
       e.printStackTrace();
       fail();
     }
-    
+
   }
-  
+
   @Test
   public void getsCorrectAngle() {
 
@@ -243,7 +243,7 @@ public class OrthogonalityTest {
       String fName = folder + prefixes[i] + extension;
       String seriesName = "";
       try {
-        seriesName = 
+        seriesName =
             new ArrayList<String>( TimeSeriesUtils.getMplexNameSet(fName) ).
             get(0);
       } catch (FileNotFoundException e) {
