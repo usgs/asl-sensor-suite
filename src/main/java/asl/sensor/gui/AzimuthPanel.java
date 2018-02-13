@@ -1,5 +1,6 @@
 package asl.sensor.gui;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -17,12 +18,15 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PolarPlot;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.DefaultXYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleAnchor;
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.experiment.ExperimentEnum;
@@ -309,6 +313,12 @@ public class AzimuthPanel extends ExperimentPanel {
           RectangleAnchor.CENTER);
       xyp.clearAnnotations();
       xyp.addAnnotation(xyt);
+    } else {
+      double cutOff = az.getMinCorr();
+      Marker highWater = new ValueMarker(cutOff);
+      highWater.setStroke( new BasicStroke( (float) 1.5 ) );
+      highWater.setPaint(Color.BLACK);
+      xyp.addRangeMarker(1, highWater, Layer.BACKGROUND);
     }
 
     /*

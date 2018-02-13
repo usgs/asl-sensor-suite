@@ -4,10 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
@@ -57,7 +55,8 @@ public class AzimuthExperiment extends Experiment {
   // private double[] freqs;
 
   // private double[] coherence;
-  private double[] correlations;
+  private double[] correlations; // best-fit correlations used to find windows w/ good estimates
+  private double minCorr; // lowest correlation value still used in angle estimation
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
 
@@ -91,7 +90,6 @@ public class AzimuthExperiment extends Experiment {
 
   @Override
   protected void backend(final DataStore ds) {
-
     // assume the first two are the reference and the second two are the test
     // we just need the timeseries, don't actually care about response
 
@@ -130,6 +128,7 @@ public class AzimuthExperiment extends Experiment {
       double[] testNorth, double[] testEast,
       double[] refNorth, long interval, long startTime, long endTime) {
 
+    minCorr = 0; // make sure to initialize
     double tau = NumericUtils.TAU; // 2 pi
 
     enoughPts = false;
@@ -270,6 +269,8 @@ public class AzimuthExperiment extends Experiment {
       optimumY = optimizer.optimize(findAngleWindow);
 
       RealVector angleVectorWindow = optimumY.getPoint();
+      findAngleWindow.evaluate(angleVectorWindow);
+      // call to evaluate at best-fit point gives corresponding latestCorrelation as side effect
       double angleTemp = angleVectorWindow.getEntry(0);
 
       angleTemp = angleTemp % NumericUtils.TAU;
@@ -300,7 +301,7 @@ public class AzimuthExperiment extends Experiment {
       int maxBoundary = Math.max(minCorrelations, sortedCorrelation.size() * 3 / 20);
       // start from 0 because sort is descending order
       sortedCorrelation = sortedCorrelation.subList(0, maxBoundary);
-      Set<Double> acceptableCorrelations = new HashSet<Double>(sortedCorrelation);
+      minCorr = sortedCorrelation.get( sortedCorrelation.size() - 1);
 
       // store good values for use in std dev calculation
       List<Double> acceptedAngles = new ArrayList<Double>();
@@ -326,7 +327,7 @@ public class AzimuthExperiment extends Experiment {
       for (int i = 0; i < angles.length; ++i) {
         angles[i] -= shift; // subtract shift term back out
         double correlation = correlations[i];
-        if ( acceptableCorrelations.contains(correlation) && acceptedAngles.size() < maxBoundary ) {
+        if ( correlation >= minCorr && acceptedAngles.size() < maxBoundary ) {
           // don't keep adding angles once we've hit the max size
           // don't break out of the loop, though, so we can remove the shift from everything
           acceptedAngles.add(angles[i]);
@@ -419,6 +420,14 @@ public class AzimuthExperiment extends Experiment {
    */
   public double getFitAngleRad() {
     return angle;
+  }
+
+  /**
+   * Returns the minimum acceptable correlation used in angle estimates
+   * @return correlation cut-off point
+   */
+  public double getMinCorr() {
+    return minCorr;
   }
 
   /**
