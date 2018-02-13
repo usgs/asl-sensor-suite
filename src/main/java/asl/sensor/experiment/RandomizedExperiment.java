@@ -510,7 +510,13 @@ extends Experiment implements ParameterValidator {
 
     fireStateChange("Compiling data into plots...");
 
-    for (int i = 0; i < freqsFull.length; ++i) {
+    int upperBound = freqsFull.length;
+    if (!lowFreq) {
+      // high freq has multipoint moving average -- means last point will look ugly
+      --upperBound;
+    }
+
+    for (int i = 0; i < upperBound; ++i) {
       double xValue;
       if (freqSpace) {
         xValue = freqsFull[i];
