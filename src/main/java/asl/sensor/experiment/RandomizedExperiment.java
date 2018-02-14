@@ -191,11 +191,14 @@ extends Experiment implements ParameterValidator {
     }
 
     double zeroTarget = 0.02; // frequency to set all curves to zero at
+    int movingAvgOffset = 0;
     if (!lowFreq) {
       zeroTarget = 1.0;
-      --startIdx; // subtracting by 1 here to offset artifact from moving average later
+      movingAvgOffset = 5;
     }
 
+    // moving average, if done, will produce errors in terms below its cutoff point
+    startIdx -= movingAvgOffset;
 
     // Collections.sort(freqList); // done mostly for peace of mind
     double[] freqsFull = Arrays.copyOfRange(freqs, startIdx, extIdx);
@@ -221,11 +224,11 @@ extends Experiment implements ParameterValidator {
     }
     // 5-point moving average used to smooth calculated response curve
     if (!lowFreq) {
-      plottedResponse = NumericUtils.multipointMovingAverage(plottedResponse, 5);
+      plottedResponse = NumericUtils.multipointMovingAverage(plottedResponse, movingAvgOffset);
       // make sure freqs and plotted data are trimmed by 1 to deal with error introduced by this
-      plottedResponse = Arrays.copyOfRange(plottedResponse, 1, freqsFull.length);
-      freqsFull = Arrays.copyOfRange(freqsFull, 1, freqsFull.length);
-      freqs = Arrays.copyOfRange(freqs, 1, freqs.length);
+      plottedResponse = Arrays.copyOfRange(plottedResponse, movingAvgOffset, freqsFull.length);
+      freqsFull = Arrays.copyOfRange(freqsFull, movingAvgOffset, freqsFull.length);
+      freqs = Arrays.copyOfRange(freqs, movingAvgOffset, freqs.length);
     }
 
     // now that we know length of frequency array, figure out normalization index
