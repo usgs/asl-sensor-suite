@@ -162,8 +162,10 @@ public class AzimuthExperiment extends Experiment {
     MultivariateJacobianFunction jacobian =
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
 
+    double initAngle = -Math.toRadians(offset);
+
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
-        start(new double[] {0}).
+        start(new double[] {initAngle}).
         model(jacobian).
         target(new double[]{1}).
         maxEvaluations(Integer.MAX_VALUE).
@@ -183,6 +185,7 @@ public class AzimuthExperiment extends Experiment {
 
     String newStatus = "Found initial guess for angle: " + tempAngle;
     fireStateChange(newStatus);
+    System.out.println( Math.toDegrees(tempAngle) + " is initial best guess");
 
     // how much data we need (i.e., iteration length) to check 10 seconds
     // used when checking if alignment is off by 180 degrees
@@ -263,7 +266,6 @@ public class AzimuthExperiment extends Experiment {
           maxEvaluations(Integer.MAX_VALUE).
           maxIterations(Integer.MAX_VALUE).
           lazyEvaluation(false).
-          // checker(cv).
           build();
 
       optimumY = optimizer.optimize(findAngleWindow);
@@ -393,7 +395,7 @@ public class AzimuthExperiment extends Experiment {
         angle = ( (angle % tau) + tau ) % tau;
         double correlation = angleCorrelationMap.get(time).getSecond();
         timeMapCorrelation.add(xVal, correlation);
-        timeMapAngle.add( xVal, Math.toDegrees(angle) );
+        timeMapAngle.add( xVal, Math.toDegrees(angle) + offset );
     }
 
 
@@ -583,10 +585,6 @@ public class AzimuthExperiment extends Experiment {
 
     double theta = ( point.getEntry(0) );
     double thetaDelta = theta + diff;
-
-    // was the frequency range under examination (in Hz) when doing coherence
-    // double lowFreq = 1./18.;
-    // double highFreq = 1./3.;
 
     // angles of rotation are x, x+dx respectively
     double[] testRotated =
