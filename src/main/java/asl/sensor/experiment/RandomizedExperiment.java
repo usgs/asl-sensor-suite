@@ -190,12 +190,12 @@ extends Experiment implements ParameterValidator {
       }
     }
 
-    double zeroTarget; // frequency to set all curves to zero at
-    if (lowFreq) {
-      zeroTarget = 0.02;
-    } else {
+    double zeroTarget = 0.02; // frequency to set all curves to zero at
+    if (!lowFreq) {
       zeroTarget = 1.0;
+      --startIdx; // subtracting by 1 here to offset artifact from moving average later
     }
+
 
     // Collections.sort(freqList); // done mostly for peace of mind
     double[] freqsFull = Arrays.copyOfRange(freqs, startIdx, extIdx);
@@ -208,13 +208,6 @@ extends Experiment implements ParameterValidator {
     Complex[] denominatorPSDVals =
         Arrays.copyOfRange(denominatorPSD.getFFT(), startIdx, extIdx);
 
-    for (int i = 0; i < freqs.length; ++i) {
-      if ( freqs[i] == zeroTarget || ( i > 0 &&
-          (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) ) {
-        normalIdx = i;
-      }
-    }
-
     // calculated response from deconvolving calibration from signal
     // (this will be in displacement and need to be integrated)
     Complex[] plottedResponse = new Complex[freqsFull.length];
@@ -226,9 +219,21 @@ extends Experiment implements ParameterValidator {
       Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqsFull[i]);
       plottedResponse[i] = plottedResponse[i].multiply(scaleFactor);
     }
-    // 3-point moving average
+    // 5-point moving average used to smooth calculated response curve
     if (!lowFreq) {
       plottedResponse = NumericUtils.multipointMovingAverage(plottedResponse, 5);
+      // make sure freqs and plotted data are trimmed by 1 to deal with error introduced by this
+      plottedResponse = Arrays.copyOfRange(plottedResponse, 1, freqsFull.length);
+      freqsFull = Arrays.copyOfRange(freqsFull, 1, freqsFull.length);
+      freqs = Arrays.copyOfRange(freqs, 1, freqs.length);
+    }
+
+    // now that we know length of frequency array, figure out normalization index
+    for (int i = 0; i < freqs.length; ++i) {
+      if ( freqs[i] == zeroTarget || ( i > 0 &&
+          (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) ) {
+        normalIdx = i;
+      }
     }
 
     // the range over the fit is trimmed from the full plot
@@ -510,13 +515,7 @@ extends Experiment implements ParameterValidator {
 
     fireStateChange("Compiling data into plots...");
 
-    int upperBound = freqsFull.length;
-    if (!lowFreq) {
-      // high freq has multipoint moving average -- means last point will look ugly
-      --upperBound;
-    }
-
-    for (int i = 0; i < upperBound; ++i) {
+    for (int i = 0; i < freqsFull.length; ++i) {
       double xValue;
       if (freqSpace) {
         xValue = freqsFull[i];
