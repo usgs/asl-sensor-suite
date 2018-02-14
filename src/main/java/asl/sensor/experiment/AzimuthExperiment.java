@@ -185,7 +185,6 @@ public class AzimuthExperiment extends Experiment {
 
     String newStatus = "Found initial guess for angle: " + tempAngle;
     fireStateChange(newStatus);
-    System.out.println( Math.toDegrees(tempAngle) + " is initial best guess");
 
     // how much data we need (i.e., iteration length) to check 10 seconds
     // used when checking if alignment is off by 180 degrees

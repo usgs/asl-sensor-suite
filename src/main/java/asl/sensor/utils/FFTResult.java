@@ -47,8 +47,8 @@ public class FFTResult {
   bandFilter(double[] toFilt, double sps, double low, double high) {
 
     Butterworth casc = new Butterworth();
-    // order 1 filter
-    casc.bandPass(2, sps, (high-low)/2, (high-low));
+    // filter library defines bandpass with center frequency and notch width
+    casc.bandPass(2, sps, (high-low)/2, (high-low)/2);
 
     double[] filtered = new double[toFilt.length];
     for (int i = 0; i < toFilt.length; ++i) {
