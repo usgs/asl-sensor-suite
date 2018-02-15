@@ -64,28 +64,28 @@ public class CalProcessingServer {
       String outFileNameD1, String outFileNameD2, String respName, boolean respEmbd,
       String startDate, String endDate, boolean lowFreq) throws IOException {
 
-      DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-      ZonedDateTime startDateTime = ZonedDateTime.parse(startDate, dtf);
-      ZonedDateTime endDateTime = ZonedDateTime.parse(endDate, dtf);
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    ZonedDateTime startDateTime = ZonedDateTime.parse(startDate, dtf);
+    ZonedDateTime endDateTime = ZonedDateTime.parse(endDate, dtf);
 
-      DataStore ds = new DataStore();
-      String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
-      String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-      DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-      DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
-      InstrumentResponse ir;
-      if (respEmbd) {
-        ir = InstrumentResponse.loadEmbeddedResponse(respName);
-      } else{
-        ir = new InstrumentResponse(respName);
-      }
+    DataStore ds = new DataStore();
+    String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
+    String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
+    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
+    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    InstrumentResponse ir;
+    if (respEmbd) {
+      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+    } else{
+      ir = new InstrumentResponse(respName);
+    }
 
-      ds.setBlock(0, calBlock);
-      ds.setBlock(1, outBlock);
-      ds.setResponse(1, ir);
-      ds.trim(startDateTime, endDateTime);
+    ds.setBlock(0, calBlock);
+    ds.setBlock(1, outBlock);
+    ds.setResponse(1, ir);
+    ds.trim(startDateTime, endDateTime);
 
-      return runExpGetData(ds, lowFreq);
+    return runExpGetData(ds, lowFreq);
 
   }
 
@@ -103,25 +103,29 @@ public class CalProcessingServer {
    * @throws IOException If a string does not refer to a valid accessible file
    */
   public RandData populateDataAndRun(String calFileName, String outFileName,
-      String respName, boolean respEmbd, long startTime, long endTime, boolean lowFreq)
-      throws IOException {
+      String respName, boolean respEmbd, String startDate, String endDate, boolean lowFreq)
+          throws IOException {
 
-      DataStore ds = new DataStore();
-      DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-      DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
-      InstrumentResponse ir;
-      if (respEmbd) {
-        ir = InstrumentResponse.loadEmbeddedResponse(respName);
-      } else{
-        ir = new InstrumentResponse(respName);
-      }
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    ZonedDateTime startDateTime = ZonedDateTime.parse(startDate, dtf);
+    ZonedDateTime endDateTime = ZonedDateTime.parse(endDate, dtf);
 
-      ds.setBlock(0, calBlock);
-      ds.setBlock(1, outBlock);
-      ds.setResponse(1, ir);
-      ds.trim(startTime, endTime);
+    DataStore ds = new DataStore();
+    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
+    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    InstrumentResponse ir;
+    if (respEmbd) {
+      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+    } else{
+      ir = new InstrumentResponse(respName);
+    }
 
-      return runExpGetData(ds, lowFreq);
+    ds.setBlock(0, calBlock);
+    ds.setBlock(1, outBlock);
+    ds.setResponse(1, ir);
+    ds.trim(startDateTime, endDateTime);
+
+    return runExpGetData(ds, lowFreq);
 
   }
 
