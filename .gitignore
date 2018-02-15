@@ -5,8 +5,9 @@ data/*
 !data/readme.txt
 responses/*
 !responses/readme.txt
-
+test-data/sprockets/*
 .idea/
+out/
 
 # Mac
 .DS_Store
@@ -163,5 +164,4 @@ local.properties
 /.gradle/
 
 # jar files
-#
-.jar
+*.jar

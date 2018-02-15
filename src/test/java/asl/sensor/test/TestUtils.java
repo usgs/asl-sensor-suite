@@ -1,28 +1,33 @@
 package asl.sensor.test;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.fail;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.TimeZone;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
+import asl.sensor.gui.InputPanel;
+import asl.sensor.input.DataStore;
 
 public class TestUtils {
-  
-  private static String URL_HEADER = 
-      "https://code.usgs.gov/asl/sprockets/raw/master/";
+
+  // may need to change this to deal with eventual migration to main usgs github
+  private static String URL_HEADER =
+      "https://github.com/kschramm-usgs/sprockets/raw/master/";
   private static int LOGIN_PAGE_BYTE_SIZE = 7875;
-  
-  public static void 
-  downloadTestData(String urlLoc, String localLoc, String fName) 
+
+  // inName and fName are separated to make it possible to rename output file
+  // to prevent collisions between data with the same filename from different inputs
+  public static void
+  downloadTestData(String urlLoc, String inName, String localLoc, String fName)
   throws IOException {
-    String fullPath = URL_HEADER + urlLoc + fName;
+    // System.out.println("Acquiring data from " + urlLoc);
+    String fullPath = URL_HEADER + urlLoc + inName;
     String localPath = "./test-data/sprockets/" + localLoc + fName;
 
     File target = new File(localPath);
@@ -49,32 +54,42 @@ public class TestUtils {
         br.close();
       }
     }
-    
+
 
   }
-  
-  // re-comment when repo made public
-  //@Test
+
+  @Test
   public void canGetTestData() {
-    String fullPath = URL_HEADER;
+
+    String loc = "PSD_calculation/SyntheticData/";
+    String file = "XX_KAS.00_BHZ.seed";
     try {
-      URL web = new URL(fullPath);
-      HttpURLConnection connection = (HttpURLConnection) web.openConnection();
-      connection.connect();
-      assertEquals( connection.getResponseCode(), 200 );
-      String loc = "PSD_calculation/SyntheticData/";
-      String file = "XX_KAS.00_BHZ.seed";
-      downloadTestData(loc, "PSD/", file);
-    } catch (MalformedURLException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
+      downloadTestData(loc, file, "PSD/", file);
+    } catch (IOException e1) {
+      e1.printStackTrace();
       fail();
     }
-    
+
   }
-  
+
+  public static Calendar getStartCalendar(DataStore ds) {
+    SimpleDateFormat sdf = InputPanel.SDF;
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+
+    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
+    return cCal;
+  }
+
+  public static Calendar getEndCalendar(DataStore ds) {
+    SimpleDateFormat sdf = InputPanel.SDF;
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+
+    cCal.setTimeInMillis( ds.getBlock(0).getEndTime() );
+    return cCal;
+  }
+
   public static void makeTestDataDirectory() {
     File file = new File("./test-data/");
     if ( !file.exists() ) {

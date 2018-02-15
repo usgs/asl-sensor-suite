@@ -3,7 +3,6 @@ package asl.sensor.experiment;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
@@ -15,15 +14,17 @@ import asl.sensor.utils.FFTResult;
  * rather than the 9-component.
  * Based on code in the seedscan timeseries package, see
  * https://github.com/usgs/seedscan/tree/master/src/main/java/asl/timeseries
+ * See also Ringler, Hutt: 'Self-Noise Models of Seismic Instruments', Seismological Research 
+ * Letters (2010).
  * @author akearns, jholland 
  *
  */
 public class NoiseExperiment extends Experiment {
   
 
-  protected boolean freqSpace;
+  protected boolean freqSpace; // controls plotting in Hz vs. time interval between samples
   
-  protected int[] respIndices;
+  protected int[] respIndices; // to keep track of the response data used in this experiment
   
   /**
    * Instantiates a noise experiment -- axis titles and scales

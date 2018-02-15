@@ -1,13 +1,21 @@
 package asl.sensor.experiment;
  
 import java.util.List;
-
 import org.jfree.data.xy.XYSeries;
-
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
 
+/**
+ * Augmented version of relative gain experiment that includes
+ * calculation of components in all 3 main dimensions; this will
+ * rotate north and east components into aligned orientation with
+ * the first sensor specified in the data store.
+ * This experiment uses the azimuth code to do alignment in these dimensions
+ * and then calls a gain backend on the data in each dimension
+ * @author akearns
+ *
+ */
 public class GainSixExperiment extends Experiment {
 
   private static final int DIMS = 3; // number of known space dimensions

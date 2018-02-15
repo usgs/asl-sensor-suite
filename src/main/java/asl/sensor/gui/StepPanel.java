@@ -6,10 +6,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
-
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
-
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -21,7 +19,6 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.VerticalAlignment;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.input.DataStore;

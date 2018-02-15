@@ -5,15 +5,12 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
-
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.data.xy.XYSeriesCollection;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.SpectrumExperiment;
 import asl.sensor.input.DataStore;
