@@ -340,7 +340,6 @@ public class DataStore {
     // second loop to downsample
     for (int i = 0; i < limit; ++i) {
       if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() != interval ) {
-        // System.out.println("resampling");
         getBlock(i).resample(interval);
       }
     }
@@ -472,56 +471,6 @@ public class DataStore {
                 thisBlockIsSet[i] = false;
               }
 
-            }
-          }
-        }
-      }
-    }
-
-  }
-
-  /**
-   * Takes a loaded miniSEED data series and loads it in as a datablock into
-   * this datastore object
-   * @param idx The plot (range 0 to FILE_COUNT) to be given new data
-   * @param filepath Full address of file to be loaded in
-   * @param nameFilter Station ID (SNCL) to load in from multiplexed file
-   * @param startTrim Time of initial data point in file to load
-   * @param endTrim Time of last data point in file to load
-   */
-  public void setBlock(int idx, String filepath, String nameFilter,
-      long startTrim, long endTrim) {
-
-    try {
-      Pair<Long, Long> timeRange = new Pair<Long, Long>(startTrim, endTrim);
-      DataBlock xy =
-          TimeSeriesUtils.getTimeSeries(filepath, nameFilter, timeRange);
-      thisBlockIsSet[idx] = true;
-      dataBlockArray[idx] = xy;
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
-
-    synchronized(this) {
-      if (numberOfBlocksSet() > 1) {
-        // don't trim data here, that way we don't lose data
-        long start = dataBlockArray[idx].getStartTime();
-        long end = dataBlockArray[idx].getEndTime();
-
-        // there's clearly already another block loaded, let's make sure they
-        // actually have an intersecting time range
-        for (int i = 0; i < FILE_COUNT; ++i) {
-          if (i != idx && thisBlockIsSet[i]) {
-            // whole block either comes before or after the data set
-            if (end < dataBlockArray[i].getStartTime() ||
-                start > dataBlockArray[i].getEndTime() ) {
-
-              //System.out.println(end+","+dataBlockArray[i].getStartTime());
-              //System.out.println(start+","+dataBlockArray[i].getEndTime());
-
-              thisBlockIsSet[idx] = false;
-              dataBlockArray[idx] = null;
-              throw new RuntimeException("Time range does not intersect");
             }
           }
         }
@@ -726,7 +675,6 @@ public class DataStore {
       }
       DataBlock data = dataBlockArray[i];
       data.trim(lastStartTime, firstEndTime);
-      // outToPlots[i] = data.toXYSeries();
     }
 
   }
@@ -740,9 +688,7 @@ public class DataStore {
       if (!thisBlockIsSet[i]) {
         continue;
       }
-      DataBlock data = dataBlockArray[i];
-      // System.out.println( data.getName() );
-      data.untrim();
+      DataBlock data = dataBlockArray[i];      data.untrim();
     }
     trimToCommonTime(limit);
   }

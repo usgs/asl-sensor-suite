@@ -148,7 +148,6 @@ public class StepExperiment extends Experiment{
     // (i.e., lowpass, demean, normalize)
     double[] toPlot = calculate(params);
 
-    long start = 0L; // was db.startTime();
     long now = start;
     XYSeries xys = new XYSeries("STEP *^(-1) RESP");
     XYSeries scs = new XYSeries( stepCalRaw.getName() );
@@ -220,7 +219,6 @@ public class StepExperiment extends Experiment{
 
     double[] fitPlot = calculate(newParams);
     // fitPlot = TimeSeriesUtils.normalize(fitPlot);
-    start = 0L; // was db.startTime();
     now = start;
     XYSeries bfs = new XYSeries("BEST FIT PLOT");
     for (double point : fitPlot) {

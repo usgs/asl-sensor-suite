@@ -91,45 +91,12 @@ public class OrthogonalExperiment extends Experiment {
     testLH1 = TimeSeriesUtils.detrend(testLH1);
     testLH2 = TimeSeriesUtils.detrend(testLH2);
 
-    /*
-    refLH1 = TimeSeriesUtils.normalize(refLH1);
-    refLH2 = TimeSeriesUtils.normalize(refLH2);
-    testLH1 = TimeSeriesUtils.normalize(testLH1);
-    testLH2 = TimeSeriesUtils.normalize(testLH2);
-
-    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / refLH1Block.getInterval();
-    double low = 1./8;
-    double high = 1./4;
-
-    refLH1 = FFTResult.bandFilter(refLH1, sps, low, high);
-    refLH2 = FFTResult.bandFilter(refLH2, sps, low, high);
-    testLH1 = FFTResult.bandFilter(testLH1, sps, low, high);
-    testLH2 = FFTResult.bandFilter(testLH2, sps, low, high);
-    */
     int len = refLH1.length;
 
     double[] refYArr = Arrays.copyOfRange(refLH1, 0, len);
     double[] refXArr = Arrays.copyOfRange(refLH2, 0, len);
     double[] testYArr = Arrays.copyOfRange(testLH1, 0, len);
     double[] testXArr = Arrays.copyOfRange(testLH2, 0, len);
-    /*
-    for (int i = 0; i < len; ++i) {
-      refYArr[i] = refLH1.get(i).doubleValue();
-      refXArr[i] = refLH2.get(i).doubleValue();
-      testYArr[i] = testLH1.get(i).doubleValue();
-    }
-    */
-
-    // since refLH1 and refLH2 are orthogonal, can use them with azimuth logic
-    // to find angle between the other two datasets
-    /* this is slow
-    DataStore findTestX = new DataStore();
-    findTestX.setBlock(0, refLH1Block);
-    findTestX.setBlock(1, refLH2Block);
-    findTestX.setBlock(2, testLH2Block);
-    DataStore findTestY = new DataStore(findTestX);
-    findTestY.setBlock(2, testLH1Block);
-    */
 
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.setSimple(false); // set to see if damped window estimates are hurting our results
@@ -156,11 +123,6 @@ public class OrthogonalExperiment extends Experiment {
     diffs[1] = angleX; // east
     diffs[0] = ( (diffs[0] % 360) + 360 ) % 360;
     diffs[1] = ( (diffs[1] % 360) + 360 ) % 360;
-
-    // if x-plot chart way above y-plot, plot negative angle
-    //if (diffs[1] > diffs[0]) {
-    //  diffs[1] -= 360;
-    //}
 
     double timeAtPoint = 0.;
     double tick = interval / TimeSeriesUtils.ONE_HZ_INTERVAL;
