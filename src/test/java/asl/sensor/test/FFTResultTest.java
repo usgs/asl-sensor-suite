@@ -536,8 +536,8 @@ public class FFTResultTest {
     
     double sps = 40.;
     
-    double[] lowPassed = FFTResult.bandFilter(timeSeries, sps, 0., 1.);
-    
+    double[] lowPassed = FFTResult.bandFilter(timeSeries, sps, 0.5, 1.5);
+    System.out.println(Arrays.toString(lowPassed));
     for (int i = 1; i < (lowPassed.length - 1); ++i) {
       assertTrue( Math.abs( lowPassed[i] ) < 1. );
     }

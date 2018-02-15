@@ -8,6 +8,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -24,7 +27,6 @@ import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -39,7 +41,6 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-
 import asl.sensor.experiment.Experiment;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
@@ -50,11 +51,11 @@ import asl.sensor.utils.ReportingUtils;
  * Panel used to display the data produced from a specified sensor test.
  * This primarily exists as a chartpanel, plus a filechooser and button used
  * in saving the chart held in the panel to a file.
- * 
+ *
  * A default construction of the GUI components exists in this class, but
  * implementing methods are suggested to override this in their constructor
  * (see existing classes such as GainPanel and NoisePanel for examples).
- * 
+ *
  * This class also includes a number of utility functions used in report
  * generation. This is done with the expectation that some (but not necessarily
  * all) such functions will be overridden by an implementing class, such as
@@ -62,14 +63,14 @@ import asl.sensor.utils.ReportingUtils;
  * and all text data relevant to the panel is included in a report. In addition
  * there are methods to display on the panel the current status of the
  * experiment based on calls to a status change report in the backend.
- * 
+ *
  * @author akearns
  *
  */
-public abstract class ExperimentPanel 
-extends JPanel 
+public abstract class ExperimentPanel
+extends JPanel
 implements ActionListener, ChangeListener {
- 
+
   private static final long serialVersionUID = -5591522915365766604L;
 
   /**
@@ -81,42 +82,41 @@ implements ActionListener, ChangeListener {
     String titleText = chart.getTitle().getText();
     chart.getTitle().setText(titleText + appendText);
   }
-  
+
   /**
    * Get start and end times of data for experiments that use time series data
    * @param expResult experiment with data already added
-   * @return string representing the start and end of the 
+   * @return string representing the start and end of the
    * experiment's data range
    */
   public static String getTimeStampString(Experiment expResult) {
     StringBuilder sb = new StringBuilder();
-    SimpleDateFormat sdf = new SimpleDateFormat("Y.DDD.HH:mm:ss");
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    
+
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("y.DDD.HH:mm:ss.SSS");
+    ZonedDateTime dt = ZonedDateTime.now(ZoneOffset.UTC);
+
     sb.append("Time of report generation:\n");
-    sb.append( sdf.format( cCal.getTime() ) );
+    sb.append( dtf.format(dt) );
     sb.append('\n');
-    
+
     long startTime = expResult.getStart();
     long endTime = expResult.getEnd();
     if ( !(startTime == 0L && endTime == 0L) ) {
-      cCal.setTimeInMillis(startTime);
-      
+      dt = ZonedDateTime.ofInstant( Instant.ofEpochMilli(startTime), ZoneOffset.UTC);
+
       sb.append("Data start time:\n");
-      sb.append( sdf.format( cCal.getTime() ) );
+      sb.append( dtf.format(dt) );
       sb.append('\n');
-      
-      cCal.setTimeInMillis(endTime);
-      
+
+      dt = ZonedDateTime.ofInstant( Instant.ofEpochMilli(endTime), ZoneOffset.UTC);
+
       sb.append("Data end time:\n");
-      sb.append( sdf.format( cCal.getTime() ) );
+      sb.append( dtf.format(dt) );
       sb.append('\n');
     }
     return sb.toString();
   }
-  
+
   /**
    * Reverses an xyplot rendering order, allowing curves that would otherwise be
    * at the background are inverted and placed in the foreground instead.
@@ -133,77 +133,77 @@ implements ActionListener, ChangeListener {
     } else {
       xyp.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
     }
-    
+
   }
-  
-  protected JButton save;
-  
+
+  protected JButton save; // easy access to saving output as png
+
   protected JFreeChart chart; // the chart shown in the panel
-  
+
   protected ChartPanel chartPanel; // component used to hold the shown chart
   // (if an experiment has multiple charts to show, ideally each should be
-  // selectable through some sort of menu with the active menu option deciding
+  // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
-  
+
   protected JFileChooser fc; // save image when image save button clicked
-  
-  public final ExperimentEnum expType; 
+
+  public final ExperimentEnum expType;
     // used to define experiment of each plot object (i.e., chart name)
-  
+
   protected Experiment expResult;
     // experiment actually being run (call its 'setData' method to run backend)
     // experiments use builder pattern -- set necessary variables like
     // angle offset or x-axis units before running the experiment
-  
+
   protected ValueAxis xAxis, yAxis;
     // default axes to use with the default chart
-  
+
   public String[] channelType;
     // used to give details in input panel about what users needs to load where
   protected boolean set; // true if the experiment has run
-  
+
   protected String[] plotTheseInBold; // given in the implementing function
   // this is a String because bolded names are intended to be fixed
   // (i.e., NLNM, NHNM, not dependent on user input)
   protected Map<String, Color> seriesColorMap;
-  
+
   protected Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
-  
+
   /**
    * Construct a new panel, using a backend defined by the passed-in enum
    * @param exp Experiment enum with corresponding backend for factory
    * instantiation
    */
   public ExperimentPanel(ExperimentEnum exp) {
-    
+
     set = false;
-    
+
     channelType = new String[DataStore.FILE_COUNT];
-    
+
     // default initialization for channel type string
     for (int i = 0; i < channelType.length; ++i) {
       channelType[i] = "NOT USED";
     }
-    
+
     seriesColorMap = new HashMap<String, Color>();
     seriesDashedSet = new HashSet<String>();
     plotTheseInBold = new String[]{};
-    
+
     expType = exp;
     expResult = ExperimentFactory.createExperiment(exp);
     expResult.addChangeListener(this);
-    
-    chart = ChartFactory.createXYLineChart( expType.getName(), 
+
+    chart = ChartFactory.createXYLineChart( expType.getName(),
         "", "", null);
     chartPanel = new ChartPanel(chart);
     // chartPanel.setMouseZoomable(false);
-    
+
     fc = new JFileChooser();
-    
+
     save = new JButton("Save plot (PNG)");
     save.addActionListener(this);
-    
+
     // basic layout for components (recommended to override in concrete class)
     // if specific formatting or additional components are unnecessary, the
     // implementing class can simply call super(expType) to make a panel
@@ -211,14 +211,14 @@ implements ActionListener, ChangeListener {
     this.add(chartPanel);
     this.add(save);
   }
-  
+
   /**
-   * Handle's saving this plot's chart to file (PNG image) 
+   * Handle's saving this plot's chart to file (PNG image)
    * when the save button is clicked.
    */
   @Override
   public void actionPerformed(ActionEvent e) {
-    
+
     if ( e.getSource() == save ) {
       String ext = ".png";
       fc.addChoosableFileFilter(
@@ -238,16 +238,16 @@ implements ActionListener, ChangeListener {
       }
     }
   }
-  
+
   /**
-   * Gets the axes to be used to plot the data 
+   * Gets the axes to be used to plot the data
    */
   protected void applyAxesToChart() {
     XYPlot xyp = chart.getXYPlot();
     xyp.setDomainAxis( getXAxis() );
     xyp.setRangeAxis( getYAxis() );
   }
-  
+
   /**
    * Function to construct a chart from the XYSeriesCollection produced
    * from this panel's backend. Any data that requires a specific plot color,
@@ -258,7 +258,7 @@ implements ActionListener, ChangeListener {
   public JFreeChart buildChart(XYSeriesCollection xyDataset) {
     return buildChart( xyDataset, getXAxis(), getYAxis() );
   }
-  
+
   /**
    * Function to construct a chart from the XYSeriesCollection produced
    * from this panel's backend. Any data that requires a specific plot color,
@@ -268,16 +268,16 @@ implements ActionListener, ChangeListener {
    * each chart may use a different axis for either domain or range.
    * For example, step calibration has a panel with time series data of the step
    * using x-axis of seconds and y of counts, and has two other plots with
-   * axes matching the charts of the response panel (x is frequency and 
+   * axes matching the charts of the response panel (x is frequency and
    * y is magnitude and phase).
    * @param xyDataset Data to be plotted
    * @param x X-axis to be applied to the chart
    * @param y Y-axis to be applied to the chart
    * @return XY Line Chart with the corresponding data in it
    */
-  public JFreeChart 
+  public JFreeChart
   buildChart(XYSeriesCollection xyDataset, ValueAxis x, ValueAxis y) {
-    
+
     JFreeChart chart = ChartFactory.createXYLineChart(
         expType.getName(),
         x.getLabel(),
@@ -285,7 +285,7 @@ implements ActionListener, ChangeListener {
         xyDataset,
         PlotOrientation.VERTICAL,
         true, // include legend
-        false, 
+        false,
         false);
 
     // apply effects to the components that require it (i.e., NLNM time series)
@@ -338,26 +338,26 @@ implements ActionListener, ChangeListener {
         xyir.setSeriesPaint(seriesIdx, new Color(0,0,0) );
       }
     }
-    
+
     xyPlot.setDomainAxis(x);
     xyPlot.setRangeAxis(y);
-    
+
     return chart;
   }
-  
+
   /**
    * Clear chart, for when calculation operations have been cancelled
    */
   public void clearChart() {
     set = false;
-    chart = 
-        ChartFactory.createXYLineChart( 
-            expType.getName(), 
-            getXAxis().getLabel(),  
+    chart =
+        ChartFactory.createXYLineChart(
+            expType.getName(),
+            getXAxis().getLabel(),
             getYAxis().getLabel(),  null );
     chartPanel.setChart(chart);
   }
-  
+
   /**
    * Clear chart data and display text that it is loading new data
    */
@@ -365,7 +365,7 @@ implements ActionListener, ChangeListener {
     clearChart();
     displayInfoMessage("Running calculation...");
   }
-  
+
   /**
    * Overlay an error message in the event of an exception or other issue
    * @param errMsg Text of the message to be displayed
@@ -397,7 +397,7 @@ implements ActionListener, ChangeListener {
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
   }
-  
+
   /**
    * Function template for applying data taken from updateData function
    * and drawing the given charts on the screen as necessary
@@ -442,7 +442,7 @@ implements ActionListener, ChangeListener {
     }
     return sb.toString();
   }
-  
+
   /**
    * Return image of panel's plots with specified dimensions
    * Used to compile PNG image of all charts contained in this panel
@@ -451,14 +451,14 @@ implements ActionListener, ChangeListener {
    * @return buffered image of this panel's chart
    */
   public BufferedImage getAsImage(int width, int height) {
-    
+
     JFreeChart[] jfcs = getCharts();
     return ReportingUtils.chartsToImage(width, height, jfcs);
-    
+
   }
-  
+
   /**
-   * Returns the identifiers of each input plot being used, such as 
+   * Returns the identifiers of each input plot being used, such as
    * "calibration input" for the calibration tests.
    * @return Strings used to populate channel type identifiers in input panel
    */
@@ -476,7 +476,7 @@ implements ActionListener, ChangeListener {
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{chart};
   }
-  
+
   /**
    * Get index for station name for most relevant data. For example, in the
    * case of a calibration, this is usually the second input. In most cases,
@@ -487,7 +487,7 @@ implements ActionListener, ChangeListener {
   protected int getIndexOfMainData() {
     return 0;
   }
-  
+
   /**
    * Used to return any title insets as text format for saving in PDF,
    * to be overridden by any panel that uses an inset
@@ -496,7 +496,7 @@ implements ActionListener, ChangeListener {
   public String getInsetStrings() {
     return "";
   }
-  
+
   /**
    * Used to return any metadata from the experiment to be saved in PDF
    * to be overridden by panels with data that should be included in the report
@@ -515,17 +515,17 @@ implements ActionListener, ChangeListener {
     }
     return sb.toString();
   }
-  
+
   /**
    * Produce the filename of the report generated from this experiment.
    * Has the format TEST_STATION_YEAR.DAY unless overridden
    * @return String that will be default filename of PDF generated from data
    */
   public String getPDFFilename() {
-    
+
     SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    
+
     String date;
     long time = expResult.getStart();
     if (time > 0) {
@@ -534,17 +534,17 @@ implements ActionListener, ChangeListener {
       Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
       date = sdf.format( cCal.getTime() );
     }
-    
+
     // turn spaces into underscores
     String test = expType.getName().replace(' ', '_'); // name of experiment
     // make sure parentheses in filenames aren't causing issues
     // (i.e., better than dealing with system-specific setups to escape them)
     test = test.replace('(','_');
     test = test.replace(')','_');
-    
+
     int idx = getIndexOfMainData();
     String name = expResult.getInputNames().get(idx); // name of input data
-    
+
     StringBuilder sb = new StringBuilder();
     sb.append(test);
     sb.append('_');
@@ -553,9 +553,9 @@ implements ActionListener, ChangeListener {
     sb.append(date);
     sb.append(".pdf");
     return sb.toString();
-    
+
   }
-  
+
   /**
    * For report generation, give the list of indices of response files used
    * in the plot
@@ -564,7 +564,7 @@ implements ActionListener, ChangeListener {
   public int[] getResponseIndices() {
     return expResult.listActiveResponseIndices();
   }
-  
+
   /**
    * Function to be overridden by implementing class that will add an extra
    * page to PDF reports including charts with less-essential data, such as
@@ -574,7 +574,7 @@ implements ActionListener, ChangeListener {
   public JFreeChart[] getSecondPageCharts() {
     return new JFreeChart[]{};
   }
-  
+
   /**
    * Default x-axis return function.
    * Though the x-axis is a local variable, some panels may have multiple unit
@@ -586,7 +586,7 @@ implements ActionListener, ChangeListener {
   public ValueAxis getXAxis() {
     return xAxis;
   }
-  
+
   /**
    * Default y-axis return function. As with getXAxis, designed to be overridden
    * for charts that may use multiple scales.
@@ -595,7 +595,7 @@ implements ActionListener, ChangeListener {
   public ValueAxis getYAxis() {
     return yAxis;
   }
-  
+
   /**
    * Function used to query backend on whether or not a datastore has all the
    * data that a backend needs to calculate. This is used mainly to inform
@@ -607,7 +607,7 @@ implements ActionListener, ChangeListener {
   public boolean hasEnoughData(final DataStore ds) {
     return expResult.hasEnoughData(ds);
   }
-  
+
   /**
    * True if data has been loaded into the experiment backend yet
    * @return True if there is data to process
@@ -615,37 +615,37 @@ implements ActionListener, ChangeListener {
   public boolean hasRun() {
     return set;
   }
-  
+
   /**
    * Function template for informing main window of number of panels to display
    * to fit all data needed by the program
    * @return Number of plots to show in the input panel
    */
   public abstract int panelsNeeded();
-  
+
   /**
    * Number of panels to return in an output report
-   * @return number of panels to include 
+   * @return number of panels to include
    */
   public int plotsToShow() {
     return panelsNeeded();
   }
-  
+
   /**
    * Function to call to run experiment backend on specific data, using the
    * given swingworker
    * @param ds Data to evaluate the backend on
-   * @param worker Worker thread to run the backend in, presumably the 
+   * @param worker Worker thread to run the backend in, presumably the
    * worker object originating in the main class for the suite
    */
-  public SwingWorker<Boolean, Void> 
+  public SwingWorker<Boolean, Void>
   runExperiment(final DataStore ds, SwingWorker<Boolean, Void> worker) {
-    
-    
+
+
     worker.execute();
-    
+
     return worker;
-    
+
   }
 
   /**
@@ -656,7 +656,7 @@ implements ActionListener, ChangeListener {
    * @param pdf PDF document to append data to
    */
   public void saveInsetDataText(PDDocument pdf) {
-    
+
     StringBuilder sb = new StringBuilder( getInsetStrings() );
     if ( sb.length() > 0 ) {
       sb.append("\n \n");
@@ -671,7 +671,7 @@ implements ActionListener, ChangeListener {
     ReportingUtils.textListToPDFPages( pdf, getAdditionalReportPages() );
     return;
   }
-  
+
   /**
    * Loads in charts used in this panel and prints them out in a PDF document
    * and includes any relevant metadata / analysis results as plain text
@@ -682,17 +682,17 @@ implements ActionListener, ChangeListener {
     int width = 1280;
     int height = 960;
     JFreeChart[] charts = getCharts();
-    
+
     ReportingUtils.chartsToPDFPage(width, height, pdf, charts);
     JFreeChart[] page2 = getSecondPageCharts();
     if (page2.length > 0) {
       ReportingUtils.chartsToPDFPage(width, height, pdf, page2);
     }
     saveInsetDataText(pdf);
-    
+
   }
-  
-  
+
+
   /**
    * Used to plot the results of a backend function from an experiment
    * using a collection of XYSeries mapped by strings. This will be set to
@@ -704,7 +704,7 @@ implements ActionListener, ChangeListener {
      chart = buildChart(xyDataset);
 
   }
-  
+
   /**
    * Used to identify completion of an experiment to a containing thread
    */
@@ -724,7 +724,7 @@ implements ActionListener, ChangeListener {
       displayInfoMessage(info);
     }
   }
-  
+
   /**
    * Function template for sending input to a backend fucntion and collecting
    * the corresponding data
@@ -733,5 +733,5 @@ implements ActionListener, ChangeListener {
   protected abstract void updateData(final DataStore ds);
   // details of how to run updateData are left up to the implementing panel
   // however, the boolean "set" should be set to true to enable PDF saving
-  
+
 }

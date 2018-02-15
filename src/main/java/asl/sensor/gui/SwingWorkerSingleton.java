@@ -1,9 +1,7 @@
 package asl.sensor.gui;
 
 import java.util.concurrent.ExecutionException;
-
 import javax.swing.SwingWorker;
-
 import asl.sensor.input.DataStore;
 
 /**

@@ -9,12 +9,10 @@ import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
-
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
-
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
 import org.jfree.chart.JFreeChart;
@@ -32,7 +30,6 @@ import org.jfree.chart.title.Title;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.VerticalAlignment;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
@@ -412,7 +409,7 @@ public class RandomizedPanel extends ExperimentPanel {
   }
   
   private void initAxes() {
-    String yAxisTitle = "10 * log10( RESP(f) )";
+    String yAxisTitle = "20 * log10( RESP(f) )";
     String xAxisTitle = "Frequency (Hz)";
     String prdAxisTitle = "Period (s)";
     String degreeAxisTitle = "phi(RESP(f))";

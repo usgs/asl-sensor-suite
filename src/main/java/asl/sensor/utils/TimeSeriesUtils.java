@@ -11,9 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.math3.util.Pair;
-
 import asl.sensor.input.DataBlock;
 import edu.iris.dmc.seedcodec.B1000Types;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -37,34 +35,35 @@ public class TimeSeriesUtils {
 
 
   /**
-   * Factor of precision over default level of time
+   * Interval for data that has been sampled at 1 Hz in milliseconds
    */
-  public final static int TIME_FACTOR = 1;
-  /**
-   * Interval for data that has been sampled at 1 Hz in tenths-of-milliseconds
-   */
-  public final static long ONE_HZ_INTERVAL = 1000L * TIME_FACTOR;
-  
+  public final static long ONE_HZ_INTERVAL = 1000L;
+
   /**
    * Sample rate of a 1 Hz sample, in Hz, as a double (that is, 1.0)
    */
   public final static double ONE_HZ = 1.0;
 
+  /**
+   * Merge arrays from multiple timeseries into a single object
+   * @param arrs Series of arrays
+   * @return All inputted arrays concatenated into a single array (can be specified as a 2D array)
+   */
   public static double[] concatAll(double[]... arrs) {
-    
+
     if (arrs.length == 0) {
       return new double[]{};
     }
-    
+
     if (arrs.length == 1) {
       return arrs[0];
     }
-    
+
     int len = 0;
     for (double[] arr : arrs) {
       len += arr.length;
     }
-    
+
     double[] result = new double[len];
     int start = 0;
     for (double[] arr : arrs) {
@@ -75,7 +74,7 @@ public class TimeSeriesUtils {
       System.arraycopy(arr, 0, result, start, end);
       start += end;
     }
-    
+
     return result;
   }
 
@@ -90,20 +89,20 @@ public class TimeSeriesUtils {
    * @return Single array holding each array's data in sequence.
    */
   public static double[] concatAll(List<double[]> arrs) {
-    
+
     if (arrs.size() == 0) {
       return new double[]{};
     }
-    
+
     if (arrs.size() == 1) {
       return arrs.get(0);
     }
-    
+
     int len = 0;
     for (double[] arr : arrs) {
       len += arr.length;
     }
-    
+
     double[] result = new double[len];
     int start = 0;
     for (double[] arr : arrs) {
@@ -114,7 +113,7 @@ public class TimeSeriesUtils {
       System.arraycopy(arr, 0, result, start, end);
       start += end;
     }
-    
+
     return result;
   }
 
@@ -148,15 +147,16 @@ public class TimeSeriesUtils {
     int dnf = (int)(tgt/gcd);
 
     double higherFreq = (1. / src) * upf * ONE_HZ_INTERVAL;
-    double lowerFreq = (1. / tgt) * ONE_HZ_INTERVAL / 2; 
+    double lowerFreq = (1. / tgt) * ONE_HZ_INTERVAL / 2;
     // nyquist rate of downsampled data
 
     // one valid sample rate for data is 2.5Hz
     // with 1Hz that comes out as a ratio of 5/2, which won't
     // downsample neatly in some cases so we would first upsample,
     // filter out any noise terms, then downsample
+
     double[] upped = upsample(data,upf);
-    double[] lpfed = lowPassFilter(upped, higherFreq, lowerFreq);
+    double[] lpfed = FFTResult.lowPassFilter(upped, higherFreq, lowerFreq);
     double[] down = downsample(lpfed,dnf);
 
     return down;
@@ -180,27 +180,27 @@ public class TimeSeriesUtils {
    * @param dataSet The data to have the mean removed from.
    */
   public static void demeanInPlace(double[] dataSet) {
-    
+
     // I'm always getting the demeaning tasks, huh?
-    
+
     if(dataSet.length == 0) return; // shouldn't happen but just in case
-    
+
     double mean = 0.0;
-    
+
     for(double data : dataSet) {
       mean += data;
     }
-    
+
     mean /= dataSet.length;
-    
+
     for(int i = 0; i < dataSet.length; ++i) {
       // iterate over index rather than for-each cuz we must replace data
       dataSet[i] -= mean;
     }
-    
+
     // test shows this works as in-place method
   }
-  
+
   /**
    * Linear detrend applied to an array of doubles rather than a list.
    * This operation is not done in-place.
@@ -212,72 +212,72 @@ public class TimeSeriesUtils {
     double sumY = 0.0;
     double sumXSqd = 0.0;
     double sumXY = 0.0;
-    
+
     for (int i = 0; i < dataSet.length; ++i) {
-      sumX += (double) i;
+      sumX += i;
       sumXSqd += (double) i * (double) i;
       double value = dataSet[i];
-      sumXY += value * (double) i;
+      sumXY += value * i;
       sumY += value;
     }
-    
+
     // brackets here so you don't get confused thinking this should be
     // algebraic division (in which case we'd just factor out the size term)
-    // 
-    
+    //
+
     double del = sumXSqd - ( sumX * sumX / dataSet.length );
-    
+
     double slope = sumXY - ( sumX * sumY / dataSet.length );
     slope /= del;
-    
+
     double yOffset = (sumXSqd * sumY) - (sumX * sumXY);
     yOffset /= del * dataSet.length;
-    
+
     double[] detrended = new double[dataSet.length];
-    
+
     for (int i = 0; i < dataSet.length; ++i) {
       detrended[i] = dataSet[i] - ( (slope * i) + yOffset);
     }
-    
+
     return detrended;
   }
-  
+
   /**
    * In-place subtraction of trend from each point in an incoming data set.
    * This is a necessary step in calculating the power-spectral density.
    * @param dataSet The data to have the trend removed from.
    */
   public static void detrend(List<Number> dataSet) {
-    
+
     double sumX = 0.0;
     double sumY = 0.0;
     double sumXSqd = 0.0;
     double sumXY = 0.0;
-    
+
     for (int i = 0; i < dataSet.size(); ++i) {
-      sumX += (double) i;
+      sumX += i;
       sumXSqd += (double) i * (double) i;
       double value = dataSet.get(i).doubleValue();
-      sumXY += value * (double) i;
+      sumXY += value * i;
       sumY += value;
     }
-    
+
     // brackets here so you don't get confused thinking this should be
     // algebraic division (in which case we'd just factor out the size term)
-    // 
-    
+    //
+
     double del = sumXSqd - ( sumX * sumX / dataSet.size() );
-    
+
     double slope = sumXY - ( sumX * sumY / dataSet.size() );
     slope /= del;
-    
+
     double yOffset = (sumXSqd * sumY) - (sumX * sumXY);
     yOffset /= del * dataSet.size();
-    
+
     for (int i = 0; i < dataSet.size(); ++i) {
       dataSet.set(i, dataSet.get(i).doubleValue() - ( (slope * i) + yOffset) );
     }
-    
+
   }
 
   /**
@@ -292,12 +292,12 @@ public class TimeSeriesUtils {
 
     double[] downsamp = new double[data.length/factor];
     for(int i=0; i < downsamp.length; i++){
-      downsamp[i] = data[i*factor]; 
+      downsamp[i] = data[i*factor];
     }
 
     return downsamp;
   }
-  
+
   /**
    * Implements Euclid's algorithm for finding GCD
    * used to find common divisors to give us upsample
@@ -318,7 +318,7 @@ public class TimeSeriesUtils {
 
     return euclidGCD(tgt, rem);
   }
-  
+
   /**
    * Extract SNCL data from a SEED data header
    * @param dh found in a seed file
@@ -335,7 +335,7 @@ public class TimeSeriesUtils {
     fileID.append(dh.getChannelIdentifier());
     return fileID.toString();
   }
-  
+
   /**
    * Returns an int representing the number of bytes in a record for
    * a miniSEED file
@@ -387,17 +387,32 @@ public class TimeSeriesUtils {
    * @return Datablock representing the data inside the miniSEED
    * @throws FileNotFoundException if given file from filename cannot be read
    */
-  public static DataBlock getFirstTimeSeries(String filename) 
+  public static DataBlock getFirstTimeSeries(String filename)
       throws FileNotFoundException {
     String filter = getMplexNameList(filename).get(0);
     return getTimeSeries(filename, filter);
   }
-  
+
+  /**
+   * Used to quickly get the data in a list of files, where the first
+   * file's first data is the SNCL to filter on. This is useful if loading in
+   * data from files that are known to not be multiplexed (i.e., containing
+   * only the data from a single channel). Used mainly to load calibration spanning multiple days.
+   * @param filenames Filenames of miniSEED data to load in
+   * @return Datablock representing the data inside the miniSEEDs
+   * @throws FileNotFoundException if given files from filenames cannot be read
+   */
+  public static DataBlock getFirstTimeSeries(String[] filenames)
+      throws FileNotFoundException {
+    String filter = getMplexNameList(filenames[0]).get(0);
+    return getTimeSeries(filenames, filter);
+  }
+
   /**
    * Get the set of available data series in a multiplexed miniseed file.
    * Because the list is derived from the set, the result of this function
    * should have no duplicate entries.
-   * Because Java Sets do not specify ordering, this allows for indexing
+   * Because Java Sets do not specify ordering, conversion to list (which does) allows for indexing
    * operations to be performed on the returned data more easily.
    * @param filename Name of file to read in
    * @return List of strings corresponding to metadata of each data series
@@ -408,7 +423,7 @@ public class TimeSeriesUtils {
       throws FileNotFoundException {
     return new ArrayList<String>( getMplexNameSet(filename) );
   }
-  
+
   /**
    * Returns list of SNCL (station, network, channel, location) data for
    * a multiplexed miniseed file as a set of strings
@@ -416,7 +431,7 @@ public class TimeSeriesUtils {
    * @return set of all (unique) SNCL strings
    * @throws FileNotFoundException if file cannot be read
    */
-  public static Set<String> getMplexNameSet(String filename) 
+  public static Set<String> getMplexNameSet(String filename)
       throws FileNotFoundException {
     Set<String> dataNames = new HashSet<String>();
 
@@ -468,8 +483,7 @@ public class TimeSeriesUtils {
 
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
-   * list of Java numerics, which can be shorts, floats, doubles, or longs,
-   * reflecting the format of the data in the file which can be any of these.
+   * list of doubles according to a given filter (to handle multiplexed data).
    * This is packaged into a data structure that also includes the file's
    * metadata (station, channel, etc.) and the start time and period between
    * samples.
@@ -487,13 +501,41 @@ public class TimeSeriesUtils {
 
     // XYSeries xys = null;
     DataBlock db = null;
-    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair = 
+    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
         getTimeSeriesMap(filename, filter);
     db = mapToTimeSeries(intervalSeriesMapPair, filter);
     return db;
 
   }
-  
+
+  /**
+   * Reads in the time series data from miniSEED files and concatenates it as a
+   * list of doubles according to a given filter (to handle multiplexed data).
+   * This is packaged into a data structure that also includes the file's
+   * metadata (station, channel, etc.) and the start time and period between
+   * samples.
+   * This method is used to handle data that may span multiple days (such as some calibrations).
+   * Some of this code is based on the miniseed to float array example given
+   * in the repository for the included seisFile miniSEED parser library;
+   * see the src/.../examples folder under
+   * https://github.com/crotwell/seisFile/ for more
+   * @param filenames Each entry is full path of each file to be loaded in
+   * @param filter Specifies which data to load in, for multiplexed files
+   * @return A structure containing the time series and metadata for the file
+   * @throws FileNotFoundException If file cannot be read in
+   */
+  public static DataBlock getTimeSeries(String[] filenames, String filter)
+      throws FileNotFoundException {
+
+    // XYSeries xys = null;
+    DataBlock db = null;
+    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
+        getTimeSeriesMap(filenames, filter);
+    db = mapToTimeSeries(intervalSeriesMapPair, filter);
+    return db;
+
+  }
+
   /**
    * Reads in the time series data from a miniSEED file and produces it as a
    * list of Java numerics, which can be shorts, floats, doubles, or longs,
@@ -509,12 +551,12 @@ public class TimeSeriesUtils {
    * @return A structure containing the time series and metadata for the file
    * @throws FileNotFoundException If file cannot be read in
    */
-  public static DataBlock 
-  getTimeSeries(String filename, String filter, Pair<Long, Long> range) 
+  public static DataBlock
+  getTimeSeries(String filename, String filter, Pair<Long, Long> range)
       throws FileNotFoundException {
-    
+
     DataBlock db = null;
-    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair = 
+    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
         getTimeSeriesMap(filename, filter);
     db = mapToTimeSeries(intervalSeriesMapPair, filter, range);
     return db;
@@ -526,166 +568,161 @@ public class TimeSeriesUtils {
    * @param filename Name of miniseed file to read in
    * @param filter SNCL data of relevant channel to get data from
    * @return Paired value, first entry of which is the interval between points
-   * given as a long and second of which is a map from sample times to data 
+   * given as a long and second of which is a map from sample times to data
    * points from each given time value in the miniseed records
    * @throws FileNotFoundException if given file from filename cannot be read
    */
   public static Pair<Long, Map<Long, double[]>>
-   getTimeSeriesMap(String filename, String filter) 
+   getTimeSeriesMap(String filename, String filter)
       throws FileNotFoundException {
 
+    return getTimeSeriesMap(new String[]{filename}, filter);
+
+  }
+
+
+  /**
+   * Read in multiple miniseed files and concatenate data as long as the data
+   * refers to the SNCL data according to the provided filter. If a file does
+   * not have any data matching the filter, then its contents will not be added.
+   * This is useful for concatenating data automatically from day-crossing
+   * calibration data.
+   * @param filenames List of miniseed data
+   * @param filter SNCL data of relevant channel to get data from
+   * @return Paired value, first entry of which is the interval between points
+   * given as a long and second of which is a map from sample times to data
+   * points from each given time value in the miniseed records
+   * @throws FileNotFoundException
+   */
+  public static Pair<Long, Map<Long, double[]>>
+    getTimeSeriesMap(String[] filenames, String filter)
+       throws FileNotFoundException {
     long interval = 0L;
     DataInputStream dis;
-    
+
     Map<Long, double[]> timeListMap = new HashMap<Long, double[]>();
-    
-    int byteSize = 512;
-    try {
-      byteSize = getByteSize(filename);
-    } catch (FileNotFoundException e1) {
-      throw e1;
-    }
 
-    try {
-      dis = new DataInputStream(  new FileInputStream(filename) );
+    for (String filename : filenames) {
+      int byteSize = 512;
+      try {
+        byteSize = getByteSize(filename);
+      } catch (FileNotFoundException e1) {
+        throw e1;
+      }
 
-      while ( true ) {
+      try {
+        dis = new DataInputStream(  new FileInputStream(filename) );
 
-        try {
-          SeedRecord sr = SeedRecord.read(dis, byteSize);
-          if (sr instanceof DataRecord) {
-            DataRecord dr = (DataRecord)sr;
-            DataHeader dh = dr.getHeader();
-            String seriesID = extractName(dh);
+        while ( true ) {
 
-            if ( !seriesID.equals(filter) ){
-              // System.out.println(seriesID);
-              continue; // skip to next seedRecord
-            }
+          try {
+            SeedRecord sr = SeedRecord.read(dis, byteSize);
+            if (sr instanceof DataRecord) {
+              DataRecord dr = (DataRecord)sr;
+              DataHeader dh = dr.getHeader();
+              String seriesID = extractName(dh);
 
-            byte af = dh.getActivityFlags();
-            byte correctionFlag = 0b00000010; // is there a time correction?
-            int correction = 0;
-            if ( (af & correctionFlag) != 0 ) {
-              correction = dh.getTimeCorrection();
-            }
-            if (correction > 0) {
-              System.out.println("Time correction? " + correction);
-            }
-            Btime bt = dh.getStartBtime();
-
-            // convert Btime to milliseconds
-            long start = bt.convertToCalendar().getTimeInMillis();
-            start += correction / 10; // correction in tenths of millis
-            //start = (start * 10) + bt.getTenthMilli();
-
-            int fact = dh.getSampleRateFactor();
-            int mult = dh.getSampleRateMultiplier();
-
-            // we can assume interval is consistent through a file
-            if( fact > 0 && mult > 0) {
-              interval = ONE_HZ_INTERVAL / (fact * mult);
-            } else if (fact > 0 && mult < 0) {
-              interval = Math.abs( (ONE_HZ_INTERVAL * mult) / fact);
-            } else if (fact < 0 && mult > 0) {
-              interval = Math.abs( (ONE_HZ_INTERVAL * fact) / mult);
-            } else {
-              interval = ONE_HZ_INTERVAL * fact * mult;
-            }
-
-            DecompressedData decomp = dr.decompress();
-
-            // get the original datatype of the series (loads data faster)
-            // otherwise the decompressed data gets converted (cloned) as
-            // the other type instead
-            int dataType = decomp.getType();
-            double[] values = new double[dr.getHeader().getNumSamples()];
-
-            switch (dataType) {
-            case B1000Types.INTEGER:
-              int[] decomArrayInt = decomp.getAsInt();
-              for (int i = 0; i < decomArrayInt.length; ++i) {
-                Number dataPoint = decomArrayInt[i]; 
-                values[i] = dataPoint.doubleValue();
+              if ( !seriesID.equals(filter) ){
+                // System.out.println(seriesID);
+                continue; // skip to next seedRecord
               }
-              break;
-            case B1000Types.FLOAT:
-              float[] decomArrayFlt = decomp.getAsFloat();
-              for (int i = 0; i < decomArrayFlt.length; ++i) {
-                Number dataPoint = decomArrayFlt[i]; 
-                values[i] = dataPoint.doubleValue();
-              }
-              break;
-            case B1000Types.SHORT:
-              short[] decomArrayShr = decomp.getAsShort();
-              for (int i = 0; i < decomArrayShr.length; ++i) {
-                Number dataPoint = decomArrayShr[i]; 
-                values[i] = dataPoint.doubleValue();
-              }
-              break;
-            default:
-              double[] decomArrayDbl = decomp.getAsDouble();
-              for (int i = 0; i < decomArrayDbl.length; ++i) {
-                values[i] = decomArrayDbl[i];
-              }
-              break;
-            }
-            
-            timeListMap.put(start, values);
 
+              byte af = dh.getActivityFlags();
+              byte correctionFlag = 0b00000010; // is there a time correction?
+              int correction = 0;
+              if ( (af & correctionFlag) != 0 ) {
+                correction = dh.getTimeCorrection();
+              }
+              if (correction > 0) {
+                System.out.println("Time correction? " + correction);
+              }
+              Btime bt = dh.getStartBtime();
+
+              // convert Btime to milliseconds
+              long start = bt.convertToCalendar().getTimeInMillis();
+              start += correction / 10; // correction in tenths of millis
+              //start = (start * 10) + bt.getTenthMilli();
+
+              int fact = dh.getSampleRateFactor();
+              int mult = dh.getSampleRateMultiplier();
+
+              // we can assume interval is consistent through a file
+              if( fact > 0 && mult > 0) {
+                interval = ONE_HZ_INTERVAL / (fact * mult);
+              } else if (fact > 0 && mult < 0) {
+                interval = Math.abs( (ONE_HZ_INTERVAL * mult) / fact);
+              } else if (fact < 0 && mult > 0) {
+                interval = Math.abs( (ONE_HZ_INTERVAL * fact) / mult);
+              } else {
+                interval = ONE_HZ_INTERVAL * fact * mult;
+              }
+
+              DecompressedData decomp = dr.decompress();
+
+              // get the original datatype of the series (loads data faster)
+              // otherwise the decompressed data gets converted (cloned) as
+              // the other type instead
+              int dataType = decomp.getType();
+              double[] values = new double[dr.getHeader().getNumSamples()];
+
+              switch (dataType) {
+              case B1000Types.INTEGER:
+                int[] decomArrayInt = decomp.getAsInt();
+                for (int i = 0; i < decomArrayInt.length; ++i) {
+                  Number dataPoint = decomArrayInt[i];
+                  values[i] = dataPoint.doubleValue();
+                }
+                break;
+              case B1000Types.FLOAT:
+                float[] decomArrayFlt = decomp.getAsFloat();
+                for (int i = 0; i < decomArrayFlt.length; ++i) {
+                  Number dataPoint = decomArrayFlt[i];
+                  values[i] = dataPoint.doubleValue();
+                }
+                break;
+              case B1000Types.SHORT:
+                short[] decomArrayShr = decomp.getAsShort();
+                for (int i = 0; i < decomArrayShr.length; ++i) {
+                  Number dataPoint = decomArrayShr[i];
+                  values[i] = dataPoint.doubleValue();
+                }
+                break;
+              default:
+                double[] decomArrayDbl = decomp.getAsDouble();
+                for (int i = 0; i < decomArrayDbl.length; ++i) {
+                  values[i] = decomArrayDbl[i];
+                }
+                break;
+              }
+
+              timeListMap.put(start, values);
+
+            }
+          } catch(EOFException e) {
+            break;
           }
-        } catch(EOFException e) {
-          break;
-        }
 
-      } // end infinite while loop (read until EOF)
+        } // end infinite while loop (read until EOF)
 
-    } catch (FileNotFoundException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (IOException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (SeedFormatException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (UnsupportedCompressionType e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (CodecException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
+      } catch (FileNotFoundException e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      } catch (IOException e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      } catch (SeedFormatException e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      } catch (UnsupportedCompressionType e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      } catch (CodecException e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      }
     }
 
     return new Pair<Long, Map<Long, double[]>>(interval, timeListMap);
-  }
-
-  /**
-   * Implements low pass band filter
-   * @param timeseries  The data to be filtered
-   * @param sps         Samples per second
-   * @return            The filtered data
-   */
-  public static double[] 
-  lowPassFilter(double[] timeseries, double sps, double corner)
-  {
-
-    double fl = 0.;
-    double fh = corner;
-
-    return FFTResult.bandFilter(timeseries, sps, fl, fh);
-
-    /*
-    List<Number> timeseriesOut = new ArrayList<Number>();
-
-    for (int i = 0; i < timeseries.size(); ++i) {
-      double point = timeseriesFilter.get(i);
-      // System.out.println(point);
-      timeseriesOut.add(point);
-    }
-
-    return timeseriesOut;
-     */
   }
 
   /**
@@ -697,17 +734,17 @@ public class TimeSeriesUtils {
    * @param filter String with SNCL (station, network, channel, location) data
    * @return DataBlock with the given timeseries and metadata
    */
-  public static DataBlock 
+  public static DataBlock
   mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter) {
-    
+
     // use max range instead of a trim region
     // TODO: likely will need to change range in year 2038
     // or to use data from before 1970
-    Pair<Long, Long> range = 
+    Pair<Long, Long> range =
         new Pair<Long, Long>( 0L, Long.MAX_VALUE );
-    
+
     return mapToTimeSeries(data, filter, range);
-    
+
   }
 
   /**
@@ -720,21 +757,21 @@ public class TimeSeriesUtils {
    * @param range Range to pre-trim data to
    * @return DataBlock consisting of timeseries data within given range
    */
-  public static DataBlock 
-  mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter, 
+  public static DataBlock
+  mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter,
       Pair<Long, Long> range) {
-    
+
     long interval = data.getFirst();
     Map<Long, double[]> timeMap = data.getSecond();
     // TODO: trim timeMap according to range
     DataBlock db;
-    
+
     db = new DataBlock(timeMap, interval, filter);
     return db;
-    
+
   }
- 
-  /** 
+
+  /**
    * Scales data of an arbitrary range to lie within a [-1, 1] range
    * @param data Timeseries data
    * @return Same data, over the range [-1, 1], linearly scaled
@@ -742,6 +779,8 @@ public class TimeSeriesUtils {
   public static double[] normalize(double[] data) {
     double max = Double.NEGATIVE_INFINITY;
     double min = Double.POSITIVE_INFINITY;
+
+    double[] newData = new double[data.length];
 
     for (double point : data) {
       if (point < min) {
@@ -754,11 +793,36 @@ public class TimeSeriesUtils {
 
     for (int i = 0; i < data.length; ++i) {
       // scale to range (0,2) then to (-1, 1)
-      data[i] = ( 2 * (data[i] - min) / (max - min) ) - 1;
+      newData[i] = ( 2 * (data[i] - min) / (max - min) ) - 1;
     }
 
-    return data;
+    return newData;
 
+  }
+
+  /**
+   * Normalize result according to value of absolute maximum of the data.
+   * This is intended to replicate the normalization behavior of Obspy.
+   * @param data Time series data to be normalized
+   * @return The data normalized by its maximum absolute value
+   */
+  public static double[] normalizeByMax(double[] data) {
+    double[] normData = new double[data.length];
+    double absMax = Math.abs(data[0]); // initialize with first value in array
+    // first get the absolute max
+    for (double point : data) {
+      absMax = Math.max( Math.abs(point), absMax );
+    }
+    // now scale the data accordingly
+    for (int i = 0; i < data.length; ++i) {
+      // this will only trigger in the unlikely event of a time series with all values 0
+      if (absMax == 0) {
+        normData[i] = data[i] / absMax;
+      } else {
+        normData[i] = data[i] / absMax;
+      }
+    }
+    return normData;
   }
 
   /**
@@ -803,11 +867,11 @@ public class TimeSeriesUtils {
     long start = north.getStartTime();
     long interval = north.getInterval();
     String name = north.getName();
-    
+
     double[] northData = north.getData();
     double[] eastData = east.getData();
 
-    DataBlock rotated = 
+    DataBlock rotated =
         new DataBlock(rotate(northData, eastData, ang), interval, name, start);
     return rotated;
   }
@@ -816,16 +880,16 @@ public class TimeSeriesUtils {
    * Rotates a north and east (known orthogonal) timeseries and produces a new
    * timeseries along the north axis in the rotated coordinate system from
    * the given angle, clockwise (y' = y cos theta - x sin theta). Though the
-   * data given as input are not necessarily from a north-facing and 
+   * data given as input are not necessarily from a north-facing and
    * east-facing sensor, they are presumed to be orthogonal to each other.
    * @param northData Timeseries data expected to point north
-   * @param eastData Timeseries assumed to point east, 
+   * @param eastData Timeseries assumed to point east,
    * orthogonal to north sensor
    * @param ang Angle to rotate the data along
    * @return New timeseries data rotated data along the
    * given angle, facing north
    */
-  public static double[] 
+  public static double[]
   rotate(double[] northData, double[] eastData, double ang) {
     double[] rotatedData = new double[northData.length];
 
@@ -834,8 +898,8 @@ public class TimeSeriesUtils {
     double cosTheta = Math.cos(ang);
 
     for (int i = 0; i < northData.length; ++i) {
-      rotatedData[i] = 
-          northData[i] * cosTheta - 
+      rotatedData[i] =
+          northData[i] * cosTheta -
           eastData[i] * sinTheta;
     }
 
@@ -856,11 +920,11 @@ public class TimeSeriesUtils {
     long start = east.getStartTime();
     long interval = east.getInterval();
     String name = east.getName();
-    
+
     double[] northData = north.getData();
     double[] eastData = east.getData();
-    
-    DataBlock rotated = 
+
+    DataBlock rotated =
         new DataBlock(rotateX(northData, eastData, ang), interval, name, start);
     return rotated;
   }
@@ -869,10 +933,10 @@ public class TimeSeriesUtils {
    * Rotates a north and east (known orthogonal) timeseries and produces a new
    * timeseries along the east axis in the rotated coordinate system from
    * the given angle, clockwise (x' = x cos theta + y sin theta). Though the
-   * data given as input are not necessarily from a north-facing and 
+   * data given as input are not necessarily from a north-facing and
    * east-facing sensor, they are presumed to be orthogonal to each other.
    * @param northData Timeseries data expected to point north
-   * @param eastData Timeseries assumed to point east, 
+   * @param eastData Timeseries assumed to point east,
    * orthogonal to north sensor
    * @param ang Angle to rotate the data along
    * @return New timeseries data rotated data along the
@@ -886,8 +950,8 @@ public class TimeSeriesUtils {
     double cosTheta = Math.cos(ang);
 
     for (int i = 0; i < northData.length; ++i) {
-      rotatedData[i] =  
-          eastData[i] * cosTheta + 
+      rotatedData[i] =
+          eastData[i] * cosTheta +
           northData[i] * sinTheta;
     }
 
@@ -905,7 +969,7 @@ public class TimeSeriesUtils {
   public static double[] upsample(double[] data, int factor){
 
     int newLength = data.length * factor;
-    
+
     double[] upsamp = new double[newLength];
 
     for(int i = 0; i < data.length; ++i){
@@ -914,26 +978,19 @@ public class TimeSeriesUtils {
 
     return upsamp;
   }
-  
-  /**
-   * Checks to see if the sensor's calibration is wired positively or not
-   * (i.e., if the result of a step-calibration is upside-down)
-   * @return True if sign appears to be incorrect compared to expected step cal
-   */
-  public boolean needsSignFlip(List<Number> data) {
-    
-    double max = Math.abs( data.get(0).doubleValue() );
-    int idx = 0;
-    
-    for (int i = 1; i < data.size() / 2; ++i) {
-      if ( Math.abs( data.get(i).doubleValue() ) > max ) {
-        max = Math.abs( data.get(i).doubleValue() );
-        idx = i;
+
+  public static boolean needsSignFlip(double[] data) {
+    double maxAbs = Math.abs(data[0]);
+    double max = data[0];
+
+    for (int i = 1; i < data.length / 3; ++i) {
+      if ( Math.abs(data[i]) > maxAbs ) {
+        max = data[i];
+        maxAbs = Math.abs(data[i]);
       }
     }
-    
-    return Math.signum( data.get(idx).doubleValue() ) < 0;
-    
+
+    return max < 0;
   }
 
 }

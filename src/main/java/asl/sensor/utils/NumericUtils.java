@@ -5,11 +5,11 @@ import java.text.DecimalFormatSymbols;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.commons.math3.complex.Complex;
 
 /**
- * Class containing methods to serve as math functions, mainly for angle calcs.
+ * Class containing methods to serve as math functions, mainly for angle calcs
+ * and operations (stats) on complex numbers
  * @author akearns
  *
  */
@@ -31,6 +31,15 @@ public class NumericUtils {
     
     @Override
     public int compare(Complex c1, Complex c2) {
+      
+      if (null == c1 && null == c2) {
+        return 0;
+      } else if (null == c1) {
+        return -1;
+      } else if (null == c2) {
+        return 1;
+      }
+      
       if( c1.abs() == c2.abs() ) {
         Double r1 = c1.getReal();
         Double r2 = c2.getReal();
@@ -46,7 +55,7 @@ public class NumericUtils {
   }
   
   /**
-   * Complex comparator ordering by magnitude but listing all real-values first
+   * Complex comparator ordering by magnitude but listing pure-real values first
    * And then sorting complex numbers according to real value first, and then
    * by imaginary value if the real values match.
    * @author akearns
@@ -61,6 +70,14 @@ public class NumericUtils {
     
     @Override
     public int compare(Complex c1, Complex c2) {
+      
+      if (null == c1 && null == c2) {
+        return 0;
+      } else if (null == c1) {
+        return -1;
+      } else if (null == c2) {
+        return 1;
+      }
       
       if( c1.getImaginary() == 0. && c2.getImaginary() == 0. ) {
         return (int) Math.signum( c1.getReal() - c2.getReal() );
@@ -136,6 +153,53 @@ public class NumericUtils {
   }
   
   /**
+   * Perform a moving average on complex data, using the specified number of points to average at
+   * each point in the input
+   * @param nums Complex data to be smoothed by use of moving average
+   * @param points Number of points to include in moving average
+   * @return Smoothed data resulting from performing the moving average on input data.
+   */
+  public static Complex[] multipointMovingAverage(Complex[] nums, int points) {
+    Complex[] out = new Complex[nums.length];
+    Complex[] cached = new Complex[points];
+    for (int i = 0; i < cached.length; ++i) {
+     cached[i] = Complex.ZERO;
+    }
+    Complex windowedAverage = Complex.ZERO;
+    for (int i = 0; i < nums.length; ++i) {
+      int cacheIdx = i % points;
+      Complex temp = cached[cacheIdx];
+      windowedAverage = windowedAverage.subtract(temp);
+      cached[cacheIdx] = nums[i].divide(points);
+      windowedAverage = windowedAverage.add(cached[cacheIdx]);
+      out[i] = windowedAverage;
+    }
+    return out;
+  }
+  
+  /**
+   * Perform a moving average on real-val. data, using the specified number of points to average at
+   * each point in the input
+   * @param nums Numeric data to be smoothed by use of moving average
+   * @param points Number of points to include in moving average
+   * @return Smoothed data resulting from performing the moving average on input data.
+   */
+  public static double[] multipointMovingAverage(double[] nums, int points) {
+    double[] out = new double[nums.length];
+    double[] cached = new double[points];
+    double windowedAverage = 0.;
+    for (int i = 0; i < nums.length; ++i) {
+      int cacheIdx = i % points;
+      double temp = cached[cacheIdx];
+      windowedAverage = windowedAverage - temp;
+      cached[cacheIdx] = nums[i] / points;
+      windowedAverage = windowedAverage + cached[cacheIdx];
+      out[i] = windowedAverage;
+    }
+    return out;
+  }
+  
+  /**
    * Given a plot of data within a 2 * Pi range, check that a point is
    * continuous with a previous value.
    * @param phi Angle to fit within range of previous value (radians)
@@ -176,6 +240,61 @@ public class NumericUtils {
     }
     
     return out;
+  }
+
+  /**
+   * Get the mean of the PSD calculation within the specified range
+   * @param psd PSD calculation (frequency space / FFT)
+   * @param lower Starting index of window
+   * @param higher Ending index of window
+   * @return Mean of datapoints in the specific range
+   */
+  public static double getFFTMean(FFTResult psd, int lower, int higher) {
+    double result = 0;
+    int range = higher-lower;
+    
+    Complex[] data = psd.getFFT();
+    
+    for (int i = lower; i <= higher; ++i) {
+      if ( data[i].abs() >= Double.POSITIVE_INFINITY ) {
+        continue;
+      }
+      result += data[i].abs();
+    }
+    
+    return result/range; // since result is a double, no cast needed?
+    
+  }
+
+  /**
+   * PSD Standard deviation calculation given mean ratio and specified range
+   * (Get the result for mean calculation using the mean function before
+   * calling this calculation; does not call the function directly)
+   * @param fft1 first PSD (numerator) of relative gain standard deviation
+   * @param fft2 second PSD (denominator)
+   * @param meanRatio mean(fft1)/mean(fft2)
+   * @param lower Starting index of window (should be same used in mean calc)
+   * @param higher Ending index of window (should be same used in mean calc)
+   * @return double corresponding to standard deviation ratio over the window
+   */
+  public static double getFFTSDev(FFTResult fft1, FFTResult fft2, double meanRatio, 
+      int lower, int higher) {
+    Complex[] density1 = fft1.getFFT();
+    Complex[] density2 = fft2.getFFT();
+    double sigma = 0.;
+    for (int i = lower; i <= higher; ++i) {
+      double value1 = density1[i].abs();
+      double value2 = density2[i].abs();
+      
+      if (value1 >= Double.POSITIVE_INFINITY || 
+          value2 >= Double.POSITIVE_INFINITY) {
+        continue;
+      }
+      
+      sigma += Math.pow( (value1 / value2) - meanRatio, 2 );
+    }
+    
+    return Math.sqrt(sigma);
   }
   
 }

@@ -3,11 +3,9 @@ package asl.sensor.experiment;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.NumericUtils;
@@ -26,7 +24,7 @@ public class ResponseExperiment extends Experiment {
   public static final String MAGNITUDE = "Response amplitude";
   public static final String ARGUMENT = "Response phase";
   
-  private boolean freqSpace;
+  private boolean freqSpace; // choose between units of Hz or seconds (time between samples)
   
   private Set<InstrumentResponse> responses;
   

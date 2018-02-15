@@ -5,14 +5,12 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.Arrays;
-
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.input.DataStore;
@@ -40,7 +38,7 @@ public class OrthogonalPanel extends ExperimentPanel {
     sb.append("Calculated angle between non-reference sensors:\n");
     sb.append(angle);
     sb.append('\n');
-    sb.append("Calc. orientation angles for LH1 and LH2 sensor outputs:\n");
+    sb.append("Rough est. orientation angles for (non-ref) LH1, LH2 respectively:\n");
     sb.append( Arrays.toString(fit) );
     
     return sb.toString();

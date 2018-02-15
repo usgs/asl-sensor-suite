@@ -5,9 +5,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
-
 import javax.swing.JComboBox;
-
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
@@ -15,7 +13,6 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.NoiseNineExperiment;
@@ -40,7 +37,7 @@ public class NoiseNinePanel extends NoisePanel {
    * @return String representing experiment data (rotation angles)
    */
   public static String getInsetString(NoiseNineExperiment exp) {
-    NoiseNineExperiment nne = (NoiseNineExperiment) exp;
+    NoiseNineExperiment nne = exp;
     DecimalFormat df = new DecimalFormat("#.###");
     double[] angles = nne.getNorthAngles();
     StringBuilder sb = new StringBuilder();
@@ -61,6 +58,10 @@ public class NoiseNinePanel extends NoisePanel {
   
   protected JFreeChart northChart, eastChart, vertChart;
 
+  /**
+   * Construct panel and lay out its components
+   * @param exp Enum to get relevant experiment backend from factory (NoiseNineExperiment)
+   */
   public NoiseNinePanel(ExperimentEnum exp) {
     super(exp);
     
@@ -160,6 +161,7 @@ public class NoiseNinePanel extends NoisePanel {
     
   }
   
+  @Override
   protected void drawCharts() {
     
     int idx = plotSelection.getSelectedIndex();
@@ -182,6 +184,10 @@ public class NoiseNinePanel extends NoisePanel {
     return new JFreeChart[]{northChart, eastChart, vertChart};
   }
 
+  /**
+   * Get text representation of angles used to rotate data
+   * @return String displaying angles of rotation for the 2nd, 3rd east sensors
+   */
   private String getEastChartString() {
     NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
     DecimalFormat df = new DecimalFormat("#.###");
@@ -203,6 +209,10 @@ public class NoiseNinePanel extends NoisePanel {
     return sb.toString();
   }
   
+  /**
+   * Get text representation of angles used to rotate data
+   * @return String displaying angles of rotation for the 2nd, 3rd north sensors
+   */
   private String getNorthChartString() {
     NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
     DecimalFormat df = new DecimalFormat("#.###");

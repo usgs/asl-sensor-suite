@@ -2,9 +2,9 @@ package asl.sensor.gui;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.util.Calendar;
-import java.util.TimeZone;
-
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
@@ -12,8 +12,6 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
-
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * This panel presents an alternate means of range-trimming to the standard
@@ -27,37 +25,38 @@ import asl.sensor.utils.TimeSeriesUtils;
 public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = -1649983797482938586L;
-  public static final int TIME_FACTOR = TimeSeriesUtils.TIME_FACTOR;
-  
+
+  // divide by this to go from nanoseconds to milliseconds
+  private static final int TO_MILLI_FACTOR = 1000000;
+
   private JSpinner year, day, hour, minute, second, millisecond;
   private JLabel yLabel, dLabel, hLabel, mLabel, sLabel, msLabel;
   private EventListenerList listeners;
-  private Calendar c; // holds the data for the current time
-  
+  private ZonedDateTime dt; // holds the data for the current time
+
   /**
    * Constructor initializes components, layouts, and listeners.
    */
   public EditableDateDisplayPanel() {
-    
+
     listeners = new EventListenerList();
-    
-    c = Calendar.getInstance();
-    c.setTimeZone( TimeZone.getTimeZone("UTC") );
-    
+
+    dt = ZonedDateTime.now(ZoneOffset.UTC);
+
     SpinnerNumberModel model = new SpinnerNumberModel();
     model.setStepSize(1);
     model.setMinimum(0);
-    model.setMaximum(9999); // TODO: in the year 9000, change this
+    model.setMaximum(9999); // TODO: in the year 9000, change this?
     year = new JSpinner(model);
     // remove commas from date display
     JSpinner.NumberEditor editor = new JSpinner.NumberEditor(year, "#");
     year.setEditor(editor);
     year.addChangeListener(this);
     yLabel = new JLabel("(Y)");
-    
+
     model = new SpinnerNumberModel();
     model.setStepSize(1);
     model.setMinimum(0);
@@ -65,7 +64,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     day = new JSpinner(model);
     day.addChangeListener(this);
     dLabel = new JLabel("(D)");
-    
+
     model = new SpinnerNumberModel();
     model.setStepSize(1);
     model.setMinimum(0);
@@ -73,7 +72,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     hour = new JSpinner(model);
     hour.addChangeListener(this);
     hLabel = new JLabel("(H-24)");
-    
+
     model = new SpinnerNumberModel();
     model.setStepSize(1);
     model.setMinimum(0);
@@ -81,7 +80,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     minute = new JSpinner(model);
     minute.addChangeListener(this);
     mLabel = new JLabel("(M)");
-    
+
     model = new SpinnerNumberModel();
     model.setStepSize(1);
     model.setMinimum(0);
@@ -89,7 +88,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     second = new JSpinner(model);
     second.addChangeListener(this);
     sLabel = new JLabel("(S)");
-    
+
     model = new SpinnerNumberModel();
     model.setStepSize(1);
     model.setMinimum(0);
@@ -97,11 +96,11 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     millisecond = new JSpinner(model);
     millisecond.addChangeListener(this);
     msLabel = new JLabel("(ms)");
-    
+
     // build panel
     GridBagConstraints gbc = new GridBagConstraints();
     this.setLayout( new GridBagLayout() );
-    
+
     gbc.weightx = 1.0;
     gbc.gridx = 0;
     gbc.gridy = 0;
@@ -144,9 +143,9 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     gbc.weightx = 0.;
     gbc.gridy = 1;
     this.add(msLabel, gbc);
-    
+
   }
-  
+
   /**
    * Initialize a panel with a specific initial time value
    * @param timeStamp Java epoch time (ms)
@@ -164,7 +163,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
   public void addChangeListener(ChangeListener listener) {
     listeners.add(ChangeListener.class, listener);
   }
-  
+
   /**
    * Notifies listening components that the state of this object has changed
    */
@@ -177,15 +176,15 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
       }
     }
   }
-  
+
   /**
    * Get the time specified by this panel's components in milliseconds
    * @return The time based on the calendar componets
    */
   public long getTime() {
-    return c.getTimeInMillis();
+    return dt.toInstant().toEpochMilli();
   }
-  
+
   /**
    * Remove a Swing component from the list of active listeners to this panel
    * @param listener Swing component no longer listening to this object
@@ -193,47 +192,46 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
   public void removeChangeListener(ChangeListener listener) {
     listeners.remove(ChangeListener.class, listener);
   }
-  
+
   /**
    * Convert time in milliseconds to calendar components to populate panel
    * @param timeStamp Time to set this panel to
    */
   public void setValues(long timeStamp) {
-    
-    timeStamp /= TIME_FACTOR;
-    
+
     if ( timeStamp == getTime() ) {
       return; // don't do anything if no change is necessary
     }
-    
-    c.setTimeInMillis(timeStamp);
-    year.setValue( c.get(Calendar.YEAR) );
-    day.setValue( c.get(Calendar.DAY_OF_YEAR) );
-    hour.setValue( c.get(Calendar.HOUR_OF_DAY) );
-    minute.setValue( c.get(Calendar.MINUTE) );
-    second.setValue( c.get(Calendar.SECOND) );
-    millisecond.setValue( c.get(Calendar.MILLISECOND) );
-    
+
+    dt = ZonedDateTime.ofInstant( Instant.ofEpochMilli(timeStamp), ZoneOffset.UTC);
+    year.setValue( dt.getYear() );
+    day.setValue( dt.getDayOfYear() );
+    hour.setValue( dt.getHour() );
+    minute.setValue( dt.getMinute() );
+    second.setValue( dt.getSecond() );
+    millisecond.setValue( dt.getNano() / TO_MILLI_FACTOR );
+
   }
-  
+
   @Override
   public void stateChanged(ChangeEvent e) {
-    
+
+
     if ( e.getSource() == year ) {
-      c.set( Calendar.YEAR, (int) year.getValue() );
+      dt = dt.withYear( (int) year.getValue() );
     } else if ( e.getSource() == day ) {
-      c.set( Calendar.DAY_OF_YEAR, (int) day.getValue() );
+      dt = dt.withDayOfYear( (int) day.getValue() );
     } else if ( e.getSource() == hour ) {
-      c.set( Calendar.HOUR_OF_DAY, (int) hour.getValue() );
+      dt = dt.withHour( (int) hour.getValue() );
     } else if ( e.getSource() == minute ) {
-      c.set( Calendar.MINUTE, (int) minute.getValue() );
+      dt = dt.withMinute( (int) minute.getValue() );
     } else if ( e.getSource() == second ) {
-      c.set( Calendar.SECOND, (int) second.getValue() );
+      dt = dt.withSecond( (int) second.getValue() );
     } else if ( e.getSource() == millisecond ) {
-      c.set( Calendar.MILLISECOND, (int) millisecond.getValue() );
+      dt = dt.withNano( (int) millisecond.getValue() * TO_MILLI_FACTOR );
     }
-    
+
     fireStateChanged(); // percolate change in component up to any containers
   }
-  
+
 }
