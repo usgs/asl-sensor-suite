@@ -11,7 +11,7 @@ public enum ExperimentEnum {
   // if adding a new test to this, make sure to also create a new extender for
   // experiment and a corresponding constructor call in experimentfactory
   // due to how iterating through an enum works, the order in which panels'
-  // tabs appear in the GUI should match up with the 
+  // tabs appear in the GUI should match up with the order they are listed here
   NOISE ("Self-noise"),
   NOIS9 ("Self-noise (3-component)"),
   RGAIN ("Relative gain"),
@@ -25,11 +25,11 @@ public enum ExperimentEnum {
   RESPN ("Response");
 
   private String name;
-  
+
   ExperimentEnum(String name) {
     this.name = name;  }
-  
-  
+
+
   /**
    * Get the full name of this experiment (used for plot & tab names)
    * @return Name of experiment, as String
@@ -37,5 +37,5 @@ public enum ExperimentEnum {
   public String getName() {
     return name;
   }
-  
+
 }
