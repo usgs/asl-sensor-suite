@@ -128,7 +128,6 @@ public class TimeSeriesUtils {
    */
   public static double[] decimate(double[] data, long src, long tgt){
 
-    // long tgt = ONE_HZ_INTERVAL; // target frequency
     // a sample lower than 1Hz frq has longer time between samples
     // since it's an inverse relationship and all
     if(src >= tgt){
@@ -537,32 +536,6 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Reads in the time series data from a miniSEED file and produces it as a
-   * list of Java numerics, which can be shorts, floats, doubles, or longs,
-   * reflecting the format of the data in the file which can be any of these.
-   * This is packaged into a data structure that also includes the file's
-   * metadata (station, channel, etc.) and the start time and period between
-   * samples. The data loaded in is pre-trimmed according a specified range,
-   * mainly to be used for loading in contiguous regions of data based on
-   * gap locations
-   * @param filename The full path to the file to be loaded in
-   * @param filter Specifies which data to load in, for multiplexed files
-   * @param range Range of time to trim data to before loading
-   * @return A structure containing the time series and metadata for the file
-   * @throws FileNotFoundException If file cannot be read in
-   */
-  public static DataBlock
-  getTimeSeries(String filename, String filter, Pair<Long, Long> range)
-      throws FileNotFoundException {
-
-    DataBlock db = null;
-    Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
-        getTimeSeriesMap(filename, filter);
-    db = mapToTimeSeries(intervalSeriesMapPair, filter, range);
-    return db;
-  }
-
-  /**
    * Extract data from records in a miniseed file and return them as a map
    * of sampled data points at various times
    * @param filename Name of miniseed file to read in
@@ -736,30 +709,6 @@ public class TimeSeriesUtils {
    */
   public static DataBlock
   mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter) {
-
-    // use max range instead of a trim region
-    // TODO: likely will need to change range in year 2038
-    // or to use data from before 1970
-    Pair<Long, Long> range =
-        new Pair<Long, Long>( 0L, Long.MAX_VALUE );
-
-    return mapToTimeSeries(data, filter, range);
-
-  }
-
-  /**
-   * Convert loaded in time-value map to contiguous timeseries over a given
-   * range.
-   * @param data Pair, first value is long representing interval and the
-   * second value is a map from longs representing time of a data sample
-   * to a numeric type representing the recorded value at that time
-   * @param filter SNCL data taken from miniseed data
-   * @param range Range to pre-trim data to
-   * @return DataBlock consisting of timeseries data within given range
-   */
-  public static DataBlock
-  mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter,
-      Pair<Long, Long> range) {
 
     long interval = data.getFirst();
     Map<Long, double[]> timeMap = data.getSecond();

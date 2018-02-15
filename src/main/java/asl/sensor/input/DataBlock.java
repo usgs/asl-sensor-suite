@@ -216,12 +216,9 @@ public class DataBlock {
         } else {
           startIndex = closeIdx + 1;
         }
-        // System.out.println("index: " + startIndex);
       } else {
         continue;
       }
-
-      // System.out.println("Current list length: " + data.size());
 
       if ( startIndex < data.length ) {
         // make sure we are not in a gap to start with
@@ -229,9 +226,6 @@ public class DataBlock {
         // copy either up to our current end point, or the limit of the block
         end = Math.min( data.length, end );
         double[] sublist = Arrays.copyOfRange(data, startIndex, end);
-        /*
-        Number[] sublist = data.subList(startIndex, end).toArray(new Number[0]);
-        */
         for (int j = 0; j < sublist.length; ++j, ++lastFilledIndex) {
           cachedTimeSeries[lastFilledIndex] = sublist[j];
         }
@@ -609,7 +603,6 @@ public class DataBlock {
     trimmedStart = start;
     dataMap = new HashMap<Long, double[]>();
     dataMap.put(startTime, data);
-    // System.out.println(data.length - 1);
     endTime = startTime + (interval * data.length);
     trimmedEnd = endTime;
     cachedTimeSeries = data;
@@ -648,9 +641,7 @@ public class DataBlock {
     // doing a quick decimation here on the displays for datapanel
     // so that we can do the sliding/zooming operations relatively expediently
     // trying to draw the charts with too much data slows it down terribly
-    // System.out.println(rebuildList);
     double[] data = getData();
-    // System.out.println(data.length);
 
     int skipFactor = data.length / MAX_POINTS + 1; // must be >= 1
 

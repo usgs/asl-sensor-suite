@@ -54,8 +54,8 @@ public class CalProcessingServer {
    * @param outFileNameD2 Filename of sensor output (day 2)
    * @param respName Filename of response to load in
    * @param respEmbd True if response is an embedded response in program
-   * @param startTime Long representing ms-since-epoch of data start time
-   * @param endTime Long representing ms-since-epoch of data end time
+   * @param startTime ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endTime ISO-861 formatted datetime string with timezone offset; end of data window
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
