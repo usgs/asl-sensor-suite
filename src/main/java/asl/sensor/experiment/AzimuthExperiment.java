@@ -159,6 +159,7 @@ public class AzimuthExperiment extends Experiment {
     initTestEast = FFTResult.bandFilter(initTestEast, sps, low, high);
     initRefNorth = FFTResult.bandFilter(initRefNorth, sps, low, high);
 
+
     MultivariateJacobianFunction jacobian =
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
 
@@ -175,7 +176,7 @@ public class AzimuthExperiment extends Experiment {
 
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(1E-5).
-        withParameterRelativeTolerance(1E-5);
+        withParameterRelativeTolerance(1E-3);
 
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
@@ -274,13 +275,13 @@ public class AzimuthExperiment extends Experiment {
       // call to evaluate at best-fit point gives corresponding latestCorrelation as side effect
       double angleTemp = angleVectorWindow.getEntry(0);
 
-      angleTemp = angleTemp % NumericUtils.TAU;
+      angleTemp = ( (angleTemp % tau) + tau ) % tau;
 
       double correlation = latestCorrelation;
 
       if (correlation > bestCorr) {
         bestCorr = correlation;
-        bestTheta = ( (angleTemp % tau) + tau) % tau;
+        bestTheta = angleTemp;
       }
 
       angleCorrelationMap.put(
@@ -289,10 +290,12 @@ public class AzimuthExperiment extends Experiment {
     }
 
     int minCorrelations = 5;
+    double[] angles = new double[]{};
+    correlations = new double[]{};
     // TODO: can refactor this to break out if numWindows is < 5
     if (angleCorrelationMap.size() < minCorrelations) {
       fireStateChange("Window size too small for good angle estimation...");
-      angle = ( ( angleVector.getEntry(0) % tau) + tau ) % tau;
+      angle = tempAngle % tau; // tempAngle is the initial estimate from before windowing occurs
     } else {
       // get the best-correlation estimations of angle and average them
       enoughPts = true;
@@ -309,15 +312,20 @@ public class AzimuthExperiment extends Experiment {
 
       // deal with wraparound issue
       correlations = new double[angleCorrelationMap.size()];
-      double[] angles = new double[angleCorrelationMap.size()];
-      List<Pair<Double, Double>> angleCorrelationList =
-          new ArrayList<Pair<Double, Double>>( angleCorrelationMap.values() );
+      angles = new double[angleCorrelationMap.size()];
 
-      for (int i = 0; i < angleCorrelationList.size(); ++i) {
-        angles[i] = angleCorrelationList.get(i).getFirst();
-        correlations[i] = angleCorrelationList.get(i).getSecond();
+
+      List<Long> times = new ArrayList<Long>( angleCorrelationMap.keySet() );
+      Collections.sort(times);
+
+      for (int i = 0; i < times.size(); ++i) {
+        long time = times.get(i);
+        Pair<Double, Double> angleAndCorrelation = angleCorrelationMap.get(time);
+        angles[i] = angleAndCorrelation.getFirst();
+        correlations[i] = angleAndCorrelation.getSecond();
       }
 
+      // shift term here used to deal with potential discontinuities in the mean of the data
       double shift = angles[0] + Math.PI/4; // 45 degrees offset
       for (int i = 0; i < angles.length; ++i) {
         angles[i] = ( ( (angles[i] + shift) % tau ) + tau ) % tau;
@@ -388,12 +396,12 @@ public class AzimuthExperiment extends Experiment {
     xysc.addSeries(timeMapAngle);
     xysc.addSeries(timeMapCorrelation);
 
-    for ( long time : angleCorrelationMap.keySet() ) {
-        long xVal = time / 1000;
-        double angle = angleCorrelationMap.get(time).getFirst();
+    for (int i = 0; i < angles.length; ++i) {
+        long xVal = i * 500;
+        double angle = angles[i];
         // angle += Math.toRadians(offset);
         angle = (angle % tau);
-        double correlation = angleCorrelationMap.get(time).getSecond();
+        double correlation = correlations[i];
         timeMapCorrelation.add(xVal, correlation);
         timeMapAngle.add( xVal, Math.toDegrees(angle) );
     }
