@@ -8,12 +8,10 @@ import java.util.Map;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
-
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 

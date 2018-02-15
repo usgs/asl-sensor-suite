@@ -391,10 +391,11 @@ public class AzimuthExperiment extends Experiment {
     for ( long time : angleCorrelationMap.keySet() ) {
         long xVal = time / 1000;
         double angle = angleCorrelationMap.get(time).getFirst();
+        angle += Math.toRadians(offset);
         angle = ( (angle % tau) + tau ) % tau;
         double correlation = angleCorrelationMap.get(time).getSecond();
         timeMapCorrelation.add(xVal, correlation);
-        timeMapAngle.add( xVal, Math.toDegrees(angle) + offset );
+        timeMapAngle.add( xVal, Math.toDegrees(angle) );
     }
 
 

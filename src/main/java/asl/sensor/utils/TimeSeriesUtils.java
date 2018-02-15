@@ -35,13 +35,9 @@ public class TimeSeriesUtils {
 
 
   /**
-   * Factor of precision over default level of time
-   */
-  public final static int TIME_FACTOR = 1;
-  /**
    * Interval for data that has been sampled at 1 Hz in milliseconds
    */
-  public final static long ONE_HZ_INTERVAL = 1000L * TIME_FACTOR;
+  public final static long ONE_HZ_INTERVAL = 1000L;
 
   /**
    * Sample rate of a 1 Hz sample, in Hz, as a double (that is, 1.0)

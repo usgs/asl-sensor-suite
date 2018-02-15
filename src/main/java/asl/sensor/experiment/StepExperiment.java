@@ -143,7 +143,7 @@ public class StepExperiment extends Experiment{
     // these values used in calculating the response deconvolution
     sensorFFTSeries = sensorsFFT.getFFT();
     freqs = sensorsFFT.getFreqs();
-    // this applies the current f, h value to the FFT (removes response),
+    // calculate method applies the current f, h value to the FFT (removes response),
     // inverts the FFT back into time space, and then does additional filtering on the result
     // (i.e., lowpass, demean, normalize)
     double[] toPlot = calculate(params);
@@ -386,7 +386,7 @@ public class StepExperiment extends Experiment{
     returnValue = TimeSeriesUtils.normalizeByMax(returnValue);
 
     // attempt to filter out additional noise
-    returnValue = FFTResult.bandFilter(returnValue, sps, 0.0, 0.1);
+    returnValue = FFTResult.lowPassFilter(returnValue, sps, 0.1);
     // trim out ringing, add offset to try to line up the calculated corner with step signal corner
     int trimOffset = 3 * (int) sps;
     returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);

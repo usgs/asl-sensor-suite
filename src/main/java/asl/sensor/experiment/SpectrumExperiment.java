@@ -1,7 +1,6 @@
 package asl.sensor.experiment;
 
 import org.jfree.data.xy.XYSeriesCollection;
-
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;

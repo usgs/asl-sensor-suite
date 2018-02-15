@@ -5,9 +5,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
-
 import javax.swing.JComboBox;
-
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
@@ -15,7 +13,6 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.NoiseNineExperiment;
@@ -40,7 +37,7 @@ public class NoiseNinePanel extends NoisePanel {
    * @return String representing experiment data (rotation angles)
    */
   public static String getInsetString(NoiseNineExperiment exp) {
-    NoiseNineExperiment nne = (NoiseNineExperiment) exp;
+    NoiseNineExperiment nne = exp;
     DecimalFormat df = new DecimalFormat("#.###");
     double[] angles = nne.getNorthAngles();
     StringBuilder sb = new StringBuilder();

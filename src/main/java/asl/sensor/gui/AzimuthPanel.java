@@ -295,8 +295,12 @@ public class AzimuthPanel extends ExperimentPanel {
     XYItemRenderer renderer = new DefaultXYItemRenderer();
     renderer.setSeriesPaint(0, Color.BLUE);
     xyp.setRenderer(1, renderer);
-    xyp.setRangeAxis( 0, new NumberAxis("Angle est. (deg)") );
-    xyp.setRangeAxis( 1, new NumberAxis("Correlation est. of best fit angle") );
+    NumberAxis angleEstimationAxis = new NumberAxis("Angle est. (deg)");
+    // angleEstimationAxis.setAutoRangeIncludesZero(false);
+    xyp.setRangeAxis( 0, angleEstimationAxis );
+    NumberAxis correlationAxis = new NumberAxis("Correlation est. of best fit angle");
+    // correlationAxis.setAutoRangeIncludesZero(false);
+    xyp.setRangeAxis( 1, correlationAxis );
     NumberAxis xAx = new NumberAxis("Time from data start of (2000s) window (s)");
     xAx.setAutoRangeIncludesZero(false);
     xyp.setDomainAxis(xAx);

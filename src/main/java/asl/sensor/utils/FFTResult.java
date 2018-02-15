@@ -110,49 +110,6 @@ public class FFTResult {
   }
 
   /**
-   * Band-pass filter that creates hard-stop for values outside of range but
-   * produces linear dropoff for points between the corner frequencies and
-   * hard stop limits.
-   * @param toFilt series of data to do a band-pass filter on
-   * @param sps sample rate of the current data (samples / sec)
-   * @param low low corner frequency of band-pass filter
-   * @param high high corner frequency of band-pass filter
-   * @param lowStop low frequency value beyond which to attenuate all signal
-   * @param highStop high frequency value beyond which to attenuate all signal
-   * @return timeseries with band-pass filter applied
-   */
-  public static double[]
-  bandFilterWithCuts(double[] toFilt, double sps, double low, double high,
-                     double lowStop, double highStop) {
-
-    // System.out.println("FILTERING OPERATION OCCURRING");
-
-    Complex[] fft = simpleFFT(toFilt);
-
-    int trim = fft.length/2 + 1;
-
-    Complex[] toInvert = new Complex[trim];
-
-    double freqDelta = sps / trim;
-
-    for (int i = 0; i < trim; ++i) {
-      double x = i * freqDelta;
-      double scale = 1;
-      if (x < lowStop || x > highStop) {
-        scale = 0;
-      } else if (x < low) {
-        scale = (x - lowStop) / (low - lowStop);
-      } else if (x > high) {
-        scale = (x - highStop) / (high - highStop);
-      }
-
-      toInvert[i] = fft[i].multiply(scale);
-    }
-
-    return singleSidedInverseFFT(toInvert, toFilt.length);
-  }
-
-  /**
    * Calculates and performs an in-place cosine taper on an incoming data set.
    * Used for windowing for performing FFT.
    * @param dataSet The dataset to have the taper applied to.
@@ -446,7 +403,7 @@ public class FFTResult {
 
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
 
-    data = bandFilter(data, sps, 0.0, 0.1);
+    data = lowPassFilter(data, sps, 0.1);
 
     data = TimeSeriesUtils.demean(data);
 
@@ -626,15 +583,11 @@ public class FFTResult {
         toFFT2 = new double[padding];
       }
 
-      // TODO: this can clearly be refactored
-      for (int i = 0; i < data1Range.length; ++i) {
-        // no point in using arraycopy -- must make sure each Number's a double
-        toFFT1[i] = data1Range[i];
-        if (!sameData) {
-          toFFT2[i] = data2Range[i];
-        }
-      }
 
+      toFFT1 = Arrays.copyOfRange(data1Range, 0, padding);
+      if (!sameData) {
+        toFFT2 = Arrays.copyOfRange(data2Range, 0, padding);
+      }
       FastFourierTransformer fft =
           new FastFourierTransformer(DftNormalization.STANDARD);
 

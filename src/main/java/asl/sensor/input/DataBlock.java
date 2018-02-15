@@ -1,5 +1,8 @@
 package asl.sensor.input;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -45,7 +48,6 @@ import asl.sensor.utils.TimeSeriesUtils;
 public class DataBlock {
 
   private static final int MAX_POINTS = 100000;
-  public static final int TIME_FACTOR = TimeSeriesUtils.TIME_FACTOR;
 
   private long interval, targetInterval;
   private String name;
@@ -393,19 +395,39 @@ public class DataBlock {
    * Get start time of data series as a Java calendar object
    * @return Calendar object representing start time (UTC time zone)
    */
+  @Deprecated
   public Calendar getStartCalendar() {
     Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
-    cCal.setTimeInMillis(startTime / TIME_FACTOR);
+    cCal.setTimeInMillis(startTime);
     return cCal;
+  }
+
+  /**
+   * Get (untrimmed) start time of the data
+   * @return DateTime object representing start time in UTC time zone
+   */
+  public ZonedDateTime getStartDateTime() {
+    Instant startInstant = Instant.ofEpochMilli(startTime);
+    return ZonedDateTime.ofInstant(startInstant, ZoneOffset.UTC);
+  }
+
+  /**
+   * Get trimmed start time of the data
+   * @return DateTime object representing start time in UTC time zone
+   */
+  public ZonedDateTime getTrimmedStartDateTime() {
+    Instant startInstant = Instant.ofEpochMilli(trimmedStart);
+    return ZonedDateTime.ofInstant(startInstant, ZoneOffset.UTC);
   }
 
   /**
    * Get the trimmed start time of the data
    * @return Calendar object representing start time (UTC time zone)
    */
+  @Deprecated
   public Calendar getTrimmedStartCalendar() {
     Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
-    cCal.setTimeInMillis(trimmedStart / TIME_FACTOR);
+    cCal.setTimeInMillis(trimmedStart);
     return cCal;
   }
 
@@ -636,7 +658,7 @@ public class DataBlock {
     long thisTime = trimmedStart;
     for (int i = 0; i < data.length; i+=skipFactor) {
       double point = data[i];
-      double xTime = thisTime / TIME_FACTOR;
+      double xTime = thisTime;
       out.add(xTime, point);
       thisTime += skipFactor*targetInterval;
     }
@@ -646,12 +668,25 @@ public class DataBlock {
 
   /**
    * Adjust the window of data to collect samples from when getting the data
-   * @param start Start time to trim window to in milliseconds from epoch
-   * @param end End time to trim window to in milliseconds from epoch
+   * @param start Start time to trim window to, as Calendar object
+   * @param end End time to trim window to, as Calendar object
    */
+  @Deprecated
   public void trim(Calendar start, Calendar end) {
-    trim( start.getTimeInMillis() * TIME_FACTOR,
-        end.getTimeInMillis() * TIME_FACTOR );
+    trim( start.getTimeInMillis(),
+        end.getTimeInMillis() );
+  }
+
+  /**
+   * Adjust the window of data to collect samples from when getting the data
+   * (i.e., used to determine region of analysis for the various experiments)
+   * @param start Start time to trim window to, as DateTime object
+   * @param end End time to trim window to, as DateTime object
+   */
+  public void trim(ZonedDateTime start, ZonedDateTime end) {
+    long startMillis = start.toInstant().toEpochMilli();
+    long endMillis = end.toInstant().toEpochMilli();
+    trim(startMillis, endMillis);
   }
 
   /**

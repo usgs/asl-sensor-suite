@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.imageio.ImageIO;
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -27,11 +26,9 @@ import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-
 import org.apache.log4j.BasicConfigurator;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.JFreeChart;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.ExperimentPanelFactory;
@@ -98,6 +95,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     //creating and showing this application's GUI.
     
     SwingUtilities.invokeLater(new Runnable() {
+      @Override
       public void run() {
         BasicConfigurator.configure();
         //Turn off metal's use of bold fonts

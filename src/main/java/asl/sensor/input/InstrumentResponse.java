@@ -14,12 +14,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
-
 import asl.sensor.gui.InputPanel;
 import asl.sensor.utils.NumericUtils;
 
@@ -903,6 +901,7 @@ public class InstrumentResponse {
   /**
    * Output text report of this response file. Not same format as IRIS RESP.
    */
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     

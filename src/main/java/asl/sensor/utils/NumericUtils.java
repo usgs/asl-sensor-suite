@@ -5,7 +5,6 @@ import java.text.DecimalFormatSymbols;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.commons.math3.complex.Complex;
 
 /**

@@ -19,19 +19,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
-
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
-
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.data.xy.XYSeriesCollection;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
@@ -232,6 +229,7 @@ public class ResponsePanel extends ExperimentPanel {
     
   }
   
+  @Override
   protected void drawCharts() {
 
     plotSelection.setSelectedIndex(0);
