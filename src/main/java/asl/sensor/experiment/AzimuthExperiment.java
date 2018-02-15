@@ -383,7 +383,7 @@ public class AzimuthExperiment extends Experiment {
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
-    XYSeries timeMapAngle = new XYSeries("Best-fit angle per window");
+    XYSeries timeMapAngle = new XYSeries("Best-fit angle per window (not including ref. shift)");
     XYSeries timeMapCorrelation = new XYSeries("Correlation estimate per window");
     xysc.addSeries(timeMapAngle);
     xysc.addSeries(timeMapCorrelation);
@@ -391,8 +391,8 @@ public class AzimuthExperiment extends Experiment {
     for ( long time : angleCorrelationMap.keySet() ) {
         long xVal = time / 1000;
         double angle = angleCorrelationMap.get(time).getFirst();
-        angle += Math.toRadians(offset);
-        angle = ( (angle % tau) + tau ) % tau;
+        // angle += Math.toRadians(offset);
+        angle = (angle % tau);
         double correlation = angleCorrelationMap.get(time).getSecond();
         timeMapCorrelation.add(xVal, correlation);
         timeMapAngle.add( xVal, Math.toDegrees(angle) );
