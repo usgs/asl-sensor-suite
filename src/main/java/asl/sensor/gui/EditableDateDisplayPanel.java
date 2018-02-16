@@ -3,8 +3,8 @@ package asl.sensor.gui;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
@@ -35,7 +35,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
   private JSpinner year, day, hour, minute, second, millisecond;
   private JLabel yLabel, dLabel, hLabel, mLabel, sLabel, msLabel;
   private EventListenerList listeners;
-  private ZonedDateTime dt; // holds the data for the current time
+  private OffsetDateTime dt; // holds the data for the current time
 
   /**
    * Constructor initializes components, layouts, and listeners.
@@ -44,7 +44,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
     listeners = new EventListenerList();
 
-    dt = ZonedDateTime.now(ZoneOffset.UTC);
+    dt = OffsetDateTime.now(ZoneOffset.UTC);
 
     SpinnerNumberModel model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -203,7 +203,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
       return; // don't do anything if no change is necessary
     }
 
-    dt = ZonedDateTime.ofInstant( Instant.ofEpochMilli(timeStamp), ZoneOffset.UTC);
+    dt = OffsetDateTime.ofInstant( Instant.ofEpochMilli(timeStamp), ZoneOffset.UTC);
     year.setValue( dt.getYear() );
     day.setValue( dt.getDayOfYear() );
     hour.setValue( dt.getHour() );

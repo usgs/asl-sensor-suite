@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -71,7 +71,7 @@ public class FFTResultTest {
     String dataname = "US_COWI_  _LHN";
     try {
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename, dataname);
-      ZonedDateTime dt = db.getStartDateTime();
+      OffsetDateTime dt = db.getStartDateTime();
       System.out.println(dt);
       dt = dt.withDayOfYear(236).withHour(0).withMinute(0).withSecond(0);
       System.out.println(dt);

@@ -2,7 +2,7 @@ package asl.sensor.input;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Calendar;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
@@ -544,7 +544,7 @@ public class DataStore {
    * @param start Start time to trim data to
    * @param end End time to trim data to
    */
-  public void trim(ZonedDateTime start, ZonedDateTime end) {
+  public void trim(OffsetDateTime start, OffsetDateTime end) {
     trim(start, end, FILE_COUNT);
   }
 
@@ -554,7 +554,7 @@ public class DataStore {
    * @param start Start time to trim data to
    * @param end End time to trim data to
    */
-  public void trim(ZonedDateTime start, ZonedDateTime end, int limit) {
+  public void trim(OffsetDateTime start, OffsetDateTime end, int limit) {
     long startTime = start.toInstant().toEpochMilli();
     long endTime = start.toInstant().toEpochMilli();
     trim(startTime, endTime, limit);

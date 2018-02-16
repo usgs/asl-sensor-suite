@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
@@ -65,8 +65,8 @@ public class CalProcessingServer {
       String startDate, String endDate, boolean lowFreq) throws IOException {
 
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-    ZonedDateTime startDateTime = ZonedDateTime.parse(startDate, dtf);
-    ZonedDateTime endDateTime = ZonedDateTime.parse(endDate, dtf);
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
 
     DataStore ds = new DataStore();
     String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
@@ -107,8 +107,11 @@ public class CalProcessingServer {
           throws IOException {
 
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-    ZonedDateTime startDateTime = ZonedDateTime.parse(startDate, dtf);
-    ZonedDateTime endDateTime = ZonedDateTime.parse(endDate, dtf);
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+
+    System.out.println( startDateTime.toInstant().toEpochMilli() );
+    System.out.println( endDateTime.toInstant().toEpochMilli() );
 
     DataStore ds = new DataStore();
     DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
