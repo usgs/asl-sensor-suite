@@ -9,6 +9,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -25,6 +27,7 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
+import asl.sensor.CalProcessingServer;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
@@ -288,6 +291,52 @@ public class RandomizedExperimentTest {
       fail();
     }
 
+  }
+
+  @Test
+  public void testEfficiencyOfMVCOSolution() {
+    // for some reason this test goes very slowly in the cal server. it is not clear why.
+    String folder = "test-data/test-crashed-on-cal/";
+    String calInFile = folder + "_BC0.512.seed";
+    String sensorOutFile = folder + "00_BHZ.512.seed";
+    String respFile = folder + "RESP.US.MVCO.00.BHZ";
+    String start = "2018-01-30T07:55:00+00:00";
+    String end = "2018-01-30T11:55:00+00:00";
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    long startTime = OffsetDateTime.parse(start, dtf).toInstant().toEpochMilli();
+    long endTime = OffsetDateTime.parse(end, dtf).toInstant().toEpochMilli();
+    RandomizedExperiment re = new RandomizedExperiment();
+    re.setLowFreq(true);
+      DataStore ds = new DataStore();
+      try {
+        ds.setBlock( 0, TimeSeriesUtils.getFirstTimeSeries(calInFile) );
+        ds.setBlock( 1, TimeSeriesUtils.getFirstTimeSeries(sensorOutFile) );
+        ds.setResponse(1, respFile);
+        ds.trim(startTime, endTime);
+        re.runExperimentOnData(ds);
+      } catch (FileNotFoundException e) {
+        // TODO Auto-generated catch block
+        fail();
+        e.printStackTrace();
+      }
+  }
+
+  @Test
+  public void testCalServerEntryMethods() {
+    String folder = "test-data/test-crashed-on-cal/";
+    String calInFile = folder + "_BC0.512.seed";
+    String sensorOutFile = folder + "00_BHZ.512.seed";
+    String respFile = folder + "RESP.US.MVCO.00.BHZ";
+    String start = "2018-01-30T07:55:00+00:00";
+    String end = "2018-01-30T11:55:00+00:00";
+    try {
+      CalProcessingServer.populateDataAndRun(calInFile, sensorOutFile, respFile,
+          false, start, end, true);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
   }
 
   //@Test

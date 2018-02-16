@@ -333,8 +333,8 @@ public class DataStore {
     long interval = 0;
     // first loop to get lowest-frequency data
     for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() > interval ) {
-        interval = getBlock(i).getInitialInterval();
+      if (thisBlockIsSet[i]) {
+        interval = Math.max( interval, getBlock(i).getInitialInterval() );
       }
     }
     // second loop to downsample
@@ -347,6 +347,26 @@ public class DataStore {
     trimToCommonTime();
 
   }
+
+  public void resample(double newSampleRate) {
+    resample(newSampleRate, FILE_COUNT);
+  }
+
+  public void resample(double newSampleRate, int limit) {
+    long newInterval = (long) (TimeSeriesUtils.ONE_HZ_INTERVAL / newSampleRate);
+    // make sure all data over range gets set to the same interval (and don't upsample)
+    for (int i = 0; i < limit; ++i) {
+      if (thisBlockIsSet[i]) {
+        newInterval = Math.max( newInterval, getBlock(i).getInitialInterval() );
+      }
+    }
+    for (int i = 0; i < limit; ++i) {
+      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() != newInterval ) {
+        getBlock(i).resample(newInterval);
+      }
+    }
+  }
+
 
   /**
    * Gives the count of indices where both a miniseed and response are loaded
@@ -692,4 +712,5 @@ public class DataStore {
     }
     trimToCommonTime(limit);
   }
+
 }
