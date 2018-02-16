@@ -46,6 +46,11 @@ public class FFTResult {
   public static double[]
   bandFilter(double[] toFilt, double sps, double low, double high) {
 
+    // make sure the low value is actually the lower of the two
+    double temp = Math.min(low, high);
+    high = Math.max(low, high);
+    low = temp;
+
     Butterworth casc = new Butterworth();
     // filter library defines bandpass with center frequency and notch width
     casc.bandPass(2, sps, (high-low)/2, (high-low)/2);

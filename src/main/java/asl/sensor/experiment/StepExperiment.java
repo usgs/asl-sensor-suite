@@ -2,6 +2,7 @@ package asl.sensor.experiment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
@@ -243,6 +244,10 @@ public class StepExperiment extends Experiment{
     p2 = p2.multiply( -1 * NumericUtils.TAU * f);
 
     InstrumentResponse fitResp = new InstrumentResponse(ir);
+    List<Complex> poles = fitResp.getPoles();
+    poles.set(0, p1);
+    poles.set(1, p2);
+    fitResp.setPoles(poles);
     fitResp.setName( fitResp.getName() + " [FIT]" );
 
     Complex[] inputCurve = ir.applyResponseToInput(freqs);
