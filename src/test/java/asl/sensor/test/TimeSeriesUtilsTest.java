@@ -15,6 +15,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -297,12 +300,11 @@ public class TimeSeriesUtilsTest {
         sum += n.longValue();
       }
       assertEquals(707752187L, sum);
-      Calendar cCal = db.getStartCalendar();
+      OffsetDateTime cCal = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);
 
-      String correctDate = "2017.08.02 | 00:00:00.019";
-      SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
-      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-      String inputDate = sdf.format( cCal.getTime() );
+      String correctDate = "2017.08.02 | 00:00:00.019-Z";
+      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("YYYY.MM.dd | HH:mm:ss.SSS-X");
+      String inputDate = cCal.format(dtf);
       assertEquals(inputDate, correctDate);
       assertEquals(20.0, db.getSampleRate(), 1E-20);
       // System.out.println(timeseries.get(start)[0]);

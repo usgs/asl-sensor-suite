@@ -13,6 +13,7 @@ import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -71,7 +72,7 @@ public class FFTResultTest {
     String dataname = "US_COWI_  _LHN";
     try {
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename, dataname);
-      OffsetDateTime dt = db.getStartDateTime();
+      OffsetDateTime dt = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
       System.out.println(dt);
       dt = dt.withDayOfYear(236).withHour(0).withMinute(0).withSecond(0);
       System.out.println(dt);
@@ -228,17 +229,16 @@ public class FFTResultTest {
     DataBlock db;
     try {
       db = TimeSeriesUtils.getFirstTimeSeries(inName);
-      Calendar startCal = db.getStartCalendar();
-      startCal.set(Calendar.HOUR_OF_DAY, 0);
-      startCal.set(Calendar.MINUTE, 59);
-      startCal.set(Calendar.SECOND, 59);
-      startCal.set(Calendar.MILLISECOND, 994);
-      Calendar endCal = (Calendar) startCal.clone();
-      endCal.set(Calendar.HOUR_OF_DAY, 7);
-      endCal.set(Calendar.MINUTE, 0);
-      endCal.set(Calendar.SECOND, 0);
-      endCal.set(Calendar.MILLISECOND, 25);
-      db.trim(startCal, endCal);
+      OffsetDateTime startDT = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
+      startDT = startDT.withHour(0);
+      startDT = startDT.withMinute(59);
+      startDT = startDT.withSecond(59);
+      startDT = startDT.withNano(994 * TimeSeriesUtils.TO_MILLI_FACTOR);
+      OffsetDateTime endDT = startDT.withHour(7);
+      endDT = endDT.withMinute(0);
+      endDT = endDT.withSecond(0);
+      endDT = endDT.withNano(25 * TimeSeriesUtils.TO_MILLI_FACTOR);
+      db.trim(startDT, endDT);
 
       double[] list1 = db.getData();
       String name = db.getName();
@@ -580,10 +580,9 @@ public class FFTResultTest {
     try {
       DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
 
-      Calendar cal = db.getStartCalendar();
-      Calendar cal2 = db.getStartCalendar();
-      cal2.set(Calendar.HOUR_OF_DAY, 7);
-      cal2.set(Calendar.MINUTE, 30);
+      OffsetDateTime cal = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
+      OffsetDateTime cal2 = cal.withHour(7);
+      cal2 = cal2.withMinute(30);
       db.trim(cal, cal2);
 
       FastFourierTransformer fft =
@@ -788,10 +787,9 @@ public class FFTResultTest {
     try {
       DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
 
-      Calendar cal = db.getStartCalendar();
-      Calendar cal2 = db.getStartCalendar();
-      cal2.set(Calendar.HOUR_OF_DAY, 7);
-      cal2.set(Calendar.MINUTE, 30);
+      OffsetDateTime cal = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);
+      OffsetDateTime cal2 = cal.withHour(7);
+      cal2 = cal2.withMinute(30);
 
       name = "data/random_cal_lowfrq/BC0.512.seed";
 
@@ -972,10 +970,9 @@ public class FFTResultTest {
     try {
       DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
 
-      Calendar cal = db.getStartCalendar();
-      Calendar cal2 = db.getStartCalendar();
-      cal2.set(Calendar.HOUR_OF_DAY, 7);
-      cal2.set(Calendar.MINUTE, 30);
+      OffsetDateTime cal = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
+      OffsetDateTime cal2 = cal.withHour(7);
+      cal2 = cal2.withMinute(30);
 
       name = "data/random_cal_lowfrq/BC0.512.seed";
       db = TimeSeriesUtils.getFirstTimeSeries(name);

@@ -12,6 +12,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
+import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * This panel presents an alternate means of range-trimming to the standard
@@ -28,9 +29,6 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
    *
    */
   private static final long serialVersionUID = -1649983797482938586L;
-
-  // divide by this to go from nanoseconds to milliseconds
-  private static final int TO_MILLI_FACTOR = 1000000;
 
   private JSpinner year, day, hour, minute, second, millisecond;
   private JLabel yLabel, dLabel, hLabel, mLabel, sLabel, msLabel;
@@ -209,7 +207,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     hour.setValue( dt.getHour() );
     minute.setValue( dt.getMinute() );
     second.setValue( dt.getSecond() );
-    millisecond.setValue( dt.getNano() / TO_MILLI_FACTOR );
+    millisecond.setValue( dt.getNano() / TimeSeriesUtils.TO_MILLI_FACTOR );
 
   }
 
@@ -228,7 +226,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     } else if ( e.getSource() == second ) {
       dt = dt.withSecond( (int) second.getValue() );
     } else if ( e.getSource() == millisecond ) {
-      dt = dt.withNano( (int) millisecond.getValue() * TO_MILLI_FACTOR );
+      dt = dt.withNano( (int) millisecond.getValue() * TimeSeriesUtils.TO_MILLI_FACTOR );
     }
 
     fireStateChanged(); // percolate change in component up to any containers

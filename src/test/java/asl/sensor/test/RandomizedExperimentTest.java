@@ -10,9 +10,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
@@ -228,12 +228,14 @@ public class RandomizedExperimentTest {
       DataBlock out =
           TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
 
-      Calendar start = cal.getTrimmedStartCalendar();
-      Calendar end = cal.getTrimmedStartCalendar();
-      start.set(Calendar.HOUR_OF_DAY, 18);
-      start.set(Calendar.MINUTE, 20);
-      end.set(Calendar.HOUR_OF_DAY, 18);
-      end.set(Calendar.MINUTE, 35);
+      OffsetDateTime start =
+          OffsetDateTime.ofInstant(cal.getTrimmedStartInstant(), ZoneOffset.UTC);
+      start = start.withHour(18);
+      start = start.withMinute(20);
+      OffsetDateTime end = start.withHour(18);
+      end = end.withMinute(35);
+
+
       cal.trim(start, end);
       out.trim(start, end);
 
@@ -349,12 +351,12 @@ public class RandomizedExperimentTest {
       DataBlock out =
           TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
 
-      Calendar start = cal.getTrimmedStartCalendar();
-      Calendar end = cal.getTrimmedStartCalendar();
-      start.set(Calendar.HOUR_OF_DAY, 18);
-      start.set(Calendar.MINUTE, 20);
-      end.set(Calendar.HOUR_OF_DAY, 18);
-      end.set(Calendar.MINUTE, 35);
+      OffsetDateTime start =
+          OffsetDateTime.ofInstant(cal.getTrimmedStartInstant(), ZoneOffset.UTC);
+      start = start.withHour(18);
+      start = start.withMinute(20);
+      OffsetDateTime end = start.withHour(18);
+      end = end.withMinute(35);
       cal.trim(start, end);
       out.trim(start, end);
 
@@ -489,15 +491,15 @@ public class RandomizedExperimentTest {
     fileList.add(sensOutName);
 
     DataStore ds = getFromList(fileList);
-    Calendar cCal = TestUtils.getStartCalendar(ds);
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
 
-    cCal.set(Calendar.MINUTE, 36);
-    cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime();
+    cCal = cCal.withMinute(36);
+    cCal = cCal.withSecond(0);
+    long start = cCal.toInstant().toEpochMilli();
 
-    cCal.set(Calendar.MINUTE, 41);
+    cCal = cCal.withMinute(41);
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime();
+    long end = cCal.toInstant().toEpochMilli();
 
     ds.trim(start, end);
 
@@ -522,18 +524,17 @@ public class RandomizedExperimentTest {
     ir = InstrumentResponse.loadEmbeddedResponse("T-compact_Q330HR_BH_40");
     ds.setResponse(1, ir);
 
-    Calendar cCal = TestUtils.getStartCalendar(ds);
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
 
-    cCal.set(Calendar.MINUTE, 52);
-    cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime();
+    cCal = cCal.withMinute(52);
+    cCal = cCal.withSecond(0);
+    long start = cCal.toInstant().toEpochMilli();
 
-    int hour = cCal.get(Calendar.HOUR);
-    cCal.set(Calendar.HOUR, hour + 1);
-    cCal.set(Calendar.MINUTE, 12);
+    cCal = cCal.plusHours(1);
+    cCal = cCal.withMinute(12);
 
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime();
+    long end = cCal.toInstant().toEpochMilli();
 
     ds.trim(start, end);
 
@@ -558,12 +559,12 @@ public class RandomizedExperimentTest {
     ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR");
     ds.setResponse(1, ir);
 
-    Calendar cCal = TestUtils.getStartCalendar(ds);
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
 
-    cCal.set(Calendar.HOUR_OF_DAY, 21);
-    cCal.set(Calendar.MINUTE, 24);
-    cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime();
+    cCal = cCal.withHour(21);
+    cCal = cCal.withMinute(24);
+    cCal = cCal.withSecond(0);
+    long start = cCal.toInstant().toEpochMilli();
 
     // commented out -- calibration ends when the data does
     //int hour = cCal.get(Calendar.HOUR);
@@ -600,16 +601,16 @@ public class RandomizedExperimentTest {
     ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR");
     ds.setResponse(1, ir);
 
-    Calendar cCal = TestUtils.getStartCalendar(ds);
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
 
-    cCal.set(Calendar.HOUR_OF_DAY, 20);
-    cCal.set(Calendar.MINUTE, 16);
-    cCal.set(Calendar.SECOND, 0);
-    long start = cCal.getTime().getTime();
+    cCal = cCal.withHour(20);
+    cCal = cCal.withMinute(16);
+    cCal = cCal.withSecond(0);
+    long start = cCal.toInstant().toEpochMilli();
 
-    cCal.set(Calendar.MINUTE, 26);
+    cCal = cCal.withMinute(26);
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime();
+    long end = cCal.toInstant().toEpochMilli();
 
     ds.trim(start, end);
 
@@ -902,19 +903,19 @@ public class RandomizedExperimentTest {
     fileList.add(sensOutName);
 
     DataStore ds = getFromList(fileList);
-    Calendar cCal = TestUtils.getStartCalendar(ds);
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
 
-    cCal.set(Calendar.HOUR_OF_DAY, 23);
-    cCal.set(Calendar.MINUTE, 35);
-    cCal.set(Calendar.SECOND, 30);
-    long start = cCal.getTime().getTime();
+    cCal = cCal.withHour(23);
+    cCal = cCal.withMinute(35);
+    cCal = cCal.withSecond(30);
+    long start = cCal.toInstant().toEpochMilli();
 
-    cCal.set(Calendar.DAY_OF_YEAR, 214);
-    cCal.set(Calendar.HOUR_OF_DAY, 7);
-    cCal.set(Calendar.MINUTE, 45);
-    cCal.set(Calendar.SECOND, 0);
+    cCal = cCal.withDayOfYear(214);
+    cCal = cCal.withHour(7);
+    cCal = cCal.withMinute(45);
+    cCal = cCal.withSecond(0);
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime();
+    long end = cCal.toInstant().toEpochMilli();
 
     ds.trim(start, end);
 

@@ -942,5 +942,8 @@ public class TimeSeriesUtils {
     return max < 0;
   }
 
+  // divide by this to go from nanoseconds to milliseconds
+  public static final int TO_MILLI_FACTOR = 1000000;
+
 }
 

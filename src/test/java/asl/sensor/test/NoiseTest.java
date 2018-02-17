@@ -2,17 +2,15 @@ package asl.sensor.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Calendar;
-
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-
 import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
@@ -23,7 +21,7 @@ import asl.sensor.utils.TimeSeriesUtils;
 public class NoiseTest {
 
   XYSeriesCollection xysc;
-  
+
   //@Test
   public void testResp() {
     String resp = "T-compact_Q330HR_BH_40";
@@ -35,9 +33,9 @@ public class NoiseTest {
       e.printStackTrace();
       fail();
     }
-    
+
   }
-  
+
   public XYSeriesCollection setUpTest1() throws FileNotFoundException {
     String folder = "test-data/noise-neg159db/";
     String[] data = new String[3];
@@ -51,24 +49,25 @@ public class NoiseTest {
       ds.setBlock(i, db);
       ds.setEmbedResponse(i, resp);
     }
-    Calendar startCal = ds.getBlock(0).getStartCalendar();
-    startCal.set(Calendar.HOUR_OF_DAY, 0);
-    startCal.set(Calendar.MINUTE, 59);
-    startCal.set(Calendar.SECOND, 59);
-    startCal.set(Calendar.MILLISECOND, 994);
-    Calendar endCal = (Calendar) startCal.clone();
-    endCal.set(Calendar.HOUR_OF_DAY, 7);
-    endCal.set(Calendar.MINUTE, 0);
-    endCal.set(Calendar.SECOND, 0);
-    endCal.set(Calendar.MILLISECOND, 25);
-    ds.trim(startCal, endCal);
+
+    OffsetDateTime startCal =
+        OffsetDateTime.ofInstant(ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);
+    startCal = startCal.withHour(0);
+    startCal = startCal.withMinute(59);
+    startCal = startCal.withSecond(59);
+    startCal = startCal.withNano(994 * TimeSeriesUtils.TO_MILLI_FACTOR);
+    OffsetDateTime endCal = startCal.withHour(7);
+    endCal = endCal.withMinute(0);
+    endCal = endCal.withSecond(0);
+    endCal = endCal.withNano(25 * TimeSeriesUtils.TO_MILLI_FACTOR);
+    ds.trim(startCal.toInstant(), endCal.toInstant());
     NoiseExperiment ne = new NoiseExperiment();
     ne.setFreqSpace(false); // use period units (s)
     ne.runExperimentOnData(ds);
     XYSeriesCollection xysc = ne.getData().get(0);
     return xysc;
   }
-  
+
   public XYSeriesCollection setUpTest2() throws FileNotFoundException {
     String folder = "test-data/noise-neg160db/";
     String[] data = new String[3];
@@ -82,24 +81,25 @@ public class NoiseTest {
       ds.setBlock(i, db);
       ds.setEmbedResponse(i, resp);
     }
-    Calendar startCal = ds.getBlock(0).getStartCalendar();
-    startCal.set(Calendar.HOUR_OF_DAY, 0);
-    startCal.set(Calendar.MINUTE, 59);
-    startCal.set(Calendar.SECOND, 59);
-    startCal.set(Calendar.MILLISECOND, 994);
-    Calendar endCal = (Calendar) startCal.clone();
-    endCal.set(Calendar.HOUR_OF_DAY, 7);
-    endCal.set(Calendar.MINUTE, 0);
-    endCal.set(Calendar.SECOND, 0);
-    endCal.set(Calendar.MILLISECOND, 25);
-    ds.trim(startCal, endCal);
+    OffsetDateTime startCal =
+        OffsetDateTime.ofInstant( ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);
+    startCal = startCal.withHour(0);
+    startCal = startCal.withMinute(59);
+    startCal = startCal.withSecond(59);
+    startCal = startCal.withNano(994 * TimeSeriesUtils.TO_MILLI_FACTOR);
+    OffsetDateTime endCal = startCal.withHour(7);
+    endCal = endCal.withMinute(0);
+    endCal = endCal.withSecond(0);
+    endCal = endCal.withNano(25 * TimeSeriesUtils.TO_MILLI_FACTOR);
+    ds.trim( startCal.toInstant(), endCal.toInstant() );
+
     NoiseExperiment ne = new NoiseExperiment();
     ne.setFreqSpace(false); // use period units (s)
     ne.runExperimentOnData(ds);
     XYSeriesCollection xysc = ne.getData().get(0);
     return xysc;
   }
-  
+
   @Test
   public void testResultsData1PSD1() {
     int idx = 0;
@@ -135,21 +135,21 @@ public class NoiseTest {
       }
       psdResults /= psdPoints;
       noiseResults /= noisePoints;
-      
+
       System.out.println(psdResults + "," + noiseResults);
       System.out.println(psdCheck + "," + noiseCheck);
       System.out.println("PSD DIFF: " + Math.abs(psdResults - psdCheck));
       System.out.println("NOISE DIFF: " + Math.abs(noiseResults - noiseCheck));
-      
+
       assertEquals(noiseCheck, noiseResults, 1E-2);
       assertEquals(psdCheck, psdResults, 1E-2);
-      
+
     } catch (FileNotFoundException e) {
       e.printStackTrace();
       fail();
     }
   }
-  
+
   @Test
   public void testResultsData2PSD1() {
     int idx = 0;
@@ -187,13 +187,13 @@ public class NoiseTest {
       noiseResults /= noisePoints;
       assertEquals(noiseCheck, noiseResults, 1E-2);
       assertEquals(psdCheck, psdResults, 1E-2);
-      
+
     } catch (FileNotFoundException e) {
       e.printStackTrace();
       fail();
     }
   }
-  
+
   @Test
   public void testResultsData1PSD2() {
     int idx = 1;
@@ -231,13 +231,13 @@ public class NoiseTest {
       noiseResults /= noisePoints;
       assertEquals(noiseCheck, noiseResults, 1E-2);
       assertEquals(psdCheck, psdResults, 1E-2);
-      
+
     } catch (FileNotFoundException e) {
       e.printStackTrace();
       fail();
     }
   }
- 
+
   @Test
   public void testResultsData1PSD3() {
     int idx = 2;
@@ -275,13 +275,13 @@ public class NoiseTest {
       noiseResults /= noisePoints;
       assertEquals(noiseCheck, noiseResults, 1E-2);
       assertEquals(psdCheck, psdResults, 1E-2);
-      
+
     } catch (FileNotFoundException e) {
       e.printStackTrace();
       fail();
     }
   }
-  
+
   //@Test
   public void anotherDamnPrintFunction() {
     // still beats feeding the inputs in by hand though
@@ -315,7 +315,7 @@ public class NoiseTest {
         StringBuilder csv = new StringBuilder();
         for (int j = 0; j < freqs.length; ++j) {
           csv.append(freqs[j]);
-          csv.append(", "); 
+          csv.append(", ");
           csv.append(fftr1.getFFT(j).getReal());
           csv.append(", ");
           csv.append(fftr2.getFFT(j).getReal());
@@ -335,5 +335,5 @@ public class NoiseTest {
     }
 
   }
-  
+
 }

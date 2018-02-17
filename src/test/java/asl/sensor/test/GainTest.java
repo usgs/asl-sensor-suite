@@ -3,8 +3,9 @@ package asl.sensor.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import java.io.FileNotFoundException;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Calendar;
 import org.junit.Test;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
@@ -49,12 +50,12 @@ public class GainTest {
       ds.setResponse(i, fName);
     }
 
-    Calendar start = ds.getBlock(0).getStartCalendar();
-    start.set(Calendar.HOUR_OF_DAY, 10);
-    Calendar end = (Calendar) start.clone();
-    end.set(Calendar.HOUR_OF_DAY, 14);
+    OffsetDateTime start =
+        OffsetDateTime.ofInstant(ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);
+    start = start.withHour(10);
+    OffsetDateTime end = start.withHour(14);
 
-    ds.trim(start, end);
+    ds.trim(start.toInstant(), end.toInstant());
 
     GainExperiment ge = new GainExperiment();
     ge.runExperimentOnData(ds);

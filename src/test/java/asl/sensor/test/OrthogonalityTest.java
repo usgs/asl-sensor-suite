@@ -6,6 +6,7 @@ import static org.junit.Assert.fail;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -185,14 +186,14 @@ public class OrthogonalityTest {
       ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
       ds.setBlock(3, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
 
-      Calendar cCal = TestUtils.getStartCalendar(ds);
-      cCal.set(Calendar.HOUR_OF_DAY, 10);
-      cCal.set(Calendar.MINUTE, 0);
-      cCal.set(Calendar.SECOND, 0);
-      cCal.set(Calendar.MILLISECOND, 0);
-      long start = cCal.getTime().getTime();
-      cCal.set(Calendar.HOUR_OF_DAY, 14);
-      long end = cCal.getTime().getTime();
+      OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
+      cCal = cCal.withHour(10);
+      cCal = cCal.withMinute(0);
+      cCal = cCal.withSecond(0);
+      cCal = cCal.withNano(0);
+      long start = cCal.toInstant().toEpochMilli();
+      cCal = cCal.withHour(14);
+      long end = cCal.toInstant().toEpochMilli();
 
       ds.trim(start, end);
 

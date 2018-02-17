@@ -2,7 +2,6 @@ package asl.sensor.input;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -400,18 +399,16 @@ public class DataBlock {
    * Get (untrimmed) start time of the data
    * @return DateTime object representing start time in UTC time zone
    */
-  public OffsetDateTime getStartDateTime() {
-    Instant startInstant = Instant.ofEpochMilli(startTime);
-    return OffsetDateTime.ofInstant(startInstant, ZoneOffset.UTC);
+  public Instant getStartInstant() {
+    return Instant.ofEpochMilli(startTime);
   }
 
   /**
    * Get trimmed start time of the data
    * @return DateTime object representing start time in UTC time zone
    */
-  public OffsetDateTime getTrimmedStartDateTime() {
-    Instant startInstant = Instant.ofEpochMilli(trimmedStart);
-    return OffsetDateTime.ofInstant(startInstant, ZoneOffset.UTC);
+  public Instant getTrimmedStartInstant() {
+    return Instant.ofEpochMilli(trimmedStart);
   }
 
   /**
