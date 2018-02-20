@@ -60,7 +60,7 @@ public class CalProcessingServer {
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    */
-  public static RandData populateDataAndRun(String calFileNameD1, String calFileNameD2,
+  public RandData populateDataAndRun(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean respEmbd,
       String startDate, String endDate, boolean lowFreq) throws IOException {
 
@@ -105,11 +105,9 @@ public class CalProcessingServer {
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    */
-  public static RandData populateDataAndRun(String calFileName, String outFileName,
+  public RandData populateDataAndRun(String calFileName, String outFileName,
       String respName, boolean respEmbd, String startDate, String endDate, boolean lowFreq)
           throws IOException {
-
-    System.out.println("This is the start of the hook from python");
 
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -130,9 +128,7 @@ public class CalProcessingServer {
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
     ds.setResponse(1, ir);
-    System.out.println("This is where trim happens");
     ds.trim(start, end);
-    System.out.println("Data has been trimmed");
     if (lowFreq) {
       ds.resample(10.); // more than 5 Hz should be unnecessary for low-frequency curve fitting
     }
@@ -141,15 +137,13 @@ public class CalProcessingServer {
 
   }
 
-  private static RandData runExpGetData(DataStore ds, boolean lowFreq) throws IOException {
+  private RandData runExpGetData(DataStore ds, boolean lowFreq) throws IOException {
 
     RandomizedExperiment re = new RandomizedExperiment();
-    re.setTerminalPrintStatus(true);
+    // re.setTerminalPrintStatus(true);
 
     re.setLowFreq(lowFreq);
-    System.out.println("The experiment begins!");
     re.runExperimentOnData(ds);
-    System.out.println("The experiment ends!");
 
     Complex[] fitZerosCpx = re.getFitResponse().getZeros().toArray(new Complex[]{});
     Complex[] fitPolesCpx = re.getFitResponse().getPoles().toArray(new Complex[]{});
@@ -326,7 +320,7 @@ public class CalProcessingServer {
     System.out.println("Gateway Server Started");
   }
 
-  public static class RandData {
+  public class RandData {
 
     private double[] initPoles;
     private double[] initZeros;

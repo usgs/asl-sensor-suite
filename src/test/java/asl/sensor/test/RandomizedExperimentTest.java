@@ -13,6 +13,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
@@ -28,6 +29,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 import asl.sensor.CalProcessingServer;
+import asl.sensor.CalProcessingServer.RandData;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
@@ -332,8 +334,11 @@ public class RandomizedExperimentTest {
     String start = "2018-01-30T07:55:00+00:00";
     String end = "2018-01-30T11:55:00+00:00";
     try {
-      CalProcessingServer.populateDataAndRun(calInFile, sensorOutFile, respFile,
+      CalProcessingServer cps = new CalProcessingServer();
+      RandData rd = cps.populateDataAndRun(calInFile, sensorOutFile, respFile,
           false, start, end, true);
+      System.out.println( Arrays.toString(rd.getFitPoles()) );
+      System.out.println( Arrays.toString(rd.getFitZeros()) );
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();

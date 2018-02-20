@@ -171,7 +171,7 @@ extends Experiment implements ParameterValidator {
       extFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist;
     }
 
-    System.out.println("Finding and trimming data to relevant frequency range");
+    fireStateChange("Finding and trimming data to relevant frequency range");
     // now trim frequencies to in range
     int startIdx = -1; int endIdx = -1; int extIdx = -1;
     for (int i = 0; i < freqs.length; ++i) {

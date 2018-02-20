@@ -73,9 +73,9 @@ public class FFTResultTest {
     try {
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename, dataname);
       OffsetDateTime dt = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
-      System.out.println(dt);
+      //System.out.println(dt);
       dt = dt.withDayOfYear(236).withHour(0).withMinute(0).withSecond(0);
-      System.out.println(dt);
+      //System.out.println(dt);
       long start = dt.toInstant().toEpochMilli();
       // dt = dt.withHour(15);
       long end = db.getEndTime();
@@ -101,7 +101,7 @@ public class FFTResultTest {
 
   //@Test
   public void testPSDAndResp() {
-    System.out.println("Running the test of ANMO's PSD");
+    //System.out.println("Running the test of ANMO's PSD");
     String data1 = "data/testPSDandResp/00_LHZ.512.seed";
     String data2 = "data/testPSDandResp/10_LHZ.512.seed";
     String resp1 = "responses/testPSDandResp/RESP.IU.ANMO.00.LHZ";
@@ -567,7 +567,7 @@ public class FFTResultTest {
     double sps = 40.;
 
     double[] lowPassed = FFTResult.bandFilter(timeSeries, sps, 0.5, 1.5);
-    System.out.println(Arrays.toString(lowPassed));
+    //System.out.println(Arrays.toString(lowPassed));
     for (int i = 1; i < (lowPassed.length - 1); ++i) {
       assertTrue( Math.abs( lowPassed[i] ) < 1. );
     }
@@ -716,6 +716,43 @@ public class FFTResultTest {
 
 
   @Test
+  public void testBandFilter() {
+    String name = "test-data/bandfilter-test/00_LHZ.512.seed";
+    double[] testAgainst = new double[]{-50394.9143358, -111785.107014, -18613.4142884,
+        143117.116357, 141452.164593, 6453.3516971, -79041.0146413, -58317.1285426, -8621.19465151,
+        12272.6705308};
+    DataBlock db;
+    try {
+      db = TimeSeriesUtils.getFirstTimeSeries(name);
+      double sps = db.getSampleRate();
+      assertEquals(sps, 1.0, 1E-10);
+      double[] data = db.getData();
+      double[] taper = new double[data.length];
+      for (int i = 0; i < taper.length; ++i) {
+        taper[i] = 1.;
+      }
+      FFTResult.cosineTaper(taper, 1.);
+      double[] toFilter = new double[data.length];
+      assertEquals(86400, data.length);
+      /*
+      for (int i = 0; i < data.length; ++i) {
+        toFilter[i] = taper[i] * data[i];
+      }
+       */
+      toFilter = data;
+      double[] testThis = FFTResult.bandFilter(toFilter, sps, 1./8., 1./4.);
+      for (int i = 0; i < testAgainst.length; ++i) {
+        assertEquals(testThis[i], testAgainst[i], 1E-6);
+      }
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
+
+  }
+
+  @Test
   public void spectrumTest() {
 
     long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
@@ -798,7 +835,7 @@ public class FFTResultTest {
       String dir = "testResultImages/ringlerTaperResults/";
       File folder = new File(dir);
       if ( !folder.exists() ) {
-        System.out.println("Writing directory " + dir);
+        //System.out.println("Writing directory " + dir);
         folder.mkdirs();
       }
 
@@ -982,7 +1019,7 @@ public class FFTResultTest {
       String dir = "testResultImages/ringlerTaperResults2/";
       File folder = new File(dir);
       if ( !folder.exists() ) {
-        System.out.println("Writing directory " + dir);
+        //System.out.println("Writing directory " + dir);
         folder.mkdirs();
       }
 
@@ -1252,7 +1289,7 @@ public class FFTResultTest {
       String folderName = "testResultImages";
       File folder = new File(folderName);
       if ( !folder.exists() ) {
-        System.out.println("Writing directory " + folderName);
+        //System.out.println("Writing directory " + folderName);
         folder.mkdirs();
       }
 
@@ -1334,7 +1371,7 @@ public class FFTResultTest {
       long endTime = cCal.getTimeInMillis();
 
       sensor.trim(startTime, endTime);
-      System.out.println("Trimmed!");
+      //System.out.println("Trimmed!");
       // System.out.println(startTime + "," + sensor.getStartTime());
 
       List<Double> timeSeriesList = new ArrayList<Double>();
@@ -1402,7 +1439,7 @@ public class FFTResultTest {
       String folderName = "testResultImages";
       File folder = new File(folderName);
       if ( !folder.exists() ) {
-        System.out.println("Writing directory " + folderName);
+        //System.out.println("Writing directory " + folderName);
         folder.mkdirs();
       }
 
