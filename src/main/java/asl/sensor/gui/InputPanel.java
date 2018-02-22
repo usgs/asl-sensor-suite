@@ -721,7 +721,6 @@ implements ActionListener, ChangeListener {
       chartPanels[idx] = new ChartPanel(chart);
     } else {
       chartPanels[idx].setChart(chart);
-
     }
     chartPanels[idx].setMouseZoomable(true);
   }
@@ -828,9 +827,6 @@ implements ActionListener, ChangeListener {
           int colorIdx = idx % defaultColor.length;
           xyp.getRenderer().setSeriesPaint(0, defaultColor[colorIdx]);
 
-          NumberAxis na = (NumberAxis) xyp.getRangeAxis();
-          na.setAutoRangeIncludesZero(false);
-
           return 0;
           // setData(idx, filePath, immutableFilter);
           // return 0;
@@ -858,8 +854,11 @@ implements ActionListener, ChangeListener {
           }
 
           // seedFileNames[idx].setText("PLOTTING: " + file.getName());
-
+          NumberAxis na = (NumberAxis) chart.getXYPlot().getRangeAxis();
+          na.setAutoRange(true);
+          na.setAutoRangeIncludesZero(false);
           chartPanels[idx].setChart(chart);
+          chartPanels[idx].repaint();
           chartPanels[idx].setMouseZoomable(true);
 
           clearButton[idx].setEnabled(true);
@@ -1034,6 +1033,8 @@ implements ActionListener, ChangeListener {
     xyp.setDataset( xys );
     xyp.getRenderer().setSeriesPaint(0,
         defaultColor[idx % defaultColor.length]);
+    xyp.getDomainAxis().setAutoRange(true);
+    //xyp.setRangeAxis(na);
     if ( xyp.getSeriesCount() > 1 ) {
       throw new RuntimeException("TOO MUCH DATA");
     }

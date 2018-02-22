@@ -205,16 +205,16 @@ public class AzimuthTest {
   }
 
   @Test
-  public void getsCorrectAngle() {
+  public void getsCorrectAngleANMO() {
 
     DataStore ds = new DataStore();
 
     String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/test-data/azi-16off/";
+    String folder = currentDir + "/test-data/azi-ANMO-test/";
     String[] prefixes = new String[3];
-    prefixes[0] = "00_LH1";
-    prefixes[1] = "00_LH2";
-    prefixes[2] = "XX_LH1";
+    prefixes[0] = "ANMO.00_LH1";
+    prefixes[1] = "ANMO.00_LH2";
+    prefixes[2] = "TST.00_LH1";
     String extension = ".512.seed";
 
     for (int i = 0; i < prefixes.length; ++i) {
@@ -239,12 +239,12 @@ public class AzimuthTest {
     SimpleDateFormat sdf = InputPanel.SDF;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
-
+    /*
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     cCal.set(Calendar.HOUR, 10);
     cCal.set(Calendar.MINUTE, 30);
-    //System.out.println("start: " + sdf.format( cCal.getTime() ) );
+    System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 15);
     cCal.set(Calendar.MINUTE, 00);
@@ -252,11 +252,12 @@ public class AzimuthTest {
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end, 2);
-
+    */
     azi.runExperimentOnData(ds);
 
     System.out.println( azi.getFitAngle() );
-    assertEquals( 16.0, azi.getFitAngle(), 2. );
+    assertEquals(15.0, azi.getFitAngle(), 1.);
+    assertEquals(0.4, azi.getUncertainty(), 0.5);
 
   }
 
@@ -400,7 +401,7 @@ public class AzimuthTest {
       AzimuthExperiment az = new AzimuthExperiment();
       az.setSimple(true);
       az.runExperimentOnData(ds);
-      assertEquals(3.4, az.getFitAngle(), 0.1);
+      assertEquals(3.4, az.getFitAngle(), 0.5);
 
     } catch (FileNotFoundException e) {
       // TODO Auto-generated catch block
@@ -434,6 +435,9 @@ public class AzimuthTest {
       System.out.println( Arrays.toString( az.getBestFitAngles() ) );
       System.out.println( Arrays.toString( az.getAcceptedAngles() ) );
       System.out.println( az.getFitAngle() + "," + az.getUncertainty() );
+
+      assertEquals(3.2, az.getFitAngle(), 0.5);
+      assertEquals(0.5, az.getUncertainty(), 0.5);
 
     } catch (FileNotFoundException e) {
       // TODO Auto-generated catch block

@@ -69,7 +69,7 @@ public class DataBlockTest {
         long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
         db.trim(st, ed);
         double[] data = db.getData();
-        assertEquals(39601, data.length);
+        assertEquals(39600, data.length);
       } catch (FileNotFoundException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();

@@ -173,18 +173,19 @@ public class DataBlock {
 
     long timeCursor = trimmedStart;
 
-    // make sure the correct number of points are loaded in to prevent
-    // off-by-one errors later on
-    long addOneFormula = ( (trimmedStart - startTime) % interval ) +
-                         ( (endTime - trimmedEnd) % interval);
-    // add one point if the data is aligned closely enough
-    boolean notAligned = addOneFormula > interval / 2 || addOneFormula == 0;
-
     int numPoints =
         (int) Math.ceil( (trimmedEnd - trimmedStart) / ((double) interval) );
+    /*
+    // make sure the correct number of points are loaded in to prevent
+    // off-by-one errors later on
+    // add one point if the data is aligned closely enough
+    long addOneFormula = ( (trimmedStart - startTime) % interval ) +
+                         ( (endTime - trimmedEnd) % interval);
+    boolean notAligned = addOneFormula > interval / 2 || addOneFormula == 0;
     if ( notAligned ) {
       ++numPoints;
     }
+    */
     // System.out.println("num. points: " + numPoints);
 
     cachedTimeSeries = new double[numPoints];
