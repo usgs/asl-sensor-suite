@@ -68,7 +68,7 @@ public class FFTResultTest {
 
   @Test
   public void testOddityWithCOWI() {
-    String filename = "test-data/C100823215422_COWI.LHx";
+    String filename = "test-data/cowi-multitests/C100823215422_COWI.LHx";
     String dataname = "US_COWI_  _LHN";
     try {
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename, dataname);

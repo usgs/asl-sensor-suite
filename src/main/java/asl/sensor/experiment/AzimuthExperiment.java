@@ -56,6 +56,8 @@ public class AzimuthExperiment extends Experiment {
 
   // private double[] coherence;
   private double[] correlations; // best-fit correlations used to find windows w/ good estimates
+  private double[] angles;
+  private List<Double> acceptedAngles;
   private double minCorr; // lowest correlation value still used in angle estimation
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
@@ -159,11 +161,10 @@ public class AzimuthExperiment extends Experiment {
     initTestEast = FFTResult.bandFilter(initTestEast, sps, low, high);
     initRefNorth = FFTResult.bandFilter(initRefNorth, sps, low, high);
 
-
     MultivariateJacobianFunction jacobian =
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
 
-    double initAngle = -Math.toRadians(offset);
+    double initAngle = 0.;
 
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {initAngle}).
@@ -175,7 +176,7 @@ public class AzimuthExperiment extends Experiment {
         build();
 
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1E-5).
+        withCostRelativeTolerance(1E-8).
         withParameterRelativeTolerance(1E-5);
 
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
@@ -198,7 +199,6 @@ public class AzimuthExperiment extends Experiment {
       // where a 'pretty good' estimate of the angle is all we need
       // just stop here, don't do windowing
       angle = tempAngle;
-
       return;
     }
 
@@ -290,7 +290,7 @@ public class AzimuthExperiment extends Experiment {
     }
 
     int minCorrelations = 5;
-    double[] angles = new double[]{};
+    angles = new double[]{};
     correlations = new double[]{};
     // TODO: can refactor this to break out if numWindows is < 5
     if (angleCorrelationMap.size() < minCorrelations) {
@@ -308,7 +308,7 @@ public class AzimuthExperiment extends Experiment {
       minCorr = sortedCorrelation.get( sortedCorrelation.size() - 1);
 
       // store good values for use in std dev calculation
-      List<Double> acceptedAngles = new ArrayList<Double>();
+      acceptedAngles = new ArrayList<Double>();
 
       // deal with wraparound issue
       correlations = new double[angleCorrelationMap.size()];
@@ -404,6 +404,7 @@ public class AzimuthExperiment extends Experiment {
         double correlation = correlations[i];
         timeMapCorrelation.add(xVal, correlation);
         timeMapAngle.add( xVal, Math.toDegrees(angle) );
+        angles[i] = Math.toDegrees(angle);
     }
 
 
@@ -502,6 +503,10 @@ public class AzimuthExperiment extends Experiment {
     return jFunc;
   }
 
+  /**
+   * Returns the given offset angle (i.e., angle between north and reference sensor)
+   * @return offset angle, in degrees, set between 0 and 360
+   */
   public double getOffset() {
     return ( (offset % 360) + 360 ) % 360;
   }
@@ -524,6 +529,10 @@ public class AzimuthExperiment extends Experiment {
     return true;
   }
 
+  /**
+   * Get the correlation estimate for each best-fit angle over the series of data windows
+   * @return Array of best correlations
+   */
   public double[] getCorrelations() {
     return correlations;
   }
@@ -631,6 +640,22 @@ public class AzimuthExperiment extends Experiment {
    */
   public void setSimple(boolean isSimple) {
     simpleCalc = isSimple;
+  }
+
+  /**
+   * Get the series of best-fit angles over each of the windowed ranges of data
+   * @return Array of best-fit angles
+   */
+  public double[] getBestFitAngles() {
+    return angles;
+  }
+
+  public double[] getAcceptedAngles() {
+    double[] acceptedDeg = new double[acceptedAngles.size()];
+    for (int i = 0; i < acceptedDeg.length; ++i) {
+      acceptedDeg[i] = Math.toDegrees( acceptedAngles.get(i) );
+    }
+    return acceptedDeg;
   }
 
   /**
