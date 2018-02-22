@@ -1,8 +1,7 @@
 package asl.sensor.input;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -174,10 +173,19 @@ public class DataBlock {
 
     long timeCursor = trimmedStart;
 
+    int numPoints =
+        (int) Math.ceil( (trimmedEnd - trimmedStart) / ((double) interval) );
+    /*
     // make sure the correct number of points are loaded in to prevent
     // off-by-one errors later on
-    int numPoints =
-        (int) ( (trimmedEnd - trimmedStart) / (interval) );
+    // add one point if the data is aligned closely enough
+    long addOneFormula = ( (trimmedStart - startTime) % interval ) +
+                         ( (endTime - trimmedEnd) % interval);
+    boolean notAligned = addOneFormula > interval / 2 || addOneFormula == 0;
+    if ( notAligned ) {
+      ++numPoints;
+    }
+    */
     // System.out.println("num. points: " + numPoints);
 
     cachedTimeSeries = new double[numPoints];
@@ -400,18 +408,16 @@ public class DataBlock {
    * Get (untrimmed) start time of the data
    * @return DateTime object representing start time in UTC time zone
    */
-  public ZonedDateTime getStartDateTime() {
-    Instant startInstant = Instant.ofEpochMilli(startTime);
-    return ZonedDateTime.ofInstant(startInstant, ZoneOffset.UTC);
+  public Instant getStartInstant() {
+    return Instant.ofEpochMilli(startTime);
   }
 
   /**
    * Get trimmed start time of the data
    * @return DateTime object representing start time in UTC time zone
    */
-  public ZonedDateTime getTrimmedStartDateTime() {
-    Instant startInstant = Instant.ofEpochMilli(trimmedStart);
-    return ZonedDateTime.ofInstant(startInstant, ZoneOffset.UTC);
+  public Instant getTrimmedStartInstant() {
+    return Instant.ofEpochMilli(trimmedStart);
   }
 
   /**
@@ -674,7 +680,7 @@ public class DataBlock {
    * @param start Start time to trim window to, as DateTime object
    * @param end End time to trim window to, as DateTime object
    */
-  public void trim(ZonedDateTime start, ZonedDateTime end) {
+  public void trim(OffsetDateTime start, OffsetDateTime end) {
     long startMillis = start.toInstant().toEpochMilli();
     long endMillis = end.toInstant().toEpochMilli();
     trim(startMillis, endMillis);

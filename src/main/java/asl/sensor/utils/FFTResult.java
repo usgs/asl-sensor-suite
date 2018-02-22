@@ -46,9 +46,17 @@ public class FFTResult {
   public static double[]
   bandFilter(double[] toFilt, double sps, double low, double high) {
 
+    double temp = Math.min(low, high);
+    high = Math.max(low, high);
+    low = temp;
+
     Butterworth casc = new Butterworth();
+    // center = low-corner location plus half the distance between the corners
+    // width is exactly the distance between them
+    double width = high-low;
+    double center = low + (width) / 2.;
     // filter library defines bandpass with center frequency and notch width
-    casc.bandPass(2, sps, (high-low)/2, (high-low)/2);
+    casc.bandPass(2, sps, center, width);
 
     double[] filtered = new double[toFilt.length];
     for (int i = 0; i < toFilt.length; ++i) {
@@ -123,7 +131,7 @@ public class FFTResult {
     double wss = 0.0; // represents power loss
 
     for (int i = 0; i < ramp; i++) {
-      taper = 0.5 * (1.0 - Math.cos( i * Math.PI / ramp) );
+      taper = 0.5 * (1.0 - Math.cos(i * Math.PI / ramp) );
       dataSet[i] *= taper;
       int idx = dataSet.length-i-1;
       dataSet[idx] *= taper;

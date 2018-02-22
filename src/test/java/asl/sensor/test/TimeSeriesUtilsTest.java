@@ -15,6 +15,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -69,6 +73,35 @@ public class TimeSeriesUtilsTest {
     double num = 1.44;
     double res = num / div;
     assertEquals(0.12, res, 1E-10);
+  }
+
+  @Test
+  public void testCOWIDemean() {
+    String filename = "test-data/cowi-multitests/C100823215422_COWI.LHx";
+    String dataname = "US_COWI_  _LHN";
+    DataBlock db;
+    try {
+      db = TimeSeriesUtils.getTimeSeries(filename, dataname);
+      String startString = "2010-236T02:00:00.0";
+      String endString = "2010-236T13:00:00.0";
+      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
+      long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      db.trim(st, ed);
+      double[] data = db.getData();
+      data = TimeSeriesUtils.demean(data);
+      double mean = 0.;
+      for (double point : data) {
+        mean += point;
+      }
+      mean /= data.length;
+      assertEquals(0., mean, 1E-10);
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
+
   }
 
   //@Test
@@ -297,12 +330,11 @@ public class TimeSeriesUtilsTest {
         sum += n.longValue();
       }
       assertEquals(707752187L, sum);
-      Calendar cCal = db.getStartCalendar();
+      OffsetDateTime cCal = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);
 
-      String correctDate = "2017.08.02 | 00:00:00.019";
-      SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
-      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-      String inputDate = sdf.format( cCal.getTime() );
+      String correctDate = "2017.08.02 | 00:00:00.019-Z";
+      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("YYYY.MM.dd | HH:mm:ss.SSS-X");
+      String inputDate = cCal.format(dtf);
       assertEquals(inputDate, correctDate);
       assertEquals(20.0, db.getSampleRate(), 1E-20);
       // System.out.println(timeseries.get(start)[0]);

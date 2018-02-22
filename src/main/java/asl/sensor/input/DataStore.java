@@ -2,7 +2,7 @@ package asl.sensor.input;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.Calendar;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
@@ -333,8 +333,8 @@ public class DataStore {
     long interval = 0;
     // first loop to get lowest-frequency data
     for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() > interval ) {
-        interval = getBlock(i).getInitialInterval();
+      if (thisBlockIsSet[i]) {
+        interval = Math.max( interval, getBlock(i).getInitialInterval() );
       }
     }
     // second loop to downsample
@@ -347,6 +347,26 @@ public class DataStore {
     trimToCommonTime();
 
   }
+
+  public void resample(double newSampleRate) {
+    resample(newSampleRate, FILE_COUNT);
+  }
+
+  public void resample(double newSampleRate, int limit) {
+    long newInterval = (long) (TimeSeriesUtils.ONE_HZ_INTERVAL / newSampleRate);
+    // make sure all data over range gets set to the same interval (and don't upsample)
+    for (int i = 0; i < limit; ++i) {
+      if (thisBlockIsSet[i]) {
+        newInterval = Math.max( newInterval, getBlock(i).getInitialInterval() );
+      }
+    }
+    for (int i = 0; i < limit; ++i) {
+      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() != newInterval ) {
+        getBlock(i).resample(newInterval);
+      }
+    }
+  }
+
 
   /**
    * Gives the count of indices where both a miniseed and response are loaded
@@ -544,7 +564,7 @@ public class DataStore {
    * @param start Start time to trim data to
    * @param end End time to trim data to
    */
-  public void trim(ZonedDateTime start, ZonedDateTime end) {
+  public void trim(Instant start, Instant end) {
     trim(start, end, FILE_COUNT);
   }
 
@@ -554,10 +574,30 @@ public class DataStore {
    * @param start Start time to trim data to
    * @param end End time to trim data to
    */
-  public void trim(ZonedDateTime start, ZonedDateTime end, int limit) {
-    long startTime = start.toInstant().toEpochMilli();
-    long endTime = start.toInstant().toEpochMilli();
+  public void trim(Instant start, Instant end, int limit) {
+    long startTime = start.toEpochMilli();
+    long endTime = end.toEpochMilli();
     trim(startTime, endTime, limit);
+  }
+
+  public void trimJustStart(Instant startInstant) {
+    if ( !areAnyBlocksSet() ) {
+      return;
+    }
+    trimToCommonTime();
+    long end = getXthLoadedBlock(1).getEndTime();
+    long start = startInstant.toEpochMilli();
+    trim(start, end);
+  }
+
+  public void trimJustEnd(Instant endInstant) {
+    if ( !areAnyBlocksSet() ) {
+      return;
+    }
+    trimToCommonTime();
+    long start = getXthLoadedBlock(1).getStartTime();
+    long end = endInstant.toEpochMilli();
+    trim(start, end);
   }
 
   /**
@@ -692,4 +732,5 @@ public class DataStore {
     }
     trimToCommonTime(limit);
   }
+
 }

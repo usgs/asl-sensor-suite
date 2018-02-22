@@ -145,6 +145,7 @@ extends Experiment implements ParameterValidator {
     // complex conjugate
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
     // also, use those frequencies to get the applied response to input
+    fireStateChange("Getting PSDs of data...");
     FFTResult numeratorPSD, denominatorPSD;
     numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
     denominatorPSD = FFTResult.spectralCalc(calib, calib);
@@ -170,6 +171,7 @@ extends Experiment implements ParameterValidator {
       extFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist;
     }
 
+    fireStateChange("Finding and trimming data to relevant frequency range");
     // now trim frequencies to in range
     int startIdx = -1; int endIdx = -1; int extIdx = -1;
     for (int i = 0; i < freqs.length; ++i) {
@@ -236,6 +238,7 @@ extends Experiment implements ParameterValidator {
       if ( freqs[i] == zeroTarget || ( i > 0 &&
           (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget) ) ) {
         normalIdx = i;
+        break;
       }
     }
 
@@ -249,6 +252,7 @@ extends Experiment implements ParameterValidator {
     XYSeries calcMag = new XYSeries("Calc. resp. (" + name + ") magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. (" + name + ") phase");
 
+    fireStateChange("Scaling data...");
     // scaling values, used to set curve values to 0 at 1Hz
     Complex scaleValue = estResponse[normalIdx];
     double subtractBy = 20 * Math.log10( scaleValue.abs() );

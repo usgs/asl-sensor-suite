@@ -928,19 +928,37 @@ public class TimeSeriesUtils {
     return upsamp;
   }
 
+  /**
+   * Used to determine polarity of data in step calibrations in particular. If the first step
+   * response goes negative, the wiring of the sensor has been done effectively backwards.
+   * That is, step expects first response to be positive, and so this informs sensor that the
+   * input should be multiplied by -1 before calibration params are solved for.
+   * @param data
+   * @return
+   */
   public static boolean needsSignFlip(double[] data) {
-    double maxAbs = Math.abs(data[0]);
-    double max = data[0];
+    double min = data[0]; // most negative value in data
+    double max = data[0]; // most positive value in data
+    int minIdx = 0; // where in list min occurs
+    int maxIdx = 0; // where in list max occurs
 
-    for (int i = 1; i < data.length / 3; ++i) {
-      if ( Math.abs(data[i]) > maxAbs ) {
+
+    for (int i = 1; i < data.length; ++i) {
+      if (data[i] > max) {
         max = data[i];
-        maxAbs = Math.abs(data[i]);
+        maxIdx = i;
+      } else if (data[i] < min) {
+        min = data[i];
+        minIdx = i;
       }
     }
 
-    return max < 0;
+    // if the negative peak is first, we need the flip
+    return minIdx > maxIdx;
   }
+
+  // divide by this to go from nanoseconds to milliseconds
+  public static final int TO_MILLI_FACTOR = 1000000;
 
 }
 

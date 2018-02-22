@@ -9,8 +9,8 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -93,7 +93,7 @@ implements ActionListener, ChangeListener {
     StringBuilder sb = new StringBuilder();
 
     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("y.DDD.HH:mm:ss.SSS");
-    ZonedDateTime dt = ZonedDateTime.now(ZoneOffset.UTC);
+    OffsetDateTime dt = OffsetDateTime.now(ZoneOffset.UTC);
 
     sb.append("Time of report generation:\n");
     sb.append( dtf.format(dt) );
@@ -102,13 +102,13 @@ implements ActionListener, ChangeListener {
     long startTime = expResult.getStart();
     long endTime = expResult.getEnd();
     if ( !(startTime == 0L && endTime == 0L) ) {
-      dt = ZonedDateTime.ofInstant( Instant.ofEpochMilli(startTime), ZoneOffset.UTC);
+      dt = OffsetDateTime.ofInstant( Instant.ofEpochMilli(startTime), ZoneOffset.UTC);
 
       sb.append("Data start time:\n");
       sb.append( dtf.format(dt) );
       sb.append('\n');
 
-      dt = ZonedDateTime.ofInstant( Instant.ofEpochMilli(endTime), ZoneOffset.UTC);
+      dt = OffsetDateTime.ofInstant( Instant.ofEpochMilli(endTime), ZoneOffset.UTC);
 
       sb.append("Data end time:\n");
       sb.append( dtf.format(dt) );

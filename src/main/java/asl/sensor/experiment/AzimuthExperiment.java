@@ -56,6 +56,8 @@ public class AzimuthExperiment extends Experiment {
 
   // private double[] coherence;
   private double[] correlations; // best-fit correlations used to find windows w/ good estimates
+  private double[] angles;
+  private List<Double> acceptedAngles;
   private double minCorr; // lowest correlation value still used in angle estimation
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
@@ -162,7 +164,7 @@ public class AzimuthExperiment extends Experiment {
     MultivariateJacobianFunction jacobian =
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
 
-    double initAngle = -Math.toRadians(offset);
+    double initAngle = 0.;
 
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
         start(new double[] {initAngle}).
@@ -174,7 +176,7 @@ public class AzimuthExperiment extends Experiment {
         build();
 
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
-        withCostRelativeTolerance(1E-5).
+        withCostRelativeTolerance(1E-8).
         withParameterRelativeTolerance(1E-5);
 
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
@@ -197,7 +199,6 @@ public class AzimuthExperiment extends Experiment {
       // where a 'pretty good' estimate of the angle is all we need
       // just stop here, don't do windowing
       angle = tempAngle;
-
       return;
     }
 
@@ -274,13 +275,13 @@ public class AzimuthExperiment extends Experiment {
       // call to evaluate at best-fit point gives corresponding latestCorrelation as side effect
       double angleTemp = angleVectorWindow.getEntry(0);
 
-      angleTemp = angleTemp % NumericUtils.TAU;
+      angleTemp = ( (angleTemp % tau) + tau ) % tau;
 
       double correlation = latestCorrelation;
 
       if (correlation > bestCorr) {
         bestCorr = correlation;
-        bestTheta = ( (angleTemp % tau) + tau) % tau;
+        bestTheta = angleTemp;
       }
 
       angleCorrelationMap.put(
@@ -289,10 +290,12 @@ public class AzimuthExperiment extends Experiment {
     }
 
     int minCorrelations = 5;
+    angles = new double[]{};
+    correlations = new double[]{};
     // TODO: can refactor this to break out if numWindows is < 5
     if (angleCorrelationMap.size() < minCorrelations) {
       fireStateChange("Window size too small for good angle estimation...");
-      angle = ( ( angleVector.getEntry(0) % tau) + tau ) % tau;
+      angle = tempAngle % tau; // tempAngle is the initial estimate from before windowing occurs
     } else {
       // get the best-correlation estimations of angle and average them
       enoughPts = true;
@@ -305,19 +308,24 @@ public class AzimuthExperiment extends Experiment {
       minCorr = sortedCorrelation.get( sortedCorrelation.size() - 1);
 
       // store good values for use in std dev calculation
-      List<Double> acceptedAngles = new ArrayList<Double>();
+      acceptedAngles = new ArrayList<Double>();
 
       // deal with wraparound issue
       correlations = new double[angleCorrelationMap.size()];
-      double[] angles = new double[angleCorrelationMap.size()];
-      List<Pair<Double, Double>> angleCorrelationList =
-          new ArrayList<Pair<Double, Double>>( angleCorrelationMap.values() );
+      angles = new double[angleCorrelationMap.size()];
 
-      for (int i = 0; i < angleCorrelationList.size(); ++i) {
-        angles[i] = angleCorrelationList.get(i).getFirst();
-        correlations[i] = angleCorrelationList.get(i).getSecond();
+
+      List<Long> times = new ArrayList<Long>( angleCorrelationMap.keySet() );
+      Collections.sort(times);
+
+      for (int i = 0; i < times.size(); ++i) {
+        long time = times.get(i);
+        Pair<Double, Double> angleAndCorrelation = angleCorrelationMap.get(time);
+        angles[i] = angleAndCorrelation.getFirst();
+        correlations[i] = angleAndCorrelation.getSecond();
       }
 
+      // shift term here used to deal with potential discontinuities in the mean of the data
       double shift = angles[0] + Math.PI/4; // 45 degrees offset
       for (int i = 0; i < angles.length; ++i) {
         angles[i] = ( ( (angles[i] + shift) % tau ) + tau ) % tau;
@@ -383,19 +391,20 @@ public class AzimuthExperiment extends Experiment {
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
-    XYSeries timeMapAngle = new XYSeries("Best-fit angle per window");
+    XYSeries timeMapAngle = new XYSeries("Best-fit angle per window (not including ref. shift)");
     XYSeries timeMapCorrelation = new XYSeries("Correlation estimate per window");
     xysc.addSeries(timeMapAngle);
     xysc.addSeries(timeMapCorrelation);
 
-    for ( long time : angleCorrelationMap.keySet() ) {
-        long xVal = time / 1000;
-        double angle = angleCorrelationMap.get(time).getFirst();
-        angle += Math.toRadians(offset);
-        angle = ( (angle % tau) + tau ) % tau;
-        double correlation = angleCorrelationMap.get(time).getSecond();
+    for (int i = 0; i < angles.length; ++i) {
+        long xVal = i * 500;
+        double angle = angles[i];
+        // angle += Math.toRadians(offset);
+        angle = (angle % tau);
+        double correlation = correlations[i];
         timeMapCorrelation.add(xVal, correlation);
         timeMapAngle.add( xVal, Math.toDegrees(angle) );
+        angles[i] = Math.toDegrees(angle);
     }
 
 
@@ -494,6 +503,10 @@ public class AzimuthExperiment extends Experiment {
     return jFunc;
   }
 
+  /**
+   * Returns the given offset angle (i.e., angle between north and reference sensor)
+   * @return offset angle, in degrees, set between 0 and 360
+   */
   public double getOffset() {
     return ( (offset % 360) + 360 ) % 360;
   }
@@ -516,6 +529,10 @@ public class AzimuthExperiment extends Experiment {
     return true;
   }
 
+  /**
+   * Get the correlation estimate for each best-fit angle over the series of data windows
+   * @return Array of best correlations
+   */
   public double[] getCorrelations() {
     return correlations;
   }
@@ -623,6 +640,22 @@ public class AzimuthExperiment extends Experiment {
    */
   public void setSimple(boolean isSimple) {
     simpleCalc = isSimple;
+  }
+
+  /**
+   * Get the series of best-fit angles over each of the windowed ranges of data
+   * @return Array of best-fit angles
+   */
+  public double[] getBestFitAngles() {
+    return angles;
+  }
+
+  public double[] getAcceptedAngles() {
+    double[] acceptedDeg = new double[acceptedAngles.size()];
+    for (int i = 0; i < acceptedDeg.length; ++i) {
+      acceptedDeg[i] = Math.toDegrees( acceptedAngles.get(i) );
+    }
+    return acceptedDeg;
   }
 
   /**

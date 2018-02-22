@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
@@ -64,28 +64,31 @@ public class CalProcessingServer {
       String outFileNameD1, String outFileNameD2, String respName, boolean respEmbd,
       String startDate, String endDate, boolean lowFreq) throws IOException {
 
-      DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-      ZonedDateTime startDateTime = ZonedDateTime.parse(startDate, dtf);
-      ZonedDateTime endDateTime = ZonedDateTime.parse(endDate, dtf);
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
 
-      DataStore ds = new DataStore();
-      String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
-      String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-      DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-      DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
-      InstrumentResponse ir;
-      if (respEmbd) {
-        ir = InstrumentResponse.loadEmbeddedResponse(respName);
-      } else{
-        ir = new InstrumentResponse(respName);
-      }
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
 
-      ds.setBlock(0, calBlock);
-      ds.setBlock(1, outBlock);
-      ds.setResponse(1, ir);
-      ds.trim(startDateTime, endDateTime);
+    DataStore ds = new DataStore();
+    String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
+    String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
+    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
+    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    InstrumentResponse ir;
+    if (respEmbd) {
+      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+    } else{
+      ir = new InstrumentResponse(respName);
+    }
 
-      return runExpGetData(ds, lowFreq);
+    ds.setBlock(0, calBlock);
+    ds.setBlock(1, outBlock);
+    ds.setResponse(1, ir);
+    ds.trim(start, end);
+
+    return runExpGetData(ds, lowFreq);
 
   }
 
@@ -103,31 +106,41 @@ public class CalProcessingServer {
    * @throws IOException If a string does not refer to a valid accessible file
    */
   public RandData populateDataAndRun(String calFileName, String outFileName,
-      String respName, boolean respEmbd, long startTime, long endTime, boolean lowFreq)
-      throws IOException {
+      String respName, boolean respEmbd, String startDate, String endDate, boolean lowFreq)
+          throws IOException {
 
-      DataStore ds = new DataStore();
-      DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-      DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
-      InstrumentResponse ir;
-      if (respEmbd) {
-        ir = InstrumentResponse.loadEmbeddedResponse(respName);
-      } else{
-        ir = new InstrumentResponse(respName);
-      }
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
 
-      ds.setBlock(0, calBlock);
-      ds.setBlock(1, outBlock);
-      ds.setResponse(1, ir);
-      ds.trim(startTime, endTime);
+    DataStore ds = new DataStore();
+    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
+    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    InstrumentResponse ir;
+    if (respEmbd) {
+      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+    } else{
+      ir = new InstrumentResponse(respName);
+    }
 
-      return runExpGetData(ds, lowFreq);
+    ds.setBlock(0, calBlock);
+    ds.setBlock(1, outBlock);
+    ds.setResponse(1, ir);
+    ds.trim(start, end);
+    if (lowFreq) {
+      ds.resample(10.); // more than 5 Hz should be unnecessary for low-frequency curve fitting
+    }
+
+    return runExpGetData(ds, lowFreq);
 
   }
 
   private RandData runExpGetData(DataStore ds, boolean lowFreq) throws IOException {
 
     RandomizedExperiment re = new RandomizedExperiment();
+    // re.setTerminalPrintStatus(true);
 
     re.setLowFreq(lowFreq);
     re.runExperimentOnData(ds);

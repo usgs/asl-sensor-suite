@@ -6,12 +6,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.TimeZone;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
-import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
 
 public class TestUtils {
@@ -72,22 +71,16 @@ public class TestUtils {
 
   }
 
-  public static Calendar getStartCalendar(DataStore ds) {
-    SimpleDateFormat sdf = InputPanel.SDF;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
-    return cCal;
+  public static OffsetDateTime getStartCalendar(DataStore ds) {
+    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getStartTime() );
+    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
+    return dt;
   }
 
-  public static Calendar getEndCalendar(DataStore ds) {
-    SimpleDateFormat sdf = InputPanel.SDF;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-
-    cCal.setTimeInMillis( ds.getBlock(0).getEndTime() );
-    return cCal;
+  public static OffsetDateTime getEndCalendar(DataStore ds) {
+    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getEndTime() );
+    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
+    return dt;
   }
 
   public static void makeTestDataDirectory() {
