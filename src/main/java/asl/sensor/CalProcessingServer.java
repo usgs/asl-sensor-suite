@@ -34,6 +34,9 @@ import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
@@ -59,10 +62,13 @@ public class CalProcessingServer {
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
    */
   public RandData populateDataAndRun(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean respEmbd,
-      String startDate, String endDate, boolean lowFreq) throws IOException {
+      String startDate, String endDate, boolean lowFreq) throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
 
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -104,10 +110,13 @@ public class CalProcessingServer {
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
    */
   public RandData populateDataAndRun(String calFileName, String outFileName,
       String respName, boolean respEmbd, String startDate, String endDate, boolean lowFreq)
-          throws IOException {
+          throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
 
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);

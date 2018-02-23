@@ -41,6 +41,8 @@ import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class RandomizedExperimentTest {
 
@@ -51,23 +53,22 @@ public class RandomizedExperimentTest {
     String respName = setUpFilenames.get(0);
     String calName = setUpFilenames.get(1);
     String sensOutName = setUpFilenames.get(2);
-    String metaName;
 
     System.out.println(respName);
     System.out.println(calName);
     System.out.println(sensOutName);
 
-    metaName = TimeSeriesUtils.getMplexNameList(calName).get(0);
-    DataBlock calib = TimeSeriesUtils.getTimeSeries(calName, metaName);
-
     InstrumentResponse ir = new InstrumentResponse(respName);
 
-    metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
-    DataBlock sensor = TimeSeriesUtils.getTimeSeries(sensOutName, metaName);
-
     DataStore ds = new DataStore();
-    ds.setBlock(0, calib);
-    ds.setBlock(1, sensor);
+    try {
+      ds.setBlock(0, calName);
+      ds.setBlock(1, sensOutName);
+    } catch (SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
+
     ds.setResponse(1, ir);
 
     return ds;
@@ -293,6 +294,9 @@ public class RandomizedExperimentTest {
     } catch (IOException e) {
       e.printStackTrace();
       fail();
+    } catch (SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
     }
 
   }
@@ -313,16 +317,15 @@ public class RandomizedExperimentTest {
     re.setLowFreq(true);
       DataStore ds = new DataStore();
       try {
-        ds.setBlock( 0, TimeSeriesUtils.getFirstTimeSeries(calInFile) );
-        ds.setBlock( 1, TimeSeriesUtils.getFirstTimeSeries(sensorOutFile) );
-        ds.setResponse(1, respFile);
-        ds.trim(startTime, endTime);
-        re.runExperimentOnData(ds);
-      } catch (FileNotFoundException e) {
-        // TODO Auto-generated catch block
-        fail();
+        ds.setBlock( 0, calInFile);
+        ds.setBlock( 1, sensorOutFile);
+      } catch (SeedFormatException | CodecException e) {
         e.printStackTrace();
+        fail();
       }
+      ds.setResponse(1, respFile);
+      ds.trim(startTime, endTime);
+      re.runExperimentOnData(ds);
   }
 
   @Test
@@ -339,8 +342,7 @@ public class RandomizedExperimentTest {
           false, start, end, true);
       System.out.println( Arrays.toString(rd.getFitPoles()) );
       System.out.println( Arrays.toString(rd.getFitZeros()) );
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -433,6 +435,9 @@ public class RandomizedExperimentTest {
       e.printStackTrace();
       fail();
     } catch (IOException e) {
+      e.printStackTrace();
+      fail();
+    } catch (SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -830,7 +835,7 @@ public class RandomizedExperimentTest {
       pdf.close();
       System.out.println("Output result has been written");
 
-    } catch (IOException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       fail();
       e.printStackTrace();
     }

@@ -2,17 +2,13 @@ package asl.sensor.test;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import java.awt.Font;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
@@ -22,14 +18,14 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.NoiseNineExperiment;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.NoiseNinePanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class NoiseNineTest {
 
@@ -44,8 +40,8 @@ public class NoiseNineTest {
     String[] components = new String[]{"1","2","Z"};
     String ending = ".512.seed";
     String respName = "STS-1_Q330HR_BH_20";
-    
-    DataStore ds = 
+
+    DataStore ds =
         setUpTest(folder, types, freqName, components, ending, respName, true);
 
     SimpleDateFormat sdf = InputPanel.SDF;
@@ -105,14 +101,14 @@ public class NoiseNineTest {
     sb.append('\n');
     sb.append("INPUTTED FILES:");
     sb.append('\n');
-    
+
     List<String> names = nne.getInputNames();
-    
+
     for (String name : names) {
       sb.append( name );
       sb.append('\n');
     }
-    
+
 
     int width = 1280; int height = 960;
 
@@ -134,11 +130,11 @@ public class NoiseNineTest {
       e.printStackTrace();
       fail();
     }
-    
+
     System.out.println("Output result has been written");
 
   }
-  
+
   @Test
   public void canRunAndPlotTest2() {
     String folder = currentDir + "/test-data/noisenine2/";
@@ -147,8 +143,8 @@ public class NoiseNineTest {
     String[] components = new String[]{"1","2","Z"};
     String ending = ".512.seed";
     String respName = "test-data/noisenine2/RESP.XX.MOFO.00.BHZ";
-    
-    DataStore ds = 
+
+    DataStore ds =
         setUpTest(folder, types, freqName, components, ending, respName, false);
 
     SimpleDateFormat sdf = InputPanel.SDF;
@@ -167,9 +163,9 @@ public class NoiseNineTest {
     cCal.set(Calendar.SECOND, 0);
     System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
-    
+
     ds.trim(start, end, DataStore.FILE_COUNT);
-    
+
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
     nne.runExperimentOnData(ds);
@@ -183,9 +179,9 @@ public class NoiseNineTest {
     xAxis.setLabelFont(bold);
     String yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
     String[] orientations = new String[]{" (North)", " (East)", " (Vertical)"};
-    
+
     for (int i = 0; i < xysc.size(); ++i) {
-      
+
       // make sure each series is populated with data from correct orientation
       // i.e., BH1s for north, BH2s for south, etc.
       String check = freqName + components[i];
@@ -196,7 +192,7 @@ public class NoiseNineTest {
         String key = (String) coll.getSeriesKey(j);
         assertTrue(key.contains(check));
       }
-      
+
       jfcl[i] = ChartFactory.createXYLineChart(
           ExperimentEnum.RANDM.getName() + orientations[i],
           xAxisTitle,
@@ -223,14 +219,14 @@ public class NoiseNineTest {
     sb.append('\n');
     sb.append("INPUTTED FILES:");
     sb.append('\n');
-    
+
     List<String> names = nne.getInputNames();
-    
+
     for (String name : names) {
       sb.append( name );
       sb.append('\n');
     }
-    
+
 
     int width = 1280; int height = 960;
 
@@ -252,14 +248,14 @@ public class NoiseNineTest {
       e.printStackTrace();
       fail();
     }
-    
+
     System.out.println("Output result has been written");
 
   }
-  
-  public DataStore setUpTest(String folder, String[] types, String freqName, 
+
+  public DataStore setUpTest(String folder, String[] types, String freqName,
       String[] components, String ending, String respName, boolean isEmbed) {
-    
+
     DataStore ds = new DataStore();
 
     for (int i = 0; i < types.length; ++i) {
@@ -270,15 +266,12 @@ public class NoiseNineTest {
 
         System.out.println(fName);
 
-        List<String> dataNames = new ArrayList<String>();
         try {
-          dataNames = new ArrayList<String>( 
-              TimeSeriesUtils.getMplexNameSet(fName) );
-        } catch (FileNotFoundException e) {
-          fail();
+          ds.setBlock(indexInStore, fName);
+        } catch (SeedFormatException | CodecException e) {
           e.printStackTrace();
+          fail();
         }
-        ds.setBlock(indexInStore, fName, dataNames.get(0) );
         if (isEmbed) {
           ds.setEmbedResponse(indexInStore, respName);
         } else {
@@ -286,9 +279,9 @@ public class NoiseNineTest {
         }
       }
     }
-    
+
     return ds;
-    
+
   }
 
 }

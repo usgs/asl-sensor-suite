@@ -385,9 +385,12 @@ public class TimeSeriesUtils {
    * @param filename Filename of miniSEED data to load in
    * @return Datablock representing the data inside the miniSEED
    * @throws FileNotFoundException if given file from filename cannot be read
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
    */
   public static DataBlock getFirstTimeSeries(String filename)
-      throws FileNotFoundException {
+      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
     String filter = getMplexNameList(filename).get(0);
     return getTimeSeries(filename, filter);
   }
@@ -400,9 +403,12 @@ public class TimeSeriesUtils {
    * @param filenames Filenames of miniSEED data to load in
    * @return Datablock representing the data inside the miniSEEDs
    * @throws FileNotFoundException if given files from filenames cannot be read
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
    */
   public static DataBlock getFirstTimeSeries(String[] filenames)
-      throws FileNotFoundException {
+      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
     String filter = getMplexNameList(filenames[0]).get(0);
     return getTimeSeries(filenames, filter);
   }
@@ -494,9 +500,12 @@ public class TimeSeriesUtils {
    * @param filter Specifies which data to load in, for multiplexed files
    * @return A structure containing the time series and metadata for the file
    * @throws FileNotFoundException If file cannot be read in
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
    */
   public static DataBlock getTimeSeries(String filename, String filter)
-      throws FileNotFoundException {
+      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
 
     // XYSeries xys = null;
     DataBlock db = null;
@@ -522,9 +531,12 @@ public class TimeSeriesUtils {
    * @param filter Specifies which data to load in, for multiplexed files
    * @return A structure containing the time series and metadata for the file
    * @throws FileNotFoundException If file cannot be read in
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
    */
   public static DataBlock getTimeSeries(String[] filenames, String filter)
-      throws FileNotFoundException {
+      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
 
     // XYSeries xys = null;
     DataBlock db = null;
@@ -544,10 +556,13 @@ public class TimeSeriesUtils {
    * given as a long and second of which is a map from sample times to data
    * points from each given time value in the miniseed records
    * @throws FileNotFoundException if given file from filename cannot be read
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
    */
   public static Pair<Long, Map<Long, double[]>>
    getTimeSeriesMap(String filename, String filter)
-      throws FileNotFoundException {
+      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
 
     return getTimeSeriesMap(new String[]{filename}, filter);
 
@@ -566,10 +581,13 @@ public class TimeSeriesUtils {
    * given as a long and second of which is a map from sample times to data
    * points from each given time value in the miniseed records
    * @throws FileNotFoundException
+   * @throws SeedFormatException
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
    */
   public static Pair<Long, Map<Long, double[]>>
     getTimeSeriesMap(String[] filenames, String filter)
-       throws FileNotFoundException {
+       throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
     long interval = 0L;
     DataInputStream dis;
 
@@ -681,15 +699,6 @@ public class TimeSeriesUtils {
         // Auto-generated catch block
         e.printStackTrace();
       } catch (IOException e) {
-        // Auto-generated catch block
-        e.printStackTrace();
-      } catch (SeedFormatException e) {
-        // Auto-generated catch block
-        e.printStackTrace();
-      } catch (UnsupportedCompressionType e) {
-        // Auto-generated catch block
-        e.printStackTrace();
-      } catch (CodecException e) {
         // Auto-generated catch block
         e.printStackTrace();
       }

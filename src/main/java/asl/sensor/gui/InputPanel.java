@@ -59,6 +59,9 @@ import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 
 /**
@@ -784,6 +787,7 @@ implements ActionListener, ChangeListener {
 
         JFreeChart chart;
         boolean caughtException = false;
+        String returnedErrMsg = "";
 
         @Override
         public Integer doInBackground() {
@@ -791,9 +795,22 @@ implements ActionListener, ChangeListener {
           try {
             ds.setBlock(idx, filePath, immutableFilter, activePlots);
           } catch (RuntimeException e) {
+            returnedErrMsg = e.getMessage();
             e.printStackTrace();
             caughtException = true;
             return 1;
+          } catch (SeedFormatException e) {
+            returnedErrMsg = e.getMessage();
+            caughtException = true;
+            e.printStackTrace();
+          } catch (UnsupportedCompressionType e) {
+            returnedErrMsg = e.getMessage();
+            caughtException = true;
+            e.printStackTrace();
+          } catch (CodecException e) {
+            returnedErrMsg = e.getMessage();
+            caughtException = true;
+            e.printStackTrace();
           }
 
           // zooms.matchIntervals(activePlots);
@@ -840,7 +857,7 @@ implements ActionListener, ChangeListener {
             XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
             TextTitle result = new TextTitle();
             String errMsg = "COULD NOT LOAD IN " + file.getName();
-            errMsg += "\nTIME RANGE DOES NOT INTERSECT";
+            errMsg += returnedErrMsg;
             result.setText(errMsg);
             result.setBackgroundPaint(Color.red);
             result.setPaint(Color.white);
