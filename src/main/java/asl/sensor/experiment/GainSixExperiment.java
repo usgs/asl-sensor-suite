@@ -148,7 +148,7 @@ public class GainSixExperiment extends Experiment {
   private double getAzimuth(double[] n, double[] e, double[] r,
       long interval, long start, long end) {
     AzimuthExperiment azi = new AzimuthExperiment();
-    azi.setSimple(true); // do the faster angle calculation
+    azi.setSimple(false); // don't do the faster angle calculation
     azi.alternateEntryPoint(n, e, r, interval, start, end);
     return azi.getFitAngleRad();
   }

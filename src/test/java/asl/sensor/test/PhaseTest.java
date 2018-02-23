@@ -17,7 +17,8 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class PhaseTest {
 
@@ -28,23 +29,22 @@ public class PhaseTest {
     String respName = setUpFilenames.get(0);
     String calName = setUpFilenames.get(1);
     String sensOutName = setUpFilenames.get(2);
-    String metaName;
 
     System.out.println(respName);
     System.out.println(calName);
     System.out.println(sensOutName);
 
-    metaName = TimeSeriesUtils.getMplexNameList(calName).get(0);
-    DataBlock calib = TimeSeriesUtils.getTimeSeries(calName, metaName);
-
     InstrumentResponse ir = new InstrumentResponse(respName);
 
-    metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
-    DataBlock sensor = TimeSeriesUtils.getTimeSeries(sensOutName, metaName);
-
     DataStore ds = new DataStore();
-    ds.setBlock(0, calib);
-    ds.setBlock(1, sensor);
+    try {
+      ds.setBlock(0, calName);
+      ds.setBlock(1, sensOutName);
+    } catch (SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
+
     ds.setResponse(1, ir);
 
     return ds;

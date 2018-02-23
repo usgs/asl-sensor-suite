@@ -96,8 +96,7 @@ public class TimeSeriesUtilsTest {
       }
       mean /= data.length;
       assertEquals(0., mean, 1E-10);
-    } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -116,7 +115,7 @@ public class TimeSeriesUtilsTest {
         System.out.println("START: " + time);
         System.out.println("\tLENGTH: " + map.get(time).length);
       }
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -284,7 +283,7 @@ public class TimeSeriesUtilsTest {
       write.println( sb.toString() );
       write.close();
 
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       fail();
       e.printStackTrace();
     }
@@ -307,7 +306,7 @@ public class TimeSeriesUtilsTest {
       assertEquals(1652432, firstContiguous.length);
       // System.out.println(timeseries.get(start)[0]);
 
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       fail();
       e.printStackTrace();
     }
@@ -339,7 +338,7 @@ public class TimeSeriesUtilsTest {
       assertEquals(20.0, db.getSampleRate(), 1E-20);
       // System.out.println(timeseries.get(start)[0]);
 
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       fail();
       e.printStackTrace();
     }
@@ -483,7 +482,7 @@ public class TimeSeriesUtilsTest {
       pdf.save( new File(testResult) );
       pdf.close();
 
-    } catch (IOException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       fail();
       e.printStackTrace();
     }
@@ -609,7 +608,7 @@ public class TimeSeriesUtilsTest {
       out.println( sb.toString() );
       out.close();
 
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -681,8 +680,9 @@ public class TimeSeriesUtilsTest {
       // System.out.println(inputDate);
       String correctDate = "2017.08.02 | 00:00:00.019";
       assertEquals(inputDate, correctDate);
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       e.printStackTrace();
+      fail();
     }
   }
 

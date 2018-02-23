@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import org.jfree.data.xy.XYDataItem;
@@ -12,11 +11,11 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 import asl.sensor.experiment.NoiseExperiment;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class NoiseTest {
 
@@ -45,8 +44,12 @@ public class NoiseTest {
     String resp = "T-compact_Q330HR_BH_40";
     DataStore ds = new DataStore();
     for (int i = 0; i < data.length; ++i) {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(folder + data[i]);
-      ds.setBlock(i, db);
+      try {
+        ds.setBlock(i, folder + data[i]);
+      } catch (SeedFormatException | CodecException e) {
+        e.printStackTrace();
+        fail();
+      }
       ds.setEmbedResponse(i, resp);
     }
 
@@ -77,8 +80,12 @@ public class NoiseTest {
     String resp = "T-compact_Q330HR_BH_40";
     DataStore ds = new DataStore();
     for (int i = 0; i < data.length; ++i) {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(folder + data[i]);
-      ds.setBlock(i, db);
+      try {
+        ds.setBlock(i, folder + data[i]);
+      } catch (SeedFormatException | CodecException e) {
+        e.printStackTrace();
+        fail();
+      }
       ds.setEmbedResponse(i, resp);
     }
     OffsetDateTime startCal =
@@ -280,60 +287,6 @@ public class NoiseTest {
       e.printStackTrace();
       fail();
     }
-  }
-
-  //@Test
-  public void anotherDamnPrintFunction() {
-    // still beats feeding the inputs in by hand though
-    String folder = "data/noise_1/";
-    String[] data = new String[3];
-    data[0] = "00_BH0.512.seed";
-    data[1] = "10_BH0.512.seed";
-    data[2] = "TST6." + data[0];
-    String resp = "T-compact_Q330HR_BH_40";
-    try {
-      InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse(resp);
-      for (int i = 0; i < data.length; ++i) {
-        String name = folder + data[i];
-        DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
-        /*
-        Calendar startCal = db.getStartCalendar();
-        startCal.set(Calendar.HOUR_OF_DAY, 0);
-        startCal.set(Calendar.MINUTE, 59);
-        startCal.set(Calendar.SECOND, 59);
-        startCal.set(Calendar.MILLISECOND, 994);
-        Calendar endCal = (Calendar) startCal.clone();
-        endCal.set(Calendar.HOUR_OF_DAY, 7);
-        endCal.set(Calendar.MINUTE, 0);
-        endCal.set(Calendar.SECOND, 0);
-        endCal.set(Calendar.MILLISECOND, 25);
-        db.trim(startCal, endCal);
-        */
-        FFTResult fftr1 = FFTResult.spectralCalc(db, db);
-        FFTResult fftr2 = FFTResult.crossPower(db, db, ir, ir);
-        double[] freqs = fftr1.getFreqs();
-        StringBuilder csv = new StringBuilder();
-        for (int j = 0; j < freqs.length; ++j) {
-          csv.append(freqs[j]);
-          csv.append(", ");
-          csv.append(fftr1.getFFT(j).getReal());
-          csv.append(", ");
-          csv.append(fftr2.getFFT(j).getReal());
-          if (j+1 < freqs.length) {
-            csv.append("\n");
-          }
-        }
-        String outPath = "testResultImages/PSD_OF_"+data[i]+".txt";
-        PrintWriter out = new PrintWriter(outPath);
-        out.write(csv.toString());
-        out.close();
-      }
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-      fail();
-    }
-
   }
 
 }

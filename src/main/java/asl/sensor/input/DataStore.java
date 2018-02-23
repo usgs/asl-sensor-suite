@@ -8,6 +8,9 @@ import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 /**
  * Holds the inputted data from miniSEED files both as a simple struct
@@ -445,9 +448,47 @@ public class DataStore {
    * @param idx The plot (range 0 to FILE_COUNT) to be given new data
    * @param filepath Full address of file to be loaded in
    * @param nameFilter Station ID (SNCL) to load in from multiplexed file
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
    */
-  public void setBlock(int idx, String filepath, String nameFilter) {
+  public void setBlock(int idx, String filepath, String nameFilter)
+      throws SeedFormatException, UnsupportedCompressionType, CodecException {
     setBlock(idx, filepath, nameFilter, FILE_COUNT);
+  }
+
+  /**
+   * load in miniseed file
+   * @param idx The plot (range 0 to FILE_COUNT) to be given new data
+   * @param filepath Full address of file to be loaded in
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
+   */
+  public void setBlock(int idx, String filepath)
+      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+    setBlock(idx, filepath, FILE_COUNT);
+  }
+
+  /**
+   * Loads in a miniseed file with assumption that it is not multiplexed and only includes a single
+   * channel's range of data. Mainly used as a shortcut for non-GUI calls (for test cases, etc.)
+   * @param idx The plot (range 0 to FILE_COUNT) to be given new data
+   * @param filepath Full address of file to be loaded in
+   * @param activePlots Max index of active panel to check as active
+   * @throws SeedFormatException
+   * @throws UnsupportedCompressionType
+   * @throws CodecException
+   */
+  public void setBlock(int idx, String filepath, int activePlots)
+      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+    try {
+      String nameFilter = TimeSeriesUtils.getMplexNameList(filepath).get(0);
+      setBlock(idx, filepath, nameFilter, activePlots);
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
   }
 
   /**
@@ -457,8 +498,12 @@ public class DataStore {
    * @param filepath Full address of file to be loaded in
    * @param nameFilter Station ID (SNCL) to load in from multiplexed file
    * @param activePlots Max index of active panel to check as active
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
    */
-  public void setBlock(int idx, String filepath, String nameFilter, int activePlots) {
+  public void setBlock(int idx, String filepath, String nameFilter, int activePlots)
+      throws SeedFormatException, UnsupportedCompressionType, CodecException {
 
     try {
       DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
