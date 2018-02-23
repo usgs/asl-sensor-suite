@@ -46,6 +46,7 @@ public class FFTResult {
   public static double[]
   bandFilter(double[] toFilt, double sps, double low, double high) {
 
+    // make sure the low value is actually the lower of the two
     double temp = Math.min(low, high);
     high = Math.max(low, high);
     low = temp;

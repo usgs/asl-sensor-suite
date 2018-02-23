@@ -18,6 +18,7 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.util.Pair;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.utils.NumericUtils;
 
@@ -33,7 +34,7 @@ import asl.sensor.utils.NumericUtils;
 public class InstrumentResponse {
 
   public static final double PEAK_MULTIPLIER = 0.8;
-  
+
   /**
    * Get one of the response files embedded in the program
    * @return response file embedded into the program
@@ -41,34 +42,34 @@ public class InstrumentResponse {
    * if a file listed in the responses.txt file does not exist in that location
    * which means it was likely improperly modified or a response file deleted)
    */
-  public static InstrumentResponse loadEmbeddedResponse(String fname) 
+  public static InstrumentResponse loadEmbeddedResponse(String fname)
       throws IOException {
-    
+
     ClassLoader cl = InputPanel.class.getClassLoader();
     InputStream is = cl.getResourceAsStream(fname);
     BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
     return new InstrumentResponse(fr, fname);
   }
-  
+
   /**
    * Get list of all responses embedded into the program, derived from the
    * responses.txt file in the resources folder
    * @return Set of strings representing response filenames
    */
   public static Set<String> parseInstrumentList() {
-    
+
     Set<String> respFilenames = new HashSet<String>();
     ClassLoader cl = InstrumentResponse.class.getClassLoader();
-    
+
     // there's no elegant way to extract responses other than to
     // load in their names from a list and then grab them as available
     // correspondingly, this means adding response files to this program
     // requires us to add their names to this file
     // There may be other possibilities but they are more complex and
     // tend not to work the same way between IDE and launching a jar
-    
+
     InputStream respRead = cl.getResourceAsStream("responses.txt");
-    BufferedReader respBuff = 
+    BufferedReader respBuff =
         new BufferedReader( new InputStreamReader(respRead) );
 
     try {
@@ -82,10 +83,10 @@ public class InstrumentResponse {
     } catch (IOException e2) {
       e2.printStackTrace();
     }
-    
+
     return respFilenames;
   }
-  
+
   /**
    * Extract the real and imaginary terms from a pole or zero in a RESP file
    * @param line the line the zero or pole is found on in the file
@@ -101,45 +102,46 @@ public class InstrumentResponse {
     // index 0 is the identifier for the field types (used in switch-stmt)
     // index 1 is where in the list this zero or pole is
     // index 2 is the real part, and index 3 the imaginary
-    // indices 4 and 5 are error terms (ignored)    
+    // indices 4 and 5 are error terms (ignored)
     int index = Integer.parseInt(words[1]);
     double realPart = Double.parseDouble(words[2]);
     double imagPart = Double.parseDouble(words[3]);
     array[index] = new Complex(realPart, imagPart);
   }
-  
+
   private TransferFunction transferType;
   private int epochsCounted;
-  
+
   // gain values, indexed by stage
   private double[] gain;
   private int numStages;
-  
+
   // poles and zeros
-  private Map<Complex, Integer> zeros;
-  
-  private Map<Complex, Integer> poles;
-  
+  private List<Pair<Complex, Integer>> zeros;
+  //private Map<Complex, Integer> zeros;
+  private List<Pair<Complex, Integer>> poles;
+  //private Map<Complex, Integer> poles;
+
   private String name;
   private Unit unitType;
-  
+
   private double normalization; // A0 normalization factor
-  
-  private double normalFreq; // cuz she's a normalFreq, normalFreq 
-  // (the A0 norm. factor's frequency) 
-  
+
+  private double normalFreq; // cuz she's a normalFreq, normalFreq
+  // (the A0 norm. factor's frequency)
+
   /**
    * Reads in a response from an already-accessed bufferedreader handle
    * and assigns it to the name given (used with embedded response files)
    * Only the last epoch of a multi-epoch response file is used.
    * @param br Handle to a buffered reader of a given RESP file
-   * @param name Name of RESP file to be used internally 
+   * @param name Name of RESP file to be used internally
    * @throws IOException
    */
   public InstrumentResponse(BufferedReader br, String name) throws IOException {
-    
+
     this.name = name;
-    
+
     parserDriver(br);
   }
   /**
@@ -149,21 +151,29 @@ public class InstrumentResponse {
   public InstrumentResponse(InstrumentResponse responseIn) {
     epochsCounted = 1;
     transferType = responseIn.getTransferFunction();
-    
+
     gain = responseIn.getGain();
     numStages = responseIn.getNumStages();
 
-    zeros = new HashMap<Complex, Integer>( responseIn.getZerosMap() );
-    poles = new HashMap<Complex, Integer>( responseIn.getPolesMap() );
-    
+    zeros = new ArrayList<Pair<Complex, Integer>>( responseIn.getZerosList() );
+    poles = new ArrayList<Pair<Complex, Integer>>( responseIn.getPolesList() );
+
     unitType = responseIn.getUnits();
-    
+
     normalization = Double.valueOf( responseIn.getNormalization() );
     normalFreq = Double.valueOf( responseIn.getNormalizationFrequency() );
-    
+
     name = responseIn.getName();
   }
-  
+
+  public List<Pair<Complex, Integer>> getZerosList() {
+    return zeros;
+  }
+
+  public List<Pair<Complex, Integer>> getPolesList() {
+    return poles;
+  }
+
   /**
    * Return the number of gain stages this response has
    * @return number of gain stages
@@ -172,46 +182,6 @@ public class InstrumentResponse {
     return numStages;
   }
 
-  /**
-   * Get each unique zero as a complex value and the number of times it appears in the response
-   * @return map from unique zeros to the number of times they each appear
-   */
-  private Map<Complex, Integer> getZerosMap() {
-    return zeros;
-  }
-  
-  /**
-   * Get each unique pole as a complex value and the number of times it appears in the response
-   * @return map from unique poles to the number of times they each appear
-   */
-  private Map<Complex, Integer> getPolesMap() {
-    return poles;
-  }
-
-  /**
-   * Sort poles by magnitude, prioritizing poles with zero imaginary component
-   * @return sorted list of unique poles
-   */
-  private List<Complex> getSortedPoleKeys() {
-    ArrayList<Complex> list = new ArrayList<Complex>( poles.keySet() );
-    if (list.size() > 1) {
-      NumericUtils.complexMagnitudeSorter(list);
-    }
-    return list;
-  }
-  
-  /**
-   * Sort zeros by magnitude, prioritizing zeros with zero imaginary component
-   * @return sorted list of unique zeros
-   */
-  private List<Complex> getSortedZeroKeys() {
-    ArrayList<Complex> list = new ArrayList<Complex>( zeros.keySet() );
-    if ( list.size() > 1 ) {
-      NumericUtils.complexMagnitudeSorter(list);
-    }
-    return list;
-  }
-  
   /**
    * Reads in an instrument response from a RESP file
    * If the RESP file has multiple epochs, only the last one is used.
@@ -222,7 +192,7 @@ public class InstrumentResponse {
     name = new File(filename).getName();
     parseResponseFile(filename);
   }
-  
+
   /**
    * Apply the values of this response object to a list of frequencies and
    * return the resulting (complex) frequencies
@@ -233,9 +203,9 @@ public class InstrumentResponse {
    * @return application of the response to those frequencies
    */
   public Complex[] applyResponseToInput(double[] frequencies) {
-   
+
     Complex[] resps = new Complex[frequencies.length];
-    
+
     // precalculate gain for scaling the response
     double scale = 1.;
     // stage 0 is sensitivity (supposed to be product of all gains)
@@ -243,41 +213,37 @@ public class InstrumentResponse {
     for (int i = 1; i < gain.length; ++i) {
       scale *= gain[i];
     }
-    
+
     // how many times do we need to do differentiation?
     // outUnits (acceleration) - inUnits
     // i.e., if the units of this response are acceleration, we integrate once
     int diffs = Unit.VELOCITY.getDifferentiations(unitType);
     // unlike s (see below) this is always 2Pi
     double integConstant = NumericUtils.TAU;
-    
+
     for (int i = 0; i < frequencies.length; ++i) {
       double deltaFrq = frequencies[i];
-      
+
       // pole-zero expansion
       Complex s = new Complex( 0, deltaFrq*transferType.getFunction() );
-      
+
       Complex numerator = Complex.ONE;
       Complex denominator = Complex.ONE;
-      
-      for ( Complex zero : zeros.keySet() ) {
-        int count = zeros.get(zero); // number of times to apply zero
-        for (int j = 0; j < count; ++j) {
-          numerator = numerator.multiply( s.subtract(zero) );  
-        }
+
+      // generate the list structures and get the values with respect to transfer function
+      // unfolding the paired list like this is as reasonable as most other options
+      for ( Complex zero : getZeros() ) {
+        numerator = numerator.multiply( s.subtract(zero) );
       }
-      
-      for ( Complex pole : poles.keySet() ) {
-        int count = poles.get(pole);
-        for (int j = 0; j < count; ++j) {
-          denominator = denominator.multiply( s.subtract(pole) );
-        }
+
+      for ( Complex pole : getPoles() ) {
+        denominator = denominator.multiply( s.subtract(pole) );
       }
-      
+
       resps[i] = numerator.multiply(normalization).divide(denominator);
-      
+
       if (diffs < 0) {
-        // a negative number of differentiations 
+        // a negative number of differentiations
         // is a positive number of integrations
         // i*omega; integration is I(w) x (iw)^n
         Complex iw = new Complex(0.0, integConstant*deltaFrq);
@@ -286,7 +252,7 @@ public class InstrumentResponse {
           iw = iw.multiply(iw);
         }
         resps[i] = resps[i].multiply(iw);
-      } else if (diffs > 0) { 
+      } else if (diffs > 0) {
         // differentiation is I(w) / (-i/w)^n
         Complex iw = new Complex(0.0, -1.0 / (integConstant*deltaFrq) );
         for (int j = 1; j < Math.abs(diffs); j++){
@@ -294,21 +260,21 @@ public class InstrumentResponse {
         }
         resps[i] = iw.multiply(resps[i]);
       }
-      
-      
+
+
       // lastly, scale by the scale we chose (gain0 or gain1*gain2)
       resps[i] = resps[i].multiply(scale);
     }
-    
+
     return resps;
   }
-  
+
   /**
    * Given a best-fit vector, build the poles and zeros to use the ones
-   * defined by that vector. Imaginary values that are non-zero are constrained 
+   * defined by that vector. Imaginary values that are non-zero are constrained
    * to be (implicitly) defining a complex conjugate of the pole/zero they
    * are built into. Similarly, any poles or zeros in the initial list that
-   * are duplicated are all set to have the same new value. 
+   * are duplicated are all set to have the same new value.
    * @see #zerosToVector and #polesToVector
    * @param params Array of real and imaginary component values of poles
    * and zeros
@@ -316,148 +282,146 @@ public class InstrumentResponse {
    * @param numZeros How much of the input parameter array is zero components
    * @return New InstrumentResponse with the fit values applied to it
    */
-  public InstrumentResponse 
-  buildResponseFromFitVector(double[] params, boolean lowFreq, 
+  public InstrumentResponse
+  buildResponseFromFitVector(double[] params, boolean lowFreq,
       int numZeros) {
-    
+
     // get all distinct pole values as lists
-    List<Complex> zList = getSortedZeroKeys();
-    List<Complex> pList = getSortedPoleKeys();
-    
+    // List<Complex> zList = getDistinctZeros();
+    // List<Complex> pList = getDistinctPoles();
+
     // first covert poles and zeros back to complex values to make this easier
     List<Complex> zerosAsComplex = new ArrayList<Complex>();
     for (int i = 0; i < numZeros; i += 2) {
       Complex c = new Complex( params[i], params[i+1] );
       zerosAsComplex.add(c);
     }
-    
+
     List<Complex> polesAsComplex = new ArrayList<Complex>();
     for (int i = numZeros; i < params.length; i += 2) {
       Complex c = new Complex( params[i], params[i+1] );
       polesAsComplex.add(c);
     }
-    
+
     // fit the zeros
-    Map<Complex, Integer> builtZeros = new HashMap<Complex, Integer>();
-    
-    // first, add the literally zero values; these aren't fit
+    List<Pair<Complex, Integer>> builtZeros = new ArrayList<Pair<Complex, Integer>>();
+
+    // first, add the literally zero values; these are never fit
     // (NOTE: we expect count to never be more than 2)
     int start;
-    start = 0;
-    Complex firstZero = zList.get(0);
-    if (firstZero.abs() == 0.) {
-      start = 1;
-      int count = zeros.get(firstZero);
-      builtZeros.put(firstZero, count);
+    for (start = 0; start < zeros.size(); ++start) {
+      Pair<Complex, Integer> valueAndCount = zeros.get(start);
+      Complex c = valueAndCount.getFirst();
+      // if it's not zero, it might need to get replaced
+      if (c.abs() > 0) {
+        break;
+      }
+      builtZeros.add(valueAndCount);
     }
-    
+
     // add the low-frequency zeros from source if they're not being fit
     if (!lowFreq) {
       // add zeros until they reach the high-freq cutoff point
       // start from current index of data
-      for (int i = start; i < zList.size(); ++i) {
-        Complex zero = zList.get(i);
-        int count = zeros.get(zero);
+      for (int i = start; i < zeros.size(); ++i) {
+        Pair<Complex, Integer> valueAndCount = zeros.get(i);
+        Complex zero = valueAndCount.getFirst();
         if ( zero.abs() / NumericUtils.TAU > 1. ) {
           // zeros after this point are high-frequency
           break;
         }
-        builtZeros.put(zero, count);
+        builtZeros.add(valueAndCount);
       }
     }
-    
+
     // now add the zeros under consideration for fit
     // these are the high-frequency zeros if we're doing high-frequency cal
     // or the low-frequency zeros otherwise
     int offset;
     offset = builtZeros.size();
     for (int i = 0; i < zerosAsComplex.size(); ++i) {
-      Complex origZero = zList.get(i + offset);
-      int count = zeros.get(origZero);
+      // get the number of times the original value appeared
+      int count = zeros.get(i + offset).getSecond();
       Complex zero = zerosAsComplex.get(i);
-      builtZeros.put(zero, count);
-      
+      builtZeros.add( new Pair<Complex, Integer>(zero, count) );
+
       // add conjugate if it has one
       if ( zero.getImaginary() != 0. ) {
-        builtZeros.put( zero.conjugate(), count );
+        builtZeros.add( new Pair<Complex, Integer>( zero.conjugate(), count ) );
         ++offset; // skipping over the original conjugate pair
       }
     }
-    
+
     // now add in all remaining zeros
-    for (int i = builtZeros.size(); i < zList.size(); ++i) {
-      Complex zero = zList.get(i);
-      int count = zeros.get(zero);
-      builtZeros.put(zero, count);
+    for (int i = builtZeros.size(); i < zeros.size(); ++i) {
+      builtZeros.add( zeros.get(i) );
     }
-    
+
     // now do the same thing as the zeros but for the poles
-    Map<Complex, Integer> builtPoles = new HashMap<Complex, Integer>();
-    
+    List<Pair<Complex, Integer>> builtPoles = new ArrayList<Pair<Complex, Integer>>();
+
     // low frequency poles not being fit added first (keeps list sorted)
     if (!lowFreq) {
       // first add low-frequency poles not getting fit by high-freq cal
-      for (int i = 0; i < pList.size(); ++i) {
-        Complex pole = pList.get(i);
+      for (int i = 0; i < poles.size(); ++i) {
+        Pair<Complex, Integer> valueAndCount = poles.get(i);
+        Complex pole = valueAndCount.getFirst();
         if ( pole.abs() / NumericUtils.TAU > 1. ) {
           break;
         }
-        int count = poles.get(pole);
-        builtPoles.put(pole, count);
+        builtPoles.add(valueAndCount);
       }
-    } else if ( hasTooLowFreqPole() ) {
+    } else if ( isKS54000() ) {
       // used in the odd KS54000 case, we don't fit the low-freq damping pole
-      Complex pole = pList.get(0);
-      int count = poles.get(pole);
-      builtPoles.put(pole, count);
+      // there should only be the one, because the KS54000 is a weird one
+      builtPoles.add( poles.get(0) );
     }
-    
+
     offset = builtPoles.size();
     // now add the poles under consideration for fit as with zeros
     for (int i = 0; i < polesAsComplex.size(); ++i) {
-      Complex origPole = pList.get(i + offset);
-      int count = poles.get(origPole);
+      int count = poles.get(i + offset).getSecond();
       Complex pole = polesAsComplex.get(i);
-      builtPoles.put(pole, count);
-      
+      builtPoles.add( new Pair<Complex, Integer>(pole, count) );
+
       // add conjugate if it has one
       if ( pole.getImaginary() != 0. ) {
-        builtPoles.put( pole.conjugate(), count );
+        builtPoles.add( new Pair<Complex, Integer>( pole.conjugate(), count ) );
         ++offset;
       }
     }
-    
+
     // now add the poles that remain
-    for (int i = builtPoles.size(); i < pList.size(); ++i) {
-      Complex pole = pList.get(i);
-      int count = poles.get(pole);
-      builtPoles.put(pole, count);
+    for (int i = builtPoles.size(); i < poles.size(); ++i) {
+      builtPoles.add( poles.get(i) );
     }
-    
+
     // create a copy of this instrument response and set the new values
     InstrumentResponse out = new InstrumentResponse(this);
-    out.setZerosMap(builtZeros);
-    out.setPolesMap(builtPoles);
+    out.setZerosList(builtZeros);
+    out.setPolesList(builtPoles);
     return out;
-    
+
   }
-  
+
   /**
    * Apply new zeros to this response object
-   * @param newZeros map from unique zeros to the number of times they appear in (modified) response
+   * @param newZeros List of paired values; first entry is a unique zero in response, and
+   * second is the number of times it appears
    */
-  private void setZerosMap(Map<Complex, Integer> newZeros) {
+  private void setZerosList(List<Pair<Complex, Integer>> newZeros) {
     zeros = newZeros;
   }
-  
+
   /**
    * Apply new poles to this response object
-   * @param newPoles map from unique poles to the number of times they appear in (modified) response
+   * @param newPoles List of paired values; first entry is a unique pole in response, and
+   * second is the number of times it appears
    */
-  private void setPolesMap(Map<Complex, Integer> newPoles) {
+  private void setPolesList(List<Pair<Complex, Integer>> newPoles) {
     poles = newPoles;
   }
-  
+
   /**
    * Get the gain stages of the RESP file. Stage x is at index x. That is,
    * the sensitivity is at 0, the sensor gain is at 1, and the digitizer
@@ -467,7 +431,7 @@ public class InstrumentResponse {
   public double[] getGain() {
     return gain;
   }
-  
+
   /**
    * Return the name of this response file (i.e., STS-1Q330 or similar)
    * Used primarily for identifying response curve on plots
@@ -476,7 +440,7 @@ public class InstrumentResponse {
   public String getName() {
     return name;
   }
-  
+
   /**
    * Get the normalization of the response
    * @return normalization constant
@@ -484,7 +448,7 @@ public class InstrumentResponse {
   public double getNormalization() {
     return normalization;
   }
-  
+
   /**
    * Get the normalization frequency
    * @return normalization frequency (Hz)
@@ -492,23 +456,24 @@ public class InstrumentResponse {
   public double getNormalizationFrequency() {
     return normalFreq;
   }
-  
+
   /**
    * Return the list of poles in the RESP file, not including error terms
    * @return List of complex numbers; index y is the yth pole in response list
    */
   public List<Complex> getPoles() {
-    List<Complex> pList = getSortedPoleKeys();
-    List<Complex> listOut = new ArrayList<Complex>();
-    for ( Complex p : pList ) {
-      int count = poles.get(p);
+    List<Complex> out = new ArrayList<Complex>();
+    for (Pair<Complex, Integer> valueAndCount : poles) {
+      Complex value = valueAndCount.getFirst();
+      Integer count = valueAndCount.getSecond();
+      // count is number of times pole appears, add it that many times to the list
       for (int i = 0; i < count; ++i) {
-        listOut.add(p);
+        out.add(value);
       }
     }
-    return listOut;
+    return out;
   }
-  
+
   /**
    * Get the transfer function of this response file (laplacian, linear)
    * @return transfer type as an enumeration (can get factor as numeric type
@@ -517,7 +482,7 @@ public class InstrumentResponse {
   public TransferFunction getTransferFunction() {
     return transferType;
   }
-  
+
   /**
    * Gives the unit type of the RESP file (displacement, velocity, acceleration)
    * @return Unit type as enumeration, distance measures of meters and time of
@@ -526,40 +491,41 @@ public class InstrumentResponse {
   public Unit getUnits() {
     return unitType;
   }
-  
+
   /**
    * Return the list of zeros in the RESP file, not including error terms
    * @return List of complex numbers; index y is the yth zero in response list
    */
   public List<Complex> getZeros() {
-    List<Complex> zList = getSortedZeroKeys();
-    List<Complex> listOut = new ArrayList<Complex>();
-    for (Complex z : zList) {
-      int count = zeros.get(z);
+    List<Complex> out = new ArrayList<Complex>();
+    for (Pair<Complex, Integer> valueAndCount : zeros) {
+      Complex value = valueAndCount.getFirst();
+      Integer count = valueAndCount.getSecond();
+      // count is number of times zero appears, add it that many times to the list
       for (int i = 0; i < count; ++i) {
-        listOut.add(z);
+        out.add(value);
       }
     }
-    return listOut;
+    return out;
   }
-  
+
   /**
    * Determines whether or not the first pole is too low to fit even with
    * a low-frequency random cal solver operation. Mainly an issue for
    * the KS54000 RESP, since the damping curve is unusual.
    * @return True if the initial pole is too low-frequency to add to fit.
    */
-  private boolean hasTooLowFreqPole() {
+  private boolean isKS54000() {
     final double CUTOFF = 1. / 1000.;
     List<Complex> pList = getPoles();
     if ( ( pList.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
       // first two poles are low-frequency
       return true;
     }
-    
+
     return false;
   }
- 
+
   /**
    * Return the number of epochs found in the data, for use in warning
    * if the user has loaded in a response with multiple epochs
@@ -568,7 +534,7 @@ public class InstrumentResponse {
   public int getEpochsCounted() {
     return epochsCounted;
   }
-  
+
   /**
    * Read in each line of a response and parse and store relevant lines
    * according to the hex value at the start of the line
@@ -576,9 +542,9 @@ public class InstrumentResponse {
    * @throws IOException if the reader cannot read the given file
    */
   private void parserDriver(BufferedReader br) throws IOException {
-    
+
     epochsCounted = 0;
-    
+
     numStages = 0;
     double[] gains = new double[10];
     for (int i = 0; i < gains.length; ++i) {
@@ -589,17 +555,17 @@ public class InstrumentResponse {
     int gainStage = -1;
     Complex[] polesArr = null;
     Complex[] zerosArr = null;
-    
+
     String line = br.readLine();
-    
+
     while (line != null) {
-      
+
       if( line.length() == 0 ) {
         // empty line? need to skip it
         line = br.readLine();
         continue;
       }
-      
+
       if (line.charAt(0) == '#') {
         // comment -- skip
         line = br.readLine();
@@ -608,7 +574,7 @@ public class InstrumentResponse {
         // the components of each line, assuming split by 2 or more spaces
         String[] words = line.split("\\s\\s+");
         String hexIdentifier = words[0];
-        
+
         switch (hexIdentifier) {
         case "B052F22":
           ++epochsCounted;
@@ -700,26 +666,26 @@ public class InstrumentResponse {
           // in the event they're not sorted in the response file
           // and allows us to have basically arbitrarily many stages
           gains[gainStage] = Double.parseDouble(words[2]);
-          
+
           // reset the stage to prevent data being overwritten
           gainStage = -1;
           break;
         }
-        
+
         line = br.readLine();
       } // else
-      
+
     } // end of file-read loop (EOF reached, line is null)
-    
+
     // turn map of gain stages into list
     gain = gains;
     ++numStages; // offset by 1 to represent size of stored gain stages
-    
+
     // turn pole/zero arrays into maps from pole values to # times repeated
     setZeros(zerosArr);
     setPoles(polesArr);
   }
-  
+
   /**
    * Parses a response file of the sort found on the Iris Nominal Response
    * Library. These files can be found at http://ds.iris.edu/NRL/
@@ -728,7 +694,7 @@ public class InstrumentResponse {
    * @param filename Full path to the response file
    */
   private void parseResponseFile(String filename) throws IOException {
-    
+
     // response files have a very nice format that is not so nice as something
     // like JSON but still quite easy to parse
     // lines either begin with a hex value or a '#'
@@ -738,10 +704,10 @@ public class InstrumentResponse {
     // where name is the human-readable explanation of what a value represents
     // in some cases, 'value' may not be just a raw value but also include
     // some information about the value, such as verbose unit specifications
-    
+
     // there is one exception, the actual pole/zero fields, which have 5
     // components after the hex identifier
-    
+
     BufferedReader br;
     try {
       br = new BufferedReader( new FileReader(filename) );
@@ -750,7 +716,7 @@ public class InstrumentResponse {
     } catch (FileNotFoundException e) {
       e.printStackTrace();
     }
-    
+
   }
 
   /**
@@ -758,70 +724,71 @@ public class InstrumentResponse {
    * response, used for finding best-fit poles from a random calibration
    * The complex numbers each representing a pole are split into their
    * real and imaginary components (each a double), with the real components
-   * being set on even indices and imaginary components on the odd indices; 
+   * being set on even indices and imaginary components on the odd indices;
    * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
    * single pole. Poles with non-zero imaginary components do not have their
-   * conjugate included in this vector in order to maintain constraints. 
+   * conjugate included in this vector in order to maintain constraints.
    * @param lowFreq True if the low-frequency poles are to be fit
    * @param nyquist Nyquist rate of data (upper bound on high-freq poles to fit)
    * @return RealVector with fittable pole values
    */
   public RealVector polesToVector(boolean lowFreq, double nyquist) {
-    // first, sort poles by magnitude
-    List<Complex> pList = getSortedPoleKeys();
-    
+    // peak represents max value of poles we will fit; others are above rate of data
+    // and thus cannot be accurately determined from what we are solving for
     double peak = PEAK_MULTIPLIER * nyquist;
-    
-    
+
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<Double>();
-    
+
     // starting index for poles, shift up one if lowest-freq pole is TOO low
     int start = 0;
-    if ( hasTooLowFreqPole() ) {
+    if ( isKS54000() ) {
       start = 1;
     }
-    
-    for (int i = start; i < pList.size(); ++i) {
-      
-      double frq = pList.get(i).abs() / NumericUtils.TAU;
+
+    for (int i = start; i < poles.size(); ++i) {
+
+      Pair<Complex, Integer> pairAndValue = poles.get(i);
+      Complex p = pairAndValue.getFirst();
+
+      double frq = p.abs() / NumericUtils.TAU;
       if ( !lowFreq && (frq < 1.) ) {
         // don't include poles below 1Hz in high-frequency calibration
         continue;
       }
       if ( lowFreq && (frq > 1.) ) {
-        // only do low frequency calibrations on poles up to 
+        // only do low frequency calibrations on poles up to
         break;
       }
       if ( !lowFreq && (frq >= peak) ) {
         // don't fit poles above fraction of nyquist rate of sensor output
         break;
       }
-      
+
       // a complex is just two doubles representing real and imaginary lengths
-      double realPart = pList.get(i).getReal();
-      double imagPart = pList.get(i).getImaginary();
-      
+      double realPart = p.getReal();
+      double imagPart = p.getImaginary();
+
       componentList.add(realPart);
       componentList.add(imagPart);
-      
+
       if (imagPart != 0.) {
-        ++i; // skip complex conjuage
+        ++i; // skip complex conjuagte
       }
-      
+
     }
-    
+
     // turn into array to be turned into vector
     // can't use toArray because List doesn't use primitive double objects
     double[] responseVariables = new double[componentList.size()];
     for (int i = 0; i < responseVariables.length; ++i) {
       responseVariables[i] = componentList.get(i);
     }
-    
+
     return MatrixUtils.createRealVector(responseVariables);
   }
-  
+
   /**
    * Set name of response file, used in some plot and report generation
    * @param newName New name to give this response
@@ -829,106 +796,103 @@ public class InstrumentResponse {
   public void setName(String newName) {
     name = newName;
   }
-  
+
   /**
    * Replace the current poles of this response with new ones from a list
-   * @param poleList List of poles to replace the current response poles with (repeated poles listed 
+   * @param poleList List of poles to replace the current response poles with (repeated poles listed
    * the number of times they appear)
    */
   public void setPoles(List<Complex> poleList) {
-    poles = new HashMap<Complex, Integer>();
-    for (Complex p : poleList) {
-      if ( poles.keySet().contains(p) ) {
-        int count = zeros.get(p) + 1;
-        poles.put(p, count);
-      } else {
-        poles.put(p, 1);
-      }
-    }
+    Complex[] poleArr = poleList.toArray(new Complex[]{});
+    setPoles(poleArr);
   }
-  
+
   /**
    * Replace the current poles of this response with new ones from an array
-   * @param poleList Array of poles to replace the current response poles with (repeated poles 
+   * @param poleList Array of poles to replace the current response poles with (repeated poles
    * listed by the number of times they appear)
    */
   public void setPoles(Complex[] poleList) {
-    poles = new HashMap<Complex, Integer>();
-    for (Complex p : poleList) {
-      if ( poles.keySet().contains(p) ) {
-        int count = poles.get(p) + 1;
-        poles.put(p, count);
-      } else {
-        poles.put(p, 1);
-      }
-    }
+    poles = setComponentValues(poleList);
   }
 
   /**
    * Set the list of zeros to a new list, such as after fitting from random cal
-   * @param zeroList List of zeros to replace the current response poles with (repeated zeros listed 
-   * the number of times they appear)
+   * @param zeroList List of zeros to replace the current response poles with (repeated zeros listed
+   * every time they appear)
    */
   public void setZeros(List<Complex> zeroList) {
-    zeros = new HashMap<Complex, Integer>();
-    for (Complex z : zeroList) {
-      if ( zeros.keySet().contains(z) ) {
-        int count = zeros.get(z) + 1;
-        zeros.put(z, count);
-      } else {
-        zeros.put(z, 1);
-      }
-    }
+    Complex[] zeroArr = zeroList.toArray(new Complex[]{});
+    setZeros(zeroArr);
   }
-  
+
   /**
    * Set the list of zeros to a new array, such as after fitting from random cal
-   * @param zeroList Array of zeros to replace the current response poles with (repeated zeros 
-   * listed the number of times they appear)
+   * @param zeroList Array of zeros to replace the current response poles with (repeated zeros
+   * listed every time they appear)
    */
   public void setZeros(Complex[] zeroList) {
-    zeros = new HashMap<Complex, Integer>();
-    for (Complex z : zeroList) {
-      if ( zeros.keySet().contains(z) ) {
-        int count = zeros.get(z) + 1;
-        zeros.put(z, count);
+    zeros = setComponentValues(zeroList);
+  }
+
+  private static List<Pair<Complex, Integer>> setComponentValues(Complex[] pzArr) {
+    // first, sort matching P/Z values into bins, count up the number of each
+    Map<Complex, Integer> values = new HashMap<Complex, Integer>();
+    for (Complex c : pzArr) {
+      if ( values.keySet().contains(c) ) {
+        int count = values.get(c) + 1;
+        values.put(c, count);
       } else {
-        zeros.put(z, 1);
+        values.put(c, 1);
       }
     }
+    // initialize list here
+    List<Pair<Complex, Integer>> valueList = new ArrayList<Pair<Complex, Integer>>();
+    // since second value in pair keeps track of item count in array, use set to prevent duplicates
+    // (note that we don't want to store in a set because order matters for this data)
+    Set<Complex> inList = new HashSet<Complex>();
+    // iterate from the array; it should have the values in the correct order
+    for (Complex c : pzArr) {
+      if ( !inList.contains(c) ) {
+        Pair<Complex, Integer> toAdd = new Pair<Complex, Integer>(c, values.get(c));
+        valueList.add(toAdd);
+        inList.add(c);
+      }
+    }
+    return valueList;
   }
-  
+
   /**
    * Output text report of this response file. Not same format as IRIS RESP.
    */
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    
+
     NumberFormat nf = NumberFormat.getInstance();
     nf.setMaximumFractionDigits(4);
     ComplexFormat cf = new ComplexFormat(nf);
-    
+
     sb.append("Response name: ");
     sb.append(name);
     sb.append('\n');
     sb.append("Gain stage values: ");
     sb.append('\n');
-    
+
     for (int i = 0; i < numStages; ++i) {
       sb.append(i);
       sb.append(": ");
       sb.append( nf.format(gain[i]) );
       sb.append("\n");
     }
-    
+
     sb.append("Normalization: ");
     sb.append(normalization);
     sb.append('\n');
     sb.append("Normalization frequency (Hz): ");
     sb.append(normalFreq);
     sb.append('\n');
-    
+
     sb.append("Transfer function ");
     if (transferType == TransferFunction.LAPLACIAN) {
       sb.append("is LAPLACIAN");
@@ -936,7 +900,7 @@ public class InstrumentResponse {
       sb.append("is LINEAR");
     }
     sb.append('\n');
-    
+
     sb.append("Response input units: ");
     if (unitType == Unit.DISPLACEMENT) {
       sb.append("displacement (m)");
@@ -946,7 +910,7 @@ public class InstrumentResponse {
       sb.append("acceleration (m/s^2)");
     }
     sb.append('\n');
-    
+
     sb.append("Response zeros: ");
     sb.append('\n');
     List<Complex> zList = getZeros();
@@ -956,7 +920,7 @@ public class InstrumentResponse {
       sb.append( cf.format( zList.get(i) ) );
       sb.append("\n");
     }
-    
+
     sb.append("Response poles: ");
     sb.append('\n');
     List<Complex> pList = getPoles();
@@ -966,7 +930,7 @@ public class InstrumentResponse {
       sb.append( cf.format( pList.get(i) ) );
       sb.append("\n");
     }
-    
+
     return sb.toString();
   }
 
@@ -975,32 +939,33 @@ public class InstrumentResponse {
    * response, used for finding best-fit zeros from a random calibration
    * The complex numbers each representing a zero are split into their
    * real and imaginary components (each a double), with the real components
-   * being set on even indices and imaginary components on the odd indices; 
+   * being set on even indices and imaginary components on the odd indices;
    * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
    * single zero. Zeros with non-zero imaginary components do not have their
-   * conjugate included in this vector in order to maintain constraints. 
+   * conjugate included in this vector in order to maintain constraints.
    * @param lowFreq True if the low-frequency zeros are to be fit
    * @param nyquist Nyquist rate of data (upper bound on high-freq zeros to fit)
    * @return RealVector with fittable zero values
    */
   public RealVector zerosToVector(boolean lowFreq, double nyquist) {
-    List<Complex> zList = getSortedZeroKeys();
-    
     double peak = PEAK_MULTIPLIER * nyquist;
-    
+
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<Double>();
-    
+
     for (int i = 0; i < zeros.size(); ++i) {
-      
-      if ( zList.get(i).abs() == 0. ) {
+
+      Pair<Complex, Integer> valueAndCount = zeros.get(i);
+      Complex c = valueAndCount.getFirst();
+
+      if ( c.abs() == 0. ) {
         // ignore zeros that are literally zero-valued
         continue;
       }
-      
-      double cutoffChecker = zList.get(i).abs() / NumericUtils.TAU;
-      
+
+      double cutoffChecker = c.abs() / NumericUtils.TAU;
+
       if ( lowFreq && (cutoffChecker > 1.) ) {
         // only do low frequency calibrations on zeros up to 1Hz
         break;
@@ -1013,16 +978,16 @@ public class InstrumentResponse {
         // don't fit zeros above 80% nyquist rate of sensor output
         break;
       }
-      
-      double realPart = zList.get(i).getReal();
-      double imagPart = zList.get(i).getImaginary();
+
+      double realPart = c.getReal();
+      double imagPart = c.getImaginary();
       componentList.add(realPart);
       componentList.add(imagPart);
-      
+
       if (imagPart != 0.) {
         ++i;
       }
-      
+
     }
 
     // turn into array to be turned into vector
@@ -1031,10 +996,10 @@ public class InstrumentResponse {
     for (int i = 0; i < responseVariables.length; ++i) {
       responseVariables[i] = componentList.get(i);
     }
-    
+
     return MatrixUtils.createRealVector(responseVariables);
   }
-  
+
 }
 
 
