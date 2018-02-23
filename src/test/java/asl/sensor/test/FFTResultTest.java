@@ -71,6 +71,7 @@ public class FFTResultTest {
     String filename = "test-data/cowi-multitests/C100823215422_COWI.LHx";
     String dataname = "US_COWI_  _LHN";
     try {
+      PrintWriter out;
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename, dataname);
       OffsetDateTime dt = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
       //System.out.println(dt);
@@ -87,8 +88,14 @@ public class FFTResultTest {
       double low = 1./8; // filter from 8 seconds interval
       double high = 1./3; // up to 3 seconds interval
 
+      data = TimeSeriesUtils.demean(data);
+      data = TimeSeriesUtils.detrend(data);
+
+      out = new PrintWriter("testResultImages/" + dataname + "-unfiltered.txt");
+      out.write( Arrays.toString(data) );
       data = FFTResult.bandFilter(data, sps, low, high);
-      PrintWriter out = new PrintWriter("testResultImages/" + dataname + "-filtered.txt");
+      out.close();
+      out = new PrintWriter("testResultImages/" + dataname + "-filtered.txt");
       out.write( Arrays.toString(data) );
       out.close();
 
