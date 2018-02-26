@@ -963,7 +963,7 @@ public class TimeSeriesUtils {
     }
 
     // if the negative peak is first, we need the flip
-    return minIdx > maxIdx;
+    return minIdx < maxIdx;
   }
 
   // divide by this to go from nanoseconds to milliseconds

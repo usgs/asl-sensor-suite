@@ -105,15 +105,15 @@ public class StepPanel extends ExperimentPanel {
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
 
-    String xAxisTitle = "Time (s)";
+    String xAxisTitle = "Time";
     String yAxisTitle = "Normalized counts";
-    xAxis = new NumberAxis(xAxisTitle);
+    xAxis = new DateAxis(xAxisTitle);
+    ( (DateAxis) xAxis).setDateFormatOverride(InputPanel.SDF);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     // xAxis.setAutoRange(true);
 
-    yAxis = new DateAxis(yAxisTitle);
-    ( (DateAxis) yAxis).setDateFormatOverride(InputPanel.SDF);
+    yAxis = new NumberAxis(yAxisTitle);
     yAxis.setLabelFont(bold);
     // yAxis.setAutoRange(true);
 
