@@ -9,16 +9,17 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
 import org.junit.Test;
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.gui.InputPanel;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class AzimuthTest {
 
@@ -174,9 +175,21 @@ public class AzimuthTest {
       String root = "./test-data/sprockets/";
       testSubfolder = root + testSubfolder;
       refSubfolder = root + refSubfolder;
-      ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
-      ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
-      ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
+      try {
+        ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
+        ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
+        ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
+      } catch (SeedFormatException e) {
+        e.printStackTrace();
+        fail();
+      } catch (UnsupportedCompressionType e) {
+        e.printStackTrace();
+        fail();
+      } catch (CodecException e) {
+        e.printStackTrace();
+        fail();
+      }
+
 
       ds.trimToCommonTime();
       AzimuthExperiment ae = new AzimuthExperiment();
@@ -219,17 +232,12 @@ public class AzimuthTest {
 
     for (int i = 0; i < prefixes.length; ++i) {
       String fName = folder + prefixes[i] + extension;
-      String seriesName = "";
       try {
-        seriesName =
-            new ArrayList<String>( TimeSeriesUtils.getMplexNameSet(fName) ).
-            get(0);
-      } catch (FileNotFoundException e) {
-        // TODO Auto-generated catch block
-        fail();
+        ds.setBlock(i, fName);
+      } catch (SeedFormatException | CodecException e) {
         e.printStackTrace();
+        fail();
       }
-      ds.setBlock(i, fName, seriesName);
     }
 
     AzimuthExperiment azi = new AzimuthExperiment();
@@ -252,7 +260,7 @@ public class AzimuthTest {
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end, 2);
-    */
+     */
     azi.runExperimentOnData(ds);
 
     System.out.println( azi.getFitAngle() );
@@ -275,17 +283,12 @@ public class AzimuthTest {
 
     for (int i = 0; i < prefixes.length; ++i) {
       String fName = folder + prefixes[i] + extension;
-      String seriesName = "";
       try {
-        seriesName =
-            new ArrayList<String>( TimeSeriesUtils.getMplexNameSet(fName) ).
-            get(0);
-      } catch (FileNotFoundException e) {
-        // TODO Auto-generated catch block
-        fail();
+        ds.setBlock(i, fName);
+      } catch (SeedFormatException | CodecException e) {
         e.printStackTrace();
+        fail();
       }
-      ds.setBlock(i, fName, seriesName);
     }
 
     AzimuthExperiment azi = new AzimuthExperiment();
@@ -332,17 +335,12 @@ public class AzimuthTest {
 
     for (int i = 0; i < prefixes.length; ++i) {
       String fName = folder + prefixes[i] + extension;
-      String seriesName = "";
       try {
-        seriesName =
-            new ArrayList<String>( TimeSeriesUtils.getMplexNameSet(fName) ).
-            get(0);
-      } catch (FileNotFoundException e) {
-        // TODO Auto-generated catch block
-        fail();
+        ds.setBlock(i, fName);
+      } catch (SeedFormatException | CodecException e) {
         e.printStackTrace();
+        fail();
       }
-      ds.setBlock(i, fName, seriesName);
     }
 
     AzimuthExperiment azi = new AzimuthExperiment();
@@ -388,8 +386,7 @@ public class AzimuthTest {
       DataStore ds = new DataStore();
       ds.setBlock(0, filename, dataname1);
       ds.setBlock(1, filename, dataname2);
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(filename2);
-      ds.setBlock(2, db);
+      ds.setBlock(2, filename2);
 
       String startString = "2010-236T02:00:00.0";
       String endString = "2010-236T13:00:00.0";
@@ -403,8 +400,7 @@ public class AzimuthTest {
       az.runExperimentOnData(ds);
       assertEquals(3.4, az.getFitAngle(), 0.5);
 
-    } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
+    } catch (SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -420,8 +416,7 @@ public class AzimuthTest {
       DataStore ds = new DataStore();
       ds.setBlock(0, filename, dataname1);
       ds.setBlock(1, filename, dataname2);
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(filename2);
-      ds.setBlock(2, db);
+      ds.setBlock(2, filename2);
 
       String startString = "2010-236T02:00:00.0";
       String endString = "2010-236T13:00:00.0";
@@ -439,8 +434,7 @@ public class AzimuthTest {
       assertEquals(3.2, az.getFitAngle(), 0.5);
       assertEquals(0.5, az.getUncertainty(), 0.5);
 
-    } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
+    } catch (SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }

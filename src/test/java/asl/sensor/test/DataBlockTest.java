@@ -6,11 +6,12 @@ import java.io.FileNotFoundException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class DataBlockTest {
 
@@ -19,7 +20,6 @@ public class DataBlockTest {
   public String channel = "BH0";
 
   public String fileID = station+"_"+location+"_"+channel;
-
   public String filename1 = "./test-data/blocktrim/"+fileID+".512.seed";
 
   @Test
@@ -27,13 +27,8 @@ public class DataBlockTest {
     int left = InputPanel.SLIDER_MAX / 4;
     int right = 3 * InputPanel.SLIDER_MAX / 4;
 
-    String name;
     try {
-      name = new ArrayList<String>(
-            TimeSeriesUtils.getMplexNameSet(filename1)
-          ).get(0);
-
-      DataBlock db = TimeSeriesUtils.getTimeSeries(filename1, name);
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(filename1);
 
       int sizeOld = db.size();
 
@@ -48,7 +43,9 @@ public class DataBlockTest {
       assertEquals( sizeOld/2, db.size() );
 
     } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    } catch (SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -71,7 +68,9 @@ public class DataBlockTest {
         double[] data = db.getData();
         assertEquals(39600, data.length);
       } catch (FileNotFoundException e) {
-        // TODO Auto-generated catch block
+        e.printStackTrace();
+        fail();
+      } catch (SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }

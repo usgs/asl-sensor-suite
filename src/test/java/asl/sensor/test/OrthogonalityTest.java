@@ -3,11 +3,9 @@ package asl.sensor.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -15,7 +13,8 @@ import org.junit.Test;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class OrthogonalityTest {
 
@@ -180,11 +179,11 @@ public class OrthogonalityTest {
       testSubfolder = root + testSubfolder;
       refSubfolder = root + refSubfolder;
 
-      ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
-      ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data2) );
+      ds.setBlock(0, refSubfolder + data1);
+      ds.setBlock(1, refSubfolder + data2);
 
-      ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
-      ds.setBlock(3, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
+      ds.setBlock(2, testSubfolder + data1);
+      ds.setBlock(3, testSubfolder + data2);
 
       OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
       cCal = cCal.withHour(10);
@@ -219,7 +218,7 @@ public class OrthogonalityTest {
 
       assertEquals(expectedAngle, fitAngle, 1.0);
 
-    } catch (FileNotFoundException e) {
+    } catch (SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -242,16 +241,12 @@ public class OrthogonalityTest {
 
     for (int i = 0; i < prefixes.length; ++i) {
       String fName = folder + prefixes[i] + extension;
-      String seriesName = "";
       try {
-        seriesName =
-            new ArrayList<String>( TimeSeriesUtils.getMplexNameSet(fName) ).
-            get(0);
-      } catch (FileNotFoundException e) {
-        fail();
+        ds.setBlock(i, fName);
+      } catch (SeedFormatException | CodecException e) {
         e.printStackTrace();
+        fail();
       }
-      ds.setBlock(i, fName, seriesName);
     }
 
     OrthogonalExperiment orth = new OrthogonalExperiment();

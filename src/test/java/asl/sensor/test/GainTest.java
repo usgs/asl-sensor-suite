@@ -2,14 +2,13 @@ package asl.sensor.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import java.io.FileNotFoundException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import org.junit.Test;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class GainTest {
 
@@ -27,16 +26,12 @@ public class GainTest {
 
     for (int i = 0; i < prefixes.length; ++i) {
       String fName = folder + prefixes[i] + extension;
-      String seriesName = "";
       try {
-        seriesName =
-            new ArrayList<String>( TimeSeriesUtils.getMplexNameSet(fName) ).
-            get(0);
-      } catch (FileNotFoundException e) {
-        fail();
+        ds.setBlock(i, fName);
+      } catch (SeedFormatException | CodecException e) {
         e.printStackTrace();
+        fail();
       }
-      ds.setBlock(i, fName, seriesName);
     }
 
     folder = currentDir + "/test-data/relativeGain100/";

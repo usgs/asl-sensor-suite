@@ -11,39 +11,33 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
-import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class FFTResultTest {
 
@@ -66,11 +60,12 @@ public class FFTResultTest {
     }
   }
 
-  @Test
+  // @Test
   public void testOddityWithCOWI() {
     String filename = "test-data/cowi-multitests/C100823215422_COWI.LHx";
     String dataname = "US_COWI_  _LHN";
     try {
+      PrintWriter out;
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename, dataname);
       OffsetDateTime dt = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
       //System.out.println(dt);
@@ -87,12 +82,18 @@ public class FFTResultTest {
       double low = 1./8; // filter from 8 seconds interval
       double high = 1./3; // up to 3 seconds interval
 
+      data = TimeSeriesUtils.demean(data);
+      data = TimeSeriesUtils.detrend(data);
+
+      out = new PrintWriter("testResultImages/" + dataname + "-unfiltered.txt");
+      out.write( Arrays.toString(data) );
       data = FFTResult.bandFilter(data, sps, low, high);
-      PrintWriter out = new PrintWriter("testResultImages/" + dataname + "-filtered.txt");
+      out.close();
+      out = new PrintWriter("testResultImages/" + dataname + "-filtered.txt");
       out.write( Arrays.toString(data) );
       out.close();
 
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -201,6 +202,9 @@ public class FFTResultTest {
       e.printStackTrace();
       fail();
     } catch (IOException e) {
+      e.printStackTrace();
+      fail();
+    } catch (SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -441,7 +445,7 @@ public class FFTResultTest {
       out.write( smooth.toString() );
       out.close();
 
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -626,7 +630,7 @@ public class FFTResultTest {
       }
       assertTrue(improving);
 
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -744,7 +748,7 @@ public class FFTResultTest {
       for (int i = 0; i < testAgainst.length; ++i) {
         assertEquals(testThis[i], testAgainst[i], 1E-6);
       }
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
@@ -998,6 +1002,8 @@ public class FFTResultTest {
       fail();
     } catch (IOException e) {
       e.printStackTrace();
+    } catch (SeedFormatException | CodecException e) {
+      e.printStackTrace();
     }
   }
 
@@ -1183,128 +1189,10 @@ public class FFTResultTest {
       fail();
     } catch (IOException e) {
       e.printStackTrace();
-    }
-  }
-
-  //@Test
-  public void testDemeaning() {
-    // TODO: see about restoring this test case, because it has a real test
-    String dataFolderName = "data/random_cal/";
-    String sensOutName = dataFolderName + "00_EHZ.512.seed";
-
-    String metaName;
-    try {
-      metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
-      Pair<Long, Map<Long, double[]>> dataMap =
-          TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
-      DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
-
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      XYSeries meaned = new XYSeries(metaName + "FFT, mean kept");
-      XYSeries demeaned = new XYSeries(metaName + "FFT, mean removed");
-
-      Map<Long, double[]> map = dataMap.getSecond();
-
-      int padding = 2;
-      while (padding < sensor.size()) {
-        padding *= 2;
-      }
-
-      double[] meanedTimeSeries = new double[padding];
-      List<Long> time = new ArrayList<Long>( map.keySet() );
-      Collections.sort(time);
-      long interval = sensor.getInterval();
-
-      int arrIdx = 0;
-      for (int i = 0; i < time.size(); ++i) {
-        long timeNow = time.get(i);
-        // do a demean here so that we can add 0-values to empty points
-        // without those values affecting the removal of a DC offset later
-        for ( Number sample : map.get(timeNow) ) {
-          meanedTimeSeries[arrIdx] = sample.doubleValue();
-          ++arrIdx;
-        }
-
-
-        if ( (i + 1) < time.size() ) {
-          long timeNext = time.get(i + 1);
-          // is there a discrepancy, and is it big enough for us to care?
-          if (timeNext - timeNow != interval) {
-
-            if (timeNext - timeNow < interval / 2) {
-              continue;
-            }
-
-            if (timeNext - timeNow < interval * 1.75) {
-              continue; // assume just a time rounding error between records
-            }
-
-            // long gap = timeNext - timeNow;
-            // System.out.println("FOUND GAP: " + timeNow + ", " + timeNext);
-            // System.out.println("(Itvl: " + interval + "; gap: " + gap + ")");
-            while (timeNext - timeNow > interval) {
-              meanedTimeSeries[arrIdx] = 0.;
-              ++arrIdx;
-              timeNow += interval;
-            }
-          }
-        }
-      }
-
-      assertEquals(arrIdx, sensor.size());
-
-      double[] demeanedTimeSeries = sensor.getData();
-
-      Complex[] meanedFFT = FFTResult.simpleFFT(meanedTimeSeries);
-      Complex[] demeanedFFT = FFTResult.simpleFFT(demeanedTimeSeries);
-
-      int numPoints = meanedFFT.length / 2 + 1;
-      double nyquist = sensor.getSampleRate() / 2;
-      double deltaFrq = nyquist / (numPoints - 1);
-
-      double deltaFrqB = sensor.getSampleRate() / meanedFFT.length;
-
-      // System.out.println("PEAK FREQ: " + deltaFrq * (numPoints - 1) );
-      assertEquals(deltaFrq, deltaFrqB, 1E-7);
-
-      for (int i = 1; i < numPoints; ++i) {
-        double frq = i * deltaFrq;
-        meaned.add(frq, 10 * Math.log10(meanedFFT[i].abs()));
-        demeaned.add(frq, 10 * Math.log10(demeanedFFT[i].abs()));
-      }
-
-      xysc.addSeries(meaned);
-      xysc.addSeries(demeaned);
-
-      JFreeChart chart = ChartFactory.createXYLineChart(
-          "Test demeaning operation",
-          "frequency (hz)",
-          "10 * log10 of FFT amplitude",
-          xysc);
-      chart.getXYPlot().setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
-      ValueAxis va = new LogarithmicAxis ("freq[hz]");
-      chart.getXYPlot().setDomainAxis(va);
-
-
-      String folderName = "testResultImages";
-      File folder = new File(folderName);
-      if ( !folder.exists() ) {
-        //System.out.println("Writing directory " + folderName);
-        folder.mkdirs();
-      }
-
-      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
-      File file = new File("testResultImages/demeaning-FFT-test.png");
-      ImageIO.write( bi, "png", file );
-
-    } catch (FileNotFoundException e) {
-      fail();
+    } catch (SeedFormatException | CodecException e) {
       e.printStackTrace();
-    } catch (IOException e) {
       fail();
-      e.printStackTrace();
     }
-
   }
 
   @Test
@@ -1339,122 +1227,6 @@ public class FFTResultTest {
       assertEquals(0., toFFT[0], 1E-10);
       assertEquals(0., toFFT[l], 1E-10);
     }
-  }
-
-  @Test
-  public void testTrimAndDemean() {
-    String dataFolderName = "test-data/random_cal_4/";
-    String sensOutName = dataFolderName + "00_EHZ.512.seed";
-
-    String metaName;
-    try {
-      metaName = TimeSeriesUtils.getMplexNameList(sensOutName).get(0);
-      Pair<Long, Map<Long, double[]>> dataMap =
-          TimeSeriesUtils.getTimeSeriesMap(sensOutName, metaName);
-      DataBlock sensor = TimeSeriesUtils.mapToTimeSeries(dataMap, metaName);
-      // long interval = dataMap.getFirst();
-      Map<Long, double[]> timeSeriesMap = dataMap.getSecond();
-      List<Long> times = new ArrayList<Long>( timeSeriesMap.keySet() );
-      Collections.sort(times);
-      long initTime = times.get(0);
-
-      SimpleDateFormat sdf = InputPanel.SDF;
-      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-      Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-      cCal.setTimeInMillis( initTime );
-      cCal.set(Calendar.HOUR_OF_DAY, 20);
-      cCal.set(Calendar.MINUTE, 16);
-      cCal.set(Calendar.SECOND, 0);
-      cCal.set(Calendar.MILLISECOND, 0);
-      long startTime = cCal.getTimeInMillis();
-      cCal.set(Calendar.MINUTE, 16 + 8); // match ringler's test case's window
-      long endTime = cCal.getTimeInMillis();
-
-      sensor.trim(startTime, endTime);
-      //System.out.println("Trimmed!");
-      // System.out.println(startTime + "," + sensor.getStartTime());
-
-      List<Double> timeSeriesList = new ArrayList<Double>();
-
-      for (int i = 0; i < times.size(); ++i) {
-        long timeNow = times.get(i);
-
-        if (timeNow < startTime) {
-          continue;
-        } else if (timeNow > endTime) {
-          break;
-        }
-
-        // do a demean here so that we can add 0-values to empty points
-        // without those values affecting the removal of a DC offset later
-        for (Number sample : timeSeriesMap.get(timeNow)) {
-          timeSeriesList.add( sample.doubleValue() );
-        }
-
-      }
-
-      // System.out.println(sensor.size());
-      // System.out.println(timeSeriesList.size());
-      // System.out.println(endTime+","+sensor.getEndTime());
-
-      double[] timeSeriesArrayMean = new double[timeSeriesList.size()];
-      double[] timeSeriesArrayDemean = sensor.getData();
-      for (int i = 0; i < timeSeriesArrayMean.length; ++i) {
-        timeSeriesArrayMean[i] = timeSeriesList.get(i);
-        // timeSeriesArrayDemean[i] = sensor.getData()[i];
-      }
-
-      Complex[] withMeanFFT = FFTResult.simpleFFT(timeSeriesArrayMean);
-      Complex[] demeanedFFT = FFTResult.simpleFFT(timeSeriesArrayDemean);
-
-      int len = withMeanFFT.length / 2 + 1;
-      double nyquist = sensor.getSampleRate() / 2;
-      double deltaFrq = nyquist / (len - 1);
-
-      // System.out.println("PEAK FREQ: " + (len - 1) * deltaFrq);
-
-      XYSeries meanSeries = new XYSeries(metaName + " w/ mean");
-      XYSeries demeanSeries = new XYSeries(metaName + " demeaned");
-
-      for (int i = 1; i < len; ++i) {
-        double xValue = i * deltaFrq;
-
-        meanSeries.add(xValue, 10 * Math.log10( withMeanFFT[i].abs() ) );
-        demeanSeries.add(xValue, 10 * Math.log10( demeanedFFT[i].abs() ) );
-      }
-
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(meanSeries);
-      xysc.addSeries(demeanSeries);
-      JFreeChart chart = ChartFactory.createXYLineChart(
-          "Test demeaning operation",
-          "frequency (hz)",
-          "10 * log10 of FFT amplitude",
-          xysc);
-      chart.getXYPlot().setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
-      ValueAxis va = new LogarithmicAxis ("freq[hz]");
-      chart.getXYPlot().setDomainAxis(va);
-
-
-      String folderName = "testResultImages";
-      File folder = new File(folderName);
-      if ( !folder.exists() ) {
-        //System.out.println("Writing directory " + folderName);
-        folder.mkdirs();
-      }
-
-      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
-      File file = new File("testResultImages/demeaning-FFT-trim-test.png");
-      ImageIO.write( bi, "png", file );
-
-    } catch (FileNotFoundException e) {
-      fail();
-      e.printStackTrace();
-    } catch (IOException e) {
-      fail();
-      e.printStackTrace();
-    }
-
   }
 
 }
