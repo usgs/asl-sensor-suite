@@ -32,8 +32,8 @@ public class StepTest {
       StepExperiment se = new StepExperiment();
       se.runExperimentOnData(ds);
       double[] fitParams = se.getFitParams();
-      assertEquals(364.5, 1./fitParams[0], 0.5);
-      assertEquals(0.7225, fitParams[1], 0.0005);
+      assertEquals(366.97, 1./fitParams[0], 0.5);
+      assertEquals(0.7196, fitParams[1], 0.0005);
     } catch (SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();

@@ -688,7 +688,7 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public void testNormByMax() {
-    String fname = "./test-data/kiev-step/00_BHZ.512.seed";
+    String fname = "./test-data/kiev-step/_BC0.512.seed";
     try {
       DataBlock db = TimeSeriesUtils.getFirstTimeSeries(fname);
       String startString = "2018-038T15:16:00.0";
@@ -698,6 +698,9 @@ public class TimeSeriesUtilsTest {
       long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
       db.trim(st, ed);
       double[] data = db.getData();
+      System.out.println("AVG OF RAW DATA: " + TimeSeriesUtils.getMean(data));
+      data = TimeSeriesUtils.demean(data);
+      System.out.println("AVG OF DEMEANED DATA: " + TimeSeriesUtils.getMean(data));
       double[] normed = TimeSeriesUtils.normalizeByMax(data);
       int minIdx = 0; int maxIdx = 0;
       double min = 0; double max = 0;
@@ -710,10 +713,12 @@ public class TimeSeriesUtilsTest {
           maxIdx = i;
         }
       }
-      assertTrue(Math.abs(min) < Math.abs(max));
-      assertEquals(normed[maxIdx], 1.0, 1E-3);
+      System.out.println("(max, min): " + max + ", " + min);
+      //assertTrue(Math.abs(min) < Math.abs(max));
+      assertEquals(1.0, normed[maxIdx], 1E-3);
       assertTrue(Math.abs(normed[minIdx]) < 1.0);
-      assertEquals(normed[minIdx], data[minIdx]/data[maxIdx], 1E-3);
+      assertEquals(data[minIdx]/data[maxIdx], normed[minIdx], 1E-3);
+      assertEquals(-0.78988, normed[minIdx], 1E-3);
     } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();

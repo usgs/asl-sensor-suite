@@ -184,13 +184,8 @@ public class TimeSeriesUtils {
 
     if(dataSet.length == 0) return; // shouldn't happen but just in case
 
-    double mean = 0.0;
-
-    for(double data : dataSet) {
-      mean += data;
-    }
-
-    mean /= dataSet.length;
+    double mean = getMean(dataSet);
+    // mean /= dataSet.length;
 
     for(int i = 0; i < dataSet.length; ++i) {
       // iterate over index rather than for-each cuz we must replace data
@@ -198,6 +193,22 @@ public class TimeSeriesUtils {
     }
 
     // test shows this works as in-place method
+  }
+
+  /**
+   * Return the calculation of the arithmetic mean (using a recursive definition for stability)
+   * @param dataSet Range of data to get the mean value from
+   * @return the arithmetic mean
+   */
+  public static double getMean(double[] dataSet) {
+    double mean = 0.0;
+    double inc = 1;
+
+    for(double data : dataSet) {
+      mean = mean + ( (data - mean) / inc );
+      ++inc;
+    }
+    return mean;
   }
 
   /**

@@ -61,9 +61,9 @@ public class StepExperiment extends Experiment{
 
   private int sensorOutIdx; // used to keep track of response location for report generation
 
-  final double STEP_FACTOR = 1E-12;
-  final double F_TOLER = 1E-10;
-  final double X_TOLER = 1E-10;
+  final double STEP_FACTOR = 1E-10;
+  final double F_TOLER = 1E-25;
+  final double X_TOLER = 1E-15;
 
   public StepExperiment() {
     super();
@@ -87,7 +87,7 @@ public class StepExperiment extends Experiment{
 
     fireStateChange("Initial filtering of the raw step signal...");
     double[] stepCalData = stepCalRaw.getData().clone();
-    stepCalData = FFTResult.bandFilter(stepCalData, sps, 0., 0.1);
+    stepCalData = FFTResult.lowPassFilter(stepCalData, sps, 0.1);
     // demean and normalize before trimming
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.normalizeByMax(stepCalSeries);
@@ -127,10 +127,6 @@ public class StepExperiment extends Experiment{
 
     f = 1. / (NumericUtils.TAU / pole.abs() ); // corner frequency
     h = Math.abs( pole.getReal() / pole.abs() ); // damping
-
-    // these manually-set parameters were used in testing convergence
-    // f = 0.002777;
-    // h = 0.707107;
 
     double[] params = new double[]{f, h};
 
