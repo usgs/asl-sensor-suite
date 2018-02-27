@@ -686,4 +686,39 @@ public class TimeSeriesUtilsTest {
     }
   }
 
+  @Test
+  public void testNormByMax() {
+    String fname = "./test-data/kiev-step/00_BHZ.512.seed";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(fname);
+      String startString = "2018-038T15:16:00.0";
+      String endString = "2018-038T15:59:00.0";
+      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
+      long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      db.trim(st, ed);
+      double[] data = db.getData();
+      double[] normed = TimeSeriesUtils.normalizeByMax(data);
+      int minIdx = 0; int maxIdx = 0;
+      double min = 0; double max = 0;
+      for (int i = 0; i < data.length; ++i) {
+        if (data[i] < min) {
+          min = data[i];
+          minIdx = i;
+        } else if (data[i] > max) {
+          max = data[i];
+          maxIdx = i;
+        }
+      }
+      assertTrue(Math.abs(min) < Math.abs(max));
+      assertEquals(normed[maxIdx], 1.0, 1E-3);
+      assertTrue(Math.abs(normed[minIdx]) < 1.0);
+      assertTrue(normed[minIdx] < 0);
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
+  }
+
 }
