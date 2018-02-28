@@ -220,6 +220,18 @@ public class TimeSeriesUtilsTest {
   }
 
   @Test
+  public void detrendAtEndsTest() {
+    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4,
+        3, 2, 1 };
+
+    x = TimeSeriesUtils.detrendEnds(x);
+
+    assertEquals(x[0], 0, 1E-5);
+    assertEquals(x[x.length-1], 0, 1E-5);
+  }
+
+  @Test
   public void detrendingLinearTest() {
 
     Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -681,6 +693,46 @@ public class TimeSeriesUtilsTest {
       String correctDate = "2017.08.02 | 00:00:00.019";
       assertEquals(inputDate, correctDate);
     } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+  @Test
+  public void testNormByMax() {
+    String fname = "./test-data/kiev-step/_BC0.512.seed";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(fname);
+      String startString = "2018-038T15:25:00.0";
+      String endString = "2018-038T16:00:00.0";
+      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
+      long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      db.trim(st, ed);
+      double[] data = db.getData();
+      System.out.println("AVG OF RAW DATA: " + TimeSeriesUtils.getMean(data));
+      data = TimeSeriesUtils.demean(data);
+      System.out.println("AVG OF DEMEANED DATA: " + TimeSeriesUtils.getMean(data));
+      double[] normed = TimeSeriesUtils.normalizeByMax(data);
+      int minIdx = 0; int maxIdx = 0;
+      double min = 0; double max = 0;
+      for (int i = 0; i < data.length; ++i) {
+        if (data[i] < min) {
+          min = data[i];
+          minIdx = i;
+        } else if (data[i] > max) {
+          max = data[i];
+          maxIdx = i;
+        }
+      }
+      System.out.println("(max, min): " + max + ", " + min);
+      //assertTrue(Math.abs(min) < Math.abs(max));
+      assertEquals(1.0, normed[maxIdx], 1E-3);
+      assertTrue(Math.abs(normed[minIdx]) < 1.0);
+      assertEquals(data[minIdx]/data[maxIdx], normed[minIdx], 1E-3);
+      assertEquals(-0.79, normed[minIdx], 0.01);
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+      // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
     }

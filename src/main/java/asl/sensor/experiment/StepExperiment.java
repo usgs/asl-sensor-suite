@@ -61,9 +61,9 @@ public class StepExperiment extends Experiment{
 
   private int sensorOutIdx; // used to keep track of response location for report generation
 
-  final double STEP_FACTOR = 1E-12;
-  final double F_TOLER = 1E-10;
-  final double X_TOLER = 1E-10;
+  final double STEP_FACTOR = 1E-10;
+  final double F_TOLER = 1E-15;
+  final double X_TOLER = 1E-15;
 
   public StepExperiment() {
     super();
@@ -87,7 +87,7 @@ public class StepExperiment extends Experiment{
 
     fireStateChange("Initial filtering of the raw step signal...");
     double[] stepCalData = stepCalRaw.getData().clone();
-    stepCalData = FFTResult.bandFilter(stepCalData, sps, 0., 0.1);
+    stepCalData = FFTResult.lowPassFilter(stepCalData, sps, 0.1);
     // demean and normalize before trimming
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.normalizeByMax(stepCalSeries);
@@ -100,6 +100,7 @@ public class StepExperiment extends Experiment{
     // actually trim the data and demean, normalize
     stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
+    stepCalSeries = TimeSeriesUtils.detrendEnds(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.normalizeByMax(stepCalSeries);
 
     // FFTResult.detrend(toDetrend);
@@ -128,9 +129,8 @@ public class StepExperiment extends Experiment{
     f = 1. / (NumericUtils.TAU / pole.abs() ); // corner frequency
     h = Math.abs( pole.getReal() / pole.abs() ); // damping
 
-    // these manually-set parameters were used in testing convergence
-    // f = 0.002777;
-    // h = 0.707107;
+    // manual override for testing purposes
+    // f = 0.002725; h = 0.719614;
 
     double[] params = new double[]{f, h};
 
@@ -153,13 +153,13 @@ public class StepExperiment extends Experiment{
     XYSeries xys = new XYSeries("STEP *^(-1) RESP");
     XYSeries scs = new XYSeries( stepCalRaw.getName() );
     for (double point : toPlot) {
-      double seconds = (double) now / TimeSeriesUtils.ONE_HZ_INTERVAL;
+      double seconds = now;
       xys.add(seconds, point);
       now += interval;
     }
     now = start;
     for (Number point : stepCalSeries) {
-      double seconds = (double) now / TimeSeriesUtils.ONE_HZ_INTERVAL;
+      double seconds = now;
       scs.add(seconds, point);
       now += interval;
     }
@@ -223,7 +223,7 @@ public class StepExperiment extends Experiment{
     now = start;
     XYSeries bfs = new XYSeries("BEST FIT PLOT");
     for (double point : fitPlot) {
-      double seconds = (double) now / TimeSeriesUtils.ONE_HZ_INTERVAL;
+      double seconds = now;
       bfs.add(seconds, point);
       now += interval;
     }
@@ -250,6 +250,7 @@ public class StepExperiment extends Experiment{
     fitResp.setPoles(poles);
     fitResp.setName( fitResp.getName() + " [FIT]" );
 
+    // go ahead and plot magnitude and phase of data
     Complex[] inputCurve = ir.applyResponseToInput(freqs);
     Complex[] fitCurve = fitResp.applyResponseToInput(freqs);
 
@@ -266,8 +267,8 @@ public class StepExperiment extends Experiment{
         continue;
       }
 
-      Complex tmpIn = inputCurve[i].divide(NumericUtils.TAU * freqs[i]);
-      Complex tmpFit = fitCurve[i].divide(NumericUtils.TAU * freqs[i]);
+      Complex tmpIn = inputCurve[i];
+      Complex tmpFit = fitCurve[i];
 
       double phiIn = NumericUtils.atanc(tmpIn);
       phiIn = NumericUtils.unwrap(phiIn, phiPrevIn);
@@ -280,11 +281,11 @@ public class StepExperiment extends Experiment{
       phiFit = Math.toDegrees(phiFit);
 
       double magAccelIn = tmpIn.abs();
-      inMag.add( freqs[i], 20 * Math.log10(magAccelIn) );
+      inMag.add( freqs[i], 10 * Math.log10(magAccelIn) );
       inPhase.add(freqs[i], phiIn);
 
       double magAccelFit = tmpFit.abs();
-      fitMag.add( freqs[i], 20 * Math.log10(magAccelFit) );
+      fitMag.add( freqs[i], 10 * Math.log10(magAccelFit) );
       fitPhase.add(freqs[i], phiFit);
     }
 
@@ -345,58 +346,40 @@ public class StepExperiment extends Experiment{
     // calculate the FFT of the response
     // recall that sensorFFTSeries is the FFT of the sensor output from the step signal
     Complex[] respFFT = new Complex[sensorFFTSeries.length]; // array of resps
-    double max = 0.0;
     // don't let denominator be zero
     respFFT[0] = Complex.ONE;
     for (int i = 1; i < respFFT.length; ++i) {
-
-      // replaced freqs[i] with
-      // 2*pi*i*f
+      // replaced freqs[i] with 2*pi*i*f
       Complex factor = new Complex(0, 2*Math.PI*freqs[i]);
-
       // (2*pi*i*f - p1) * (2*pi*f*i - p2)
       Complex denom = factor.subtract(pole1).multiply( factor.subtract(pole2) );
-
       respFFT[i] = factor.divide(denom);
-
-
-      if (respFFT[i].abs() > max) {
-        max = respFFT[i].abs();
-      }
-
     }
+
+    // get water level for response curve (gets multiplicative inverse as well)
+    respFFT = setWaterLevel(respFFT);
+
     // now that we have the response curve, we can remove it from the FFT of the sensor data
     Complex[] toDeconvolve = new Complex[sensorFFTSeries.length];
     // deconvolving response is dividing fft(signal) by fft(response)
-
+    // note that setting water level involves inverting the respFFT value, so we multiply here
     for (int i = 0; i < sensorFFTSeries.length; ++i) {
-      // the conjugate of the response, used twice in deconvolution
-      Complex conjResp = respFFT[i].conjugate();
-      double aboveZero = 0.008*max;  // term to keep the denominator above 0
-
-      // resp * conj(resp) + 0.008(max(|resp|))
-      Complex denom = respFFT[i].multiply(conjResp).add(aboveZero);
-
-      // deconvolving the response from output
-      // fft * conj(resp) / (resp * conjResp)+0.008(max(|resp|))
-      toDeconvolve[i] = sensorFFTSeries[i].multiply(conjResp).divide(denom);
+      toDeconvolve[i] = sensorFFTSeries[i].multiply(respFFT[i]);
     }
+
+    int lastIdx = toDeconvolve.length - 1;
+    toDeconvolve[lastIdx] = new Complex( toDeconvolve[lastIdx].abs(), 0. );
 
     // return data to time space
     double[] returnValue = FFTResult.singleSidedInverseFFT(toDeconvolve, inverseTrim);
 
-    returnValue = TimeSeriesUtils.demean(returnValue);
+    // trim data around areas with filter ringing and remove linear trend
+    int trimOffset = 0;
+    returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);
+    returnValue = TimeSeriesUtils.detrendEnds(returnValue);
     returnValue = TimeSeriesUtils.normalizeByMax(returnValue);
 
-    // attempt to filter out additional noise
-    returnValue = FFTResult.lowPassFilter(returnValue, sps, 0.1);
-    // trim out ringing, add offset to try to line up the calculated corner with step signal corner
-    int trimOffset = 3 * (int) sps;
-    returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);
-    // make sure data is correctly processed before returning -- demean and normalize
-    returnValue = TimeSeriesUtils.demean(returnValue);
-    return TimeSeriesUtils.normalizeByMax(returnValue);
-
+    return returnValue;
   }
 
   /**
@@ -468,6 +451,45 @@ public class StepExperiment extends Experiment{
     // NOTE: not used by corresponding panel, overrides with active indices
     // of components in the combo-box
     return new int[]{sensorOutIdx};
+  }
+
+  /**
+   * Applies a "water level" to the FFT data to prevent division by zero during deconvolutions,
+   * including inverting the FFT (mult. by -1) to make the deconvolution an act of multiplication.
+   * @param data FFT data
+   * @return FFT data, inverted and zero-corrected
+   */
+  public static Complex[] setWaterLevel(Complex[] data) {
+    Complex[] resetData = new Complex[data.length];
+    double[] sqrt = new double[data.length];
+    double max = data[0].abs();
+    int maxIdx = 0;
+    // first iteration gets abs values, scaled data
+    for (int i = 0; i < data.length; ++i) {
+      resetData[i] = data[i];
+      sqrt[i] = data[i].abs();
+      if ( max < sqrt[i] ) {
+        max = sqrt[i];
+        maxIdx = i;
+      }
+    }
+    double scaleBy = sqrt[maxIdx]*1E-30; // python code multiplies by 10^(-600/20) which is 10^-30
+    for (int i = 0; i < data.length; ++i) {
+      if (sqrt[i] < scaleBy & sqrt[i] > 0) {
+        resetData[i] = resetData[i].multiply(scaleBy / sqrt[i]);
+        sqrt[i] = resetData[i].abs();
+      }
+
+      if (sqrt[i] > 0) {
+        resetData[i] = new Complex(1., 0.).divide(resetData[i]);
+      }
+
+      if (sqrt[i] == 0) {
+        resetData[i] = Complex.ZERO;
+      }
+    }
+
+    return resetData;
   }
 
 }
