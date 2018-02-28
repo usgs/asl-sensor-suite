@@ -413,7 +413,8 @@ public class FFTResult {
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
     data = lowPassFilter(data, sps, 0.1);
     data = TimeSeriesUtils.demean(data);
-    data = TimeSeriesUtils.normalizeByMax(data);
+    cosineTaper(data, 0.05);
+    // data = TimeSeriesUtils.normalizeByMax(data);
 
     Complex[] frqDomn = simpleFFT(data);
 

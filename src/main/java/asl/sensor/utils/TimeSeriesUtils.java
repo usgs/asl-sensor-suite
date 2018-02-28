@@ -252,6 +252,20 @@ public class TimeSeriesUtils {
     return detrended;
   }
 
+  public static double[] detrendEnds(double[] data) {
+    int lastIdx = data.length - 1;
+    double start = data[0];
+    double end = data[lastIdx];
+    double diff = end - start;
+    double delta = diff / data.length;
+    double[] dataCopy = data.clone();
+    for (int i = 0; i < data.length; ++i) {
+      dataCopy[i] -= start + ( (delta * i) + 1) * diff / (lastIdx);
+    }
+
+    return dataCopy;
+  }
+
   /**
    * In-place subtraction of trend from each point in an incoming data set.
    * This is a necessary step in calculating the power-spectral density.

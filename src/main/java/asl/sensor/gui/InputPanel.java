@@ -87,7 +87,7 @@ implements ActionListener, ChangeListener {
   private static final long serialVersionUID = -7302813951637543526L;
 
   public static final SimpleDateFormat SDF =
-      new SimpleDateFormat("Y.DDD.HH:mm");
+      new SimpleDateFormat("Y.DDD.HH:mm:ss");
 
   /**
    * Default height of image produced by the save-as-image function
