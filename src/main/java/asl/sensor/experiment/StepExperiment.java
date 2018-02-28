@@ -128,6 +128,9 @@ public class StepExperiment extends Experiment{
     f = 1. / (NumericUtils.TAU / pole.abs() ); // corner frequency
     h = Math.abs( pole.getReal() / pole.abs() ); // damping
 
+    // manual override for testing purposes
+    // f = 0.002725; h = 0.719614;
+
     double[] params = new double[]{f, h};
 
     boolean needsFlip = sensorOutput.needsSignFlip();
@@ -388,6 +391,7 @@ public class StepExperiment extends Experiment{
     returnValue = FFTResult.lowPassFilter(returnValue, sps, 0.1);
     // trim out ringing, add offset to try to line up the calculated corner with step signal corner
     int trimOffset = 3 * (int) sps;
+    //trimOffset = 0;
     returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);
     // make sure data is correctly processed before returning -- demean and normalize
     returnValue = TimeSeriesUtils.demean(returnValue);

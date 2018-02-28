@@ -411,10 +411,9 @@ public class FFTResult {
     long interval = db.getInterval();
 
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
-
     data = lowPassFilter(data, sps, 0.1);
-
     data = TimeSeriesUtils.demean(data);
+    data = TimeSeriesUtils.normalizeByMax(data);
 
     Complex[] frqDomn = simpleFFT(data);
 

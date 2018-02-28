@@ -23,8 +23,8 @@ public class StepTest {
       ds.setBlock(0, folder + fname1);
       ds.setBlock(1, folder + fname2);
       ds.setEmbedResponse(1, "STS1T5_Q330HR");
-      String startString = "2018-038T15:16:00.0";
-      String endString = "2018-038T15:59:00.0";
+      String startString = "2018-038T15:25:00.0";
+      String endString = "2018-038T16:00:00.0";
       DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
       long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
       long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();

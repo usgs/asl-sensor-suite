@@ -718,7 +718,7 @@ public class TimeSeriesUtilsTest {
       assertEquals(1.0, normed[maxIdx], 1E-3);
       assertTrue(Math.abs(normed[minIdx]) < 1.0);
       assertEquals(data[minIdx]/data[maxIdx], normed[minIdx], 1E-3);
-      assertEquals(-0.79, normed[minIdx], 0.1);
+      assertEquals(-0.79, normed[minIdx], 0.01);
     } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
