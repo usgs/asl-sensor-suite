@@ -1,10 +1,14 @@
 package asl.sensor.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.math3.complex.Complex;
 import org.junit.Test;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.input.DataStore;
@@ -64,6 +68,33 @@ public class StepTest {
     } catch (SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
+    }
+  }
+
+  @Test
+  public void testWaterLevelCalc() {
+    List<Complex> data = new ArrayList<Complex>();
+    data.add( new Complex(1, 2) );
+    data.add(Complex.ZERO);
+    data.add( new Complex(2, 2) );
+    data.add( new Complex(1, -1) );
+    data.add(Complex.ZERO);
+    data.add( new Complex(100, -3) );
+    data.add( new Complex(5, -10) );
+    data.add( new Complex(20) );
+    Complex[] arr = data.toArray(new Complex[]{});
+    data = new ArrayList<Complex>();
+    data.add( new Complex(.2, -.4) );
+    data.add(Complex.ZERO);
+    data.add( new Complex(.25, -.25) );
+    data.add( new Complex(.5, .5) );
+    data.add(Complex.ZERO);
+    data.add( new Complex(0.00999101, 2.99730243E-4) );
+    data.add( new Complex(0.04, 0.08) );
+    data.add( new Complex(0.05) );
+    arr = StepExperiment.setWaterLevel(arr);
+    for (int i = 0; i < arr.length; ++i) {
+      assertTrue( Complex.equals( arr[i], data.get(i), 1E-7 ) );
     }
   }
 
