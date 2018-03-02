@@ -20,7 +20,7 @@ public class TestUtils {
       "https://github.com/amkearns-usgs/sprockets/raw/master/";
   private static int LOGIN_PAGE_BYTE_SIZE = 7875;
   static String SUBPAGE = "from_sensor_test/";
-  private static String TEST_DATA_LOCATION = "./test-data/";
+  private static String TEST_DATA_LOCATION = "src/test/resources/";
   static String DL_DEST_LOCATION = TEST_DATA_LOCATION + "sprockets/";
 
   // inName and fName are separated to make it possible to rename output file

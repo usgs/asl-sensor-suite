@@ -200,7 +200,7 @@ public class OrthogonalityTest {
 
     DataStore ds = new DataStore();
     try {
-      String root = "./test-data/sprockets/";
+      String root = TestUtils.DL_DEST_LOCATION;
       testSubfolder = root + testSubfolder;
       refSubfolder = root + refSubfolder;
 
