@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.gui.InputPanel;
@@ -17,6 +18,30 @@ import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class OrthogonalityTest {
+
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "orthog-94/";
+    String[] prefixes = new String[4];
+    prefixes[0] = "00_LH1";
+    prefixes[1] = "00_LH2";
+    prefixes[2] = "10_LH1";
+    prefixes[3] = "10_LH2";
+    String extension = ".512.seed";
+
+    for (String prefix : prefixes) {
+      String fileID = prefix + extension;
+      try {
+        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
 
   public String getNoisyData() {
     return "FUNA.00";
@@ -229,9 +254,7 @@ public class OrthogonalityTest {
   public void getsCorrectAngle() {
 
     DataStore ds = new DataStore();
-
-    String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/test-data/orthog-94/";
+    String testFolder = folder + "orthog-94/";
     String[] prefixes = new String[4];
     prefixes[0] = "00_LH1";
     prefixes[1] = "00_LH2";
@@ -240,7 +263,7 @@ public class OrthogonalityTest {
     String extension = ".512.seed";
 
     for (int i = 0; i < prefixes.length; ++i) {
-      String fName = folder + prefixes[i] + extension;
+      String fName = testFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
       } catch (SeedFormatException | CodecException e) {

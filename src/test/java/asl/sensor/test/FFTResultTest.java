@@ -1,7 +1,6 @@
 package asl.sensor.test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -10,7 +9,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.NumberFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -18,22 +16,19 @@ import java.util.Arrays;
 import java.util.List;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
-import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.input.DataBlock;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -41,6 +36,33 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class FFTResultTest {
 
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+
+    String refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
+    String filename = "C100823215422_COWI.LHx";
+    String filename2 = "DT000110.LH1";
+    try {
+      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
+      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "bandfilter-test/";
+    filename = "00_LHZ.512.seed";
+    try {
+      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
 
   //@Test
   public void testComplexDivision() {
@@ -62,7 +84,7 @@ public class FFTResultTest {
 
   // @Test
   public void testOddityWithCOWI() {
-    String filename = "test-data/cowi-multitests/C100823215422_COWI.LHx";
+    String filename = folder + "cowi-multitests/C100823215422_COWI.LHx";
     String dataname = "US_COWI_  _LHN";
     try {
       PrintWriter out;
@@ -91,358 +113,6 @@ public class FFTResultTest {
       out.close();
       out = new PrintWriter("testResultImages/" + dataname + "-filtered.txt");
       out.write( Arrays.toString(data) );
-      out.close();
-
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
-
-  }
-
-  //@Test
-  public void testPSDAndResp() {
-    //System.out.println("Running the test of ANMO's PSD");
-    String data1 = "data/testPSDandResp/00_LHZ.512.seed";
-    String data2 = "data/testPSDandResp/10_LHZ.512.seed";
-    String resp1 = "responses/testPSDandResp/RESP.IU.ANMO.00.LHZ";
-    String resp2 = "responses/testPSDandResp/RESP.IU.ANMO.10.LHZ";
-    try {
-      DataBlock db1 = TimeSeriesUtils.getFirstTimeSeries(data1);
-      DataBlock db2 = TimeSeriesUtils.getFirstTimeSeries(data2);
-
-      InstrumentResponse ir1 = new InstrumentResponse(resp1);
-      InstrumentResponse ir2 = new InstrumentResponse(resp2);
-
-      FFTResult psd1 = FFTResult.spectralCalc(db1, db1);
-      FFTResult psd2 = FFTResult.spectralCalc(db2, db2);
-      FFTResult psd1Resp = FFTResult.crossPower(db1, db1, ir1, ir1);
-      FFTResult psd2Resp = FFTResult.crossPower(db2, db2, ir2, ir2);
-
-      double[] freqs = psd1.getFreqs();
-      Complex[] respCurve = ir1.applyResponseToInput(freqs);
-      double phiPrev = 0;
-      StringBuilder[] sbs = new StringBuilder[7];
-      XYSeries xys1 = new XYSeries("00-LHZ PSD");
-      XYSeries xys2 = new XYSeries("10-LHZ PSD");
-      XYSeries xys3 = new XYSeries("00-LHZ PSD respified");
-      XYSeries xys4 = new XYSeries("10-LHZ PSD respified");
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(xys1);
-      xysc.addSeries(xys2);
-      xysc.addSeries(xys3);
-      xysc.addSeries(xys4);
-      for (int i = 0; i < sbs.length; ++i) {
-        sbs[i] = new StringBuilder();
-      }
-      for (int i = 0; i < freqs.length; ++i) {
-        sbs[0].append(freqs[i]);
-        double abs1 = 10*Math.log10( psd1.getFFT(i).abs() );
-        sbs[1].append(abs1);
-        double abs2 = 10*Math.log10( psd2.getFFT(i).abs() );
-        sbs[2].append(abs2);
-        double abs3 = 10*Math.log10( psd1Resp.getFFT(i).abs() );
-        sbs[3].append(abs3);
-        double abs4 = 10*Math.log10( psd2Resp.getFFT(i).abs() );
-        sbs[4].append(abs4);
-        double abs5 = 10*Math.log10( respCurve[i].abs() );
-        sbs[5].append(abs5);
-        double phi = NumericUtils.atanc(respCurve[i]);
-        phi = NumericUtils.unwrap(phi, phiPrev);
-        phiPrev = phi;
-        sbs[6].append(phi);
-
-        if (freqs[i] > .001) {
-          xys1.add(1/freqs[i], abs1);
-          xys2.add(1/freqs[i], abs2);
-          xys3.add(1/freqs[i], abs3);
-          xys4.add(1/freqs[i], abs4);
-        }
-
-        if (i + 1 < freqs.length) {
-          for (StringBuilder sb : sbs) {
-            sb.append(",\t");
-          }
-        }
-      }
-
-      XYSeriesCollection xysc2 = new XYSeriesCollection();
-      xysc2.addSeries(xys3);
-      xysc2.addSeries(xys4);
-      xysc2.addSeries( FFTResult.getLowNoiseModel(false) );
-
-      JFreeChart chart = ChartFactory.createXYLineChart("PSD test data",
-          "PSD (dB)", "", xysc);
-      chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Period (s)") );
-      BufferedImage bi = ReportingUtils.chartsToImage(640, 480, chart);
-      File chartOut = new File("testResultImages/ANMO-2017-002-PSD.png");
-      ImageIO.write(bi, "png", chartOut);
-
-      StringBuilder sbOut = new StringBuilder();
-      for (StringBuilder sb : sbs) {
-        sbOut.append(sb);
-        sbOut.append("\n");
-      }
-
-      String outname = "testResultImages/ANMO-2017-002-PSDTest.csv";
-      PrintWriter out = new PrintWriter(outname);
-      out.write( sbOut.toString() );
-      out.close();
-
-      chart = ChartFactory.createXYLineChart("PSD test data",
-          "PSD (dB)", "", xysc2);
-      chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Period (s)") );
-      NumberAxis na = (NumberAxis) chart.getXYPlot().getRangeAxis();
-      na.setAutoRangeIncludesZero(false);
-      bi = ReportingUtils.chartsToImage(640, 480, chart);
-      chartOut = new File("testResultImages/ANMO-2017-002-RESPD-PSD.png");
-      ImageIO.write(bi, "png", chartOut);
-
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-      fail();
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    } catch (SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
-  }
-
-  //@Test
-  public void ohNoMorePrintFunctions() {
-
-    // DecimalFormat df = new DecimalFormat(); // may need to tweak precision
-    NumberFormat nf = NumberFormat.getInstance();
-    nf.setGroupingUsed(false);
-    ComplexFormat cf = new ComplexFormat("j", nf);
-    assertFalse( cf.getImaginaryFormat().isGroupingUsed() );
-
-    // intended to be not-quite line-by-line replication of the PSD operations
-    // it is said that unit tests are meant to be atomic. this ain't that
-    String location = "testResultImages/psdOutputFiles/";
-    File folder = new File(location);
-    if ( !folder.exists() ) {
-      folder.mkdir();
-    }
-    PrintWriter out;
-
-    // get data first of all
-    String inName = "data/noise_1/00_BH0.512.seed";
-    DataBlock db;
-    try {
-      db = TimeSeriesUtils.getFirstTimeSeries(inName);
-      OffsetDateTime startDT = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
-      startDT = startDT.withHour(0);
-      startDT = startDT.withMinute(59);
-      startDT = startDT.withSecond(59);
-      startDT = startDT.withNano(994 * TimeSeriesUtils.TO_MILLI_FACTOR);
-      OffsetDateTime endDT = startDT.withHour(7);
-      endDT = endDT.withMinute(0);
-      endDT = endDT.withSecond(0);
-      endDT = endDT.withNano(25 * TimeSeriesUtils.TO_MILLI_FACTOR);
-      db.trim(startDT, endDT);
-
-      double[] list1 = db.getData();
-      String name = db.getName();
-      String pref = location + name;
-      out = new PrintWriter(pref + "-rawData.txt");
-      out.write(Arrays.toString(list1));
-      out.close();
-      long interval = db.getInterval();
-      // divide into windows of 1/4, moving up 1/16 of the data at a time
-
-      final double TAPER_WIDTH = .1;
-      int range = list1.length/4;
-      int slider = range/4;
-
-      // period is 1/sample rate in seconds
-      // since the interval data is just that multiplied by a large number
-      // let's divide it by that large number to get our period
-
-      // shouldn't need to worry about a cast here
-      double period = 1.0 / TimeSeriesUtils.ONE_HZ_INTERVAL;
-      period *= interval;
-
-      int padding = 2;
-      while (padding < range) {
-        padding *= 2;
-      }
-
-      int singleSide = padding / 2 + 1;
-      double deltaFreq = 1. / (padding * period);
-
-      Complex[] powSpectDens = new Complex[singleSide];
-      double wss = 0;
-
-      int segsProcessed = 0;
-      int rangeStart = 0;
-      int rangeEnd = range;
-
-      for (int i = 0; i < powSpectDens.length; ++i) {
-        powSpectDens[i] = Complex.ZERO;
-      }
-
-      while ( rangeEnd <= list1.length ) {
-
-        String initValues, detrended, demeaned, tapered;
-        StringBuilder fftOutput = new StringBuilder();
-        StringBuilder psdBins = new StringBuilder();
-
-        Complex[] fftResult1 = new Complex[singleSide]; // first half FFT reslt
-
-        // give us a new list we can modify to get the data of
-        double[] data1Range =
-            Arrays.copyOfRange(list1, rangeStart, rangeEnd);
-
-        initValues = Arrays.toString(data1Range);
-
-        // double arrays initialized with zeros, set as a power of two for FFT
-        // (i.e., effectively pre-padded on initialization)
-        double[] toFFT1 = new double[padding];
-
-        // demean and detrend work in-place on the list
-        TimeSeriesUtils.detrend(data1Range);
-        detrended = Arrays.toString(data1Range);
-        TimeSeriesUtils.demeanInPlace(data1Range);
-        demeaned = Arrays.toString(data1Range);
-        wss = FFTResult.cosineTaper(data1Range, TAPER_WIDTH);
-        tapered = Arrays.toString(data1Range);
-        // presumably we only need the last value of wss
-
-
-        for (int i = 0; i < data1Range.length; ++i) {
-          toFFT1[i] = data1Range[i];
-        }
-
-        FastFourierTransformer fft =
-            new FastFourierTransformer(DftNormalization.STANDARD);
-
-        Complex[] frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
-        fftOutput.append('[');
-        for (int i = 0; i < frqDomn1.length; ++i) {
-          fftOutput.append(cf.format(frqDomn1[i]));
-          if (i + 1 < frqDomn1.length) {
-            fftOutput.append(", ");
-          }
-        }
-        fftOutput.append(']');
-        // use arraycopy now (as it's fast) to get the first half of the fft
-        System.arraycopy(frqDomn1, 0, fftResult1, 0, fftResult1.length);
-        Complex[] psdBin = new Complex[singleSide];
-        psdBins.append('[');
-        for (int i = 0; i < singleSide; ++i) {
-          Complex val1 = fftResult1[i];
-          psdBin[i] = val1.multiply( val1.conjugate() );
-
-          psdBins.append( psdBin[i].getReal() ); // imag part should be 0
-          assertEquals(psdBin[i].getImaginary(), 0., 1E-15);
-          if (i + 1 < singleSide) {
-            psdBins.append(", ");
-          }
-
-          powSpectDens[i] = powSpectDens[i].add(psdBin[i]);
-        }
-        psdBins.append(']');
-        ++segsProcessed;
-        rangeStart  += slider;
-        rangeEnd    += slider;
-
-        out =
-            new PrintWriter(pref + "-psdSteps_" + segsProcessed + ".txt");
-        StringBuilder sb = new StringBuilder();
-        // initValues, detrended, demeaned, tapered, fftOutput, psdBins;
-        sb.append("THIS IS THE DATA FOR WINDOW " + segsProcessed);
-        sb.append(" WITH THE FOLLOWING FORMAT:\n");
-        sb.append("1. RAW DATA GOING INTO PSD OF WINDOW SIZE\n");
-        sb.append("2. DETRENDED DATA\n");
-        sb.append("3. DETREND + DEMEANED DATA\n");
-        sb.append("4. DATA WITH COSINE TAPER APPLIED\n");
-        sb.append("5. OUTPUT OF FFT FOR MODIFIED DATA\n");
-        sb.append("6. BINNED PSD DATA (SHOULD BE REAL-VALUED ONLY)\n\n");
-        sb.append(initValues);
-        sb.append("\n\n");
-        sb.append(detrended);
-        sb.append("\n\n");
-        sb.append(demeaned);
-        sb.append("\n\n");
-        sb.append(tapered);
-        sb.append("\n\n");
-        sb.append(fftOutput);
-        sb.append("\n\n");
-        sb.append(psdBins);
-        sb.append("\n\n");
-        out.write(sb.toString());
-        out.close();
-      }
-
-      // normalization time!
-
-      double psdNormalization = 2.0 * period / padding;
-      double windowCorrection = wss / range;
-      // it only uses the last value of wss, but that was how the original
-      // code was
-
-      psdNormalization /= windowCorrection;
-      psdNormalization /= segsProcessed; // NOTE: divisor here should be 13
-      assertEquals(13, segsProcessed);
-
-      double[] frequencies = new double[singleSide];
-
-      StringBuilder psdString = new StringBuilder('[');
-      for (int i = 0; i < singleSide; ++i) {
-        powSpectDens[i] = powSpectDens[i].multiply(psdNormalization);
-        psdString.append( powSpectDens[i].getReal() );
-        if (i + 1 < singleSide) {
-          psdString.append(", ");
-        }
-        assertEquals(powSpectDens[i].getImaginary(), 0., 1E-15);
-        frequencies[i] = i * deltaFreq;
-      }
-      psdString.append(']');
-
-      out = new PrintWriter(pref + "-outputPSD.txt");
-      out.write( psdString.toString() );
-      out.close();
-      // do smoothing over neighboring frequencies; values taken from
-      // asl.timeseries' PSD function
-      int nSmooth = 11, nHalf = 5;
-      Complex[] psdCFSmooth = new Complex[singleSide];
-
-      int iw = 0;
-
-      for (iw = 0; iw < nHalf; ++iw) {
-        psdCFSmooth[iw] = powSpectDens[iw];
-      }
-
-      // iw should be icenter of nsmooth point window
-      for (; iw < singleSide - nHalf; ++iw){
-        int k1 = iw - nHalf;
-        int k2 = iw + nHalf;
-
-        Complex sumC = Complex.ZERO;
-        for (int k = k1; k < k2; ++k) {
-          sumC = sumC.add(powSpectDens[k]);
-        }
-        psdCFSmooth[iw] = sumC.divide(nSmooth);
-      }
-
-      // copy remaining into smoothed array
-      for (; iw < singleSide; ++iw) {
-        psdCFSmooth[iw] = powSpectDens[iw];
-      }
-
-      StringBuilder smooth = new StringBuilder('[');
-      for (int i = 0; i < psdCFSmooth.length; ++i) {
-        Complex c = psdCFSmooth[i];
-        smooth.append(c.getReal());
-        assertEquals(c.getImaginary(), 0., 1E-15);
-        smooth.append(", ");
-      }
-      smooth.append(']');
-      out = new PrintWriter(pref + "-smoothedPSD.txt");
-      out.write( smooth.toString() );
       out.close();
 
     } catch (FileNotFoundException | SeedFormatException | CodecException e) {
@@ -578,65 +248,6 @@ public class FFTResultTest {
 
   }
 
-  //@Test
-  public void multitaperSmootherData() {
-    String name = "data/random_cal_lowfrq/BHZ.512.seed";
-    try {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
-
-      OffsetDateTime cal = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
-      OffsetDateTime cal2 = cal.withHour(7);
-      cal2 = cal2.withMinute(30);
-      db.trim(cal, cal2);
-
-      FastFourierTransformer fft =
-          new FastFourierTransformer(DftNormalization.STANDARD);
-
-      int tCount = 12;
-      double[] data = db.getData();
-      double[][] tapers = FFTResult.getMultitaperSeries(data.length, tCount);
-
-      // sum of smoothness of data
-      double[] smoothness = new double[tCount];
-
-      int padding = 1;
-      while (padding < data.length) {
-        padding *= 2;
-      }
-
-      for (int j = 0; j < tapers.length; ++j) {
-        double[] taper = tapers[j];
-        double[] taperedData = new double[padding];
-        double smoothSum = 0;
-        double taperSum = 0;
-        for (int i = 0; i < data.length; ++i) {
-          taperedData[i] = data[i] * taper[i];
-          taperSum += Math.abs(taper[i]);
-        }
-        Complex[] fftData = fft.transform(taperedData, TransformType.FORWARD);
-        for (int i = 1; i < fftData.length; ++i) {
-          fftData[i] = fftData[i].divide(taperSum);
-          Complex temp = fftData[i].subtract(fftData[i-1]);
-          smoothSum += temp.abs();
-        }
-
-        smoothness[j] = smoothSum;
-      }
-      // smoother curves have lower value (less change between points)
-      boolean improving = true;
-      for (int i = 1; i < tCount; ++i) {
-        System.out.println(smoothness[i] + ", prev " + smoothness[i-1]);
-        improving &= smoothness[i] < smoothness[i-1];
-      }
-      assertTrue(improving);
-
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
-  }
-
-
   @Test
   public void rangeCopyTest() {
 
@@ -721,7 +332,7 @@ public class FFTResultTest {
 
   @Test
   public void testBandFilter() {
-    String name = "test-data/bandfilter-test/00_LHZ.512.seed";
+    String name = folder + "bandfilter-test/00_LHZ.512.seed";
     double[] testAgainst = new double[]{-50394.9143358, -111785.107014, -18613.4142884,
         143117.116357, 141452.164593, 6453.3516971, -79041.0146413, -58317.1285426, -8621.19465151,
         12272.6705308};
@@ -820,379 +431,6 @@ public class FFTResultTest {
       e.printStackTrace();
     }
 
-  }
-
-  //@Test commented out because saves a lot of text data
-  public void testAutomateRingler() {
-    String name = "data/random_cal_lowfrq/BHZ.512.seed";
-    try {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
-
-      OffsetDateTime cal = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);
-      OffsetDateTime cal2 = cal.withHour(7);
-      cal2 = cal2.withMinute(30);
-
-      name = "data/random_cal_lowfrq/BC0.512.seed";
-
-      db.trim(cal, cal2);
-
-      String dir = "testResultImages/ringlerTaperResults/";
-      File folder = new File(dir);
-      if ( !folder.exists() ) {
-        //System.out.println("Writing directory " + dir);
-        folder.mkdirs();
-      }
-
-      double[] data = db.getData();
-      int padding = 1;
-      while (padding < data.length) {
-        padding *= 2;
-      }
-
-      double[] frequencies = new double[padding];
-      double deltaFreq = db.getSampleRate() / padding;
-      for (int i = 0; i < frequencies.length; ++i) {
-        frequencies[i] = deltaFreq * i;
-      }
-
-      FastFourierTransformer fft =
-          new FastFourierTransformer(DftNormalization.STANDARD);
-
-      StringBuilder sb = new StringBuilder();
-      PrintWriter out;
-
-      for (int i = 0; i < data.length; ++i) {
-        sb.append(data[i]);
-        if (i + 1 < data.length) {
-          sb.append("\n");
-        }
-      }
-      String dataOut = "raw_data_MAJO_BHZ.txt";
-      out = new PrintWriter(dir + dataOut);
-      out.println(sb.toString());
-      out.close();
-
-      double[] cloned = data.clone();
-      TimeSeriesUtils.detrend(cloned);
-      TimeSeriesUtils.demeanInPlace(cloned);
-      int taperCt = 12;
-      double[][] tapers = FFTResult.getMultitaperSeries(data.length, taperCt);
-
-      int firstHalf = padding / 2 + 1;
-      Complex[] fftFinal = new Complex[firstHalf];
-      for (int i = 0; i < firstHalf; ++i) {
-        fftFinal[i] = Complex.ZERO;
-      }
-
-      for (int j = 0; j < tapers.length; ++j) {
-        double[] convert = new double[padding];
-        double[] taper = tapers[j];
-        double taperSum = 0;
-        sb = new StringBuilder();
-        for (int i = 0; i < data.length; ++i) {
-          taperSum += Math.abs(taper[i]);
-          convert[i] = cloned[i] * taper[i];
-
-          sb.append(cloned[i]);
-          sb.append(", ");
-          sb.append(taper[i]);
-          sb.append(", ");
-          sb.append(convert[i]);
-          if (i + 1 < data.length) {
-            sb.append("\n");
-          }
-
-        }
-
-        String file;
-
-        file = "taper_" + j + ".csv";
-        out = new PrintWriter(dir + file);
-        out.println(sb.toString());
-        out.close();
-
-
-        Complex[] freqSpace = fft.transform(convert, TransformType.FORWARD);
-        file = "fft_" + j + ".csv";
-        sb = new StringBuilder();
-
-        for (int i = 0; i < firstHalf; ++i) {
-          fftFinal[i] = fftFinal[i].add(freqSpace[i].divide(taperSum));
-          sb.append(frequencies[i]);
-          sb.append(", ");
-          sb.append(freqSpace[i].getReal());
-          sb.append(", ");
-          sb.append(freqSpace[i].getImaginary());
-          if (i + 1 < freqSpace.length) {
-            sb.append("\n");
-          }
-        }
-        out = new PrintWriter(dir + file);
-        out.println(sb.toString());
-        out.close();
-      }
-
-      XYSeries xys = new XYSeries("PSD of MAJO LFQ - MULTI");
-      XYSeries xysTest = new XYSeries("PSD of MAJO LFQ - WELCH");
-      FFTResult fftr = FFTResult.spectralCalc(db, db);
-
-      sb = new StringBuilder();
-      Complex[] psdTest = fftr.getFFT();
-      double[] freqList = fftr.getFreqs();
-      for (int i = 1; freqList[i] < 0.1; ++i) {
-        sb.append(freqList[i]);
-        sb.append(", ");
-        sb.append(psdTest[i].getReal());
-        sb.append(", ");
-        sb.append(psdTest[i].getImaginary());
-        if (freqList[i+1] < 0.1) {
-          sb.append("\n");
-        }
-        xysTest.add(freqList[i], 10 * Math.log10(psdTest[i].abs()));
-      }
-      out = new PrintWriter(dir + "BHZ-welch-fft.csv");
-      out.println(sb.toString());
-      out.close();
-
-      sb = new StringBuilder();
-      String outputFinal = "FFT_result.csv";
-      for (int i = 0; i < firstHalf; ++i) {
-        double fq = frequencies[i];
-        fftFinal[i] = fftFinal[i].divide(taperCt);
-        Complex cross = fftFinal[i].multiply( fftFinal[i].conjugate() );
-        sb.append(fftFinal[i].getReal());
-        sb.append(", ");
-        sb.append(fftFinal[i].getImaginary());
-        sb.append(", ");
-        sb.append(cross.getReal());
-        sb.append(", ");
-        sb.append(cross.getImaginary());
-        if (i + 1 < firstHalf) {
-          sb.append('\n');
-        }
-
-        if (i > 0 && fq < 0.1) {
-          xys.add( fq, 10 * Math.log10( cross.abs() ) );
-        }
-
-      }
-
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(xys);
-      xysc.addSeries(xysTest);
-
-      JFreeChart chart =
-          ChartFactory.createXYLineChart("psd", "x", "y", xysc);
-      chart.getXYPlot().setDomainAxis(new LogarithmicAxis("frq"));
-
-      BufferedImage bi = ReportingUtils.chartsToImage(640, 480, chart);
-      String currentDir = System.getProperty("user.dir");
-      String testResultFolder = currentDir + "/testResultImages/";
-      String testResult =
-          testResultFolder + "PSD-MAJO.png";
-      File file = new File(testResult);
-      ImageIO.write(bi, "png", file);
-
-      out = new PrintWriter(dir + outputFinal);
-      out.write(sb.toString());
-      out.close();
-
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-      fail();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (SeedFormatException | CodecException e) {
-      e.printStackTrace();
-    }
-  }
-
-  //@Test commented out because saves a lot of text data
-  public void testAutomateRingler2() {
-    String name = "data/random_cal_lowfrq/BHZ.512.seed";
-    try {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(name);
-
-      OffsetDateTime cal = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
-      OffsetDateTime cal2 = cal.withHour(7);
-      cal2 = cal2.withMinute(30);
-
-      name = "data/random_cal_lowfrq/BC0.512.seed";
-      db = TimeSeriesUtils.getFirstTimeSeries(name);
-
-      db.trim(cal, cal2);
-
-      String dir = "testResultImages/ringlerTaperResults2/";
-      File folder = new File(dir);
-      if ( !folder.exists() ) {
-        //System.out.println("Writing directory " + dir);
-        folder.mkdirs();
-      }
-
-      double[] data = db.getData();
-      int padding = 1;
-      while (padding < data.length) {
-        padding *= 2;
-      }
-
-      double[] frequencies = new double[padding];
-      double deltaFreq = db.getSampleRate() / padding;
-      for (int i = 0; i < frequencies.length; ++i) {
-        frequencies[i] = deltaFreq * i;
-      }
-
-      FastFourierTransformer fft =
-          new FastFourierTransformer(DftNormalization.STANDARD);
-
-      StringBuilder sb = new StringBuilder();
-      PrintWriter out;
-
-      for (int i = 0; i < data.length; ++i) {
-        sb.append(data[i]);
-        if (i + 1 < data.length) {
-          sb.append("\n");
-        }
-      }
-      String dataOut = "raw_data_MAJO_BC0.txt";
-      out = new PrintWriter(dir + dataOut);
-      out.println(sb.toString());
-      out.close();
-
-      double[] cloned = data.clone();
-      TimeSeriesUtils.detrend(cloned);
-      TimeSeriesUtils.demeanInPlace(cloned);
-      int taperCt = 12;
-      double[][] tapers = FFTResult.getMultitaperSeries(data.length, taperCt);
-
-      int firstHalf = padding / 2 + 1;
-      Complex[] fftFinal = new Complex[firstHalf];
-      for (int i = 0; i < firstHalf; ++i) {
-        fftFinal[i] = Complex.ZERO;
-      }
-
-      for (int j = 0; j < tapers.length; ++j) {
-        double[] convert = new double[padding];
-        double[] taper = tapers[j];
-        double taperSum = 0;
-        sb = new StringBuilder();
-        for (int i = 0; i < data.length; ++i) {
-          taperSum += Math.abs(taper[i]);
-          convert[i] = cloned[i] * taper[i];
-
-          sb.append(cloned[i]);
-          sb.append(", ");
-          sb.append(taper[i]);
-          sb.append(", ");
-          sb.append(convert[i]);
-          if (i + 1 < data.length) {
-            sb.append("\n");
-          }
-
-        }
-
-        String file;
-
-        file = "taper_" + j + ".csv";
-        out = new PrintWriter(dir + file);
-        out.println(sb.toString());
-        out.close();
-
-
-        Complex[] freqSpace = fft.transform(convert, TransformType.FORWARD);
-        file = "fft_" + j + ".csv";
-        sb = new StringBuilder();
-
-        for (int i = 0; i < firstHalf; ++i) {
-          fftFinal[i] = fftFinal[i].add(freqSpace[i].divide(taperSum));
-          sb.append(frequencies[i]);
-          sb.append(", ");
-          sb.append(freqSpace[i].getReal());
-          sb.append(", ");
-          sb.append(freqSpace[i].getImaginary());
-          if (i + 1 < freqSpace.length) {
-            sb.append("\n");
-          }
-        }
-        out = new PrintWriter(dir + file);
-        out.println(sb.toString());
-        out.close();
-      }
-
-      XYSeries xys = new XYSeries("PSD of MAJO LFQ - MULTI");
-      XYSeries xysTest = new XYSeries("PSD of MAJO LFQ - WELCH");
-      FFTResult fftr = FFTResult.spectralCalc(db, db);
-
-      sb = new StringBuilder();
-      Complex[] psdTest = fftr.getFFT();
-      double[] freqList = fftr.getFreqs();
-      for (int i = 1; freqList[i] < 0.1; ++i) {
-        sb.append(freqList[i]);
-        sb.append(", ");
-        sb.append(psdTest[i].getReal());
-        sb.append(", ");
-        sb.append(psdTest[i].getImaginary());
-        if (freqList[i+1] < 0.1) {
-          sb.append("\n");
-        }
-        xysTest.add(freqList[i], 10 * Math.log10(psdTest[i].abs()));
-      }
-      out = new PrintWriter(dir + "BC0-welch-fft.csv");
-      out.println(sb.toString());
-      out.close();
-
-      sb = new StringBuilder();
-      String outputFinal = "FFT_result.csv";
-      for (int i = 0; i < firstHalf; ++i) {
-        double fq = frequencies[i];
-        fftFinal[i] = fftFinal[i].divide(taperCt);
-        Complex cross = fftFinal[i].multiply( fftFinal[i].conjugate() );
-        sb.append(fftFinal[i].getReal());
-        sb.append(", ");
-        sb.append(fftFinal[i].getImaginary());
-        sb.append(", ");
-        sb.append(cross.getReal());
-        sb.append(", ");
-        sb.append(cross.getImaginary());
-        if (i + 1 < firstHalf) {
-          sb.append('\n');
-        }
-
-        if (i > 0 && fq < 0.1) {
-          xys.add( fq, 10 * Math.log10( fftFinal[i].abs() ) );
-          // xys.add( fq, 10 * Math.log10( cross.getReal() ) );
-        }
-
-      }
-
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(xys);
-      xysc.addSeries(xysTest);
-
-      JFreeChart chart =
-          ChartFactory.createXYLineChart("psd", "x", "y", xysc);
-      chart.getXYPlot().setDomainAxis(new LogarithmicAxis("frq"));
-
-      BufferedImage bi = ReportingUtils.chartsToImage(640, 480, chart);
-      String currentDir = System.getProperty("user.dir");
-      String testResultFolder = currentDir + "/testResultImages/";
-      String testResult =
-          testResultFolder + "PSD-MAJO-CAL.png";
-      File file = new File(testResult);
-      ImageIO.write(bi, "png", file);
-
-      out = new PrintWriter(dir + outputFinal);
-      out.write(sb.toString());
-      out.close();
-
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-      fail();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
   }
 
   @Test

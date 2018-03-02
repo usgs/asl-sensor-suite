@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
@@ -15,21 +17,34 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class DataStoreTest {
 
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
+  public String fileID = station+"_"+location+"_"+channel+".512.seed";
 
-  public String fileID = station+"_"+location+"_"+channel;
+  @Before
+  public void getReferencedData() {
 
-  public String filename1 = "./test-data/blocktrim/"+fileID+".512.seed";
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
+    try {
+      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+  }
 
   @Test
   public void commonTimeTrimMatchesLength() {
-
+    String filename = folder + "blocktrim/" + fileID;
     DataStore ds = new DataStore();
     DataBlock db;
     try {
-      db = TimeSeriesUtils.getFirstTimeSeries(filename1);
+      db = TimeSeriesUtils.getFirstTimeSeries(filename);
       String filter = db.getName();
       ds.setBlock(0, db);
 
@@ -44,8 +59,8 @@ public class DataStoreTest {
       //  tested in DataBlockTest
       db.trim(loc1, loc2);
 
-      ds.setBlock(1, filename1, filter);
-      ds.setBlock(2, filename1, filter);
+      ds.setBlock(1, filename, filter);
+      ds.setBlock(2, filename, filter);
 
       // function under test
       ds.trimToCommonTime();

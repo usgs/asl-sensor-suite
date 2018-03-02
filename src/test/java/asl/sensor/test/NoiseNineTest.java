@@ -17,6 +17,7 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.NoiseNineExperiment;
@@ -31,10 +32,58 @@ public class NoiseNineTest {
 
   String currentDir = System.getProperty("user.dir");
 
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "noisenine/";
+    String[] types = new String[]{"00","10","60"};
+    String freqName = "_BH";
+    String[] components = new String[]{"1","2","Z"};
+    String ending = ".512.seed";
+    for (String type : types) {
+      for (String component : components) {
+        try {
+          String fileID = type + freqName + component + ending;
+          TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+        } catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "noisenine2/";
+    types = new String[]{"00","10","30"};
+    for (String type : types) {
+      for (String component : components) {
+        try {
+          String fileID = type + freqName + component + ending;
+          TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+        } catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+    }
+
+    try {
+      String fileID = "RESP.XX.MOFO.00.BHZ";
+      // this resp is part of the noisenine2 subdirectory
+      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+  }
+
   @Test
   public void canRunAndPlotTest1() {
 
-    String folder = currentDir + "/test-data/noisenine/";
+    String testFolder = folder + "noisenine/";
     String[] types = new String[]{"00","10","60"};;
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};
@@ -42,7 +91,7 @@ public class NoiseNineTest {
     String respName = "STS-1_Q330HR_BH_20";
 
     DataStore ds =
-        setUpTest(folder, types, freqName, components, ending, respName, true);
+        setUpTest(testFolder, types, freqName, components, ending, respName, true);
 
     SimpleDateFormat sdf = InputPanel.SDF;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
@@ -137,15 +186,15 @@ public class NoiseNineTest {
 
   @Test
   public void canRunAndPlotTest2() {
-    String folder = currentDir + "/test-data/noisenine2/";
+    String testFolder = folder + "noisenine2/";
     String[] types = new String[]{"00","10","30"};
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};
     String ending = ".512.seed";
-    String respName = "test-data/noisenine2/RESP.XX.MOFO.00.BHZ";
+    String respName = folder + "noisenine2/RESP.XX.MOFO.00.BHZ";
 
     DataStore ds =
-        setUpTest(folder, types, freqName, components, ending, respName, false);
+        setUpTest(testFolder, types, freqName, components, ending, respName, false);
 
     SimpleDateFormat sdf = InputPanel.SDF;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );

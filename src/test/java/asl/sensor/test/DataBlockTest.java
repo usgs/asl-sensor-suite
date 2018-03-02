@@ -3,9 +3,11 @@ package asl.sensor.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
@@ -15,20 +17,48 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class DataBlockTest {
 
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
+  public String fileID = station+"_"+location+"_"+channel+".512.seed";
 
-  public String fileID = station+"_"+location+"_"+channel;
-  public String filename1 = "./test-data/blocktrim/"+fileID+".512.seed";
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+
+    String refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
+    String filename = "C100823215422_COWI.LHx";
+    String filename2 = "DT000110.LH1";
+    try {
+      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
+      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
+    try {
+      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+  }
 
   @Test
   public void trimsCorrectly() {
     int left = InputPanel.SLIDER_MAX / 4;
     int right = 3 * InputPanel.SLIDER_MAX / 4;
 
+    String filename = folder + "blocktrim/" + fileID;
+
     try {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(filename1);
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(filename);
 
       int sizeOld = db.size();
 
@@ -54,7 +84,7 @@ public class DataBlockTest {
 
   @Test
   public void trimsCOWICorrectly() {
-      String filename = "test-data/cowi-multitests/C100823215422_COWI.LHx";
+      String filename = folder + "cowi-multitests/C100823215422_COWI.LHx";
       String dataname = "US_COWI_  _LHN";
       DataBlock db;
       try {

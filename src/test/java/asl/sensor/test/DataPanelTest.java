@@ -3,6 +3,8 @@ package asl.sensor.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
@@ -12,13 +14,26 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class DataPanelTest {
 
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
+  public String fileID = station+"_"+location+"_"+channel+".512.seed";
 
-  public String fileID = station+"_"+location+"_"+channel;
+  @Before
+  public void getReferencedData() {
 
-  public String filename1 = "./test-data/blocktrim/"+fileID+".512.seed";
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
+    try {
+      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+  }
 
   @Test
   public void getsCorrectTrimming() {
@@ -27,9 +42,10 @@ public class DataPanelTest {
     int farLeft = 0;
 
     System.out.println(left+","+right);
+    String filename = folder + "blocktrim/" + fileID;
 
     try {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(filename1);
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(filename);
       long start = db.getStartTime();
       long end = db.getEndTime();
       long interval = db.getInterval();

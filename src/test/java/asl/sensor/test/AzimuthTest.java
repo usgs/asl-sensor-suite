@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.gui.InputPanel;
@@ -22,6 +23,70 @@ import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class AzimuthTest {
+
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "azi-ANMO-test/";
+    String[] prefixes = new String[3];
+    prefixes[0] = "ANMO.00_LH1";
+    prefixes[1] = "ANMO.00_LH2";
+    prefixes[2] = "TST.00_LH1";
+    String extension = ".512.seed";
+    for (String prefix : prefixes) {
+      String data = prefix + extension;
+      try {
+        // get reference data if needed
+        TestUtils.downloadTestData(refSubfolder, data, refSubfolder, data);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "azi-polartest/";
+    // prefixes = new String[3];
+    prefixes[0] = "00_LH1";
+    prefixes[1] = "00_LH2";
+    prefixes[2] = "TST1.00_LH1";
+    for (String prefix : prefixes) {
+      String data = prefix + extension;
+      try {
+        // get reference data if needed
+        TestUtils.downloadTestData(refSubfolder, data, refSubfolder, data);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "azi-at0/";
+    // prefixes = new String[3];
+    // prefixes[0] = "00_LH1";
+    // prefixes[1] = "00_LH2";
+    prefixes[2] = "10_LH1";
+    for (String prefix : prefixes) {
+      String data = prefix + extension;
+      try {
+        // get reference data if needed
+        TestUtils.downloadTestData(refSubfolder, data, refSubfolder, data);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
+    String filename = "C100823215422_COWI.LHx";
+    String filename2 = "DT000110.LH1";
+    try {
+      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
+      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
 
   public String getNoisyData() {
     return "FUNA.00";
@@ -172,7 +237,7 @@ public class AzimuthTest {
 
     DataStore ds = new DataStore();
     try {
-      String root = "./test-data/sprockets/";
+      String root = TestUtils.DL_DEST_LOCATION;
       testSubfolder = root + testSubfolder;
       refSubfolder = root + refSubfolder;
       try {
@@ -222,8 +287,7 @@ public class AzimuthTest {
 
     DataStore ds = new DataStore();
 
-    String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/test-data/azi-ANMO-test/";
+    String dataFolder = folder + "azi-ANMO-test/";
     String[] prefixes = new String[3];
     prefixes[0] = "ANMO.00_LH1";
     prefixes[1] = "ANMO.00_LH2";
@@ -231,7 +295,7 @@ public class AzimuthTest {
     String extension = ".512.seed";
 
     for (int i = 0; i < prefixes.length; ++i) {
-      String fName = folder + prefixes[i] + extension;
+      String fName = dataFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
       } catch (SeedFormatException | CodecException e) {
@@ -273,8 +337,7 @@ public class AzimuthTest {
   public void findsAntipolarCorrectly() {
     DataStore ds = new DataStore();
 
-    String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/test-data/azi-polartest/";
+    String dataFolder = folder + "azi-polartest/";
     String[] prefixes = new String[3];
     prefixes[0] = "00_LH1";
     prefixes[1] = "00_LH2";
@@ -282,7 +345,7 @@ public class AzimuthTest {
     String extension = ".512.seed";
 
     for (int i = 0; i < prefixes.length; ++i) {
-      String fName = folder + prefixes[i] + extension;
+      String fName = dataFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
       } catch (SeedFormatException | CodecException e) {
@@ -325,8 +388,7 @@ public class AzimuthTest {
   public void solvesNoRotation() {
     DataStore ds = new DataStore();
 
-    String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/test-data/azi-at0/";
+    String dataFolder = folder + "azi-at0/";
     String[] prefixes = new String[3];
     prefixes[0] = "00_LH1";
     prefixes[1] = "00_LH2";
@@ -334,7 +396,7 @@ public class AzimuthTest {
     String extension = ".512.seed";
 
     for (int i = 0; i < prefixes.length; ++i) {
-      String fName = folder + prefixes[i] + extension;
+      String fName = dataFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
       } catch (SeedFormatException | CodecException e) {
@@ -375,13 +437,12 @@ public class AzimuthTest {
 
   }
 
-
   @Test
   public void testSimpleCOWI() {
-    String filename = "test-data/cowi-multitests/C100823215422_COWI.LHx";
+    String filename = folder + "cowi-multitests/C100823215422_COWI.LHx";
     String dataname1 = "US_COWI_  _LHN";
     String dataname2 = "US_COWI_  _LHE";
-    String filename2 = "test-data/cowi-multitests/DT000110.LH1";
+    String filename2 = folder + "cowi-multitests/DT000110.LH1";
     try {
       DataStore ds = new DataStore();
       ds.setBlock(0, filename, dataname1);
@@ -408,10 +469,10 @@ public class AzimuthTest {
 
   @Test
   public void testGetsCorrectWindowAnglesCOWI() {
-    String filename = "test-data/cowi-multitests/C100823215422_COWI.LHx";
+    String filename = folder + "cowi-multitests/C100823215422_COWI.LHx";
     String dataname1 = "US_COWI_  _LHN";
     String dataname2 = "US_COWI_  _LHE";
-    String filename2 = "test-data/cowi-multitests/DT000110.LH1";
+    String filename2 = folder + "cowi-multitests/DT000110.LH1";
     try {
       DataStore ds = new DataStore();
       ds.setBlock(0, filename, dataname1);
