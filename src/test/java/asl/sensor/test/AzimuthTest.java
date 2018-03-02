@@ -255,24 +255,12 @@ public class AzimuthTest {
         fail();
       }
 
-
       ds.trimToCommonTime();
       AzimuthExperiment ae = new AzimuthExperiment();
       ae.runExperimentOnData(ds);
-      double fitAngle = ae.getFitAngle() - 180;
-      if (fitAngle > 180) {
-        fitAngle -= 360; // keep in range (-180, 180) for testing near 0 accurately
-      } else if (angle > 180) {
-        angle -= 360;
-      }
-
+      double fitAngle = ae.getFitAngle();
       System.out.println(sb.toString() + " | " + ( (fitAngle % 360) + 360) % 360 );
-      // so above check dealt with case where data was near 0
-      // some of our test cases are with data near 180, so let's handle that as well
-      // rather than have it wrap from 180 to -180
-      if ( Math.abs(180 + fitAngle) < 1E-3 ) {
-        fitAngle += 360;
-      }
+
       assertEquals(angle, fitAngle, 1.0);
 
     } catch (FileNotFoundException e) {

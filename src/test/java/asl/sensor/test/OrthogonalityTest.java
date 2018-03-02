@@ -226,15 +226,7 @@ public class OrthogonalityTest {
       oe.runExperimentOnData(ds);
       double fitAngle = oe.getFitAngle();
       System.out.println( Arrays.toString(oe.getSolutionParams()) );
-      /*
-      if (fitAngle > 180) {
-        fitAngle -= 360; // keep in range (-180, 180) for testing near 0 accurately
-      } else if (angle > 180) {
-        angle -= 360;
-      }
-      */
 
-      fitAngle = 180 - fitAngle; // back-azimuth correction
       double expectedAngle = angle;
       if (expectedAngle > 180) {
         expectedAngle = 360 - expectedAngle;
