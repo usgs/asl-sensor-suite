@@ -363,6 +363,14 @@ public class FFTResult {
     return singleSidedFFT(data, sps, mustFlip);
   }
 
+  /**
+   * Calculates the FFT of some timeseries data (double array)
+   * and returns the positive frequencies resulting from the FFT calculation
+   * @param data Timeseries data
+   * @param sps Sample rate of the timeseries data
+   * @param mustFlip True if signal is inverted (for step cal)
+   * @return Complex array of FFT values, and double array of matching frequencies
+   */
   public static FFTResult singleSidedFFT(double[] data, double sps, boolean mustFlip) {
     for (int i = 0; i < data.length; ++i) {
       if (mustFlip) {
