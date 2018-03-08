@@ -127,11 +127,12 @@ public class FFTResult {
    * @return Value corresponding to power loss from application of taper.
    */
   public static double cosineTaper(double[] dataSet, double taperW) {
-
-    double ramp = taperW * dataSet.length;
+    double widthSingleSide = taperW/2;
+    int ramp = (int) (widthSingleSide * dataSet.length);
+    widthSingleSide = (double) ramp / dataSet.length;
     double wss = 0.0; // represents power loss
 
-    double[] taperCurve = getCosTaperCurve(dataSet.length, taperW);
+    double[] taperCurve = getCosTaperCurveSingleSide(dataSet.length, widthSingleSide);
 
     for (int i = 0; i < taperCurve.length; i++) {
       double taper = taperCurve[i];
@@ -358,15 +359,19 @@ public class FFTResult {
   public static FFTResult singleSidedFFT(DataBlock db, boolean mustFlip) {
 
     double[] data = db.getData().clone();
+    double sps = db.getSampleRate();
+    return singleSidedFFT(data, sps, mustFlip);
+  }
 
-    for (int i = 0; i < db.size(); ++i) {
+  public static FFTResult singleSidedFFT(double[] data, double sps, boolean mustFlip) {
+    for (int i = 0; i < data.length; ++i) {
       if (mustFlip) {
         data[i] *= -1;
       }
     }
 
     data = TimeSeriesUtils.demean(data);
-
+    FFTResult.cosineTaper(data, 0.05);
     // data = TimeSeriesUtils.normalize(data);
 
     Complex[] frqDomn = simpleFFT(data);
@@ -374,7 +379,7 @@ public class FFTResult {
     int padding = frqDomn.length;
     int singleSide = padding/2 + 1;
 
-    double nyquist = db.getSampleRate() / 2;
+    double nyquist = sps / 2;
     double deltaFrq = nyquist / (singleSide - 1);
 
     Complex[] fftOut = new Complex[singleSide];
@@ -390,6 +395,8 @@ public class FFTResult {
     return new FFTResult(fftOut, frequencies);
 
   }
+
+
 
   /**
    * Calculates the FFT of the timeseries data in a DataBlock
@@ -666,8 +673,9 @@ public class FFTResult {
    * @param tWidth Width of actual taper curve (i.e., decimal fraction of the data being tapered)
    * @return Taper curve, with 1.0 in areas not having taper applied
    */
-  public static double[] getCosTaperCurve(int length, double width) {
-    double ramp = width * length;
+  public static double[] getCosTaperCurveSingleSide(int length, double width) {
+    // width = width/2;
+    int ramp = (int) (width * length);
 
     int limit = (int) Math.ceil(ramp);
 
@@ -684,7 +692,7 @@ public class FFTResult {
     // demean and detrend work in-place on the list
     // TimeSeriesUtils.detrend(toFFT);
     TimeSeriesUtils.demeanInPlace(toFFT);
-    Double wss = cosineTaper(toFFT, 0.025);
+    Double wss = cosineTaper(toFFT, 0.05);
     // presumably we only need the last value of wss
 
 
