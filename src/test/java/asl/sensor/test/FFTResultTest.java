@@ -19,6 +19,7 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
+import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -28,6 +29,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.input.DataBlock;
+import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
@@ -365,6 +367,129 @@ public class FFTResultTest {
       fail();
     }
 
+  }
+
+  @Test
+  public void testTaperCurve() {
+    int length = 21600;
+    double width = 0.025;
+    double[] taper = FFTResult.getCosTaperCurve(length, width);
+    double[] testAgainst = new double[]{
+        0.0, 8.49299745992e-06, 3.39717013156e-05, 7.64352460048e-05, 0.000135882188956,
+        0.00021231051064, 0.000305717614632, 0.000416100327709,  0.000543454899949,
+        0.000687777004865, 0.000849061739547, 0.00102730362483, 0.00122249660549
+    };
+    for (int i = 0; i < testAgainst.length; ++i) {
+      assertEquals(testAgainst[i], taper[i], 5E-6);
+    }
+  }
+
+  @Test
+  public void PSDWindowTest() {
+    String dataName = folder + "psd-check/" + "00_LHZ.512.seed";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(dataName);
+      double[] list1 = db.getData();
+      assertEquals(86400, list1.length);
+      int range = list1.length/4;
+      assertEquals(21600, range);
+      int slider = range/4;
+      assertEquals(5400, slider);
+      int padding = 2;
+      while (padding < range) {
+        padding *= 2;
+      }
+      assertEquals(32768, padding);
+      // double period = 1.0 / TimeSeriesUtils.ONE_HZ_INTERVAL;
+      // period *= db.getInterval();
+      // int singleSide = padding / 2 + 1;
+      // double deltaFreq = 1. / (padding * period);
+      int segsProcessed = 0;
+      int rangeStart = 0;
+      int rangeEnd = range;
+      while ( rangeEnd <= list1.length ) {
+
+        // give us a new list we can modify to get the data of
+        double[] toFFT =
+            Arrays.copyOfRange(list1, rangeStart, rangeEnd);
+        // FFTResult.cosineTaper(toFFT, 0.05);
+        assertEquals(range, toFFT.length);
+        Pair<Complex[], Double> tempResult = FFTResult.getSpectralWindow(toFFT, padding);
+        double cos = tempResult.getSecond();
+        assertEquals(20925, cos, 1);
+        Complex[] result = tempResult.getFirst();
+        if (segsProcessed == 0) {
+          System.out.println(cos);
+          System.out.println( Arrays.toString( Arrays.copyOfRange(toFFT, 0, 10) ) );
+          System.out.println( Arrays.toString( Arrays.copyOfRange(result, 0, 10) ) );
+        }
+
+        ++segsProcessed;
+        rangeStart  += slider;
+        rangeEnd    += slider;
+
+      }
+      assertEquals(segsProcessed, 13);
+
+    } catch (SeedFormatException | CodecException | IOException e) {
+      e.printStackTrace();
+      fail();
+    }
+}
+
+  @Test
+  public void PSDCalcTest() {
+    String dataName = folder + "psd-check/" + "00_LHZ.512.seed";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(dataName);
+      assertEquals(86400, db.getData().length);
+      // InstrumentResponse ir = new InstrumentResponse(respName);
+      FFTResult psd = FFTResult.spectralCalc(db, db);
+      Complex[] spect = psd.getFFT();
+      System.out.println(spect.length);
+      for (int i = 0; i < 10; ++i) {
+        System.out.println(spect[i]);
+      }
+      assertEquals(spect.length, 16385);
+      double deltaFreq = psd.getFreq(1);
+      int lowIdx = (int) Math.ceil(1./(deltaFreq * 5.));
+      int highIdx = (int) Math.floor(1./(deltaFreq * 3.));
+      Complex[] spectTrim = Arrays.copyOfRange(spect, lowIdx, highIdx);
+      double[] psdAmp = new double[spectTrim.length];
+      for (int i = 0; i < spectTrim.length; ++i) {
+        psdAmp[i] = 10 * Math.log10(spectTrim[i].abs());
+      }
+      double mean = TimeSeriesUtils.getMean(psdAmp);
+      assertEquals(55.314, mean, 1E-2);
+    } catch (SeedFormatException | CodecException | IOException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+  @Test
+  public void PSDCalcTestWithResp() {
+    String dataName = folder + "psd-check/" + "00_LHZ.512.seed";
+    String respName = folder + "psd-check/" + "RESP.IU.ANMO.00.LHZ";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(dataName);
+      InstrumentResponse ir = new InstrumentResponse(respName);
+      FFTResult psd = FFTResult.crossPower(db, db, ir, ir);
+      Complex[] spect = psd.getFFT();
+      double deltaFreq = psd.getFreq(1);
+      int lowIdx = (int) Math.floor(1./(deltaFreq * 5.));
+      int highIdx = (int) Math.ceil(1./(deltaFreq * 3.));
+      Complex[] spectTrim = Arrays.copyOfRange(spect, lowIdx, highIdx);
+      double[] psdAmp = new double[spectTrim.length];
+      for (int i = 0; i < spectTrim.length; ++i) {
+        psdAmp[i] = 10 * Math.log10(spectTrim[i].abs());
+      }
+      double mean = TimeSeriesUtils.getMean(psdAmp);
+      assertEquals(55.314, mean, 1E-2);
+    } catch (SeedFormatException | CodecException | IOException e) {
+      e.printStackTrace();
+      fail();
+    }
   }
 
   @Test

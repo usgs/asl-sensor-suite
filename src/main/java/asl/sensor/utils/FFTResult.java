@@ -12,6 +12,7 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
+import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.InstrumentResponse;
@@ -128,11 +129,12 @@ public class FFTResult {
   public static double cosineTaper(double[] dataSet, double taperW) {
 
     double ramp = taperW * dataSet.length;
-    double taper;
     double wss = 0.0; // represents power loss
 
-    for (int i = 0; i < ramp; i++) {
-      taper = 0.5 * (1.0 - Math.cos(i * Math.PI / ramp) );
+    double[] taperCurve = getCosTaperCurve(dataSet.length, taperW);
+
+    for (int i = 0; i < taperCurve.length; i++) {
+      double taper = taperCurve[i];
       dataSet[i] *= taper;
       int idx = dataSet.length-i-1;
       dataSet[idx] *= taper;
@@ -558,56 +560,28 @@ public class FFTResult {
 
     while ( rangeEnd <= list1.length ) {
 
-      Complex[] fftResult1 = new Complex[singleSide]; // first half of FFT reslt
-      Complex[] fftResult2 = null;
-
-      if (!sameData) {
-        fftResult2 = new Complex[singleSide];
-      }
-
       // give us a new list we can modify to get the data of
-      double[] data1Range =
+      double[] toFFT1 =
           Arrays.copyOfRange(list1, rangeStart, rangeEnd);
-      double[] data2Range = null;
+      double[] toFFT2 = null;
 
       if (!sameData) {
-        data2Range = Arrays.copyOfRange(list2, rangeStart, rangeEnd);
+        toFFT2 = Arrays.copyOfRange(list2, rangeStart, rangeEnd);
       }
 
+      /*
       // double arrays initialized with zeros, set as a power of two for FFT
       // (i.e., effectively pre-padded on initialization)
       double[] toFFT1 = new double[padding];
       double[] toFFT2 = null;
+      */
 
-      // demean and detrend work in-place on the list
-      TimeSeriesUtils.detrend(data1Range);
-      TimeSeriesUtils.demeanInPlace(data1Range);
-      wss = cosineTaper(data1Range, TAPER_WIDTH);
-      // presumably we only need the last value of wss
-
-      if (!sameData) {
-        TimeSeriesUtils.demeanInPlace(data2Range);
-        TimeSeriesUtils.detrend(data2Range);
-        wss = cosineTaper(data2Range, TAPER_WIDTH);
-        toFFT2 = new double[padding];
-      }
-
-
-      toFFT1 = Arrays.copyOfRange(data1Range, 0, padding);
-      if (!sameData) {
-        toFFT2 = Arrays.copyOfRange(data2Range, 0, padding);
-      }
-      FastFourierTransformer fft =
-          new FastFourierTransformer(DftNormalization.STANDARD);
-
-      Complex[] frqDomn1 = fft.transform(toFFT1, TransformType.FORWARD);
-      // use arraycopy now (as it's fast) to get the first half of the fft
-      System.arraycopy(frqDomn1, 0, fftResult1, 0, fftResult1.length);
-
-      Complex[] frqDomn2 = null;
+      Pair<Complex[], Double> windFFTData = getSpectralWindow(toFFT1, padding);
+      Complex[] fftResult1 = windFFTData.getFirst();
+      wss = windFFTData.getSecond();
+      Complex[] fftResult2 = fftResult1;
       if (toFFT2 != null) {
-        frqDomn2 = fft.transform(toFFT2, TransformType.FORWARD);
-        System.arraycopy(frqDomn2, 0, fftResult2, 0, fftResult2.length);
+        fftResult2 = getSpectralWindow(toFFT2, padding).getFirst();
       }
 
       for (int i = 0; i < singleSide; ++i) {
@@ -682,6 +656,45 @@ public class FFTResult {
 
     return new FFTResult(psdCFSmooth, frequencies);
 
+  }
+
+  /**
+   * Return the cosine taper curve to multiply against data of a specified length, with taper of
+   * given width
+   * @param length Length of data being tapered (to per-element multply against)
+   * @param tWidth Width of actual taper curve (i.e., decimal fraction of the data being tapered)
+   * @return Taper curve, with 1.0 in areas not having taper applied
+   */
+  public static double[] getCosTaperCurve(int length, double width) {
+    double ramp = width * length;
+
+    int limit = (int) Math.ceil(ramp);
+
+    double[] result = new double[limit];
+    for (int i = 0; i < ramp; i++) {
+      double taper = 0.5 * (1.0 - Math.cos(i * Math.PI / ramp) );
+      result[i] = taper;
+    }
+
+    return result;
+  }
+
+  public static Pair<Complex[], Double> getSpectralWindow(double[] toFFT, int padding) {
+    // demean and detrend work in-place on the list
+    // TimeSeriesUtils.detrend(toFFT);
+    TimeSeriesUtils.demeanInPlace(toFFT);
+    Double wss = cosineTaper(toFFT, 0.025);
+    // presumably we only need the last value of wss
+
+
+    toFFT = Arrays.copyOfRange(toFFT, 0, padding);
+    FastFourierTransformer fft =
+        new FastFourierTransformer(DftNormalization.STANDARD);
+
+    Complex[] frqDomn1 = fft.transform(toFFT, TransformType.FORWARD);
+    int singleSide = padding / 2 + 1;
+    // use arraycopy now (as it's fast) to get the first half of the fft
+    return new Pair<Complex[], Double>( Arrays.copyOfRange(frqDomn1, 0, singleSide), wss );
   }
 
   /**
