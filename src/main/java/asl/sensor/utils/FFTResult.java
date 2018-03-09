@@ -127,12 +127,15 @@ public class FFTResult {
    * @return Value corresponding to power loss from application of taper.
    */
   public static double cosineTaper(double[] dataSet, double taperW) {
+    /*
     double widthSingleSide = taperW/2;
     int ramp = (int) (widthSingleSide * dataSet.length);
     widthSingleSide = (double) ramp / dataSet.length;
+    */
     double wss = 0.0; // represents power loss
 
-    double[] taperCurve = getCosTaperCurveSingleSide(dataSet.length, widthSingleSide);
+    double[] taperCurve = getCosTaperCurveSingleSide(dataSet.length, taperW);
+    int ramp = taperCurve.length;
 
     for (int i = 0; i < taperCurve.length; i++) {
       double taper = taperCurve[i];
@@ -585,16 +588,9 @@ public class FFTResult {
         toFFT2 = Arrays.copyOfRange(list2, rangeStart, rangeEnd);
       }
 
-      /*
-      // double arrays initialized with zeros, set as a power of two for FFT
-      // (i.e., effectively pre-padded on initialization)
-      double[] toFFT1 = new double[padding];
-      double[] toFFT2 = null;
-      */
-
       Pair<Complex[], Double> windFFTData = getSpectralWindow(toFFT1, padding);
-      Complex[] fftResult1 = windFFTData.getFirst();
-      wss = windFFTData.getSecond();
+      Complex[] fftResult1 = windFFTData.getFirst(); // actual fft data
+      wss = windFFTData.getSecond(); // represents some measure of power loss
       Complex[] fftResult2 = fftResult1;
       if (toFFT2 != null) {
         fftResult2 = getSpectralWindow(toFFT2, padding).getFirst();
@@ -678,16 +674,18 @@ public class FFTResult {
    * Return the cosine taper curve to multiply against data of a specified length, with taper of
    * given width
    * @param length Length of data being tapered (to per-element multply against)
-   * @param tWidth Width of actual taper curve (i.e., decimal fraction of the data being tapered)
-   * @return Taper curve, with 1.0 in areas not having taper applied
+   * @param tWidth Width of (half-) taper curve (i.e., decimal fraction of the data being tapered)
+   * Because this parameter is used to create the actual length of the data, this should be half
+   * the value of the full taper.
+   * @return Start of taper curve, symmetric to end, with all other entries being implicitly 1.0
    */
   public static double[] getCosTaperCurveSingleSide(int length, double width) {
     // width = width/2;
-    int ramp = (int) (width * length);
+    int ramp = (int) ( ( ( (length * width) + 1) / 2.) - 1);
 
-    int limit = (int) Math.ceil(ramp);
+    // int limit = (int) Math.ceil(ramp);
 
-    double[] result = new double[limit];
+    double[] result = new double[ramp];
     for (int i = 0; i < ramp; i++) {
       double taper = 0.5 * (1.0 - Math.cos(i * Math.PI / ramp) );
       result[i] = taper;

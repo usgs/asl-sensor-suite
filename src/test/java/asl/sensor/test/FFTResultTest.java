@@ -64,6 +64,29 @@ public class FFTResultTest {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
+
+    refSubfolder = TestUtils.SUBPAGE + "psd-check/";
+    String[] fnames = { "00_LHZ.512.seed", "RESP.IU.ANMO.00.LHZ",
+        "ALLzero.mseed", "ALLButOnezero.mseed" };
+    for (String fname : fnames) {
+      try {
+        TestUtils.downloadTestData(refSubfolder, fname, refSubfolder, fname);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+  }
+
+  @Test
+  public void testMoreComplexCosTaper() {
+    int len = 1000; double width = 0.05;
+    int taperLen = (int) ( ( (len * width) + 1) / 2.) - 1;
+    assertEquals(24, taperLen);
+    double[] taper = FFTResult.getCosTaperCurveSingleSide(len, 0.05);
+    assertEquals(taper.length, 24);
+    System.out.println(len + " LENGTH TAPER CURVE WITH WIDTH " + width + ": ");
+    System.out.println(Arrays.toString(taper));
   }
 
   //@Test
@@ -373,7 +396,7 @@ public class FFTResultTest {
   @Test
   public void testTaperCurve() {
     int length = 21600;
-    double width = 0.025; // single side; akin to 0.05 length of full curve
+    double width = 0.05;
     double[] taper = FFTResult.getCosTaperCurveSingleSide(length, width);
     double[] testAgainst = new double[]{
         0.0, 8.49299745992e-06, 3.39717013156e-05, 7.64352460048e-05, 0.000135882188956,
@@ -440,7 +463,7 @@ public class FFTResultTest {
 
   @Test
   public void testCosineTaper() {
-    double[] taper = FFTResult.getCosTaperCurveSingleSide(100, 0.025);
+    double[] taper = FFTResult.getCosTaperCurveSingleSide(100, 0.05);
     assertEquals(taper.length, 2);
     assertEquals(0., taper[0], 1E-9);
     assertEquals(0.5, taper[1], 1E-9);
@@ -458,10 +481,9 @@ public class FFTResultTest {
       FFTResult psd = FFTResult.singleSidedFFT(data, sps, false);
       Complex[] spect = psd.getFFT();
       assertEquals(spect.length, 131072/2 + 1);
-      Complex firstPointTest = new Complex(722987.975235, 0.);
 
       Complex[] reference = {
-          firstPointTest,
+          new Complex(722987.975235, 0.),
           new Complex(-37414805.72779498, -5822012.70678756),
           new Complex(-45662469.49645267, 24281858.75109717),
           new Complex(20729519.11753263, 64465056.80586579),
@@ -474,9 +496,11 @@ public class FFTResultTest {
       };
 
       for (int i = 0; i < 10; ++i) {
-        String msg = "Got " + spect[0] + " but expected " + firstPointTest;
-        // assertTrue(msg, Complex.equals(spect[i], reference[i], 1E-3));
-        System.out.println("Got " + spect[i] + " -- expected " + reference[i]);
+        // TODO: add check here
+        String msg = "Got " + spect[i] + " -- expected " + reference[i];
+        System.out.println(msg);
+        assertTrue(msg, Complex.equals(spect[i], reference[i], 1E-3));
+
       }
     } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
@@ -485,7 +509,7 @@ public class FFTResultTest {
   }
 
   @Test
-  public void testPSDAllZeroIn() {
+  public void testFFTInputAllZero() {
       double[] data = new double[86400];
       String dataName = folder + "psd-check/" + "ALLzero.mseed";
       try {
@@ -498,6 +522,41 @@ public class FFTResultTest {
         for (Complex c : spect) {
           String msg = "Got " + c + " but expected ZERO";
           assertTrue(msg, Complex.equals(c, Complex.ZERO, 1E-20) );
+        }
+      } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+        e.printStackTrace();
+        fail();
+      }
+  }
+
+  @Test
+  public void testFFTInputAllZeroButOne() {
+      double[] data = new double[86400];
+      String dataName = folder + "psd-check/" + "ALLButOnezero.mseed";
+      try {
+        DataBlock db = TimeSeriesUtils.getFirstTimeSeries(dataName);
+        double sps = db.getSampleRate();
+        data = db.getData();
+        FFTResult psd = FFTResult.singleSidedFFT(data, sps, false);
+        Complex[] spect = psd.getFFT();
+        assertEquals(spect.length, 131072/2 + 1);
+        Complex[] testAgainst = {
+            new Complex(-0.97500000),
+            new Complex(0.20859933, 0.38178972),
+            new Complex(-0.10179138, 0.15856818),
+            new Complex(0.03587773, 0.00253845),
+            new Complex(0.04882482, 0.10662358),
+            new Complex(-0.03568545, 0.04779705),
+            new Complex(0.03446735, 0.00490186),
+            new Complex(0.02392292, 0.06379192),
+            new Complex(-0.01669606, 0.01934787),
+            new Complex(0.03221568, 0.00693072)
+        };
+        for (int i = 0; i < testAgainst.length; ++i) {
+          Complex c = spect[i];
+          Complex compare = testAgainst[i];
+          String msg = "Got " + c + " -- expected " + compare;
+          assertTrue(msg, Complex.equals(c, compare, 1E-4) );
         }
       } catch (FileNotFoundException | SeedFormatException | CodecException e) {
         e.printStackTrace();
