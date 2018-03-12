@@ -85,8 +85,16 @@ public class FFTResultTest {
     assertEquals(24, taperLen);
     double[] taper = FFTResult.getCosTaperCurveSingleSide(len, 0.05);
     assertEquals(taper.length, 24);
-    System.out.println(len + " LENGTH TAPER CURVE WITH WIDTH " + width + ": ");
-    System.out.println(Arrays.toString(taper));
+    double[] expected = {
+        0.,          0.00427757,  0.01703709,  0.03806023,  0.0669873,   0.10332333,
+        0.14644661,  0.19561929,  0.25,        0.30865828,  0.37059048,  0.4347369,
+        0.5,         0.5652631,   0.62940952,  0.69134172,  0.75,        0.80438071,
+        0.85355339,  0.89667667,  0.9330127,   0.96193977,  0.98296291,  0.99572243
+    };
+    for (int i = 0; i < expected.length; ++i) {
+      assertEquals(taper[i], expected[i], 1E-4);
+    }
+
   }
 
   //@Test
@@ -221,21 +229,6 @@ public class FFTResultTest {
       assertEquals(timeSeries[i], result[i], 0.1);
     }
 
-  }
-
-  @Test
-  public void fftZerosTestMultitaper() {
-    long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
-    double[] data = new double[1000];
-    // likely unnecessary loop, double arrays initialized at 0
-    for (int i = 0; i < data.length; ++i) {
-      data[i] = 0.;
-    }
-    FFTResult fftr = FFTResult.spectralCalcMultitaper(data, data, interval);
-    Complex[] values = fftr.getFFT();
-    for (Complex c : values) {
-      assertTrue(c.equals(Complex.ZERO));
-    }
   }
 
   @Test
@@ -432,7 +425,6 @@ public class FFTResultTest {
       int rangeStart = 0;
       int rangeEnd = range;
       while ( rangeEnd <= list1.length ) {
-
         // give us a new list we can modify to get the data of
         double[] toFFT =
             Arrays.copyOfRange(list1, rangeStart, rangeEnd);
@@ -440,12 +432,34 @@ public class FFTResultTest {
         assertEquals(range, toFFT.length);
         Pair<Complex[], Double> tempResult = FFTResult.getSpectralWindow(toFFT, padding);
         double cos = tempResult.getSecond();
-        assertEquals(20925, cos, 1);
+        assertEquals(20925.25, cos, 1E-10);
         Complex[] result = tempResult.getFirst();
         if (segsProcessed == 0) {
-          System.out.println(cos);
-          System.out.println( Arrays.toString( Arrays.copyOfRange(toFFT, 0, 10) ) );
-          System.out.println( Arrays.toString( Arrays.copyOfRange(result, 0, 10) ) );
+          double[] inputCompare = {
+              0.,          0.00829733,  0.04025516,  0.07436855,  0.11318463,
+              0.20593302,  0.39650397,  0.56754482,  0.53962978,  0.2964054,
+          };
+          Complex[] compareFFTAgainst = {
+            new Complex(-527418.58107920),
+            new Complex(2776737.84811514, 3857608.90528254),
+            new Complex(3026409.04852451, -5380632.86921071),
+            new Complex(674295.05515449, -16987.54811898),
+            new Complex(-935438.31540157, -1996975.50482683),
+            new Complex(906760.19785340, -1335406.39712464),
+            new Complex(-362291.20689872, -152366.81080565),
+            new Complex(-608945.67973085, -1276477.12005977),
+            new Complex(386499.87292928, -567698.68950399),
+            new Complex(-542277.47724910, -8439.67480907)
+          };
+          for (int i = 0; i < 10; ++i) {
+            assertEquals(toFFT[i], inputCompare[i], 1E-4);
+            String msg = "Got " + result[i] + " -- expected " + compareFFTAgainst[i];
+            assertTrue(msg, Complex.equals(result[i], compareFFTAgainst[i], 1E-5));
+          }
+        }
+        if (segsProcessed == 1) {
+          System.out.println( Arrays.toString( Arrays.copyOfRange( toFFT, 0, 10 ) ) );
+          System.out.println( Arrays.toString( Arrays.copyOfRange( result, 0, 10 ) ) );
         }
 
         ++segsProcessed;
@@ -496,9 +510,8 @@ public class FFTResultTest {
       };
 
       for (int i = 0; i < 10; ++i) {
-        // TODO: add check here
         String msg = "Got " + spect[i] + " -- expected " + reference[i];
-        System.out.println(msg);
+        // System.out.println(msg);
         assertTrue(msg, Complex.equals(spect[i], reference[i], 1E-3));
 
       }
@@ -582,10 +595,12 @@ public class FFTResultTest {
       double deltaFreq = psd.getFreq(1);
       int lowIdx = (int) Math.ceil(1./(deltaFreq * 5.));
       int highIdx = (int) Math.floor(1./(deltaFreq * 3.));
+      assertEquals(0.200012207031, psd.getFreq(lowIdx), 1E-12);
+      assertEquals(0.333312988281, psd.getFreq(highIdx), 1E-12);
       Complex[] spectTrim = Arrays.copyOfRange(spect, lowIdx, highIdx);
       double[] psdAmp = new double[spectTrim.length];
       for (int i = 0; i < spectTrim.length; ++i) {
-        psdAmp[i] = 10 * Math.log10(spectTrim[i].abs());
+        psdAmp[i] = 10*Math.log10(spectTrim[i].abs());
       }
       double mean = TimeSeriesUtils.getMean(psdAmp);
       assertEquals(55.314, mean, 1E-2);
