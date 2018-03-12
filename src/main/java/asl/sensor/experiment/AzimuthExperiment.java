@@ -417,6 +417,60 @@ public class AzimuthExperiment extends Experiment {
     return 3;
   }
 
+  public double[] getAcceptedAngles() {
+    double[] acceptedDeg = new double[acceptedAngles.size()];
+    for (int i = 0; i < acceptedDeg.length; ++i) {
+      acceptedDeg[i] = Math.toDegrees( acceptedAngles.get(i) );
+    }
+    return acceptedDeg;
+  }
+
+  /**
+   * Get the series of best-fit angles over each of the windowed ranges of data
+   * @return Array of best-fit angles
+   */
+  public double[] getBestFitAngles() {
+    return angles;
+  }
+
+  /**
+   * Get the correlation estimate for each best-fit angle over the series of data windows
+   * @return Array of best correlations
+   */
+  public double[] getCorrelations() {
+    return correlations;
+  }
+
+  // This is the damped jacobian function for windowed estimates
+  // we use a different cost function for initial estimate since using the
+  // squared correlation would make x, 180+x produce the same values
+  private MultivariateJacobianFunction
+  getDampedJacobianFunction(double[] l1, double[] l2, double[] l3, double cr, double th) {
+
+    // make my func the j-func, I want that func-y stuff
+    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
+
+      final double[] finalTestNorth = l1;
+      final double[] finalTestEast = l2;
+      final double[] finalRefNorth = l3;
+      final double bestCorr = cr;
+      final double bestTheta = th;
+
+      @Override
+      public Pair<RealVector, RealMatrix> value(final RealVector point) {
+        return jacobian(point,
+            finalRefNorth,
+            finalTestNorth,
+            finalTestEast,
+            bestCorr,
+            bestTheta);
+      }
+
+    };
+
+    return jFunc;
+  }
+
   /**
    * Return the fit angle calculated by the backend in degrees
    * @return angle result in degrees
@@ -431,14 +485,6 @@ public class AzimuthExperiment extends Experiment {
    */
   public double getFitAngleRad() {
     return angle;
-  }
-
-  /**
-   * Returns the minimum acceptable correlation used in angle estimates
-   * @return correlation cut-off point
-   */
-  public double getMinCorr() {
-    return minCorr;
   }
 
   /**
@@ -473,34 +519,12 @@ public class AzimuthExperiment extends Experiment {
     return jFunc;
   }
 
-  // This is the damped jacobian function for windowed estimates
-  // we use a different cost function for initial estimate since using the
-  // squared correlation would make x, 180+x produce the same values
-  private MultivariateJacobianFunction
-  getDampedJacobianFunction(double[] l1, double[] l2, double[] l3, double cr, double th) {
-
-    // make my func the j-func, I want that func-y stuff
-    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
-
-      final double[] finalTestNorth = l1;
-      final double[] finalTestEast = l2;
-      final double[] finalRefNorth = l3;
-      final double bestCorr = cr;
-      final double bestTheta = th;
-
-      @Override
-      public Pair<RealVector, RealMatrix> value(final RealVector point) {
-        return jacobian(point,
-            finalRefNorth,
-            finalTestNorth,
-            finalTestEast,
-            bestCorr,
-            bestTheta);
-      }
-
-    };
-
-    return jFunc;
+  /**
+   * Returns the minimum acceptable correlation used in angle estimates
+   * @return correlation cut-off point
+   */
+  public double getMinCorr() {
+    return minCorr;
   }
 
   /**
@@ -519,6 +543,14 @@ public class AzimuthExperiment extends Experiment {
     return Math.toDegrees(uncert);
   }
 
+  /**
+   * Returns true if there were enough points to do correlation windowing step
+   * @return Boolean that is true if correlation windows were taken
+   */
+  public boolean hadEnoughPoints() {
+    return enoughPts;
+  }
+
   @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < blocksNeeded(); ++i) {
@@ -529,12 +561,32 @@ public class AzimuthExperiment extends Experiment {
     return true;
   }
 
-  /**
-   * Get the correlation estimate for each best-fit angle over the series of data windows
-   * @return Array of best correlations
-   */
-  public double[] getCorrelations() {
-    return correlations;
+  private Pair<RealVector, RealMatrix> jacobian(
+      final RealVector point,
+      final double[] refNorth,
+      final double[] testNorth,
+      final double[] testEast) {
+
+    double diff = 1E-12;
+
+    double theta = ( point.getEntry(0) );
+    double thetaDelta = theta + diff;
+
+    // angles of rotation are x, x+dx respectively
+    double[] testRotated =
+        TimeSeriesUtils.rotate(testNorth, testEast, theta);
+    double[] rotatedDiff =
+        TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
+
+    PearsonsCorrelation pc = new PearsonsCorrelation();
+    double value = pc.correlation(refNorth, testRotated);
+    RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
+    double deltaY = pc.correlation(refNorth, rotatedDiff);
+    double change = (deltaY - value) / diff;
+    double[][] jacobianArray = new double[][]{{change}};
+    RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
+    return new Pair<RealVector, RealMatrix>(valueVec, jacobian);
+
   }
 
   /**
@@ -592,34 +644,6 @@ public class AzimuthExperiment extends Experiment {
 
   }
 
-  private Pair<RealVector, RealMatrix> jacobian(
-      final RealVector point,
-      final double[] refNorth,
-      final double[] testNorth,
-      final double[] testEast) {
-
-    double diff = 1E-12;
-
-    double theta = ( point.getEntry(0) );
-    double thetaDelta = theta + diff;
-
-    // angles of rotation are x, x+dx respectively
-    double[] testRotated =
-        TimeSeriesUtils.rotate(testNorth, testEast, theta);
-    double[] rotatedDiff =
-        TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
-
-    PearsonsCorrelation pc = new PearsonsCorrelation();
-    double value = pc.correlation(refNorth, testRotated);
-    RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
-    double deltaY = pc.correlation(refNorth, rotatedDiff);
-    double change = (deltaY - value) / diff;
-    double[][] jacobianArray = new double[][]{{change}};
-    RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
-    return new Pair<RealVector, RealMatrix>(valueVec, jacobian);
-
-  }
-
   /**
    * Set the angle offset for the reference sensor (degrees from north)
    * @param newOffset Degrees from north that the reference sensor points
@@ -640,29 +664,5 @@ public class AzimuthExperiment extends Experiment {
    */
   public void setSimple(boolean isSimple) {
     simpleCalc = isSimple;
-  }
-
-  /**
-   * Get the series of best-fit angles over each of the windowed ranges of data
-   * @return Array of best-fit angles
-   */
-  public double[] getBestFitAngles() {
-    return angles;
-  }
-
-  public double[] getAcceptedAngles() {
-    double[] acceptedDeg = new double[acceptedAngles.size()];
-    for (int i = 0; i < acceptedDeg.length; ++i) {
-      acceptedDeg[i] = Math.toDegrees( acceptedAngles.get(i) );
-    }
-    return acceptedDeg;
-  }
-
-  /**
-   * Returns true if there were enough points to do correlation windowing step
-   * @return Boolean that is true if correlation windows were taken
-   */
-  public boolean hadEnoughPoints() {
-    return enoughPts;
   }
 }

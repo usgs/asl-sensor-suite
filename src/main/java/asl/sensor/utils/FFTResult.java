@@ -30,11 +30,6 @@ import uk.me.berndporr.iirj.Butterworth;
 public class FFTResult {
 
   /**
-   * Specifies the width of the cosine taper function used in windowing
-   */
-  private static final double TAPER_WIDTH = 0.10;
-
-  /**
    * Filter out data outside of the range between the low and high frequencies;
    * can be used for a low-pass filter if low frequency is set to 0
    * and high-pass if higher frequency is set to sample rate
@@ -67,26 +62,6 @@ public class FFTResult {
 
     return filtered;
 
-  }
-
-  /**
-   * Apply a low pass filter to some timeseries data
-   * @param toFilt Data to be filtered
-   * @param sps Sample rate of the data in Hz
-   * @param corner Corner frequency of LPF
-   * @return lowpass-filtered timeseries data
-   */
-  public static double[] lowPassFilter(double[] toFilt, double sps, double corner) {
-    Butterworth casc = new Butterworth();
-    // order 1 filter
-    casc.lowPass(2, sps, corner);
-
-    double[] filtered = new double[toFilt.length];
-    for (int i = 0; i < toFilt.length; ++i) {
-      filtered[i] = casc.filter(toFilt[i]);
-    }
-
-    return filtered;
   }
 
   /**
@@ -150,31 +125,6 @@ public class FFTResult {
     return wss;
   }
 
-  /**
-   * Root funtion for calculating crosspower. Gets spectral calculation of data
-   * from inputted data series by calling the spectralCalc function, and then
-   * applies the provided responses to that result. This is the Power Spectral
-   * Density of the inputted data if both sets are the same.
-   * @param data1 First data series
-   * @param data2 Second data series
-   * @param ir1 Response of instrument producing first series
-   * @param ir2 Response of instrument producing second series
-   * @return Data structure containing the crosspower result of the two data
-   * sets as a complex array and the frequencies matched to them in a double
-   * array.
-   */
-  public static FFTResult crossPower(DataBlock data1, DataBlock data2,
-      InstrumentResponse ir1, InstrumentResponse ir2) {
-
-    FFTResult selfPSD = spectralCalc(data1, data2);
-    Complex[] results = selfPSD.getFFT();
-    double[] freqs = selfPSD.getFreqs();
-    Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
-    Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
-
-    return crossPower(results, freqs, freqRespd1, freqRespd2);
-  }
-
   private static FFTResult crossPower(Complex[] results, double[] freqs,
       Complex[] freqRespd1, Complex[] freqRespd2) {
 
@@ -201,6 +151,31 @@ public class FFTResult {
 
   }
 
+  /**
+   * Root funtion for calculating crosspower. Gets spectral calculation of data
+   * from inputted data series by calling the spectralCalc function, and then
+   * applies the provided responses to that result. This is the Power Spectral
+   * Density of the inputted data if both sets are the same.
+   * @param data1 First data series
+   * @param data2 Second data series
+   * @param ir1 Response of instrument producing first series
+   * @param ir2 Response of instrument producing second series
+   * @return Data structure containing the crosspower result of the two data
+   * sets as a complex array and the frequencies matched to them in a double
+   * array.
+   */
+  public static FFTResult crossPower(DataBlock data1, DataBlock data2,
+      InstrumentResponse ir1, InstrumentResponse ir2) {
+
+    FFTResult selfPSD = spectralCalc(data1, data2);
+    Complex[] results = selfPSD.getFFT();
+    double[] freqs = selfPSD.getFreqs();
+    Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
+    Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
+
+    return crossPower(results, freqs, freqRespd1, freqRespd2);
+  }
+
   public static FFTResult crossPower(double[] data1, double[] data2,
       InstrumentResponse ir1, InstrumentResponse ir2, long interval) {
     FFTResult selfPSD = spectralCalc(data1, data2, interval);
@@ -210,6 +185,30 @@ public class FFTResult {
     Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
 
     return crossPower(results, freqs, freqRespd1, freqRespd2);
+  }
+
+  /**
+   * Return the cosine taper curve to multiply against data of a specified length, with taper of
+   * given width
+   * @param length Length of data being tapered (to per-element multply against)
+   * @param tWidth Width of (half-) taper curve (i.e., decimal fraction of the data being tapered)
+   * Because this parameter is used to create the actual length of the data, this should be half
+   * the value of the full taper.
+   * @return Start of taper curve, symmetric to end, with all other entries being implicitly 1.0
+   */
+  public static double[] getCosTaperCurveSingleSide(int length, double width) {
+    // width = width/2;
+    int ramp = (int) ( ( ( (length * width) + 1) / 2.) - 1);
+
+    // int limit = (int) Math.ceil(ramp);
+
+    double[] result = new double[ramp];
+    for (int i = 0; i < ramp; i++) {
+      double taper = 0.5 * (1.0 - Math.cos(i * Math.PI / ramp) );
+      result[i] = taper;
+    }
+
+    return result;
   }
 
   /**
@@ -322,6 +321,44 @@ public class FFTResult {
     return taperMat;
   }
 
+  public static Pair<Complex[], Double> getSpectralWindow(double[] toFFT, int padding) {
+    // demean and detrend work in-place on the list
+    // TimeSeriesUtils.detrend(toFFT);
+    TimeSeriesUtils.demeanInPlace(toFFT);
+    Double wss = cosineTaper(toFFT, 0.05);
+    // presumably we only need the last value of wss
+
+
+    toFFT = Arrays.copyOfRange(toFFT, 0, padding);
+    FastFourierTransformer fft =
+        new FastFourierTransformer(DftNormalization.STANDARD);
+
+    Complex[] frqDomn1 = fft.transform(toFFT, TransformType.FORWARD);
+    int singleSide = padding / 2 + 1;
+    // use arraycopy now (as it's fast) to get the first half of the fft
+    return new Pair<Complex[], Double>( Arrays.copyOfRange(frqDomn1, 0, singleSide), wss );
+  }
+
+  /**
+   * Apply a low pass filter to some timeseries data
+   * @param toFilt Data to be filtered
+   * @param sps Sample rate of the data in Hz
+   * @param corner Corner frequency of LPF
+   * @return lowpass-filtered timeseries data
+   */
+  public static double[] lowPassFilter(double[] toFilt, double sps, double corner) {
+    Butterworth casc = new Butterworth();
+    // order 1 filter
+    casc.lowPass(2, sps, corner);
+
+    double[] filtered = new double[toFilt.length];
+    for (int i = 0; i < toFilt.length; ++i) {
+      filtered[i] = casc.filter(toFilt[i]);
+    }
+
+    return filtered;
+  }
+
   /**
    * Function for padding and returning the result of a forward FFT.
    * This does not trim the negative frequencies of the result; it returns
@@ -337,11 +374,7 @@ public class FFTResult {
       padding *= 2;
     }
 
-    double[] toFFT = new double[padding];
-
-    for (int i = 0; i < dataIn.length; ++i) {
-      toFFT[i] = dataIn[i];
-    }
+    double[] toFFT = Arrays.copyOf(dataIn, padding);
 
     FastFourierTransformer fft =
         new FastFourierTransformer(DftNormalization.STANDARD);
@@ -350,6 +383,8 @@ public class FFTResult {
 
     return frqDomn;
   }
+
+
 
   /**
    * Calculates the FFT of the timeseries data in a DataBlock
@@ -401,13 +436,9 @@ public class FFTResult {
       frequencies[i] = i * deltaFrq;
     }
 
-    // System.out.println(frequencies[singleSide - 1]);
-
     return new FFTResult(fftOut, frequencies);
 
   }
-
-
 
   /**
    * Calculates the FFT of the timeseries data in a DataBlock
@@ -432,7 +463,7 @@ public class FFTResult {
 
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
     data = lowPassFilter(data, sps, 0.1);
-    data = TimeSeriesUtils.detrend(data);
+    // data = TimeSeriesUtils.detrend(data);
     data = TimeSeriesUtils.demean(data);
     cosineTaper(data, 0.05);
     // data = TimeSeriesUtils.normalizeByMax(data);
@@ -604,13 +635,9 @@ public class FFTResult {
           val2 = fftResult2[i];
         }
 
-        val1 = val1.multiply(2);
-        val2 = val2.multiply(2);
-
-        powSpectDens[i] =
-            powSpectDens[i].add(
-                val1.multiply(
-                    val2.conjugate() ) );
+        // 2 * fft1 * fft2' / wss
+        Complex temp = val1.multiply( val2.conjugate() ).multiply(2).divide(wss);
+        powSpectDens[i] = powSpectDens[i].add(temp);
       }
 
       ++segsProcessed;
@@ -619,97 +646,15 @@ public class FFTResult {
 
     }
 
-    // normalization time!
-    // System.out.println("PERIOD: " + period);
-    // period = 1.0; // quick testing
-    double psdNormalization = period / padding; // was mult. by 2.0 previously
-    // removal of 2.0 here result of adding mult by 2 ~line 654
-    double windowCorrection = wss / range;
-    // System.out.println("Window correction: " + windowCorrection);
-    // value of wss associated with taper parameters, not related to data
-
-    psdNormalization /= windowCorrection;
-    psdNormalization /= segsProcessed; // NOTE: divisor here should be 13
-
+    // get frequency per-point, also normalize PSD on number of segments processed (i.e., get mean)
     double[] frequencies = new double[singleSide];
-
     for (int i = 0; i < singleSide; ++i) {
-      powSpectDens[i] = powSpectDens[i].multiply(psdNormalization);
+      powSpectDens[i] = powSpectDens[i].divide(segsProcessed);
       frequencies[i] = i * deltaFreq;
     }
 
-    // do smoothing over neighboring frequencies; values taken from
-    // asl.timeseries' PSD function
-    int nSmooth = 11, nHalf = 5;
-    Complex[] psdCFSmooth = new Complex[singleSide];
+    return new FFTResult(powSpectDens, frequencies);
 
-    int iw = 0;
-
-    for (iw = 0; iw < nHalf; ++iw) {
-      psdCFSmooth[iw] = powSpectDens[iw];
-    }
-
-    // iw should be icenter of nsmooth point window
-    for (; iw < singleSide - nHalf; ++iw){
-      int k1 = iw - nHalf;
-      int k2 = iw + nHalf;
-
-      Complex sumC = Complex.ZERO;
-      for (int k = k1; k < k2; ++k) {
-        sumC = sumC.add(powSpectDens[k]);
-      }
-      psdCFSmooth[iw] = sumC.divide(nSmooth);
-    }
-
-    // copy remaining into smoothed array
-    for ( ; iw < singleSide; ++iw) {
-      psdCFSmooth[iw] = powSpectDens[iw];
-    }
-
-    return new FFTResult(psdCFSmooth, frequencies);
-
-  }
-
-  /**
-   * Return the cosine taper curve to multiply against data of a specified length, with taper of
-   * given width
-   * @param length Length of data being tapered (to per-element multply against)
-   * @param tWidth Width of (half-) taper curve (i.e., decimal fraction of the data being tapered)
-   * Because this parameter is used to create the actual length of the data, this should be half
-   * the value of the full taper.
-   * @return Start of taper curve, symmetric to end, with all other entries being implicitly 1.0
-   */
-  public static double[] getCosTaperCurveSingleSide(int length, double width) {
-    // width = width/2;
-    int ramp = (int) ( ( ( (length * width) + 1) / 2.) - 1);
-
-    // int limit = (int) Math.ceil(ramp);
-
-    double[] result = new double[ramp];
-    for (int i = 0; i < ramp; i++) {
-      double taper = 0.5 * (1.0 - Math.cos(i * Math.PI / ramp) );
-      result[i] = taper;
-    }
-
-    return result;
-  }
-
-  public static Pair<Complex[], Double> getSpectralWindow(double[] toFFT, int padding) {
-    // demean and detrend work in-place on the list
-    // TimeSeriesUtils.detrend(toFFT);
-    TimeSeriesUtils.demeanInPlace(toFFT);
-    Double wss = cosineTaper(toFFT, 0.05);
-    // presumably we only need the last value of wss
-
-
-    toFFT = Arrays.copyOfRange(toFFT, 0, padding);
-    FastFourierTransformer fft =
-        new FastFourierTransformer(DftNormalization.STANDARD);
-
-    Complex[] frqDomn1 = fft.transform(toFFT, TransformType.FORWARD);
-    int singleSide = padding / 2 + 1;
-    // use arraycopy now (as it's fast) to get the first half of the fft
-    return new Pair<Complex[], Double>( Arrays.copyOfRange(frqDomn1, 0, singleSide), wss );
   }
 
   final private Complex[] transform; // the FFT data

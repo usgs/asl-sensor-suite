@@ -1059,21 +1059,6 @@ implements ActionListener, ChangeListener {
   }
 
   /**
-   * Used to get labels for each plot to idenitify what data they need to
-   * contain in order for an experiment to have enough data to run
-   * @param channels List of strings to be used as panel title
-   */
-  public void setChannelTypes(String[] channels) {
-
-    int len = Math.min(channels.length, channelType.length);
-
-    for (int i = 0; i < len; ++i) {
-      channelType[i].setText(channels[i]);
-      channelType[i].setHorizontalAlignment(SwingConstants.CENTER);
-    }
-  }
-
-  /**
    * Warn user if response has too many epochs
    * @param ir InstrumentResponse that was read-in
    */
@@ -1085,6 +1070,21 @@ implements ActionListener, ChangeListener {
       warning += "Only the last epoch will be parsed in.";
       JDialog jd = new JDialog();
       JOptionPane.showMessageDialog(jd, warning);
+    }
+  }
+
+  /**
+   * Used to get labels for each plot to idenitify what data they need to
+   * contain in order for an experiment to have enough data to run
+   * @param channels List of strings to be used as panel title
+   */
+  public void setChannelTypes(String[] channels) {
+
+    int len = Math.min(channels.length, channelType.length);
+
+    for (int i = 0; i < len; ++i) {
+      channelType[i].setText(channels[i]);
+      channelType[i].setHorizontalAlignment(SwingConstants.CENTER);
     }
   }
 

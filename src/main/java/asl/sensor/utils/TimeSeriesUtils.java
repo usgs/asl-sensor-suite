@@ -44,6 +44,9 @@ public class TimeSeriesUtils {
    */
   public final static double ONE_HZ = 1.0;
 
+  // divide by this to go from nanoseconds to milliseconds
+  public static final int TO_MILLI_FACTOR = 1000000;
+
   /**
    * Merge arrays from multiple timeseries into a single object
    * @param arrs Series of arrays
@@ -196,22 +199,6 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Return the calculation of the arithmetic mean (using a recursive definition for stability)
-   * @param dataSet Range of data to get the mean value from
-   * @return the arithmetic mean
-   */
-  public static double getMean(double[] dataSet) {
-    double mean = 0.0;
-    double inc = 1;
-
-    for(double data : dataSet) {
-      mean = mean + ( (data - mean) / inc );
-      ++inc;
-    }
-    return mean;
-  }
-
-  /**
    * Linear detrend applied to an array of doubles rather than a list.
    * This operation is not done in-place.
    * @param dataSet The double array to be detrended
@@ -252,20 +239,6 @@ public class TimeSeriesUtils {
     return detrended;
   }
 
-  public static double[] detrendEnds(double[] data) {
-    int lastIdx = data.length - 1;
-    double start = data[0];
-    double end = data[lastIdx];
-    double diff = end - start;
-    double delta = diff / data.length;
-    double[] dataCopy = data.clone();
-    for (int i = 0; i < data.length; ++i) {
-      dataCopy[i] -= start + ( (delta * i) + 1) * diff / (lastIdx);
-    }
-
-    return dataCopy;
-  }
-
   /**
    * In-place subtraction of trend from each point in an incoming data set.
    * This is a necessary step in calculating the power-spectral density.
@@ -302,6 +275,20 @@ public class TimeSeriesUtils {
       dataSet.set(i, dataSet.get(i).doubleValue() - ( (slope * i) + yOffset) );
     }
 
+  }
+
+  public static double[] detrendEnds(double[] data) {
+    int lastIdx = data.length - 1;
+    double start = data[0];
+    double end = data[lastIdx];
+    double diff = end - start;
+    double delta = diff / data.length;
+    double[] dataCopy = data.clone();
+    for (int i = 0; i < data.length; ++i) {
+      dataCopy[i] -= start + ( (delta * i) + 1) * diff / (lastIdx);
+    }
+
+    return dataCopy;
   }
 
   /**
@@ -439,6 +426,22 @@ public class TimeSeriesUtils {
   }
 
   /**
+   * Return the calculation of the arithmetic mean (using a recursive definition for stability)
+   * @param dataSet Range of data to get the mean value from
+   * @return the arithmetic mean
+   */
+  public static double getMean(double[] dataSet) {
+    double mean = 0.0;
+    double inc = 1;
+
+    for(double data : dataSet) {
+      mean = mean + ( (data - mean) / inc );
+      ++inc;
+    }
+    return mean;
+  }
+
+  /**
    * Get the set of available data series in a multiplexed miniseed file.
    * Because the list is derived from the set, the result of this function
    * should have no duplicate entries.
@@ -572,6 +575,7 @@ public class TimeSeriesUtils {
 
   }
 
+
   /**
    * Extract data from records in a miniseed file and return them as a map
    * of sampled data points at various times
@@ -592,7 +596,6 @@ public class TimeSeriesUtils {
     return getTimeSeriesMap(new String[]{filename}, filter);
 
   }
-
 
   /**
    * Read in multiple miniseed files and concatenate data as long as the data
@@ -755,6 +758,35 @@ public class TimeSeriesUtils {
   }
 
   /**
+   * Used to determine polarity of data in step calibrations in particular. If the first step
+   * response goes negative, the wiring of the sensor has been done effectively backwards.
+   * That is, step expects first response to be positive, and so this informs sensor that the
+   * input should be multiplied by -1 before calibration params are solved for.
+   * @param data
+   * @return
+   */
+  public static boolean needsSignFlip(double[] data) {
+    double min = data[0]; // most negative value in data
+    double max = data[0]; // most positive value in data
+    int minIdx = 0; // where in list min occurs
+    int maxIdx = 0; // where in list max occurs
+
+
+    for (int i = 1; i < data.length; ++i) {
+      if (data[i] > max) {
+        max = data[i];
+        maxIdx = i;
+      } else if (data[i] < min) {
+        min = data[i];
+        minIdx = i;
+      }
+    }
+
+    // if the negative peak is first, we need the flip
+    return minIdx < maxIdx;
+  }
+
+  /**
    * Scales data of an arbitrary range to lie within a [-1, 1] range
    * @param data Timeseries data
    * @return Same data, over the range [-1, 1], linearly scaled
@@ -784,31 +816,6 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Normalize result according to value of absolute maximum of the data.
-   * This is intended to replicate the normalization behavior of Obspy.
-   * @param data Time series data to be normalized
-   * @return The data normalized by its maximum absolute value
-   */
-  public static double[] normalizeByMax(double[] data) {
-    double[] normData = new double[data.length];
-    double absMax = Math.abs(data[0]); // initialize with first value in array
-    // first get the absolute max
-    for (double point : data) {
-      absMax = Math.max( Math.abs(point), absMax );
-    }
-    // now scale the data accordingly
-    for (int i = 0; i < data.length; ++i) {
-      // this will only trigger in the unlikely event of a time series with all values 0
-      if (absMax == 0) {
-        normData[i] = data[i] / absMax;
-      } else {
-        normData[i] = data[i] / absMax;
-      }
-    }
-    return normData;
-  }
-
-  /**
    * Take a list of data and normalize it to the range [-1, 1].
    * @param data List of samples to be normalized
    * @return List of normalized samples
@@ -834,6 +841,31 @@ public class TimeSeriesUtils {
 
     return data;
 
+  }
+
+  /**
+   * Normalize result according to value of absolute maximum of the data.
+   * This is intended to replicate the normalization behavior of Obspy.
+   * @param data Time series data to be normalized
+   * @return The data normalized by its maximum absolute value
+   */
+  public static double[] normalizeByMax(double[] data) {
+    double[] normData = new double[data.length];
+    double absMax = Math.abs(data[0]); // initialize with first value in array
+    // first get the absolute max
+    for (double point : data) {
+      absMax = Math.max( Math.abs(point), absMax );
+    }
+    // now scale the data accordingly
+    for (int i = 0; i < data.length; ++i) {
+      // this will only trigger in the unlikely event of a time series with all values 0
+      if (absMax == 0) {
+        normData[i] = data[i] / absMax;
+      } else {
+        normData[i] = data[i] / absMax;
+      }
+    }
+    return normData;
   }
 
   /**
@@ -961,38 +993,6 @@ public class TimeSeriesUtils {
 
     return upsamp;
   }
-
-  /**
-   * Used to determine polarity of data in step calibrations in particular. If the first step
-   * response goes negative, the wiring of the sensor has been done effectively backwards.
-   * That is, step expects first response to be positive, and so this informs sensor that the
-   * input should be multiplied by -1 before calibration params are solved for.
-   * @param data
-   * @return
-   */
-  public static boolean needsSignFlip(double[] data) {
-    double min = data[0]; // most negative value in data
-    double max = data[0]; // most positive value in data
-    int minIdx = 0; // where in list min occurs
-    int maxIdx = 0; // where in list max occurs
-
-
-    for (int i = 1; i < data.length; ++i) {
-      if (data[i] > max) {
-        max = data[i];
-        maxIdx = i;
-      } else if (data[i] < min) {
-        min = data[i];
-        minIdx = i;
-      }
-    }
-
-    // if the negative peak is first, we need the flip
-    return minIdx < maxIdx;
-  }
-
-  // divide by this to go from nanoseconds to milliseconds
-  public static final int TO_MILLI_FACTOR = 1000000;
 
 }
 

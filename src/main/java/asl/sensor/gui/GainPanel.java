@@ -303,17 +303,6 @@ implements ChangeListener {
 
   }
 
-  protected void setSliderValues(int leftSliderValue, int rightSliderValue) {
-
-    // enforce constraint that left slider value is the smaller one
-    int leftTemp = Math.min(leftSliderValue, rightSliderValue);
-    rightSliderValue = Math.max(leftSliderValue, rightSliderValue);
-    leftSliderValue = leftTemp;
-
-    leftSlider.setValue(leftSliderValue);
-    rightSlider.setValue(rightSliderValue);
-  }
-
   @Override
   public String getInsetStrings() {
     int leftPos = leftSlider.getValue();
@@ -330,7 +319,6 @@ implements ChangeListener {
 
     return getInsetString(gn, refIdx, lowPrd, highPrd);
   }
-
 
   @Override
   public String getMetadataString() {
@@ -354,6 +342,7 @@ implements ChangeListener {
     return sb.toString();
   }
 
+
   /**
    * Converts x-axis value from log scale to linear, to get slider position
    * @param prd period value marking data window boundary
@@ -363,7 +352,6 @@ implements ChangeListener {
     double scale = (high - low)/SLIDER_MAX; // recall slider range is 0 to 1000
     return (int) ( ( Math.log10(prd) - low ) / scale );
   }
-
 
   /**
    * Converts the slider position to a logarithmic scale matching x-axis values
@@ -375,6 +363,7 @@ implements ChangeListener {
     double scale = (high - low)/SLIDER_MAX; // slider range is 0 to 1000
     return Math.pow(10, low + (scale * position) );
   }
+
 
   @Override
   public int panelsNeeded() {
@@ -403,6 +392,17 @@ implements ChangeListener {
     }
 
     refSeries.setSelectedIndex(0);
+  }
+
+  protected void setSliderValues(int leftSliderValue, int rightSliderValue) {
+
+    // enforce constraint that left slider value is the smaller one
+    int leftTemp = Math.min(leftSliderValue, rightSliderValue);
+    rightSliderValue = Math.max(leftSliderValue, rightSliderValue);
+    leftSliderValue = leftTemp;
+
+    leftSlider.setValue(leftSliderValue);
+    rightSlider.setValue(rightSliderValue);
   }
 
   /**

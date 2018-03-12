@@ -351,26 +351,6 @@ public class DataStore {
 
   }
 
-  public void resample(double newSampleRate) {
-    resample(newSampleRate, FILE_COUNT);
-  }
-
-  public void resample(double newSampleRate, int limit) {
-    long newInterval = (long) (TimeSeriesUtils.ONE_HZ_INTERVAL / newSampleRate);
-    // make sure all data over range gets set to the same interval (and don't upsample)
-    for (int i = 0; i < limit; ++i) {
-      if (thisBlockIsSet[i]) {
-        newInterval = Math.max( newInterval, getBlock(i).getInitialInterval() );
-      }
-    }
-    for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() != newInterval ) {
-        getBlock(i).resample(newInterval);
-      }
-    }
-  }
-
-
   /**
    * Gives the count of indices where both a miniseed and response are loaded
    * @return the number of entries of miniseeds with a matching response
@@ -399,6 +379,7 @@ public class DataStore {
     return loaded;
   }
 
+
   /**
    * Removes all data at a specific index -- miniseed, response, and any
    * data generated from them
@@ -409,6 +390,25 @@ public class DataStore {
     responses[idx] = null;
     thisBlockIsSet[idx] = false;
     thisResponseIsSet[idx] = false;
+  }
+
+  public void resample(double newSampleRate) {
+    resample(newSampleRate, FILE_COUNT);
+  }
+
+  public void resample(double newSampleRate, int limit) {
+    long newInterval = (long) (TimeSeriesUtils.ONE_HZ_INTERVAL / newSampleRate);
+    // make sure all data over range gets set to the same interval (and don't upsample)
+    for (int i = 0; i < limit; ++i) {
+      if (thisBlockIsSet[i]) {
+        newInterval = Math.max( newInterval, getBlock(i).getInitialInterval() );
+      }
+    }
+    for (int i = 0; i < limit; ++i) {
+      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() != newInterval ) {
+        getBlock(i).resample(newInterval);
+      }
+    }
   }
 
   /**
@@ -443,21 +443,6 @@ public class DataStore {
   }
 
   /**
-   * Takes a loaded miniSEED data series and loads it in as a datablock into
-   * this datastore object
-   * @param idx The plot (range 0 to FILE_COUNT) to be given new data
-   * @param filepath Full address of file to be loaded in
-   * @param nameFilter Station ID (SNCL) to load in from multiplexed file
-   * @throws CodecException
-   * @throws UnsupportedCompressionType
-   * @throws SeedFormatException
-   */
-  public void setBlock(int idx, String filepath, String nameFilter)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
-    setBlock(idx, filepath, nameFilter, FILE_COUNT);
-  }
-
-  /**
    * load in miniseed file
    * @param idx The plot (range 0 to FILE_COUNT) to be given new data
    * @param filepath Full address of file to be loaded in
@@ -489,6 +474,21 @@ public class DataStore {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
+  }
+
+  /**
+   * Takes a loaded miniSEED data series and loads it in as a datablock into
+   * this datastore object
+   * @param idx The plot (range 0 to FILE_COUNT) to be given new data
+   * @param filepath Full address of file to be loaded in
+   * @param nameFilter Station ID (SNCL) to load in from multiplexed file
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
+   */
+  public void setBlock(int idx, String filepath, String nameFilter)
+      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+    setBlock(idx, filepath, nameFilter, FILE_COUNT);
   }
 
   /**
@@ -604,6 +604,20 @@ public class DataStore {
   }
 
   /**
+   * Trim a given set of data according to calendar objects. Converts the data
+   * into epoch millisecond longs and uses that to specify a trim range.
+   * @param start Start time to trim data to
+   * @param end End time to trim data to
+   * @param limit Number of data portions to perform trim on
+   */
+  @Deprecated
+  public void trim(Calendar start, Calendar end, int limit) {
+    long startTime = start.getTimeInMillis();
+    long endTime = end.getTimeInMillis();
+    trim(startTime, endTime, limit);
+  }
+
+  /**
    * Trim all data according to DateTime objects. Converts into epoch milliseconds, which are then
    * used to get the trim range for the underlying datablocks. This trims all data.
    * @param start Start time to trim data to
@@ -622,40 +636,6 @@ public class DataStore {
   public void trim(Instant start, Instant end, int limit) {
     long startTime = start.toEpochMilli();
     long endTime = end.toEpochMilli();
-    trim(startTime, endTime, limit);
-  }
-
-  public void trimJustStart(Instant startInstant) {
-    if ( !areAnyBlocksSet() ) {
-      return;
-    }
-    trimToCommonTime();
-    long end = getXthLoadedBlock(1).getEndTime();
-    long start = startInstant.toEpochMilli();
-    trim(start, end);
-  }
-
-  public void trimJustEnd(Instant endInstant) {
-    if ( !areAnyBlocksSet() ) {
-      return;
-    }
-    trimToCommonTime();
-    long start = getXthLoadedBlock(1).getStartTime();
-    long end = endInstant.toEpochMilli();
-    trim(start, end);
-  }
-
-  /**
-   * Trim a given set of data according to calendar objects. Converts the data
-   * into epoch millisecond longs and uses that to specify a trim range.
-   * @param start Start time to trim data to
-   * @param end End time to trim data to
-   * @param limit Number of data portions to perform trim on
-   */
-  @Deprecated
-  public void trim(Calendar start, Calendar end, int limit) {
-    long startTime = start.getTimeInMillis();
-    long endTime = end.getTimeInMillis();
     trim(startTime, endTime, limit);
   }
 
@@ -712,6 +692,26 @@ public class DataStore {
   public void trim(Pair<Long, Long> times, int limit)
       throws IndexOutOfBoundsException{
     trim( times.getFirst(), times.getSecond(), limit );
+  }
+
+  public void trimJustEnd(Instant endInstant) {
+    if ( !areAnyBlocksSet() ) {
+      return;
+    }
+    trimToCommonTime();
+    long start = getXthLoadedBlock(1).getStartTime();
+    long end = endInstant.toEpochMilli();
+    trim(start, end);
+  }
+
+  public void trimJustStart(Instant startInstant) {
+    if ( !areAnyBlocksSet() ) {
+      return;
+    }
+    trimToCommonTime();
+    long end = getXthLoadedBlock(1).getEndTime();
+    long start = startInstant.toEpochMilli();
+    trim(start, end);
   }
 
   /**

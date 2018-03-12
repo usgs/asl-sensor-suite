@@ -413,11 +413,13 @@ public class DataBlock {
   }
 
   /**
-   * Get trimmed start time of the data
-   * @return DateTime object representing start time in UTC time zone
+   * Gives the start timestamp of the trim window. This is a long compatible
+   * with the Java System Library's Date and Calendar objects and expressed
+   * as milliseconds from the UTC epoch
+   * @return When the miniSEED data logging started in milliseconds
    */
-  public Instant getTrimmedStartInstant() {
-    return Instant.ofEpochMilli(trimmedStart);
+  public long getStartTime() {
+    return trimmedStart;
   }
 
   /**
@@ -432,13 +434,11 @@ public class DataBlock {
   }
 
   /**
-   * Gives the start timestamp of the trim window. This is a long compatible
-   * with the Java System Library's Date and Calendar objects and expressed
-   * as milliseconds from the UTC epoch
-   * @return When the miniSEED data logging started in milliseconds
+   * Get trimmed start time of the data
+   * @return DateTime object representing start time in UTC time zone
    */
-  public long getStartTime() {
-    return trimmedStart;
+  public Instant getTrimmedStartInstant() {
+    return Instant.ofEpochMilli(trimmedStart);
   }
 
   /**
@@ -676,18 +676,6 @@ public class DataBlock {
 
   /**
    * Adjust the window of data to collect samples from when getting the data
-   * (i.e., used to determine region of analysis for the various experiments)
-   * @param start Start time to trim window to, as DateTime object
-   * @param end End time to trim window to, as DateTime object
-   */
-  public void trim(OffsetDateTime start, OffsetDateTime end) {
-    long startMillis = start.toInstant().toEpochMilli();
-    long endMillis = end.toInstant().toEpochMilli();
-    trim(startMillis, endMillis);
-  }
-
-  /**
-   * Adjust the window of data to collect samples from when getting the data
    * @param start Start time to trim window to in milliseconds from epoch
    * @param end End time to trim window to in milliseconds from epoch
    */
@@ -702,6 +690,18 @@ public class DataBlock {
     rebuildList = rebuildList ||
         (startTime != trimmedStart) || (endTime != trimmedEnd);
 
+  }
+
+  /**
+   * Adjust the window of data to collect samples from when getting the data
+   * (i.e., used to determine region of analysis for the various experiments)
+   * @param start Start time to trim window to, as DateTime object
+   * @param end End time to trim window to, as DateTime object
+   */
+  public void trim(OffsetDateTime start, OffsetDateTime end) {
+    long startMillis = start.toInstant().toEpochMilli();
+    long endMillis = end.toInstant().toEpochMilli();
+    trim(startMillis, endMillis);
   }
 
   /**

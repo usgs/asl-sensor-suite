@@ -60,6 +60,25 @@ public class TestUtils {
 
   }
 
+  public static OffsetDateTime getEndCalendar(DataStore ds) {
+    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getEndTime() );
+    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
+    return dt;
+  }
+
+  public static OffsetDateTime getStartCalendar(DataStore ds) {
+    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getStartTime() );
+    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
+    return dt;
+  }
+
+  public static void makeTestDataDirectory() {
+    File file = new File(TEST_DATA_LOCATION);
+    if ( !file.exists() ) {
+      file.mkdir();
+    }
+  }
+
   @Test
   public void canGetTestData() {
 
@@ -72,24 +91,5 @@ public class TestUtils {
       fail();
     }
 
-  }
-
-  public static OffsetDateTime getStartCalendar(DataStore ds) {
-    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getStartTime() );
-    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
-    return dt;
-  }
-
-  public static OffsetDateTime getEndCalendar(DataStore ds) {
-    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getEndTime() );
-    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
-    return dt;
-  }
-
-  public static void makeTestDataDirectory() {
-    File file = new File(TEST_DATA_LOCATION);
-    if ( !file.exists() ) {
-      file.mkdir();
-    }
   }
 }

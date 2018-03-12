@@ -41,6 +41,33 @@ public class RandomizedExperimentTest {
   public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
   String testRespName = folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
 
+  public DataStore getFromList(List<String> setUpFilenames) throws IOException {
+
+    String respName = setUpFilenames.get(0);
+    String calName = setUpFilenames.get(1);
+    String sensOutName = setUpFilenames.get(2);
+
+    System.out.println(respName);
+    System.out.println(calName);
+    System.out.println(sensOutName);
+
+    InstrumentResponse ir = new InstrumentResponse(respName);
+
+    DataStore ds = new DataStore();
+    try {
+      ds.setBlock(0, calName);
+      ds.setBlock(1, sensOutName);
+    } catch (SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
+
+    ds.setResponse(1, ir);
+
+    return ds;
+
+  }
+
   @Before
   public void getReferencedData() {
 
@@ -80,33 +107,6 @@ public class RandomizedExperimentTest {
         e.printStackTrace();
       }
     }
-
-  }
-
-  public DataStore getFromList(List<String> setUpFilenames) throws IOException {
-
-    String respName = setUpFilenames.get(0);
-    String calName = setUpFilenames.get(1);
-    String sensOutName = setUpFilenames.get(2);
-
-    System.out.println(respName);
-    System.out.println(calName);
-    System.out.println(sensOutName);
-
-    InstrumentResponse ir = new InstrumentResponse(respName);
-
-    DataStore ds = new DataStore();
-    try {
-      ds.setBlock(0, calName);
-      ds.setBlock(1, sensOutName);
-    } catch (SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
-
-    ds.setResponse(1, ir);
-
-    return ds;
 
   }
 
@@ -251,26 +251,6 @@ public class RandomizedExperimentTest {
       e.printStackTrace();
     }
 
-  }
-
-  @Test
-  public void testCalServerEntryMethods() {
-    String testFolder = folder + "test-crashed-on-cal/";
-    String calInFile = testFolder + "_BC0.512.seed";
-    String sensorOutFile = testFolder + "00_BHZ.512.seed";
-    String respFile = testFolder + "RESP.US.MVCO.00.BHZ";
-    String start = "2018-01-30T07:55:00+00:00";
-    String end = "2018-01-30T11:55:00+00:00";
-    try {
-      CalProcessingServer cps = new CalProcessingServer();
-      RandData rd = cps.populateDataAndRun(calInFile, sensorOutFile, respFile,
-          false, start, end, true);
-      System.out.println( Arrays.toString(rd.getFitPoles()) );
-      System.out.println( Arrays.toString(rd.getFitZeros()) );
-    } catch (IOException | SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
   }
 
   @Test
@@ -503,6 +483,26 @@ public class RandomizedExperimentTest {
       System.out.println("Output result has been written");
 
     } catch (IOException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+  @Test
+  public void testCalServerEntryMethods() {
+    String testFolder = folder + "test-crashed-on-cal/";
+    String calInFile = testFolder + "_BC0.512.seed";
+    String sensorOutFile = testFolder + "00_BHZ.512.seed";
+    String respFile = testFolder + "RESP.US.MVCO.00.BHZ";
+    String start = "2018-01-30T07:55:00+00:00";
+    String end = "2018-01-30T11:55:00+00:00";
+    try {
+      CalProcessingServer cps = new CalProcessingServer();
+      RandData rd = cps.populateDataAndRun(calInFile, sensorOutFile, respFile,
+          false, start, end, true);
+      System.out.println( Arrays.toString(rd.getFitPoles()) );
+      System.out.println( Arrays.toString(rd.getFitZeros()) );
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }

@@ -13,6 +13,16 @@ import asl.sensor.utils.NumericUtils;
 public class NumericUtilsTest {
 
   @Test
+  public void movingAverageCorrectValues() {
+    double[] averaged = new double[]{1./3.,  1.0, 2.0, 3.0, 4.0};
+    double[] init = new double[]{1., 2., 3., 4., 5.};
+    double[] test = NumericUtils.multipointMovingAverage(init, 3);
+    for (int i = 0; i < test.length; ++i) {
+      assertEquals(averaged[i], test[i], 1E-25);
+    }
+  }
+  
+  @Test
   public void realSorterWorksRight() {
     List<Complex> cs = new ArrayList<Complex>();
     cs.add( new Complex(1, 0) );
@@ -33,16 +43,6 @@ public class NumericUtilsTest {
     csl[6] = new Complex(1, -1);
     for (int i = 0; i < csl.length; ++i) {
       assertTrue( cs.get(i).equals(csl[i]) );
-    }
-  }
-  
-  @Test
-  public void movingAverageCorrectValues() {
-    double[] averaged = new double[]{1./3.,  1.0, 2.0, 3.0, 4.0};
-    double[] init = new double[]{1., 2., 3., 4., 5.};
-    double[] test = NumericUtils.multipointMovingAverage(init, 3);
-    for (int i = 0; i < test.length; ++i) {
-      assertEquals(averaged[i], test[i], 1E-25);
     }
   }
 

@@ -24,20 +24,6 @@ public class DataStoreTest {
   public String channel = "BH0";
   public String fileID = station+"_"+location+"_"+channel+".512.seed";
 
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
-    try {
-      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-  }
-
   @Test
   public void commonTimeTrimMatchesLength() {
     String filename = folder + "blocktrim/" + fileID;
@@ -116,6 +102,20 @@ public class DataStoreTest {
       }
     }
     assertTrue(notAllZero);
+  }
+
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
+    try {
+      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
   }
 
 }

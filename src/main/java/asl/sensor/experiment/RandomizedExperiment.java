@@ -595,30 +595,6 @@ extends Experiment implements ParameterValidator {
     return 2;
   }
 
-  public double getMaxFitFrequency() {
-    return freqs[freqs.length - 1];
-  }
-
-  private void scaleValues(double[] unrot) {
-    int argStart = unrot.length / 2;
-    double unrotScaleAmp = 20 * Math.log10(unrot[normalIdx]);
-    double unrotScaleArg = unrot[argStart + normalIdx];
-    double phiPrev = 0;
-    if (lowFreq) {
-      phiPrev = unrot[3*unrot.length/4];
-    }
-    for (int i = 0; i < argStart; ++i) {
-      int argIdx = argStart + i;
-      double db = 20 * Math.log10(unrot[i]);
-      unrot[i] = db - unrotScaleAmp;
-      double phi = unrot[argIdx] - unrotScaleArg;
-      phi = NumericUtils.unwrap(phi, phiPrev);
-      phiPrev = phi;
-      unrot[argIdx] = Math.toDegrees(phi);
-    }
-  }
-
-
   /**
    * Backend function to set instrument response according to current
    * test variables (for best-fit calculation / backward difference) and
@@ -654,6 +630,23 @@ extends Experiment implements ParameterValidator {
 
     return curValue;
   }
+
+  /**
+   * Return a 2D array containing the values of the y-axis of each of the
+   * plotted curves. The order is {input resp, calc resp, fit resp}.
+   * The second index is the y-values ordered by corresponding freq
+   * @return 2D array with each of the amplitude response curves
+   */
+  public double[][] getAmplitudesAsArrays() {
+    XYSeriesCollection mags = xySeriesData.get(0);
+    double[][] out = new double[mags.getSeriesCount()][];
+    for (int i = 0; i < out.length; ++i) {
+      XYSeries xys = mags.getSeries(i);
+      out[i] = xys.toArray()[1];
+    }
+    return out;
+  }
+
 
   /**
    * Get the poles that the solver has found to best-fit the est. response
@@ -705,12 +698,12 @@ extends Experiment implements ParameterValidator {
     return zerosOut;
   }
 
-  public List<String> getInputsToPrint() {
-    return inputsPerCalculation;
-  }
-
-  public List<String> getOutputsToPrint() {
-    return outputsPerCalculation;
+  /**
+   * Get the range of frequencies over which the data was plotted
+   * @return list of frequencies, sorted order
+   */
+  public double[] getFreqList() {
+    return freqs;
   }
 
   /**
@@ -755,6 +748,10 @@ extends Experiment implements ParameterValidator {
     return initialResidual;
   }
 
+  public List<String> getInputsToPrint() {
+    return inputsPerCalculation;
+  }
+
   /**
    * Get the number of times the algorithm iterated to produce the optimum
    * response fit, from the underlying least squares solver
@@ -762,6 +759,30 @@ extends Experiment implements ParameterValidator {
    */
   public int getIterations() {
     return numIterations;
+  }
+
+  public double getMaxFitFrequency() {
+    return freqs[freqs.length - 1];
+  }
+
+  public List<String> getOutputsToPrint() {
+    return outputsPerCalculation;
+  }
+
+  /**
+   * Return a 2D array containing the values of the y-axis of each of the
+   * plotted curves. The order is {input resp, calc resp, fit resp}.
+   * The second index is the y-values ordered by corresponding freq
+   * @return 2D array with each of the phase response curves
+   */
+  public double[][] getPhasesAsArrays() {
+    XYSeriesCollection phases = xySeriesData.get(0);
+    double[][] out = new double[phases.getSeriesCount()][];
+    for (int i = 0; i < out.length; ++i) {
+      XYSeries xys = phases.getSeries(i);
+      out[i] = xys.toArray()[1];
+    }
+    return out;
   }
 
   /**
@@ -780,46 +801,6 @@ extends Experiment implements ParameterValidator {
    */
   public double[] getWeights() {
     return new double[]{maxMagWeight, maxArgWeight};
-  }
-
-  /**
-   * Get the range of frequencies over which the data was plotted
-   * @return list of frequencies, sorted order
-   */
-  public double[] getFreqList() {
-    return freqs;
-  }
-
-  /**
-   * Return a 2D array containing the values of the y-axis of each of the
-   * plotted curves. The order is {input resp, calc resp, fit resp}.
-   * The second index is the y-values ordered by corresponding freq
-   * @return 2D array with each of the amplitude response curves
-   */
-  public double[][] getAmplitudesAsArrays() {
-    XYSeriesCollection mags = xySeriesData.get(0);
-    double[][] out = new double[mags.getSeriesCount()][];
-    for (int i = 0; i < out.length; ++i) {
-      XYSeries xys = mags.getSeries(i);
-      out[i] = xys.toArray()[1];
-    }
-    return out;
-  }
-
-  /**
-   * Return a 2D array containing the values of the y-axis of each of the
-   * plotted curves. The order is {input resp, calc resp, fit resp}.
-   * The second index is the y-values ordered by corresponding freq
-   * @return 2D array with each of the phase response curves
-   */
-  public double[][] getPhasesAsArrays() {
-    XYSeriesCollection phases = xySeriesData.get(0);
-    double[][] out = new double[phases.getSeriesCount()][];
-    for (int i = 0; i < out.length; ++i) {
-      XYSeries xys = phases.getSeries(i);
-      out[i] = xys.toArray()[1];
-    }
-    return out;
   }
 
   @Override
@@ -950,6 +931,25 @@ extends Experiment implements ParameterValidator {
     // NOTE: not used by corresponding panel, overrides with active indices
     // of components in the combo-box
     return new int[]{1};
+  }
+
+  private void scaleValues(double[] unrot) {
+    int argStart = unrot.length / 2;
+    double unrotScaleAmp = 20 * Math.log10(unrot[normalIdx]);
+    double unrotScaleArg = unrot[argStart + normalIdx];
+    double phiPrev = 0;
+    if (lowFreq) {
+      phiPrev = unrot[3*unrot.length/4];
+    }
+    for (int i = 0; i < argStart; ++i) {
+      int argIdx = argStart + i;
+      double db = 20 * Math.log10(unrot[i]);
+      unrot[i] = db - unrotScaleAmp;
+      double phi = unrot[argIdx] - unrotScaleArg;
+      phi = NumericUtils.unwrap(phi, phiPrev);
+      phiPrev = phi;
+      unrot[argIdx] = Math.toDegrees(phi);
+    }
   }
 
   /**
