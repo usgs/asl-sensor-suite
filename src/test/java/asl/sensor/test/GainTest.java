@@ -2,8 +2,10 @@ package asl.sensor.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
@@ -12,20 +14,46 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class GainTest {
 
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "relative-gain-100/";
+    String[] prefixes = new String[]{"00_BHZ", "10_BHZ"};
+    String extension = ".512.seed";
+    String[] filenames = new String[]{
+      prefixes[0] + extension,
+      prefixes[1] + extension,
+      "RESP.IU.ANMO.00.BHZ_gainx100",
+      "RESP.IU.ANMO.10.BHZ"
+    };
+    for (String fileID : filenames) {
+      try {
+        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+
+
+  }
+
   @Test
   public void testGainCalculation() {
 
     DataStore ds = new DataStore();
 
-    String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/test-data/relativeGain100/";
+    String testFolder = folder + "relative-gain-100/";
     String[] prefixes = new String[2];
     prefixes[0] = "00_BHZ";
     prefixes[1] = "10_BHZ";
     String extension = ".512.seed";
 
     for (int i = 0; i < prefixes.length; ++i) {
-      String fName = folder + prefixes[i] + extension;
+      String fName = testFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
       } catch (SeedFormatException | CodecException e) {
@@ -34,14 +62,13 @@ public class GainTest {
       }
     }
 
-    folder = currentDir + "/test-data/relativeGain100/";
     String[] rnames = new String[2];
     rnames[0] = "RESP.IU.ANMO.00.BHZ_gainx100";
     //rnames[0] = "RESP.IU.ANMO.00.BHZ";
     rnames[1] = "RESP.IU.ANMO.10.BHZ";
 
     for (int i = 0; i < rnames.length; ++i) {
-      String fName = folder + rnames[i];
+      String fName = testFolder + rnames[i];
       ds.setResponse(i, fName);
     }
 

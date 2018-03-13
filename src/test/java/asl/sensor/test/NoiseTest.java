@@ -9,34 +9,55 @@ import java.time.ZoneOffset;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class NoiseTest {
 
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
   XYSeriesCollection xysc;
 
-  //@Test
-  public void testResp() {
-    String resp = "T-compact_Q330HR_BH_40";
-    try {
-      InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse(resp);
-      System.out.println(ir.toString());
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-      fail();
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "noise-neg159db/";
+
+    String[] data = new String[3];
+    data[0] = "00_BH0.512.seed";
+    data[1] = "10_BH0.512.seed";
+    data[2] = "TST6." + data[0];
+    for (String fileID : data) {
+      try {
+        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
     }
 
+    refSubfolder = TestUtils.SUBPAGE + "noise-neg160db/";
+    data[0] = "00_LH0.512.seed";
+    data[1] = "10_LH0.512.seed";
+    data[2] = "TST6." + data[0];
+    for (String fileID : data) {
+      try {
+        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
   }
 
   public XYSeriesCollection setUpTest1() throws FileNotFoundException {
-    String folder = "test-data/noise-neg159db/";
+    String testFolder = folder + "noise-neg159db/";
     String[] data = new String[3];
     data[0] = "00_BH0.512.seed";
     data[1] = "10_BH0.512.seed";
@@ -45,7 +66,7 @@ public class NoiseTest {
     DataStore ds = new DataStore();
     for (int i = 0; i < data.length; ++i) {
       try {
-        ds.setBlock(i, folder + data[i]);
+        ds.setBlock(i, testFolder + data[i]);
       } catch (SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
@@ -72,7 +93,7 @@ public class NoiseTest {
   }
 
   public XYSeriesCollection setUpTest2() throws FileNotFoundException {
-    String folder = "test-data/noise-neg160db/";
+    String testFolder = folder + "noise-neg160db/";
     String[] data = new String[3];
     data[0] = "00_LH0.512.seed";
     data[1] = "10_LH0.512.seed";
@@ -81,7 +102,7 @@ public class NoiseTest {
     DataStore ds = new DataStore();
     for (int i = 0; i < data.length; ++i) {
       try {
-        ds.setBlock(i, folder + data[i]);
+        ds.setBlock(i, testFolder + data[i]);
       } catch (SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
@@ -110,8 +131,8 @@ public class NoiseTest {
   @Test
   public void testResultsData1PSD1() {
     int idx = 0;
-    double psdCheck = -157.64;
-    double noiseCheck = -158.53;
+    double psdCheck = -143.71;
+    double noiseCheck = -145.15;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest1();
@@ -158,54 +179,10 @@ public class NoiseTest {
   }
 
   @Test
-  public void testResultsData2PSD1() {
-    int idx = 0;
-    double psdCheck = -158.68;
-    double noiseCheck = -159.63;
-    // everything below here same for every test
-    try{
-      XYSeriesCollection xysc = setUpTest2();
-      // first 3 data, PSDs of each input
-      // second 3 data, self-noise of each input
-      // want data from 30 to 100s
-      double low = 30.;
-      double high = 100.;
-      double psdResults = 0.;
-      double noiseResults = 0.;
-      XYSeries psd = xysc.getSeries(idx);
-      XYSeries noise = xysc.getSeries(idx + 3);
-      int psdPoints = 0;
-      int noisePoints = 0;
-      for (int j = 0; j < psd.getItemCount(); ++j) {
-        XYDataItem psdxy = psd.getDataItem(j);
-        double x = psdxy.getX().doubleValue();
-        if (x >= low && x <= high) {
-          psdResults += psdxy.getY().doubleValue();
-          ++psdPoints;
-        }
-        XYDataItem noisxy = noise.getDataItem(j);
-        x = noisxy.getX().doubleValue();
-        if (x >= low && x <= high) {
-          noiseResults += noisxy.getY().doubleValue();
-          ++noisePoints;
-        }
-      }
-      psdResults /= psdPoints;
-      noiseResults /= noisePoints;
-      assertEquals(noiseCheck, noiseResults, 1E-2);
-      assertEquals(psdCheck, psdResults, 1E-2);
-
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-      fail();
-    }
-  }
-
-  @Test
   public void testResultsData1PSD2() {
     int idx = 1;
-    double psdCheck = -159.05;
-    double noiseCheck = -160.79;
+    double psdCheck = -145.18;
+    double noiseCheck = -146.39;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest1();
@@ -248,11 +225,55 @@ public class NoiseTest {
   @Test
   public void testResultsData1PSD3() {
     int idx = 2;
-    double psdCheck = -155.56;
-    double noiseCheck = -156.33;
+    double psdCheck = -141.74;
+    double noiseCheck = -142.64;
     // everything below here same for every test
     try{
       XYSeriesCollection xysc = setUpTest1();
+      // first 3 data, PSDs of each input
+      // second 3 data, self-noise of each input
+      // want data from 30 to 100s
+      double low = 30.;
+      double high = 100.;
+      double psdResults = 0.;
+      double noiseResults = 0.;
+      XYSeries psd = xysc.getSeries(idx);
+      XYSeries noise = xysc.getSeries(idx + 3);
+      int psdPoints = 0;
+      int noisePoints = 0;
+      for (int j = 0; j < psd.getItemCount(); ++j) {
+        XYDataItem psdxy = psd.getDataItem(j);
+        double x = psdxy.getX().doubleValue();
+        if (x >= low && x <= high) {
+          psdResults += psdxy.getY().doubleValue();
+          ++psdPoints;
+        }
+        XYDataItem noisxy = noise.getDataItem(j);
+        x = noisxy.getX().doubleValue();
+        if (x >= low && x <= high) {
+          noiseResults += noisxy.getY().doubleValue();
+          ++noisePoints;
+        }
+      }
+      psdResults /= psdPoints;
+      noiseResults /= noisePoints;
+      assertEquals(noiseCheck, noiseResults, 1E-2);
+      assertEquals(psdCheck, psdResults, 1E-2);
+
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+  @Test
+  public void testResultsData2PSD1() {
+    int idx = 0;
+    double psdCheck = -159.77;
+    double noiseCheck = -161.16;
+    // everything below here same for every test
+    try{
+      XYSeriesCollection xysc = setUpTest2();
       // first 3 data, PSDs of each input
       // second 3 data, self-noise of each input
       // want data from 30 to 100s

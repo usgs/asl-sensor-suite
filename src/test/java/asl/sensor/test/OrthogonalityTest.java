@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.gui.InputPanel;
@@ -18,12 +19,87 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class OrthogonalityTest {
 
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
+  public String getCleanData() {
+    return "ANMO.10";
+  }
+
   public String getNoisyData() {
     return "FUNA.00";
   }
 
-  public String getCleanData() {
-    return "ANMO.10";
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "orthog-94/";
+    String[] prefixes = new String[4];
+    prefixes[0] = "00_LH1";
+    prefixes[1] = "00_LH2";
+    prefixes[2] = "10_LH1";
+    prefixes[3] = "10_LH2";
+    String extension = ".512.seed";
+
+    for (String prefix : prefixes) {
+      String fileID = prefix + extension;
+      try {
+        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  @Test
+  public void getsCorrectAngle() {
+
+    DataStore ds = new DataStore();
+    String testFolder = folder + "orthog-94/";
+    String[] prefixes = new String[4];
+    prefixes[0] = "00_LH1";
+    prefixes[1] = "00_LH2";
+    prefixes[2] = "10_LH1";
+    prefixes[3] = "10_LH2";
+    String extension = ".512.seed";
+
+    for (int i = 0; i < prefixes.length; ++i) {
+      String fName = testFolder + prefixes[i] + extension;
+      try {
+        ds.setBlock(i, fName);
+      } catch (SeedFormatException | CodecException e) {
+        e.printStackTrace();
+        fail();
+      }
+    }
+
+    OrthogonalExperiment orth = new OrthogonalExperiment();
+
+    assertTrue( orth.hasEnoughData(ds) );
+
+    SimpleDateFormat sdf = InputPanel.SDF;
+    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    // sdf.setLenient(false);
+
+    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
+    cCal.set(Calendar.HOUR, 7);
+    // cCal.set(Calendar.MINUTE, 30);
+    System.out.println("start: " + sdf.format( cCal.getTime() ) );
+    long start = cCal.getTime().getTime();
+    cCal.set(Calendar.HOUR, 13);
+    cCal.set(Calendar.MINUTE, 00);
+    System.out.println("end: " + sdf.format( cCal.getTime() ) );
+    long end = cCal.getTime().getTime();
+
+    ds.trim(start, end);
+
+    orth.runExperimentOnData(ds);
+
+    System.out.println( orth.getFitAngle() );
+    System.out.println( Arrays.toString( orth.getSolutionParams() ) );
+    assertEquals( 94., orth.getFitAngle(), 1. );
+
   }
 
   @Test
@@ -175,7 +251,7 @@ public class OrthogonalityTest {
 
     DataStore ds = new DataStore();
     try {
-      String root = "./test-data/sprockets/";
+      String root = TestUtils.DL_DEST_LOCATION;
       testSubfolder = root + testSubfolder;
       refSubfolder = root + refSubfolder;
 
@@ -201,15 +277,7 @@ public class OrthogonalityTest {
       oe.runExperimentOnData(ds);
       double fitAngle = oe.getFitAngle();
       System.out.println( Arrays.toString(oe.getSolutionParams()) );
-      /*
-      if (fitAngle > 180) {
-        fitAngle -= 360; // keep in range (-180, 180) for testing near 0 accurately
-      } else if (angle > 180) {
-        angle -= 360;
-      }
-      */
 
-      fitAngle = 180 - fitAngle; // back-azimuth correction
       double expectedAngle = angle;
       if (expectedAngle > 180) {
         expectedAngle = 360 - expectedAngle;
@@ -222,59 +290,6 @@ public class OrthogonalityTest {
       e.printStackTrace();
       fail();
     }
-
-  }
-
-  @Test
-  public void getsCorrectAngle() {
-
-    DataStore ds = new DataStore();
-
-    String currentDir = System.getProperty("user.dir");
-    String folder = currentDir + "/test-data/orthog-94/";
-    String[] prefixes = new String[4];
-    prefixes[0] = "00_LH1";
-    prefixes[1] = "00_LH2";
-    prefixes[2] = "10_LH1";
-    prefixes[3] = "10_LH2";
-    String extension = ".512.seed";
-
-    for (int i = 0; i < prefixes.length; ++i) {
-      String fName = folder + prefixes[i] + extension;
-      try {
-        ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
-        e.printStackTrace();
-        fail();
-      }
-    }
-
-    OrthogonalExperiment orth = new OrthogonalExperiment();
-
-    assertTrue( orth.hasEnoughData(ds) );
-
-    SimpleDateFormat sdf = InputPanel.SDF;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    // sdf.setLenient(false);
-
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
-    cCal.set(Calendar.HOUR, 7);
-    // cCal.set(Calendar.MINUTE, 30);
-    System.out.println("start: " + sdf.format( cCal.getTime() ) );
-    long start = cCal.getTime().getTime();
-    cCal.set(Calendar.HOUR, 13);
-    cCal.set(Calendar.MINUTE, 00);
-    System.out.println("end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime();
-
-    ds.trim(start, end);
-
-    orth.runExperimentOnData(ds);
-
-    System.out.println( orth.getFitAngle() );
-    System.out.println( Arrays.toString( orth.getSolutionParams() ) );
-    assertEquals( 94., orth.getFitAngle(), 1. );
 
   }
 

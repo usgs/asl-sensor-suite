@@ -9,35 +9,24 @@ import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.EOFException;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
-import org.apache.commons.math3.util.Pair;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.data.xy.XYSeriesCollection;
+import org.junit.Before;
 import org.junit.Test;
-import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.B1000Types;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -49,17 +38,17 @@ import edu.sc.seis.seisFile.mseed.SeedRecord;
 
 public class TimeSeriesUtilsTest {
 
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
-
-  public String fileID = station+"_"+location+"_"+channel;
-
-  public String filename1 = "./test-data/blocktrim/"+fileID+".512.seed";
+  public String fileID = station+"_"+location+"_"+channel+".512.seed";
 
   @Test
   public void canGetFile() {
     try{
+      String filename1 = folder + "blocktrim/" + fileID;
       FileInputStream fis = new FileInputStream(filename1);
       fis.close();
     } catch (Exception e) {
@@ -68,62 +57,8 @@ public class TimeSeriesUtilsTest {
   }
 
   @Test
-  public void dumbDivisionTest() {
-    int div = 12;
-    double num = 1.44;
-    double res = num / div;
-    assertEquals(0.12, res, 1E-10);
-  }
-
-  @Test
-  public void testCOWIDemean() {
-    String filename = "test-data/cowi-multitests/C100823215422_COWI.LHx";
-    String dataname = "US_COWI_  _LHN";
-    DataBlock db;
-    try {
-      db = TimeSeriesUtils.getTimeSeries(filename, dataname);
-      String startString = "2010-236T02:00:00.0";
-      String endString = "2010-236T13:00:00.0";
-      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
-      long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
-      long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
-      db.trim(st, ed);
-      double[] data = db.getData();
-      data = TimeSeriesUtils.demean(data);
-      double mean = 0.;
-      for (double point : data) {
-        mean += point;
-      }
-      mean /= data.length;
-      assertEquals(0., mean, 1E-10);
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
-
-  }
-
-  //@Test
-  public void testDataLocally() {
-    String fname = "./data/gitignoreme/HF_MAJO_10_EHZ.512.cut.seed";
-    try {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(fname);
-      Map<Long, double[]> map = db.getDataMap();
-      System.out.println(db.getName());
-      System.out.println("\tSample interval: "+db.getInterval());
-      for (long time : map.keySet()) {
-        System.out.println("START: " + time);
-        System.out.println("\tLENGTH: " + map.get(time).length);
-      }
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
-  }
-
-  @Test
   public void canGetMultiplexDataNames() {
-    String filename2 = "./test-data/multiplex/cat.seed";
+    String filename2 = folder + "multiplex/cat.seed";
     Set<String> names;
 
     try {
@@ -188,13 +123,15 @@ public class TimeSeriesUtilsTest {
   }
 
   @Test
-  public final void testDemean1to9() throws Exception {
-    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    double[] expected = { -4d, -3d, -2d, -1d, 0d, 1d, 2d, 3d, 4d };
-    TimeSeriesUtils.demeanInPlace(x);
-    for (int i = 0; i < x.length; i++) {
-      assertEquals(x[i], expected[i], 1E-15);
-    }
+  public void detrendAtEndsTest() {
+    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4,
+        3, 2, 1 };
+
+    x = TimeSeriesUtils.detrendEnds(x);
+
+    assertEquals(x[0], 0, 1E-5);
+    assertEquals(x[x.length-1], 0, 1E-5);
   }
 
   @Test
@@ -220,18 +157,6 @@ public class TimeSeriesUtilsTest {
   }
 
   @Test
-  public void detrendAtEndsTest() {
-    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4,
-        3, 2, 1 };
-
-    x = TimeSeriesUtils.detrendEnds(x);
-
-    assertEquals(x[0], 0, 1E-5);
-    assertEquals(x[x.length-1], 0, 1E-5);
-  }
-
-  @Test
   public void detrendingLinearTest() {
 
     Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -246,64 +171,16 @@ public class TimeSeriesUtilsTest {
   }
 
   @Test
-  public final void testDetrendLinear2() throws Exception {
-    double[] x = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6,
-        7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
-
-    x = TimeSeriesUtils.detrend(x);
-    for (int i = 0; i < x.length; i++) {
-      assertEquals(new Double(Math.round(x[i])), new Double(0));
-    }
-  }
-
-  public void
-  doInputParseTest(String dataFolderName, String extension, String testID) {
-
-    String fileName =  dataFolderName + extension;
-    String metaName;
-    try {
-      metaName = TimeSeriesUtils.getMplexNameList(fileName).get(0);
-      Pair<Long, Map<Long, double[]>> data =
-          TimeSeriesUtils.getTimeSeriesMap(fileName, metaName);
-      Map<Long, double[]> map = data.getSecond();
-
-      List<Long> times = new ArrayList<Long>( map.keySet() );
-      Collections.sort(times);
-      long lastTime = times.get( times.size() - 1 );
-
-      StringBuilder sb = new StringBuilder();
-      for (Long time : times) {
-        sb.append(time);
-        sb.append(": ");
-        sb.append( map.get(time) );
-        if (time < lastTime) {
-          sb.append("\n");
-        }
-      }
-
-      String folderName = "testResultImages";
-      File folder = new File(folderName);
-      if ( !folder.exists() ) {
-        System.out.println("Writing directory " + folderName);
-        folder.mkdirs();
-      }
-
-      String outputFilename =
-          folderName + "/outputData"+testID+"TimeDataMap.txt";
-      PrintWriter write;
-      write = new PrintWriter(outputFilename);
-      write.println( sb.toString() );
-      write.close();
-
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
-      fail();
-      e.printStackTrace();
-    }
+  public void dumbDivisionTest() {
+    int div = 12;
+    double num = 1.44;
+    double res = num / div;
+    assertEquals(0.12, res, 1E-10);
   }
 
   @Test
   public void firstSampleCorrect() {
-    String fname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
+    String fname = folder + "random_cal_lowfrq/BHZ.512.seed";
     try {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
@@ -326,7 +203,7 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public void firstSampleCorrect2() {
-    String fname = "./test-data/random_cal_lowfrq/BC0.512.seed";
+    String fname = folder + "random_cal_lowfrq/BC0.512.seed";
     try {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
@@ -342,7 +219,6 @@ public class TimeSeriesUtilsTest {
       }
       assertEquals(707752187L, sum);
       OffsetDateTime cCal = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);
-
       String correctDate = "2017.08.02 | 00:00:00.019-Z";
       DateTimeFormatter dtf = DateTimeFormatter.ofPattern("YYYY.MM.dd | HH:mm:ss.SSS-X");
       String inputDate = cCal.format(dtf);
@@ -356,23 +232,61 @@ public class TimeSeriesUtilsTest {
     }
   }
 
-  @Deprecated
-  public Calendar getStartCalendar(long time) {
-    SimpleDateFormat sdf = InputPanel.SDF;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+  @Before
+  public void getReferencedData() {
 
-    cCal.setTimeInMillis(time);
-    return cCal;
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+
+    String refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
+    String filename = "C100823215422_COWI.LHx";
+    String filename2 = "DT000110.LH1";
+    try {
+      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
+      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
+    try {
+      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "kiev-step/";
+    filename = "_BC0.512.seed";
+    try {
+      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "multiplex/";
+    filename = "cat.seed";
+    try {
+      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "random_cal_lowfrq/";
+    filename = "BHZ.512.seed";
+    filename2 = "BC0.512.seed";
+    try {
+      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
+      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
   }
-
-
 
   @Test
   public void inputFileReaderCreatesXYSeries() {
     DataInput dis;
     List<Number> data = new ArrayList<Number>();
-
+    String filename1 = folder + "blocktrim/" + fileID;
     try {
       dis = new DataInputStream(
             new BufferedInputStream(
@@ -452,60 +366,8 @@ public class TimeSeriesUtilsTest {
   }
 
   @Test
-  public void producePlotReadIn() {
-    try {
-      String calname = "./test-data/random_cal_lowfrq/BC0.512.seed";
-      String outname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
-      String calMplex = TimeSeriesUtils.getMplexNameList(calname).get(0);
-      String outMplex = TimeSeriesUtils.getMplexNameList(outname).get(0);
-      DataBlock cal = TimeSeriesUtils.getTimeSeries(calname, calMplex);
-      DataBlock out = TimeSeriesUtils.getTimeSeries(outname, outMplex);
-      long start = Math.max(cal.getStartTime(), out.getStartTime());
-      long end = Math.min(cal.getEndTime(), out.getEndTime());
-      cal.trim(start, end);
-      out.trim(start, end);
-
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries( cal.toXYSeries() );
-      xysc.addSeries( out.toXYSeries() );
-
-      JFreeChart chart = ChartFactory.createXYLineChart(
-          "MAJO calibration and output data",
-          "Time",
-          "Signal data (counts)",
-          xysc,
-          PlotOrientation.VERTICAL,
-          true,
-          false,
-          false);
-
-      int width = 1280; int height = 960;
-      PDDocument pdf = new PDDocument();
-      ReportingUtils.chartsToPDFPage(width, height, pdf, chart);
-
-      String currentDir = System.getProperty("user.dir");
-      String testResultFolder = currentDir + "/testResultImages/";
-      File dir = new File(testResultFolder);
-      if ( !dir.exists() ) {
-        dir.mkdir();
-      }
-      String testResult =
-          testResultFolder + "Time-Series_MAJO.pdf";
-      pdf.save( new File(testResult) );
-      pdf.close();
-
-    } catch (IOException | SeedFormatException | CodecException e) {
-      fail();
-      e.printStackTrace();
-    }
-
-
-
-  }
-
-  @Test
   public void seisFileCanParseFile() {
-
+    String filename1 = folder + "blocktrim/" + fileID;
     try {
       DataInput dis = new DataInputStream( new BufferedInputStream(
           new FileInputStream(filename1) ) );
@@ -541,9 +403,9 @@ public class TimeSeriesUtilsTest {
   @Test
   public void seisFileGivesCorrectSampleRateAndInterval() {
     DataInput dis;
+    String filename1 = folder + "blocktrim/" + fileID;
     try {
       while (true) {
-
         dis = new DataInputStream( new BufferedInputStream(
             new FileInputStream(filename1) ) );
         SeedRecord sr = SeedRecord.read(dis,4096);
@@ -581,126 +443,58 @@ public class TimeSeriesUtilsTest {
     }
   }
 
-  public void showsTimeSeries(String fname, String annot) {
-
+  @Test
+  public void testCOWIDemean() {
+    String filename = folder + "cowi-multitests/C100823215422_COWI.LHx";
+    String dataname = "US_COWI_  _LHN";
+    DataBlock db;
     try {
-      String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
-      DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
-      Map<Long, double[]> timeseries = db.getDataMap();
-      List<Long> timeList = new ArrayList<Long>( timeseries.keySet() );
-      Collections.sort(timeList);
-      StringBuilder sb = new StringBuilder();
-      for ( Long time : timeList ) {
-
-        Calendar cCal = getStartCalendar(time);
-        SimpleDateFormat sdf =
-            new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
-        sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-        String inputDate = sdf.format( cCal.getTime() );
-
-        double[] contiguous = timeseries.get(time);
-        // long tstamp = time / 1000;
-        sb.append("Contiguous block of data at " + inputDate + ":\n");
-        for (Number n : contiguous) {
-          sb.append("\t"+n+"\n");
-        }
-        sb.append("\n");
+      db = TimeSeriesUtils.getTimeSeries(filename, dataname);
+      String startString = "2010-236T02:00:00.0";
+      String endString = "2010-236T13:00:00.0";
+      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
+      long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      db.trim(st, ed);
+      double[] data = db.getData();
+      data = TimeSeriesUtils.demean(data);
+      double mean = 0.;
+      for (double point : data) {
+        mean += point;
       }
-
-      String currentDir = System.getProperty("user.dir");
-      String testResultFolder = currentDir + "/testResultImages/";
-      File dir = new File(testResultFolder);
-      if ( !dir.exists() ) {
-        dir.mkdir();
-      }
-      String testResult =
-          testResultFolder + "Time-Series_MAJO_" + annot + ".txt";
-
-      PrintWriter out = new PrintWriter(testResult);
-      out.println( sb.toString() );
-      out.close();
-
+      mean /= data.length;
+      assertEquals(0., mean, 1E-10);
     } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
-  }
-
-  @Test
-  public void showsTimeSeriesCal() {
-    String fname = "./test-data/random_cal_lowfrq/BC0.512.seed";
-    showsTimeSeries(fname, "BC0");
-  }
-
-  @Test
-  public void showsTimeSeriesOut() {
-    String fname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
-    showsTimeSeries(fname, "BHZ");
-  }
-
-  @Test
-  public void testGapPadding() {
-
-   // TODO: re-write test to deal with data structure change
 
   }
 
   @Test
-  public void testInputParsing1() {
-    String dataFolderName = "test-data/random-high-32+70i/";
-    String extension = "_EC0.512.seed";
-    String testID = "1_Cal";
-    doInputParseTest(dataFolderName, extension, testID);
-    extension = "00_EHZ.512.seed";
-    testID = "1_Out";
-    doInputParseTest(dataFolderName, extension, testID);
+  public final void testDemean1to9() throws Exception {
+    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    double[] expected = { -4d, -3d, -2d, -1d, 0d, 1d, 2d, 3d, 4d };
+    TimeSeriesUtils.demeanInPlace(x);
+    for (int i = 0; i < x.length; i++) {
+      assertEquals(x[i], expected[i], 1E-15);
+    }
   }
 
   @Test
-  public void testInputParsing4() {
-    String dataFolderName = "test-data/random_cal_4/";
-    String extension = "CB_BC0.512.seed";
-    String testID = "4_Cal";
-    doInputParseTest(dataFolderName, extension, testID);
-    extension = "00_EHZ.512.seed";
-    testID = "4_Out";
-    doInputParseTest(dataFolderName, extension, testID);
-  }
+  public final void testDetrendLinear2() throws Exception {
+    double[] x = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6,
+        7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 
-
-
-  @Test
-  public void timeDataCorrect() {
-    String fname = "./test-data/random_cal_lowfrq/BHZ.512.seed";
-    try {
-      String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
-      DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
-
-      Map<Long, double[]> dataMap = db.getDataMap();
-      List<Long> regions = new ArrayList<Long>( dataMap.keySet() );
-      Collections.sort(regions);
-      for (int i = 0; i < regions.size(); ++i) {
-        long time = regions.get(i);
-        System.out.println(dataMap.get(time).length);
-      }
-
-      long start = db.getStartTime();
-      Calendar cCal = getStartCalendar(start);
-      SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MM.dd | HH:mm:ss.SSS");
-      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-      String inputDate = sdf.format( cCal.getTime() );
-      // System.out.println(inputDate);
-      String correctDate = "2017.08.02 | 00:00:00.019";
-      assertEquals(inputDate, correctDate);
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
+    x = TimeSeriesUtils.detrend(x);
+    for (int i = 0; i < x.length; i++) {
+      assertEquals(new Double(Math.round(x[i])), new Double(0));
     }
   }
 
   @Test
   public void testNormByMax() {
-    String fname = "./test-data/kiev-step/_BC0.512.seed";
+    String fname = folder + "kiev-step/_BC0.512.seed";
     try {
       DataBlock db = TimeSeriesUtils.getFirstTimeSeries(fname);
       String startString = "2018-038T15:25:00.0";
@@ -733,6 +527,34 @@ public class TimeSeriesUtilsTest {
       assertEquals(-0.79, normed[minIdx], 0.01);
     } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+  @Test
+  public void timeDataCorrect() {
+    String fname = folder + "random_cal_lowfrq/BHZ.512.seed";
+    try {
+      String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
+      DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
+
+      Map<Long, double[]> dataMap = db.getDataMap();
+      List<Long> regions = new ArrayList<Long>( dataMap.keySet() );
+      Collections.sort(regions);
+      for (int i = 0; i < regions.size(); ++i) {
+        long time = regions.get(i);
+        System.out.println(dataMap.get(time).length);
+      }
+
+      Instant timeInst = Instant.ofEpochMilli( db.getStartTime() );
+      OffsetDateTime dt = OffsetDateTime.ofInstant(timeInst, ZoneOffset.UTC);
+      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu.MM.dd'T'HH:mm:ss.SSS");
+      String inputDate = dtf.format(dt);
+      // System.out.println(inputDate);
+      String correctDate = "2017.08.02T00:00:00.019";
+      assertEquals(inputDate, correctDate);
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }

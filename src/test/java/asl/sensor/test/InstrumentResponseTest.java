@@ -10,38 +10,40 @@ import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.input.TransferFunction;
 import asl.sensor.input.Unit;
-import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
 
-  // @Test
-  public void listPoles() {
-    InstrumentResponse ir;
-    try {
-      ir = InstrumentResponse.loadEmbeddedResponse("STS-6_Q330HR_BH_40_nocoil");
-      for ( Complex pole : ir.getPoles() ) {
-        double poleFreq = pole.abs() / NumericUtils.TAU;
-        System.out.println("POLE " + poleFreq + " Hz");
-      }
-      for ( Complex zero : ir.getZeros() ) {
-        double zeroFreq = zero.abs() / NumericUtils.TAU;
-        System.out.println("ZERO " + zeroFreq + " Hz");
-      }
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
 
-    } catch (IOException e) {
-      fail();
-      e.printStackTrace();
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "resp-parse/";
+    String[] filenames = new String[]{
+        "RESP.XX.NS087..BHZ.STS1.20.2400",
+        "multiepoch.txt"
+    };
+    for (String fileID : filenames) {
+      try {
+        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
     }
+
   }
 
   @Test
   public void testFileParse() {
-    String filename = "./test-data/resp-parse/RESP.XX.NS087..BHZ.STS1.20.2400";
+    String filename = folder + "resp-parse/RESP.XX.NS087..BHZ.STS1.20.2400";
 
     try {
       InstrumentResponse ir = new InstrumentResponse(filename);
@@ -84,9 +86,8 @@ public class InstrumentResponseTest {
 
   @Test
   public void testMultiEpoch() {
-    String currentDir = System.getProperty("user.dir");
-    String filename = currentDir +
-        "/test-data/resp-parse/multiepoch.txt";
+
+    String filename = folder + "resp-parse/multiepoch.txt";
     InstrumentResponse ir;
     try {
       ir = new InstrumentResponse(filename);
@@ -101,10 +102,7 @@ public class InstrumentResponseTest {
   @Test
   public void testStringOutput() {
 
-    String currentDir = System.getProperty("user.dir");
-    String filename = currentDir +
-        "/test-data/resp-parse/RESP.XX.NS087..BHZ.STS1.20.2400";
-
+    String filename = folder + "resp-parse/RESP.XX.NS087..BHZ.STS1.20.2400";
 
     try {
       InstrumentResponse ir = new InstrumentResponse(filename);
@@ -115,6 +113,7 @@ public class InstrumentResponseTest {
 
       ReportingUtils.textToPDFPage( ir.toString(), pdf );
 
+      String currentDir = System.getProperty("user.dir");
       String testResultFolder = currentDir + "/testResultImages/";
       File dir = new File(testResultFolder);
       if ( !dir.exists() ) {

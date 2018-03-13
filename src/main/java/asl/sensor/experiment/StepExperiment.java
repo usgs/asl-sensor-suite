@@ -49,20 +49,59 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class StepExperiment extends Experiment{
 
+  /**
+   * Applies a "water level" to the FFT data to prevent division by zero during deconvolutions,
+   * including inverting the FFT (mult. by -1) to make the deconvolution an act of multiplication.
+   * @param data FFT data
+   * @return FFT data, inverted and zero-corrected
+   */
+  public static Complex[] setWaterLevel(Complex[] data) {
+    Complex[] resetData = new Complex[data.length];
+    double[] sqrt = new double[data.length];
+    double max = data[0].abs();
+    int maxIdx = 0;
+    // first iteration gets abs values, scaled data
+    for (int i = 0; i < data.length; ++i) {
+      resetData[i] = data[i];
+      sqrt[i] = data[i].abs();
+      if ( max < sqrt[i] ) {
+        max = sqrt[i];
+        maxIdx = i;
+      }
+    }
+    double scaleBy = sqrt[maxIdx]*1E-30; // python code multiplies by 10^(-600/20) which is 10^-30
+    for (int i = 0; i < data.length; ++i) {
+      if (sqrt[i] < scaleBy & sqrt[i] > 0) {
+        resetData[i] = resetData[i].multiply(scaleBy / sqrt[i]);
+        sqrt[i] = resetData[i].abs();
+      }
+
+      if (sqrt[i] > 0) {
+        resetData[i] = new Complex(1., 0.).divide(resetData[i]);
+      }
+
+      if (sqrt[i] == 0) {
+        resetData[i] = Complex.ZERO;
+      }
+    }
+
+    return resetData;
+  }
   private double f, h; //corner and damping of output (uncorrected)
   private double fCorr, hCorr; // fit parameters to turn output into cal input
   private double initResid, fitResid; // residual values
-  private double sps; // samples per second
 
+  private double sps; // samples per second
   private int trimmedLength, cutAmount;
   private double[] freqs; // frequency (i.e., x-axis values) of step cal FFT series
   private Complex[] sensorFFTSeries; // FFT of step cal from sensor
+
   private double[] stepCalSeries; // time series of raw step cal function
 
   private int sensorOutIdx; // used to keep track of response location for report generation
-
   final double STEP_FACTOR = 1E-10;
   final double F_TOLER = 1E-15;
+
   final double X_TOLER = 1E-15;
 
   public StepExperiment() {
@@ -320,10 +359,9 @@ public class StepExperiment extends Experiment{
     // the upper bound on the returned data (trimmed length plus amount cut from start as offset)
     int upperBound = trimmedLength + cutAmount;
 
+    // use these terms to calculate the poles
     double f = params[0];
     double h = params[1];
-
-    // use these terms to calculate the poles
 
     // term inside the square root in the calculations of p1, p2
     // (h^2-1)
@@ -451,45 +489,6 @@ public class StepExperiment extends Experiment{
     // NOTE: not used by corresponding panel, overrides with active indices
     // of components in the combo-box
     return new int[]{sensorOutIdx};
-  }
-
-  /**
-   * Applies a "water level" to the FFT data to prevent division by zero during deconvolutions,
-   * including inverting the FFT (mult. by -1) to make the deconvolution an act of multiplication.
-   * @param data FFT data
-   * @return FFT data, inverted and zero-corrected
-   */
-  public static Complex[] setWaterLevel(Complex[] data) {
-    Complex[] resetData = new Complex[data.length];
-    double[] sqrt = new double[data.length];
-    double max = data[0].abs();
-    int maxIdx = 0;
-    // first iteration gets abs values, scaled data
-    for (int i = 0; i < data.length; ++i) {
-      resetData[i] = data[i];
-      sqrt[i] = data[i].abs();
-      if ( max < sqrt[i] ) {
-        max = sqrt[i];
-        maxIdx = i;
-      }
-    }
-    double scaleBy = sqrt[maxIdx]*1E-30; // python code multiplies by 10^(-600/20) which is 10^-30
-    for (int i = 0; i < data.length; ++i) {
-      if (sqrt[i] < scaleBy & sqrt[i] > 0) {
-        resetData[i] = resetData[i].multiply(scaleBy / sqrt[i]);
-        sqrt[i] = resetData[i].abs();
-      }
-
-      if (sqrt[i] > 0) {
-        resetData[i] = new Complex(1., 0.).divide(resetData[i]);
-      }
-
-      if (sqrt[i] == 0) {
-        resetData[i] = Complex.ZERO;
-      }
-    }
-
-    return resetData;
   }
 
 }

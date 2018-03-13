@@ -143,106 +143,6 @@ public class NumericUtils {
   }
 
   /**
-   * Sets decimalformat object so that infinity can be printed in a PDF document
-   * @param df DecimalFormat object to change the infinity symbol value of
-   */
-  public static void setInfinityPrintable(DecimalFormat df) {
-    DecimalFormatSymbols symbols = df.getDecimalFormatSymbols();
-    symbols.setInfinity("Inf.");
-    df.setDecimalFormatSymbols(symbols);
-  }
-
-  /**
-   * Perform a moving average on complex data, using the specified number of points to average at
-   * each point in the input
-   * @param nums Complex data to be smoothed by use of moving average
-   * @param points Number of points to include in moving average
-   * @return Smoothed data resulting from performing the moving average on input data.
-   */
-  public static Complex[] multipointMovingAverage(Complex[] nums, int points) {
-    Complex[] out = new Complex[nums.length];
-    Complex[] cached = new Complex[points];
-    for (int i = 0; i < cached.length; ++i) {
-     cached[i] = Complex.ZERO;
-    }
-    Complex windowedAverage = Complex.ZERO;
-    for (int i = 0; i < nums.length; ++i) {
-      int cacheIdx = i % points;
-      Complex temp = cached[cacheIdx];
-      windowedAverage = windowedAverage.subtract(temp);
-      cached[cacheIdx] = nums[i].divide(points);
-      windowedAverage = windowedAverage.add(cached[cacheIdx]);
-      out[i] = windowedAverage;
-    }
-    return out;
-  }
-
-  /**
-   * Perform a moving average on real-val. data, using the specified number of points to average at
-   * each point in the input
-   * @param nums Numeric data to be smoothed by use of moving average
-   * @param points Number of points to include in moving average
-   * @return Smoothed data resulting from performing the moving average on input data.
-   */
-  public static double[] multipointMovingAverage(double[] nums, int points) {
-    double[] out = new double[nums.length];
-    double[] cached = new double[points];
-    double windowedAverage = 0.;
-    for (int i = 0; i < nums.length; ++i) {
-      int cacheIdx = i % points;
-      double temp = cached[cacheIdx];
-      windowedAverage = windowedAverage - temp;
-      cached[cacheIdx] = nums[i] / points;
-      windowedAverage = windowedAverage + cached[cacheIdx];
-      out[i] = windowedAverage;
-    }
-    return out;
-  }
-
-  /**
-   * Given a plot of data within a 2 * Pi range, check that a point is
-   * continuous with a previous value.
-   * @param phi Angle to fit within range of previous value (radians)
-   * @param prevPhi Angle to check discontinuity against (radians)
-   * @return New angle, with distance < Pi rad from the previous value
-   */
-  public static double unwrap(double phi, double prevPhi) {
-    // sets range to [0,TAU], this syntax used because Java mod is weird
-    double newPhi = ( (phi % TAU) + TAU) % TAU;
-
-    while ( Math.abs(prevPhi - newPhi) > Math.PI ) {
-      if (prevPhi < newPhi) {
-        newPhi -= TAU;
-      } else {
-        newPhi += TAU;
-      }
-    }
-
-    return newPhi;
-  }
-
-  /**
-   * Given a list of doubles representing the curve of a function with output
-   * in radians over a range of 2 * pi, create a new curve that removes any
-   * discontinuities in the plot. The starting point will be set to be as close
-   * to zero as possible.
-   * @param angles Array of input angles to make continuous (radians)
-   * @return New array of angles where each pair of continuous points is
-   * within distance < Pi rad from the previous value
-   */
-  public static double[] unwrapList(double[] angles) {
-    double[] out = new double[angles.length];
-    double prevPhi = 0.;
-
-    for (int i = 0; i < out.length; ++i) {
-      out[i] = unwrap(angles[i], prevPhi);
-      prevPhi = out[i];
-    }
-
-    return out;
-  }
-
-  /**
    * Get the mean of the PSD calculation within the specified range
    * @param psd PSD calculation (frequency space / FFT)
    * @param lower Starting index of window
@@ -299,6 +199,40 @@ public class NumericUtils {
 
   /**
    * Used to find peak value of data in a certain location (based on true maximum, not magnitude)
+   * @param data Some complex numeric data (i.e., result of an FFT calculation)
+   * @return Location of max value of entire range of data
+   */
+  public static int getLocationOfPeak(Complex[] data) {
+    return getLocationOfPeak(data, 0, data.length);
+  }
+
+  /**
+   * Used to find peak value of data in a certain location (based on true maximum, not magnitude),
+   * within a certain region of interest
+   * @param data Some complex numeric data (i.e., result of an FFT calculation)
+   * @param lBound Lower index of the region of interest
+   * @param uBound Upper index of the region of interest (will be treated as length of the array if
+   * larger than that value)
+   * @return Location of max value over range of data of interest
+   */
+  public static int getLocationOfPeak(Complex[] data, int lBound, int uBound) {
+    int temp = Math.min(lBound, uBound);
+    uBound = Math.max(lBound, uBound);
+    lBound = temp;
+
+    double max = data[lBound].abs();
+    int idx = lBound;
+    for (int i = lBound+1; i < uBound; ++i) {
+      if (data[i].abs() > max) {
+        max = data[i].abs();
+        idx = i;
+      }
+    }
+    return idx;
+  }
+
+  /**
+   * Used to find peak value of data in a certain location (based on true maximum, not magnitude)
    * @param data Some numeric data (i.e., timeseries)
    * @return Location of max value of entire range of data
    */
@@ -333,37 +267,103 @@ public class NumericUtils {
   }
 
   /**
-   * Used to find peak value of data in a certain location (based on true maximum, not magnitude)
-   * @param data Some complex numeric data (i.e., result of an FFT calculation)
-   * @return Location of max value of entire range of data
+   * Perform a moving average on complex data, using the specified number of points to average at
+   * each point in the input
+   * @param nums Complex data to be smoothed by use of moving average
+   * @param points Number of points to include in moving average
+   * @return Smoothed data resulting from performing the moving average on input data.
    */
-  public static int getLocationOfPeak(Complex[] data) {
-    return getLocationOfPeak(data, 0, data.length);
+  public static Complex[] multipointMovingAverage(Complex[] nums, int points) {
+    Complex[] out = new Complex[nums.length];
+    Complex[] cached = new Complex[points];
+    for (int i = 0; i < cached.length; ++i) {
+     cached[i] = Complex.ZERO;
+    }
+    Complex windowedAverage = Complex.ZERO;
+    for (int i = 0; i < nums.length; ++i) {
+      int cacheIdx = i % points;
+      Complex temp = cached[cacheIdx];
+      windowedAverage = windowedAverage.subtract(temp);
+      cached[cacheIdx] = nums[i].divide(points);
+      windowedAverage = windowedAverage.add(cached[cacheIdx]);
+      out[i] = windowedAverage;
+    }
+    return out;
   }
 
   /**
-   * Used to find peak value of data in a certain location (based on true maximum, not magnitude),
-   * within a certain region of interest
-   * @param data Some complex numeric data (i.e., result of an FFT calculation)
-   * @param lBound Lower index of the region of interest
-   * @param uBound Upper index of the region of interest (will be treated as length of the array if
-   * larger than that value)
-   * @return Location of max value over range of data of interest
+   * Perform a moving average on real-val. data, using the specified number of points to average at
+   * each point in the input
+   * @param nums Numeric data to be smoothed by use of moving average
+   * @param points Number of points to include in moving average
+   * @return Smoothed data resulting from performing the moving average on input data.
    */
-  public static int getLocationOfPeak(Complex[] data, int lBound, int uBound) {
-    int temp = Math.min(lBound, uBound);
-    uBound = Math.max(lBound, uBound);
-    lBound = temp;
+  public static double[] multipointMovingAverage(double[] nums, int points) {
+    double[] out = new double[nums.length];
+    double[] cached = new double[points];
+    double windowedAverage = 0.;
+    for (int i = 0; i < nums.length; ++i) {
+      int cacheIdx = i % points;
+      double temp = cached[cacheIdx];
+      windowedAverage = windowedAverage - temp;
+      cached[cacheIdx] = nums[i] / points;
+      windowedAverage = windowedAverage + cached[cacheIdx];
+      out[i] = windowedAverage;
+    }
+    return out;
+  }
 
-    double max = data[lBound].abs();
-    int idx = lBound;
-    for (int i = lBound+1; i < uBound; ++i) {
-      if (data[i].abs() > max) {
-        max = data[i].abs();
-        idx = i;
+  /**
+   * Sets decimalformat object so that infinity can be printed in a PDF document
+   * @param df DecimalFormat object to change the infinity symbol value of
+   */
+  public static void setInfinityPrintable(DecimalFormat df) {
+    DecimalFormatSymbols symbols = df.getDecimalFormatSymbols();
+    symbols.setInfinity("Inf.");
+    df.setDecimalFormatSymbols(symbols);
+  }
+
+  /**
+   * Given a plot of data within a 2 * Pi range, check that a point is
+   * continuous with a previous value.
+   * @param phi Angle to fit within range of previous value (radians)
+   * @param prevPhi Angle to check discontinuity against (radians)
+   * @return New angle, with distance < Pi rad from the previous value
+   */
+  public static double unwrap(double phi, double prevPhi) {
+    // sets range to [0,TAU], this syntax used because Java mod is weird
+    double newPhi = ( (phi % TAU) + TAU) % TAU;
+
+    while ( Math.abs(prevPhi - newPhi) > Math.PI ) {
+      if (prevPhi < newPhi) {
+        newPhi -= TAU;
+      } else {
+        newPhi += TAU;
       }
     }
-    return idx;
+
+    return newPhi;
+  }
+
+  /**
+   * Given a list of doubles representing the curve of a function with output
+   * in radians over a range of 2 * pi, create a new curve that removes any
+   * discontinuities in the plot. The starting point will be set to be as close
+   * to zero as possible.
+   * @param angles Array of input angles to make continuous (radians)
+   * @return New array of angles where each pair of continuous points is
+   * within distance < Pi rad from the previous value
+   */
+  public static double[] unwrapList(double[] angles) {
+    double[] out = new double[angles.length];
+    double prevPhi = 0.;
+
+    for (int i = 0; i < out.length; ++i) {
+      out[i] = unwrap(angles[i], prevPhi);
+      prevPhi = out[i];
+    }
+
+    return out;
   }
 
 }

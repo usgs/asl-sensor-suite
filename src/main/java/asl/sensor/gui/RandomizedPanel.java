@@ -58,6 +58,37 @@ public class RandomizedPanel extends ExperimentPanel {
    * 
    */
   private static final long serialVersionUID = -1791709117080520178L;
+  public static String complexListToString(List<Complex> stringMe) {
+    final int MAX_LINE = 2; // maximum number of entries per line
+    
+    DecimalFormat df = new DecimalFormat("#.#####");
+    NumericUtils.setInfinityPrintable(df);
+    ComplexFormat cf = new ComplexFormat(df);
+    StringBuilder sb = new StringBuilder();
+    int numInLine = 0;
+    
+    for (int i = 0; i < stringMe.size(); ++i) {
+      
+      Complex c = stringMe.get(i);
+      double initPrd = NumericUtils.TAU / c.abs();
+      
+      sb.append( cf.format(c) );
+      sb.append(" (");
+      sb.append( df.format(initPrd) );
+      sb.append(")");
+      ++numInLine;
+      // want to fit two to a line for paired values
+      if (numInLine >= MAX_LINE) {
+        sb.append("\n");
+        numInLine = 0;
+      } else {
+        sb.append(", ");
+      }
+    }
+    
+    return sb.toString();
+  }
+  
   /**
    * Utility function for formatting additional report pages from the
    * underlying experiment backend; can be called without constructing a
@@ -238,37 +269,6 @@ public class RandomizedPanel extends ExperimentPanel {
     return out;
   }
   
-  public static String complexListToString(List<Complex> stringMe) {
-    final int MAX_LINE = 2; // maximum number of entries per line
-    
-    DecimalFormat df = new DecimalFormat("#.#####");
-    NumericUtils.setInfinityPrintable(df);
-    ComplexFormat cf = new ComplexFormat(df);
-    StringBuilder sb = new StringBuilder();
-    int numInLine = 0;
-    
-    for (int i = 0; i < stringMe.size(); ++i) {
-      
-      Complex c = stringMe.get(i);
-      double initPrd = NumericUtils.TAU / c.abs();
-      
-      sb.append( cf.format(c) );
-      sb.append(" (");
-      sb.append( df.format(initPrd) );
-      sb.append(")");
-      ++numInLine;
-      // want to fit two to a line for paired values
-      if (numInLine >= MAX_LINE) {
-        sb.append("\n");
-        numInLine = 0;
-      } else {
-        sb.append(", ");
-      }
-    }
-    
-    return sb.toString();
-  }
-  
   
   /**
    * Static helper method for getting the formatted inset string directly
@@ -408,45 +408,6 @@ public class RandomizedPanel extends ExperimentPanel {
     this.add(plotSelection, gbc);
   }
   
-  private void initAxes() {
-    String yAxisTitle = "20 * log10( RESP(f) )";
-    String xAxisTitle = "Frequency (Hz)";
-    String prdAxisTitle = "Period (s)";
-    String degreeAxisTitle = "phi(RESP(f))";
-    
-    xAxis = new LogarithmicAxis(xAxisTitle);
-    prdAxis = new LogarithmicAxis(prdAxisTitle);
-    residXAxis = new LogarithmicAxis(xAxisTitle);
-    residPrdAxis = new LogarithmicAxis(prdAxisTitle);
-    
-    yAxis = new NumberAxis(yAxisTitle);
-    yAxis.setAutoRange(true);
-    
-    degreeAxis = new NumberAxis(degreeAxisTitle);
-    degreeAxis.setAutoRange(true);    
-    
-    residPhaseAxis = new NumberAxis("Phase error (degrees)");
-    residAmpAxis = new NumberAxis("Amplitude error (percentage)");
-    
-    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
-    xAxis.setLabelFont(bold);
-    yAxis.setLabelFont(bold);
-    degreeAxis.setLabelFont(bold);
-    residPhaseAxis.setLabelFont(bold);
-    residAmpAxis.setLabelFont(bold);
-    
-    lowFreqBox = new JCheckBox("Low frequency calibration");
-    lowFreqBox.setSelected(true);
-    
-    showParams = new JCheckBox("Show params");
-    showParams.setEnabled(false);
-    showParams.addActionListener(this);
-    
-    freqSpace = new JCheckBox("Use Hz units (req. regen)");
-    freqSpace.setSelected(true);
-  }
-  
   @Override
   public void actionPerformed(ActionEvent e) {
     
@@ -499,36 +460,6 @@ public class RandomizedPanel extends ExperimentPanel {
     
   }
   
-  private void setSubtitles() {
-    BlockContainer bc = new BlockContainer( new FlowArrangement() );
-    CompositeTitle ct = new CompositeTitle(bc);
-    String[] insets = getInsetStringsAsList();
-    for (String inset : insets) {
-      TextTitle result = new TextTitle();
-      result.setText(inset);
-      // result.setFont( new Font("Dialog", Font.BOLD, 12) );
-      result.setBackgroundPaint(Color.white);
-      bc.add(result);
-    }
-
-    TextTitle result = new TextTitle();
-    RandomizedExperiment re = (RandomizedExperiment) expResult;
-    int numIters = re.getIterations();
-    StringBuilder sb = new StringBuilder("NUMBER OF ITERATIONS: ");
-    sb.append(numIters);
-    result.setText( sb.toString() );
-    result.setBackgroundPaint(Color.white);
-
-    ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
-    ct.setPosition(RectangleEdge.BOTTOM);
-    result.setVerticalAlignment(VerticalAlignment.BOTTOM);
-    result.setPosition(RectangleEdge.BOTTOM);
-    for ( JFreeChart chart : getCharts() ) {
-      chart.addSubtitle(TITLE_IDX, ct);
-      chart.addSubtitle(TITLE_IDX, result);
-    }
-  }
-  
   @Override
   protected void drawCharts() {
     // just force the active plot at the start to be the amplitude plot
@@ -576,7 +507,7 @@ public class RandomizedPanel extends ExperimentPanel {
     }
     return sb.toString();
   }
-
+  
   /**
    * Produce arrays of pole, zero, and residual data for text titles
    * @return Array of strings 
@@ -607,7 +538,7 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append(weights[1]);
     return sb.toString();
   }
-  
+
   @Override
   /**
    * Produce the filename of the report generated from this experiment.
@@ -630,6 +561,14 @@ public class RandomizedPanel extends ExperimentPanel {
     return sb.toString();
   }
   
+  public ValueAxis getResidAxis() {
+    if ( null == plotSelection || freqSpace.isSelected() ) {
+      return residXAxis;
+    } else {
+      return residPrdAxis;
+    }
+  }
+  
   @Override
   public JFreeChart[] getSecondPageCharts() {
     return new JFreeChart[]{residAmpChart, residPhaseChart};
@@ -641,14 +580,6 @@ public class RandomizedPanel extends ExperimentPanel {
       return xAxis;
     } else {
       return prdAxis;
-    }
-  }
-  
-  public ValueAxis getResidAxis() {
-    if ( null == plotSelection || freqSpace.isSelected() ) {
-      return residXAxis;
-    } else {
-      return residPrdAxis;
     }
   }
   
@@ -664,10 +595,79 @@ public class RandomizedPanel extends ExperimentPanel {
         new ValueAxis[]{yAxis, degreeAxis, residAmpAxis, residPhaseAxis};
     return out[idx];
   }
-
+  
+  private void initAxes() {
+    String yAxisTitle = "20 * log10( RESP(f) )";
+    String xAxisTitle = "Frequency (Hz)";
+    String prdAxisTitle = "Period (s)";
+    String degreeAxisTitle = "phi(RESP(f))";
+    
+    xAxis = new LogarithmicAxis(xAxisTitle);
+    prdAxis = new LogarithmicAxis(prdAxisTitle);
+    residXAxis = new LogarithmicAxis(xAxisTitle);
+    residPrdAxis = new LogarithmicAxis(prdAxisTitle);
+    
+    yAxis = new NumberAxis(yAxisTitle);
+    yAxis.setAutoRange(true);
+    
+    degreeAxis = new NumberAxis(degreeAxisTitle);
+    degreeAxis.setAutoRange(true);    
+    
+    residPhaseAxis = new NumberAxis("Phase error (degrees)");
+    residAmpAxis = new NumberAxis("Amplitude error (percentage)");
+    
+    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
+    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    xAxis.setLabelFont(bold);
+    yAxis.setLabelFont(bold);
+    degreeAxis.setLabelFont(bold);
+    residPhaseAxis.setLabelFont(bold);
+    residAmpAxis.setLabelFont(bold);
+    
+    lowFreqBox = new JCheckBox("Low frequency calibration");
+    lowFreqBox.setSelected(true);
+    
+    showParams = new JCheckBox("Show params");
+    showParams.setEnabled(false);
+    showParams.addActionListener(this);
+    
+    freqSpace = new JCheckBox("Use Hz units (req. regen)");
+    freqSpace.setSelected(true);
+  }
+  
   @Override
   public int panelsNeeded() {
     return 2;
+  }
+
+  private void setSubtitles() {
+    BlockContainer bc = new BlockContainer( new FlowArrangement() );
+    CompositeTitle ct = new CompositeTitle(bc);
+    String[] insets = getInsetStringsAsList();
+    for (String inset : insets) {
+      TextTitle result = new TextTitle();
+      result.setText(inset);
+      // result.setFont( new Font("Dialog", Font.BOLD, 12) );
+      result.setBackgroundPaint(Color.white);
+      bc.add(result);
+    }
+
+    TextTitle result = new TextTitle();
+    RandomizedExperiment re = (RandomizedExperiment) expResult;
+    int numIters = re.getIterations();
+    StringBuilder sb = new StringBuilder("NUMBER OF ITERATIONS: ");
+    sb.append(numIters);
+    result.setText( sb.toString() );
+    result.setBackgroundPaint(Color.white);
+
+    ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
+    ct.setPosition(RectangleEdge.BOTTOM);
+    result.setVerticalAlignment(VerticalAlignment.BOTTOM);
+    result.setPosition(RectangleEdge.BOTTOM);
+    for ( JFreeChart chart : getCharts() ) {
+      chart.addSubtitle(TITLE_IDX, ct);
+      chart.addSubtitle(TITLE_IDX, result);
+    }
   }
 
   @Override

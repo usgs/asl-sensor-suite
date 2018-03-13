@@ -45,7 +45,174 @@ import py4j.Py4JNetworkException;
  */
 public class CalProcessingServer {
 
+  public class RandData {
+
+    private double[] initPoles;
+    private double[] initZeros;
+    private double[] fitPoles;
+    private double[] fitZeros;
+    private byte[][] pngs;
+    private String[] gapNameIdentifiers;
+    private Date[][] gapStarts;
+    private Date[][] gapEnds;
+
+    public RandData(double[] fp, double[] fz, double[] ip, double[] iz, byte[][] im,
+        String[] nm, Date[][] gpa, Date[][] gpb) {
+      fitPoles = fp;
+      fitZeros = fz;
+      initPoles = ip;
+      initZeros = iz;
+      pngs = im;
+      gapNameIdentifiers = nm;
+      gapStarts = gpa;
+      gapEnds = gpb;
+    }
+
+    public byte[] getAmpErrorImage() {
+      return pngs[2];
+    }
+
+    public byte[] getAmpImage() {
+      return pngs[0];
+    }
+
+    public double[] getFitPoles() {
+      return fitPoles;
+    }
+
+    public double[] getFitZeros() {
+      return fitZeros;
+    }
+
+    public Date[][] getGapEndDates() {
+      return gapEnds;
+    }
+
+    public String[] getGapIdentifiers() {
+      return gapNameIdentifiers;
+    }
+
+    public String getGapInfoAsString() {
+      SimpleDateFormat sdf = new SimpleDateFormat("DD.HH:m:s");
+      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+      return getGapInfoAsString(sdf);
+    }
+
+    public String getGapInfoAsString(DateFormat df) {
+      StringBuilder sb = new StringBuilder();
+      for (int j = 0; j < gapNameIdentifiers.length; ++j) {
+        sb.append(gapNameIdentifiers[j]);
+        sb.append(":\n");
+        for (int i = 0; i < gapStarts[j].length; ++i) {
+          sb.append("\t");
+          Date start = gapStarts[j][i];
+          Date end = gapEnds[j][i];
+          sb.append( df.format(start) );
+          sb.append("\t");
+          sb.append( df.format(end) );
+          sb.append("\n");
+        }
+        sb.append("\n");
+      }
+      return sb.toString();
+    }
+
+    public Date[][] getGapStartDates() {
+      return gapStarts;
+    }
+
+    public double[] getInitPoles() {
+      return initPoles;
+    }
+
+    public double[] getInitZeros() {
+      return initZeros;
+    }
+
+    public byte[] getPhaseErrorImage() {
+      return pngs[3];
+    }
+
+    public byte[] getPhaseImage() {
+      return pngs[1];
+    }
+  }
+
+  /**
+   * get all metadata from the function in a single file
+   * @param exp
+   * @return text representation of data from experiment
+   */
+  public static String getMetadataFromExp(RandomizedExperiment exp) {
+    String[] data = RandomizedPanel.getInsetString(exp);
+    StringBuilder sb = new StringBuilder();
+    for (String dataPart : data) {
+      sb.append(dataPart);
+      sb.append('\n');
+    }
+    return sb.toString();
+  }
+
+  public static void main(String[] args) {
+    GatewayServer gatewayServer = new GatewayServer(new CalProcessingServer());
+    try {
+      gatewayServer.start();
+    } catch (Py4JNetworkException e){
+      System.out.println("Already Running: Closing process");
+      System.exit(0);
+    }
+    System.out.println("Gateway Server Started");
+  }
+
   public CalProcessingServer() {
+  }
+
+  /**
+   * Acquire data and run calibration over it.
+   * Returns the experiment (all data kept locally to maintain thread safety)
+   * @param calFileName Filename of calibration signal
+   * @param outFileName Filename of sensor output
+   * @param respName Filename of response to load in
+   * @param respEmbd True if response is an embedded response in program
+   * @param startTime Long representing ms-since-epoch of data start time
+   * @param endTime Long representing ms-since-epoch of data end time
+   * @param lowFreq True if a low-freq cal should be run
+   * @return Data from running the experiment (plots and fit pole/zero values)
+   * @throws IOException If a string does not refer to a valid accessible file
+   * @throws CodecException
+   * @throws UnsupportedCompressionType
+   * @throws SeedFormatException
+   */
+  public RandData populateDataAndRun(String calFileName, String outFileName,
+      String respName, boolean respEmbd, String startDate, String endDate, boolean lowFreq)
+          throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
+
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
+
+    DataStore ds = new DataStore();
+    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
+    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    InstrumentResponse ir;
+    if (respEmbd) {
+      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+    } else{
+      ir = new InstrumentResponse(respName);
+    }
+
+    ds.setBlock(0, calBlock);
+    ds.setBlock(1, outBlock);
+    ds.setResponse(1, ir);
+    ds.trim(start, end);
+    if (lowFreq) {
+      ds.resample(10.); // more than 5 Hz should be unnecessary for low-frequency curve fitting
+    }
+
+    return runExpGetData(ds, lowFreq);
+
   }
 
   /**
@@ -93,54 +260,6 @@ public class CalProcessingServer {
     ds.setBlock(1, outBlock);
     ds.setResponse(1, ir);
     ds.trim(start, end);
-
-    return runExpGetData(ds, lowFreq);
-
-  }
-
-  /**
-   * Acquire data and run calibration over it.
-   * Returns the experiment (all data kept locally to maintain thread safety)
-   * @param calFileName Filename of calibration signal
-   * @param outFileName Filename of sensor output
-   * @param respName Filename of response to load in
-   * @param respEmbd True if response is an embedded response in program
-   * @param startTime Long representing ms-since-epoch of data start time
-   * @param endTime Long representing ms-since-epoch of data end time
-   * @param lowFreq True if a low-freq cal should be run
-   * @return Data from running the experiment (plots and fit pole/zero values)
-   * @throws IOException If a string does not refer to a valid accessible file
-   * @throws CodecException
-   * @throws UnsupportedCompressionType
-   * @throws SeedFormatException
-   */
-  public RandData populateDataAndRun(String calFileName, String outFileName,
-      String respName, boolean respEmbd, String startDate, String endDate, boolean lowFreq)
-          throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
-
-    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
-    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
-    long start = startDateTime.toInstant().toEpochMilli();
-    long end = endDateTime.toInstant().toEpochMilli();
-
-    DataStore ds = new DataStore();
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
-    InstrumentResponse ir;
-    if (respEmbd) {
-      ir = InstrumentResponse.loadEmbeddedResponse(respName);
-    } else{
-      ir = new InstrumentResponse(respName);
-    }
-
-    ds.setBlock(0, calBlock);
-    ds.setBlock(1, outBlock);
-    ds.setResponse(1, ir);
-    ds.trim(start, end);
-    if (lowFreq) {
-      ds.resample(10.); // more than 5 Hz should be unnecessary for low-frequency curve fitting
-    }
 
     return runExpGetData(ds, lowFreq);
 
@@ -301,125 +420,6 @@ public class CalProcessingServer {
     return new RandData(poles, zeros, initPoles, initZeros, pngByteArrays,
         names, gapStarts, gapEnds);
 
-  }
-
-  /**
-   * get all metadata from the function in a single file
-   * @param exp
-   * @return text representation of data from experiment
-   */
-  public static String getMetadataFromExp(RandomizedExperiment exp) {
-    String[] data = RandomizedPanel.getInsetString(exp);
-    StringBuilder sb = new StringBuilder();
-    for (String dataPart : data) {
-      sb.append(dataPart);
-      sb.append('\n');
-    }
-    return sb.toString();
-  }
-
-  public static void main(String[] args) {
-    GatewayServer gatewayServer = new GatewayServer(new CalProcessingServer());
-    try {
-      gatewayServer.start();
-    } catch (Py4JNetworkException e){
-      System.out.println("Already Running: Closing process");
-      System.exit(0);
-    }
-    System.out.println("Gateway Server Started");
-  }
-
-  public class RandData {
-
-    private double[] initPoles;
-    private double[] initZeros;
-    private double[] fitPoles;
-    private double[] fitZeros;
-    private byte[][] pngs;
-    private String[] gapNameIdentifiers;
-    private Date[][] gapStarts;
-    private Date[][] gapEnds;
-
-    public RandData(double[] fp, double[] fz, double[] ip, double[] iz, byte[][] im,
-        String[] nm, Date[][] gpa, Date[][] gpb) {
-      fitPoles = fp;
-      fitZeros = fz;
-      initPoles = ip;
-      initZeros = iz;
-      pngs = im;
-      gapNameIdentifiers = nm;
-      gapStarts = gpa;
-      gapEnds = gpb;
-    }
-
-    public double[] getInitPoles() {
-      return initPoles;
-    }
-
-    public double[] getInitZeros() {
-      return initZeros;
-    }
-
-    public double[] getFitPoles() {
-      return fitPoles;
-    }
-
-    public double[] getFitZeros() {
-      return fitZeros;
-    }
-
-    public byte[] getAmpImage() {
-      return pngs[0];
-    }
-
-    public byte[] getPhaseImage() {
-      return pngs[1];
-    }
-
-    public byte[] getAmpErrorImage() {
-      return pngs[2];
-    }
-
-    public byte[] getPhaseErrorImage() {
-      return pngs[3];
-    }
-
-    public String[] getGapIdentifiers() {
-      return gapNameIdentifiers;
-    }
-
-    public Date[][] getGapStartDates() {
-      return gapStarts;
-    }
-
-    public Date[][] getGapEndDates() {
-      return gapEnds;
-    }
-
-    public String getGapInfoAsString() {
-      SimpleDateFormat sdf = new SimpleDateFormat("DD.HH:m:s");
-      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-      return getGapInfoAsString(sdf);
-    }
-
-    public String getGapInfoAsString(DateFormat df) {
-      StringBuilder sb = new StringBuilder();
-      for (int j = 0; j < gapNameIdentifiers.length; ++j) {
-        sb.append(gapNameIdentifiers[j]);
-        sb.append(":\n");
-        for (int i = 0; i < gapStarts[j].length; ++i) {
-          sb.append("\t");
-          Date start = gapStarts[j][i];
-          Date end = gapEnds[j][i];
-          sb.append( df.format(start) );
-          sb.append("\t");
-          sb.append( df.format(end) );
-          sb.append("\n");
-        }
-        sb.append("\n");
-      }
-      return sb.toString();
-    }
   }
 
 }

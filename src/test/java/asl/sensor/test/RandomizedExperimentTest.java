@@ -5,17 +5,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.awt.Font;
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -27,6 +22,7 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.CalProcessingServer;
 import asl.sensor.CalProcessingServer.RandData;
@@ -34,19 +30,16 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.gui.RandomizedPanel;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class RandomizedExperimentTest {
 
-  String testRespName = "test-data/random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
+  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  String testRespName = folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
 
   public DataStore getFromList(List<String> setUpFilenames) throws IOException {
 
@@ -75,9 +68,51 @@ public class RandomizedExperimentTest {
 
   }
 
+  @Before
+  public void getReferencedData() {
+
+    // place in sprockets folder under 'from-sensor-test/[test-name]'
+    String refSubfolder = TestUtils.SUBPAGE + "resp-parse/";
+    String filename = "TST5_response.txt";
+    try {
+      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "test-crashed-on-cal/";
+    String[] fileIDs = new String[] {
+        "_BC0.512.seed",
+        "00_BHZ.512.seed",
+        "RESP.US.MVCO.00.BHZ"
+    };
+    for (String fileID : fileIDs) {
+      try {
+        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    refSubfolder = TestUtils.SUBPAGE + "random-high-32+70i/";
+    fileIDs = new String[] {
+        "_EC0.512.seed",
+        "00_EHZ.512.seed",
+        "RESP.XX.NS088..BHZ.STS1.360.2400"
+    };
+    for (String fileID : fileIDs) {
+      try {
+        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+  }
+
   @Test
   public void ResponseCorrectConvertedToVectorHighFreq() {
-    String fname = "test-data/resp-parse/TST5_response.txt";
+    String fname = folder + "resp-parse/TST5_response.txt";
     boolean lowFreq = false;
     InstrumentResponse ir;
     try {
@@ -119,7 +154,7 @@ public class RandomizedExperimentTest {
 
   @Test
   public void ResponseCorrectlyConvertedToVectorLowFreq() {
-    String fname = "test-data/resp-parse/TST5_response.txt";
+    String fname = folder + "resp-parse/TST5_response.txt";
     boolean lowFreq = true;
     InstrumentResponse ir;
     try {
@@ -144,347 +179,119 @@ public class RandomizedExperimentTest {
 
   @Test
   public void ResponseSetCorrectlyHighFreq() {
-
-    String fname = "test-data/resp-parse/TST5_response.txt";
-
+    String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
 
-      try {
-        ir = new InstrumentResponse(fname);
-        boolean lowFreq = false;
+    try {
+      ir = new InstrumentResponse(fname);
+      boolean lowFreq = false;
 
-        List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
-        List<Complex> replacements = new ArrayList<Complex>();
+      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      List<Complex> replacements = new ArrayList<Complex>();
 
-        int start = 2;
-        if ( poles.get(0).getImaginary() == 0 ) {
-          start = 1;
+      int start = 2;
+      if ( poles.get(0).getImaginary() == 0 ) {
+        start = 1;
+      }
+
+      for (int i = start; i < poles.size(); ++i) {
+        if ( poles.get(i).getImaginary() == 0 ) {
+          Complex c = poles.get(i);
+          replacements.add(c.subtract(1));
+          int next = i+1;
+          while (next < poles.size() && poles.get(next).equals(c)) {
+            ++next; // skip duplicates
+          }
+        } else {
+          Complex c = poles.get(i);
+          c = c.subtract( new Complex(1, 1) );
+          replacements.add(c);
+          ++i;
         }
+      }
 
-        for (int i = start; i < poles.size(); ++i) {
-          if ( poles.get(i).getImaginary() == 0 ) {
-            Complex c = poles.get(i);
-            replacements.add(c.subtract(1));
-            int next = i+1;
-            while (next < poles.size() && poles.get(next).equals(c)) {
-              ++next; // skip duplicates
-            }
-          } else {
-            Complex c = poles.get(i);
-            c = c.subtract( new Complex(1, 1) );
-            replacements.add(c);
+      //System.out.println(poles);
+      //System.out.println(replacements);
+
+      double[] newPoles = new double[replacements.size() * 2];
+      for (int i = 0; i < newPoles.length; i += 2) {
+        int poleIdx = i / 2;
+        Complex c = replacements.get(poleIdx);
+        newPoles[i] = c.getReal();
+        newPoles[i + 1] = c.getImaginary();
+      }
+
+      InstrumentResponse ir2 =
+          ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
+
+      List<Complex> testList = ir2.getPoles();
+      //System.out.println(testList);
+      int offsetIdx = 0;
+      for (int i = 0; i < poles.size(); ++i) {
+        if (i < start) {
+          assertTrue( poles.get(i).equals( testList.get(i) ) );
+        } else {
+          Complex c = replacements.get(offsetIdx);
+          assertTrue( testList.get(i).equals(c) );
+          if ( poles.get(i).getImaginary() != 0 ) {
+            Complex c1 = new Complex(1, 1);
+            assertTrue(poles.get(i).equals( c.add(c1) ));
             ++i;
-          }
-        }
-
-        //System.out.println(poles);
-        //System.out.println(replacements);
-
-        double[] newPoles = new double[replacements.size() * 2];
-        for (int i = 0; i < newPoles.length; i += 2) {
-          int poleIdx = i / 2;
-          Complex c = replacements.get(poleIdx);
-          newPoles[i] = c.getReal();
-          newPoles[i + 1] = c.getImaginary();
-        }
-
-        InstrumentResponse ir2 =
-            ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
-
-        List<Complex> testList = ir2.getPoles();
-        //System.out.println(testList);
-        int offsetIdx = 0;
-        for (int i = 0; i < poles.size(); ++i) {
-          if (i < start) {
-            assertTrue( poles.get(i).equals( testList.get(i) ) );
+            Complex c2 = new Complex(1, -1);
+            assertTrue( testList.get(i).equals( c.conjugate() ) );
+            assertTrue( poles.get(i).equals( c.conjugate().add(c2) ) );
           } else {
-            Complex c = replacements.get(offsetIdx);
-            assertTrue( testList.get(i).equals(c) );
-            if ( poles.get(i).getImaginary() != 0 ) {
-              Complex c1 = new Complex(1, 1);
-              assertTrue(poles.get(i).equals( c.add(c1) ));
-              ++i;
-              Complex c2 = new Complex(1, -1);
-              assertTrue( testList.get(i).equals( c.conjugate() ) );
-              assertTrue( poles.get(i).equals( c.conjugate().add(c2) ) );
-            } else {
-              assertTrue( poles.get(i).equals(c.add(1)) );
-            }
-            ++offsetIdx;
+            assertTrue( poles.get(i).equals(c.add(1)) );
           }
+          ++offsetIdx;
         }
-
-      } catch (IOException e) {
-        e.printStackTrace();
       }
 
-  }
-
-  //@Test
-  public void testSingleSideFFTValues() {
-    // just to test to see how crosspower compares to single-side fft
-    String folder = "data/highfrq-majo/";
-    String calInFile = "CB_BC1.512.seed";
-    String sensorOutFile = "10_EHZ.512.seed";
-    try {
-      DataBlock cal = TimeSeriesUtils.getFirstTimeSeries(folder + calInFile);
-      DataBlock out =
-          TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
-
-      OffsetDateTime start =
-          OffsetDateTime.ofInstant(cal.getTrimmedStartInstant(), ZoneOffset.UTC);
-      start = start.withHour(18);
-      start = start.withMinute(20);
-      OffsetDateTime end = start.withHour(18);
-      end = end.withMinute(35);
-
-
-      cal.trim(start, end);
-      out.trim(start, end);
-
-      FFTResult outputSingleSide = FFTResult.singleSidedFFT(out, false);
-      FFTResult calSingleSide = FFTResult.singleSidedFFT(cal, false);
-
-      Complex[] outputFFT = outputSingleSide.getFFT();
-      Complex[] calFFT = calSingleSide.getFFT();
-      double[] freqs = outputSingleSide.getFreqs();
-
-      double minFreq = 30;
-
-      XYSeries numXYS = new XYSeries("Nom FFT amp [out x cal]");
-      XYSeries denXYS = new XYSeries("Dnm FFT amp [cal x cal]");
-      double nyquist = cal.getSampleRate() / 2;
-      for (int i = 0; freqs[i] < .8 * nyquist; ++i) {
-        if (freqs[i] < minFreq) {
-          continue;
-        }
-        // Complex scaleFreq = new Complex(0., NumericUtils.TAU * freqs[i]);
-        double dBNumer = 10 * Math.log10(outputFFT[i].abs());
-        double dBDenom = 10 * Math.log10(calFFT[i].abs());
-        numXYS.add(freqs[i], dBNumer);
-        denXYS.add(freqs[i], dBDenom);
-      }
-
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(numXYS);
-      xysc.addSeries(denXYS);
-      JFreeChart chart = ChartFactory.createXYLineChart(
-          "High-freq. Cal Deconvolution verification",
-          "Frequency",
-          "Spectrum magnitude (log scale)",
-          xysc,
-          PlotOrientation.VERTICAL,
-          true,
-          false,
-          false);
-      LogarithmicAxis la = new LogarithmicAxis("Freq. (Hz)");
-      chart.getXYPlot().setDomainAxis(la);
-
-      String pngFname = "testResultImages/MAJO-plot-singleside-rcal.png";
-      int width = 640; int height = 480;
-      BufferedImage bi =
-          ReportingUtils.chartsToImage(width, height, chart);
-      File file = new File(pngFname);
-      ImageIO.write(bi, "png", file);
-
-
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-      fail();
     } catch (IOException e) {
       e.printStackTrace();
-      fail();
-    } catch (SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
-
-  }
-
-  @Test
-  public void testEfficiencyOfMVCOSolution() {
-    // for some reason this test goes very slowly in the cal server. it is not clear why.
-    String folder = "test-data/test-crashed-on-cal/";
-    String calInFile = folder + "_BC0.512.seed";
-    String sensorOutFile = folder + "00_BHZ.512.seed";
-    String respFile = folder + "RESP.US.MVCO.00.BHZ";
-    String start = "2018-01-30T07:55:00+00:00";
-    String end = "2018-01-30T11:55:00+00:00";
-    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-    long startTime = OffsetDateTime.parse(start, dtf).toInstant().toEpochMilli();
-    long endTime = OffsetDateTime.parse(end, dtf).toInstant().toEpochMilli();
-    RandomizedExperiment re = new RandomizedExperiment();
-    re.setLowFreq(true);
-      DataStore ds = new DataStore();
-      try {
-        ds.setBlock( 0, calInFile);
-        ds.setBlock( 1, sensorOutFile);
-      } catch (SeedFormatException | CodecException e) {
-        e.printStackTrace();
-        fail();
-      }
-      ds.setResponse(1, respFile);
-      ds.trim(startTime, endTime);
-      re.runExperimentOnData(ds);
-  }
-
-  @Test
-  public void testCalServerEntryMethods() {
-    String folder = "test-data/test-crashed-on-cal/";
-    String calInFile = folder + "_BC0.512.seed";
-    String sensorOutFile = folder + "00_BHZ.512.seed";
-    String respFile = folder + "RESP.US.MVCO.00.BHZ";
-    String start = "2018-01-30T07:55:00+00:00";
-    String end = "2018-01-30T11:55:00+00:00";
-    try {
-      CalProcessingServer cps = new CalProcessingServer();
-      RandData rd = cps.populateDataAndRun(calInFile, sensorOutFile, respFile,
-          false, start, end, true);
-      System.out.println( Arrays.toString(rd.getFitPoles()) );
-      System.out.println( Arrays.toString(rd.getFitZeros()) );
-    } catch (IOException | SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
-  }
-
-  //@Test
-  public void testCrossPowerCalculations() {
-    String folder = "data/highfrq-majo/";
-    String calInFile = "CB_BC1.512.seed";
-    String sensorOutFile = "10_EHZ.512.seed";
-    try {
-      DataBlock cal = TimeSeriesUtils.getFirstTimeSeries(folder + calInFile);
-      DataBlock out =
-          TimeSeriesUtils.getFirstTimeSeries(folder + sensorOutFile);
-
-      OffsetDateTime start =
-          OffsetDateTime.ofInstant(cal.getTrimmedStartInstant(), ZoneOffset.UTC);
-      start = start.withHour(18);
-      start = start.withMinute(20);
-      OffsetDateTime end = start.withHour(18);
-      end = end.withMinute(35);
-      cal.trim(start, end);
-      out.trim(start, end);
-
-      FFTResult numer = FFTResult.spectralCalc(out, cal);
-      FFTResult denom = FFTResult.spectralCalc(cal, cal);
-
-      Complex[] numerFFT = numer.getFFT();
-      Complex[] denomFFT = denom.getFFT();
-      double[] freqs = numer.getFreqs();
-
-      double minFreq = 30;
-
-      XYSeries numXYS = new XYSeries("Nom FFT amp [out x cal]");
-      XYSeries denXYS = new XYSeries("Dnm FFT amp [cal x cal]");
-      XYSeries dcvXYS = new XYSeries("Deconvolution (nom/dnm), scaled to vel.");
-      double nyquist = cal.getSampleRate() / 2;
-      for (int i = 0; freqs[i] < .8 * nyquist; ++i) {
-        if (freqs[i] < minFreq) {
-          continue;
-        }
-        Complex scaleFreq = new Complex(0., NumericUtils.TAU * freqs[i]);
-        double dBNumer = 10 * Math.log10(numerFFT[i].abs());
-        double dBDenom = 10 * Math.log10(denomFFT[i].abs());
-        Complex div = numerFFT[i].divide(denomFFT[i].abs());
-        Complex todB = div.multiply(scaleFreq);
-        double dBDiv = 10 * Math.log10(todB.abs());
-        numXYS.add(freqs[i], dBNumer);
-        denXYS.add(freqs[i], dBDenom);
-        dcvXYS.add(freqs[i], dBDiv);
-      }
-
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(numXYS);
-      xysc.addSeries(denXYS);
-      JFreeChart chart = ChartFactory.createXYLineChart(
-          "High-freq. Cal Deconvolution verification",
-          "Frequency",
-          "Spectrum magnitude (log scale)",
-          xysc,
-          PlotOrientation.VERTICAL,
-          true,
-          false,
-          false);
-      LogarithmicAxis la = new LogarithmicAxis("Freq. (Hz)");
-      chart.getXYPlot().setDomainAxis(la);
-
-      xysc = new XYSeriesCollection();
-      xysc.addSeries(dcvXYS);
-      JFreeChart chart2 = ChartFactory.createXYLineChart(
-          "High-freq. Cal Deconvolution verification",
-          "Frequency",
-          "Spectrum magnitude (log scale)",
-          xysc,
-          PlotOrientation.VERTICAL,
-          true,
-          false,
-          false);
-      chart2.getXYPlot().setDomainAxis(la);
-
-      String pngFname = "testResultImages/MAJO-plot-highfreq-spectral.png";
-      int width = 1280; int height = 480;
-      BufferedImage bi =
-          ReportingUtils.chartsToImage(width, height, chart, chart2);
-      File file = new File(pngFname);
-      ImageIO.write(bi, "png", file);
-
-
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-      fail();
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    } catch (SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
     }
 
   }
 
   @Test
   public void responseSetCorrectlyLowFreq() {
+    String fname = folder + "resp-parse/TST5_response.txt";
+    InstrumentResponse ir;
+    try {
+      ir = new InstrumentResponse(fname);
+      boolean lowFreq = true;
+      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
 
-    String fname = "test-data/resp-parse/TST5_response.txt";
+      double[] newPoles = new double[2];
+      newPoles[0] = 0.;
+      newPoles[1] = 1.;
 
-      InstrumentResponse ir;
-      try {
-        ir = new InstrumentResponse(fname);
-        boolean lowFreq = true;
-        List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      Complex c = new Complex( newPoles[0], newPoles[1] );
 
-        double[] newPoles = new double[2];
-        newPoles[0] = 0.;
-        newPoles[1] = 1.;
+      InstrumentResponse ir2 =
+          ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
+      List<Complex> poles2 = ir2.getPoles();
 
-        Complex c = new Complex( newPoles[0], newPoles[1] );
+      List<Complex> testList = new ArrayList<Complex>(poles);
+      testList.set(0, c);
+      testList.set( 1, c.conjugate() );
 
-        InstrumentResponse ir2 =
-            ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
-        List<Complex> poles2 = ir2.getPoles();
+      // System.out.println(testList);
+      // System.out.println(poles);
+      // System.out.println(poles2);
 
-        List<Complex> testList = new ArrayList<Complex>(poles);
-        testList.set(0, c);
-        testList.set( 1, c.conjugate() );
-
-        // System.out.println(testList);
-        // System.out.println(poles);
-        // System.out.println(poles2);
-
-        for (int i = 0; i < poles.size(); ++i) {
-          if (i < 2) {
-            assertFalse( poles.get(i).equals( poles2.get(i) ) );
-            assertTrue( poles2.get(i).equals( testList.get(i) ) );
-          }
+      for (int i = 0; i < poles.size(); ++i) {
+        if (i < 2) {
+          assertFalse( poles.get(i).equals( poles2.get(i) ) );
+          assertTrue( poles2.get(i).equals( testList.get(i) ) );
         }
-
-
-      } catch (IOException e) {
-        fail();
-        e.printStackTrace();
       }
+
+
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
 
   }
 
@@ -492,7 +299,7 @@ public class RandomizedExperimentTest {
 
     List<String> fileList = new ArrayList<String>();
     String respName = testRespName;
-    String dataFolderName = "test-data/random-high-32+70i/";
+    String dataFolderName = folder + "random-high-32+70i/";
     String calName =  dataFolderName + "_EC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
 
@@ -508,422 +315,6 @@ public class RandomizedExperimentTest {
     long start = cCal.toInstant().toEpochMilli();
 
     cCal = cCal.withMinute(41);
-    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.toInstant().toEpochMilli();
-
-    ds.trim(start, end);
-
-    return ds;
-  }
-
-  public DataStore setUpTest2() throws IOException {
-    List<String> fileList = new ArrayList<String>();
-    String respName = testRespName;
-    String dataFolderName = "test-data/random_cal_2/";
-    String calName =  dataFolderName + "CB_BC0.512.seed";
-    String sensOutName = dataFolderName + "00_EHZ.512.seed";
-
-    fileList.add(respName);
-    fileList.add(calName);
-    fileList.add(sensOutName);
-
-    DataStore ds = getFromList(fileList);
-
-    // response we want is embedded
-    InstrumentResponse ir;
-    ir = InstrumentResponse.loadEmbeddedResponse("T-compact_Q330HR_BH_40");
-    ds.setResponse(1, ir);
-
-    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
-
-    cCal = cCal.withMinute(52);
-    cCal = cCal.withSecond(0);
-    long start = cCal.toInstant().toEpochMilli();
-
-    cCal = cCal.plusHours(1);
-    cCal = cCal.withMinute(12);
-
-    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.toInstant().toEpochMilli();
-
-    ds.trim(start, end);
-
-    return ds;
-  }
-
-    public DataStore setUpTest3() throws IOException {
-    List<String> fileList = new ArrayList<String>();
-    String respName = testRespName;
-    String dataFolderName = "test-data/random_cal_3/";
-    String calName =  dataFolderName + "BC0.512.seed";
-    String sensOutName = dataFolderName + "00_BHZ.512.seed";
-
-    fileList.add(respName);
-    fileList.add(calName);
-    fileList.add(sensOutName);
-
-    DataStore ds = getFromList(fileList);
-
-    // response we want is embedded
-    InstrumentResponse ir;
-    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR");
-    ds.setResponse(1, ir);
-
-    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
-
-    cCal = cCal.withHour(21);
-    cCal = cCal.withMinute(24);
-    cCal = cCal.withSecond(0);
-    long start = cCal.toInstant().toEpochMilli();
-
-    // commented out -- calibration ends when the data does
-    //int hour = cCal.get(Calendar.HOUR);
-    /*
-    cCal.set(Calendar.DAY_OF_YEAR, 4);
-    cCal.set(Calendar.HOUR_OF_DAY, 0);
-    cCal.set(Calendar.MINUTE, 0);
-    */
-
-    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = ds.getBlock(0).getEndTime();
-
-    ds.trim(start, end);
-
-    return ds;
-  }
-
-  public DataStore setUpTest4() throws IOException {
-
-    List<String> fileList = new ArrayList<String>();
-    String respName = testRespName;
-    String dataFolderName = "test-data/random_cal_4/";
-    String calName =  dataFolderName + "CB_BC0.512.seed";
-    String sensOutName = dataFolderName + "00_EHZ.512.seed";
-
-    fileList.add(respName);
-    fileList.add(calName);
-    fileList.add(sensOutName);
-
-    DataStore ds = getFromList(fileList);
-
-    // response we want is embedded
-    InstrumentResponse ir;
-    ir = InstrumentResponse.loadEmbeddedResponse("KS54000_Q330HR");
-    ds.setResponse(1, ir);
-
-    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
-
-    cCal = cCal.withHour(20);
-    cCal = cCal.withMinute(16);
-    cCal = cCal.withSecond(0);
-    long start = cCal.toInstant().toEpochMilli();
-
-    cCal = cCal.withMinute(26);
-    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.toInstant().toEpochMilli();
-
-    ds.trim(start, end);
-
-    return ds;
-  }
-
-  @Test
-  public void subtestLowFreqPSDs() {
-    try {
-      DataStore ds = setUpTest3();
-      DataBlock cal = ds.getBlock(0);
-      DataBlock out = ds.getBlock(1);
-      int maxLen = Math.max( out.size(), cal.size() );
-      int windowSize = 2;
-      while (windowSize <= maxLen) {
-        windowSize *= 2;
-      }
-      windowSize *= 2;
-      FFTResult fft1 =
-          FFTResult.spectralCalcMultitaper(cal, out);
-      FFTResult fft2 =
-          FFTResult.spectralCalcMultitaper(out, out);
-      Complex[] calSpec = fft1.getFFT();
-      Complex[] outSpec = fft2.getFFT();
-      double[] freqs = fft1.getFreqs();
-      XYSeries calXYS = new XYSeries("Calibration spectrum amplitude");
-      XYSeries outXYS = new XYSeries("Sensor out spectrum amplitude");
-      XYSeries divXYS = new XYSeries("Power-spectral division");
-      XYSeries subXYS = new XYSeries("Power-spectral dB subtraction");
-      for (int i = 0; i < freqs.length; ++i) {
-        if ( freqs[i] != 0 && freqs[i] <= .05 && freqs[i] >= .0001) {
-          double calDB = 10 * Math.log10( calSpec[i].abs() );
-          double outDB = 10 * Math.log10( outSpec[i].abs() );
-          calXYS.add( 1/freqs[i], calDB );
-          outXYS.add( 1/freqs[i], outDB );
-          divXYS.add( 1/freqs[i],
-              10 * Math.log10( outSpec[i].divide(calSpec[i].abs()).abs() ) );
-          subXYS.add( 1/freqs[i], outDB - calDB);
-        }
-      }
-
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(calXYS);
-      xysc.addSeries(outXYS);
-      JFreeChart chart = ChartFactory.createXYLineChart(
-          "Low-Freq Cal Input verification",
-          "Frequency",
-          "Spectrum magnitude (log scale)",
-          xysc,
-          PlotOrientation.VERTICAL,
-          true,
-          false,
-          false);
-
-      xysc = new XYSeriesCollection(divXYS);
-      xysc.addSeries(subXYS);
-      JFreeChart chart2 = ChartFactory.createXYLineChart(
-          "Low-Freq Cal Deconvolution verification",
-          "Frequency",
-          "Spectrum magnitude (log scale)",
-          xysc,
-          PlotOrientation.VERTICAL,
-          true,
-          false,
-          false);
-      LogarithmicAxis la = new LogarithmicAxis("Period (s)");
-
-      chart.getXYPlot().setDomainAxis(la);
-      chart2.getXYPlot().setDomainAxis(la);
-
-      int width = 1280; int height = 960;
-
-      PDDocument pdf = new PDDocument();
-      ReportingUtils.chartsToPDFPage(width, height, pdf, chart, chart2);
-
-      String currentDir = System.getProperty("user.dir");
-      String testResultFolder = currentDir + "/testResultImages/";
-      File dir = new File(testResultFolder);
-      if ( !dir.exists() ) {
-        dir.mkdir();
-      }
-      String testResult =
-          testResultFolder + "Low-frequency-spectral-data.pdf";
-      pdf.save( new File(testResult) );
-      pdf.close();
-      System.out.println("Output result has been written");
-
-    } catch (IOException e) {
-      fail();
-      e.printStackTrace();
-    }
-  }
-
-  //@Test
-  public void subtestLowFreqPSDsMAJO() {
-    try {
-      String calname = "./data/random_cal_lowfrq/BC0.512.seed";
-      String outname = "./data/random_cal_lowfrq/BHZ.512.seed";
-      String calMplex = TimeSeriesUtils.getMplexNameList(calname).get(0);
-      String outMplex = TimeSeriesUtils.getMplexNameList(outname).get(0);
-      DataBlock cal = TimeSeriesUtils.getTimeSeries(calname, calMplex);
-      DataBlock out = TimeSeriesUtils.getTimeSeries(outname, outMplex);
-      long start = Math.max(cal.getStartTime(), out.getStartTime());
-      long end = Math.min(cal.getEndTime(), out.getEndTime());
-      cal.trim(start, end);
-      out.trim(start, end);
-      int maxLen = Math.max( out.size(), cal.size() );
-      int windowSize = 2;
-      while (windowSize <= maxLen) {
-        windowSize *= 2;
-      }
-      windowSize *= 2;
-      FFTResult fft1 =
-          FFTResult.spectralCalcMultitaper(cal, out);
-      FFTResult fft2 =
-          FFTResult.spectralCalcMultitaper(out, out);
-
-      FFTResult fft3 =
-          FFTResult.spectralCalc(cal, out);
-      FFTResult fft4 =
-          FFTResult.spectralCalc(out, out);
-      Complex[] calSpec = fft1.getFFT();
-      Complex[] outSpec = fft2.getFFT();
-      double[] freqs1 = fft1.getFreqs();
-
-      Complex[] calSpec2 = fft3.getFFT();
-      Complex[] outSpec2 = fft4.getFFT();
-      double[] freqs2 = fft3.getFreqs();
-
-      XYSeries calXYS = new XYSeries("Cal vs out cross-amplitude MT");
-      XYSeries outXYS = new XYSeries("Out vs out cross-amplitude MT");
-      XYSeries calXYS2 = new XYSeries("Cal vs out cross-amplitude CT");
-      XYSeries outXYS2 = new XYSeries("Out vs out cross-amplitude CT");
-      XYSeries calPXYS = new XYSeries("Cal vs out cross-phase MT");
-      XYSeries outPXYS = new XYSeries("Out vs out cross-phase MT");
-      XYSeries calPXYS2 = new XYSeries("Cal vs out cross-phase CT");
-      XYSeries outPXYS2 = new XYSeries("Out vs out cross-phase CT");
-      for (int i = 0; i < freqs1.length; ++i) {
-        if ( freqs1[i] != 0 && freqs1[i] <= .05 && freqs1[i] >= .0001) {
-          double calDB = 10 * Math.log10( calSpec[i].abs() );
-          double outDB = 10 * Math.log10( outSpec[i].abs() );
-          double calP = NumericUtils.atanc(calSpec[i]);
-          double outP = NumericUtils.atanc(outSpec[i]);
-          calXYS.add( 1/freqs1[i], calDB );
-          outXYS.add( 1/freqs1[i], outDB );
-          calPXYS.add( 1/freqs1[i], calP );
-          outPXYS.add( 1/freqs1[i], outP);
-        }
-      }
-
-      for (int i = 0; i < freqs2.length; ++i) {
-        if ( freqs2[i] != 0 && freqs2[i] <= .05 && freqs2[i] >= .0001) {
-          double calDB = 10 * Math.log10( calSpec2[i].abs() );
-          double outDB = 10 * Math.log10( outSpec2[i].abs() );
-          double calP = NumericUtils.atanc(calSpec2[i]);
-          double outP = NumericUtils.atanc(outSpec2[i]);
-          calXYS2.add( 1/freqs2[i], calDB );
-          outXYS2.add( 1/freqs2[i], outDB );
-          calPXYS2.add( 1/freqs2[i], calP );
-          outPXYS2.add( 1/freqs2[i], outP);
-        }
-      }
-
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(calXYS);
-      xysc.addSeries(outXYS);
-      xysc.addSeries(calXYS2);
-      xysc.addSeries(outXYS2);
-      JFreeChart chart = ChartFactory.createXYLineChart(
-          "Low-Freq Cal Input verification",
-          "Frequency",
-          "Spectrum magnitude (log scale)",
-          xysc,
-          PlotOrientation.VERTICAL,
-          true,
-          false,
-          false);
-
-      xysc = new XYSeriesCollection();
-      xysc.addSeries(calPXYS);
-      xysc.addSeries(outPXYS);
-      xysc.addSeries(calPXYS2);
-      xysc.addSeries(outPXYS2);
-      JFreeChart chart2 = ChartFactory.createXYLineChart(
-          "Low-Freq Cal Deconvolution verification",
-          "Frequency",
-          "Spectrum magnitude (log scale)",
-          xysc,
-          PlotOrientation.VERTICAL,
-          true,
-          false,
-          false);
-      LogarithmicAxis la = new LogarithmicAxis("Period (s)");
-
-      chart.getXYPlot().setDomainAxis(la);
-      chart2.getXYPlot().setDomainAxis(la);
-
-      int width = 1280; int height = 960;
-
-      PDDocument pdf = new PDDocument();
-      ReportingUtils.chartsToPDFPage(width, height, pdf, chart, chart2);
-
-      String currentDir = System.getProperty("user.dir");
-      String testResultFolder = currentDir + "/testResultImages/";
-      File dir = new File(testResultFolder);
-      if ( !dir.exists() ) {
-        dir.mkdir();
-      }
-      String testResult =
-          testResultFolder + "Low-frequency-spectral-data_MAJO.pdf";
-      pdf.save( new File(testResult) );
-      pdf.close();
-      System.out.println("Output result has been written");
-
-    } catch (IOException | SeedFormatException | CodecException e) {
-      fail();
-      e.printStackTrace();
-    }
-  }
-
-  @Test
-  public void testCalculationLowFreqSTS1() {
-    // String currentDir = System.getProperty("user.dir");
-    // int testNumber = 3; // use to switch automated report data
-    boolean lowFreq = true;
-    DataStore ds;
-    try {
-      ds = setUpTestLowSTS1();
-      // InstrumentResponse ir = ds.getResponse(1);
-
-      double nyq = ds.getBlock(0).getSampleRate() / 2.;
-      System.out.println("NYQUIST RATE: " + nyq);
-
-      RandomizedExperiment rCal = (RandomizedExperiment)
-          ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
-
-      rCal.setLowFreq(lowFreq);
-
-      assertTrue( rCal.hasEnoughData(ds) );
-      rCal.runExperimentOnData(ds);
-
-      /* uncomment for generating plots
-      List<XYSeriesCollection> xysc = rCal.getData();
-      double bestResid = rCal.getFitResidual();
-
-      int width = 1280;
-      int height = 960;
-
-      String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
-      JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
-      */
-
-      /*
-      // one-time set of coding to placate Ringler, outputting data
-      double[][] ampRespIn = xysc.get(0).getSeries(0).toArray();
-      double[][] phsRespIn = xysc.get(1).getSeries(0).toArray();
-      double[] freqs = ampRespIn[0];
-      double[] amps = ampRespIn[1];
-      double[] phas = phsRespIn[1];
-      StringBuilder sbTemp = new StringBuilder();
-      for (int i = 0; i < freqs.length; ++i) {
-        sbTemp.append(freqs[i]);
-        sbTemp.append(": ");
-        sbTemp.append(amps[i]);
-        sbTemp.append(", ");
-        sbTemp.append(phas[i]);
-        sbTemp.append("\n");
-      }
-      PrintWriter strOut = new PrintWriter("testResultImages/STS1-power-lf.txt");
-      strOut.write( sbTemp.toString() );
-      strOut.close();
-      */
-
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
-
-  }
-
-  private DataStore setUpTestLowSTS1() throws IOException {
-    List<String> fileList = new ArrayList<String>();
-    String respName = testRespName;
-    String dataFolderName = "test-data/random-sts1-lowfrq/";
-    String calName =  dataFolderName + "IU.MAJO._BC0.512.seed";
-    String sensOutName = dataFolderName + "IU.MAJO.00_BHZ.512.seed";
-
-    fileList.add(respName);
-    fileList.add(calName);
-    fileList.add(sensOutName);
-
-    DataStore ds = getFromList(fileList);
-    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
-
-    cCal = cCal.withHour(23);
-    cCal = cCal.withMinute(35);
-    cCal = cCal.withSecond(30);
-    long start = cCal.toInstant().toEpochMilli();
-
-    cCal = cCal.withDayOfYear(214);
-    cCal = cCal.withHour(7);
-    cCal = cCal.withMinute(45);
-    cCal = cCal.withSecond(0);
     // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.toInstant().toEpochMilli();
 
@@ -983,7 +374,7 @@ public class RandomizedExperimentTest {
       PrintWriter strOut = new PrintWriter("testResultImages/STS1-power.txt");
       strOut.write( sbTemp.toString() );
       strOut.close();
-      */
+       */
 
       String xAxisTitle = "Frequency (Hz)";
       NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
@@ -1037,6 +428,8 @@ public class RandomizedExperimentTest {
         System.out.println(rCal.getInitialPoles());
         System.out.println(bestResid + ", " + expectedResid);
       }
+
+      // TODO: add corrected assert here to compare best-fit and expected result
       //assertTrue("PCT DIFF EXPECTED <15%, GOT " + pctDiff, pctDiff < 15);
 
       // add initial curve from expected fit params to report
@@ -1068,7 +461,7 @@ public class RandomizedExperimentTest {
         //xyp.clearAnnotations();
         //xyp.addAnnotation(xyt);
 
-        xyp.setDomainAxis( xAxis );
+        xyp.setDomainAxis(xAxis);
       }
 
       String page2 = sb.toString();
@@ -1095,333 +488,24 @@ public class RandomizedExperimentTest {
     }
   }
 
-  // @Test
-  public void testCalculationResult2() {
-    String currentDir = System.getProperty("user.dir");
-    boolean lowFreq = false;
-
-    try {
-
-      DataStore ds = setUpTest2();
-      // InstrumentResponse ir = ds.getResponse(1);
-
-      RandomizedExperiment rCal = (RandomizedExperiment)
-          ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
-
-      rCal.setLowFreq(lowFreq);
-
-      assertTrue( rCal.hasEnoughData(ds) );
-      rCal.runExperimentOnData(ds);
-
-      int width = 1280;
-      int height = 960;
-
-      List<XYSeriesCollection> xysc = rCal.getData();
-      String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
-      JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
-
-      String xAxisTitle = "Frequency (Hz)";
-      NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
-      Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
-      xAxis.setLabelFont(bold);
-
-      StringBuilder sb = new StringBuilder();
-      String[] resultString = RandomizedPanel.getInsetString(rCal);
-      for (String resultPart : resultString) {
-        sb.append( resultPart );
-        sb.append('\n');
-      }
-      sb.append('\n');
-      sb.append( RandomizedPanel.getTimeStampString(rCal) );
-      sb.append('\n');
-      sb.append("Input files:\n");
-      sb.append( ds.getBlock(0).getName() );
-      sb.append(" (calibration)\n");
-      sb.append( ds.getBlock(1).getName() );
-      sb.append(" (sensor output)\n");
-      sb.append("Response file used:\n");
-      sb.append( ds.getResponse(1).getName() );
-      sb.append("\n \n");
-
-      String page1 = sb.toString();
-
-      sb = new StringBuilder();
-
-      for (int i = 0; i < jfcl.length; ++i) {
-
-        jfcl[i] = ChartFactory.createXYLineChart(
-            ExperimentEnum.RANDM.getName(),
-            xAxisTitle,
-            yAxisTitles[i],
-            xysc.get(i),
-            PlotOrientation.VERTICAL,
-            true,
-            false,
-            false);
-
-        XYPlot xyp = jfcl[i].getXYPlot();
-
-        //xyp.clearAnnotations();
-        //xyp.addAnnotation(xyt);
-
-        xyp.setDomainAxis( xAxis );
-      }
-
-      String page2 = sb.toString();
-
-      PDDocument pdf = new PDDocument();
-      ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-      ReportingUtils.textListToPDFPages(pdf, page1, page2);
-
-      String testResultFolder = currentDir + "/testResultImages/";
-      File dir = new File(testResultFolder);
-      if ( !dir.exists() ) {
-        dir.mkdir();
-      }
-
-      String testResult =
-          testResultFolder + "Random-Calib-Test-2.pdf";
-      pdf.save( new File(testResult) );
-      pdf.close();
-      System.out.println("Output result has been written");
-
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
-  }
-
   @Test
-  public void testCalculationResult3() {
-    String currentDir = System.getProperty("user.dir");
-    boolean lowFreq = true;
-
+  public void testCalServerEntryMethods() {
+    String testFolder = folder + "test-crashed-on-cal/";
+    String calInFile = testFolder + "_BC0.512.seed";
+    String sensorOutFile = testFolder + "00_BHZ.512.seed";
+    String respFile = testFolder + "RESP.US.MVCO.00.BHZ";
+    String start = "2018-01-30T07:55:00+00:00";
+    String end = "2018-01-30T11:55:00+00:00";
     try {
-
-      DataStore ds = setUpTest3();
-
-      // InstrumentResponse ir = ds.getResponse(1);
-
-      RandomizedExperiment rCal = (RandomizedExperiment)
-          ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
-
-      rCal.setLowFreq(lowFreq);
-
-      assertTrue( rCal.hasEnoughData(ds) );
-      rCal.runExperimentOnData(ds);
-
-      int width = 1280;
-      int height = 960;
-
-      List<XYSeriesCollection> xysc = rCal.getData();
-      String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
-      JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
-
-      String xAxisTitle = "Frequency (Hz)";
-      NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
-      Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
-      xAxis.setLabelFont(bold);
-
-      /*
-      StringBuilder textOut = new StringBuilder();
-      PrintWriter out = new PrintWriter("testResultImages/test3-resp-data.txt");
-      double[][] frqAmpResp = xysc.get(0).getSeries(0).toArray();
-      double[] phaseResp = xysc.get(1).getSeries(0).toArray()[1];
-      for (int i = 0; i < frqAmpResp[0].length; ++i) {
-        textOut.append(frqAmpResp[0][i]);
-        textOut.append(": ");
-        textOut.append(frqAmpResp[1][i]);
-        textOut.append(", ");
-        textOut.append(phaseResp[i]);
-        textOut.append("\n");
-      }
-      out.write(textOut.toString());
-      out.close();
-      */
-
-
-      StringBuilder sb = new StringBuilder();
-      String[] resultString = RandomizedPanel.getInsetString(rCal);
-      for (String resultPart : resultString) {
-        sb.append( resultPart );
-        sb.append('\n');
-      }
-      sb.append('\n');
-      sb.append( RandomizedPanel.getTimeStampString(rCal) );
-      sb.append('\n');
-      sb.append("Input files:\n");
-      sb.append( ds.getBlock(0).getName() );
-      sb.append(" (calibration)\n");
-      sb.append( ds.getBlock(1).getName() );
-      sb.append(" (sensor output)\n");
-      sb.append("Response file used:\n");
-      sb.append( ds.getResponse(1).getName() );
-      sb.append("\n \n");
-
-      String page1 = sb.toString();
-
-      sb = new StringBuilder();
-
-      for (int i = 0; i < jfcl.length; ++i) {
-
-        jfcl[i] = ChartFactory.createXYLineChart(
-            ExperimentEnum.RANDM.getName(),
-            xAxisTitle,
-            yAxisTitles[i],
-            xysc.get(i),
-            PlotOrientation.VERTICAL,
-            true,
-            false,
-            false);
-
-        XYPlot xyp = jfcl[i].getXYPlot();
-
-        //xyp.clearAnnotations();
-        //xyp.addAnnotation(xyt);
-
-        xyp.setDomainAxis( xAxis );
-      }
-
-      String page2 = sb.toString();
-
-      PDDocument pdf = new PDDocument();
-      ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-      ReportingUtils.textListToPDFPages(pdf, page1, page2);
-
-      String testResultFolder = currentDir + "/testResultImages/";
-      File dir = new File(testResultFolder);
-      if ( !dir.exists() ) {
-        dir.mkdir();
-      }
-
-      String testResult =
-          testResultFolder + "Random-Calib-Test-3.pdf";
-      pdf.save( new File(testResult) );
-      pdf.close();
-      System.out.println("Output result has been written");
-
-    } catch (IOException e) {
+      CalProcessingServer cps = new CalProcessingServer();
+      RandData rd = cps.populateDataAndRun(calInFile, sensorOutFile, respFile,
+          false, start, end, true);
+      System.out.println( Arrays.toString(rd.getFitPoles()) );
+      System.out.println( Arrays.toString(rd.getFitZeros()) );
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
   }
 
-  @Test
-  public void testCalculationResult4() {
-    String currentDir = System.getProperty("user.dir");
-    boolean lowFreq = false;
-
-    try {
-
-      DataStore ds = setUpTest4();
-
-      // InstrumentResponse ir = ds.getResponse(1);
-
-      RandomizedExperiment rCal = (RandomizedExperiment)
-          ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
-
-      rCal.setLowFreq(lowFreq);
-
-      assertTrue( rCal.hasEnoughData(ds) );
-      rCal.runExperimentOnData(ds);
-
-      int width = 1280;
-      int height = 960;
-
-      List<XYSeriesCollection> xysc = rCal.getData();
-
-      /*
-      StringBuilder textOut = new StringBuilder();
-      PrintWriter out = new PrintWriter("testResultImages/rcal4-out.txt");
-      double[][] amp = xysc.get(0).getSeries(1).toArray();
-      double[] phs = xysc.get(1).getSeries(1).toArray()[1];
-      for (int i = 0; i < amp[0].length; ++i) {
-        double fq = amp[0][i];
-        double ap = amp[1][i];
-        double ps = phs[i];
-        textOut.append(fq);
-        textOut.append(": ");
-        textOut.append(ap);
-        textOut.append(", ");
-        textOut.append(ps);
-        textOut.append("\n");
-      }
-
-      out.write( textOut.toString() );
-      out.close();
-      */
-
-      String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
-      JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
-
-      String xAxisTitle = "Frequency (Hz)";
-      NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
-      Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
-      xAxis.setLabelFont(bold);
-
-      StringBuilder sb = new StringBuilder();
-      String[] resultString = RandomizedPanel.getInsetString(rCal);
-      for (String resultPart : resultString) {
-        sb.append( resultPart );
-        sb.append('\n');
-      }
-      sb.append('\n');
-      sb.append( RandomizedPanel.getTimeStampString(rCal) );
-      sb.append('\n');
-      sb.append("Input files:\n");
-      sb.append( ds.getBlock(0).getName() );
-      sb.append(" (calibration)\n");
-      sb.append( ds.getBlock(1).getName() );
-      sb.append(" (sensor output)\n");
-      sb.append("Response file used:\n");
-      sb.append( ds.getResponse(1).getName() );
-      sb.append("\n \n");
-
-      String page1 = sb.toString();
-
-      sb = new StringBuilder();
-
-      for (int i = 0; i < jfcl.length; ++i) {
-
-        jfcl[i] = ChartFactory.createXYLineChart(
-            ExperimentEnum.RANDM.getName(),
-            xAxisTitle,
-            yAxisTitles[i],
-            xysc.get(i),
-            PlotOrientation.VERTICAL,
-            true,
-            false,
-            false);
-
-        XYPlot xyp = jfcl[i].getXYPlot();
-
-        //xyp.clearAnnotations();
-        //xyp.addAnnotation(xyt);
-
-        xyp.setDomainAxis( xAxis );
-      }
-
-      String page2 = sb.toString();
-
-      PDDocument pdf = new PDDocument();
-      ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-      ReportingUtils.textListToPDFPages(pdf, page1, page2);
-
-      String testResultFolder = currentDir + "/testResultImages/";
-      File dir = new File(testResultFolder);
-      if ( !dir.exists() ) {
-        dir.mkdir();
-      }
-
-      String testResult =
-          testResultFolder + "Random-Calib-Test-4.pdf";
-      pdf.save( new File(testResult) );
-      pdf.close();
-      System.out.println("Output result has been written");
-
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
-  }
 }

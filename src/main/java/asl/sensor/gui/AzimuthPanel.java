@@ -194,6 +194,22 @@ public class AzimuthPanel extends ExperimentPanel {
   }
 
   @Override
+  public String[] getAdditionalReportPages() {
+    DecimalFormat df = new DecimalFormat("#.###");
+    AzimuthExperiment az = (AzimuthExperiment) expResult;
+    double[] corr = az.getCorrelations();
+    StringBuilder sb = new StringBuilder("Best-fit correlation value per-window:\n");
+    for (int i = 0; i < corr.length; ++i) {
+      sb.append( df.format(corr[i]) );
+      sb.append("  ");
+    }
+    sb.append("\n");
+
+    String[] returnStrings = new String[]{sb.toString()};
+    return returnStrings;
+  }
+
+  @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{angleChart, /*coherenceChart,*/ estimChart};
   }
@@ -213,22 +229,6 @@ public class AzimuthPanel extends ExperimentPanel {
       angleStr.append(" | WARNING: SMALL RANGE");
     }
     return angleStr.toString();
-  }
-
-  @Override
-  public String[] getAdditionalReportPages() {
-    DecimalFormat df = new DecimalFormat("#.###");
-    AzimuthExperiment az = (AzimuthExperiment) expResult;
-    double[] corr = az.getCorrelations();
-    StringBuilder sb = new StringBuilder("Best-fit correlation value per-window:\n");
-    for (int i = 0; i < corr.length; ++i) {
-      sb.append( df.format(corr[i]) );
-      sb.append("  ");
-    }
-    sb.append("\n");
-
-    String[] returnStrings = new String[]{sb.toString()};
-    return returnStrings;
   }
 
   @Override

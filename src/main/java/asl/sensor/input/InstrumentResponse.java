@@ -109,27 +109,53 @@ public class InstrumentResponse {
     array[index] = new Complex(realPart, imagPart);
   }
 
+  private static List<Pair<Complex, Integer>> setComponentValues(Complex[] pzArr) {
+    // first, sort matching P/Z values into bins, count up the number of each
+    Map<Complex, Integer> values = new HashMap<Complex, Integer>();
+    for (Complex c : pzArr) {
+      if ( values.keySet().contains(c) ) {
+        int count = values.get(c) + 1;
+        values.put(c, count);
+      } else {
+        values.put(c, 1);
+      }
+    }
+    // initialize list here
+    List<Pair<Complex, Integer>> valueList = new ArrayList<Pair<Complex, Integer>>();
+    // since second value in pair keeps track of item count in array, use set to prevent duplicates
+    // (note that we don't want to store in a set because order matters for this data)
+    Set<Complex> inList = new HashSet<Complex>();
+    // iterate from the array; it should have the values in the correct order
+    for (Complex c : pzArr) {
+      if ( !inList.contains(c) ) {
+        Pair<Complex, Integer> toAdd = new Pair<Complex, Integer>(c, values.get(c));
+        valueList.add(toAdd);
+        inList.add(c);
+      }
+    }
+    return valueList;
+  }
   private TransferFunction transferType;
-  private int epochsCounted;
 
+  private int epochsCounted;
   // gain values, indexed by stage
   private double[] gain;
-  private int numStages;
 
+  private int numStages;
   // poles and zeros
   private List<Pair<Complex, Integer>> zeros;
+
   //private Map<Complex, Integer> zeros;
   private List<Pair<Complex, Integer>> poles;
   //private Map<Complex, Integer> poles;
-
   private String name;
+
   private Unit unitType;
 
   private double normalization; // A0 normalization factor
 
   private double normalFreq; // cuz she's a normalFreq, normalFreq
   // (the A0 norm. factor's frequency)
-
   /**
    * Reads in a response from an already-accessed bufferedreader handle
    * and assigns it to the name given (used with embedded response files)
@@ -144,6 +170,7 @@ public class InstrumentResponse {
 
     parserDriver(br);
   }
+
   /**
    * Create a copy of an existing response object
    * @param responseIn The response object to be copied
@@ -164,22 +191,6 @@ public class InstrumentResponse {
     normalFreq = Double.valueOf( responseIn.getNormalizationFrequency() );
 
     name = responseIn.getName();
-  }
-
-  public List<Pair<Complex, Integer>> getZerosList() {
-    return zeros;
-  }
-
-  public List<Pair<Complex, Integer>> getPolesList() {
-    return poles;
-  }
-
-  /**
-   * Return the number of gain stages this response has
-   * @return number of gain stages
-   */
-  public int getNumStages() {
-    return numStages;
   }
 
   /**
@@ -405,21 +416,12 @@ public class InstrumentResponse {
   }
 
   /**
-   * Apply new zeros to this response object
-   * @param newZeros List of paired values; first entry is a unique zero in response, and
-   * second is the number of times it appears
+   * Return the number of epochs found in the data, for use in warning
+   * if the user has loaded in a response with multiple epochs
+   * @return number of times 0xb052f22 lines were found in file
    */
-  private void setZerosList(List<Pair<Complex, Integer>> newZeros) {
-    zeros = newZeros;
-  }
-
-  /**
-   * Apply new poles to this response object
-   * @param newPoles List of paired values; first entry is a unique pole in response, and
-   * second is the number of times it appears
-   */
-  private void setPolesList(List<Pair<Complex, Integer>> newPoles) {
-    poles = newPoles;
+  public int getEpochsCounted() {
+    return epochsCounted;
   }
 
   /**
@@ -458,6 +460,14 @@ public class InstrumentResponse {
   }
 
   /**
+   * Return the number of gain stages this response has
+   * @return number of gain stages
+   */
+  public int getNumStages() {
+    return numStages;
+  }
+
+  /**
    * Return the list of poles in the RESP file, not including error terms
    * @return List of complex numbers; index y is the yth pole in response list
    */
@@ -472,6 +482,10 @@ public class InstrumentResponse {
       }
     }
     return out;
+  }
+
+  public List<Pair<Complex, Integer>> getPolesList() {
+    return poles;
   }
 
   /**
@@ -509,6 +523,10 @@ public class InstrumentResponse {
     return out;
   }
 
+  public List<Pair<Complex, Integer>> getZerosList() {
+    return zeros;
+  }
+
   /**
    * Determines whether or not the first pole is too low to fit even with
    * a low-frequency random cal solver operation. Mainly an issue for
@@ -524,15 +542,6 @@ public class InstrumentResponse {
     }
 
     return false;
-  }
-
-  /**
-   * Return the number of epochs found in the data, for use in warning
-   * if the user has loaded in a response with multiple epochs
-   * @return number of times 0xb052f22 lines were found in file
-   */
-  public int getEpochsCounted() {
-    return epochsCounted;
   }
 
   /**
@@ -798,6 +807,15 @@ public class InstrumentResponse {
   }
 
   /**
+   * Replace the current poles of this response with new ones from an array
+   * @param poleList Array of poles to replace the current response poles with (repeated poles
+   * listed by the number of times they appear)
+   */
+  public void setPoles(Complex[] poleList) {
+    poles = setComponentValues(poleList);
+  }
+
+  /**
    * Replace the current poles of this response with new ones from a list
    * @param poleList List of poles to replace the current response poles with (repeated poles listed
    * the number of times they appear)
@@ -808,12 +826,21 @@ public class InstrumentResponse {
   }
 
   /**
-   * Replace the current poles of this response with new ones from an array
-   * @param poleList Array of poles to replace the current response poles with (repeated poles
-   * listed by the number of times they appear)
+   * Apply new poles to this response object
+   * @param newPoles List of paired values; first entry is a unique pole in response, and
+   * second is the number of times it appears
    */
-  public void setPoles(Complex[] poleList) {
-    poles = setComponentValues(poleList);
+  private void setPolesList(List<Pair<Complex, Integer>> newPoles) {
+    poles = newPoles;
+  }
+
+  /**
+   * Set the list of zeros to a new array, such as after fitting from random cal
+   * @param zeroList Array of zeros to replace the current response poles with (repeated zeros
+   * listed every time they appear)
+   */
+  public void setZeros(Complex[] zeroList) {
+    zeros = setComponentValues(zeroList);
   }
 
   /**
@@ -827,39 +854,12 @@ public class InstrumentResponse {
   }
 
   /**
-   * Set the list of zeros to a new array, such as after fitting from random cal
-   * @param zeroList Array of zeros to replace the current response poles with (repeated zeros
-   * listed every time they appear)
+   * Apply new zeros to this response object
+   * @param newZeros List of paired values; first entry is a unique zero in response, and
+   * second is the number of times it appears
    */
-  public void setZeros(Complex[] zeroList) {
-    zeros = setComponentValues(zeroList);
-  }
-
-  private static List<Pair<Complex, Integer>> setComponentValues(Complex[] pzArr) {
-    // first, sort matching P/Z values into bins, count up the number of each
-    Map<Complex, Integer> values = new HashMap<Complex, Integer>();
-    for (Complex c : pzArr) {
-      if ( values.keySet().contains(c) ) {
-        int count = values.get(c) + 1;
-        values.put(c, count);
-      } else {
-        values.put(c, 1);
-      }
-    }
-    // initialize list here
-    List<Pair<Complex, Integer>> valueList = new ArrayList<Pair<Complex, Integer>>();
-    // since second value in pair keeps track of item count in array, use set to prevent duplicates
-    // (note that we don't want to store in a set because order matters for this data)
-    Set<Complex> inList = new HashSet<Complex>();
-    // iterate from the array; it should have the values in the correct order
-    for (Complex c : pzArr) {
-      if ( !inList.contains(c) ) {
-        Pair<Complex, Integer> toAdd = new Pair<Complex, Integer>(c, values.get(c));
-        valueList.add(toAdd);
-        inList.add(c);
-      }
-    }
-    return valueList;
+  private void setZerosList(List<Pair<Complex, Integer>> newZeros) {
+    zeros = newZeros;
   }
 
   /**

@@ -17,8 +17,11 @@ public class TestUtils {
 
   // may need to change this to deal with eventual migration to main usgs github
   private static String URL_HEADER =
-      "https://github.com/kschramm-usgs/sprockets/raw/master/";
+      "https://github.com/amkearns-usgs/sprockets/raw/master/";
   private static int LOGIN_PAGE_BYTE_SIZE = 7875;
+  static String SUBPAGE = "from_sensor_test/";
+  private static String TEST_DATA_LOCATION = "src/test/resources/";
+  static String DL_DEST_LOCATION = TEST_DATA_LOCATION + "sprockets/";
 
   // inName and fName are separated to make it possible to rename output file
   // to prevent collisions between data with the same filename from different inputs
@@ -27,7 +30,7 @@ public class TestUtils {
   throws IOException {
     // System.out.println("Acquiring data from " + urlLoc);
     String fullPath = URL_HEADER + urlLoc + inName;
-    String localPath = "./test-data/sprockets/" + localLoc + fName;
+    String localPath = DL_DEST_LOCATION + localLoc + fName;
 
     File target = new File(localPath);
     File fullDir = new File( target.getParent() );
@@ -57,6 +60,25 @@ public class TestUtils {
 
   }
 
+  public static OffsetDateTime getEndCalendar(DataStore ds) {
+    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getEndTime() );
+    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
+    return dt;
+  }
+
+  public static OffsetDateTime getStartCalendar(DataStore ds) {
+    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getStartTime() );
+    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
+    return dt;
+  }
+
+  public static void makeTestDataDirectory() {
+    File file = new File(TEST_DATA_LOCATION);
+    if ( !file.exists() ) {
+      file.mkdir();
+    }
+  }
+
   @Test
   public void canGetTestData() {
 
@@ -69,24 +91,5 @@ public class TestUtils {
       fail();
     }
 
-  }
-
-  public static OffsetDateTime getStartCalendar(DataStore ds) {
-    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getStartTime() );
-    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
-    return dt;
-  }
-
-  public static OffsetDateTime getEndCalendar(DataStore ds) {
-    Instant time = Instant.ofEpochMilli( ds.getBlock(0).getEndTime() );
-    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
-    return dt;
-  }
-
-  public static void makeTestDataDirectory() {
-    File file = new File("./test-data/");
-    if ( !file.exists() ) {
-      file.mkdir();
-    }
   }
 }

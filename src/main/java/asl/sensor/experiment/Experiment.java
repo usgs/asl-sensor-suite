@@ -138,10 +138,6 @@ public abstract class Experiment {
     statusToTerminal = false;
   }
 
-  public void setTerminalPrintStatus(boolean print) {
-    statusToTerminal = print;
-  }
-
   /**
    * Add an object to the list of objects to be notified when the experiment's
    * status changes
@@ -294,6 +290,8 @@ public abstract class Experiment {
       return;
     }
 
+    // TODO: may want to do a check that enough data exists and throw exception as necessary
+
     final DataBlock db = ds.getXthLoadedBlock(1);
 
     start = db.getStartTime();
@@ -307,6 +305,11 @@ public abstract class Experiment {
 
     gapRegions = new HashMap<String, List<Pair<Date, Date>>>();
     for (int i = 0; i < blocksNeeded(); ++i) {
+      // in the case of spectrum panel, not all data inputs may be set
+      // lockout check to make sure enough needed data is set already done, so this is OK
+      if ( !ds.blockIsSet(i) ) {
+        continue;
+      }
       DataBlock block = ds.getBlock(i);
       String name = block.getName();
       // gaps already is calculated based on trimmed start and end times
@@ -325,6 +328,10 @@ public abstract class Experiment {
     backend(ds);
 
     fireStateChange("Calculations done!");
+  }
+
+  public void setTerminalPrintStatus(boolean print) {
+    statusToTerminal = print;
   }
 
 }
