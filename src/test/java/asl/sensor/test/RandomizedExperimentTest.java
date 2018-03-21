@@ -113,7 +113,7 @@ public class RandomizedExperimentTest {
       }
     }
 
-    refSubfolder = TestUtils.SUBPAGE + "kiev-random-lowfreq/";
+    refSubfolder = TestUtils.SUBPAGE + "kiev-random-lowfrq/";
     fileIDs = new String[] {
         "_BC0.512.seed",
         "00_BH1.512.seed"

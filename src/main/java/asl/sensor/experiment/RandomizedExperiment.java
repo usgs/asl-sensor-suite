@@ -283,9 +283,11 @@ extends Experiment implements ParameterValidator {
 
     }
 
-    Complex[] smoothed = NumericUtils.multipointMovingAverage(untrimmedResponse, 5, true);
+    int windowSize = 5;
+    int offset = windowSize / 2;
+    Complex[] smoothed = NumericUtils.multipointMovingAverage(untrimmedResponse, windowSize);
     unsmoothedCurve = Arrays.copyOfRange(untrimmedResponse, startIdx, extIdx);
-    smoothedCurve = Arrays.copyOfRange(smoothed, startIdx, extIdx);
+    smoothedCurve = Arrays.copyOfRange(smoothed, startIdx+offset, extIdx+offset);
     for (int i = 0; i < freqsFull.length; ++i) {
       Complex estValue = smoothedCurve[i];
       // estValue = estValue.subtract(scaleValue);
