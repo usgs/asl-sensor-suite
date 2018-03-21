@@ -113,11 +113,24 @@ public class RandomizedExperimentTest {
       }
     }
 
+    refSubfolder = TestUtils.SUBPAGE + "kiev-random-lowfreq/";
+    fileIDs = new String[] {
+        "_BC0.512.seed",
+        "00_BH1.512.seed"
+    };
+    for (String fileID : fileIDs) {
+      try {
+        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
   }
 
   @Test
   public void TestRandomCalCurves() {
-    String fname = "src/test/resources/kiev-random-lowfrq/";
+    String fname = folder + "kiev-random-lowfrq/";
     String cal = "_BC0.512.seed";
     String out = "00_BH1.512.seed";
     try {
