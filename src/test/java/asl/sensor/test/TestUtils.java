@@ -7,8 +7,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import asl.sensor.input.DataStore;
@@ -22,6 +24,7 @@ public class TestUtils {
   static String SUBPAGE = "from_sensor_test/";
   private static String TEST_DATA_LOCATION = "src/test/resources/";
   static String DL_DEST_LOCATION = TEST_DATA_LOCATION + "sprockets/";
+  static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
 
   // inName and fName are separated to make it possible to rename output file
   // to prevent collisions between data with the same filename from different inputs
@@ -70,6 +73,10 @@ public class TestUtils {
     Instant time = Instant.ofEpochMilli( ds.getBlock(0).getStartTime() );
     OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
     return dt;
+  }
+
+  public static long timeStringToEpochMilli(String time) {
+    return LocalDateTime.parse(time, DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
   }
 
   public static void makeTestDataDirectory() {

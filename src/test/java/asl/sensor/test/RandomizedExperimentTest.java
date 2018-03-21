@@ -5,12 +5,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.awt.Font;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -30,9 +33,11 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.gui.RandomizedPanel;
+import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
@@ -106,6 +111,89 @@ public class RandomizedExperimentTest {
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+
+  }
+
+  @Test
+  public void TestRandomCalCurves() {
+    String fname = "src/test/resources/kiev-random-lowfrq/";
+    String cal = "_BC0.512.seed";
+    String out = "00_BH1.512.seed";
+    try {
+      InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS25_Q330HR");
+      DataBlock calB = TimeSeriesUtils.getFirstTimeSeries(fname + cal);
+      DataBlock outB = TimeSeriesUtils.getFirstTimeSeries(fname + out);
+      DataStore ds = new DataStore();
+      ds.setBlock(0, calB);
+      ds.setBlock(1, outB);
+      ds.setResponse(1, ir);
+
+      String startString = "2018-044T23:37:00.0";
+      // String endString = "2018-045T07:37:00.0";
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = st + (8 * 60 * 60 * 1000);
+      ds.trim(st, ed);
+      System.out.println("DATA LENGTH: " + ds.getBlock(0).getData().length);
+
+      RandomizedExperiment re = new RandomizedExperiment();
+      re.setLowFreq(true);
+      re.runExperimentOnData(ds);
+
+      Complex[] smooth = re.getSmoothedCalcResp();
+      Complex[] unsmooth = re.getUnsmoothedCalcResp();
+      double[] freqs = re.getFreqList();
+
+      XYSeries smoothPlotA = new XYSeries("Smoothed response curve (amp)");
+      XYSeries unsmoothPlotA = new XYSeries("Unsmoothed response curve (amp)");
+      XYSeries smoothPlotP = new XYSeries("Smoothed response curve (phs)");
+      XYSeries unsmoothPlotP = new XYSeries("Unsmoothed response curve (phs)");
+      for (int i = 0; i < smooth.length; ++i) {
+        smoothPlotA.add(freqs[i], 20 * Math.log10(smooth[i].abs()));
+        unsmoothPlotA.add(freqs[i], 20 * Math.log10(unsmooth[i].abs()));
+      }
+
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(unsmoothPlotA);
+      xysc.addSeries(smoothPlotA);
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          ExperimentEnum.RANDM.getName(),
+          "Frequency (Hz)",
+          "Power Amplitude (20 * log10)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Frequency (Hz) [log]") );
+
+      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+      ImageIO.write(bi, "png", new File("testResultImages/smoothing-comparison.png") );
+
+      StringBuilder smt = new StringBuilder("AMPLITUDE (smoothed):\t");
+      StringBuilder unsmt = new StringBuilder("AMPLITUDE (unsmoothed):\t");
+      DecimalFormat df = new DecimalFormat("#.########");
+      for (int i = 0; i < 10; ++i) {
+        double s = 20 * Math.log10(smooth[i].abs());
+        double u = 20 * Math.log10(unsmooth[i].abs());
+        unsmt.append(df.format(u));
+        unsmt.append("\t");
+        smt.append(df.format(s));
+        smt.append("\t");
+      }
+
+      System.out.println(unsmt.toString());
+      System.out.println(smt.toString());
+
+      Complex ref = new Complex(-0.01243, -0.01176);
+      Complex got = re.getFitPoles().get(0);
+
+      assertTrue( Complex.equals(ref, got, 1E-3) );
+
+    } catch (IOException | SeedFormatException | CodecException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
     }
 
   }
