@@ -129,7 +129,7 @@ public class StepExperiment extends Experiment{
     stepCalData = FFTResult.lowPassFilter(stepCalData, sps, 0.1);
     // demean and normalize before trimming
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.normalizeByMax(stepCalSeries);
+    stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
 
     // trim 10s from each side of the input data
     cutAmount = (int) sps * 10;
@@ -140,7 +140,7 @@ public class StepExperiment extends Experiment{
     stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.detrendEnds(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.normalizeByMax(stepCalSeries);
+    stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
 
     // FFTResult.detrend(toDetrend);
     // stepCalSeries = TimeSeriesUtils.normalize(filteredStepCal);
@@ -415,7 +415,7 @@ public class StepExperiment extends Experiment{
     int trimOffset = 0;
     returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);
     returnValue = TimeSeriesUtils.detrendEnds(returnValue);
-    returnValue = TimeSeriesUtils.normalizeByMax(returnValue);
+    returnValue = TimeSeriesUtils.normalize(returnValue);
 
     return returnValue;
   }

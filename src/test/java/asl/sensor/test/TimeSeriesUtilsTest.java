@@ -504,7 +504,7 @@ public class TimeSeriesUtilsTest {
       System.out.println("AVG OF RAW DATA: " + TimeSeriesUtils.getMean(data));
       data = TimeSeriesUtils.demean(data);
       System.out.println("AVG OF DEMEANED DATA: " + TimeSeriesUtils.getMean(data));
-      double[] normed = TimeSeriesUtils.normalizeByMax(data);
+      double[] normed = TimeSeriesUtils.normalize(data);
       int minIdx = 0; int maxIdx = 0;
       double min = 0; double max = 0;
       for (int i = 0; i < data.length; ++i) {

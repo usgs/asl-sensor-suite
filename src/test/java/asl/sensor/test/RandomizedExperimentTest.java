@@ -159,8 +159,6 @@ public class RandomizedExperimentTest {
 
       XYSeries smoothPlotA = new XYSeries("Smoothed response curve (amp)");
       XYSeries unsmoothPlotA = new XYSeries("Unsmoothed response curve (amp)");
-      XYSeries smoothPlotP = new XYSeries("Smoothed response curve (phs)");
-      XYSeries unsmoothPlotP = new XYSeries("Unsmoothed response curve (phs)");
       for (int i = 0; i < smooth.length; ++i) {
         smoothPlotA.add(freqs[i], 20 * Math.log10(smooth[i].abs()));
         unsmoothPlotA.add(freqs[i], 20 * Math.log10(unsmooth[i].abs()));
@@ -194,9 +192,6 @@ public class RandomizedExperimentTest {
         smt.append(df.format(s));
         smt.append("\t");
       }
-
-      System.out.println(unsmt.toString());
-      System.out.println(smt.toString());
 
       Complex ref = new Complex(-0.01243, -0.01176);
       Complex got = re.getFitPoles().get(0);
