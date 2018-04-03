@@ -70,6 +70,8 @@ extends Experiment implements ParameterValidator {
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
 
+  private int untrimmedPSDLength;
+
   private List<String> inputsPerCalculation;
   private List<String> outputsPerCalculation;
 
@@ -153,6 +155,7 @@ extends Experiment implements ParameterValidator {
     denominatorPSD = FFTResult.spectralCalc(calib, calib);
 
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
+    untrimmedPSDLength = freqsUntrimmed.length;
 
     // store nyquist rate of data because freqs will be trimmed down later
     nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
@@ -959,6 +962,10 @@ extends Experiment implements ParameterValidator {
    */
   public void useFreqUnits(boolean setFreq) {
     freqSpace = setFreq;
+  }
+
+  public int getUntrimmedPSDLength() {
+    return untrimmedPSDLength;
   }
 
   /**

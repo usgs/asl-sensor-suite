@@ -45,6 +45,20 @@ public class DataBlockTest {
       e.printStackTrace();
     }
 
+    refSubfolder = TestUtils.SUBPAGE + "test-appending/";
+    String[] appends = {"", "44", "45"};
+    String suffix = "_BC0.512.seed";
+    for (String append : appends) {
+      try {
+        String fullname = append + suffix;
+        TestUtils.downloadTestData(refSubfolder, fullname, refSubfolder, fullname);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+
+
   }
 
   @Test
@@ -100,7 +114,30 @@ public class DataBlockTest {
         e.printStackTrace();
         fail();
       }
+  }
 
+  @Test
+  public void appendsCorrectly() {
+    String subfolder = folder + "test-appending/";
+    String fullLength = "_BC0.512.seed";
+    String firstPart = "044._BC0.512.seed";
+    String secondPart = "045._BC0.512.seed";
+    DataBlock dbFull, dbAppended;
+    try {
+      dbFull = TimeSeriesUtils.getFirstTimeSeries(subfolder + fullLength);
+      dbAppended = TimeSeriesUtils.getFirstTimeSeries(subfolder + firstPart);
+      dbAppended.appendTimeSeries(subfolder + secondPart);
+      long st = dbFull.getStartTime();
+      long ed = dbFull.getEndTime();
+      assertEquals(st, dbAppended.getStartTime());
+      assertEquals(ed, dbAppended.getEndTime());
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      fail();
+    } catch (SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
   }
 
 }

@@ -160,10 +160,13 @@ public class RandomizedExperimentTest {
       XYSeries smoothPlotA = new XYSeries("Smoothed response curve (amp)");
       XYSeries unsmoothPlotA = new XYSeries("Unsmoothed response curve (amp)");
       for (int i = 0; i < smooth.length; ++i) {
-        smoothPlotA.add(freqs[i], 20 * Math.log10(smooth[i].abs()));
+        double point = 20 * Math.log10(smooth[i].abs());
+        smoothPlotA.add(freqs[i], point);
         unsmoothPlotA.add(freqs[i], 20 * Math.log10(unsmooth[i].abs()));
       }
 
+      System.out.println("PSD data length? " + unsmooth.length);
+      assertEquals(262144/2 + 1, re.getUntrimmedPSDLength());
       XYSeriesCollection xysc = new XYSeriesCollection();
       xysc.addSeries(unsmoothPlotA);
       xysc.addSeries(smoothPlotA);
@@ -193,10 +196,67 @@ public class RandomizedExperimentTest {
         smt.append("\t");
       }
 
+      System.out.println(unsmt);
+
       Complex ref = new Complex(-0.01243, -0.01176);
       Complex got = re.getFitPoles().get(0);
 
-      assertTrue( Complex.equals(ref, got, 1E-3) );
+      String msg = "Expected " + ref + " and got " + got;
+      assertTrue(msg, Complex.equals(ref, got, 5E-4));
+
+    } catch (IOException | SeedFormatException | CodecException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
+    }
+
+  }
+
+  @Test
+  public void TestRandomCal30s() {
+    String fname = folder + "kiev-random-lowfrq/";
+    String cal = "_BC0.512.seed";
+    String out = "00_BH1.512.seed";
+    try {
+      InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS25_Q330HR");
+      DataBlock calB = TimeSeriesUtils.getFirstTimeSeries(fname + cal);
+      DataBlock outB = TimeSeriesUtils.getFirstTimeSeries(fname + out);
+      DataStore ds = new DataStore();
+      ds.setBlock(0, calB);
+      ds.setBlock(1, outB);
+      ds.setResponse(1, ir);
+
+      String startString = "2018-044T23:37:00.0";
+      // String endString = "2018-045T07:37:00.0";
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = st + (8 * 60 * 60 * 1000);
+      ds.trim(st, ed);
+      System.out.println("DATA LENGTH: " + ds.getBlock(0).getData().length);
+
+      RandomizedExperiment re = new RandomizedExperiment();
+      re.setLowFreq(true);
+      re.runExperimentOnData(ds);
+
+      Complex[] smooth = re.getSmoothedCalcResp();
+      Complex[] unsmooth = re.getUnsmoothedCalcResp();
+      double[] freqs = re.getFreqList();
+
+      double deltaFreq = freqs[1];
+      int indexOfInterest = (int) (.02/deltaFreq);
+
+      for (int i = 0; i < freqs.length; ++i) {
+
+        if (i == indexOfInterest) {
+          assertEquals(0.02, freqs[i], 1E-3);
+          assertEquals(0., 20 * Math.log10(unsmooth[i].abs()), 1E-4);
+        }
+
+        if (i == 423) {
+          assertEquals(1./30., freqs[i], deltaFreq);
+          assertEquals(0.159, 20 * Math.log10(unsmooth[i].abs()), 1E-4);
+        }
+      }
+
 
     } catch (IOException | SeedFormatException | CodecException e) {
       // TODO Auto-generated catch block

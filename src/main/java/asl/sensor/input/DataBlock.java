@@ -1,5 +1,6 @@
 package asl.sensor.input;
 
+import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -13,6 +14,9 @@ import java.util.TimeZone;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 /**
  * Holds the time series and metadata for a miniSEED file loaded in by the user.
@@ -135,19 +139,11 @@ public class DataBlock {
     interval = intervalIn;
     targetInterval = intervalIn;
 
-    List<Long> times = new ArrayList<Long>( dataIn.keySet() );
-    Collections.sort(times);
-    startTime = times.get(0);
-    trimmedStart = startTime;
-    long lastListStart = times.get( times.size() - 1 );
-    int pointsToEnd = dataIn.get(lastListStart).length;
-    endTime = lastListStart + (pointsToEnd * intervalIn);
-    trimmedEnd = endTime;
-
     name = nameIn;
     dataMap = dataIn;
 
     mergeContiguousTimes();
+    recalculateTimes();
     rebuildList = true;
   }
 
@@ -713,6 +709,27 @@ public class DataBlock {
     trimmedEnd = endTime;
     rebuildList = rebuildList || regen;
 
+  }
+
+  private void recalculateTimes() {
+    List<Long> times = new ArrayList<Long>( dataMap.keySet() );
+    Collections.sort(times);
+    startTime = times.get(0);
+    trimmedStart = startTime;
+    long lastListStart = times.get( times.size() - 1 );
+    int pointsToEnd = dataMap.get(lastListStart).length;
+    endTime = lastListStart + (pointsToEnd * interval);
+    trimmedEnd = endTime;
+    rebuildList = true;
+  }
+
+  public void appendTimeSeries(String filepath)
+      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+    Map<Long, double[]> toAppend =
+        TimeSeriesUtils.getTimeSeriesMap(filepath, name).getSecond();
+    dataMap.putAll(toAppend);
+    mergeContiguousTimes();
+    recalculateTimes();
   }
 
 }

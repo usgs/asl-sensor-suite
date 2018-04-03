@@ -778,4 +778,49 @@ public class DataStore {
     trimToCommonTime(limit);
   }
 
+
+  public void appendBlock(int idx, String filepath, String nameFilter, int activePlots)
+      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+
+    if (!thisBlockIsSet[idx]) {
+      setBlock(idx, filepath, nameFilter, activePlots);
+      return;
+    }
+
+    try {
+      dataBlockArray[idx].appendTimeSeries(filepath);
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
+
+    synchronized(this) {
+      if (numberOfBlocksSet() > 1) {
+        // don't trim data here, that way we don't lose data
+        long start = dataBlockArray[idx].getStartTime();
+        long end = dataBlockArray[idx].getEndTime();
+
+        // there's clearly already another block loaded, let's make sure they
+        // actually have an intersecting time range
+        for (int i = 0; i < FILE_COUNT; ++i) {
+          if (i != idx && thisBlockIsSet[i]) {
+            // whole block either comes before or after the data set
+            if (end < dataBlockArray[i].getStartTime() ||
+                start > dataBlockArray[i].getEndTime() ) {
+
+              if (i < activePlots) {
+                thisBlockIsSet[idx] = false;
+                dataBlockArray[idx] = null;
+                throw new RuntimeException("Time range does not intersect");
+              } else {
+                // unload data that we aren't currently using
+                thisBlockIsSet[i] = false;
+              }
+
+            }
+          }
+        }
+      }
+    }
+  }
+
 }
