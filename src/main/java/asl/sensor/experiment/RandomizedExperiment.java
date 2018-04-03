@@ -199,7 +199,6 @@ extends Experiment implements ParameterValidator {
 
     double zeroTarget = 0.02; // frequency to set all curves to zero at
 
-    // Collections.sort(freqList); // done mostly for peace of mind
     double[] freqsFull = Arrays.copyOfRange(freqsUntrimmed, startIdx, extIdx);
     freqs = Arrays.copyOfRange(freqsUntrimmed, startIdx, endIdx);
 

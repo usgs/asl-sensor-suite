@@ -227,7 +227,6 @@ public class RandomizedExperimentTest {
       ds.setResponse(1, ir);
 
       String startString = "2018-044T23:37:00.0";
-      // String endString = "2018-045T07:37:00.0";
       long st = TestUtils.timeStringToEpochMilli(startString);
       long ed = st + (8 * 60 * 60 * 1000);
       ds.trim(st, ed);
