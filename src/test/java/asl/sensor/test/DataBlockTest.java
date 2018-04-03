@@ -46,7 +46,7 @@ public class DataBlockTest {
     }
 
     refSubfolder = TestUtils.SUBPAGE + "test-appending/";
-    String[] appends = {"", "44.", "45."};
+    String[] appends = {"", "044.", "045."};
     String suffix = "_BC0.512.seed";
     for (String append : appends) {
       try {
