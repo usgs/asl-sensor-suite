@@ -212,7 +212,7 @@ public class RandomizedExperimentTest {
 
   }
 
-  @Test
+  // @Test
   public void TestRandomCal30s() {
     String fname = folder + "kiev-random-lowfrq/";
     String cal = "_BC0.512.seed";
@@ -241,8 +241,10 @@ public class RandomizedExperimentTest {
       Complex[] unsmooth = re.getUnsmoothedCalcResp();
       double[] freqs = re.getFreqList();
 
-      double deltaFreq = freqs[1];
-      int indexOfInterest = (int) (.02/deltaFreq);
+      assertEquals(freqs.length, unsmooth.length);
+
+      double deltaFreq = freqs[1] - freqs[0];
+      int indexOfInterest = (int) ( (.02 - freqs[0])/deltaFreq);
 
       for (int i = 0; i < freqs.length; ++i) {
 
