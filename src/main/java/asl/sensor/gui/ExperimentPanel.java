@@ -170,6 +170,10 @@ implements ActionListener, ChangeListener {
   protected Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
 
+  // three PSDs, three self-noise calcs
+  
+  protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
+
   /**
    * Construct a new panel, using a backend defined by the passed-in enum
    * @param exp Experiment enum with corresponding backend for factory

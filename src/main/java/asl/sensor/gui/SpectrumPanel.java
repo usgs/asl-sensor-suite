@@ -34,8 +34,6 @@ public class SpectrumPanel extends ExperimentPanel {
   private int plotCount;
   // three PSDs, three self-noise calcs
 
-  protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
-
   private NumberAxis freqAxis;
 
   /**

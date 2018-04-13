@@ -392,10 +392,39 @@ public class DataStore {
     thisResponseIsSet[idx] = false;
   }
 
+  /**
+   * Used to unset the time series data at a given index, mainly to be used in case of an error on
+   * loading in data, so that it is cleared correctly
+   * @param idx Index of data to be removed
+   */
+  public void removeBlock(int idx) {
+    dataBlockArray[idx] = null;
+    thisBlockIsSet[idx] = false;
+  }
+
+  /**
+   * Used to unset the response data at a given index, mainly to be used in case of an error on
+   * loading in data, so that it is cleared correctly
+   * @param idx Index of data to be removed
+   */
+  public void removeResp(int idx) {
+    responses[idx] = null;
+    thisResponseIsSet[idx] = false;
+  }
+
+  /**
+   * Resample data to a given sample rate
+   * @param newSampleRate new sample rate (Hz)
+   */
   public void resample(double newSampleRate) {
     resample(newSampleRate, FILE_COUNT);
   }
 
+  /**
+   * Resample the first X sets of data to a given sample rate, based on limit parameter
+   * @param newSampleRate new sample rate (Hz)
+   * @param limit upper bound on plots to resample
+   */
   public void resample(double newSampleRate, int limit) {
     long newInterval = (long) (TimeSeriesUtils.ONE_HZ_INTERVAL / newSampleRate);
     // make sure all data over range gets set to the same interval (and don't upsample)
@@ -574,13 +603,9 @@ public class DataStore {
    * @param idx Index of plot for which response file matches
    * @param filepath Full address of file to be loaded in
    */
-  public void setResponse(int idx, String filepath) {
-    try {
-      responses[idx] = new InstrumentResponse(filepath);
-      thisResponseIsSet[idx] = true;
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+  public void setResponse(int idx, String filepath) throws IOException {
+    responses[idx] = new InstrumentResponse(filepath);
+    thisResponseIsSet[idx] = true;
   }
 
   /**

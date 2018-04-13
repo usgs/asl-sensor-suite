@@ -206,8 +206,8 @@ public class StepExperiment extends Experiment{
     // next we'll want to find the parameters to fit the plots
     // to the inputted data
     XYSeriesCollection xysc = new XYSeriesCollection();
-    xysc.addSeries(scs);
     xysc.addSeries(xys);
+    xysc.addSeries(scs);
 
     fireStateChange("Solving for best-fit corner and damping...");
     // next step: curve fitting

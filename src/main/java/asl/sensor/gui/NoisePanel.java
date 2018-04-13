@@ -29,31 +29,29 @@ public class NoisePanel extends ExperimentPanel {
    * Auto-generated serialize ID
    */
   private static final long serialVersionUID = 9018553361096758354L;
-  
+
   protected JCheckBox freqSpaceBox;
-  
+
   protected final int NOISE_PLOT_COUNT = 6;
   // three PSDs, three self-noise calcs
-  
-  protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
-  
+
   private NumberAxis freqAxis;
-  
+
   /**
    * Constructs a new panel and lays out all the components in it
    * @param exp
    */
   public NoisePanel(ExperimentEnum exp) {
-    
-    // create chart, chartPanel, save button & file chooser, 
+
+    // create chart, chartPanel, save button & file chooser,
     super(exp);
-    
+
     for (int i = 0; i < 3; ++i) {
       channelType[i] = "Input data (RESP required)";
     }
-    
+
     plotTheseInBold = new String[]{"NLNM","NHNM"};
-    
+
     // instantiate local fields
     String xAxisTitle = "Period (s)";
     String freqAxisTitle = "Frequency (Hz)";
@@ -67,23 +65,23 @@ public class NoisePanel extends ExperimentPanel {
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     freqAxis.setLabelFont(bold);
-    
+
     freqSpaceBox = new JCheckBox("Use Hz units (requires regen)");
     freqSpaceBox.setSelected(false);
-    
+
     applyAxesToChart(); // now that we've got axes defined
-    
+
     // set the GUI components
     this.setLayout( new GridBagLayout() );
     GridBagConstraints gbc = new GridBagConstraints();
-    
+
     gbc.fill = GridBagConstraints.BOTH;
     gbc.gridx = 0; gbc.gridy = 0;
     gbc.weightx = 1.0; gbc.weighty = 1.0;
     gbc.gridwidth = 3;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
-    
+
     // place the other UI elements in a single row below the chart
     gbc.gridwidth = 1;
     gbc.weighty = 0.0; gbc.weightx = 0.0;
@@ -91,14 +89,14 @@ public class NoisePanel extends ExperimentPanel {
     gbc.fill = GridBagConstraints.NONE;
     gbc.gridy += 1; gbc.gridx = 0;
     this.add(freqSpaceBox, gbc);
-    
+
     gbc.gridx += 1;
     gbc.weightx = 1.0;
     gbc.fill = GridBagConstraints.NONE;
     gbc.anchor = GridBagConstraints.CENTER;
     // gbc.gridwidth = GridBagConstraints.REMAINDER;
     this.add(save, gbc);
-    
+
     // add an empty panel as a spacer to keep the save button in the center
     gbc.fill = GridBagConstraints.NONE;
     gbc.gridx += 1;
@@ -108,21 +106,21 @@ public class NoisePanel extends ExperimentPanel {
     spacer.setPreferredSize( freqSpaceBox.getPreferredSize() );
     this.add(spacer, gbc);
   }
-  
+
   @Override
   public void actionPerformed(ActionEvent e) {
     // overridden in the event we add more stuff to this panel
     super.actionPerformed(e); // only actionlistener here
   }
-  
+
   @Override
   protected void drawCharts() {
-    
+
     setChart( expResult.getData().get(0) );
 
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
-    
+
   }
 
   /**
@@ -133,34 +131,34 @@ public class NoisePanel extends ExperimentPanel {
    */
   @Override
   public ValueAxis getXAxis() {
-    
+
     // true if using Hz units
     if ( freqSpaceBox.isSelected() ) {
         return freqAxis;
     }
-    
+
     return xAxis;
-    
+
   }
 
   @Override
   public int panelsNeeded() {
-    
+
     return 3;
   }
-  
+
   /**
    * Initially called function to calculate self-noise when data is passed in
    */
   @Override
   protected void updateData(final DataStore ds) {
-    
+
     set = true;
-    
+
     boolean freqSpace = freqSpaceBox.isSelected();
-    
+
     final boolean freqSpaceImmutable = freqSpace;
-    
+
     NoiseExperiment noisExp = (NoiseExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);
     expResult.runExperimentOnData(ds);
@@ -177,6 +175,6 @@ public class NoisePanel extends ExperimentPanel {
 
     }
   }
-  
+
 
 }
