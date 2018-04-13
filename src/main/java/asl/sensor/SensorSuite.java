@@ -59,7 +59,22 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
    * Loads the main window for the program on launch
    */
   private static void createAndShowGUI() {
-    JFrame frame = new JFrame("Sensor Tests");
+    String version = SensorSuite.class.getPackage().getImplementationVersion();
+    /*
+    URLClassLoader cl = (URLClassLoader) SensorSuite.class.getClassLoader();
+    try {
+      URL url = cl.findResource("META-INF/MANIFEST.MF");
+      Manifest manifest = new Manifest(url.openStream());
+      for ( String entry : manifest.getEntries().keySet() ) {
+        System.out.println(entry);
+      }
+      version = manifest.getEntries().get("Implementation-Version").toString();
+    } catch (IOException E) {
+      // handle
+    }
+    */
+    String title = "Sensor Tester [VERSION: " + version + "]";
+    JFrame frame = new JFrame(title);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     frame.add( new SensorSuite() );

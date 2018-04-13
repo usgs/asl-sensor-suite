@@ -69,7 +69,13 @@ public class GainTest {
 
     for (int i = 0; i < rnames.length; ++i) {
       String fName = testFolder + rnames[i];
-      ds.setResponse(i, fName);
+      try {
+        ds.setResponse(i, fName);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+        fail();
+      }
     }
 
     OffsetDateTime start =

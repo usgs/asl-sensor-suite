@@ -324,7 +324,13 @@ public class NoiseNineTest {
         if (isEmbed) {
           ds.setEmbedResponse(indexInStore, respName);
         } else {
-          ds.setResponse(indexInStore, respName);
+          try {
+            ds.setResponse(indexInStore, respName);
+          } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+          }
         }
       }
     }
