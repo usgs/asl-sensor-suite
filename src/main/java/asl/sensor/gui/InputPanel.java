@@ -97,7 +97,7 @@ implements ActionListener, ChangeListener {
   public static final int IMAGE_HEIGHT = 240;
   public static final int IMAGE_WIDTH = 640;
 
-  public static final int MAX_UNSCROLLED = 4;
+  public static final int MAX_UNSCROLLED = 3;
 
   public static final int PLOTS_PER_PAGE = 3;
 
@@ -455,6 +455,8 @@ implements ActionListener, ChangeListener {
             fireStateChanged();
           } catch (IOException e1) {
             e1.printStackTrace();
+            ds.removeResp(i);
+            respFileNames[i].setText("CAUGHT IO ERROR; NO FILE LOADED");
           }
         } else {
           lastRespIndex = -1;
@@ -465,11 +467,18 @@ implements ActionListener, ChangeListener {
           if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
             respDirectory = file.getParent();
-            ds.setResponse(i, file.getAbsolutePath() );
-            respEpochWarn( ds.getResponse(i) );
-            respFileNames[i].setText( file.getName() );
-            clear.setEnabled(true);
-            clearAll.setEnabled(true);
+            try{
+              ds.setResponse(i, file.getAbsolutePath() );
+              // TODO: have this happen before setting response, change to prompt for an epoch
+              respEpochWarn( ds.getResponse(i) );
+              respFileNames[i].setText( file.getName() );
+              clear.setEnabled(true);
+              clearAll.setEnabled(true);
+            } catch (IOException e2) {
+              e2.printStackTrace();
+              ds.removeResp(i);
+              respFileNames[i].setText("CAUGHT IO ERROR; NO FILE LOADED");
+            }
 
             fireStateChanged();
           }
@@ -787,6 +796,25 @@ implements ActionListener, ChangeListener {
 
       } catch (FileNotFoundException e1) {
         e1.printStackTrace();
+        if (seed instanceof LoadingJButton) {
+          instantiateChart(idx);
+          XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
+          TextTitle result = new TextTitle();
+          String errMsg = "COULD NOT LOAD IN " + file.getName();
+          errMsg += e1.getMessage();
+          result.setText(errMsg);
+          result.setBackgroundPaint(Color.red);
+          result.setPaint(Color.white);
+          XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
+              RectangleAnchor.CENTER);
+          xyp.clearAnnotations();
+          xyp.addAnnotation(xyt);
+          ds.removeBlock(idx);
+          seedFileNames[idx].setText("NO FILE LOADED");
+          clearButton[idx].setEnabled(true);
+          fireStateChanged();
+        }
+
         return;
       }
 
@@ -863,6 +891,7 @@ implements ActionListener, ChangeListener {
         public void done() {
 
           if (caughtException) {
+            ds.removeBlock(idx);
             instantiateChart(idx);
             XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
             TextTitle result = new TextTitle();
@@ -877,6 +906,7 @@ implements ActionListener, ChangeListener {
             xyp.addAnnotation(xyt);
             seedFileNames[idx].setText("NO FILE LOADED");
             clearButton[idx].setEnabled(true);
+            fireStateChanged();
             return;
           }
 
@@ -1214,7 +1244,6 @@ implements ActionListener, ChangeListener {
         zoomOut.setEnabled(false);
       }
 
-
     } else {
       // no blocks loaded in, no zooms to handle
       zoomOut.setEnabled(false);
@@ -1226,9 +1255,11 @@ implements ActionListener, ChangeListener {
         resetPlotZoom(i);
       } else {
         instantiateChart(i);
-        clearButton[i].setEnabled(false);
         seedFileNames[i].setText("NO FILE LOADED");
-        respFileNames[i].setText("NO FILE LOADED");
+        if ( !ds.responseIsSet(i) ) {
+          respFileNames[i].setText("NO FILE LOADED");
+          clearButton[i].setEnabled(false);
+        }
       }
 
       cont.add(chartSubpanels[i], contConstraints);

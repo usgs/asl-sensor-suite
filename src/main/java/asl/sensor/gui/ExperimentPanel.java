@@ -171,7 +171,7 @@ implements ActionListener, ChangeListener {
   // these are map/set because they are based on the data read in, not fixed
 
   // three PSDs, three self-noise calcs
-  
+
   protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
 
   /**
@@ -296,6 +296,12 @@ implements ActionListener, ChangeListener {
     XYPlot xyPlot = chart.getXYPlot();
     XYItemRenderer xyir = xyPlot.getRenderer();
 
+    if (xyDataset != null && seriesColorMap.size() == 0) {
+      int modulus = COLORS.length;
+      for (int seriesIdx = 0; seriesIdx < xyDataset.getSeriesCount(); ++seriesIdx) {
+        xyir.setSeriesPaint( seriesIdx, COLORS[seriesIdx % modulus] );
+      }
+    }
 
     // force certain colors and whether or not a line should be dashed
 

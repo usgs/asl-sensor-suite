@@ -522,8 +522,8 @@ extends Experiment implements ParameterValidator {
       fitArg.add(xValue, fitValues[argIdx]);
 
       if (i < obsdAmps.length) {
-        double initAmpNumer = Math.pow(10, initialValues[i]/10);
-        double fitAmpNumer = Math.pow(10, fitValues[i]/10);
+        double initAmpNumer = Math.pow(10, initialValues[i]/20);
+        double fitAmpNumer = Math.pow(10, fitValues[i]/20);
 
         double obsAmpDbl = obsdAmps[i];
         if (obsAmpDbl == 0.) {
@@ -532,8 +532,8 @@ extends Experiment implements ParameterValidator {
 
         double errInitMag = 100. * (initAmpNumer - obsAmpDbl) / obsAmpDbl;
         double errFitMag = 100. * (fitAmpNumer - obsAmpDbl) / obsAmpDbl;
-        initResidMag.add(xValue, errInitMag);
-        fitResidMag.add(xValue, errFitMag);
+        initResidMag.add(xValue, Math.abs(errInitMag));
+        fitResidMag.add(xValue, Math.abs(errFitMag));
 
         int obsArgIdx = observedResult.length / 2 + i;
         double observedPhase = observedResult[obsArgIdx];
