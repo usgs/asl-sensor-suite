@@ -803,6 +803,9 @@ implements ActionListener, ChangeListener {
           // just get the first one; it's the only one in the list
           filterName = new ArrayList<String>(nameSet).get(0);
         } else {
+          // this shouldn't occur if the seed file is formatted correctly
+          // because there will be at least one SNCL described in it
+          // unless we are appending from a list without data for the loaded channel, etc.
           seedFileNames[idx].setText(oldName);
           seedAppendEmptyPopup( file.getName() );
           return;
@@ -811,24 +814,7 @@ implements ActionListener, ChangeListener {
       } catch (SeedFormatException | IOException | RuntimeException e) {
         e.printStackTrace();
         if (seed instanceof LoadingJButton) {
-          instantiateChart(idx);
-          XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
-          TextTitle result = new TextTitle();
-          StringBuilder errMsg = new StringBuilder("COULD NOT LOAD IN ");
-          errMsg.append( file.getName() );
-          errMsg.append("\n");
-          errMsg.append( e.toString() );
-          result.setText( errMsg.toString() );
-          result.setBackgroundPaint(Color.red);
-          result.setPaint(Color.white);
-          XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
-              RectangleAnchor.CENTER);
-          xyp.clearAnnotations();
-          xyp.addAnnotation(xyt);
-          ds.removeBlock(idx);
-          seedFileNames[idx].setText("NO FILE LOADED");
-          clearButton[idx].setEnabled(true);
-          fireStateChanged();
+          seedLoadHandleError( idx, file.getName(), e.toString() );
         } else {
           seedAppendErrorPopup( file.getName() );
         }
@@ -904,22 +890,8 @@ implements ActionListener, ChangeListener {
               return;
             }
 
-            ds.removeBlock(idx);
-            instantiateChart(idx);
-            XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
-            TextTitle result = new TextTitle();
-            String errMsg = "COULD NOT LOAD IN " + file.getName();
-            errMsg += returnedErrMsg;
-            result.setText(errMsg);
-            result.setBackgroundPaint(Color.red);
-            result.setPaint(Color.white);
-            XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
-                RectangleAnchor.CENTER);
-            xyp.clearAnnotations();
-            xyp.addAnnotation(xyt);
-            seedFileNames[idx].setText("NO FILE LOADED");
-            clearButton[idx].setEnabled(true);
-            fireStateChanged();
+            seedLoadHandleError( idx, file.getName(), returnedErrMsg );
+
             return;
           }
 
@@ -961,6 +933,29 @@ implements ActionListener, ChangeListener {
       worker.execute();
       return;
     }
+  }
+
+  private void seedLoadHandleError(int idx, String filename, String err) {
+    ds.removeBlock(idx);
+    instantiateChart(idx);
+    XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
+    TextTitle result = new TextTitle();
+    StringBuilder errMsg = new StringBuilder("COULD NOT LOAD IN ");
+    errMsg.append(filename);
+    errMsg.append("\n");
+    errMsg.append("This file is probably not a SEED file or has a formatting error.\n");
+    errMsg.append("A full stack trace is in the terminal -- this is the exception:\n");
+    errMsg.append(err);
+    result.setText( errMsg.toString() );
+    result.setBackgroundPaint(Color.red);
+    result.setPaint(Color.white);
+    XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
+        RectangleAnchor.CENTER);
+    xyp.clearAnnotations();
+    xyp.addAnnotation(xyt);
+    seedFileNames[idx].setText("NO FILE LOADED");
+    clearButton[idx].setEnabled(true);
+    fireStateChanged();
   }
 
   private void seedAppendEmptyPopup(String filename) {
