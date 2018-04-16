@@ -940,10 +940,10 @@ implements ActionListener, ChangeListener {
     instantiateChart(idx);
     XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
     TextTitle result = new TextTitle();
-    StringBuilder errMsg = new StringBuilder("COULD NOT LOAD IN ");
+    StringBuilder errMsg = new StringBuilder("COULD NOT LOAD IN FILE: ");
     errMsg.append(filename);
-    errMsg.append("\n");
-    errMsg.append("This file is probably not a SEED file or has a formatting error.\n");
+    errMsg.append("\n\n");
+    errMsg.append("This file is probably not a SEED file or has a formatting error.\n\n");
     errMsg.append("A full stack trace is in the terminal -- this is the exception:\n");
     errMsg.append(err);
     result.setText( errMsg.toString() );
