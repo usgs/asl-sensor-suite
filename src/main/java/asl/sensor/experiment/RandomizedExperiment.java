@@ -320,7 +320,9 @@ extends Experiment implements ParameterValidator {
         xAxis = 1. / freqsFull[i];
       }
       calcMag.add(xAxis, estValMag);
-      calcArg.add(xAxis, argument);
+      // plotted phase value should be in range -180,180
+      double plotArg = rewrapPhase(argument);
+      calcArg.add(xAxis, plotArg);
     }
 
     // want to set up weight-scaling for the input so rotation doesn't dominate
@@ -516,10 +518,13 @@ extends Experiment implements ParameterValidator {
       }
 
       int argIdx = initialValues.length / 2 + i;
+      double plotArg;
       initMag.add(xValue, initialValues[i]);
-      initArg.add(xValue, initialValues[argIdx]);
+      plotArg = rewrapPhase(initialValues[argIdx]);
+      initArg.add(xValue, plotArg);
       fitMag.add(xValue, fitValues[i]);
-      fitArg.add(xValue, fitValues[argIdx]);
+      plotArg = rewrapPhase(fitValues[argIdx]);
+      fitArg.add(xValue, plotArg);
 
       if (i < obsdAmps.length) {
         double initAmpNumer = Math.pow(10, initialValues[i]/20);
@@ -991,6 +996,16 @@ extends Experiment implements ParameterValidator {
       }
     }
     return poleParams;
+  }
+
+  private double rewrapPhase(double phi) {
+    while (phi < -180) {
+      phi += 360;
+    }
+    while (phi > 180) {
+      phi -= 360;
+    }
+    return phi;
   }
 
 }

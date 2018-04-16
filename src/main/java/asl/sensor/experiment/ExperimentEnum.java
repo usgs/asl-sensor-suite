@@ -18,7 +18,7 @@ public enum ExperimentEnum {
   GAIN6 ("Relative gain (3-component)"),
   STCAL ("Step calibration"),
   RANDM ("Randomized calibration"),
-  RNDBG ("Rdm. cal. verification"),
+  // RNDBG ("Rdm. cal. verification"),
   AZMTH ("Azimuth"),
   ORTHO ("Orthogonality"),
   SPECT ("Power-spectrum"),

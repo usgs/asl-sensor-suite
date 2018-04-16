@@ -960,7 +960,7 @@ implements ActionListener, ChangeListener {
 
   private void seedAppendEmptyPopup(String filename) {
     JDialog errBox = new JDialog();
-    StringBuilder errMsg = new StringBuilder("Error while loading in seed file:\n");
+    StringBuilder errMsg = new StringBuilder("Could not load data from seed file: ");
     errMsg.append(filename);
     errMsg.append('\n');
     errMsg.append("The file appears to be formatted correctly but does not have data for the\n");
@@ -972,7 +972,7 @@ implements ActionListener, ChangeListener {
 
   private void seedAppendErrorPopup(String filename) {
     JDialog errBox = new JDialog();
-    StringBuilder errMsg = new StringBuilder("Error while loading in seed file:\n");
+    StringBuilder errMsg = new StringBuilder("Error while loading in seed file: ");
     errMsg.append(filename);
     errMsg.append('\n');
     errMsg.append("Check that file exists and is formatted correctly.\n");
