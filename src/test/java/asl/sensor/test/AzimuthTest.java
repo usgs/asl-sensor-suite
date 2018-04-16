@@ -3,7 +3,6 @@ package asl.sensor.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -16,7 +15,6 @@ import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class AzimuthTest {
@@ -38,7 +36,7 @@ public class AzimuthTest {
       String fName = dataFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (SeedFormatException | CodecException | IOException e) {
         e.printStackTrace();
         fail();
       }
@@ -160,7 +158,7 @@ public class AzimuthTest {
       String fName = dataFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (SeedFormatException | CodecException | IOException e) {
         e.printStackTrace();
         fail();
       }
@@ -320,7 +318,7 @@ public class AzimuthTest {
       String fName = dataFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (SeedFormatException | CodecException | IOException e) {
         e.printStackTrace();
         fail();
       }
@@ -385,7 +383,7 @@ public class AzimuthTest {
       assertEquals(3.2, az.getFitAngle(), 0.5);
       assertEquals(0.5, az.getUncertainty(), 0.5);
 
-    } catch (SeedFormatException | CodecException e) {
+    } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
       fail();
     }
@@ -421,37 +419,25 @@ public class AzimuthTest {
     }
 
     DataStore ds = new DataStore();
+    String root = TestUtils.DL_DEST_LOCATION;
+    testSubfolder = root + testSubfolder;
+    refSubfolder = root + refSubfolder;
     try {
-      String root = TestUtils.DL_DEST_LOCATION;
-      testSubfolder = root + testSubfolder;
-      refSubfolder = root + refSubfolder;
-      try {
-        ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
-        ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
-        ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
-      } catch (SeedFormatException e) {
-        e.printStackTrace();
-        fail();
-      } catch (UnsupportedCompressionType e) {
-        e.printStackTrace();
-        fail();
-      } catch (CodecException e) {
-        e.printStackTrace();
-        fail();
-      }
-
-      ds.trimToCommonTime();
-      AzimuthExperiment ae = new AzimuthExperiment();
-      ae.runExperimentOnData(ds);
-      double fitAngle = ae.getFitAngle();
-      System.out.println(sb.toString() + " | " + ( (fitAngle % 360) + 360) % 360 );
-
-      assertEquals(angle, fitAngle, 1.0);
-
-    } catch (FileNotFoundException e) {
+      ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
+      ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
+      ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
+    } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
       fail();
     }
+
+    ds.trimToCommonTime();
+    AzimuthExperiment ae = new AzimuthExperiment();
+    ae.runExperimentOnData(ds);
+    double fitAngle = ae.getFitAngle();
+    System.out.println(sb.toString() + " | " + ( (fitAngle % 360) + 360) % 360 );
+
+    assertEquals(angle, fitAngle, 1.0);
 
   }
 
@@ -478,7 +464,7 @@ public class AzimuthTest {
       az.runExperimentOnData(ds);
       assertEquals(3.4, az.getFitAngle(), 0.5);
 
-    } catch (SeedFormatException | CodecException e) {
+    } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
       fail();
     }

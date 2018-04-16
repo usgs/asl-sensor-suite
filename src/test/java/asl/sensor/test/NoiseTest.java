@@ -67,7 +67,7 @@ public class NoiseTest {
     for (int i = 0; i < data.length; ++i) {
       try {
         ds.setBlock(i, testFolder + data[i]);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (IOException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }
@@ -103,7 +103,7 @@ public class NoiseTest {
     for (int i = 0; i < data.length; ++i) {
       try {
         ds.setBlock(i, testFolder + data[i]);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (IOException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }

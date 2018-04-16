@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.OffsetDateTime;
@@ -512,7 +511,7 @@ public class FFTResultTest {
       for (int i = 0; i < testAgainst.length; ++i) {
         assertEquals(testThis[i], testAgainst[i], 1E-6);
       }
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
@@ -561,7 +560,7 @@ public class FFTResultTest {
           String msg = "Got " + c + " but expected ZERO";
           assertTrue(msg, Complex.equals(c, Complex.ZERO, 1E-20) );
         }
-      } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+      } catch (IOException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }
@@ -596,7 +595,7 @@ public class FFTResultTest {
           String msg = "Got " + c + " -- expected " + compare;
           assertTrue(msg, Complex.equals(c, compare, 1E-4) );
         }
-      } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+      } catch (IOException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }
@@ -716,7 +715,7 @@ public class FFTResultTest {
       out.write( Arrays.toString(data) );
       out.close();
 
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }

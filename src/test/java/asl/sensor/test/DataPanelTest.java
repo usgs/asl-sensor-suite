@@ -2,7 +2,6 @@ package asl.sensor.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,12 +62,10 @@ public class DataPanelTest {
       assertEquals(loc3, start);
       assertEquals(loc2 - loc1, timeRange/2); // range is 3/4-1/4 = 1/2 of data
       assertEquals(loc1, start + (interval * size / 4) ); // correct start pt?
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
-
-
 
   }
 

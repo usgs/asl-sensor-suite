@@ -56,7 +56,7 @@ public class GainTest {
       String fName = testFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (IOException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }

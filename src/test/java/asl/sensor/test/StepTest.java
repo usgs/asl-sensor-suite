@@ -57,7 +57,7 @@ public class StepTest {
       double[] fitParams = se.getFitParams();
       assertEquals(366.97, 1./fitParams[0], 0.5);
       assertEquals(0.7196, fitParams[1], 0.0005);
-    } catch (SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -83,7 +83,7 @@ public class StepTest {
       double[] fitParams = se.getFitParams();
       assertEquals(367.5, 1./fitParams[0], 0.5);
       assertEquals(0.715, fitParams[1], 0.005);
-    } catch (SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }

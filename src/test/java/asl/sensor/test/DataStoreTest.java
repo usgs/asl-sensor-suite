@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +54,7 @@ public class DataStoreTest {
       assertEquals( ds.getBlock(1).getEndTime(), loc2);
       assertEquals( db.size(), ds.getBlock(1).size() );
       assertNotEquals( db.size(), oldSize );
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }

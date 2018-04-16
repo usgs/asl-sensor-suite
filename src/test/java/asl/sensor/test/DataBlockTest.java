@@ -83,12 +83,9 @@ public class DataBlockTest {
       assertEquals( loc1, db.getStartTime() );
       assertEquals( sizeOld/2, db.size() );
 
-    } catch (FileNotFoundException e) {
+    } catch (SeedFormatException | CodecException | IOException e) {
+      // TODO Auto-generated catch block
       e.printStackTrace();
-      fail();
-    } catch (SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
     }
 
   }
@@ -131,10 +128,7 @@ public class DataBlockTest {
       long ed = dbFull.getEndTime();
       assertEquals(st, dbAppended.getStartTime());
       assertEquals(ed, dbAppended.getEndTime());
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-      fail();
-    } catch (SeedFormatException | CodecException e) {
+    } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
       fail();
     }

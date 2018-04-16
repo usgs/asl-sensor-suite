@@ -67,7 +67,7 @@ public class OrthogonalityTest {
       String fName = testFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (IOException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }
@@ -286,7 +286,7 @@ public class OrthogonalityTest {
 
       assertEquals(expectedAngle, fitAngle, 1.0);
 
-    } catch (SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }

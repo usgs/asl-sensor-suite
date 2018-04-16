@@ -10,7 +10,6 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -66,7 +65,7 @@ public class TimeSeriesUtilsTest {
       assertTrue(names.contains("IU_ANMO_00_LH2"));
       assertTrue(names.contains("IU_ANMO_00_LHZ"));
       assertEquals( names.size(), 3 );
-    } catch (FileNotFoundException e) {
+    } catch (IOException | SeedFormatException e) {
       fail();
     }
   }
@@ -194,7 +193,7 @@ public class TimeSeriesUtilsTest {
       assertEquals(1652432, firstContiguous.length);
       // System.out.println(timeseries.get(start)[0]);
 
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       fail();
       e.printStackTrace();
     }
@@ -225,7 +224,7 @@ public class TimeSeriesUtilsTest {
       assertEquals(20.0, db.getSampleRate(), 1E-20);
       // System.out.println(timeseries.get(start)[0]);
 
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       fail();
       e.printStackTrace();
     }
@@ -351,11 +350,9 @@ public class TimeSeriesUtilsTest {
           TimeSeriesUtils.getTimeSeries(filename1, nameList.get(0) );
       assertEquals( data.size(), testAgainst.getData().length );
 
-    } catch (FileNotFoundException e) {
+    } catch (IOException e) {
       assertNull(e);
     } catch (SeedFormatException e) {
-      assertNull(e);
-    } catch (IOException e) {
       assertNull(e);
     } catch (UnsupportedCompressionType e) {
       assertNull(e);
@@ -393,7 +390,7 @@ public class TimeSeriesUtilsTest {
         assertNull(e);
       }
 
-    } catch (FileNotFoundException e) {
+    } catch (IOException e) {
       assertNull(e);
     }
 
@@ -433,11 +430,7 @@ public class TimeSeriesUtilsTest {
 
         }
       }
-    } catch (FileNotFoundException e) {
-      assertNull(e); // only reading one record;
-    } catch (SeedFormatException e) {
-      assertNull(e);
-    } catch (IOException e) {
+    } catch (IOException | SeedFormatException e) {
       assertNull(e);
     }
   }
@@ -462,7 +455,7 @@ public class TimeSeriesUtilsTest {
       }
       mean /= data.length;
       assertEquals(0., mean, 1E-10);
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -522,7 +515,7 @@ public class TimeSeriesUtilsTest {
       assertTrue(Math.abs(normed[minIdx]) < 1.0);
       assertEquals(data[minIdx]/data[maxIdx], normed[minIdx], 1E-3);
       assertEquals(-0.79, normed[minIdx], 0.01);
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
       fail();
@@ -551,7 +544,7 @@ public class TimeSeriesUtilsTest {
       // System.out.println(inputDate);
       String correctDate = "2017.08.02T00:00:00.019";
       assertEquals(inputDate, correctDate);
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }

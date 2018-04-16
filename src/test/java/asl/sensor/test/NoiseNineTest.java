@@ -317,7 +317,7 @@ public class NoiseNineTest {
 
         try {
           ds.setBlock(indexInStore, fName);
-        } catch (SeedFormatException | CodecException e) {
+        } catch (IOException | SeedFormatException | CodecException e) {
           e.printStackTrace();
           fail();
         }
