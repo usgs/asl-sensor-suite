@@ -168,7 +168,6 @@ public class InstrumentResponseTest {
     try {
       ir =
           InstrumentResponse.loadEmbeddedResponse("STS-5A_Q330HR_BH_40");
-
     } catch (IOException e) {
       fail();
       e.printStackTrace();

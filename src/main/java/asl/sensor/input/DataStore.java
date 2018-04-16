@@ -478,9 +478,11 @@ public class DataStore {
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws IOException
    */
   public void setBlock(int idx, String filepath)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      IOException {
     setBlock(idx, filepath, FILE_COUNT);
   }
 
@@ -493,16 +495,13 @@ public class DataStore {
    * @throws SeedFormatException
    * @throws UnsupportedCompressionType
    * @throws CodecException
+   * @throws IOException
    */
   public void setBlock(int idx, String filepath, int activePlots)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
-    try {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      IOException {
       String nameFilter = TimeSeriesUtils.getMplexNameList(filepath).get(0);
       setBlock(idx, filepath, nameFilter, activePlots);
-    } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
   }
 
   /**
@@ -514,9 +513,11 @@ public class DataStore {
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws FileNotFoundException
    */
   public void setBlock(int idx, String filepath, String nameFilter)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      FileNotFoundException {
     setBlock(idx, filepath, nameFilter, FILE_COUNT);
   }
 
@@ -530,17 +531,15 @@ public class DataStore {
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws FileNotFoundException
    */
   public void setBlock(int idx, String filepath, String nameFilter, int activePlots)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      FileNotFoundException {
 
-    try {
-      DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
-      thisBlockIsSet[idx] = true;
-      dataBlockArray[idx] = xy;
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
+    DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
+    thisBlockIsSet[idx] = true;
+    dataBlockArray[idx] = xy;
 
     synchronized(this) {
       if (numberOfBlocksSet() > 1) {
@@ -805,7 +804,8 @@ public class DataStore {
 
 
   public void appendBlock(int idx, String filepath, String nameFilter, int activePlots)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      FileNotFoundException {
 
     if (!thisBlockIsSet[idx]) {
       setBlock(idx, filepath, nameFilter, activePlots);

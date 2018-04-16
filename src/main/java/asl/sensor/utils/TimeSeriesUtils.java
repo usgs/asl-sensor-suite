@@ -396,13 +396,13 @@ public class TimeSeriesUtils {
    * only the data from a single channel).
    * @param filename Filename of miniSEED data to load in
    * @return Datablock representing the data inside the miniSEED
-   * @throws FileNotFoundException if given file from filename cannot be read
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws IOException
    */
   public static DataBlock getFirstTimeSeries(String filename)
-      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException, IOException {
     String filter = getMplexNameList(filename).get(0);
     return getTimeSeries(filename, filter);
   }
@@ -414,13 +414,13 @@ public class TimeSeriesUtils {
    * only the data from a single channel). Used mainly to load calibration spanning multiple days.
    * @param filenames Filenames of miniSEED data to load in
    * @return Datablock representing the data inside the miniSEEDs
-   * @throws FileNotFoundException if given files from filenames cannot be read
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws IOException
    */
   public static DataBlock getFirstTimeSeries(String[] filenames)
-      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException, IOException {
     String filter = getMplexNameList(filenames[0]).get(0);
     return getTimeSeries(filenames, filter);
   }
@@ -450,10 +450,11 @@ public class TimeSeriesUtils {
    * @param filename Name of file to read in
    * @return List of strings corresponding to metadata of each data series
    * in the given miniseed file
-   * @throws FileNotFoundException If given file from filename cannot be read
+   * @throws IOException
+   * @throws SeedFormatException
    */
   public static List<String> getMplexNameList(String filename)
-      throws FileNotFoundException {
+      throws SeedFormatException, IOException {
     return new ArrayList<String>( getMplexNameSet(filename) );
   }
 
@@ -462,22 +463,18 @@ public class TimeSeriesUtils {
    * a multiplexed miniseed file as a set of strings
    * @param filename miniseed file to be read in
    * @return set of all (unique) SNCL strings
-   * @throws FileNotFoundException if file cannot be read
+   * @throws IOException
+   * @throws SeedFormatException
    */
   public static Set<String> getMplexNameSet(String filename)
-      throws FileNotFoundException {
+      throws SeedFormatException, IOException {
     Set<String> dataNames = new HashSet<String>();
 
     int byteSize;
-    try {
-      byteSize = getByteSize(filename);
-    } catch (FileNotFoundException e1) {
-      throw e1;
-    }
+    byteSize = getByteSize(filename);
 
     DataInputStream dis;
 
-    try {
       dis = new DataInputStream( new FileInputStream(filename) );
 
       while (true) {
@@ -499,17 +496,6 @@ public class TimeSeriesUtils {
         }
 
       } // end loop until EOF exception
-
-    } catch (FileNotFoundException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (IOException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (SeedFormatException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    }
 
     return dataNames;
   }
@@ -615,7 +601,8 @@ public class TimeSeriesUtils {
    */
   public static Pair<Long, Map<Long, double[]>>
     getTimeSeriesMap(String[] filenames, String filter)
-       throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+       throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType,
+       CodecException {
     long interval = 0L;
     DataInputStream dis;
 
