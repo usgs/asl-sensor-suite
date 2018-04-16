@@ -13,6 +13,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -373,8 +376,6 @@ implements ActionListener, ChangeListener {
       JButton resp = respLoaders[i];
       FileOperationJButton appd = seedAppenders[i];
 
-      // TODO: check if source is appd
-
       if( e.getSource() == clear ) {
         instantiateChart(i);
         ds.removeData(i);
@@ -446,17 +447,16 @@ implements ActionListener, ChangeListener {
                 InstrumentResponse.loadEmbeddedResponse(fname);
             ds.setResponse(i, ir);
 
-            respEpochWarn(ir);
-
             respFileNames[i].setText( ir.getName() );
             clear.setEnabled(true);
             clearAll.setEnabled(true);
 
             fireStateChanged();
           } catch (IOException e1) {
+            // this really shouldn't be an issue with embedded responses
+            responseErrorPopup(fname);
             e1.printStackTrace();
-            ds.removeResp(i);
-            respFileNames[i].setText("CAUGHT IO ERROR; NO FILE LOADED");
+            return;
           }
         } else {
           lastRespIndex = -1;
@@ -468,16 +468,16 @@ implements ActionListener, ChangeListener {
             File file = fc.getSelectedFile();
             respDirectory = file.getParent();
             try{
-              ds.setResponse(i, file.getAbsolutePath() );
-              // TODO: have this happen before setting response, change to prompt for an epoch
-              respEpochWarn( ds.getResponse(i) );
+              Instant startInst = respEpochWarn( file.getAbsolutePath() );
+              InstrumentResponse ir = new InstrumentResponse( file.getAbsolutePath(), startInst );
+              ds.setResponse(i, ir);
               respFileNames[i].setText( file.getName() );
               clear.setEnabled(true);
               clearAll.setEnabled(true);
             } catch (IOException e2) {
+              responseErrorPopup( file.getName() );
               e2.printStackTrace();
-              ds.removeResp(i);
-              respFileNames[i].setText("CAUGHT IO ERROR; NO FILE LOADED");
+              return;
             }
 
             fireStateChanged();
@@ -544,6 +544,16 @@ implements ActionListener, ChangeListener {
       zoomOut.setEnabled(false);
       return;
     }
+  }
+
+  private void responseErrorPopup(String filename) {
+    JDialog errBox = new JDialog();
+    StringBuilder errMsg = new StringBuilder("Error while loading in response file:\n");
+    errMsg.append(filename);
+    errMsg.append('\n');
+    errMsg.append("Check that file exists and is formatted correctly.");
+    JOptionPane.showMessageDialog(errBox, errMsg.toString(), "Response Loading Error",
+        JOptionPane.ERROR_MESSAGE);
   }
 
   /**
@@ -1108,18 +1118,47 @@ implements ActionListener, ChangeListener {
   }
 
   /**
-   * Warn user if response has too many epochs
-   * @param ir InstrumentResponse that was read-in
+   * Get a selected epoch from a multi-epoch response
+   * @param respHandle Name of a given response to read in
+   * @return Value of the start instant of the epoch that the user has chosen
+   * @throws IOException Error reading resp file
+   * @throws FileNotFoundException File does not exist
    */
-  private void respEpochWarn(InstrumentResponse ir) {
-    // System.out.println("EPOCHS: " + ir.getEpochsCounted());
-    if ( ir.getEpochsCounted() > 1 ) {
-      String name = ir.getName();
-      String warning = "NOTE: Response " + name + " has multiple epochs.\n";
-      warning += "Only the last epoch will be parsed in.";
-      JDialog jd = new JDialog();
-      JOptionPane.showMessageDialog(jd, warning);
+  private Instant respEpochWarn(String respHandle) throws FileNotFoundException, IOException {
+
+    DateTimeFormatter dtf = InstrumentResponse.RESP_DT_FORMAT.withZone( ZoneOffset.UTC );
+    List<Pair<Instant, Instant>> epochs = InstrumentResponse.getRespFileEpochs(respHandle);
+
+    if (epochs.size() > 1) {
+      // more than one series in the file? prompt user for it
+      String[] epochStrings = new String[epochs.size()];
+      for (int i = 0; i < epochStrings.length; ++i) {
+        String startString = dtf.format( epochs.get(i).getFirst() );
+        String endString = dtf.format( epochs.get(i).getSecond() );
+        StringBuilder sb = new StringBuilder(startString);
+        sb.append(" | ");
+        sb.append(endString);
+        epochStrings[i] = sb.toString();
+      }
+      Arrays.sort(epochStrings);
+      JDialog dialog = new JDialog();
+      Object result = JOptionPane.showInputDialog(
+          dialog,
+          "Select the response epoch to load:",
+          "Response Epoch Selection",
+          JOptionPane.PLAIN_MESSAGE,
+          null, epochStrings,
+          epochStrings[0]);
+      if (result instanceof String) {
+        int idx = Arrays.binarySearch(epochStrings, result);
+        return epochs.get(idx).getFirst();
+      } else {
+        return null;
+      }
+    } else {
+      return epochs.get(0).getFirst();
     }
+
   }
 
   /**

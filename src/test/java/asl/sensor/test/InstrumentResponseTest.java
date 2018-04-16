@@ -5,10 +5,15 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +25,7 @@ import asl.sensor.utils.ReportingUtils;
 public class InstrumentResponseTest {
 
   public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static final DateTimeFormatter DATE_TIME_FORMAT = InstrumentResponse.RESP_DT_FORMAT;
 
   @Before
   public void getReferencedData() {
@@ -38,7 +44,6 @@ public class InstrumentResponseTest {
         e.printStackTrace();
       }
     }
-
   }
 
   @Test
@@ -88,15 +93,42 @@ public class InstrumentResponseTest {
   public void testMultiEpoch() {
 
     String filename = folder + "resp-parse/multiepoch.txt";
-    InstrumentResponse ir;
     try {
-      ir = new InstrumentResponse(filename);
-      assertTrue( ir.getEpochsCounted() > 1 );
+      List<Pair<Instant, Instant>> eps = InstrumentResponse.getRespFileEpochs(filename);
+      assertTrue( eps.size() > 1 );
     } catch (IOException e) {
       fail();
       e.printStackTrace();
     }
 
+  }
+
+  @Test
+  public void listsAllEpochs() {
+
+    // epoch 1 ends same time epoch 2 begins
+    String[] times = {"2016,193,00:00:00", "2016,196,00:00:00", "2016,224,00:00:00"};
+    Instant[] insts = new Instant[times.length];
+    for (int i = 0; i < times.length; ++i) {
+      insts[i] = LocalDateTime.parse(times[i], DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC);
+    }
+    List<Pair<Instant, Instant>> compareTo = new ArrayList<Pair<Instant, Instant>>();
+    compareTo.add(new Pair<Instant, Instant>(insts[0], insts[1]));
+    compareTo.add(new Pair<Instant, Instant>(insts[1], insts[2]));
+
+    String filename = folder + "resp-parse/multiepoch.txt";
+    try{
+      List<Pair<Instant, Instant>> eps = InstrumentResponse.getRespFileEpochs(filename);
+      for (int i = 0; i < eps.size(); ++i) {
+        Pair<Instant, Instant> inst = eps.get(i);
+        Pair<Instant, Instant> base = compareTo.get(i);
+        assertEquals(inst.getFirst(), base.getFirst());
+        assertEquals(inst.getSecond(), base.getSecond());
+      }
+    } catch (IOException e) {
+      fail();
+      e.printStackTrace();
+    }
   }
 
   @Test
