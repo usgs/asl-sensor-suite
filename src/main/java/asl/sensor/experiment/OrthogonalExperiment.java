@@ -145,7 +145,7 @@ public class OrthogonalExperiment extends Experiment {
     XYSeries diffRotSrs = new XYSeries("Diff(" + testName + ", Rotated Ref.)");
 
     RealVector diffLH1 = testY.subtract(refY);
-    RealVector diffComponents = value(refX, refY, angleY);
+    RealVector diffComponents = testY.subtract( value(refX, refY, angleY) );
 
     System.out.println( refY.getEntry(0) + "," + testY.getEntry(0) );
 

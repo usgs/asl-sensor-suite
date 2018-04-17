@@ -722,6 +722,7 @@ public class RandomizedPanel extends ExperimentPanel {
     if (!isLowFreq) {
       Marker maxFitMarker = new ValueMarker( rndExp.getMaxFitFrequency() );
       maxFitMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      maxFitMarker.setPaint(Color.BLACK);
       magChart.getXYPlot().addDomainMarker(maxFitMarker);
       argChart.getXYPlot().addDomainMarker(maxFitMarker);
     }
