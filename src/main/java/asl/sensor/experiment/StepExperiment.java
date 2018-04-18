@@ -277,10 +277,10 @@ public class StepExperiment extends Experiment{
     // now add the plots of response curve and magnitude from init & fit value
 
     // p1 = -(h+i*sqrt(1-h^2))*2*pi*f
-    Complex p1 = new Complex( h, Math.sqrt( 1 - Math.pow(h, 2) ) );
-    p1 = p1.multiply( -1 * NumericUtils.TAU * f );
-    Complex p2 = new Complex( h, -1 * Math.sqrt( 1 - Math.pow(h, 2) ) );
-    p2 = p2.multiply( -1 * NumericUtils.TAU * f);
+    Complex p1 = new Complex( hCorr, Math.sqrt( 1 - Math.pow(hCorr, 2) ) );
+    p1 = p1.multiply( -1 * NumericUtils.TAU * fCorr );
+    Complex p2 = new Complex( hCorr, -1 * Math.sqrt( 1 - Math.pow(hCorr, 2) ) );
+    p2 = p2.multiply( -1 * NumericUtils.TAU * fCorr);
 
     InstrumentResponse fitResp = new InstrumentResponse(ir);
     List<Complex> poles = fitResp.getPoles();

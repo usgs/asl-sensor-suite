@@ -648,7 +648,6 @@ public class FFTResult {
 
     // get frequency per-point, also normalize PSD on number of segments processed (i.e., get mean)
     // and divide out the sample rate (multiply by period)
-    System.out.println("SAMPLE PERIOD VALUE: " + period);
     double[] frequencies = new double[singleSide];
     for (int i = 0; i < singleSide; ++i) {
       powSpectDens[i] = powSpectDens[i].divide(segsProcessed).multiply(period);
