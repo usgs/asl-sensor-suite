@@ -6,7 +6,7 @@ apply plugin: 'application'
 version = '1.2.0'
 
 mainClassName = 'asl.sensor.SensorSuite'
-// applicationDefaultJvmArgs = ["-Xms64m", "-Xmx30g"]
+sourceCompatibility = '1.8'
 
 repositories {
     mavenCentral()
@@ -128,5 +128,9 @@ task copyServerJar(type: Copy) {
     into rootDir
 }
 
+task gitSubmodule(type: Exec) {
+    description 'Update git submodules'
+    commandLine 'git', 'submodule', 'update', '--init'
+}
 
-build.dependsOn copyJar, copyServerJar
+build.dependsOn copyJar, copyServerJar, gitSubmodule 

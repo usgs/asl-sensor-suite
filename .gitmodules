@@ -1,0 +1,3 @@
+[submodule "src/test/resources/seismic-test-data"]
+	path = src/test/resources/seismic-test-data
+	url = git@github.com:usgs/seismic-test-data.git
