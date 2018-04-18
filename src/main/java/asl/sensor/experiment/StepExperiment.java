@@ -314,7 +314,7 @@ public class StepExperiment extends Experiment{
       phiPrevIn = phiIn;
       phiIn = Math.toDegrees(phiIn);
 
-      double phiFit = NumericUtils.atanc(tmpIn);
+      double phiFit = NumericUtils.atanc(tmpFit);
       phiFit = NumericUtils.unwrap(phiFit, phiPrevFit);
       phiPrevFit = phiFit;
       phiFit = Math.toDegrees(phiFit);
