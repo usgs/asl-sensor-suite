@@ -28,6 +28,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.input.DataBlock;
+import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
@@ -655,7 +656,6 @@ public class FFTResultTest {
     }
   }
 
-  /*
   @Test
   public void PSDCalcTestWithResp() {
     String dataName = folder + "psd-check/" + "00_LHZ.512.seed";
@@ -674,13 +674,12 @@ public class FFTResultTest {
         psdAmp[i] = 10 * Math.log10(spectTrim[i].abs());
       }
       double mean = TimeSeriesUtils.getMean(psdAmp);
-      assertEquals(55.314, mean, 1E-2);
+      assertEquals(-132.2, mean, 1E-1);
     } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
       fail();
     }
   }
-  */
 
   // @Test
   public void testOddityWithCOWI() {

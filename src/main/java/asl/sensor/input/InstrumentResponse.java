@@ -696,7 +696,7 @@ public class InstrumentResponse {
           if (epoch != null) {
             // we already read to the desired epoch, so we can just return here
             // otherwise, go for the last epoch and reset out the data from prev. epochs
-            return;
+            break;
           }
           numStages = 0;
           gains = new double[MAX_GAIN_STAGES];
