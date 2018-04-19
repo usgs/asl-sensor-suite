@@ -232,7 +232,7 @@ public class TimeSeriesUtilsTest {
   @Test
   public void inputFileReaderCreatesXYSeries() {
     DataInput dis;
-    List<Number> data = new ArrayList<Number>();
+    List<Number> data = new ArrayList<>();
     String filename1 = folder + "blocktrim/" + fileID;
     try {
       dis = new DataInputStream(
@@ -292,7 +292,7 @@ public class TimeSeriesUtilsTest {
 
       // quickly get the one name in the list
       Set<String> names = TimeSeriesUtils.getMplexNameSet(filename1);
-      List<String> nameList = new ArrayList<String>(names);
+      List<String> nameList = new ArrayList<>(names);
       System.out.println("DATA BLOCK SIZE: " + data.size());
 
       DataBlock testAgainst =
@@ -479,7 +479,7 @@ public class TimeSeriesUtilsTest {
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
 
       Map<Long, double[]> dataMap = db.getDataMap();
-      List<Long> regions = new ArrayList<Long>( dataMap.keySet() );
+      List<Long> regions = new ArrayList<>(dataMap.keySet());
       Collections.sort(regions);
       for (int i = 0; i < regions.size(); ++i) {
         long time = regions.get(i);

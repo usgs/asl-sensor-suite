@@ -371,7 +371,7 @@ public class FFTResultTest {
     int high = 9;
 
     List<Number> numList = Arrays.asList(numbers);
-    List<Number> subseq = new ArrayList<Number>(numList.subList(low, high));
+    List<Number> subseq = new ArrayList<>(numList.subList(low, high));
 
     for (int i = 0; i < subseq.size(); ++i) {
       int fullListIdx = i + low;
@@ -690,7 +690,7 @@ public class FFTResultTest {
   @Test
   public void testMultitaper() {
     int size = 2000;
-    List<Double> timeSeries = new ArrayList<Double>();
+    List<Double> timeSeries = new ArrayList<>();
     for (int i = 0; i < size; ++i) {
       if (i % 2 == 0) {
         timeSeries.add(-500.);

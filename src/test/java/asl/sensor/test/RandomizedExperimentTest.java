@@ -219,7 +219,7 @@ public class RandomizedExperimentTest {
     try {
 
       ir = new InstrumentResponse(fname);
-      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      List<Complex> poles = new ArrayList<>(ir.getPoles());
       // using an unnecessarily high nyquist rate here
       RealVector high = ir.polesToVector(lowFreq, 1E8);
 
@@ -261,7 +261,7 @@ public class RandomizedExperimentTest {
     try {
 
       ir = new InstrumentResponse(fname);
-      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      List<Complex> poles = new ArrayList<>(ir.getPoles());
       // again, use a very high nyquist rate
       RealVector low = ir.polesToVector(lowFreq, 1E8);
 
@@ -287,8 +287,8 @@ public class RandomizedExperimentTest {
       ir = new InstrumentResponse(fname);
       boolean lowFreq = false;
 
-      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
-      List<Complex> replacements = new ArrayList<Complex>();
+      List<Complex> poles = new ArrayList<>(ir.getPoles());
+      List<Complex> replacements = new ArrayList<>();
 
       int start = 2;
       if ( poles.get(0).getImaginary() == 0 ) {
@@ -361,7 +361,7 @@ public class RandomizedExperimentTest {
     try {
       ir = new InstrumentResponse(fname);
       boolean lowFreq = true;
-      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      List<Complex> poles = new ArrayList<>(ir.getPoles());
 
       double[] newPoles = new double[2];
       newPoles[0] = 0.;
@@ -373,7 +373,7 @@ public class RandomizedExperimentTest {
           ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
       List<Complex> poles2 = ir2.getPoles();
 
-      List<Complex> testList = new ArrayList<Complex>(poles);
+      List<Complex> testList = new ArrayList<>(poles);
       testList.set(0, c);
       testList.set( 1, c.conjugate() );
 
@@ -398,7 +398,7 @@ public class RandomizedExperimentTest {
 
   public DataStore setUpTest1() throws IOException {
 
-    List<String> fileList = new ArrayList<String>();
+    List<String> fileList = new ArrayList<>();
     String respName = testRespName;
     String dataFolderName = folder + "random-high-32+70i/";
     String calName =  dataFolderName + "_EC0.512.seed";
