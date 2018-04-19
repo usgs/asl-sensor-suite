@@ -54,8 +54,7 @@ public class NoiseTest {
     NoiseExperiment ne = new NoiseExperiment();
     ne.setFreqSpace(false); // use period units (s)
     ne.runExperimentOnData(ds);
-    XYSeriesCollection xysc = ne.getData().get(0);
-    return xysc;
+    return ne.getData().get(0);
   }
 
   public XYSeriesCollection setUpTest2() throws FileNotFoundException {
@@ -90,8 +89,7 @@ public class NoiseTest {
     NoiseExperiment ne = new NoiseExperiment();
     ne.setFreqSpace(false); // use period units (s)
     ne.runExperimentOnData(ds);
-    XYSeriesCollection xysc = ne.getData().get(0);
-    return xysc;
+    return ne.getData().get(0);
   }
 
   @Test

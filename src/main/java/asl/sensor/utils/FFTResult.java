@@ -503,9 +503,7 @@ public class FFTResult {
     int padding = (freqDomn.length - 1) * 2;
 
     Complex[] padded = new Complex[padding];
-    for (int i = 0; i < freqDomn.length; ++i) {
-      padded[i] = freqDomn[i];
-    }
+    System.arraycopy(freqDomn, 0, padded, 0, freqDomn.length);
     for (int i = 1; i < padding/2; ++i) {
       // System.out.println(freqDomn.length+","+i);
       padded[padded.length - i] = padded[i].conjugate();

@@ -16,14 +16,12 @@ public class TestUtils {
 
   public static OffsetDateTime getEndCalendar(DataStore ds) {
     Instant time = Instant.ofEpochMilli( ds.getBlock(0).getEndTime() );
-    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
-    return dt;
+    return OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
   }
 
   public static OffsetDateTime getStartCalendar(DataStore ds) {
     Instant time = Instant.ofEpochMilli( ds.getBlock(0).getStartTime() );
-    OffsetDateTime dt = OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
-    return dt;
+    return OffsetDateTime.ofInstant(time, ZoneOffset.UTC);
   }
 
   public static long timeStringToEpochMilli(String time) {

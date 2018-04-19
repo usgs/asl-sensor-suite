@@ -427,8 +427,8 @@ public class TimeSeriesUtilsTest {
         7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 
     x = TimeSeriesUtils.detrend(x);
-    for (int i = 0; i < x.length; i++) {
-      assertEquals(new Double(Math.round(x[i])), new Double(0));
+    for (double aX : x) {
+      assertEquals(new Double(Math.round(aX)), new Double(0));
     }
   }
 
