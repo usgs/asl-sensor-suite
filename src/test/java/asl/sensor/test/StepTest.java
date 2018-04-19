@@ -44,6 +44,32 @@ public class StepTest {
   }
 
   @Test
+  public void testKonoGoodCorner() {
+    DataStore ds = new DataStore();
+    String testFolder = folder + "kono-step/";
+    String fname1 = "_BC1.512.seed";
+    String fname2 = "10_BHZ.512.seed";
+    try {
+      ds.setBlock(0, testFolder + fname1);
+      ds.setBlock(1, testFolder + fname2);
+      ds.setEmbedResponse(1, "STS25_Q330HR");
+      String startString = "2018-037T20:02:00.0";
+      String endString = "2018-037T20:17:00.0";
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = TestUtils.timeStringToEpochMilli(endString);
+      ds.trim(st, ed);
+      StepExperiment se = new StepExperiment();
+      se.runExperimentOnData(ds);
+      double[] fitParams = se.getFitParams();
+      assertEquals(120.00, 1./fitParams[0], 0.5);
+      assertEquals(0.7035, fitParams[1], 0.0005);
+    } catch (IOException | SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+  @Test
   public void testMDJGoodCorner() {
     DataStore ds = new DataStore();
     String testFolder = folder + "mdj-step/";
