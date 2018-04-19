@@ -3,7 +3,6 @@ package asl.sensor.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import java.io.IOException;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
@@ -13,26 +12,12 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class DataPanelTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
   public String fileID = station+"_"+location+"_"+channel+".512.seed";
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
-    try {
-      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-  }
 
   @Test
   public void getsCorrectTrimming() {

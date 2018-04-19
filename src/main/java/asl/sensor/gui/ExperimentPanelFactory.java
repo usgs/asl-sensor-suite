@@ -39,6 +39,8 @@ public class ExperimentPanelFactory {
       return new ResponsePanel(exp);
     // case RNDBG:
     //   return new RandDebugPanel(exp);
+    case SINCL:
+      return new SinePanel(exp);
     case SPECT:
       return new SpectrumPanel(exp);
     default:

@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
@@ -14,52 +13,12 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class DataBlockTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
   public String fileID = station+"_"+location+"_"+channel+".512.seed";
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-
-    String refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
-    String filename = "C100823215422_COWI.LHx";
-    String filename2 = "DT000110.LH1";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
-    try {
-      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "test-appending/";
-    String[] appends = {"", "044.", "045."};
-    String suffix = "_BC0.512.seed";
-    for (String append : appends) {
-      try {
-        String fullname = append + suffix;
-        TestUtils.downloadTestData(refSubfolder, fullname, refSubfolder, fullname);
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-    }
-
-
-  }
 
   @Test
   public void trimsCorrectly() {

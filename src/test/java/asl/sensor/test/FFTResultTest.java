@@ -25,7 +25,6 @@ import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.InstrumentResponse;
@@ -37,7 +36,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class FFTResultTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void calcPSDTest() {
@@ -193,44 +192,6 @@ public class FFTResultTest {
     Complex[] values = fftr.getFFT();
     for (Complex c : values) {
       assertTrue(c.equals(Complex.ZERO));
-    }
-  }
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-
-    String refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
-    String filename = "C100823215422_COWI.LHx";
-    String filename2 = "DT000110.LH1";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "bandfilter-test/";
-    filename = "00_LHZ.512.seed";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "psd-check/";
-    String[] fnames = { "00_LHZ.512.seed", "00_BHZ.512.seed", "RESP.IU.ANMO.00.LHZ",
-        "RESP.IU.ANMO.00.BHZ", "ALLzero.mseed", "ALLButOnezero.mseed" };
-    for (String fname : fnames) {
-      try {
-        TestUtils.downloadTestData(refSubfolder, fname, refSubfolder, fname);
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
     }
   }
 

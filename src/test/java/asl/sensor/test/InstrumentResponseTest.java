@@ -15,7 +15,6 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.input.TransferFunction;
@@ -24,27 +23,8 @@ import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
   public static final DateTimeFormatter DATE_TIME_FORMAT = InstrumentResponse.RESP_DT_FORMAT;
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "resp-parse/";
-    String[] filenames = new String[]{
-        "RESP.XX.NS087..BHZ.STS1.20.2400",
-        "multiepoch.txt"
-    };
-    for (String fileID : filenames) {
-      try {
-        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-    }
-  }
 
   @Test
   public void testFileParse() {

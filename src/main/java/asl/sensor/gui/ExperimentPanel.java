@@ -2,6 +2,7 @@ package asl.sensor.gui;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -211,9 +212,10 @@ implements ActionListener, ChangeListener {
     // basic layout for components (recommended to override in concrete class)
     // if specific formatting or additional components are unnecessary, the
     // implementing class can simply call super(expType) to make a panel
-    this.setLayout( new BoxLayout(this, BoxLayout.Y_AXIS) );
+    this.setLayout( new BoxLayout(this, BoxLayout.PAGE_AXIS) );
     this.add(chartPanel);
     this.add(save);
+    save.setAlignmentX(Component.CENTER_ALIGNMENT);
   }
 
   /**

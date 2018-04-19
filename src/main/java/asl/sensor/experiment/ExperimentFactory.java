@@ -28,6 +28,8 @@ public class ExperimentFactory {
       return new GainSixExperiment();
     case STCAL:
       return new StepExperiment();
+    case SINCL:
+      return new SineExperiment();
     case AZMTH:
       return new AzimuthExperiment();
     case RANDM:

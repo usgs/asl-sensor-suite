@@ -1,67 +1,18 @@
 package asl.sensor.test;
 
-import static org.junit.Assert.fail;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.URL;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import org.apache.commons.io.FileUtils;
-import org.junit.Test;
 import asl.sensor.input.DataStore;
 
 public class TestUtils {
 
   // may need to change this to deal with eventual migration to main usgs github
-  private static String URL_HEADER =
-      "https://github.com/amkearns-usgs/sprockets/raw/master/";
-  private static int LOGIN_PAGE_BYTE_SIZE = 7875;
-  static String SUBPAGE = "from_sensor_test/";
-  private static String TEST_DATA_LOCATION = "src/test/resources/";
-  static String DL_DEST_LOCATION = TEST_DATA_LOCATION + "sprockets/";
+  static String SUBPAGE = "tests/";
+  static String TEST_DATA_LOCATION = "src/test/resources/seismic-test-data/";
   static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
-
-  // inName and fName are separated to make it possible to rename output file
-  // to prevent collisions between data with the same filename from different inputs
-  public static void
-  downloadTestData(String urlLoc, String inName, String localLoc, String fName)
-  throws IOException {
-    // System.out.println("Acquiring data from " + urlLoc);
-    String fullPath = URL_HEADER + urlLoc + inName;
-    String localPath = DL_DEST_LOCATION + localLoc + fName;
-
-    File target = new File(localPath);
-    File fullDir = new File( target.getParent() );
-    if ( !fullDir.exists() ) {
-      fullDir.mkdirs();
-    }
-    if ( !target.exists() ) {
-      URL website = new URL(fullPath);
-      FileUtils.copyURLToFile(website, target);
-      if (target.length() == LOGIN_PAGE_BYTE_SIZE) {
-        // did we just download a login page?
-        BufferedReader br = new BufferedReader( new FileReader(target) );
-        String line = br.readLine();
-        while ( line != null ) {
-          line = line.toLowerCase();
-          if (line.contains("sign in")) {
-            br.close();
-            target.delete();
-            throw new IOException("Could not access file (repo not public?)");
-          }
-          line = br.readLine();
-        }
-        br.close();
-      }
-    }
-
-
-  }
 
   public static OffsetDateTime getEndCalendar(DataStore ds) {
     Instant time = Instant.ofEpochMilli( ds.getBlock(0).getEndTime() );
@@ -79,24 +30,4 @@ public class TestUtils {
     return LocalDateTime.parse(time, DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
   }
 
-  public static void makeTestDataDirectory() {
-    File file = new File(TEST_DATA_LOCATION);
-    if ( !file.exists() ) {
-      file.mkdir();
-    }
-  }
-
-  @Test
-  public void canGetTestData() {
-
-    String loc = "PSD_calculation/SyntheticData/";
-    String file = "XX_KAS.00_BHZ.seed";
-    try {
-      downloadTestData(loc, file, "PSD/", file);
-    } catch (IOException e1) {
-      e1.printStackTrace();
-      fail();
-    }
-
-  }
 }

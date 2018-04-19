@@ -8,7 +8,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.gui.InputPanel;
@@ -19,7 +18,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class AzimuthTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void findsAntipolarCorrectly() {
@@ -78,68 +77,6 @@ public class AzimuthTest {
 
   public String getNoisyData() {
     return "FUNA.00";
-  }
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "azi-ANMO-test/";
-    String[] prefixes = new String[3];
-    prefixes[0] = "ANMO.00_LH1";
-    prefixes[1] = "ANMO.00_LH2";
-    prefixes[2] = "TST.00_LH1";
-    String extension = ".512.seed";
-    for (String prefix : prefixes) {
-      String data = prefix + extension;
-      try {
-        // get reference data if needed
-        TestUtils.downloadTestData(refSubfolder, data, refSubfolder, data);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "azi-polartest/";
-    // prefixes = new String[3];
-    prefixes[0] = "00_LH1";
-    prefixes[1] = "00_LH2";
-    prefixes[2] = "TST1.00_LH1";
-    for (String prefix : prefixes) {
-      String data = prefix + extension;
-      try {
-        // get reference data if needed
-        TestUtils.downloadTestData(refSubfolder, data, refSubfolder, data);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "azi-at0/";
-    // prefixes = new String[3];
-    // prefixes[0] = "00_LH1";
-    // prefixes[1] = "00_LH2";
-    prefixes[2] = "10_LH1";
-    for (String prefix : prefixes) {
-      String data = prefix + extension;
-      try {
-        // get reference data if needed
-        TestUtils.downloadTestData(refSubfolder, data, refSubfolder, data);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
-    String filename = "C100823215422_COWI.LHx";
-    String filename2 = "DT000110.LH1";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
   }
 
   @Test
@@ -398,28 +335,12 @@ public class AzimuthTest {
     }
     String data1 = "IU." + staCha + ".BH1";
     String data2 = "IU." + staCha + ".BH2";
-    String refURL = "orientation/";
-    // orientation/rotation/[002, etc.]/
-    String testURL = refURL + "rotation/" + sb.toString() + "/";
 
-    String refSubfolder = "orientation-reference/";
-    String testSubfolder = "azimuth-" + sb.toString() + "/";
-
-    try {
-      // get reference data if needed
-      TestUtils.downloadTestData(refURL, data1, refSubfolder, data1);
-      // only need one reference point to get the data
-      //TestUtils.downloadTestData(refURL, data2, refSubfolder, data2);
-      // get test data if needed
-      TestUtils.downloadTestData(testURL, data1, testSubfolder, data1);
-      TestUtils.downloadTestData(testURL, data2, testSubfolder, data2);
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
+    String refSubfolder = "mock_data/orientation/";
+    String testSubfolder = refSubfolder + "rotation/" + sb.toString() + "/";
 
     DataStore ds = new DataStore();
-    String root = TestUtils.DL_DEST_LOCATION;
+    String root = TestUtils.TEST_DATA_LOCATION;
     testSubfolder = root + testSubfolder;
     refSubfolder = root + refSubfolder;
     try {

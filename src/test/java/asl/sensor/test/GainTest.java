@@ -5,7 +5,6 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
@@ -14,32 +13,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class GainTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "relative-gain-100/";
-    String[] prefixes = new String[]{"00_BHZ", "10_BHZ"};
-    String extension = ".512.seed";
-    String[] filenames = new String[]{
-      prefixes[0] + extension,
-      prefixes[1] + extension,
-      "RESP.IU.ANMO.00.BHZ_gainx100",
-      "RESP.IU.ANMO.10.BHZ"
-    };
-    for (String fileID : filenames) {
-      try {
-        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-    }
-
-
-  }
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void testGainCalculation() {

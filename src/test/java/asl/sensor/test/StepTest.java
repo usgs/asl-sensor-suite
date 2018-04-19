@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.input.DataStore;
@@ -16,26 +15,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class StepTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
-
-  @Before
-  public void getReferencedData() {
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String[] testNames = new String[]{"kiev-step/", "mdj-step/"};
-
-    for (String test : testNames) {
-      String refSubfolder = TestUtils.SUBPAGE + test;
-      String filename = "_BC0.512.seed";
-      String filename2 = "00_BHZ.512.seed";
-      try {
-        TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-        TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-    }
-  }
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void testKievGoodCorner() {

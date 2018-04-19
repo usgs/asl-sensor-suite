@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.input.DataBlock;
 import asl.sensor.utils.FFTResult;
@@ -36,7 +35,7 @@ import edu.sc.seis.seisFile.mseed.SeedRecord;
 
 public class TimeSeriesUtilsTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   public String station = "TST5";
   public String location = "00";
@@ -228,56 +227,6 @@ public class TimeSeriesUtilsTest {
       fail();
       e.printStackTrace();
     }
-  }
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-
-    String refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
-    String filename = "C100823215422_COWI.LHx";
-    String filename2 = "DT000110.LH1";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
-    try {
-      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "kiev-step/";
-    filename = "_BC0.512.seed";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "multiplex/";
-    filename = "cat.seed";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "random_cal_lowfrq/";
-    filename = "BHZ.512.seed";
-    filename2 = "BC0.512.seed";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
   }
 
   @Test

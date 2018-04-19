@@ -25,7 +25,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.CalProcessingServer;
 import asl.sensor.CalProcessingServer.RandData;
@@ -43,7 +42,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class RandomizedExperimentTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
   String testRespName = folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
 
   public DataStore getFromList(List<String> setUpFilenames) throws IOException {
@@ -70,61 +69,6 @@ public class RandomizedExperimentTest {
     ds.setResponse(1, ir);
 
     return ds;
-
-  }
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "resp-parse/";
-    String filename = "TST5_response.txt";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "test-crashed-on-cal/";
-    String[] fileIDs = new String[] {
-        "_BC0.512.seed",
-        "00_BHZ.512.seed",
-        "RESP.US.MVCO.00.BHZ"
-    };
-    for (String fileID : fileIDs) {
-      try {
-        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "random-high-32+70i/";
-    fileIDs = new String[] {
-        "_EC0.512.seed",
-        "00_EHZ.512.seed",
-        "RESP.XX.NS088..BHZ.STS1.360.2400"
-    };
-    for (String fileID : fileIDs) {
-      try {
-        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "kiev-random-lowfrq/";
-    fileIDs = new String[] {
-        "_BC0.512.seed",
-        "00_BH1.512.seed"
-    };
-    for (String fileID : fileIDs) {
-      try {
-        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
 
   }
 
