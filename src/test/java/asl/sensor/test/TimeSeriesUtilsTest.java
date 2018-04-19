@@ -5,6 +5,16 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.input.DataBlock;
+import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.B1000Types;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.DecompressedData;
+import edu.sc.seis.seisFile.mseed.DataRecord;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
+import edu.sc.seis.seisFile.mseed.SeedRecord;
 import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -22,16 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
-import asl.sensor.input.DataBlock;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.B1000Types;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.DecompressedData;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
-import edu.sc.seis.seisFile.mseed.DataRecord;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import edu.sc.seis.seisFile.mseed.SeedRecord;
 
 public class TimeSeriesUtilsTest {
 
@@ -404,7 +404,7 @@ public class TimeSeriesUtilsTest {
   }
 
   @Test
-  public final void testDemean1to9() throws Exception {
+  public final void testDemean1to9() {
     double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     double[] expected = { -4d, -3d, -2d, -1d, 0d, 1d, 2d, 3d, 4d };
     TimeSeriesUtils.demeanInPlace(x);
@@ -414,7 +414,7 @@ public class TimeSeriesUtilsTest {
   }
 
   @Test
-  public final void testDetrendLinear2() throws Exception {
+  public final void testDetrendLinear2() {
     double[] x = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6,
         7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 

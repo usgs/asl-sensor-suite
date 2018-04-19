@@ -71,7 +71,7 @@ public class AzimuthTest {
 
   }
 
-  public String getCleanData() {
+  private String getCleanData() {
     return "ANMO.10";
   }
 
