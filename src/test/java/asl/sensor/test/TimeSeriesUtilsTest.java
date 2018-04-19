@@ -299,13 +299,7 @@ public class TimeSeriesUtilsTest {
           TimeSeriesUtils.getTimeSeries(filename1, nameList.get(0) );
       assertEquals( data.size(), testAgainst.getData().length );
 
-    } catch (IOException e) {
-      assertNull(e);
-    } catch (SeedFormatException e) {
-      assertNull(e);
-    } catch (UnsupportedCompressionType e) {
-      assertNull(e);
-    } catch (CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       assertNull(e);
     }
   }
@@ -333,9 +327,7 @@ public class TimeSeriesUtilsTest {
         }
       } catch (EOFException e) {
         assertNotNull(e); // I haaates it! I haaaaaaaaaates it!
-      } catch (SeedFormatException e) {
-        assertNull(e);
-      } catch (IOException e) {
+      } catch (SeedFormatException | IOException e) {
         assertNull(e);
       }
 
