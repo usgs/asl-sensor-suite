@@ -4,13 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.input.DataStore;
@@ -19,26 +15,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class StepTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
-
-  @Before
-  public void getReferencedData() {
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String[] testNames = new String[]{"kiev-step/", "mdj-step/"};
-
-    for (String test : testNames) {
-      String refSubfolder = TestUtils.SUBPAGE + test;
-      String filename = "_BC0.512.seed";
-      String filename2 = "00_BHZ.512.seed";
-      try {
-        TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-        TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-    }
-  }
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void testKievGoodCorner() {
@@ -52,16 +29,41 @@ public class StepTest {
       ds.setEmbedResponse(1, "STS1T5_Q330HR");
       String startString = "2018-038T15:25:00.0";
       String endString = "2018-038T16:00:00.0";
-      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
-      long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
-      long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = TestUtils.timeStringToEpochMilli(endString);
       ds.trim(st, ed);
       StepExperiment se = new StepExperiment();
       se.runExperimentOnData(ds);
       double[] fitParams = se.getFitParams();
       assertEquals(366.97, 1./fitParams[0], 0.5);
       assertEquals(0.7196, fitParams[1], 0.0005);
-    } catch (SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+  @Test
+  public void testKonoGoodCorner() {
+    DataStore ds = new DataStore();
+    String testFolder = folder + "kono-step/";
+    String fname1 = "_BC1.512.seed";
+    String fname2 = "10_BHZ.512.seed";
+    try {
+      ds.setBlock(0, testFolder + fname1);
+      ds.setBlock(1, testFolder + fname2);
+      ds.setEmbedResponse(1, "STS25_Q330HR");
+      String startString = "2018-037T20:02:00.0";
+      String endString = "2018-037T20:17:00.0";
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = TestUtils.timeStringToEpochMilli(endString);
+      ds.trim(st, ed);
+      StepExperiment se = new StepExperiment();
+      se.runExperimentOnData(ds);
+      double[] fitParams = se.getFitParams();
+      assertEquals(120.00, 1./fitParams[0], 0.5);
+      assertEquals(0.7035, fitParams[1], 0.0005);
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -79,16 +81,41 @@ public class StepTest {
       ds.setEmbedResponse(1, "STS1T5_Q330HR");
       String startString = "2017-248T05:00:00.0";
       String endString = "2017-248T05:30:00.0";
-      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
-      long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
-      long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = TestUtils.timeStringToEpochMilli(endString);
       ds.trim(st, ed);
       StepExperiment se = new StepExperiment();
       se.runExperimentOnData(ds);
       double[] fitParams = se.getFitParams();
       assertEquals(367.5, 1./fitParams[0], 0.5);
       assertEquals(0.715, fitParams[1], 0.005);
-    } catch (SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+  @Test
+  public void testINCNAnomaly() {
+    DataStore ds = new DataStore();
+    String testFolder = folder + "incn-step/";
+    String fname1 = "_BC0.512.seed";
+    String fname2 = "00_BHZ.512.seed";
+    try {
+      ds.setBlock(0, testFolder + fname1);
+      ds.setBlock(1, testFolder + fname2);
+      ds.setEmbedResponse(1, "TR360_Q330HR");
+      String startString = "2018-102T22:22:00.0";
+      String endString = "2018-102T23:00:00.0";
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = TestUtils.timeStringToEpochMilli(endString);
+      ds.trim(st, ed);
+      StepExperiment se = new StepExperiment();
+      se.runExperimentOnData(ds);
+      double[] fitParams = se.getFitParams();
+      assertEquals(371.3, 1./fitParams[0], 0.5);
+      assertEquals(0.719, fitParams[1], 0.005);
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -98,7 +125,7 @@ public class StepTest {
   public void testWaterLevelCalc() {
     // water level calc intended to invert value unless it is 0, then set it to 0 instead
     // note that the values are scaled WRT to the maximum value of the data arrays
-    List<Complex> data = new ArrayList<Complex>();
+    List<Complex> data = new ArrayList<>();
     data.add( new Complex(1, 2) );
     data.add(Complex.ZERO);
     data.add( new Complex(2, 2) );
@@ -108,7 +135,7 @@ public class StepTest {
     data.add( new Complex(5, -10) );
     data.add( new Complex(20) );
     Complex[] arr = data.toArray(new Complex[]{});
-    data = new ArrayList<Complex>();
+    data = new ArrayList<>();
     data.add( new Complex(.2, -.4) );
     data.add(Complex.ZERO);
     data.add( new Complex(.25, -.25) );

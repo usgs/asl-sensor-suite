@@ -2,6 +2,7 @@ package asl.sensor.gui;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -170,6 +171,10 @@ implements ActionListener, ChangeListener {
   protected Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
 
+  // three PSDs, three self-noise calcs
+
+  protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
+
   /**
    * Construct a new panel, using a backend defined by the passed-in enum
    * @param exp Experiment enum with corresponding backend for factory
@@ -207,9 +212,10 @@ implements ActionListener, ChangeListener {
     // basic layout for components (recommended to override in concrete class)
     // if specific formatting or additional components are unnecessary, the
     // implementing class can simply call super(expType) to make a panel
-    this.setLayout( new BoxLayout(this, BoxLayout.Y_AXIS) );
+    this.setLayout( new BoxLayout(this, BoxLayout.PAGE_AXIS) );
     this.add(chartPanel);
     this.add(save);
+    save.setAlignmentX(Component.CENTER_ALIGNMENT);
   }
 
   /**
@@ -292,6 +298,12 @@ implements ActionListener, ChangeListener {
     XYPlot xyPlot = chart.getXYPlot();
     XYItemRenderer xyir = xyPlot.getRenderer();
 
+    if (xyDataset != null && seriesColorMap.size() == 0) {
+      int modulus = COLORS.length;
+      for (int seriesIdx = 0; seriesIdx < xyDataset.getSeriesCount(); ++seriesIdx) {
+        xyir.setSeriesPaint( seriesIdx, COLORS[seriesIdx % modulus] );
+      }
+    }
 
     // force certain colors and whether or not a line should be dashed
 

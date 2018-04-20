@@ -5,12 +5,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.awt.Font;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -22,7 +25,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.CalProcessingServer;
 import asl.sensor.CalProcessingServer.RandData;
@@ -30,15 +32,17 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.gui.RandomizedPanel;
+import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class RandomizedExperimentTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
   String testRespName = folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
 
   public DataStore getFromList(List<String> setUpFilenames) throws IOException {
@@ -68,44 +72,141 @@ public class RandomizedExperimentTest {
 
   }
 
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "resp-parse/";
-    String filename = "TST5_response.txt";
+  @Test
+  public void TestRandomCalCurves() {
+    String fname = folder + "kiev-random-lowfrq/";
+    String cal = "_BC0.512.seed";
+    String out = "00_BH1.512.seed";
     try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-    } catch (IOException e) {
+      InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS25_Q330HR");
+      DataBlock calB = TimeSeriesUtils.getFirstTimeSeries(fname + cal);
+      DataBlock outB = TimeSeriesUtils.getFirstTimeSeries(fname + out);
+      DataStore ds = new DataStore();
+      ds.setBlock(0, calB);
+      ds.setBlock(1, outB);
+      ds.setResponse(1, ir);
+
+      String startString = "2018-044T23:37:00.0";
+      // String endString = "2018-045T07:37:00.0";
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = st + (8 * 60 * 60 * 1000);
+      ds.trim(st, ed);
+      System.out.println("DATA LENGTH: " + ds.getBlock(0).getData().length);
+
+      RandomizedExperiment re = new RandomizedExperiment();
+      re.setLowFreq(true);
+      re.runExperimentOnData(ds);
+
+      Complex[] smooth = re.getSmoothedCalcResp();
+      Complex[] unsmooth = re.getUnsmoothedCalcResp();
+      double[] freqs = re.getFreqList();
+
+      XYSeries smoothPlotA = new XYSeries("Smoothed response curve (amp)");
+      XYSeries unsmoothPlotA = new XYSeries("Unsmoothed response curve (amp)");
+      for (int i = 0; i < smooth.length; ++i) {
+        double point = 20 * Math.log10(smooth[i].abs());
+        smoothPlotA.add(freqs[i], point);
+        unsmoothPlotA.add(freqs[i], 20 * Math.log10(unsmooth[i].abs()));
+      }
+
+      System.out.println("PSD data length? " + unsmooth.length);
+      assertEquals(262144/2 + 1, re.getUntrimmedPSDLength());
+      XYSeriesCollection xysc = new XYSeriesCollection();
+      xysc.addSeries(unsmoothPlotA);
+      xysc.addSeries(smoothPlotA);
+      JFreeChart chart = ChartFactory.createXYLineChart(
+          ExperimentEnum.RANDM.getName(),
+          "Frequency (Hz)",
+          "Power Amplitude (20 * log10)",
+          xysc,
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+      chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Frequency (Hz) [log]") );
+
+      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
+      ImageIO.write(bi, "png", new File("testResultImages/smoothing-comparison.png") );
+
+      StringBuilder smt = new StringBuilder("AMPLITUDE (smoothed):\t");
+      StringBuilder unsmt = new StringBuilder("AMPLITUDE (unsmoothed):\t");
+      DecimalFormat df = new DecimalFormat("#.########");
+      for (int i = 0; i < 10; ++i) {
+        double s = 20 * Math.log10(smooth[i].abs());
+        double u = 20 * Math.log10(unsmooth[i].abs());
+        unsmt.append(df.format(u));
+        unsmt.append("\t");
+        smt.append(df.format(s));
+        smt.append("\t");
+      }
+
+      System.out.println(unsmt);
+
+      Complex ref = new Complex(-0.01243, -0.01176);
+      Complex got = re.getFitPoles().get(0);
+
+      String msg = "Expected " + ref + " and got " + got;
+      assertTrue(msg, Complex.equals(ref, got, 5E-4));
+
+    } catch (IOException | SeedFormatException | CodecException e) {
+      // TODO Auto-generated catch block
       e.printStackTrace();
+      fail();
     }
 
-    refSubfolder = TestUtils.SUBPAGE + "test-crashed-on-cal/";
-    String[] fileIDs = new String[] {
-        "_BC0.512.seed",
-        "00_BHZ.512.seed",
-        "RESP.US.MVCO.00.BHZ"
-    };
-    for (String fileID : fileIDs) {
-      try {
-        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
+  }
 
-    refSubfolder = TestUtils.SUBPAGE + "random-high-32+70i/";
-    fileIDs = new String[] {
-        "_EC0.512.seed",
-        "00_EHZ.512.seed",
-        "RESP.XX.NS088..BHZ.STS1.360.2400"
-    };
-    for (String fileID : fileIDs) {
-      try {
-        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-      } catch (IOException e) {
-        e.printStackTrace();
+  // @Test
+  public void TestRandomCal30s() {
+    String fname = folder + "kiev-random-lowfrq/";
+    String cal = "_BC0.512.seed";
+    String out = "00_BH1.512.seed";
+    try {
+      InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS25_Q330HR");
+      DataBlock calB = TimeSeriesUtils.getFirstTimeSeries(fname + cal);
+      DataBlock outB = TimeSeriesUtils.getFirstTimeSeries(fname + out);
+      DataStore ds = new DataStore();
+      ds.setBlock(0, calB);
+      ds.setBlock(1, outB);
+      ds.setResponse(1, ir);
+
+      String startString = "2018-044T23:37:00.0";
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = st + (8 * 60 * 60 * 1000);
+      ds.trim(st, ed);
+      System.out.println("DATA LENGTH: " + ds.getBlock(0).getData().length);
+
+      RandomizedExperiment re = new RandomizedExperiment();
+      re.setLowFreq(true);
+      re.runExperimentOnData(ds);
+
+      Complex[] smooth = re.getSmoothedCalcResp();
+      Complex[] unsmooth = re.getUnsmoothedCalcResp();
+      double[] freqs = re.getFreqList();
+
+      assertEquals(freqs.length, unsmooth.length);
+
+      double deltaFreq = freqs[1] - freqs[0];
+      int indexOfInterest = (int) ( (.02 - freqs[0])/deltaFreq);
+
+      for (int i = 0; i < freqs.length; ++i) {
+
+        if (i == indexOfInterest) {
+          assertEquals(0.02, freqs[i], 1E-3);
+          assertEquals(0., 20 * Math.log10(unsmooth[i].abs()), 1E-4);
+        }
+
+        if (i == 423) {
+          assertEquals(1./30., freqs[i], deltaFreq);
+          assertEquals(0.159, 20 * Math.log10(unsmooth[i].abs()), 1E-4);
+        }
       }
+
+
+    } catch (IOException | SeedFormatException | CodecException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      fail();
     }
 
   }
@@ -118,7 +219,7 @@ public class RandomizedExperimentTest {
     try {
 
       ir = new InstrumentResponse(fname);
-      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      List<Complex> poles = new ArrayList<>(ir.getPoles());
       // using an unnecessarily high nyquist rate here
       RealVector high = ir.polesToVector(lowFreq, 1E8);
 
@@ -160,7 +261,7 @@ public class RandomizedExperimentTest {
     try {
 
       ir = new InstrumentResponse(fname);
-      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      List<Complex> poles = new ArrayList<>(ir.getPoles());
       // again, use a very high nyquist rate
       RealVector low = ir.polesToVector(lowFreq, 1E8);
 
@@ -186,8 +287,8 @@ public class RandomizedExperimentTest {
       ir = new InstrumentResponse(fname);
       boolean lowFreq = false;
 
-      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
-      List<Complex> replacements = new ArrayList<Complex>();
+      List<Complex> poles = new ArrayList<>(ir.getPoles());
+      List<Complex> replacements = new ArrayList<>();
 
       int start = 2;
       if ( poles.get(0).getImaginary() == 0 ) {
@@ -260,7 +361,7 @@ public class RandomizedExperimentTest {
     try {
       ir = new InstrumentResponse(fname);
       boolean lowFreq = true;
-      List<Complex> poles = new ArrayList<Complex>( ir.getPoles() );
+      List<Complex> poles = new ArrayList<>(ir.getPoles());
 
       double[] newPoles = new double[2];
       newPoles[0] = 0.;
@@ -272,7 +373,7 @@ public class RandomizedExperimentTest {
           ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
       List<Complex> poles2 = ir2.getPoles();
 
-      List<Complex> testList = new ArrayList<Complex>(poles);
+      List<Complex> testList = new ArrayList<>(poles);
       testList.set(0, c);
       testList.set( 1, c.conjugate() );
 
@@ -297,7 +398,7 @@ public class RandomizedExperimentTest {
 
   public DataStore setUpTest1() throws IOException {
 
-    List<String> fileList = new ArrayList<String>();
+    List<String> fileList = new ArrayList<>();
     String respName = testRespName;
     String dataFolderName = folder + "random-high-32+70i/";
     String calName =  dataFolderName + "_EC0.512.seed";

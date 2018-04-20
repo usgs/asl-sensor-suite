@@ -17,7 +17,6 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.NoiseNineExperiment;
@@ -30,7 +29,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class NoiseNineTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   String currentDir = System.getProperty("user.dir");
 
@@ -38,7 +37,7 @@ public class NoiseNineTest {
   public void canRunAndPlotTest1() {
 
     String testFolder = folder + "noisenine/";
-    String[] types = new String[]{"00","10","60"};;
+    String[] types = new String[]{"00","10","60"};
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};
     String ending = ".512.seed";
@@ -57,7 +56,7 @@ public class NoiseNineTest {
     System.out.println( "start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 8);
-    cCal.set(Calendar.MINUTE, 00);
+    cCal.set(Calendar.MINUTE, 0);
     System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
 
@@ -162,7 +161,7 @@ public class NoiseNineTest {
     System.out.println( "start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR_OF_DAY, 13);
-    cCal.set(Calendar.MINUTE, 00);
+    cCal.set(Calendar.MINUTE, 0);
     cCal.set(Calendar.SECOND, 0);
     System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
@@ -256,52 +255,6 @@ public class NoiseNineTest {
 
   }
 
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "noisenine/";
-    String[] types = new String[]{"00","10","60"};
-    String freqName = "_BH";
-    String[] components = new String[]{"1","2","Z"};
-    String ending = ".512.seed";
-    for (String type : types) {
-      for (String component : components) {
-        try {
-          String fileID = type + freqName + component + ending;
-          TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-        } catch (IOException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-      }
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "noisenine2/";
-    types = new String[]{"00","10","30"};
-    for (String type : types) {
-      for (String component : components) {
-        try {
-          String fileID = type + freqName + component + ending;
-          TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-        } catch (IOException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-      }
-    }
-
-    try {
-      String fileID = "RESP.XX.MOFO.00.BHZ";
-      // this resp is part of the noisenine2 subdirectory
-      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-  }
-
   public DataStore setUpTest(String folder, String[] types, String freqName,
       String[] components, String ending, String respName, boolean isEmbed) {
 
@@ -317,14 +270,20 @@ public class NoiseNineTest {
 
         try {
           ds.setBlock(indexInStore, fName);
-        } catch (SeedFormatException | CodecException e) {
+        } catch (IOException | SeedFormatException | CodecException e) {
           e.printStackTrace();
           fail();
         }
         if (isEmbed) {
           ds.setEmbedResponse(indexInStore, respName);
         } else {
-          ds.setResponse(indexInStore, respName);
+          try {
+            ds.setResponse(indexInStore, respName);
+          } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+          }
         }
       }
     }

@@ -37,8 +37,10 @@ public class ExperimentPanelFactory {
       return new RandomizedPanel(exp);
     case RESPN:
       return new ResponsePanel(exp);
-    case RNDBG:
-      return new RandDebugPanel(exp);
+    // case RNDBG:
+    //   return new RandDebugPanel(exp);
+    case SINCL:
+      return new SinePanel(exp);
     case SPECT:
       return new SpectrumPanel(exp);
     default:
@@ -47,5 +49,5 @@ public class ExperimentPanelFactory {
       throw new IllegalArgumentException("Invalid enum type specified");
     }
   }
-  
+
 }

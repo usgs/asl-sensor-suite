@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 /**
  * Class containing methods to serve as math functions, mainly for angle calcs
@@ -271,44 +272,62 @@ public class NumericUtils {
    * each point in the input
    * @param nums Complex data to be smoothed by use of moving average
    * @param points Number of points to include in moving average
+   * @param forwardScan true if average should start from first point, false if starting from last
+   * (this affects the shape of the curve slightly as the first few points are averaged with 0)
    * @return Smoothed data resulting from performing the moving average on input data.
    */
-  public static Complex[] multipointMovingAverage(Complex[] nums, int points) {
-    Complex[] out = new Complex[nums.length];
-    Complex[] cached = new Complex[points];
-    for (int i = 0; i < cached.length; ++i) {
-     cached[i] = Complex.ZERO;
+  public static Complex[] multipointMovingAverage(Complex[] nums, int points, boolean forwardScan) {
+    if (points == 0) {
+      return nums.clone();
     }
-    Complex windowedAverage = Complex.ZERO;
+    DescriptiveStatistics realSide = new DescriptiveStatistics(points);
+    DescriptiveStatistics imagSide = new DescriptiveStatistics(points);
+    Complex[] out = new Complex[nums.length];
     for (int i = 0; i < nums.length; ++i) {
-      int cacheIdx = i % points;
-      Complex temp = cached[cacheIdx];
-      windowedAverage = windowedAverage.subtract(temp);
-      cached[cacheIdx] = nums[i].divide(points);
-      windowedAverage = windowedAverage.add(cached[cacheIdx]);
-      out[i] = windowedAverage;
+      int idx = i;
+      if (!forwardScan) {
+        idx = nums.length - (i + 1);
+      }
+      realSide.addValue(nums[idx].getReal());
+      imagSide.addValue(nums[idx].getImaginary());
+      Complex temp = new Complex(realSide.getMean(), imagSide.getMean());
+      out[idx] = temp;
     }
     return out;
   }
+
+  /**
+   * Perform a moving average on complex data, using the specified number of points to average at
+   * each point in the input
+   * @param nums Complex data to be smoothed by use of moving average
+   * @param points Number of points to include in moving average
+   * @return Smoothed data resulting from performing the moving average on input data.
+   */
+  public static Complex[] multipointMovingAverage(Complex[] nums, int points) {
+    return multipointMovingAverage(nums, points, true);
+  }
+
 
   /**
    * Perform a moving average on real-val. data, using the specified number of points to average at
    * each point in the input
    * @param nums Numeric data to be smoothed by use of moving average
    * @param points Number of points to include in moving average
+   * @param forwardScan true if average should start from first point, false if starting from last
+   * (this affects the shape of the curve slightly as the first few points are averaged with 0)
    * @return Smoothed data resulting from performing the moving average on input data.
    */
-  public static double[] multipointMovingAverage(double[] nums, int points) {
+  public static double[] multipointMovingAverage(double[] nums, int points, boolean forwardScan) {
+    DescriptiveStatistics windowStats = new DescriptiveStatistics(points);
     double[] out = new double[nums.length];
-    double[] cached = new double[points];
-    double windowedAverage = 0.;
+
     for (int i = 0; i < nums.length; ++i) {
-      int cacheIdx = i % points;
-      double temp = cached[cacheIdx];
-      windowedAverage = windowedAverage - temp;
-      cached[cacheIdx] = nums[i] / points;
-      windowedAverage = windowedAverage + cached[cacheIdx];
-      out[i] = windowedAverage;
+      int idx = i;
+      if (!forwardScan) {
+        idx = nums.length - (i + 1);
+      }
+      windowStats.addValue(nums[idx]);
+      out[idx] = windowStats.getMean();
     }
     return out;
   }

@@ -6,7 +6,7 @@ package asl.sensor.experiment;
  *
  */
 public class ExperimentFactory {
-  
+
   /**
    * Instantiates an Experiment from which the ExperimentPanel generates data
    * based on the type of Experiment given by the enum
@@ -28,14 +28,16 @@ public class ExperimentFactory {
       return new GainSixExperiment();
     case STCAL:
       return new StepExperiment();
+    case SINCL:
+      return new SineExperiment();
     case AZMTH:
       return new AzimuthExperiment();
     case RANDM:
       return new RandomizedExperiment();
     case RESPN:
       return new ResponseExperiment();
-    case RNDBG:
-      return new RandDebugExperiment();
+    // case RNDBG:
+    //   return new RandDebugExperiment();
     case SPECT:
       return new SpectrumExperiment();
     default:
@@ -44,5 +46,5 @@ public class ExperimentFactory {
       throw new IllegalArgumentException("Invalid enum type specified");
     }
   }
-  
+
 }

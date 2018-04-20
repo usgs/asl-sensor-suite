@@ -129,7 +129,7 @@ public class StepExperiment extends Experiment{
     stepCalData = FFTResult.lowPassFilter(stepCalData, sps, 0.1);
     // demean and normalize before trimming
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.normalizeByMax(stepCalSeries);
+    stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
 
     // trim 10s from each side of the input data
     cutAmount = (int) sps * 10;
@@ -140,7 +140,7 @@ public class StepExperiment extends Experiment{
     stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.detrendEnds(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.normalizeByMax(stepCalSeries);
+    stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
 
     // FFTResult.detrend(toDetrend);
     // stepCalSeries = TimeSeriesUtils.normalize(filteredStepCal);
@@ -206,8 +206,8 @@ public class StepExperiment extends Experiment{
     // next we'll want to find the parameters to fit the plots
     // to the inputted data
     XYSeriesCollection xysc = new XYSeriesCollection();
-    xysc.addSeries(scs);
     xysc.addSeries(xys);
+    xysc.addSeries(scs);
 
     fireStateChange("Solving for best-fit corner and damping...");
     // next step: curve fitting
@@ -277,10 +277,10 @@ public class StepExperiment extends Experiment{
     // now add the plots of response curve and magnitude from init & fit value
 
     // p1 = -(h+i*sqrt(1-h^2))*2*pi*f
-    Complex p1 = new Complex( h, Math.sqrt( 1 - Math.pow(h, 2) ) );
-    p1 = p1.multiply( -1 * NumericUtils.TAU * f );
-    Complex p2 = new Complex( h, -1 * Math.sqrt( 1 - Math.pow(h, 2) ) );
-    p2 = p2.multiply( -1 * NumericUtils.TAU * f);
+    Complex p1 = new Complex( hCorr, Math.sqrt( 1 - Math.pow(hCorr, 2) ) );
+    p1 = p1.multiply( -1 * NumericUtils.TAU * fCorr );
+    Complex p2 = new Complex( hCorr, -1 * Math.sqrt( 1 - Math.pow(hCorr, 2) ) );
+    p2 = p2.multiply( -1 * NumericUtils.TAU * fCorr);
 
     InstrumentResponse fitResp = new InstrumentResponse(ir);
     List<Complex> poles = fitResp.getPoles();
@@ -314,7 +314,7 @@ public class StepExperiment extends Experiment{
       phiPrevIn = phiIn;
       phiIn = Math.toDegrees(phiIn);
 
-      double phiFit = NumericUtils.atanc(tmpIn);
+      double phiFit = NumericUtils.atanc(tmpFit);
       phiFit = NumericUtils.unwrap(phiFit, phiPrevFit);
       phiPrevFit = phiFit;
       phiFit = Math.toDegrees(phiFit);
@@ -415,7 +415,7 @@ public class StepExperiment extends Experiment{
     int trimOffset = 0;
     returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);
     returnValue = TimeSeriesUtils.detrendEnds(returnValue);
-    returnValue = TimeSeriesUtils.normalizeByMax(returnValue);
+    returnValue = TimeSeriesUtils.normalize(returnValue);
 
     return returnValue;
   }

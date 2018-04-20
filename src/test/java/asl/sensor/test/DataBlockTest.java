@@ -4,10 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
@@ -17,38 +13,12 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class DataBlockTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
   public String fileID = station+"_"+location+"_"+channel+".512.seed";
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-
-    String refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
-    String filename = "C100823215422_COWI.LHx";
-    String filename2 = "DT000110.LH1";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
-    try {
-      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-  }
 
   @Test
   public void trimsCorrectly() {
@@ -72,12 +42,9 @@ public class DataBlockTest {
       assertEquals( loc1, db.getStartTime() );
       assertEquals( sizeOld/2, db.size() );
 
-    } catch (FileNotFoundException e) {
+    } catch (SeedFormatException | CodecException | IOException e) {
+      // TODO Auto-generated catch block
       e.printStackTrace();
-      fail();
-    } catch (SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
     }
 
   }
@@ -91,20 +58,36 @@ public class DataBlockTest {
         db = TimeSeriesUtils.getTimeSeries(filename, dataname);
         String startString = "2010-236T02:00:00.0";
         String endString = "2010-236T13:00:00.0";
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
-        long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
-        long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+        long st = TestUtils.timeStringToEpochMilli(startString);
+        long ed = TestUtils.timeStringToEpochMilli(endString);
         db.trim(st, ed);
         double[] data = db.getData();
         assertEquals(39600, data.length);
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
-        fail();
-      } catch (SeedFormatException | CodecException e) {
+      } catch (FileNotFoundException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }
+  }
 
+  @Test
+  public void appendsCorrectly() {
+    String subfolder = folder + "test-appending/";
+    String fullLength = "_BC0.512.seed";
+    String firstPart = "044._BC0.512.seed";
+    String secondPart = "045._BC0.512.seed";
+    DataBlock dbFull, dbAppended;
+    try {
+      dbFull = TimeSeriesUtils.getFirstTimeSeries(subfolder + fullLength);
+      dbAppended = TimeSeriesUtils.getFirstTimeSeries(subfolder + firstPart);
+      dbAppended.appendTimeSeries(subfolder + secondPart);
+      long st = dbFull.getStartTime();
+      long ed = dbFull.getEndTime();
+      assertEquals(st, dbAppended.getStartTime());
+      assertEquals(ed, dbAppended.getEndTime());
+    } catch (SeedFormatException | CodecException | IOException e) {
+      e.printStackTrace();
+      fail();
+    }
   }
 
 }

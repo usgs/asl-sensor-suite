@@ -9,7 +9,6 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.gui.InputPanel;
@@ -19,7 +18,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class OrthogonalityTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   public String getCleanData() {
     return "ANMO.10";
@@ -27,28 +26,6 @@ public class OrthogonalityTest {
 
   public String getNoisyData() {
     return "FUNA.00";
-  }
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "orthog-94/";
-    String[] prefixes = new String[4];
-    prefixes[0] = "00_LH1";
-    prefixes[1] = "00_LH2";
-    prefixes[2] = "10_LH1";
-    prefixes[3] = "10_LH2";
-    String extension = ".512.seed";
-
-    for (String prefix : prefixes) {
-      String fileID = prefix + extension;
-      try {
-        TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
   }
 
   @Test
@@ -67,7 +44,7 @@ public class OrthogonalityTest {
       String fName = testFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (IOException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }
@@ -88,7 +65,7 @@ public class OrthogonalityTest {
     System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 13);
-    cCal.set(Calendar.MINUTE, 00);
+    cCal.set(Calendar.MINUTE, 0);
     System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
 
@@ -231,27 +208,13 @@ public class OrthogonalityTest {
     }
     String data1 = "IU." + staCha + ".BH1";
     String data2 = "IU." + staCha + ".BH2";
-    String refURL = "orientation/";
     // orientation/rotation/[002, etc.]/
-    String testURL = refURL + "orthogonality/" + sb.toString() + "/";
 
-    String refSubfolder = "orientation-reference/";
-    String testSubfolder = "orthogonality-" + sb.toString() + "/";
-    try {
-      // get reference data if needed
-      TestUtils.downloadTestData(refURL, data1, refSubfolder, data1);
-      TestUtils.downloadTestData(refURL, data2, refSubfolder, data2);
-      // get test data if needed
-      TestUtils.downloadTestData(testURL, data1, testSubfolder, data1);
-      TestUtils.downloadTestData(testURL, data2, testSubfolder, data2);
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
-
+    String refSubfolder = "mock_data/orientation/";
+    String testSubfolder = refSubfolder + "orthogonality/" + sb.toString() + "/";
     DataStore ds = new DataStore();
     try {
-      String root = TestUtils.DL_DEST_LOCATION;
+      String root = TestUtils.TEST_DATA_LOCATION;
       testSubfolder = root + testSubfolder;
       refSubfolder = root + refSubfolder;
 
@@ -286,7 +249,7 @@ public class OrthogonalityTest {
 
       assertEquals(expectedAngle, fitAngle, 1.0);
 
-    } catch (SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }

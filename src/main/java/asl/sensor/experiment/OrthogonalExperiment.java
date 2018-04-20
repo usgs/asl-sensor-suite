@@ -79,6 +79,22 @@ public class OrthogonalExperiment extends Experiment {
     double[] testLH1 = testLH1Block.getData();
     double[] testLH2 = testLH2Block.getData();
 
+    refLH1 = TimeSeriesUtils.demean(refLH1);
+    refLH2 = TimeSeriesUtils.demean(refLH2);
+    testLH1 = TimeSeriesUtils.demean(testLH1);
+    testLH2 = TimeSeriesUtils.demean(testLH2);
+
+    System.out.println(refLH1[0] + "," + testLH1[0]);
+
+    refLH1 = TimeSeriesUtils.detrend(refLH1);
+    refLH2 = TimeSeriesUtils.detrend(refLH2);
+    testLH1 = TimeSeriesUtils.detrend(testLH1);
+    testLH2 = TimeSeriesUtils.detrend(testLH2);
+
+
+    // note that parent class preprocessing should have already downsampled all data to same rate
+    // so this just takes it down to 1Hz if it's still above that
+
     refLH1 = TimeSeriesUtils.decimate(refLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
     refLH2 = TimeSeriesUtils.decimate(refLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
     testLH1 = TimeSeriesUtils.decimate(testLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
@@ -86,13 +102,9 @@ public class OrthogonalExperiment extends Experiment {
 
     interval = Math.max(interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
 
-    refLH1 = TimeSeriesUtils.detrend(refLH1);
-    refLH2 = TimeSeriesUtils.detrend(refLH2);
-    testLH1 = TimeSeriesUtils.detrend(testLH1);
-    testLH2 = TimeSeriesUtils.detrend(testLH2);
+    System.out.println(refLH1[0] + "," + testLH1[0]);
 
     int len = refLH1.length;
-
     double[] refYArr = Arrays.copyOfRange(refLH1, 0, len);
     double[] refXArr = Arrays.copyOfRange(refLH2, 0, len);
     double[] testYArr = Arrays.copyOfRange(testLH1, 0, len);
@@ -133,10 +145,12 @@ public class OrthogonalExperiment extends Experiment {
     XYSeries diffRotSrs = new XYSeries("Diff(" + testName + ", Rotated Ref.)");
 
     RealVector diffLH1 = testY.subtract(refY);
-    RealVector diffComponents = value(refX, refY, angleY);
+    RealVector diffComponents = testY.subtract( value(refX, refY, angleY) );
+
+    System.out.println( refY.getEntry(0) + "," + testY.getEntry(0) );
 
     for (int i = 0; i < len; ++i) {
-      diffSrs.add(timeAtPoint, diffLH1.getEntry(i) );
+      diffSrs.add( timeAtPoint, diffLH1.getEntry(i) );
       diffRotSrs.add( timeAtPoint, diffComponents.getEntry(i) );
 
       timeAtPoint += tick;

@@ -136,8 +136,8 @@ public class StepPanel extends ExperimentPanel {
 
     plotSelection = new JComboBox<String>();
     plotSelection.addItem("Step function");
-    plotSelection.addItem("Response magnitude");
-    plotSelection.addItem("Response argument");
+    plotSelection.addItem("Response amplitude");
+    plotSelection.addItem("Response phase");
     plotSelection.addActionListener(this);
 
     applyAxesToChart();

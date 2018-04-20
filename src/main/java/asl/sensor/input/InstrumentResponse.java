@@ -8,6 +8,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.NumberFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,7 +37,10 @@ import asl.sensor.utils.NumericUtils;
  */
 public class InstrumentResponse {
 
+  private static final int MAX_GAIN_STAGES = 10;
   public static final double PEAK_MULTIPLIER = 0.8;
+  public static final DateTimeFormatter RESP_DT_FORMAT =
+      DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss");
 
   /**
    * Get one of the response files embedded in the program
@@ -88,6 +95,87 @@ public class InstrumentResponse {
   }
 
   /**
+   * Take in a string representing the path to a RESP file and outputs the epochs contained in it.
+   * Used to select a specific epoch for a given file via the GUI.
+   * @param filename Location of a given RESP file
+   * @return List of epochs (pair of start and end instances)
+   * @throws IOException If there is a failure to read the resp file
+   * @throws FileNotFoundException If the file does not actually exist
+   */
+  public static List<Pair<Instant, Instant>> getRespFileEpochs(String filename)
+      throws IOException, FileNotFoundException {
+
+    BufferedReader br;
+    List<Pair<Instant, Instant>> epochList = new ArrayList<Pair<Instant, Instant>>();
+    br = new BufferedReader( new FileReader(filename) );
+    epochList = getRespFileEpochs(br);
+    br.close();
+    return epochList;
+  }
+
+  /**
+   * Take in a file object and output the epochs contained in it. Used to select a specific
+   * epoch in a given file from the GUI.
+   * @param br BufferedReader wrapper for a resp file
+   * @return List of epochs (pair of start and end instances)
+   * @throws IOException If there is a failure to read the resp file
+   */
+  public static List<Pair<Instant, Instant>> getRespFileEpochs(BufferedReader br)
+      throws IOException {
+    List<Pair<Instant, Instant>> epochList = new ArrayList<Pair<Instant, Instant>>();
+    String line = br.readLine();
+
+    while (line != null) {
+
+      if( line.length() == 0 ) {
+        // empty line? need to skip it
+        line = br.readLine();
+        continue;
+      }
+
+      if (line.charAt(0) == '#') {
+        // comment -- skip
+        line = br.readLine();
+      } else {
+        // the components of each line, assuming split by 2 or more spaces
+        String[] words = line.split("\\s\\s+");
+        String hexIdentifier = words[0];
+        switch (hexIdentifier) {
+        case "B052F22":
+          Instant start = parseTermAsDate(line);
+          // read line to get end date
+          line = br.readLine();
+          Instant end = parseTermAsDate(line);
+          epochList.add( new Pair<Instant, Instant>(start, end) );
+          break;
+        }
+        line = br.readLine();
+      }
+
+    }
+
+    return epochList;
+  }
+
+  /**
+   * Read the line defining a date (epoch start or end) as an instant
+   * @param line Line of a response file that should define an epoch
+   * @return Instant parsed from the given line
+   */
+  private static Instant parseTermAsDate(String line) {
+    // reparse the line
+    String[] words = line.split("\\s+");
+    // index 0 is the identifier for the field types (used in switch-stmt)
+    // index 1 is the word 'Start'
+    // index 2 is the word 'End'
+    // index 3 is comma-delimited date string (should be last thing in list)
+    String time = words[words.length - 1];
+    DateTimeFormatter respDTFormat = DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss");
+    return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
+
+  }
+
+  /**
    * Extract the real and imaginary terms from a pole or zero in a RESP file
    * @param line the line the zero or pole is found on in the file
    * @param array the array of zeros and poles the term will be added to
@@ -137,7 +225,6 @@ public class InstrumentResponse {
   }
   private TransferFunction transferType;
 
-  private int epochsCounted;
   // gain values, indexed by stage
   private double[] gain;
 
@@ -168,7 +255,7 @@ public class InstrumentResponse {
 
     this.name = name;
 
-    parserDriver(br);
+    parserDriver(br, null);
   }
 
   /**
@@ -176,7 +263,6 @@ public class InstrumentResponse {
    * @param responseIn The response object to be copied
    */
   public InstrumentResponse(InstrumentResponse responseIn) {
-    epochsCounted = 1;
     transferType = responseIn.getTransferFunction();
 
     gain = responseIn.getGain();
@@ -194,14 +280,25 @@ public class InstrumentResponse {
   }
 
   /**
-   * Reads in an instrument response from a RESP file
+   * Reads in an instrument response from a RESP file with the specific epoch
+   * If the RESP file has multiple epochs, only the last one is used.
+   * @param filename full path of the RESP file
+   * @throws IOException
+   */
+  public InstrumentResponse(String filename, Instant epoch) throws IOException {
+    name = new File(filename).getName();
+    parseResponseFile(filename, epoch);
+  }
+
+  /**
+   * Reads in an instrument response from a RESP file and gets the last epoch
    * If the RESP file has multiple epochs, only the last one is used.
    * @param filename full path of the RESP file
    * @throws IOException
    */
   public InstrumentResponse(String filename) throws IOException {
-    name = new File(filename).getName();
-    parseResponseFile(filename);
+    this(filename, null);
+
   }
 
   /**
@@ -416,15 +513,6 @@ public class InstrumentResponse {
   }
 
   /**
-   * Return the number of epochs found in the data, for use in warning
-   * if the user has loaded in a response with multiple epochs
-   * @return number of times 0xb052f22 lines were found in file
-   */
-  public int getEpochsCounted() {
-    return epochsCounted;
-  }
-
-  /**
    * Get the gain stages of the RESP file. Stage x is at index x. That is,
    * the sensitivity is at 0, the sensor gain is at 1, and the digitizer
    * gain is at 2.
@@ -550,12 +638,37 @@ public class InstrumentResponse {
    * @param br reader of a given file to be parse
    * @throws IOException if the reader cannot read the given file
    */
-  private void parserDriver(BufferedReader br) throws IOException {
+  private void parserDriver(BufferedReader br, Instant epoch) throws IOException {
 
-    epochsCounted = 0;
+    String line = br.readLine();
+
+    // read in lines until the epoch is found
+    if (epoch != null) {
+      boolean epochFound = false;
+      while (!epochFound) {
+        if( line.length() == 0 ) {
+          // empty line? need to skip it
+          line = br.readLine();
+          continue;
+        }
+
+        if (line.charAt(0) != '#') {
+          // the components of each line, assuming split by 2 or more spaces
+          String[] words = line.split("\\s\\s+");
+          String hexIdentifier = words[0];
+
+          switch (hexIdentifier) {
+          case "B052F22":
+            epochFound = true;
+            break;
+          }
+        } // end of if statement
+        line = br.readLine();
+      }
+    }
 
     numStages = 0;
-    double[] gains = new double[10];
+    double[] gains = new double[MAX_GAIN_STAGES];
     for (int i = 0; i < gains.length; ++i) {
       gains[i] = 1;
     }
@@ -565,8 +678,6 @@ public class InstrumentResponse {
     Complex[] polesArr = null;
     Complex[] zerosArr = null;
 
-    String line = br.readLine();
-
     while (line != null) {
 
       if( line.length() == 0 ) {
@@ -575,21 +686,20 @@ public class InstrumentResponse {
         continue;
       }
 
-      if (line.charAt(0) == '#') {
-        // comment -- skip
-        line = br.readLine();
-        continue;
-      } else {
+      if (line.charAt(0) != '#') {
         // the components of each line, assuming split by 2 or more spaces
         String[] words = line.split("\\s\\s+");
         String hexIdentifier = words[0];
 
         switch (hexIdentifier) {
         case "B052F22":
-          ++epochsCounted;
-          // NEW EPOCH REACHED. Clear out old data.
+          if (epoch != null) {
+            // we already read to the desired epoch, so we can just return here
+            // otherwise, go for the last epoch and reset out the data from prev. epochs
+            break;
+          }
           numStages = 0;
-          gains = new double[10];
+          gains = new double[MAX_GAIN_STAGES];
           for (int i = 0; i < gains.length; ++i) {
             gains[i] = 1;
           }
@@ -681,8 +791,9 @@ public class InstrumentResponse {
           break;
         }
 
-        line = br.readLine();
-      } // else
+      } // end if line not comment
+
+      line = br.readLine(); // whether or not comment, get the next line
 
     } // end of file-read loop (EOF reached, line is null)
 
@@ -702,7 +813,7 @@ public class InstrumentResponse {
    * only examines fields relevant to self-noise calculations.
    * @param filename Full path to the response file
    */
-  private void parseResponseFile(String filename) throws IOException {
+  private void parseResponseFile(String filename, Instant epoch) throws IOException {
 
     // response files have a very nice format that is not so nice as something
     // like JSON but still quite easy to parse
@@ -720,7 +831,7 @@ public class InstrumentResponse {
     BufferedReader br;
     try {
       br = new BufferedReader( new FileReader(filename) );
-      parserDriver(br);
+      parserDriver(br, epoch);
       br.close();
     } catch (FileNotFoundException e) {
       e.printStackTrace();

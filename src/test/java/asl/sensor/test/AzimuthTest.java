@@ -3,28 +3,22 @@ package asl.sensor.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class AzimuthTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void findsAntipolarCorrectly() {
@@ -41,7 +35,7 @@ public class AzimuthTest {
       String fName = dataFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (SeedFormatException | CodecException | IOException e) {
         e.printStackTrace();
         fail();
       }
@@ -58,7 +52,7 @@ public class AzimuthTest {
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     cCal.set(Calendar.HOUR_OF_DAY, 18);
-    cCal.set(Calendar.MINUTE, 00);
+    cCal.set(Calendar.MINUTE, 0);
     //System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR_OF_DAY, 20);
@@ -77,74 +71,12 @@ public class AzimuthTest {
 
   }
 
-  public String getCleanData() {
+  private String getCleanData() {
     return "ANMO.10";
   }
 
   public String getNoisyData() {
     return "FUNA.00";
-  }
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "azi-ANMO-test/";
-    String[] prefixes = new String[3];
-    prefixes[0] = "ANMO.00_LH1";
-    prefixes[1] = "ANMO.00_LH2";
-    prefixes[2] = "TST.00_LH1";
-    String extension = ".512.seed";
-    for (String prefix : prefixes) {
-      String data = prefix + extension;
-      try {
-        // get reference data if needed
-        TestUtils.downloadTestData(refSubfolder, data, refSubfolder, data);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "azi-polartest/";
-    // prefixes = new String[3];
-    prefixes[0] = "00_LH1";
-    prefixes[1] = "00_LH2";
-    prefixes[2] = "TST1.00_LH1";
-    for (String prefix : prefixes) {
-      String data = prefix + extension;
-      try {
-        // get reference data if needed
-        TestUtils.downloadTestData(refSubfolder, data, refSubfolder, data);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "azi-at0/";
-    // prefixes = new String[3];
-    // prefixes[0] = "00_LH1";
-    // prefixes[1] = "00_LH2";
-    prefixes[2] = "10_LH1";
-    for (String prefix : prefixes) {
-      String data = prefix + extension;
-      try {
-        // get reference data if needed
-        TestUtils.downloadTestData(refSubfolder, data, refSubfolder, data);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    refSubfolder = TestUtils.SUBPAGE + "cowi-multitests/";
-    String filename = "C100823215422_COWI.LHx";
-    String filename2 = "DT000110.LH1";
-    try {
-      TestUtils.downloadTestData(refSubfolder, filename, refSubfolder, filename);
-      TestUtils.downloadTestData(refSubfolder, filename2, refSubfolder, filename2);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
   }
 
   @Test
@@ -163,7 +95,7 @@ public class AzimuthTest {
       String fName = dataFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (SeedFormatException | CodecException | IOException e) {
         e.printStackTrace();
         fail();
       }
@@ -323,7 +255,7 @@ public class AzimuthTest {
       String fName = dataFolder + prefixes[i] + extension;
       try {
         ds.setBlock(i, fName);
-      } catch (SeedFormatException | CodecException e) {
+      } catch (SeedFormatException | CodecException | IOException e) {
         e.printStackTrace();
         fail();
       }
@@ -340,11 +272,11 @@ public class AzimuthTest {
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     cCal.set(Calendar.HOUR_OF_DAY, 12);
-    cCal.set(Calendar.MINUTE, 00);
+    cCal.set(Calendar.MINUTE, 0);
     //System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR_OF_DAY, 14);
-    cCal.set(Calendar.MINUTE, 00);
+    cCal.set(Calendar.MINUTE, 0);
     //System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
 
@@ -375,9 +307,8 @@ public class AzimuthTest {
 
       String startString = "2010-236T02:00:00.0";
       String endString = "2010-236T13:00:00.0";
-      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
-      long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
-      long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = TestUtils.timeStringToEpochMilli(endString);
       ds.trim(st, ed);
 
       AzimuthExperiment az = new AzimuthExperiment();
@@ -389,7 +320,7 @@ public class AzimuthTest {
       assertEquals(3.2, az.getFitAngle(), 0.5);
       assertEquals(0.5, az.getUncertainty(), 0.5);
 
-    } catch (SeedFormatException | CodecException e) {
+    } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
       fail();
     }
@@ -404,58 +335,30 @@ public class AzimuthTest {
     }
     String data1 = "IU." + staCha + ".BH1";
     String data2 = "IU." + staCha + ".BH2";
-    String refURL = "orientation/";
-    // orientation/rotation/[002, etc.]/
-    String testURL = refURL + "rotation/" + sb.toString() + "/";
 
-    String refSubfolder = "orientation-reference/";
-    String testSubfolder = "azimuth-" + sb.toString() + "/";
-
-    try {
-      // get reference data if needed
-      TestUtils.downloadTestData(refURL, data1, refSubfolder, data1);
-      // only need one reference point to get the data
-      //TestUtils.downloadTestData(refURL, data2, refSubfolder, data2);
-      // get test data if needed
-      TestUtils.downloadTestData(testURL, data1, testSubfolder, data1);
-      TestUtils.downloadTestData(testURL, data2, testSubfolder, data2);
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
+    String refSubfolder = "mock_data/orientation/";
+    String testSubfolder = refSubfolder + "rotation/" + sb.toString() + "/";
 
     DataStore ds = new DataStore();
+    String root = TestUtils.TEST_DATA_LOCATION;
+    testSubfolder = root + testSubfolder;
+    refSubfolder = root + refSubfolder;
     try {
-      String root = TestUtils.DL_DEST_LOCATION;
-      testSubfolder = root + testSubfolder;
-      refSubfolder = root + refSubfolder;
-      try {
-        ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
-        ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
-        ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
-      } catch (SeedFormatException e) {
-        e.printStackTrace();
-        fail();
-      } catch (UnsupportedCompressionType e) {
-        e.printStackTrace();
-        fail();
-      } catch (CodecException e) {
-        e.printStackTrace();
-        fail();
-      }
-
-      ds.trimToCommonTime();
-      AzimuthExperiment ae = new AzimuthExperiment();
-      ae.runExperimentOnData(ds);
-      double fitAngle = ae.getFitAngle();
-      System.out.println(sb.toString() + " | " + ( (fitAngle % 360) + 360) % 360 );
-
-      assertEquals(angle, fitAngle, 1.0);
-
-    } catch (FileNotFoundException e) {
+      ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
+      ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
+      ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
+    } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
       fail();
     }
+
+    ds.trimToCommonTime();
+    AzimuthExperiment ae = new AzimuthExperiment();
+    ae.runExperimentOnData(ds);
+    double fitAngle = ae.getFitAngle();
+    System.out.println(sb.toString() + " | " + ( (fitAngle % 360) + 360) % 360 );
+
+    assertEquals(angle, fitAngle, 1.0);
 
   }
 
@@ -473,9 +376,8 @@ public class AzimuthTest {
 
       String startString = "2010-236T02:00:00.0";
       String endString = "2010-236T13:00:00.0";
-      DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
-      long st = LocalDateTime.parse(startString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
-      long ed = LocalDateTime.parse(endString, dtf).toInstant(ZoneOffset.UTC).toEpochMilli();
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = TestUtils.timeStringToEpochMilli(endString);
       ds.trim(st, ed);
 
       AzimuthExperiment az = new AzimuthExperiment();
@@ -483,7 +385,7 @@ public class AzimuthTest {
       az.runExperimentOnData(ds);
       assertEquals(3.4, az.getFitAngle(), 0.5);
 
-    } catch (SeedFormatException | CodecException e) {
+    } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
       fail();
     }

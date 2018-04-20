@@ -18,12 +18,12 @@ public enum ExperimentEnum {
   GAIN6 ("Relative gain (3-component)"),
   STCAL ("Step calibration"),
   RANDM ("Randomized calibration"),
-  RNDBG ("Rdm. cal. verification"),
+  SINCL ("Sine calibration"),
+  // RNDBG ("Rdm. cal. verification"),
   AZMTH ("Azimuth"),
   ORTHO ("Orthogonality"),
   SPECT ("Power-spectrum"),
   RESPN ("Response");
-
   private String name;
 
   ExperimentEnum(String name) {

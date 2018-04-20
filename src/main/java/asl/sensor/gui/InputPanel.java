@@ -13,9 +13,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -96,7 +100,7 @@ implements ActionListener, ChangeListener {
   public static final int IMAGE_HEIGHT = 240;
   public static final int IMAGE_WIDTH = 640;
 
-  public static final int MAX_UNSCROLLED = 4;
+  public static final int MAX_UNSCROLLED = 3;
 
   public static final int PLOTS_PER_PAGE = 3;
 
@@ -143,7 +147,8 @@ implements ActionListener, ChangeListener {
 
   private EditableDateDisplayPanel startDate, endDate;
 
-  private JButton[] seedLoaders;
+  private FileOperationJButton[] seedLoaders;
+  private FileOperationJButton[] seedAppenders;
   private JTextComponent[] seedFileNames;
   private JButton[] respLoaders;
   private JTextComponent[] respFileNames;
@@ -169,7 +174,8 @@ implements ActionListener, ChangeListener {
   public InputPanel() {
 
     chartPanels = new ChartPanel[FILE_COUNT];
-    seedLoaders = new JButton[FILE_COUNT];
+    seedLoaders = new FileOperationJButton[FILE_COUNT];
+    seedAppenders = new FileOperationJButton[FILE_COUNT];
     seedFileNames = new JTextComponent[FILE_COUNT];
     respFileNames = new JTextComponent[FILE_COUNT];
     respLoaders = new JButton[FILE_COUNT];
@@ -241,7 +247,6 @@ implements ActionListener, ChangeListener {
     rightSlider.setEnabled(false);
     rightSlider.addChangeListener(this);
 
-    // TODO: re-add change listeners once update code is properly refactored
     startDate = new EditableDateDisplayPanel();
     startDate.addChangeListener(this);
     endDate = new EditableDateDisplayPanel();
@@ -367,13 +372,15 @@ implements ActionListener, ChangeListener {
 
     for (int i = 0; i < FILE_COUNT; ++i) {
       JButton clear = clearButton[i];
-      JButton seed = seedLoaders[i];
+      FileOperationJButton seed = seedLoaders[i];
       JButton resp = respLoaders[i];
+      FileOperationJButton appd = seedAppenders[i];
 
       if( e.getSource() == clear ) {
         instantiateChart(i);
         ds.removeData(i);
         clear.setEnabled(false);
+        appd.setEnabled(false);
         seedFileNames[i].setText("NO FILE LOADED");
         respFileNames[i].setText("NO FILE LOADED");
 
@@ -390,6 +397,9 @@ implements ActionListener, ChangeListener {
 
       if ( e.getSource() == seed ) {
         loadData(i, seed);
+      }
+      if ( e.getSource() == appd ) {
+        loadData(i, appd);
       }
 
       if ( e.getSource() == resp ) {
@@ -437,15 +447,16 @@ implements ActionListener, ChangeListener {
                 InstrumentResponse.loadEmbeddedResponse(fname);
             ds.setResponse(i, ir);
 
-            respEpochWarn(ir);
-
             respFileNames[i].setText( ir.getName() );
             clear.setEnabled(true);
             clearAll.setEnabled(true);
 
             fireStateChanged();
           } catch (IOException e1) {
+            // this really shouldn't be an issue with embedded responses
+            responseErrorPopup(fname);
             e1.printStackTrace();
+            return;
           }
         } else {
           lastRespIndex = -1;
@@ -456,11 +467,18 @@ implements ActionListener, ChangeListener {
           if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
             respDirectory = file.getParent();
-            ds.setResponse(i, file.getAbsolutePath() );
-            respEpochWarn( ds.getResponse(i) );
-            respFileNames[i].setText( file.getName() );
-            clear.setEnabled(true);
-            clearAll.setEnabled(true);
+            try{
+              Instant startInst = respEpochChoose( file.getAbsolutePath() );
+              InstrumentResponse ir = new InstrumentResponse( file.getAbsolutePath(), startInst );
+              ds.setResponse(i, ir);
+              respFileNames[i].setText( file.getName() );
+              clear.setEnabled(true);
+              clearAll.setEnabled(true);
+            } catch (IOException e2) {
+              responseErrorPopup( file.getName() );
+              e2.printStackTrace();
+              return;
+            }
 
             fireStateChanged();
           }
@@ -528,6 +546,16 @@ implements ActionListener, ChangeListener {
     }
   }
 
+  private void responseErrorPopup(String filename) {
+    JDialog errBox = new JDialog();
+    StringBuilder errMsg = new StringBuilder("Error while loading in response file:\n");
+    errMsg.append(filename);
+    errMsg.append('\n');
+    errMsg.append("Check that file exists and is formatted correctly.");
+    JOptionPane.showMessageDialog(errBox, errMsg.toString(), "Response Loading Error",
+        JOptionPane.ERROR_MESSAGE);
+  }
+
   /**
    * Used to add objects to the list that will be informed when data is loaded
    * @param listener
@@ -560,6 +588,7 @@ implements ActionListener, ChangeListener {
 
     for (int i = 0; i < chartPanels.length; ++i) {
       clearButton[i].setEnabled(false);
+      seedAppenders[i].setEnabled(false);
       instantiateChart(i);
     }
 
@@ -734,7 +763,7 @@ implements ActionListener, ChangeListener {
    * @param idx Index into datastore/plots this data should be loaded
    * @param seed The JButton to passed into the fileloader
    */
-  private void loadData(final int idx, final JButton seed) {
+  private void loadData(final int idx, final FileOperationJButton seed) {
 
     fc.setCurrentDirectory( new File(seedDirectory) );
     fc.resetChoosableFileFilters();
@@ -749,9 +778,9 @@ implements ActionListener, ChangeListener {
       final String filePath = file.getAbsolutePath();
       String filterName = "";
       try {
-        Set<String> nameSet = TimeSeriesUtils.getMplexNameSet(filePath);
+        Set<String> nameSet = seed.getFilenameSet(ds, idx, filePath);
 
-        if (nameSet.size() > 1) {
+        if ( nameSet.size() > 1 ) {
           // more than one series in the file? prompt user for it
           String[] names = nameSet.toArray(new String[0]);
           Arrays.sort(names);
@@ -766,17 +795,30 @@ implements ActionListener, ChangeListener {
           if (result instanceof String) {
             filterName = (String) result;
           } else {
-            // if the user cnacelled selecting a subseries
+            // if the user cancelled selecting a subseries
             seedFileNames[idx].setText(oldName);
             return;
           }
-        } else {
+        } else if ( nameSet.size() > 0 ) {
           // just get the first one; it's the only one in the list
           filterName = new ArrayList<String>(nameSet).get(0);
+        } else {
+          // this shouldn't occur if the seed file is formatted correctly
+          // because there will be at least one SNCL described in it
+          // unless we are appending from a list without data for the loaded channel, etc.
+          seedFileNames[idx].setText(oldName);
+          seedAppendEmptyPopup( file.getName() );
+          return;
         }
 
-      } catch (FileNotFoundException e1) {
-        e1.printStackTrace();
+      } catch (SeedFormatException | IOException | RuntimeException e) {
+        e.printStackTrace();
+        if (seed instanceof LoadingJButton) {
+          seedLoadHandleError( idx, file.getName(), e.toString() );
+        } else {
+          seedAppendErrorPopup( file.getName() );
+        }
+
         return;
       }
 
@@ -793,24 +835,13 @@ implements ActionListener, ChangeListener {
         public Integer doInBackground() {
 
           try {
-            ds.setBlock(idx, filePath, immutableFilter, activePlots);
-          } catch (RuntimeException e) {
-            returnedErrMsg = e.getMessage();
-            e.printStackTrace();
+            seed.loadInData(ds, idx, filePath, immutableFilter, activePlots);
+          } catch (RuntimeException | SeedFormatException | CodecException |
+              FileNotFoundException e) {
+            returnedErrMsg = e.toString();
             caughtException = true;
+            e.printStackTrace();
             return 1;
-          } catch (SeedFormatException e) {
-            returnedErrMsg = e.getMessage();
-            caughtException = true;
-            e.printStackTrace();
-          } catch (UnsupportedCompressionType e) {
-            returnedErrMsg = e.getMessage();
-            caughtException = true;
-            e.printStackTrace();
-          } catch (CodecException e) {
-            returnedErrMsg = e.getMessage();
-            caughtException = true;
-            e.printStackTrace();
           }
 
           // zooms.matchIntervals(activePlots);
@@ -853,20 +884,14 @@ implements ActionListener, ChangeListener {
         public void done() {
 
           if (caughtException) {
-            instantiateChart(idx);
-            XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
-            TextTitle result = new TextTitle();
-            String errMsg = "COULD NOT LOAD IN " + file.getName();
-            errMsg += returnedErrMsg;
-            result.setText(errMsg);
-            result.setBackgroundPaint(Color.red);
-            result.setPaint(Color.white);
-            XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
-                RectangleAnchor.CENTER);
-            xyp.clearAnnotations();
-            xyp.addAnnotation(xyt);
-            seedFileNames[idx].setText("NO FILE LOADED");
-            clearButton[idx].setEnabled(true);
+
+            if (seed instanceof AppendingJButton){
+              seedAppendErrorPopup( file.getName() );
+              return;
+            }
+
+            seedLoadHandleError( idx, file.getName(), returnedErrMsg );
+
             return;
           }
 
@@ -878,6 +903,7 @@ implements ActionListener, ChangeListener {
           chartPanels[idx].repaint();
           chartPanels[idx].setMouseZoomable(true);
 
+          seedAppenders[idx].setEnabled(true);
           clearButton[idx].setEnabled(true);
 
           for (int i = 0; i < FILE_COUNT; ++i) {
@@ -909,6 +935,52 @@ implements ActionListener, ChangeListener {
     }
   }
 
+  private void seedLoadHandleError(int idx, String filename, String err) {
+    ds.removeBlock(idx);
+    instantiateChart(idx);
+    XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
+    TextTitle result = new TextTitle();
+    StringBuilder errMsg = new StringBuilder("COULD NOT LOAD IN FILE: ");
+    errMsg.append(filename);
+    errMsg.append("\n\n");
+    errMsg.append("This file is probably not a SEED file or has a formatting error.\n\n");
+    errMsg.append("A full stack trace is in the terminal -- this is the exception:\n");
+    errMsg.append(err);
+    result.setText( errMsg.toString() );
+    result.setBackgroundPaint(Color.red);
+    result.setPaint(Color.white);
+    XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
+        RectangleAnchor.CENTER);
+    xyp.clearAnnotations();
+    xyp.addAnnotation(xyt);
+    seedFileNames[idx].setText("NO FILE LOADED");
+    clearButton[idx].setEnabled(true);
+    fireStateChanged();
+  }
+
+  private void seedAppendEmptyPopup(String filename) {
+    JDialog errBox = new JDialog();
+    StringBuilder errMsg = new StringBuilder("Could not load data from seed file: ");
+    errMsg.append(filename);
+    errMsg.append('\n');
+    errMsg.append("The file appears to be formatted correctly but does not have data for the\n");
+    errMsg.append("SNCL data currently loaded in. Check that the correct file was chosen.\n");
+    errMsg.append("(No data was appended to the currently loaded data.)");
+    JOptionPane.showMessageDialog(errBox, errMsg.toString(), "Response Loading Error",
+        JOptionPane.ERROR_MESSAGE);
+  }
+
+  private void seedAppendErrorPopup(String filename) {
+    JDialog errBox = new JDialog();
+    StringBuilder errMsg = new StringBuilder("Error while loading in seed file: ");
+    errMsg.append(filename);
+    errMsg.append('\n');
+    errMsg.append("Check that file exists and is formatted correctly.\n");
+    errMsg.append("(No data was appended to the currently loaded data.)");
+    JOptionPane.showMessageDialog(errBox, errMsg.toString(), "Response Loading Error",
+        JOptionPane.ERROR_MESSAGE);
+  }
+
   /**
    * Used to construct the panels for loading and displaying SEED data
    * (as well as the corresponding response file)
@@ -938,9 +1010,14 @@ implements ActionListener, ChangeListener {
 
     chartPanels[i].setMouseZoomable(true);
 
-    seedLoaders[i] = new JButton( "Load SEED file " + (i+1) );
+    seedLoaders[i] = new LoadingJButton( "Load SEED file " + (i+1) );
     seedLoaders[i].addActionListener(this);
     seedLoaders[i].setMaximumSize( seedLoaders[i].getMinimumSize() );
+
+    seedAppenders[i] = new AppendingJButton("Append SEED");
+    seedAppenders[i].addActionListener(this);
+    seedAppenders[i].setMaximumSize( seedLoaders[i].getMinimumSize() );
+    seedAppenders[i].setEnabled(false);
 
     JTextField text = new JTextField( "NO FILE LOADED" );
     text.setHorizontalAlignment(SwingConstants.CENTER);
@@ -971,7 +1048,7 @@ implements ActionListener, ChangeListener {
 
     gbc.weightx = 1; gbc.weighty = 1;
     gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridwidth = 1; gbc.gridheight = 5;
+    gbc.gridwidth = 1; gbc.gridheight = 6;
     gbc.gridy += 1;
     chartSubpanel.add(chartPanels[i], gbc);
 
@@ -986,6 +1063,9 @@ implements ActionListener, ChangeListener {
     gbc.gridwidth = 1; gbc.gridheight = 1;
     gbc.weightx = 0; gbc.weighty = 0.25;
     chartSubpanel.add(seedLoaders[i], gbc);
+
+    gbc.gridy +=1;
+    chartSubpanel.add(seedAppenders[i], gbc);
 
     gbc.fill = GridBagConstraints.BOTH;
     gbc.weighty = 1;
@@ -1059,18 +1139,49 @@ implements ActionListener, ChangeListener {
   }
 
   /**
-   * Warn user if response has too many epochs
-   * @param ir InstrumentResponse that was read-in
+   * Get a selected epoch from a multi-epoch response
+   * @param respHandle Name of a given response to read in
+   * @return Value of the start instant of the epoch that the user has chosen
+   * @throws IOException Error reading resp file
+   * @throws FileNotFoundException File does not exist
    */
-  private void respEpochWarn(InstrumentResponse ir) {
-    // System.out.println("EPOCHS: " + ir.getEpochsCounted());
-    if ( ir.getEpochsCounted() > 1 ) {
-      String name = ir.getName();
-      String warning = "NOTE: Response " + name + " has multiple epochs.\n";
-      warning += "Only the last epoch will be parsed in.";
-      JDialog jd = new JDialog();
-      JOptionPane.showMessageDialog(jd, warning);
+  private Instant respEpochChoose(String respHandle) throws FileNotFoundException, IOException {
+
+    DateTimeFormatter dtf = InstrumentResponse.RESP_DT_FORMAT.withZone( ZoneOffset.UTC );
+    List<Pair<Instant, Instant>> epochs = InstrumentResponse.getRespFileEpochs(respHandle);
+
+    if (epochs.size() > 1) {
+      // more than one series in the file? prompt user for it
+      String[] epochStrings = new String[epochs.size()];
+      for (int i = 0; i < epochStrings.length; ++i) {
+        String startString = dtf.format( epochs.get(i).getFirst() );
+        String endString = dtf.format( epochs.get(i).getSecond() );
+        StringBuilder sb = new StringBuilder(startString);
+        sb.append(" | ");
+        sb.append(endString);
+        epochStrings[i] = sb.toString();
+      }
+      Arrays.sort(epochStrings);
+      JDialog dialog = new JDialog();
+      Object result = JOptionPane.showInputDialog(
+          dialog,
+          "Select the response epoch to load:",
+          "Response Epoch Selection",
+          JOptionPane.PLAIN_MESSAGE,
+          null, epochStrings,
+          epochStrings[0]);
+      if (result instanceof String) {
+        int idx = Arrays.binarySearch(epochStrings, result);
+        return epochs.get(idx).getFirst();
+      } else {
+        return null;
+      }
+    } else if (epochs.size() > 0) {
+      return epochs.get(0).getFirst();
+    } else {
+      throw new IOException("RESP file has no epoch data -- check formatting");
     }
+
   }
 
   /**
@@ -1195,7 +1306,6 @@ implements ActionListener, ChangeListener {
         zoomOut.setEnabled(false);
       }
 
-
     } else {
       // no blocks loaded in, no zooms to handle
       zoomOut.setEnabled(false);
@@ -1207,9 +1317,11 @@ implements ActionListener, ChangeListener {
         resetPlotZoom(i);
       } else {
         instantiateChart(i);
-        clearButton[i].setEnabled(false);
         seedFileNames[i].setText("NO FILE LOADED");
-        respFileNames[i].setText("NO FILE LOADED");
+        if ( !ds.responseIsSet(i) ) {
+          respFileNames[i].setText("NO FILE LOADED");
+          clearButton[i].setEnabled(false);
+        }
       }
 
       cont.add(chartSubpanels[i], contConstraints);
@@ -1390,6 +1502,87 @@ implements ActionListener, ChangeListener {
     leftSlider.setValue(leftSliderValue);
 
   }
+
+  private abstract class FileOperationJButton extends JButton {
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = -8181485763533504906L;
+
+    public FileOperationJButton(String text) {
+      super(text);
+    }
+
+    public abstract Set<String> getFilenameSet(DataStore ds, int idx, String filePath)
+        throws FileNotFoundException, SeedFormatException, IOException;
+
+    public abstract void loadInData(DataStore ds, int idx,
+        String filePath, String fileFilter, int activePlots)
+            throws SeedFormatException, UnsupportedCompressionType, CodecException,
+            FileNotFoundException, RuntimeException;
+  };
+
+  private class LoadingJButton extends FileOperationJButton {
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = -5122928259743764418L;
+
+    public LoadingJButton(String text) {
+      super(text);
+    }
+
+    @Override
+    public Set<String> getFilenameSet(DataStore ds, int idx, String filePath)
+        throws SeedFormatException, IOException {
+      return TimeSeriesUtils.getMplexNameSet(filePath);
+    }
+
+    @Override
+    public void loadInData(DataStore ds, int idx, String filePath,
+        String fileFilter, int activePlots) throws SeedFormatException,
+                                                   UnsupportedCompressionType,
+                                                   CodecException,
+                                                   FileNotFoundException,
+                                                   RuntimeException {
+      ds.setBlock(idx, filePath, fileFilter, activePlots);
+    }
+  };
+
+  private class AppendingJButton extends FileOperationJButton {
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = -2300184562192345233L;
+
+    public AppendingJButton(String text) {
+      super(text);
+    }
+
+    @Override
+    public Set<String> getFilenameSet(DataStore ds, int idx, String filePath)
+        throws SeedFormatException, IOException {
+      String thisName = ds.getBlock(idx).getName();
+      if ( !TimeSeriesUtils.getMplexNameSet(filePath).contains(thisName) ) {
+        return new HashSet<String>();
+      }
+      Set<String> returnSet = new HashSet<String>();
+      returnSet.add(thisName);
+      return returnSet;
+    }
+
+    @Override
+    public void loadInData(DataStore ds, int idx, String filePath,
+        String fileFilter, int activePlots) throws SeedFormatException,
+                                                   UnsupportedCompressionType,
+                                                   CodecException, FileNotFoundException,
+                                                   RuntimeException {
+      ds.appendBlock(idx, filePath, fileFilter, activePlots);
+    }
+  };
 
 }
 

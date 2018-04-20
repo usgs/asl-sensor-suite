@@ -70,8 +70,12 @@ extends Experiment implements ParameterValidator {
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
 
+  private int untrimmedPSDLength;
+
   private List<String> inputsPerCalculation;
   private List<String> outputsPerCalculation;
+
+  Complex[] unsmoothedCurve, smoothedCurve;
 
   // when true, doesn't run solver, in event parameters have an issue
   // (does the solver seem to have frozen? try rebuilding with this as true,
@@ -150,7 +154,8 @@ extends Experiment implements ParameterValidator {
     numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
     denominatorPSD = FFTResult.spectralCalc(calib, calib);
 
-    freqs = numeratorPSD.getFreqs(); // should be same for both results
+    double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
+    untrimmedPSDLength = freqsUntrimmed.length;
 
     // store nyquist rate of data because freqs will be trimmed down later
     nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
@@ -174,18 +179,18 @@ extends Experiment implements ParameterValidator {
     fireStateChange("Finding and trimming data to relevant frequency range");
     // now trim frequencies to in range
     int startIdx = -1; int endIdx = -1; int extIdx = -1;
-    for (int i = 0; i < freqs.length; ++i) {
+    for (int i = 0; i < freqsUntrimmed.length; ++i) {
 
-      if (freqs[i] < minFreq) {
+      if (freqsUntrimmed[i] < minFreq) {
         continue;
       } else if (startIdx < 0) {
         startIdx = i;
       }
-      if (freqs[i] > maxFreq) {
+      if (freqsUntrimmed[i] > maxFreq) {
         if (endIdx < 0) {
           endIdx = i;
         }
-        if (freqs[i] > extFreq) {
+        if (freqsUntrimmed[i] > extFreq) {
           extIdx = i;
           break;
         }
@@ -193,45 +198,28 @@ extends Experiment implements ParameterValidator {
     }
 
     double zeroTarget = 0.02; // frequency to set all curves to zero at
-    int movingAvgOffset = 0;
-    if (!lowFreq) {
-      zeroTarget = 1.0;
-      movingAvgOffset = 5;
-    }
 
-    // moving average, if done, will produce errors in terms below its cutoff point
-    startIdx -= movingAvgOffset;
-
-    // Collections.sort(freqList); // done mostly for peace of mind
-    double[] freqsFull = Arrays.copyOfRange(freqs, startIdx, extIdx);
-    freqs = Arrays.copyOfRange(freqs, startIdx, endIdx);
+    double[] freqsFull = Arrays.copyOfRange(freqsUntrimmed, startIdx, extIdx);
+    freqs = Arrays.copyOfRange(freqsUntrimmed, startIdx, endIdx);
 
     // trim the PSDs to the data in the trimmed frequency range
     // System.out.println("INDICES: " + startIdx + "," + endIdx);
-    Complex[] numeratorPSDVals =
-        Arrays.copyOfRange(numeratorPSD.getFFT(), startIdx, extIdx);
-    Complex[] denominatorPSDVals =
-        Arrays.copyOfRange(denominatorPSD.getFFT(), startIdx, extIdx);
+    Complex[] numeratorPSDVals = numeratorPSD.getFFT();
+    Complex[] denominatorPSDVals = denominatorPSD.getFFT();
+    Complex[] untrimmedResponse = new Complex[freqsUntrimmed.length];
 
     // calculated response from deconvolving calibration from signal
     // (this will be in displacement and need to be integrated)
-    Complex[] plottedResponse = new Complex[freqsFull.length];
-    for (int i = 0; i < plottedResponse.length; ++i) {
+    for (int i = 0; i < untrimmedResponse.length; ++i) {
       Complex numer = numeratorPSDVals[i];
       double denom = denominatorPSDVals[i].abs(); // phase is 0
-      plottedResponse[i] = numer.divide(denom);
+      untrimmedResponse[i] = numer.divide(denom);
       // convert from displacement to velocity
-      Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqsFull[i]);
-      plottedResponse[i] = plottedResponse[i].multiply(scaleFactor);
+      Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqsUntrimmed[i]);
+      untrimmedResponse[i] = untrimmedResponse[i].multiply(scaleFactor);
     }
-    // 5-point moving average used to smooth calculated response curve
-    if (!lowFreq) {
-      plottedResponse = NumericUtils.multipointMovingAverage(plottedResponse, movingAvgOffset);
-      // make sure freqs and plotted data are trimmed by 1 to deal with error introduced by this
-      plottedResponse = Arrays.copyOfRange(plottedResponse, movingAvgOffset, freqsFull.length);
-      freqsFull = Arrays.copyOfRange(freqsFull, movingAvgOffset, freqsFull.length);
-      freqs = Arrays.copyOfRange(freqs, movingAvgOffset, freqs.length);
-    }
+
+    Complex[] plottedResponse = Arrays.copyOfRange(untrimmedResponse, startIdx, extIdx);
 
     // now that we know length of frequency array, figure out normalization index
     for (int i = 0; i < freqs.length; ++i) {
@@ -295,18 +283,15 @@ extends Experiment implements ParameterValidator {
         observedResult[argIdx] = argument;
       }
 
-      double xAxis;
-      if (freqSpace) {
-        xAxis = freqs[i];
-      } else {
-        xAxis = 1. / freqs[i];
-      }
-      calcMag.add(xAxis, observedResult[i]);
-      calcArg.add(xAxis, observedResult[argIdx]);
     }
 
-    for (int i = estResponse.length; i < plottedResponse.length; ++i) {
-      Complex estValue = plottedResponse[i];
+    int windowSize = 5;
+    int offset = windowSize / 2;
+    Complex[] smoothed = NumericUtils.multipointMovingAverage(untrimmedResponse, windowSize);
+    unsmoothedCurve = Arrays.copyOfRange(untrimmedResponse, startIdx, extIdx);
+    smoothedCurve = Arrays.copyOfRange(smoothed, startIdx+offset, extIdx+offset);
+    for (int i = 0; i < freqsFull.length; ++i) {
+      Complex estValue = smoothedCurve[i];
       // estValue = estValue.subtract(scaleValue);
       double estValMag = estValue.abs();
       double phi = NumericUtils.atanc(estValue);
@@ -335,7 +320,9 @@ extends Experiment implements ParameterValidator {
         xAxis = 1. / freqsFull[i];
       }
       calcMag.add(xAxis, estValMag);
-      calcArg.add(xAxis, argument);
+      // plotted phase value should be in range -180,180
+      double plotArg = rewrapPhase(argument);
+      calcArg.add(xAxis, plotArg);
     }
 
     // want to set up weight-scaling for the input so rotation doesn't dominate
@@ -531,14 +518,17 @@ extends Experiment implements ParameterValidator {
       }
 
       int argIdx = initialValues.length / 2 + i;
+      double plotArg;
       initMag.add(xValue, initialValues[i]);
-      initArg.add(xValue, initialValues[argIdx]);
+      plotArg = rewrapPhase(initialValues[argIdx]);
+      initArg.add(xValue, plotArg);
       fitMag.add(xValue, fitValues[i]);
-      fitArg.add(xValue, fitValues[argIdx]);
+      plotArg = rewrapPhase(fitValues[argIdx]);
+      fitArg.add(xValue, plotArg);
 
       if (i < obsdAmps.length) {
-        double initAmpNumer = Math.pow(10, initialValues[i]/10);
-        double fitAmpNumer = Math.pow(10, fitValues[i]/10);
+        double initAmpNumer = Math.pow(10, initialValues[i]/20);
+        double fitAmpNumer = Math.pow(10, fitValues[i]/20);
 
         double obsAmpDbl = obsdAmps[i];
         if (obsAmpDbl == 0.) {
@@ -547,8 +537,8 @@ extends Experiment implements ParameterValidator {
 
         double errInitMag = 100. * (initAmpNumer - obsAmpDbl) / obsAmpDbl;
         double errFitMag = 100. * (fitAmpNumer - obsAmpDbl) / obsAmpDbl;
-        initResidMag.add(xValue, errInitMag);
-        fitResidMag.add(xValue, errFitMag);
+        initResidMag.add(xValue, Math.abs(errInitMag));
+        fitResidMag.add(xValue, Math.abs(errFitMag));
 
         int obsArgIdx = observedResult.length / 2 + i;
         double observedPhase = observedResult[obsArgIdx];
@@ -679,6 +669,14 @@ extends Experiment implements ParameterValidator {
    */
   public InstrumentResponse getFitResponse() {
     return fitResponse;
+  }
+
+  public Complex[] getSmoothedCalcResp() {
+    return smoothedCurve;
+  }
+
+  public Complex[] getUnsmoothedCalcResp() {
+    return unsmoothedCurve;
   }
 
   /**
@@ -970,6 +968,10 @@ extends Experiment implements ParameterValidator {
     freqSpace = setFreq;
   }
 
+  public int getUntrimmedPSDLength() {
+    return untrimmedPSDLength;
+  }
+
   /**
    * Simple validator method to enforce poles to be negative for their values
    * (Since imaginary values are stored in resps as their value and complex
@@ -994,6 +996,16 @@ extends Experiment implements ParameterValidator {
       }
     }
     return poleParams;
+  }
+
+  private double rewrapPhase(double phi) {
+    while (phi < -180) {
+      phi += 360;
+    }
+    while (phi > 180) {
+      phi -= 360;
+    }
+    return phi;
   }
 
 }

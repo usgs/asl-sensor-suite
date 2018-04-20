@@ -392,10 +392,39 @@ public class DataStore {
     thisResponseIsSet[idx] = false;
   }
 
+  /**
+   * Used to unset the time series data at a given index, mainly to be used in case of an error on
+   * loading in data, so that it is cleared correctly
+   * @param idx Index of data to be removed
+   */
+  public void removeBlock(int idx) {
+    dataBlockArray[idx] = null;
+    thisBlockIsSet[idx] = false;
+  }
+
+  /**
+   * Used to unset the response data at a given index, mainly to be used in case of an error on
+   * loading in data, so that it is cleared correctly
+   * @param idx Index of data to be removed
+   */
+  public void removeResp(int idx) {
+    responses[idx] = null;
+    thisResponseIsSet[idx] = false;
+  }
+
+  /**
+   * Resample data to a given sample rate
+   * @param newSampleRate new sample rate (Hz)
+   */
   public void resample(double newSampleRate) {
     resample(newSampleRate, FILE_COUNT);
   }
 
+  /**
+   * Resample the first X sets of data to a given sample rate, based on limit parameter
+   * @param newSampleRate new sample rate (Hz)
+   * @param limit upper bound on plots to resample
+   */
   public void resample(double newSampleRate, int limit) {
     long newInterval = (long) (TimeSeriesUtils.ONE_HZ_INTERVAL / newSampleRate);
     // make sure all data over range gets set to the same interval (and don't upsample)
@@ -449,9 +478,11 @@ public class DataStore {
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws IOException
    */
   public void setBlock(int idx, String filepath)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      IOException {
     setBlock(idx, filepath, FILE_COUNT);
   }
 
@@ -464,16 +495,13 @@ public class DataStore {
    * @throws SeedFormatException
    * @throws UnsupportedCompressionType
    * @throws CodecException
+   * @throws IOException
    */
   public void setBlock(int idx, String filepath, int activePlots)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
-    try {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      IOException {
       String nameFilter = TimeSeriesUtils.getMplexNameList(filepath).get(0);
       setBlock(idx, filepath, nameFilter, activePlots);
-    } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
   }
 
   /**
@@ -485,9 +513,11 @@ public class DataStore {
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws FileNotFoundException
    */
   public void setBlock(int idx, String filepath, String nameFilter)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      FileNotFoundException {
     setBlock(idx, filepath, nameFilter, FILE_COUNT);
   }
 
@@ -501,17 +531,15 @@ public class DataStore {
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws FileNotFoundException
    */
   public void setBlock(int idx, String filepath, String nameFilter, int activePlots)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      FileNotFoundException {
 
-    try {
-      DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
-      thisBlockIsSet[idx] = true;
-      dataBlockArray[idx] = xy;
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
+    DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
+    thisBlockIsSet[idx] = true;
+    dataBlockArray[idx] = xy;
 
     synchronized(this) {
       if (numberOfBlocksSet() > 1) {
@@ -574,13 +602,9 @@ public class DataStore {
    * @param idx Index of plot for which response file matches
    * @param filepath Full address of file to be loaded in
    */
-  public void setResponse(int idx, String filepath) {
-    try {
-      responses[idx] = new InstrumentResponse(filepath);
-      thisResponseIsSet[idx] = true;
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+  public void setResponse(int idx, String filepath) throws IOException {
+    responses[idx] = new InstrumentResponse(filepath);
+    thisResponseIsSet[idx] = true;
   }
 
   /**
@@ -776,6 +800,52 @@ public class DataStore {
       DataBlock data = dataBlockArray[i];      data.untrim();
     }
     trimToCommonTime(limit);
+  }
+
+
+  public void appendBlock(int idx, String filepath, String nameFilter, int activePlots)
+      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      FileNotFoundException {
+
+    if (!thisBlockIsSet[idx]) {
+      setBlock(idx, filepath, nameFilter, activePlots);
+      return;
+    }
+
+    try {
+      dataBlockArray[idx].appendTimeSeries(filepath);
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
+
+    synchronized(this) {
+      if (numberOfBlocksSet() > 1) {
+        // don't trim data here, that way we don't lose data
+        long start = dataBlockArray[idx].getStartTime();
+        long end = dataBlockArray[idx].getEndTime();
+
+        // there's clearly already another block loaded, let's make sure they
+        // actually have an intersecting time range
+        for (int i = 0; i < FILE_COUNT; ++i) {
+          if (i != idx && thisBlockIsSet[i]) {
+            // whole block either comes before or after the data set
+            if (end < dataBlockArray[i].getStartTime() ||
+                start > dataBlockArray[i].getEndTime() ) {
+
+              if (i < activePlots) {
+                thisBlockIsSet[idx] = false;
+                dataBlockArray[idx] = null;
+                throw new RuntimeException("Time range does not intersect");
+              } else {
+                // unload data that we aren't currently using
+                thisBlockIsSet[i] = false;
+              }
+
+            }
+          }
+        }
+      }
+    }
   }
 
 }

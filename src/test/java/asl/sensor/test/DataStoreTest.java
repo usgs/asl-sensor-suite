@@ -4,9 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import org.junit.Before;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
@@ -17,7 +15,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class DataStoreTest {
 
-  public static String folder = TestUtils.DL_DEST_LOCATION + TestUtils.SUBPAGE;
+  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   public String station = "TST5";
   public String location = "00";
@@ -55,7 +53,7 @@ public class DataStoreTest {
       assertEquals( ds.getBlock(1).getEndTime(), loc2);
       assertEquals( db.size(), ds.getBlock(1).size() );
       assertNotEquals( db.size(), oldSize );
-    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
@@ -102,20 +100,6 @@ public class DataStoreTest {
       }
     }
     assertTrue(notAllZero);
-  }
-
-  @Before
-  public void getReferencedData() {
-
-    // place in sprockets folder under 'from-sensor-test/[test-name]'
-    String refSubfolder = TestUtils.SUBPAGE + "blocktrim/";
-    try {
-      TestUtils.downloadTestData(refSubfolder, fileID, refSubfolder, fileID);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
   }
 
 }

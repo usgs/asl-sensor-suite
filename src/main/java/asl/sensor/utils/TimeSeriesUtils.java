@@ -396,13 +396,13 @@ public class TimeSeriesUtils {
    * only the data from a single channel).
    * @param filename Filename of miniSEED data to load in
    * @return Datablock representing the data inside the miniSEED
-   * @throws FileNotFoundException if given file from filename cannot be read
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws IOException
    */
   public static DataBlock getFirstTimeSeries(String filename)
-      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException, IOException {
     String filter = getMplexNameList(filename).get(0);
     return getTimeSeries(filename, filter);
   }
@@ -414,13 +414,13 @@ public class TimeSeriesUtils {
    * only the data from a single channel). Used mainly to load calibration spanning multiple days.
    * @param filenames Filenames of miniSEED data to load in
    * @return Datablock representing the data inside the miniSEEDs
-   * @throws FileNotFoundException if given files from filenames cannot be read
    * @throws CodecException
    * @throws UnsupportedCompressionType
    * @throws SeedFormatException
+   * @throws IOException
    */
   public static DataBlock getFirstTimeSeries(String[] filenames)
-      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws SeedFormatException, UnsupportedCompressionType, CodecException, IOException {
     String filter = getMplexNameList(filenames[0]).get(0);
     return getTimeSeries(filenames, filter);
   }
@@ -450,10 +450,11 @@ public class TimeSeriesUtils {
    * @param filename Name of file to read in
    * @return List of strings corresponding to metadata of each data series
    * in the given miniseed file
-   * @throws FileNotFoundException If given file from filename cannot be read
+   * @throws IOException
+   * @throws SeedFormatException
    */
   public static List<String> getMplexNameList(String filename)
-      throws FileNotFoundException {
+      throws SeedFormatException, IOException {
     return new ArrayList<String>( getMplexNameSet(filename) );
   }
 
@@ -462,22 +463,18 @@ public class TimeSeriesUtils {
    * a multiplexed miniseed file as a set of strings
    * @param filename miniseed file to be read in
    * @return set of all (unique) SNCL strings
-   * @throws FileNotFoundException if file cannot be read
+   * @throws IOException
+   * @throws SeedFormatException
    */
   public static Set<String> getMplexNameSet(String filename)
-      throws FileNotFoundException {
+      throws SeedFormatException, IOException {
     Set<String> dataNames = new HashSet<String>();
 
     int byteSize;
-    try {
-      byteSize = getByteSize(filename);
-    } catch (FileNotFoundException e1) {
-      throw e1;
-    }
+    byteSize = getByteSize(filename);
 
     DataInputStream dis;
 
-    try {
       dis = new DataInputStream( new FileInputStream(filename) );
 
       while (true) {
@@ -499,17 +496,6 @@ public class TimeSeriesUtils {
         }
 
       } // end loop until EOF exception
-
-    } catch (FileNotFoundException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (IOException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    } catch (SeedFormatException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    }
 
     return dataNames;
   }
@@ -615,7 +601,8 @@ public class TimeSeriesUtils {
    */
   public static Pair<Long, Map<Long, double[]>>
     getTimeSeriesMap(String[] filenames, String filter)
-       throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+       throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType,
+       CodecException {
     long interval = 0L;
     DataInputStream dis;
 
@@ -787,75 +774,23 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Scales data of an arbitrary range to lie within a [-1, 1] range
-   * @param data Timeseries data
-   * @return Same data, over the range [-1, 1], linearly scaled
-   */
-  public static double[] normalize(double[] data) {
-    double max = Double.NEGATIVE_INFINITY;
-    double min = Double.POSITIVE_INFINITY;
-
-    double[] newData = new double[data.length];
-
-    for (double point : data) {
-      if (point < min) {
-        min = point;
-      }
-      if (point > max) {
-        max = point;
-      }
-    }
-
-    for (int i = 0; i < data.length; ++i) {
-      // scale to range (0,2) then to (-1, 1)
-      newData[i] = ( 2 * (data[i] - min) / (max - min) ) - 1;
-    }
-
-    return newData;
-
-  }
-
-  /**
-   * Take a list of data and normalize it to the range [-1, 1].
-   * @param data List of samples to be normalized
-   * @return List of normalized samples
-   */
-  public static List<Number> normalize(List<Number> data) {
-    double max = Double.NEGATIVE_INFINITY;
-    double min = Double.POSITIVE_INFINITY;
-
-    for (Number point : data) {
-      if (point.doubleValue() < min) {
-        min = point.doubleValue();
-      }
-      if (point.doubleValue() > max) {
-        max = point.doubleValue();
-      }
-    }
-
-    for (int i = 0; i < data.size(); ++i) {
-      // scale to range (0,2) then to (-1, 1)
-      Double previous = data.get(i).doubleValue();
-      data.set(i, 2 * ( (previous - min) / (max-min) ) - 1 );
-    }
-
-    return data;
-
-  }
-
-  /**
    * Normalize result according to value of absolute maximum of the data.
    * This is intended to replicate the normalization behavior of Obspy.
    * @param data Time series data to be normalized
    * @return The data normalized by its maximum absolute value
    */
-  public static double[] normalizeByMax(double[] data) {
-    double[] normData = new double[data.length];
+  public static double[] normalize(double[] data) {
     double absMax = Math.abs(data[0]); // initialize with first value in array
     // first get the absolute max
     for (double point : data) {
       absMax = Math.max( Math.abs(point), absMax );
     }
+
+    if (absMax == 0) {
+      return data.clone();
+    }
+
+    double[] normData = new double[data.length];
     // now scale the data accordingly
     for (int i = 0; i < data.length; ++i) {
       // this will only trigger in the unlikely event of a time series with all values 0
