@@ -96,6 +96,32 @@ public class StepTest {
   }
 
   @Test
+  public void testINCNAnomaly() {
+    DataStore ds = new DataStore();
+    String testFolder = folder + "incn-step/";
+    String fname1 = "_BC0.512.seed";
+    String fname2 = "00_BHZ.512.seed";
+    try {
+      ds.setBlock(0, testFolder + fname1);
+      ds.setBlock(1, testFolder + fname2);
+      ds.setEmbedResponse(1, "TR360_Q330HR");
+      String startString = "2018-102T22:22:00.0";
+      String endString = "2018-102T23:00:00.0";
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = TestUtils.timeStringToEpochMilli(endString);
+      ds.trim(st, ed);
+      StepExperiment se = new StepExperiment();
+      se.runExperimentOnData(ds);
+      double[] fitParams = se.getFitParams();
+      assertEquals(371.3, 1./fitParams[0], 0.5);
+      assertEquals(0.719, fitParams[1], 0.005);
+    } catch (IOException | SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+  @Test
   public void testWaterLevelCalc() {
     // water level calc intended to invert value unless it is 0, then set it to 0 instead
     // note that the values are scaled WRT to the maximum value of the data arrays
