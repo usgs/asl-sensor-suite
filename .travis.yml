@@ -1,14 +1,15 @@
 language: java
 
-os:
-  - linux
-  - osx
+jdk:
+  - oraclejdk8
+  - oraclejdk9
+  - openjdk8
 
 git:
     submodules: false
 
 before_install:
-    - sed -i '.original' 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+    - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
     - git submodule update --init --recursive
 
 before_cache:
