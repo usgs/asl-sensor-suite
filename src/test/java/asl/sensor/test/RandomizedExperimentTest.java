@@ -214,14 +214,13 @@ public class RandomizedExperimentTest {
   @Test
   public void ResponseCorrectConvertedToVectorHighFreq() {
     String fname = folder + "resp-parse/TST5_response.txt";
-    boolean lowFreq = false;
     InstrumentResponse ir;
     try {
 
       ir = new InstrumentResponse(fname);
       List<Complex> poles = new ArrayList<>(ir.getPoles());
       // using an unnecessarily high nyquist rate here
-      RealVector high = ir.polesToVector(lowFreq, 1E8);
+      RealVector high = ir.polesToVector(false, 1E8);
 
       int complexIndex = 2; // start at second pole
       int vectorIndex = 0;
@@ -256,14 +255,13 @@ public class RandomizedExperimentTest {
   @Test
   public void ResponseCorrectlyConvertedToVectorLowFreq() {
     String fname = folder + "resp-parse/TST5_response.txt";
-    boolean lowFreq = true;
     InstrumentResponse ir;
     try {
 
       ir = new InstrumentResponse(fname);
       List<Complex> poles = new ArrayList<>(ir.getPoles());
       // again, use a very high nyquist rate
-      RealVector low = ir.polesToVector(lowFreq, 1E8);
+      RealVector low = ir.polesToVector(true, 1E8);
 
       // only test lower two poless
       assertEquals( low.getEntry(0), poles.get(0).getReal(), 0.0 );
@@ -285,7 +283,6 @@ public class RandomizedExperimentTest {
 
     try {
       ir = new InstrumentResponse(fname);
-      boolean lowFreq = false;
 
       List<Complex> poles = new ArrayList<>(ir.getPoles());
       List<Complex> replacements = new ArrayList<>();
@@ -323,7 +320,7 @@ public class RandomizedExperimentTest {
       }
 
       InstrumentResponse ir2 =
-          ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
+          ir.buildResponseFromFitVector(newPoles, false, 0);
 
       List<Complex> testList = ir2.getPoles();
       //System.out.println(testList);
@@ -360,7 +357,6 @@ public class RandomizedExperimentTest {
     InstrumentResponse ir;
     try {
       ir = new InstrumentResponse(fname);
-      boolean lowFreq = true;
       List<Complex> poles = new ArrayList<>(ir.getPoles());
 
       double[] newPoles = new double[2];
@@ -370,7 +366,7 @@ public class RandomizedExperimentTest {
       Complex c = new Complex( newPoles[0], newPoles[1] );
 
       InstrumentResponse ir2 =
-          ir.buildResponseFromFitVector(newPoles, lowFreq, 0);
+          ir.buildResponseFromFitVector(newPoles, true, 0);
       List<Complex> poles2 = ir2.getPoles();
 
       List<Complex> testList = new ArrayList<>(poles);
@@ -428,9 +424,6 @@ public class RandomizedExperimentTest {
   public void testCalculationResult1() {
 
     String currentDir = System.getProperty("user.dir");
-    // int testNumber = 3; // use to switch automated report data
-    boolean lowFreq = false;
-
     try {
 
       DataStore ds = setUpTest1();
@@ -442,7 +435,7 @@ public class RandomizedExperimentTest {
       RandomizedExperiment rCal = (RandomizedExperiment)
           ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
 
-      rCal.setLowFreq(lowFreq);
+      rCal.setLowFreq(false);
 
       assertTrue( rCal.hasEnoughData(ds) );
       rCal.runExperimentOnData(ds);
@@ -512,7 +505,7 @@ public class RandomizedExperimentTest {
       // expected best fit params, for debugging
       sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)\n");
       double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
-      ir = ir.buildResponseFromFitVector(expectedParams, lowFreq, 0);
+      ir = ir.buildResponseFromFitVector(expectedParams, false, 0);
       ir.setName("Best-fit params");
       ds.setResponse(1, ir);
       rCal.runExperimentOnData(ds);
