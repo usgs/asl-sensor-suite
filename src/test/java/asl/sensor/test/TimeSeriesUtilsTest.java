@@ -470,14 +470,6 @@ public class TimeSeriesUtilsTest {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
 
-      Map<Long, double[]> dataMap = db.getDataMap();
-      List<Long> regions = new ArrayList<>(dataMap.keySet());
-      Collections.sort(regions);
-      for (int i = 0; i < regions.size(); ++i) {
-        long time = regions.get(i);
-        System.out.println(dataMap.get(time).length);
-      }
-
       Instant timeInst = Instant.ofEpochMilli( db.getStartTime() );
       OffsetDateTime dt = OffsetDateTime.ofInstant(timeInst, ZoneOffset.UTC);
       DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu.MM.dd'T'HH:mm:ss.SSS");
