@@ -58,7 +58,7 @@ public class DataBlock {
   private Map<Long, double[]> dataMap;
   private long trimmedStart, trimmedEnd;
   private double[] cachedTimeSeries;
-  boolean rebuildList;
+  private boolean rebuildList;
 
   /**
    * Creates a copy of a given DataBlock, which has the same parameters

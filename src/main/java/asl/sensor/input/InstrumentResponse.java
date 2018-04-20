@@ -648,12 +648,7 @@ public class InstrumentResponse {
   private boolean isKS54000() {
     final double CUTOFF = 1. / 1000.;
     List<Complex> pList = getPoles();
-    if ((pList.get(0).abs() / NumericUtils.TAU) < CUTOFF) {
-      // first two poles are low-frequency
-      return true;
-    }
-
-    return false;
+    return (pList.get(0).abs() / NumericUtils.TAU) < CUTOFF;
   }
 
   /**

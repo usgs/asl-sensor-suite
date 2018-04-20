@@ -55,7 +55,7 @@ public class RandomizedExperiment
 
   public static final boolean PRINT_EVERYTHING = false; // need debugging statements?
   // bool logic used so that if PRINT_EVERYTHING is false, this won't work
-  public static final boolean OUTPUT_TO_TERMINAL = PRINT_EVERYTHING && true;
+  private static final boolean OUTPUT_TO_TERMINAL = false;
 
   // To whomever has to maintain this code after I'm gone:
   // I'm sorry, I'm so so sorry
@@ -74,7 +74,7 @@ public class RandomizedExperiment
   private List<String> inputsPerCalculation;
   private List<String> outputsPerCalculation;
 
-  Complex[] unsmoothedCurve, smoothedCurve;
+  private Complex[] unsmoothedCurve, smoothedCurve;
 
   // when true, doesn't run solver, in event parameters have an issue
   // (does the solver seem to have frozen? try rebuilding with this as true,

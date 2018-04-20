@@ -90,36 +90,11 @@ public class TimeSeriesUtils {
    * size of the combined array is equal to the total length of all arrays in
    * the list.
    *
-   * @param arrs List of arrays to merge all together into a single array
+   * @param list List of arrays to merge all together into a single array
    * @return Single array holding each array's data in sequence.
    */
-  public static double[] concatAll(List<double[]> arrs) {
-
-    if (arrs.size() == 0) {
-      return new double[]{};
-    }
-
-    if (arrs.size() == 1) {
-      return arrs.get(0);
-    }
-
-    int len = 0;
-    for (double[] arr : arrs) {
-      len += arr.length;
-    }
-
-    double[] result = new double[len];
-    int start = 0;
-    for (double[] arr : arrs) {
-      if (arr.length == 0) {
-        continue;
-      }
-      int end = arr.length;
-      System.arraycopy(arr, 0, result, start, end);
-      start += end;
-    }
-
-    return result;
+  public static double[] concatAll(List<double[]> list) {
+    return concatAll(list.toArray(new double[list.size()][]));
   }
 
   /**
@@ -371,35 +346,28 @@ public class TimeSeriesUtils {
 
     DataInputStream dis; // used to read in input to get b1000
     int byteSize;
-    try {
-      dis = new DataInputStream(new FileInputStream(filename));
+    dis = new DataInputStream(new FileInputStream(filename));
 
-      while (true) {
+    while (true) {
 
-        try {
-          SeedRecord sr = SeedRecord.read(dis, 4096);
+      try {
+        SeedRecord sr = SeedRecord.read(dis, 4096);
 
-          Blockette[] blockettes = sr.getBlockettes();
+        Blockette[] blockettes = sr.getBlockettes();
 
-          for (Blockette blockette : blockettes) {
-            if (blockette.getType() == 1000) {
-              Blockette1000 b1000 = (Blockette1000) blockette;
-              byteSize = b1000.getDataRecordLength(); // expect either 9 or 12
-              return byteSize;
-            }
-          } // end of loop over blockettes
+        for (Blockette blockette : blockettes) {
+          if (blockette.getType() == 1000) {
+            Blockette1000 b1000 = (Blockette1000) blockette;
+            byteSize = b1000.getDataRecordLength(); // expect either 9 or 12
+            return byteSize;
+          }
+        } // end of loop over blockettes
 
-        } catch (SeedFormatException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
-        } // end of try-catch blocks for parsing an individual record
+      } catch (SeedFormatException | IOException e) {
+        e.printStackTrace();
+      }  // end of try-catch blocks for parsing an individual record
 
-      } // end of while loop for gotByteSize
-
-    } catch (FileNotFoundException e) {
-      throw e;
-    } // end of try block for creating DataInputStream
+    } // end of while loop for gotByteSize
 
   }
 
@@ -412,7 +380,7 @@ public class TimeSeriesUtils {
    * @return Datablock representing the data inside the miniSEED
    */
   public static DataBlock getFirstTimeSeries(String filename)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException, IOException {
+      throws SeedFormatException, CodecException, IOException {
     String filter = getMplexNameList(filename).get(0);
     return getTimeSeries(filename, filter);
   }
@@ -427,7 +395,7 @@ public class TimeSeriesUtils {
    * @return Datablock representing the data inside the miniSEEDs
    */
   public static DataBlock getFirstTimeSeries(String[] filenames)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException, IOException {
+      throws SeedFormatException, CodecException, IOException {
     String filter = getMplexNameList(filenames[0]).get(0);
     return getTimeSeries(filenames, filter);
   }
@@ -462,7 +430,7 @@ public class TimeSeriesUtils {
    */
   public static List<String> getMplexNameList(String filename)
       throws SeedFormatException, IOException {
-    return new ArrayList<String>(getMplexNameSet(filename));
+    return new ArrayList<>(getMplexNameSet(filename));
   }
 
   /**
@@ -474,7 +442,7 @@ public class TimeSeriesUtils {
    */
   public static Set<String> getMplexNameSet(String filename)
       throws SeedFormatException, IOException {
-    Set<String> dataNames = new HashSet<String>();
+    Set<String> dataNames = new HashSet<>();
 
     int byteSize;
     byteSize = getByteSize(filename);
@@ -523,7 +491,7 @@ public class TimeSeriesUtils {
    * @throws FileNotFoundException If file cannot be read in
    */
   public static DataBlock getTimeSeries(String filename, String filter)
-      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws FileNotFoundException, SeedFormatException, CodecException {
 
     // XYSeries xys = null;
     DataBlock db = null;
@@ -552,7 +520,7 @@ public class TimeSeriesUtils {
    * @throws FileNotFoundException If file cannot be read in
    */
   public static DataBlock getTimeSeries(String[] filenames, String filter)
-      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws FileNotFoundException, SeedFormatException, CodecException {
 
     // XYSeries xys = null;
     DataBlock db = null;
@@ -577,7 +545,7 @@ public class TimeSeriesUtils {
    */
   public static Pair<Long, Map<Long, double[]>>
   getTimeSeriesMap(String filename, String filter)
-      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws FileNotFoundException, SeedFormatException, CodecException {
 
     return getTimeSeriesMap(new String[]{filename}, filter);
 
@@ -598,20 +566,16 @@ public class TimeSeriesUtils {
    */
   public static Pair<Long, Map<Long, double[]>>
   getTimeSeriesMap(String[] filenames, String filter)
-      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType,
+      throws FileNotFoundException, SeedFormatException,
       CodecException {
     long interval = 0L;
     DataInputStream dis;
 
-    Map<Long, double[]> timeListMap = new HashMap<Long, double[]>();
+    Map<Long, double[]> timeListMap = new HashMap<>();
 
     for (String filename : filenames) {
       int byteSize = 512;
-      try {
-        byteSize = getByteSize(filename);
-      } catch (FileNotFoundException e1) {
-        throw e1;
-      }
+      byteSize = getByteSize(filename);
 
       try {
         dis = new DataInputStream(new FileInputStream(filename));
@@ -691,10 +655,7 @@ public class TimeSeriesUtils {
                   }
                   break;
                 default:
-                  double[] decomArrayDbl = decomp.getAsDouble();
-                  for (int i = 0; i < decomArrayDbl.length; ++i) {
-                    values[i] = decomArrayDbl[i];
-                  }
+                  values = decomp.getAsDouble();
                   break;
               }
 
@@ -707,16 +668,12 @@ public class TimeSeriesUtils {
 
         } // end infinite while loop (read until EOF)
 
-      } catch (FileNotFoundException e) {
-        // Auto-generated catch block
-        e.printStackTrace();
       } catch (IOException e) {
-        // Auto-generated catch block
         e.printStackTrace();
       }
     }
 
-    return new Pair<Long, Map<Long, double[]>>(interval, timeListMap);
+    return new Pair<>(interval, timeListMap);
   }
 
   /**

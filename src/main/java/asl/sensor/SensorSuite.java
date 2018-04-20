@@ -349,8 +349,6 @@ public class SensorSuite extends JPanel
       SwingWorker<Boolean, Void> wkr = SwingWorkerSingleton.getInstance();
       wkr.execute();
 
-      return;
-
     } else if (e.getSource() == savePDF) {
 
       String ext = ".pdf";
@@ -375,7 +373,6 @@ public class SensorSuite extends JPanel
 
         plotsToPDF(selFile, ep, inputPlots);
       }
-      return;
     }
 
   }

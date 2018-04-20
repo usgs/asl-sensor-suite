@@ -1,5 +1,7 @@
 package asl.sensor.test;
 
+import static asl.sensor.utils.TimeSeriesUtils.concatAll;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -150,6 +152,28 @@ public class TimeSeriesUtilsTest {
       assertEquals( x[i],  answer[i], 0.5);
     }
 
+  }
+
+  @Test
+  public void concatAllTest() {
+    double[] array1 = {1,2,3,4.5,6,7};
+    double[] array2 = {111,112,113,114.5,116,117};
+    double[] array3 = {11,12,13,14.5,16,17};
+    double[] arrayAnswer = {1,2,3,4.5,6,7, 111,112,113,114.5,116,117, 11,12,13,14.5,16,17};
+    List<double[]> list = new ArrayList<>();
+    list.add(array1);
+    list.add(array2);
+    list.add(array3);
+    double[] arrayResult = concatAll(list);
+    assertArrayEquals(arrayAnswer, arrayResult, 1E-10);
+  }
+
+  @Test
+  public void concatAllTestEmpty() {
+    double[] arrayAnswer = {};
+    List<double[]> list = new ArrayList<>();
+    double[] arrayResult = concatAll(list);
+    assertArrayEquals(arrayAnswer, arrayResult, 1E-10);
   }
 
   @Test
