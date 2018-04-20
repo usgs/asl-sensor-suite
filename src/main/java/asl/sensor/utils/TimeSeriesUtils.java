@@ -626,38 +626,7 @@ public class TimeSeriesUtils {
 
               DecompressedData decomp = dr.decompress();
 
-              // get the original datatype of the series (loads data faster)
-              // otherwise the decompressed data gets converted (cloned) as
-              // the other type instead
-              int dataType = decomp.getType();
-              double[] values = new double[dr.getHeader().getNumSamples()];
-
-              switch (dataType) {
-                case B1000Types.INTEGER:
-                  int[] decomArrayInt = decomp.getAsInt();
-                  for (int i = 0; i < decomArrayInt.length; ++i) {
-                    Number dataPoint = decomArrayInt[i];
-                    values[i] = dataPoint.doubleValue();
-                  }
-                  break;
-                case B1000Types.FLOAT:
-                  float[] decomArrayFlt = decomp.getAsFloat();
-                  for (int i = 0; i < decomArrayFlt.length; ++i) {
-                    Number dataPoint = decomArrayFlt[i];
-                    values[i] = dataPoint.doubleValue();
-                  }
-                  break;
-                case B1000Types.SHORT:
-                  short[] decomArrayShr = decomp.getAsShort();
-                  for (int i = 0; i < decomArrayShr.length; ++i) {
-                    Number dataPoint = decomArrayShr[i];
-                    values[i] = dataPoint.doubleValue();
-                  }
-                  break;
-                default:
-                  values = decomp.getAsDouble();
-                  break;
-              }
+              double[] values = decomp.getAsDouble();
 
               timeListMap.put(start, values);
 
