@@ -73,182 +73,65 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void TestRandomCalCurves() {
+  public void TestRandomCalCurves() throws Exception {
     String fname = folder + "kiev-random-lowfrq/";
     String cal = "_BC0.512.seed";
     String out = "00_BH1.512.seed";
-    try {
-      InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS25_Q330HR");
-      DataBlock calB = TimeSeriesUtils.getFirstTimeSeries(fname + cal);
-      DataBlock outB = TimeSeriesUtils.getFirstTimeSeries(fname + out);
-      DataStore ds = new DataStore();
-      ds.setBlock(0, calB);
-      ds.setBlock(1, outB);
-      ds.setResponse(1, ir);
+    InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS25_Q330HR");
+    DataBlock calB = TimeSeriesUtils.getFirstTimeSeries(fname + cal);
+    DataBlock outB = TimeSeriesUtils.getFirstTimeSeries(fname + out);
+    DataStore ds = new DataStore();
+    ds.setBlock(0, calB);
+    ds.setBlock(1, outB);
+    ds.setResponse(1, ir);
 
-      String startString = "2018-044T23:37:00.0";
-      // String endString = "2018-045T07:37:00.0";
-      long st = TestUtils.timeStringToEpochMilli(startString);
-      long ed = st + (8 * 60 * 60 * 1000);
-      ds.trim(st, ed);
-      System.out.println("DATA LENGTH: " + ds.getBlock(0).getData().length);
+    String startString = "2018-044T23:37:00.0";
+    long st = TestUtils.timeStringToEpochMilli(startString);
+    long ed = st + (8 * 60 * 60 * 1000);
+    ds.trim(st, ed);
 
-      RandomizedExperiment re = new RandomizedExperiment();
-      re.setLowFreq(true);
-      re.runExperimentOnData(ds);
+    RandomizedExperiment re = new RandomizedExperiment();
+    re.setLowFreq(true);
+    re.runExperimentOnData(ds);
 
-      Complex[] smooth = re.getSmoothedCalcResp();
-      Complex[] unsmooth = re.getUnsmoothedCalcResp();
-      double[] freqs = re.getFreqList();
+    assertEquals(262144/2 + 1, re.getUntrimmedPSDLength());
 
-      XYSeries smoothPlotA = new XYSeries("Smoothed response curve (amp)");
-      XYSeries unsmoothPlotA = new XYSeries("Unsmoothed response curve (amp)");
-      for (int i = 0; i < smooth.length; ++i) {
-        double point = 20 * Math.log10(smooth[i].abs());
-        smoothPlotA.add(freqs[i], point);
-        unsmoothPlotA.add(freqs[i], 20 * Math.log10(unsmooth[i].abs()));
-      }
+    Complex ref = new Complex(-0.01243, -0.01176);
+    Complex got = re.getFitPoles().get(0);
 
-      System.out.println("PSD data length? " + unsmooth.length);
-      assertEquals(262144/2 + 1, re.getUntrimmedPSDLength());
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(unsmoothPlotA);
-      xysc.addSeries(smoothPlotA);
-      JFreeChart chart = ChartFactory.createXYLineChart(
-          ExperimentEnum.RANDM.getName(),
-          "Frequency (Hz)",
-          "Power Amplitude (20 * log10)",
-          xysc,
-          PlotOrientation.VERTICAL,
-          true,
-          false,
-          false);
-      chart.getXYPlot().setDomainAxis( new LogarithmicAxis("Frequency (Hz) [log]") );
-
-      BufferedImage bi = ReportingUtils.chartsToImage(1280, 960, chart);
-      ImageIO.write(bi, "png", new File("testResultImages/smoothing-comparison.png") );
-
-      StringBuilder smt = new StringBuilder("AMPLITUDE (smoothed):\t");
-      StringBuilder unsmt = new StringBuilder("AMPLITUDE (unsmoothed):\t");
-      DecimalFormat df = new DecimalFormat("#.########");
-      for (int i = 0; i < 10; ++i) {
-        double s = 20 * Math.log10(smooth[i].abs());
-        double u = 20 * Math.log10(unsmooth[i].abs());
-        unsmt.append(df.format(u));
-        unsmt.append("\t");
-        smt.append(df.format(s));
-        smt.append("\t");
-      }
-
-      System.out.println(unsmt);
-
-      Complex ref = new Complex(-0.01243, -0.01176);
-      Complex got = re.getFitPoles().get(0);
-
-      String msg = "Expected " + ref + " and got " + got;
-      assertTrue(msg, Complex.equals(ref, got, 5E-4));
-
-    } catch (IOException | SeedFormatException | CodecException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-      fail();
-    }
-
-  }
-
-  // @Test
-  public void TestRandomCal30s() {
-    String fname = folder + "kiev-random-lowfrq/";
-    String cal = "_BC0.512.seed";
-    String out = "00_BH1.512.seed";
-    try {
-      InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS25_Q330HR");
-      DataBlock calB = TimeSeriesUtils.getFirstTimeSeries(fname + cal);
-      DataBlock outB = TimeSeriesUtils.getFirstTimeSeries(fname + out);
-      DataStore ds = new DataStore();
-      ds.setBlock(0, calB);
-      ds.setBlock(1, outB);
-      ds.setResponse(1, ir);
-
-      String startString = "2018-044T23:37:00.0";
-      long st = TestUtils.timeStringToEpochMilli(startString);
-      long ed = st + (8 * 60 * 60 * 1000);
-      ds.trim(st, ed);
-      System.out.println("DATA LENGTH: " + ds.getBlock(0).getData().length);
-
-      RandomizedExperiment re = new RandomizedExperiment();
-      re.setLowFreq(true);
-      re.runExperimentOnData(ds);
-
-      Complex[] smooth = re.getSmoothedCalcResp();
-      Complex[] unsmooth = re.getUnsmoothedCalcResp();
-      double[] freqs = re.getFreqList();
-
-      assertEquals(freqs.length, unsmooth.length);
-
-      double deltaFreq = freqs[1] - freqs[0];
-      int indexOfInterest = (int) ( (.02 - freqs[0])/deltaFreq);
-
-      for (int i = 0; i < freqs.length; ++i) {
-
-        if (i == indexOfInterest) {
-          assertEquals(0.02, freqs[i], 1E-3);
-          assertEquals(0., 20 * Math.log10(unsmooth[i].abs()), 1E-4);
-        }
-
-        if (i == 423) {
-          assertEquals(1./30., freqs[i], deltaFreq);
-          assertEquals(0.159, 20 * Math.log10(unsmooth[i].abs()), 1E-4);
-        }
-      }
-
-
-    } catch (IOException | SeedFormatException | CodecException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-      fail();
-    }
-
+    String msg = "Expected " + ref + " and got " + got;
+    assertTrue(msg, Complex.equals(ref, got, 5E-4));
   }
 
   @Test
-  public void ResponseCorrectConvertedToVectorHighFreq() {
+  public void ResponseCorrectConvertedToVectorHighFreq() throws Exception{
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
-    try {
+    ir = new InstrumentResponse(fname);
+    List<Complex> poles = new ArrayList<>(ir.getPoles());
+    // using an unnecessarily high nyquist rate here
+    RealVector high = ir.polesToVector(false, 1E8);
 
-      ir = new InstrumentResponse(fname);
-      List<Complex> poles = new ArrayList<>(ir.getPoles());
-      // using an unnecessarily high nyquist rate here
-      RealVector high = ir.polesToVector(false, 1E8);
+    int complexIndex = 2; // start at second pole
+    int vectorIndex = 0;
 
-      int complexIndex = 2; // start at second pole
-      int vectorIndex = 0;
+    while ( vectorIndex < high.getDimension() ) {
+      // return current index
+      double real = high.getEntry(vectorIndex++);
+      double imag = high.getEntry(vectorIndex++);
 
-      while ( vectorIndex < high.getDimension() ) {
-        // return current index
-        double real = high.getEntry(vectorIndex++);
-        double imag = high.getEntry(vectorIndex++);
+      double poleImag = poles.get(complexIndex).getImaginary();
 
-        double poleImag = poles.get(complexIndex).getImaginary();
+      assertEquals( real, poles.get(complexIndex).getReal(), 0.0 );
+      assertEquals( imag, poleImag, 0.0 );
 
-        assertEquals( real, poles.get(complexIndex).getReal(), 0.0 );
-        assertEquals( imag, poleImag, 0.0 );
-
-        if (poleImag != 0) {
-          // complex conjugate case
-          ++complexIndex;
-          assertEquals( real, poles.get(complexIndex).getReal(), 0.0 );
-          assertEquals( imag, -poles.get(complexIndex).getImaginary(), 0.0 );
-        }
-
+      if (poleImag != 0) {
+        // complex conjugate case
         ++complexIndex;
-
+        assertEquals( real, poles.get(complexIndex).getReal(), 0.0 );
+        assertEquals( imag, -poles.get(complexIndex).getImaginary(), 0.0 );
       }
-
-    } catch (IOException e) {
-      fail();
-      e.printStackTrace();
+      ++complexIndex;
     }
   }
 
