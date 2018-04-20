@@ -1,5 +1,9 @@
 package asl.sensor.input;
 
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -13,10 +17,6 @@ import java.util.Map;
 import java.util.TimeZone;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 /**
  * Holds the time series and metadata for a miniSEED file loaded in by the user.
@@ -45,8 +45,8 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
  * series has not been fully tested. In general most experiments are
  * best performed over time ranges that are fully inside a given contiguous
  * block.
- * @author akearns
  *
+ * @author akearns
  */
 public class DataBlock {
 
@@ -62,6 +62,7 @@ public class DataBlock {
 
   /**
    * Creates a copy of a given DataBlock, which has the same parameters
+   *
    * @param in The datablock to be copied
    */
   public DataBlock(DataBlock in) {
@@ -82,6 +83,7 @@ public class DataBlock {
 
   /**
    * Creates a trimmed copy of a given DataBlock, with same metadata
+   *
    * @param in The datablock to be copied
    * @param start Start time to trim data to
    * @param end End time to trim data to
@@ -106,18 +108,18 @@ public class DataBlock {
    * Create a new DataBlock using a single contiguous block of data; the
    * resulting datamap will have a single entry at the specified start time
    * which points to the passed-in array of data.
+   *
    * @param dataIn Timeseries data to be loaded into this datablock
    * @param intervalIn Sampling interval of data
    * @param nameIn SNCL metadata of data source
    * @param start Time (in ms from epoch) that the data begins on
    */
-  public
-  DataBlock(double[] dataIn, long intervalIn, String nameIn, long start) {
+  public DataBlock(double[] dataIn, long intervalIn, String nameIn, long start) {
     interval = intervalIn;
     targetInterval = intervalIn;
     startTime = start;
     dataMap = new HashMap<Long, double[]>();
-    dataMap.put( startTime, dataIn );
+    dataMap.put(startTime, dataIn);
 
     trimmedStart = startTime;
     endTime = startTime + (interval * dataIn.length);
@@ -130,12 +132,12 @@ public class DataBlock {
 
   /**
    * Create a new datablock by feeding in specific parameters
+   *
    * @param dataIn Map of contiguous data blocks (which may require merging)
    * @param intervalIn Sampling interval of data in ms
    * @param nameIn SNCL metadata of data source
    */
-  public
-  DataBlock(Map<Long, double[]> dataIn, long intervalIn, String nameIn) {
+  public DataBlock(Map<Long, double[]> dataIn, long intervalIn, String nameIn) {
     interval = intervalIn;
     targetInterval = intervalIn;
 
@@ -156,6 +158,7 @@ public class DataBlock {
    * It is not recommended to trim data to a region including these gaps because
    * they can produce undesired behavior in the results of experiments. If the
    * data time range needs to be reduce it will also perform decimation.
+   *
    * @return Array representing the data found within a given time range
    */
   public double[] getData() {
@@ -164,13 +167,13 @@ public class DataBlock {
       return cachedTimeSeries;
     }
 
-    List<Long> times = new ArrayList<Long>( dataMap.keySet() );
+    List<Long> times = new ArrayList<Long>(dataMap.keySet());
     Collections.sort(times);
 
     long timeCursor = trimmedStart;
 
     int numPoints =
-        (int) Math.ceil( (trimmedEnd - trimmedStart) / ((double) interval) );
+        (int) Math.ceil((trimmedEnd - trimmedStart) / ((double) interval));
     /*
     // make sure the correct number of points are loaded in to prevent
     // off-by-one errors later on
@@ -189,7 +192,7 @@ public class DataBlock {
 
     for (int i = 0; i < times.size(); ++i) {
 
-      if ( lastFilledIndex == numPoints ) {
+      if (lastFilledIndex == numPoints) {
         break;
       }
 
@@ -197,7 +200,7 @@ public class DataBlock {
       long now = times.get(i);
       double[] data = dataMap.get(now);
       long next = -1;
-      if ( i + 1 < times.size() ) {
+      if (i + 1 < times.size()) {
         next = times.get(i + 1);
       }
 
@@ -205,17 +208,17 @@ public class DataBlock {
       // location in the map and corresponding list closest to the current time
       if (timeCursor == now) {
         startIndex = 0;
-      } else if ( now < timeCursor && (next > timeCursor || next < 0) ) {
+      } else if (now < timeCursor && (next > timeCursor || next < 0)) {
         // get value of time closest to start
         // this is done to deal with the case of differing quantizations
         // between data sets, where all data in a file may be off by less
         // than the interval length, i.e., a millisecond or two
-        int closeIdx = (int) ( (timeCursor - now) / interval );
+        int closeIdx = (int) ((timeCursor - now) / interval);
         // this is the index rounded down
         long candidateTime = now + (closeIdx * interval);
         long nextSample = candidateTime + interval;
-        if ( Math.abs(timeCursor - candidateTime)
-            <= Math.abs(timeCursor - nextSample) ) {
+        if (Math.abs(timeCursor - candidateTime)
+            <= Math.abs(timeCursor - nextSample)) {
           startIndex = closeIdx;
         } else {
           startIndex = closeIdx + 1;
@@ -224,11 +227,11 @@ public class DataBlock {
         continue;
       }
 
-      if ( startIndex < data.length ) {
+      if (startIndex < data.length) {
         // make sure we are not in a gap to start with
-        int end = startIndex + ( numPoints - lastFilledIndex );
+        int end = startIndex + (numPoints - lastFilledIndex);
         // copy either up to our current end point, or the limit of the block
-        end = Math.min( data.length, end );
+        end = Math.min(data.length, end);
         double[] sublist = Arrays.copyOfRange(data, startIndex, end);
         for (int j = 0; j < sublist.length; ++j, ++lastFilledIndex) {
           cachedTimeSeries[lastFilledIndex] = sublist[j];
@@ -236,8 +239,8 @@ public class DataBlock {
 
       }
 
-      timeCursor = trimmedStart + ( interval * lastFilledIndex );
-      if ( next - timeCursor > (interval * 2) ) {
+      timeCursor = trimmedStart + (interval * lastFilledIndex);
+      if (next - timeCursor > (interval * 2)) {
         // deal with any gaps between two parts of the list
         while (timeCursor < next && lastFilledIndex < numPoints) {
           cachedTimeSeries[lastFilledIndex] = 0.;
@@ -270,6 +273,7 @@ public class DataBlock {
    * make a call to the corresponding setter to replace it. @see #setDataMap
    * The data structure is a map of contiguous block start times to the
    * timeseries data of that block (as an array)
+   *
    * @return copy of this datablock's underlying contiguous block map
    */
   public Map<Long, double[]> getDataMap() {
@@ -279,6 +283,7 @@ public class DataBlock {
   /**
    * Returns the end time of the data, used mainly in getting range bounds
    * for things like setting end markers, etc.
+   *
    * @return The time between two samples of data in milliseconds
    */
   public long getEndTime() {
@@ -290,13 +295,14 @@ public class DataBlock {
    * selected data window. Used to display the input panel's orange regions.
    * This is given as a list of paired start and end times specified in ms
    * from epoch.
+   *
    * @return List of time ranges specifying lengths of time with no samples
    */
   public List<Pair<Long, Long>> getGapBoundaries() {
 
     List<Pair<Long, Long>> gapList = new ArrayList<Pair<Long, Long>>();
 
-    List<Long> times = new ArrayList<Long>( dataMap.keySet() );
+    List<Long> times = new ArrayList<Long>(dataMap.keySet());
     Collections.sort(times);
     // contiguous blocks must have been merged for this to work correctly!
     for (int i = 0; i < times.size(); ++i) {
@@ -309,10 +315,10 @@ public class DataBlock {
         // if not, data begins with a gap
         if (hasNext && times.get(i + 1) > trimmedStart) {
           // does the next data point start before our region of interest ends?
-          long gapEnd = Math.min( times.get(i+1), trimmedEnd );
-          gapList.add( new Pair<Long, Long>(trimmedStart, gapEnd) );
+          long gapEnd = Math.min(times.get(i + 1), trimmedEnd);
+          gapList.add(new Pair<Long, Long>(trimmedStart, gapEnd));
         } else if (!hasNext) {
-          gapList.add( new Pair<Long, Long>(trimmedStart, trimmedEnd) );
+          gapList.add(new Pair<Long, Long>(trimmedStart, trimmedEnd));
         }
         continue;
       }
@@ -320,12 +326,12 @@ public class DataBlock {
         break;
       }
       // check if a gap exists completely inside our selection window
-      if ( (i + 1) < times.size() ) {
+      if ((i + 1) < times.size()) {
         long timeNext = times.get(i + 1);
         // is there a discrepancy, and is it big enough to be a gap?
         if (timeNext - blockEnd > (3 * interval) / 2) {
-          long gapEnd = Math.min( timeNext, trimmedEnd );
-          gapList.add( new Pair<Long, Long>(blockEnd, gapEnd) );
+          long gapEnd = Math.min(timeNext, trimmedEnd);
+          gapList.add(new Pair<Long, Long>(blockEnd, gapEnd));
         }
       }
     }
@@ -337,6 +343,7 @@ public class DataBlock {
    * Gives the end timestamp of the miniSEED data. This is a long compatible
    * with the Java System Library's Date and Calendar objects and expressed
    * as milliseconds from the UTC epoch
+   *
    * @return Time after the last sample of the latest contiguous block in ms
    */
   public long getInitialEndTime() {
@@ -346,6 +353,7 @@ public class DataBlock {
   /**
    * Get the sampling interval of the internal representation of the data.
    * Mainly useful in terms of determining when data needs to be downsampled.
+   *
    * @return Interval between samples in ms
    */
   public long getInitialInterval() {
@@ -356,6 +364,7 @@ public class DataBlock {
    * Gives the start timestamp of the miniSEED data. This is a long compatible
    * with the Java System Library's Date and Calendar objects and expressed
    * as milliseconds from the UTC epoch
+   *
    * @return When the miniSEED data logging started in milliseconds
    */
   public long getInitialStartTime() {
@@ -365,6 +374,7 @@ public class DataBlock {
   /**
    * Get the interval of the output data. The timestamp for a given data point
    * in the block can be calculated by startTime + (index * interval).
+   *
    * @return The time between two samples of data in milliseconds
    */
   public long getInterval() {
@@ -374,6 +384,7 @@ public class DataBlock {
   /**
    * Get the name of the dataset (used as a key in dataseries, etc.)
    * The name is defined by station-location-channel.
+   *
    * @return Name of dataset
    */
   public String getName() {
@@ -383,6 +394,7 @@ public class DataBlock {
   /**
    * Return the sample rate of the data, in Hz. This is the inverse of the
    * interval, scaled to be in seconds rather than milliseconds.
+   *
    * @return Sample rate in Hz.
    */
   public double getSampleRate() {
@@ -391,17 +403,19 @@ public class DataBlock {
 
   /**
    * Get start time of data series as a Java calendar object
+   *
    * @return Calendar object representing start time (UTC time zone)
    */
   @Deprecated
   public Calendar getStartCalendar() {
-    Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     cCal.setTimeInMillis(startTime);
     return cCal;
   }
 
   /**
    * Get (untrimmed) start time of the data
+   *
    * @return DateTime object representing start time in UTC time zone
    */
   public Instant getStartInstant() {
@@ -412,6 +426,7 @@ public class DataBlock {
    * Gives the start timestamp of the trim window. This is a long compatible
    * with the Java System Library's Date and Calendar objects and expressed
    * as milliseconds from the UTC epoch
+   *
    * @return When the miniSEED data logging started in milliseconds
    */
   public long getStartTime() {
@@ -420,17 +435,19 @@ public class DataBlock {
 
   /**
    * Get the trimmed start time of the data
+   *
    * @return Calendar object representing start time (UTC time zone)
    */
   @Deprecated
   public Calendar getTrimmedStartCalendar() {
-    Calendar cCal = Calendar.getInstance( TimeZone.getTimeZone("UTC") );
+    Calendar cCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     cCal.setTimeInMillis(trimmedStart);
     return cCal;
   }
 
   /**
    * Get trimmed start time of the data
+   *
    * @return DateTime object representing start time in UTC time zone
    */
   public Instant getTrimmedStartInstant() {
@@ -444,25 +461,25 @@ public class DataBlock {
   private void mergeContiguousTimes() {
 
     // for blocks that start and end at the same point
-    List<Long> startTimes = new ArrayList<Long>( dataMap.keySet() );
+    List<Long> startTimes = new ArrayList<Long>(dataMap.keySet());
     Collections.sort(startTimes);
 
     Map<Long, double[]> mergedMap = new HashMap<Long, double[]>();
 
     int startingPoint = 0;
     int cursor;
-    while ( startingPoint < startTimes.size() ) {
+    while (startingPoint < startTimes.size()) {
       List<double[]> toMerge = new ArrayList<double[]>();
       long currentTime = startTimes.get(startingPoint);
 
       double[] currentSeries = dataMap.get(currentTime);
       toMerge.add(currentSeries);
       long timeAtSublistEnd =
-          currentTime + ( currentSeries.length * interval );
+          currentTime + (currentSeries.length * interval);
 
       cursor = startingPoint + 1;
 
-      if ( cursor >= startTimes.size() ) {
+      if (cursor >= startTimes.size()) {
         mergedMap.put(currentTime, currentSeries);
         dataMap = mergedMap;
         return;
@@ -471,7 +488,7 @@ public class DataBlock {
       long nextTime = startTimes.get(cursor);
 
       long difference = nextTime - timeAtSublistEnd;
-      while ( difference < (interval / 4) ) {
+      while (difference < (interval / 4)) {
 
         if (difference < 0) {
           // duplicated data check
@@ -512,7 +529,7 @@ public class DataBlock {
           ++cursor;
         }
 
-        if ( cursor >= startTimes.size() ) {
+        if (cursor >= startTimes.size()) {
           double[] contiguousSeries = TimeSeriesUtils.concatAll(toMerge);
           mergedMap.put(currentTime, contiguousSeries);
           dataMap = mergedMap;
@@ -538,6 +555,7 @@ public class DataBlock {
   /**
    * Identifies whether or not input of signal starts positive. Used
    * in step calibration solver to figure out if the data's signs are inverted.
+   *
    * @return True if initial step response is negative
    */
   public boolean needsSignFlip() {
@@ -551,6 +569,7 @@ public class DataBlock {
    * generating a new series of data from the time series map this object holds.
    * The specified interval will be ignored if it represents a higher sample
    * rate than the current sample; only decimation is performed, not upsampling.
+   *
    * @param newInterval The new interval (time between samples in milliseconds)
    */
   public void resample(long newInterval) {
@@ -566,6 +585,7 @@ public class DataBlock {
    * new timeseries. This will replace the current timeseries map with a map
    * with a single entry from the current (trimmed) start time to the
    * inputted array.
+   *
    * @param data New timeseries, a contiguous block represented by an array.
    */
   public void setData(double[] data) {
@@ -579,6 +599,7 @@ public class DataBlock {
    * identify the beginning time of the replacement data. The array given as
    * input replaces the old map with a single-entry map starting at the given
    * start time.
+   *
    * @param data New timeseries, a contiguous block represented by an array.
    * @param start Start time of given data (ms from epoch)
    */
@@ -595,6 +616,7 @@ public class DataBlock {
    * sampling rate of the output time series, not the internal data
    * representation, this function also allows for specifying a new sampling
    * rate for the replacement data.
+   *
    * @param data New timeseries, a contiguous block represented by an array.
    * @param start Start time of given data (ms from epoch)
    * @param interval Sampling interval of new timeseries, given in ms
@@ -613,6 +635,7 @@ public class DataBlock {
 
   /**
    * Replace the current datamap object with a different one.
+   *
    * @param dataMap New datamap to put in this object, a map of start times
    * to contiguous blocks of data.
    */
@@ -625,6 +648,7 @@ public class DataBlock {
   /**
    * Return the length of datapoints to be contained in the continuous data
    * the program will return given by the currently-specified time window
+   *
    * @return length of the data region to be returned, including filled-in gaps
    */
   public int size() {
@@ -637,6 +661,7 @@ public class DataBlock {
    * The format is a pair of data: the time of a sample and that sample's value.
    * The data is truncated (without smoothing) to prevent the plot from slowing
    * down the performance of the program as much as possible.
+   *
    * @return JFreeChart XYSeries representation of the data
    */
   public XYSeries toXYSeries() {
@@ -649,11 +674,11 @@ public class DataBlock {
 
     XYSeries out = new XYSeries(name);
     long thisTime = trimmedStart;
-    for (int i = 0; i < data.length; i+=skipFactor) {
+    for (int i = 0; i < data.length; i += skipFactor) {
       double point = data[i];
       double xTime = thisTime;
       out.add(xTime, point);
-      thisTime += skipFactor*targetInterval;
+      thisTime += skipFactor * targetInterval;
     }
 
     return out;
@@ -661,17 +686,19 @@ public class DataBlock {
 
   /**
    * Adjust the window of data to collect samples from when getting the data
+   *
    * @param start Start time to trim window to, as Calendar object
    * @param end End time to trim window to, as Calendar object
    */
   @Deprecated
   public void trim(Calendar start, Calendar end) {
-    trim( start.getTimeInMillis(),
-        end.getTimeInMillis() );
+    trim(start.getTimeInMillis(),
+        end.getTimeInMillis());
   }
 
   /**
    * Adjust the window of data to collect samples from when getting the data
+   *
    * @param start Start time to trim window to in milliseconds from epoch
    * @param end End time to trim window to in milliseconds from epoch
    */
@@ -691,6 +718,7 @@ public class DataBlock {
   /**
    * Adjust the window of data to collect samples from when getting the data
    * (i.e., used to determine region of analysis for the various experiments)
+   *
    * @param start Start time to trim window to, as DateTime object
    * @param end End time to trim window to, as DateTime object
    */
@@ -712,11 +740,11 @@ public class DataBlock {
   }
 
   private void recalculateTimes() {
-    List<Long> times = new ArrayList<Long>( dataMap.keySet() );
+    List<Long> times = new ArrayList<Long>(dataMap.keySet());
     Collections.sort(times);
     startTime = times.get(0);
     trimmedStart = startTime;
-    long lastListStart = times.get( times.size() - 1 );
+    long lastListStart = times.get(times.size() - 1);
     int pointsToEnd = dataMap.get(lastListStart).length;
     endTime = lastListStart + (pointsToEnd * interval);
     trimmedEnd = endTime;

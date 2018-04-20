@@ -1,5 +1,9 @@
 package asl.sensor.gui;
 
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.ExperimentFactory;
+import asl.sensor.experiment.GainSixExperiment;
+import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -14,15 +18,11 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.ExperimentFactory;
-import asl.sensor.experiment.GainSixExperiment;
-import asl.sensor.input.DataStore;
 
 /**
  * Six-input extension for RelativeGain gui
- * @author akearns
  *
+ * @author akearns
  */
 public class GainSixPanel extends GainPanel {
 
@@ -35,6 +35,7 @@ public class GainSixPanel extends GainPanel {
   /**
    * Static helper method for getting the formatted inset string directly
    * from a GainExperiment
+   *
    * @param gn GainSixExperiment with data to be extracted
    * @param plotIdx Plot to have this inset applied to
    * @param refIdx Index of data to be loaded as reference (i.e., 0)
@@ -47,7 +48,7 @@ public class GainSixPanel extends GainPanel {
       int refIdx, double lowPrd, double highPrd) {
 
     double[][] meanAndStdDevAll =
-        gn.getStatsFromFreqs(refIdx, 1/lowPrd, 1/highPrd);
+        gn.getStatsFromFreqs(refIdx, 1 / lowPrd, 1 / highPrd);
 
     double[] meanAndStdDev = meanAndStdDevAll[plotIdx];
 
@@ -73,10 +74,10 @@ public class GainSixPanel extends GainPanel {
 
     if (plotIdx == 0) {
       sb.append("\nNorth azimuth (deg): ");
-      sb.append( df.format( Math.toDegrees( gn.getNorthAzimuth() ) ) );
+      sb.append(df.format(Math.toDegrees(gn.getNorthAzimuth())));
     } else if (plotIdx == 1) {
       sb.append("\nEast azimuth (rad): ");
-      sb.append( df.format( Math.toDegrees( gn.getEastAzimuth() ) ) );
+      sb.append(df.format(Math.toDegrees(gn.getEastAzimuth())));
     }
 
     return sb.toString();
@@ -87,7 +88,6 @@ public class GainSixPanel extends GainPanel {
 
   /**
    * Instantiate the panel, including sliders and stat calc button
-   * @param exp
    */
   public GainSixPanel(ExperimentEnum exp) {
     // instantiate common components
@@ -98,7 +98,7 @@ public class GainSixPanel extends GainPanel {
     for (int i = 0; i < 2; ++i) {
       int num = i + 1;
       channelType[3 * i] = "North sensor " + num + " (RESP required)";
-      channelType[(3 * i) + 1] = "East sensor " + num  + " (RESP required)";
+      channelType[(3 * i) + 1] = "East sensor " + num + " (RESP required)";
       channelType[(3 * i) + 2] = "Vertical sensor " + num + " (RESP required)";
     }
 
@@ -108,28 +108,31 @@ public class GainSixPanel extends GainPanel {
     String yTitle = getYAxis().getLabel();
 
     northChart =
-        ChartFactory.createXYLineChart( expType.getName() + " (North)",
-        xTitle, yTitle, null);
+        ChartFactory.createXYLineChart(expType.getName() + " (North)",
+            xTitle, yTitle, null);
     eastChart =
-        ChartFactory.createXYLineChart( expType.getName() + " (East)",
-        xTitle, yTitle, null);
+        ChartFactory.createXYLineChart(expType.getName() + " (East)",
+            xTitle, yTitle, null);
     vertChart =
-        ChartFactory.createXYLineChart( expType.getName() + " (Vertical)",
-        xTitle, yTitle, null);
+        ChartFactory.createXYLineChart(expType.getName() + " (Vertical)",
+            xTitle, yTitle, null);
 
     // create layout
     removeAll();
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
 
     gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
     gbc.gridwidth = 3;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
 
-    gbc.gridx = 0; gbc.gridy += 1;
+    gbc.gridx = 0;
+    gbc.gridy += 1;
     gbc.weighty = 0;
     gbc.gridwidth = 1;
     gbc.anchor = GridBagConstraints.EAST;
@@ -145,7 +148,8 @@ public class GainSixPanel extends GainPanel {
     gbc.weightx = 1;
     this.add(rightSlider, gbc);
 
-    gbc.gridx = 0; gbc.gridy += 1;
+    gbc.gridx = 0;
+    gbc.gridy += 1;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(refSeries, gbc);
@@ -174,7 +178,7 @@ public class GainSixPanel extends GainPanel {
   @Override
   public void actionPerformed(ActionEvent e) {
 
-    if ( e.getSource() == recalcButton ) {
+    if (e.getSource() == recalcButton) {
 
       // TODO: set title for each chart;
       setTitle();
@@ -186,7 +190,7 @@ public class GainSixPanel extends GainPanel {
 
     super.actionPerformed(e); // saving?
 
-    if ( e.getSource() == plotSelection ) {
+    if (e.getSource() == plotSelection) {
       int idx = plotSelection.getSelectedIndex();
 
       JFreeChart[] charts = getCharts();
@@ -239,9 +243,9 @@ public class GainSixPanel extends GainPanel {
     for (int i = 0; i < charts.length; ++i) {
       XYSeriesCollection xyscIn = expResult.getData().get(i);
       XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries( xyscIn.getSeries(refIdx) );
-      xysc.addSeries( xyscIn.getSeries(idx1) );
-      xysc.addSeries( xyscIn.getSeries("NLNM") );
+      xysc.addSeries(xyscIn.getSeries(refIdx));
+      xysc.addSeries(xyscIn.getSeries(idx1));
+      xysc.addSeries(xyscIn.getSeries("NLNM"));
 
       charts[i] = buildChart(xysc);
 
@@ -284,6 +288,7 @@ public class GainSixPanel extends GainPanel {
    * Since each chart has a unique inset, this method ensures each one has
    * its own unique inset; all inset strings are compiled in the getInsetString
    * method.
+   *
    * @param idx Index of experiment sub-index to get data from
    * @return String of results returned by that experiment
    */
@@ -311,7 +316,7 @@ public class GainSixPanel extends GainPanel {
     for (int i = 0; i < 3; ++i) {
       sb.append(labels[i]);
       sb.append('\n');
-      sb.append( getInsetStringPerChart(i) );
+      sb.append(getInsetStringPerChart(i));
       sb.append('\n');
     }
 
@@ -325,6 +330,7 @@ public class GainSixPanel extends GainPanel {
 
   /**
    * Used to populate the comboboxes with the incoming data
+   *
    * @param ds DataStore object being processed
    */
   private void setDataNames(DataStore ds) {

@@ -1,5 +1,10 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,8 +15,7 @@ import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import
-org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
+import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
@@ -19,11 +23,6 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * More specific javadoc will be incoming, but for now a brief explanation
@@ -42,8 +41,8 @@ import asl.sensor.utils.TimeSeriesUtils;
  * This calculation is mostly based on Ringler, Edwards, et al.,
  * 'Relative azimuth inversion by way of damped maximum correlation estimates',
  * Elsevier Computers and Geosciences 43 (2012)
- * @author akearns
  *
+ * @author akearns
  */
 public class AzimuthExperiment extends Experiment {
 
@@ -70,6 +69,7 @@ public class AzimuthExperiment extends Experiment {
   /**
    * Entry point for this experiment to guarantee the use of the simple solver
    * and require less overhead, callable from another experiment
+   *
    * @param testNorth timeseries data from presumed north-facing test sensor
    * @param testEast timeseries data from presumed east-facing test sensor
    * @param refNorth timeseries data from known north-facing sensor
@@ -100,9 +100,9 @@ public class AzimuthExperiment extends Experiment {
     DataBlock refNorthBlock = ds.getXthLoadedBlock(3);
 
     dataNames = new ArrayList<String>();
-    dataNames.add( testNorthBlock.getName() );
-    dataNames.add( testEastBlock.getName() );
-    dataNames.add( refNorthBlock.getName() );
+    dataNames.add(testNorthBlock.getName());
+    dataNames.add(testEastBlock.getName());
+    dataNames.add(refNorthBlock.getName());
 
     // resampling should already have been done when loading in data
     long interval = testNorthBlock.getInterval();
@@ -119,6 +119,7 @@ public class AzimuthExperiment extends Experiment {
 
   /**
    * Backend library call for both datasets
+   *
    * @param testNorth North-facing data to find azimuth of
    * @param testEast East-facing data to find azimuth of
    * @param refNorth North-facing data to use as reference
@@ -154,8 +155,8 @@ public class AzimuthExperiment extends Experiment {
 
     // data will be downsampled to 1 if > 1Hz rate, else will keep sample rate from input
     double sps = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / interval);
-    double low = 1./8; // filter from 8 seconds interval
-    double high = 1./3; // up to 3 seconds interval
+    double low = 1. / 8; // filter from 8 seconds interval
+    double high = 1. / 3; // up to 3 seconds interval
 
     initTestNorth = FFTResult.bandFilter(initTestNorth, sps, low, high);
     initTestEast = FFTResult.bandFilter(initTestEast, sps, low, high);
@@ -167,7 +168,7 @@ public class AzimuthExperiment extends Experiment {
     double initAngle = 0.;
 
     LeastSquaresProblem findAngleY = new LeastSquaresBuilder().
-        start(new double[] {initAngle}).
+        start(new double[]{initAngle}).
         model(jacobian).
         target(new double[]{1}).
         maxEvaluations(Integer.MAX_VALUE).
@@ -182,7 +183,7 @@ public class AzimuthExperiment extends Experiment {
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
     double tempAngle = angleVector.getEntry(0);
-    tempAngle = ( (tempAngle % NumericUtils.TAU) + NumericUtils.TAU)
+    tempAngle = ((tempAngle % NumericUtils.TAU) + NumericUtils.TAU)
         % NumericUtils.TAU;
 
     String newStatus = "Found initial guess for angle: " + tempAngle;
@@ -210,8 +211,8 @@ public class AzimuthExperiment extends Experiment {
 
     // first double -- angle estimate over window
     // second double -- correlation from that estimate over the window
-    Map<Long, Pair<Double,Double>> angleCorrelationMap =
-        new HashMap<Long, Pair<Double, Double>> ();
+    Map<Long, Pair<Double, Double>> angleCorrelationMap =
+        new HashMap<Long, Pair<Double, Double>>();
     List<Double> sortedCorrelation = new ArrayList<Double>();
 
     // want (correlation-1+damping) to be as close to 0 as possible
@@ -225,7 +226,7 @@ public class AzimuthExperiment extends Experiment {
     final long twoThouSecs = 2000L * TimeSeriesUtils.ONE_HZ_INTERVAL;
     // 1000 ms per second, range length
     final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
-    int numWindows = (int) ( (timeRange - twoThouSecs) / fiveHundSecs);
+    int numWindows = (int) ((timeRange - twoThouSecs) / fiveHundSecs);
     // look at 2000s windows, sliding over 500s of data at a time
     for (int i = 0; i < numWindows; ++i) {
       StringBuilder sb = new StringBuilder();
@@ -275,7 +276,7 @@ public class AzimuthExperiment extends Experiment {
       // call to evaluate at best-fit point gives corresponding latestCorrelation as side effect
       double angleTemp = angleVectorWindow.getEntry(0);
 
-      angleTemp = ( (angleTemp % tau) + tau ) % tau;
+      angleTemp = ((angleTemp % tau) + tau) % tau;
 
       double correlation = latestCorrelation;
 
@@ -285,7 +286,7 @@ public class AzimuthExperiment extends Experiment {
       }
 
       angleCorrelationMap.put(
-          wdStart, new Pair<Double, Double>(angleTemp, correlation) );
+          wdStart, new Pair<Double, Double>(angleTemp, correlation));
       sortedCorrelation.add(correlation);
     }
 
@@ -305,7 +306,7 @@ public class AzimuthExperiment extends Experiment {
       int maxBoundary = Math.max(minCorrelations, sortedCorrelation.size() * 3 / 20);
       // start from 0 because sort is descending order
       sortedCorrelation = sortedCorrelation.subList(0, maxBoundary);
-      minCorr = sortedCorrelation.get( sortedCorrelation.size() - 1);
+      minCorr = sortedCorrelation.get(sortedCorrelation.size() - 1);
 
       // store good values for use in std dev calculation
       acceptedAngles = new ArrayList<Double>();
@@ -314,8 +315,7 @@ public class AzimuthExperiment extends Experiment {
       correlations = new double[angleCorrelationMap.size()];
       angles = new double[angleCorrelationMap.size()];
 
-
-      List<Long> times = new ArrayList<Long>( angleCorrelationMap.keySet() );
+      List<Long> times = new ArrayList<Long>(angleCorrelationMap.keySet());
       Collections.sort(times);
 
       for (int i = 0; i < times.size(); ++i) {
@@ -326,9 +326,9 @@ public class AzimuthExperiment extends Experiment {
       }
 
       // shift term here used to deal with potential discontinuities in the mean of the data
-      double shift = angles[0] + Math.PI/4; // 45 degrees offset
+      double shift = angles[0] + Math.PI / 4; // 45 degrees offset
       for (int i = 0; i < angles.length; ++i) {
-        angles[i] = ( ( (angles[i] + shift) % tau ) + tau ) % tau;
+        angles[i] = (((angles[i] + shift) % tau) + tau) % tau;
       }
 
       // now get the average
@@ -336,7 +336,7 @@ public class AzimuthExperiment extends Experiment {
       for (int i = 0; i < angles.length; ++i) {
         angles[i] -= shift; // subtract shift term back out
         double correlation = correlations[i];
-        if ( correlation >= minCorr && acceptedAngles.size() < maxBoundary ) {
+        if (correlation >= minCorr && acceptedAngles.size() < maxBoundary) {
           // don't keep adding angles once we've hit the max size
           // don't break out of the loop, though, so we can remove the shift from everything
           acceptedAngles.add(angles[i]);
@@ -352,7 +352,7 @@ public class AzimuthExperiment extends Experiment {
         uncert += Math.pow(angle - averageAngle, 2);
       }
 
-      uncert = Math.sqrt( uncert / acceptedAngles.size() );
+      uncert = Math.sqrt(uncert / acceptedAngles.size());
       uncert *= 2; // two-sigma gets us 95% confidence interval
 
       // do this calculation to get plot of freq/correlation, a side effect
@@ -361,7 +361,7 @@ public class AzimuthExperiment extends Experiment {
           MatrixUtils.createRealVector(new double[]{averageAngle});
       findAngleY.evaluate(angleVec);
 
-      angle = ( (averageAngle % tau) + tau ) % tau;
+      angle = ((averageAngle % tau) + tau) % tau;
 
     }
 
@@ -379,7 +379,7 @@ public class AzimuthExperiment extends Experiment {
     XYSeries set = new XYSeries(eastName + " rel. to reference");
     set.add(offset + angleDeg + 90, 1);
     set.add(offset + angleDeg + 90, 0);
-    XYSeries fromNorth = new XYSeries (refName + " location");
+    XYSeries fromNorth = new XYSeries(refName + " location");
     fromNorth.add(offset, 1);
     fromNorth.add(offset, 0);
 
@@ -397,19 +397,18 @@ public class AzimuthExperiment extends Experiment {
     xysc.addSeries(timeMapCorrelation);
 
     for (int i = 0; i < angles.length; ++i) {
-        long xVal = i * 500;
-        double angle = angles[i];
-        // angle += Math.toRadians(offset);
-        angle = (angle % tau);
-        double correlation = correlations[i];
-        timeMapCorrelation.add(xVal, correlation);
-        timeMapAngle.add( xVal, Math.toDegrees(angle) );
-        angles[i] = Math.toDegrees(angle);
+      long xVal = i * 500;
+      double angle = angles[i];
+      // angle += Math.toRadians(offset);
+      angle = (angle % tau);
+      double correlation = correlations[i];
+      timeMapCorrelation.add(xVal, correlation);
+      timeMapAngle.add(xVal, Math.toDegrees(angle));
+      angles[i] = Math.toDegrees(angle);
     }
 
-
-    xySeriesData.add( new XYSeriesCollection(timeMapAngle) );
-    xySeriesData.add( new XYSeriesCollection(timeMapCorrelation) );
+    xySeriesData.add(new XYSeriesCollection(timeMapAngle));
+    xySeriesData.add(new XYSeriesCollection(timeMapCorrelation));
   }
 
   @Override
@@ -420,13 +419,14 @@ public class AzimuthExperiment extends Experiment {
   public double[] getAcceptedAngles() {
     double[] acceptedDeg = new double[acceptedAngles.size()];
     for (int i = 0; i < acceptedDeg.length; ++i) {
-      acceptedDeg[i] = Math.toDegrees( acceptedAngles.get(i) );
+      acceptedDeg[i] = Math.toDegrees(acceptedAngles.get(i));
     }
     return acceptedDeg;
   }
 
   /**
    * Get the series of best-fit angles over each of the windowed ranges of data
+   *
    * @return Array of best-fit angles
    */
   public double[] getBestFitAngles() {
@@ -435,6 +435,7 @@ public class AzimuthExperiment extends Experiment {
 
   /**
    * Get the correlation estimate for each best-fit angle over the series of data windows
+   *
    * @return Array of best correlations
    */
   public double[] getCorrelations() {
@@ -473,6 +474,7 @@ public class AzimuthExperiment extends Experiment {
 
   /**
    * Return the fit angle calculated by the backend in degrees
+   *
    * @return angle result in degrees
    */
   public double getFitAngle() {
@@ -481,6 +483,7 @@ public class AzimuthExperiment extends Experiment {
 
   /**
    * Return the fit angle calculated by the backend in radians
+   *
    * @return angle result in radians
    */
   public double getFitAngleRad() {
@@ -492,6 +495,7 @@ public class AzimuthExperiment extends Experiment {
    * The timeseries are used as input to the rotation function.
    * We take the inputs as fixed and rotate copies of the data to find the
    * Jacobian of the data.
+   *
    * @param l1 Data from the test sensor's north-facing component
    * @param l2 Data from the test sensor's east-facing component
    * @param l3 Data from the known north-facing sensor
@@ -521,6 +525,7 @@ public class AzimuthExperiment extends Experiment {
 
   /**
    * Returns the minimum acceptable correlation used in angle estimates
+   *
    * @return correlation cut-off point
    */
   public double getMinCorr() {
@@ -529,14 +534,16 @@ public class AzimuthExperiment extends Experiment {
 
   /**
    * Returns the given offset angle (i.e., angle between north and reference sensor)
+   *
    * @return offset angle, in degrees, set between 0 and 360
    */
   public double getOffset() {
-    return ( (offset % 360) + 360 ) % 360;
+    return ((offset % 360) + 360) % 360;
   }
 
   /**
    * Get the uncertainty of the angle
+   *
    * @return Uncertainty estimation of the current angle (from variance)
    */
   public double getUncertainty() {
@@ -545,6 +552,7 @@ public class AzimuthExperiment extends Experiment {
 
   /**
    * Returns true if there were enough points to do correlation windowing step
+   *
    * @return Boolean that is true if correlation windows were taken
    */
   public boolean hadEnoughPoints() {
@@ -554,7 +562,7 @@ public class AzimuthExperiment extends Experiment {
   @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if ( !ds.blockIsSet(i) ) {
+      if (!ds.blockIsSet(i)) {
         return false;
       }
     }
@@ -569,7 +577,7 @@ public class AzimuthExperiment extends Experiment {
 
     double diff = 1E-12;
 
-    double theta = ( point.getEntry(0) );
+    double theta = (point.getEntry(0));
     double thetaDelta = theta + diff;
 
     // angles of rotation are x, x+dx respectively
@@ -595,6 +603,7 @@ public class AzimuthExperiment extends Experiment {
    * a damped cost function based on best correlation (and the angle producing it) from previous
    * data windows, each one fixed for a given window (not changing on recursive calls for the same
    * set of input data).
+   *
    * @param point Current angle
    * @param refNorth Reference sensor, facing north
    * @param testNorth Test sensor, facing approximately north
@@ -615,7 +624,7 @@ public class AzimuthExperiment extends Experiment {
 
     double diff = 1E-12;
 
-    double theta = ( point.getEntry(0) );
+    double theta = (point.getEntry(0));
     double thetaDelta = theta + diff;
 
     // was the frequency range under examination (in Hz) when doing coherence
@@ -646,6 +655,7 @@ public class AzimuthExperiment extends Experiment {
 
   /**
    * Set the angle offset for the reference sensor (degrees from north)
+   *
    * @param newOffset Degrees from north that the reference sensor points
    */
   public void setOffset(double newOffset) {
@@ -660,6 +670,7 @@ public class AzimuthExperiment extends Experiment {
    * needs to be explicitly set when a simple calculation is desired.
    * This is used primarily when aligning data is done as part of a multi-input experiment
    * (i.e., 9-input self-noise, 6-input relative gain)
+   *
    * @param isSimple True if a simple calculation should be done
    */
   public void setSimple(boolean isSimple) {

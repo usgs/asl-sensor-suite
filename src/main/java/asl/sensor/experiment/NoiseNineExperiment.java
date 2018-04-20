@@ -1,9 +1,9 @@
 package asl.sensor.experiment;
 
-import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
+import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * Enhanced version of the self-noise experiment using 9 inputs. These inputs
@@ -18,8 +18,8 @@ import asl.sensor.utils.TimeSeriesUtils;
  * east-aligned signals, and for the vertical signals.
  * See also Ringler, Hutt, "Self-Noise Models of Seismic Instruments",
  * Seismological Research Letters 81 (SSA, Nov. 2010).
- * @author akearns
  *
+ * @author akearns
  */
 public class NoiseNineExperiment extends NoiseExperiment {
 
@@ -41,8 +41,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // NOTE: this may need to change in the event of a test using > 9 inputs
     for (int i = 0; i < 9; ++i) {
       // doing this loop here saves us time and significant lines of code
-      dataNames.add( ds.getBlock(i).getName() );
-      dataNames.add( ds.getResponse(i).getName() );
+      dataNames.add(ds.getBlock(i).getName());
+      dataNames.add(ds.getResponse(i).getName());
     }
 
     DataStore[] stores = new DataStore[DIMS];
@@ -50,8 +50,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
     for (int i = 0; i < DIMS; ++i) {
       stores[i] = new DataStore();
       for (int j = 0; j < 3; ++j) {
-        stores[i].setBlock( j, ds.getBlock( i + (j * DIMS) ) );
-        stores[i].setResponse( j, ds.getResponse( i + (j * DIMS) ) );
+        stores[i].setBlock(j, ds.getBlock(i + (j * DIMS)));
+        stores[i].setResponse(j, ds.getResponse(i + (j * DIMS)));
       }
     }
 
@@ -77,7 +77,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     StringBuilder sb = new StringBuilder();
     sb.append("Beginning rotations (offset angle esimates)\n");
     sb.append("for second and third sets of horizontal (N, E) data...");
-    fireStateChange( sb.toString() );
+    fireStateChange(sb.toString());
 
     // angle is set negative because we are finding angle of reference input
     // which is what north2Sensor is here
@@ -127,7 +127,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // get noise from each axis's data
     NoiseExperiment noiseExp = new NoiseExperiment();
     noiseExp.setFreqSpace(freqSpace);
-    String[] directions = new String[]{"north","east","vertical"};
+    String[] directions = new String[]{"north", "east", "vertical"};
     for (int i = 0; i < DIMS; ++i) {
       sb = new StringBuilder("Calculating ");
       sb.append(directions[i]);
@@ -150,6 +150,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
    * Uses a simpler solver for the Azimuth data. May produce an angle that
    * is 180 degrees off from expected due to use of coherence measurement
    * and limited checking of antipolar alignment
+   *
    * @param n Timeseries data from north-facing reference sensor
    * @param e Timeseries data from east-facing reference sensor
    * @param r Timeseries data from test sensor (either north or east)
@@ -171,6 +172,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
    * Return array of angles (degree-valued) which east components have been
    * rotated by, starting with the second component (1st east component is
    * assumed to have zero rotation)
+   *
    * @return double array representing angles in degrees
    */
   public double[] getEastAngles() {
@@ -181,6 +183,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
    * Return array of angles (degree-valued) which north components have been
    * rotated by, starting with the second component (1st north component is
    * assumed to have zero rotation)
+   *
    * @return double array representing angles in degrees
    */
   public double[] getNorthAngles() {
@@ -190,7 +193,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if ( !ds.bothComponentsSet(i) ) {
+      if (!ds.bothComponentsSet(i)) {
         return false;
       }
     }

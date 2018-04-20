@@ -1,5 +1,10 @@
 package asl.sensor.gui;
 
+import asl.sensor.experiment.Experiment;
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.ExperimentFactory;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
@@ -42,11 +47,6 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.experiment.Experiment;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.ExperimentFactory;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
 
 /**
  * Panel used to display the data produced from a specified sensor test.
@@ -66,16 +66,16 @@ import asl.sensor.utils.ReportingUtils;
  * experiment based on calls to a status change report in the backend.
  *
  * @author akearns
- *
  */
 public abstract class ExperimentPanel
-extends JPanel
-implements ActionListener, ChangeListener {
+    extends JPanel
+    implements ActionListener, ChangeListener {
 
   private static final long serialVersionUID = -5591522915365766604L;
 
   /**
    * Append text to a chart's title (used for distinguishing random cal types).
+   *
    * @param chart Chart whose title will be modified
    * @param appendText Text to append to chart's current title
    */
@@ -86,6 +86,7 @@ implements ActionListener, ChangeListener {
 
   /**
    * Get start and end times of data for experiments that use time series data
+   *
    * @param expResult experiment with data already added
    * @return string representing the start and end of the
    * experiment's data range
@@ -97,22 +98,22 @@ implements ActionListener, ChangeListener {
     OffsetDateTime dt = OffsetDateTime.now(ZoneOffset.UTC);
 
     sb.append("Time of report generation:\n");
-    sb.append( dtf.format(dt) );
+    sb.append(dtf.format(dt));
     sb.append('\n');
 
     long startTime = expResult.getStart();
     long endTime = expResult.getEnd();
-    if ( !(startTime == 0L && endTime == 0L) ) {
-      dt = OffsetDateTime.ofInstant( Instant.ofEpochMilli(startTime), ZoneOffset.UTC);
+    if (!(startTime == 0L && endTime == 0L)) {
+      dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneOffset.UTC);
 
       sb.append("Data start time:\n");
-      sb.append( dtf.format(dt) );
+      sb.append(dtf.format(dt));
       sb.append('\n');
 
-      dt = OffsetDateTime.ofInstant( Instant.ofEpochMilli(endTime), ZoneOffset.UTC);
+      dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(endTime), ZoneOffset.UTC);
 
       sb.append("Data end time:\n");
-      sb.append( dtf.format(dt) );
+      sb.append(dtf.format(dt));
       sb.append('\n');
     }
     return sb.toString();
@@ -123,13 +124,14 @@ implements ActionListener, ChangeListener {
    * at the background are inverted and placed in the foreground instead.
    * That is, if a curve is to be rendered behind a different curve, it will be
    * rendered instead with that series in front of the other curve.
+   *
    * @param chart Chart with plot rendering order to be reversed. Must use
    * an XY plot (i.e., is an XYLineSeries chart)
    */
   public static void invertSeriesRenderingOrder(JFreeChart chart) {
     XYPlot xyp = chart.getXYPlot();
     SeriesRenderingOrder sro = xyp.getSeriesRenderingOrder();
-    if ( sro.equals(SeriesRenderingOrder.FORWARD) ) {
+    if (sro.equals(SeriesRenderingOrder.FORWARD)) {
       xyp.setSeriesRenderingOrder(SeriesRenderingOrder.REVERSE);
     } else {
       xyp.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
@@ -149,18 +151,18 @@ implements ActionListener, ChangeListener {
   protected JFileChooser fc; // save image when image save button clicked
 
   public final ExperimentEnum expType;
-    // used to define experiment of each plot object (i.e., chart name)
+  // used to define experiment of each plot object (i.e., chart name)
 
   protected Experiment expResult;
-    // experiment actually being run (call its 'setData' method to run backend)
-    // experiments use builder pattern -- set necessary variables like
-    // angle offset or x-axis units before running the experiment
+  // experiment actually being run (call its 'setData' method to run backend)
+  // experiments use builder pattern -- set necessary variables like
+  // angle offset or x-axis units before running the experiment
 
   protected ValueAxis xAxis, yAxis;
-    // default axes to use with the default chart
+  // default axes to use with the default chart
 
   public String[] channelType;
-    // used to give details in input panel about what users needs to load where
+  // used to give details in input panel about what users needs to load where
   protected boolean set; // true if the experiment has run
 
   protected String[] plotTheseInBold; // given in the implementing function
@@ -177,6 +179,7 @@ implements ActionListener, ChangeListener {
 
   /**
    * Construct a new panel, using a backend defined by the passed-in enum
+   *
    * @param exp Experiment enum with corresponding backend for factory
    * instantiation
    */
@@ -199,7 +202,7 @@ implements ActionListener, ChangeListener {
     expResult = ExperimentFactory.createExperiment(exp);
     expResult.addChangeListener(this);
 
-    chart = ChartFactory.createXYLineChart( expType.getName(),
+    chart = ChartFactory.createXYLineChart(expType.getName(),
         "", "", null);
     chartPanel = new ChartPanel(chart);
     // chartPanel.setMouseZoomable(false);
@@ -212,7 +215,7 @@ implements ActionListener, ChangeListener {
     // basic layout for components (recommended to override in concrete class)
     // if specific formatting or additional components are unnecessary, the
     // implementing class can simply call super(expType) to make a panel
-    this.setLayout( new BoxLayout(this, BoxLayout.PAGE_AXIS) );
+    this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
     this.add(chartPanel);
     this.add(save);
     save.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -225,19 +228,19 @@ implements ActionListener, ChangeListener {
   @Override
   public void actionPerformed(ActionEvent e) {
 
-    if ( e.getSource() == save ) {
+    if (e.getSource() == save) {
       String ext = ".png";
       fc.addChoosableFileFilter(
-          new FileNameExtensionFilter("PNG image (.png)",ext) );
+          new FileNameExtensionFilter("PNG image (.png)", ext));
       fc.setFileFilter(fc.getChoosableFileFilters()[1]);
       int returnVal = fc.showSaveDialog(save);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fc.getSelectedFile();
-        if( !selFile.getName().endsWith( ext.toLowerCase() ) ) {
-          selFile = new File( selFile.toString() + ext);
+        if (!selFile.getName().endsWith(ext.toLowerCase())) {
+          selFile = new File(selFile.toString() + ext);
         }
         try {
-          ChartUtilities.saveChartAsPNG(selFile,chart,640,480);
+          ChartUtilities.saveChartAsPNG(selFile, chart, 640, 480);
         } catch (IOException e1) {
           e1.printStackTrace();
         }
@@ -250,19 +253,20 @@ implements ActionListener, ChangeListener {
    */
   protected void applyAxesToChart() {
     XYPlot xyp = chart.getXYPlot();
-    xyp.setDomainAxis( getXAxis() );
-    xyp.setRangeAxis( getYAxis() );
+    xyp.setDomainAxis(getXAxis());
+    xyp.setRangeAxis(getYAxis());
   }
 
   /**
    * Function to construct a chart from the XYSeriesCollection produced
    * from this panel's backend. Any data that requires a specific plot color,
    * dashed line, or bold line have their corresponding properties applied
+   *
    * @param xyDataset Data to be plotted
    * @return XY Line Chart with the corresponding data in it
    */
   public JFreeChart buildChart(XYSeriesCollection xyDataset) {
-    return buildChart( xyDataset, getXAxis(), getYAxis() );
+    return buildChart(xyDataset, getXAxis(), getYAxis());
   }
 
   /**
@@ -276,6 +280,7 @@ implements ActionListener, ChangeListener {
    * using x-axis of seconds and y of counts, and has two other plots with
    * axes matching the charts of the response panel (x is frequency and
    * y is magnitude and phase).
+   *
    * @param xyDataset Data to be plotted
    * @param x X-axis to be applied to the chart
    * @param y Y-axis to be applied to the chart
@@ -301,22 +306,22 @@ implements ActionListener, ChangeListener {
     if (xyDataset != null && seriesColorMap.size() == 0) {
       int modulus = COLORS.length;
       for (int seriesIdx = 0; seriesIdx < xyDataset.getSeriesCount(); ++seriesIdx) {
-        xyir.setSeriesPaint( seriesIdx, COLORS[seriesIdx % modulus] );
+        xyir.setSeriesPaint(seriesIdx, COLORS[seriesIdx % modulus]);
       }
     }
 
     // force certain colors and whether or not a line should be dashed
 
-    for ( String series : seriesColorMap.keySet() ) {
+    for (String series : seriesColorMap.keySet()) {
       int seriesIdx = xyDataset.getSeriesIndex(series);
       if (seriesIdx >= 0) {
-        xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series) );
+        xyir.setSeriesPaint(seriesIdx, seriesColorMap.get(series));
       } else {
         continue;
       }
 
-      if ( seriesDashedSet.contains(series) ) {
-        xyir.setSeriesPaint( seriesIdx, seriesColorMap.get(series).darker() );
+      if (seriesDashedSet.contains(series)) {
+        xyir.setSeriesPaint(seriesIdx, seriesColorMap.get(series).darker());
 
         BasicStroke stroke = (BasicStroke) xyir.getSeriesStroke(seriesIdx);
         if (stroke == null) {
@@ -326,7 +331,7 @@ implements ActionListener, ChangeListener {
         int join = stroke.getLineJoin();
         int cap = stroke.getEndCap();
 
-        float[] dashing = new float[]{1,4};
+        float[] dashing = new float[]{1, 4};
 
         stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
         xyir.setSeriesStroke(seriesIdx, stroke);
@@ -334,7 +339,7 @@ implements ActionListener, ChangeListener {
 
     }
 
-    if ( !(plotTheseInBold.length == 0) ) {
+    if (!(plotTheseInBold.length == 0)) {
       for (String series : plotTheseInBold) {
         int seriesIdx = xyDataset.getSeriesIndex(series);
         if (seriesIdx < 0) {
@@ -345,9 +350,9 @@ implements ActionListener, ChangeListener {
         if (stroke == null) {
           stroke = (BasicStroke) xyir.getBaseStroke();
         }
-        stroke = new BasicStroke( stroke.getLineWidth()*2 );
+        stroke = new BasicStroke(stroke.getLineWidth() * 2);
         xyir.setSeriesStroke(seriesIdx, stroke);
-        xyir.setSeriesPaint(seriesIdx, new Color(0,0,0) );
+        xyir.setSeriesPaint(seriesIdx, new Color(0, 0, 0));
       }
     }
 
@@ -366,7 +371,7 @@ implements ActionListener, ChangeListener {
         ChartFactory.createXYLineChart(
             expType.getName(),
             getXAxis().getLabel(),
-            getYAxis().getLabel(),  null );
+            getYAxis().getLabel(), null);
     chartPanel.setChart(chart);
   }
 
@@ -380,6 +385,7 @@ implements ActionListener, ChangeListener {
 
   /**
    * Overlay an error message in the event of an exception or other issue
+   *
    * @param errMsg Text of the message to be displayed
    */
   public void displayErrorMessage(String errMsg) {
@@ -397,7 +403,6 @@ implements ActionListener, ChangeListener {
 
   /**
    * Overlay informational text, such as extra results and statistics for plots
-   * @param infoMsg
    */
   public void displayInfoMessage(String infoMsg) {
     XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
@@ -422,6 +427,7 @@ implements ActionListener, ChangeListener {
    * will not need to override this method, but it may be useful to add
    * more detailed or verbose information that cannot be fit into a single
    * report page.
+   *
    * @return Array of strings, each one to be written to a new report page
    */
   public String[] getAdditionalReportPages() {
@@ -432,20 +438,21 @@ implements ActionListener, ChangeListener {
   /**
    * Produce all data used in PDF reports as a single string that can be
    * written to a text file
+   *
    * @return Data string including all metadata and relevant infrom from
    * an experiment
    */
   public String getAllTextData() {
-    StringBuilder sb = new StringBuilder( getInsetStrings() );
-    if ( sb.length() > 0 ) {
+    StringBuilder sb = new StringBuilder(getInsetStrings());
+    if (sb.length() > 0) {
       sb.append("\n\n");
     }
     String metadata = getMetadataString();
-    if ( metadata.length() > 0 ) {
+    if (metadata.length() > 0) {
       sb.append(metadata);
       sb.append("\n\n");
     }
-    sb.append( getTimeStampString(expResult) );
+    sb.append(getTimeStampString(expResult));
     sb.append("\n\n");
     String[] extraText = getAdditionalReportPages();
     for (String text : extraText) {
@@ -458,6 +465,7 @@ implements ActionListener, ChangeListener {
   /**
    * Return image of panel's plots with specified dimensions
    * Used to compile PNG image of all charts contained in this panel
+   *
    * @param width Width of output image in pixels
    * @param height Height of output image in pixels
    * @return buffered image of this panel's chart
@@ -472,6 +480,7 @@ implements ActionListener, ChangeListener {
   /**
    * Returns the identifiers of each input plot being used, such as
    * "calibration input" for the calibration tests.
+   *
    * @return Strings used to populate channel type identifiers in input panel
    */
   public String[] getChannelTypes() {
@@ -483,6 +492,7 @@ implements ActionListener, ChangeListener {
    * to be overridden by implementing experiment panels that contain multiple
    * charts.
    * Primary use of this function is to enumerate charts to save as images/PDF
+   *
    * @return All chartpanels used in this object
    */
   public JFreeChart[] getCharts() {
@@ -494,6 +504,7 @@ implements ActionListener, ChangeListener {
    * case of a calibration, this is usually the second input. In most cases,
    * however, the first data input will be sufficient. Used in report filename
    * generation.
+   *
    * @return Index of data used to get naem for report
    */
   protected int getIndexOfMainData() {
@@ -503,6 +514,7 @@ implements ActionListener, ChangeListener {
   /**
    * Used to return any title insets as text format for saving in PDF,
    * to be overridden by any panel that uses an inset
+   *
    * @return String with any relevant parameters in it
    */
   public String getInsetStrings() {
@@ -515,6 +527,7 @@ implements ActionListener, ChangeListener {
    * that it would not make sense to display in the inset, such as filenames.
    * If there is no metadata besides filenames of input data, that is returned
    * by the function, but experiments may need to augment with additional data.
+   *
    * @return A string with any additional data to be included in the PDF report
    */
   public String getMetadataString() {
@@ -531,28 +544,29 @@ implements ActionListener, ChangeListener {
   /**
    * Produce the filename of the report generated from this experiment.
    * Has the format TEST_STATION_YEAR.DAY unless overridden
+   *
    * @return String that will be default filename of PDF generated from data
    */
   public String getPDFFilename() {
 
     SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     String date;
     long time = expResult.getStart();
     if (time > 0) {
       date = sdf.format(time);
     } else {
-      Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-      date = sdf.format( cCal.getTime() );
+      Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
+      date = sdf.format(cCal.getTime());
     }
 
     // turn spaces into underscores
     String test = expType.getName().replace(' ', '_'); // name of experiment
     // make sure parentheses in filenames aren't causing issues
     // (i.e., better than dealing with system-specific setups to escape them)
-    test = test.replace('(','_');
-    test = test.replace(')','_');
+    test = test.replace('(', '_');
+    test = test.replace(')', '_');
 
     int idx = getIndexOfMainData();
     String name = expResult.getInputNames().get(idx); // name of input data
@@ -571,6 +585,7 @@ implements ActionListener, ChangeListener {
   /**
    * For report generation, give the list of indices of response files used
    * in the plot
+   *
    * @return list where each index is a relevant response file
    */
   public int[] getResponseIndices() {
@@ -581,6 +596,7 @@ implements ActionListener, ChangeListener {
    * Function to be overridden by implementing class that will add an extra
    * page to PDF reports including charts with less-essential data, such as
    * the plots of residual values over a range for parameter-fitting
+   *
    * @return List of charts to show on a second page of PDF reports
    */
   public JFreeChart[] getSecondPageCharts() {
@@ -593,6 +609,7 @@ implements ActionListener, ChangeListener {
    * types for the x-axis (i.e., for units of seconds vs. Hz); accessing
    * the x-axis object through this function allows for overrides allowing for
    * more flexibility.
+   *
    * @return ValueAxis to be applied to chart
    */
   public ValueAxis getXAxis() {
@@ -602,6 +619,7 @@ implements ActionListener, ChangeListener {
   /**
    * Default y-axis return function. As with getXAxis, designed to be overridden
    * for charts that may use multiple scales.
+   *
    * @return ValueAxis to be applied to chart
    */
   public ValueAxis getYAxis() {
@@ -613,6 +631,7 @@ implements ActionListener, ChangeListener {
    * data that a backend needs to calculate. This is used mainly to inform
    * the main window (see SensorSuite class) that the generate result button
    * can be set active
+   *
    * @param ds Datastore to run data check on
    * @return True if the backend can run with the data provided
    */
@@ -622,6 +641,7 @@ implements ActionListener, ChangeListener {
 
   /**
    * True if data has been loaded into the experiment backend yet
+   *
    * @return True if there is data to process
    */
   public boolean hasRun() {
@@ -631,12 +651,14 @@ implements ActionListener, ChangeListener {
   /**
    * Function template for informing main window of number of panels to display
    * to fit all data needed by the program
+   *
    * @return Number of plots to show in the input panel
    */
   public abstract int panelsNeeded();
 
   /**
    * Number of panels to return in an output report
+   *
    * @return number of panels to include
    */
   public int plotsToShow() {
@@ -646,13 +668,13 @@ implements ActionListener, ChangeListener {
   /**
    * Function to call to run experiment backend on specific data, using the
    * given swingworker
+   *
    * @param ds Data to evaluate the backend on
    * @param worker Worker thread to run the backend in, presumably the
    * worker object originating in the main class for the suite
    */
   public SwingWorker<Boolean, Void>
   runExperiment(final DataStore ds, SwingWorker<Boolean, Void> worker) {
-
 
     worker.execute();
 
@@ -665,28 +687,30 @@ implements ActionListener, ChangeListener {
    * data that has been passed into the experiment backend,
    * including any text that might be included in chart title insets and
    * the input data start and end timestamps
+   *
    * @param pdf PDF document to append data to
    */
   public void saveInsetDataText(PDDocument pdf) {
 
-    StringBuilder sb = new StringBuilder( getInsetStrings() );
-    if ( sb.length() > 0 ) {
+    StringBuilder sb = new StringBuilder(getInsetStrings());
+    if (sb.length() > 0) {
       sb.append("\n \n");
     }
     String metadata = getMetadataString();
-    if ( metadata.length() > 0 ) {
+    if (metadata.length() > 0) {
       sb.append(metadata);
       sb.append("\n \n");
     }
-    sb.append( getTimeStampString(expResult) );
-    ReportingUtils.textToPDFPage( sb.toString(), pdf );
-    ReportingUtils.textListToPDFPages( pdf, getAdditionalReportPages() );
+    sb.append(getTimeStampString(expResult));
+    ReportingUtils.textToPDFPage(sb.toString(), pdf);
+    ReportingUtils.textListToPDFPages(pdf, getAdditionalReportPages());
     return;
   }
 
   /**
    * Loads in charts used in this panel and prints them out in a PDF document
    * and includes any relevant metadata / analysis results as plain text
+   *
    * @param pdf Document to save data to
    */
   public void savePDFResults(PDDocument pdf) {
@@ -709,11 +733,12 @@ implements ActionListener, ChangeListener {
    * Used to plot the results of a backend function from an experiment
    * using a collection of XYSeries mapped by strings. This will be set to
    * the default chart object held by the panel.
+   *
    * @param xyDataset collection of XYSeries to plot
    */
   protected void setChart(XYSeriesCollection xyDataset) {
 
-     chart = buildChart(xyDataset);
+    chart = buildChart(xyDataset);
 
   }
 
@@ -731,7 +756,7 @@ implements ActionListener, ChangeListener {
    * the backend status changes
    */
   public void stateChanged(ChangeEvent e) {
-    if ( e.getSource() == expResult ) {
+    if (e.getSource() == expResult) {
       String info = expResult.getStatus();
       displayInfoMessage(info);
     }
@@ -740,6 +765,7 @@ implements ActionListener, ChangeListener {
   /**
    * Function template for sending input to a backend fucntion and collecting
    * the corresponding data
+   *
    * @param ds DataStore object containing seed and resp files
    */
   protected abstract void updateData(final DataStore ds);

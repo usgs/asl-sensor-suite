@@ -1,16 +1,16 @@
 package asl.sensor.input;
 
+import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Calendar;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 /**
  * Holds the inputted data from miniSEED files both as a simple struct
@@ -39,7 +39,6 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
  * experiments.
  *
  * @author akearns
- *
  */
 public class DataStore {
 
@@ -59,19 +58,20 @@ public class DataStore {
    * charts for plotting (see DataPanel)
    */
   public DataStore() {
-   dataBlockArray = new DataBlock[FILE_COUNT];
-   responses = new InstrumentResponse[FILE_COUNT];
-   thisBlockIsSet = new boolean[FILE_COUNT];
-   thisResponseIsSet = new boolean[FILE_COUNT];
-   for (int i = 0; i < FILE_COUNT; ++i) {
-     thisBlockIsSet[i] = false;
-     thisResponseIsSet[i] = false;
-   }
+    dataBlockArray = new DataBlock[FILE_COUNT];
+    responses = new InstrumentResponse[FILE_COUNT];
+    thisBlockIsSet = new boolean[FILE_COUNT];
+    thisResponseIsSet = new boolean[FILE_COUNT];
+    for (int i = 0; i < FILE_COUNT; ++i) {
+      thisBlockIsSet[i] = false;
+      thisResponseIsSet[i] = false;
+    }
   }
 
 
   /**
    * Create a copy of the current datastore
+   *
    * @param ds datastore to copy
    */
   public DataStore(DataStore ds) {
@@ -83,7 +83,7 @@ public class DataStore {
     boolean[] setResps = ds.responsesAreSet();
     for (int i = 0; i < FILE_COUNT; ++i) {
       if (setBlocks[i]) {
-        dataBlockArray[i] = new DataBlock( ds.getBlock(i) );
+        dataBlockArray[i] = new DataBlock(ds.getBlock(i));
         thisBlockIsSet[i] = true;
       }
 
@@ -97,12 +97,13 @@ public class DataStore {
 
   /**
    * Determine if any data blocks in the data store has been initialized
+   *
    * @return true if at least one datablock has been added to the store object
    */
   public boolean areAnyBlocksSet() {
 
     for (int i = 0; i < FILE_COUNT; ++i) {
-      if ( blockIsSet(i) ) {
+      if (blockIsSet(i)) {
         return true;
       }
     }
@@ -114,6 +115,7 @@ public class DataStore {
   /**
    * Checks whether the data block (timeseries) at a given index
    * contains data or is null/empty
+   *
    * @param idx Index of the data to look at (between 0 and DATA_STORE)
    * @return True if a seed file has been loaded in at the index
    */
@@ -123,6 +125,7 @@ public class DataStore {
 
   /**
    * Checks if both components at a specific index are set
+   *
    * @param idx Index of data to check if set or not
    * @return True if a seed and response have been both loaded in
    */
@@ -134,6 +137,7 @@ public class DataStore {
    * Returns the boolean array where each index shows if there is a DataBlock
    * loaded into this datastore object at that index
    * has had data loaded into it (see blockIsSet method)
+   *
    * @return Array of booleans where an entry is true if data is loaded at
    * the corresponding index
    */
@@ -143,6 +147,7 @@ public class DataStore {
 
   /**
    * Return a single data block according to the passed index
+   *
    * @param idx Index of datablock, corresponding to data panel plot index
    * @return Timeseries data for corresponing plot
    */
@@ -151,7 +156,7 @@ public class DataStore {
   }
 
   public Pair<Long, Long> getCommonTime() {
-    if ( numberOfBlocksSet() < 1) {
+    if (numberOfBlocksSet() < 1) {
       return new Pair<Long, Long>(Long.MIN_VALUE, Long.MAX_VALUE);
     } else {
       long lastStartTime = Long.MIN_VALUE;
@@ -178,6 +183,7 @@ public class DataStore {
 
   /**
    * Returns the set of structures used to hold the loaded miniSeed data sets
+   *
    * @return An array of DataBlocks (time series and metadata)
    */
   public DataBlock[] getData() {
@@ -187,6 +193,7 @@ public class DataStore {
   /**
    * Returns the plottable format of the data held in the arrays at
    * the specified index
+   *
    * @param idx Which of this structure's plottable series should be loaded
    * @return The time series data at given index, to be sent to a chart
    */
@@ -198,6 +205,7 @@ public class DataStore {
    * Gets the power-spectral density of an index in this object.
    * If a PSD has already been calculated, this will return that. If not,
    * it will calculate the result, store it, and then return that data.
+   *
    * @param idx Index of data to get the PSD of
    * @return Complex array of frequency values and a
    * double array of the frequencies
@@ -211,6 +219,7 @@ public class DataStore {
 
   /**
    * Get the instrument response object at a given index
+   *
    * @param idx Index to get the response for
    * @return The instrument response data (gain, poles, zeros, etc.)
    */
@@ -222,6 +231,7 @@ public class DataStore {
    * Returns the instrument responses as an array, ordered such that the
    * response at index i is the response associated with the DataBlock at i
    * in the array of DataBlocks
+   *
    * @return Array of instrument responses
    */
   public InstrumentResponse[] getResponses() {
@@ -230,6 +240,7 @@ public class DataStore {
 
   /**
    * Expand data into the largest range of time specified by active inputs
+   *
    * @param limit Highest index to find trimmed range for
    * @return Pair of data representing the longest common time length for data
    */
@@ -258,6 +269,7 @@ public class DataStore {
    * Used to get the first, second, etc. data set loaded. Used when operations
    * reading in data don't require all the inputs to be loaded.
    * Requires both SEED and RESP to be loaded for this to be valid.
+   *
    * @param x x-th set of loaded data to get, starting at 1 (NOT 0)
    * @return index of the loaded data
    */
@@ -268,7 +280,7 @@ public class DataStore {
 
     int loaded = 0;
     for (int i = 0; i < FILE_COUNT; ++i) {
-      if ( bothComponentsSet(i) ) {
+      if (bothComponentsSet(i)) {
         ++loaded;
         if (loaded == x) {
           return i;
@@ -284,6 +296,7 @@ public class DataStore {
    * Used to get the first, second, etc. loaded block, whether or not it has
    * a loaded response file as well.
    * Used to find the panel where a step calibration is loaded
+   *
    * @param x x-th set of data to get, starting at 1 (NOT 0)
    * @return The Xth DataBlock in this object that is not null
    */
@@ -309,10 +322,11 @@ public class DataStore {
   /**
    * Checks if there is any data at all loaded into this object so far,
    * either data or response
+   *
    * @return True if there is anything loaded into this datastore object.
    */
   public boolean isAnythingSet() {
-    for (int i = 0; i< FILE_COUNT; ++i) {
+    for (int i = 0; i < FILE_COUNT; ++i) {
       if (thisBlockIsSet[i] || thisResponseIsSet[i]) {
         return true;
       }
@@ -330,19 +344,20 @@ public class DataStore {
   /**
    * Math the first [limit] inputs' intervals to the lowest-frequency used by
    * any of the blocks within that range
+   *
    * @param limit Index of last block to match intervals to
    */
-  public void matchIntervals(int limit){
+  public void matchIntervals(int limit) {
     long interval = 0;
     // first loop to get lowest-frequency data
     for (int i = 0; i < limit; ++i) {
       if (thisBlockIsSet[i]) {
-        interval = Math.max( interval, getBlock(i).getInitialInterval() );
+        interval = Math.max(interval, getBlock(i).getInitialInterval());
       }
     }
     // second loop to downsample
     for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() != interval ) {
+      if (thisBlockIsSet[i] && getBlock(i).getInitialInterval() != interval) {
         getBlock(i).resample(interval);
       }
     }
@@ -353,12 +368,13 @@ public class DataStore {
 
   /**
    * Gives the count of indices where both a miniseed and response are loaded
+   *
    * @return the number of entries of miniseeds with a matching response
    */
   public int numberFullySet() {
     int loaded = 0;
     for (int i = 0; i < FILE_COUNT; ++i) {
-      if ( bothComponentsSet(i) ) {
+      if (bothComponentsSet(i)) {
         ++loaded;
       }
     }
@@ -367,12 +383,13 @@ public class DataStore {
 
   /**
    * Gives the number of DataBlocks (miniseed files) read in to this object
+   *
    * @return number of files read in
    */
   public int numberOfBlocksSet() {
     int loaded = 0;
     for (int i = 0; i < FILE_COUNT; ++i) {
-      if (thisBlockIsSet[i]){
+      if (thisBlockIsSet[i]) {
         ++loaded;
       }
     }
@@ -383,7 +400,6 @@ public class DataStore {
   /**
    * Removes all data at a specific index -- miniseed, response, and any
    * data generated from them
-   * @param idx
    */
   public void removeData(int idx) {
     dataBlockArray[idx] = null;
@@ -395,6 +411,7 @@ public class DataStore {
   /**
    * Used to unset the time series data at a given index, mainly to be used in case of an error on
    * loading in data, so that it is cleared correctly
+   *
    * @param idx Index of data to be removed
    */
   public void removeBlock(int idx) {
@@ -405,6 +422,7 @@ public class DataStore {
   /**
    * Used to unset the response data at a given index, mainly to be used in case of an error on
    * loading in data, so that it is cleared correctly
+   *
    * @param idx Index of data to be removed
    */
   public void removeResp(int idx) {
@@ -414,6 +432,7 @@ public class DataStore {
 
   /**
    * Resample data to a given sample rate
+   *
    * @param newSampleRate new sample rate (Hz)
    */
   public void resample(double newSampleRate) {
@@ -422,6 +441,7 @@ public class DataStore {
 
   /**
    * Resample the first X sets of data to a given sample rate, based on limit parameter
+   *
    * @param newSampleRate new sample rate (Hz)
    * @param limit upper bound on plots to resample
    */
@@ -430,11 +450,11 @@ public class DataStore {
     // make sure all data over range gets set to the same interval (and don't upsample)
     for (int i = 0; i < limit; ++i) {
       if (thisBlockIsSet[i]) {
-        newInterval = Math.max( newInterval, getBlock(i).getInitialInterval() );
+        newInterval = Math.max(newInterval, getBlock(i).getInitialInterval());
       }
     }
     for (int i = 0; i < limit; ++i) {
-      if ( thisBlockIsSet[i] && getBlock(i).getInitialInterval() != newInterval ) {
+      if (thisBlockIsSet[i] && getBlock(i).getInitialInterval() != newInterval) {
         getBlock(i).resample(newInterval);
       }
     }
@@ -442,6 +462,7 @@ public class DataStore {
 
   /**
    * Tests if a given response is loaded or not
+   *
    * @param i Index of response to load in
    * @return True if that index has a response loaded in
    */
@@ -453,6 +474,7 @@ public class DataStore {
    * Returns the boolean array where each index shows if there is a response
    * loaded into this datastore object at that index
    * has had data loaded into it (see blockIsSet, dataIsSet methods)
+   *
    * @return Array of booleans where an entry is true if a response is loaded
    * at the corresponding index
    */
@@ -463,6 +485,7 @@ public class DataStore {
   /**
    * Adds a pre-constructed datablock to this data store object at the
    * specified index
+   *
    * @param idx Index to place the data into
    * @param db Datablock to place into idx
    */
@@ -473,12 +496,9 @@ public class DataStore {
 
   /**
    * load in miniseed file
+   *
    * @param idx The plot (range 0 to FILE_COUNT) to be given new data
    * @param filepath Full address of file to be loaded in
-   * @throws CodecException
-   * @throws UnsupportedCompressionType
-   * @throws SeedFormatException
-   * @throws IOException
    */
   public void setBlock(int idx, String filepath)
       throws SeedFormatException, UnsupportedCompressionType, CodecException,
@@ -489,31 +509,25 @@ public class DataStore {
   /**
    * Loads in a miniseed file with assumption that it is not multiplexed and only includes a single
    * channel's range of data. Mainly used as a shortcut for non-GUI calls (for test cases, etc.)
+   *
    * @param idx The plot (range 0 to FILE_COUNT) to be given new data
    * @param filepath Full address of file to be loaded in
    * @param activePlots Max index of active panel to check as active
-   * @throws SeedFormatException
-   * @throws UnsupportedCompressionType
-   * @throws CodecException
-   * @throws IOException
    */
   public void setBlock(int idx, String filepath, int activePlots)
       throws SeedFormatException, UnsupportedCompressionType, CodecException,
       IOException {
-      String nameFilter = TimeSeriesUtils.getMplexNameList(filepath).get(0);
-      setBlock(idx, filepath, nameFilter, activePlots);
+    String nameFilter = TimeSeriesUtils.getMplexNameList(filepath).get(0);
+    setBlock(idx, filepath, nameFilter, activePlots);
   }
 
   /**
    * Takes a loaded miniSEED data series and loads it in as a datablock into
    * this datastore object
+   *
    * @param idx The plot (range 0 to FILE_COUNT) to be given new data
    * @param filepath Full address of file to be loaded in
    * @param nameFilter Station ID (SNCL) to load in from multiplexed file
-   * @throws CodecException
-   * @throws UnsupportedCompressionType
-   * @throws SeedFormatException
-   * @throws FileNotFoundException
    */
   public void setBlock(int idx, String filepath, String nameFilter)
       throws SeedFormatException, UnsupportedCompressionType, CodecException,
@@ -524,14 +538,11 @@ public class DataStore {
   /**
    * Takes a loaded miniSEED data series and loads it in as a datablock into
    * this datastore object. Attempts to fit data in if it overlaps data that is currently unused
+   *
    * @param idx The plot (range 0 to FILE_COUNT) to be given new data
    * @param filepath Full address of file to be loaded in
    * @param nameFilter Station ID (SNCL) to load in from multiplexed file
    * @param activePlots Max index of active panel to check as active
-   * @throws CodecException
-   * @throws UnsupportedCompressionType
-   * @throws SeedFormatException
-   * @throws FileNotFoundException
    */
   public void setBlock(int idx, String filepath, String nameFilter, int activePlots)
       throws SeedFormatException, UnsupportedCompressionType, CodecException,
@@ -541,7 +552,7 @@ public class DataStore {
     thisBlockIsSet[idx] = true;
     dataBlockArray[idx] = xy;
 
-    synchronized(this) {
+    synchronized (this) {
       if (numberOfBlocksSet() > 1) {
         // don't trim data here, that way we don't lose data
         long start = dataBlockArray[idx].getStartTime();
@@ -553,7 +564,7 @@ public class DataStore {
           if (i != idx && thisBlockIsSet[i]) {
             // whole block either comes before or after the data set
             if (end < dataBlockArray[i].getStartTime() ||
-                start > dataBlockArray[i].getEndTime() ) {
+                start > dataBlockArray[i].getEndTime()) {
 
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
@@ -574,6 +585,7 @@ public class DataStore {
 
   /**
    * Set response of a sensor's dataseries by index, using an NRL response
+   *
    * @param idx Index of plot for which response file matches
    * @param embedName Name of NRL response
    */
@@ -589,6 +601,7 @@ public class DataStore {
 
   /**
    * Place an already-constructed instrument response at the index idx
+   *
    * @param idx index in this object to place the response at
    * @param ir InstrumentResponse to have placed into this object
    */
@@ -599,6 +612,7 @@ public class DataStore {
 
   /**
    * Sets the response of a sensor's dataseries matched by index
+   *
    * @param idx Index of plot for which response file matches
    * @param filepath Full address of file to be loaded in
    */
@@ -609,6 +623,7 @@ public class DataStore {
 
   /**
    * Alias to blockIsSet function
+   *
    * @param idx Index of a datablock to check
    * @return True if a seed file has been loaded in there
    */
@@ -619,6 +634,7 @@ public class DataStore {
   /**
    * Trim all data according to calendar objects. Converts data into
    * epoch millisecond longs and uses that to specify a trim range.
+   *
    * @param start Start time to trim data to
    * @param end End time to trim data to
    */
@@ -630,6 +646,7 @@ public class DataStore {
   /**
    * Trim a given set of data according to calendar objects. Converts the data
    * into epoch millisecond longs and uses that to specify a trim range.
+   *
    * @param start Start time to trim data to
    * @param end End time to trim data to
    * @param limit Number of data portions to perform trim on
@@ -644,6 +661,7 @@ public class DataStore {
   /**
    * Trim all data according to DateTime objects. Converts into epoch milliseconds, which are then
    * used to get the trim range for the underlying datablocks. This trims all data.
+   *
    * @param start Start time to trim data to
    * @param end End time to trim data to
    */
@@ -654,6 +672,7 @@ public class DataStore {
   /**
    * Trim all data according to DateTime objects. Converts into epoch milliseconds, which are then
    * used to get the trim range for the underlying datablocks up to the specified limit
+   *
    * @param start Start time to trim data to
    * @param end End time to trim data to
    */
@@ -665,6 +684,7 @@ public class DataStore {
 
   /**
    * Trim data according to epoch millisecond longs
+   *
    * @param start Start time to trim data to
    * @param end End time to trim data to
    */
@@ -675,6 +695,7 @@ public class DataStore {
   /**
    * Trims all data blocks to be within a certain time range.
    * Used for getting a sub-range specified by sliding-bar window.
+   *
    * @param start Start time, relative to epoch (nanoseconds)
    * @param end End time, relative to epoch (nanoseconds)
    */
@@ -688,14 +709,14 @@ public class DataStore {
       }
       DataBlock db = getBlock(i);
 
-      if ( end < db.getStartTime() || start > db.getEndTime() ) {
+      if (end < db.getStartTime() || start > db.getEndTime()) {
         throw new IndexOutOfBoundsException("Time range invalid for some data");
       }
 
-      if ( start < db.getStartTime() ) {
+      if (start < db.getStartTime()) {
         start = db.getStartTime();
       }
-      if ( end > db.getEndTime() ) {
+      if (end > db.getEndTime()) {
         end = db.getEndTime();
       }
     }
@@ -709,17 +730,18 @@ public class DataStore {
 
   /**
    * Trim data to a region specified by pair of millisecond timestamps up to given input
+   *
    * @param times Pair of timestamps, given in milliseconds (lower bound, upper bound)
    * @param limit Number of datablocks to pair (1 only trims the first)
    * @throws IndexOutOfBoundsException If time limit not a subset of data region
    */
   public void trim(Pair<Long, Long> times, int limit)
-      throws IndexOutOfBoundsException{
-    trim( times.getFirst(), times.getSecond(), limit );
+      throws IndexOutOfBoundsException {
+    trim(times.getFirst(), times.getSecond(), limit);
   }
 
   public void trimJustEnd(Instant endInstant) {
-    if ( !areAnyBlocksSet() ) {
+    if (!areAnyBlocksSet()) {
       return;
     }
     trimToCommonTime();
@@ -729,7 +751,7 @@ public class DataStore {
   }
 
   public void trimJustStart(Instant startInstant) {
-    if ( !areAnyBlocksSet() ) {
+    if (!areAnyBlocksSet()) {
       return;
     }
     trimToCommonTime();
@@ -749,12 +771,13 @@ public class DataStore {
 
   /**
    * Trim the first [limit] blocks of data to a common time range
+   *
    * @param limit upper bound of blocks to do trimming on
    */
   public void trimToCommonTime(int limit) {
     // trims the data to only plot the overlapping time of each input set
 
-    if ( numberOfBlocksSet() <= 1 ) {
+    if (numberOfBlocksSet() <= 1) {
       return;
     }
 
@@ -790,6 +813,7 @@ public class DataStore {
 
   /**
    * Zoom out on current data (include all available)
+   *
    * @param limit Number of blocks to return to original time bounds
    */
   public void untrim(int limit) {
@@ -797,7 +821,8 @@ public class DataStore {
       if (!thisBlockIsSet[i]) {
         continue;
       }
-      DataBlock data = dataBlockArray[i];      data.untrim();
+      DataBlock data = dataBlockArray[i];
+      data.untrim();
     }
     trimToCommonTime(limit);
   }
@@ -818,7 +843,7 @@ public class DataStore {
       e.printStackTrace();
     }
 
-    synchronized(this) {
+    synchronized (this) {
       if (numberOfBlocksSet() > 1) {
         // don't trim data here, that way we don't lose data
         long start = dataBlockArray[idx].getStartTime();
@@ -830,7 +855,7 @@ public class DataStore {
           if (i != idx && thisBlockIsSet[i]) {
             // whole block either comes before or after the data set
             if (end < dataBlockArray[i].getStartTime() ||
-                start > dataBlockArray[i].getEndTime() ) {
+                start > dataBlockArray[i].getEndTime()) {
 
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;

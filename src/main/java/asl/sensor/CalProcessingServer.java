@@ -1,5 +1,16 @@
 package asl.sensor;
 
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.gui.RandomizedPanel;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
@@ -26,17 +37,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.RandomizedPanel;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
@@ -94,7 +94,7 @@ public class CalProcessingServer {
 
     public String getGapInfoAsString() {
       SimpleDateFormat sdf = new SimpleDateFormat("DD.HH:m:s");
-      sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
+      sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
       return getGapInfoAsString(sdf);
     }
 
@@ -107,9 +107,9 @@ public class CalProcessingServer {
           sb.append("\t");
           Date start = gapStarts[j][i];
           Date end = gapEnds[j][i];
-          sb.append( df.format(start) );
+          sb.append(df.format(start));
           sb.append("\t");
-          sb.append( df.format(end) );
+          sb.append(df.format(end));
           sb.append("\n");
         }
         sb.append("\n");
@@ -140,7 +140,7 @@ public class CalProcessingServer {
 
   /**
    * get all metadata from the function in a single file
-   * @param exp
+   *
    * @return text representation of data from experiment
    */
   public static String getMetadataFromExp(RandomizedExperiment exp) {
@@ -157,7 +157,7 @@ public class CalProcessingServer {
     GatewayServer gatewayServer = new GatewayServer(new CalProcessingServer());
     try {
       gatewayServer.start();
-    } catch (Py4JNetworkException e){
+    } catch (Py4JNetworkException e) {
       System.out.println("Already Running: Closing process");
       System.exit(0);
     }
@@ -170,6 +170,7 @@ public class CalProcessingServer {
   /**
    * Acquire data and run calibration over it.
    * Returns the experiment (all data kept locally to maintain thread safety)
+   *
    * @param calFileName Filename of calibration signal
    * @param outFileName Filename of sensor output
    * @param respName Filename of response to load in
@@ -179,13 +180,10 @@ public class CalProcessingServer {
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
-   * @throws CodecException
-   * @throws UnsupportedCompressionType
-   * @throws SeedFormatException
    */
   public RandData populateDataAndRun(String calFileName, String outFileName,
       String respName, boolean respEmbd, String startDate, String endDate, boolean lowFreq)
-          throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
 
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -199,7 +197,7 @@ public class CalProcessingServer {
     InstrumentResponse ir;
     if (respEmbd) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
-    } else{
+    } else {
       ir = new InstrumentResponse(respName);
     }
 
@@ -218,6 +216,7 @@ public class CalProcessingServer {
   /**
    * Acquire data and run calibration over it. Used to handle calibrations that cross day boundaries
    * Returns the experiment (all data kept locally to maintain thread safety)
+   *
    * @param calFileNameD1 Filename of calibration signal (day 1)
    * @param calFileNameD2 Filename of calibration signal (day 2)
    * @param outFileNameD1 Filename of sensor output (day 1)
@@ -229,13 +228,11 @@ public class CalProcessingServer {
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
-   * @throws CodecException
-   * @throws UnsupportedCompressionType
-   * @throws SeedFormatException
    */
   public RandData populateDataAndRun(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean respEmbd,
-      String startDate, String endDate, boolean lowFreq) throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      String startDate, String endDate, boolean lowFreq)
+      throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
 
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -252,7 +249,7 @@ public class CalProcessingServer {
     InstrumentResponse ir;
     if (respEmbd) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
-    } else{
+    } else {
       ir = new InstrumentResponse(respName);
     }
 
@@ -283,14 +280,16 @@ public class CalProcessingServer {
     double[] poles = new double[2 * fitPolesCpx.length];
     double[] initPoles = new double[poles.length];
     for (int i = 0; i < fitZerosCpx.length; ++i) {
-      int reIdx = 2 * i; int imIdx = reIdx + 1;
+      int reIdx = 2 * i;
+      int imIdx = reIdx + 1;
       zeros[reIdx] = fitZerosCpx[i].getReal();
       zeros[imIdx] = fitZerosCpx[i].getImaginary();
       initZeros[reIdx] = initZerosCpx[i].getReal();
       initZeros[imIdx] = initZerosCpx[i].getImaginary();
     }
-    for(int i = 0; i < fitPolesCpx.length; ++i) {
-      int reIdx = 2 * i; int imIdx = reIdx + 1;
+    for (int i = 0; i < fitPolesCpx.length; ++i) {
+      int reIdx = 2 * i;
+      int imIdx = reIdx + 1;
       poles[reIdx] = fitPolesCpx[i].getReal();
       poles[imIdx] = fitPolesCpx[i].getImaginary();
       initPoles[reIdx] = initPolesCpx[i].getReal();
@@ -308,7 +307,7 @@ public class CalProcessingServer {
     ValueAxis residXAxis = new LogarithmicAxis(xAxisTitle);
     ValueAxis ampAxis = new NumberAxis(ampAxisTitle);
     ampAxis.setAutoRange(true);
-    ( (NumberAxis) ampAxis).setAutoRangeIncludesZero(false);
+    ((NumberAxis) ampAxis).setAutoRangeIncludesZero(false);
     ValueAxis phaseAxis = new NumberAxis(phaseAxisTitle);
     phaseAxis.setAutoRange(true);
     ValueAxis residPhaseAxis = new NumberAxis("Phase error (degrees)");
@@ -386,8 +385,8 @@ public class CalProcessingServer {
     ExperimentPanel.invertSeriesRenderingOrder(chartArr[3]);
 
     if (!lowFreq) {
-      Marker maxFitMarker = new ValueMarker( re.getMaxFitFrequency() );
-      maxFitMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      Marker maxFitMarker = new ValueMarker(re.getMaxFitFrequency());
+      maxFitMarker.setStroke(new BasicStroke((float) 1.5));
       chartArr[0].getXYPlot().addDomainMarker(maxFitMarker);
       chartArr[1].getXYPlot().addDomainMarker(maxFitMarker);
     }

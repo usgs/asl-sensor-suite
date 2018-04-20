@@ -1,17 +1,17 @@
 package asl.sensor.experiment;
 
-import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * Calculates PSD to get cross-power. Can be done on 1-3 different series of data; does not estimate
  * noise parameters taken from these PSDs due to having such limited data.
  * Based on code in the seedscan timeseries package, see
  * https://github.com/usgs/seedscan/tree/master/src/main/java/asl/timeseries
- * @author akearns, jholland
  *
+ * @author akearns, jholland
  */
 public class SpectrumExperiment extends Experiment {
 
@@ -50,7 +50,7 @@ public class SpectrumExperiment extends Experiment {
 
     int loadedDataCount = 0;
     for (int i = 0; i < 3; ++i) {
-      if ( ds.bothComponentsSet(i) ) {
+      if (ds.bothComponentsSet(i)) {
         ++loadedDataCount;
       }
     }
@@ -61,10 +61,10 @@ public class SpectrumExperiment extends Experiment {
     // it is probably better to keep the program flexible against valid input
     for (int i = 0; i < respIndices.length; ++i) {
       // xth fully loaded function begins at 1
-      int idx = ds.getXthFullyLoadedIndex(i+1);
+      int idx = ds.getXthFullyLoadedIndex(i + 1);
       respIndices[i] = idx;
-      dataNames.add( ds.getBlock(idx).getName() );
-      dataNames.add( ds.getResponse(idx).getName() );
+      dataNames.add(ds.getBlock(idx).getName());
+      dataNames.add(ds.getResponse(idx).getName());
     }
 
     InstrumentResponse[] responses = new InstrumentResponse[respIndices.length];
@@ -82,8 +82,8 @@ public class SpectrumExperiment extends Experiment {
       addToPlot(ds, freqSpace, idx, xysc);
     }
 
-    xysc.addSeries( FFTResult.getLowNoiseModel(freqSpace) );
-    xysc.addSeries( FFTResult.getHighNoiseModel(freqSpace) );
+    xysc.addSeries(FFTResult.getLowNoiseModel(freqSpace));
+    xysc.addSeries(FFTResult.getHighNoiseModel(freqSpace));
 
     xySeriesData.add(xysc);
 
@@ -97,7 +97,7 @@ public class SpectrumExperiment extends Experiment {
   @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < 3; ++i) {
-      if ( ds.bothComponentsSet(i) ) {
+      if (ds.bothComponentsSet(i)) {
         return true;
       }
     }
@@ -114,6 +114,7 @@ public class SpectrumExperiment extends Experiment {
   /**
    * Used to set the x-axis over which the PSDs / cross-powers are plotted,
    * either frequency (Hz) units or sample-interval (s) units
+   *
    * @param freqSpace True if the plot should use units of Hz
    */
   public void setFreqSpace(boolean freqSpace) {

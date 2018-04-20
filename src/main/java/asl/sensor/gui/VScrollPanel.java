@@ -10,19 +10,19 @@ import javax.swing.Scrollable;
  * in the vertical direction, as necessary. Used to create an input panel that
  * doesn't get shrunk when too many inputs are needed for an experiment
  * such as for 9-component self-noise.
- * @author akearns
  *
+ * @author akearns
  */
 public class VScrollPanel extends JPanel implements Scrollable {
 
-  
+
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = -4358405572297138013L;
 
   boolean scaleVerticallyNotScroll = false;
-  
+
   @Override
   public Dimension getPreferredScrollableViewportSize() {
     return getPreferredSize();
@@ -53,10 +53,11 @@ public class VScrollPanel extends JPanel implements Scrollable {
 
   /**
    * Sets whether or not to enable scrolling in this panel vs. fitting to size
+   *
    * @param bool True if the panel should NOT have scrolling set
    */
   public void setScrollableTracksViewportHeight(boolean bool) {
     scaleVerticallyNotScroll = bool;
   }
-  
+
 }

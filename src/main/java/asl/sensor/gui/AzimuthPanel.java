@@ -1,5 +1,8 @@
 package asl.sensor.gui;
 
+import asl.sensor.experiment.AzimuthExperiment;
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.input.DataStore;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -28,16 +31,13 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.experiment.AzimuthExperiment;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.input.DataStore;
 
 /**
  * Wrapper class to display result from Azimuth. Overrides some parent
  * functions because the main plot uses polar orientation rather than typical
  * x-y plotting.
- * @author akearns
  *
+ * @author akearns
  */
 public class AzimuthPanel extends ExperimentPanel {
 
@@ -78,12 +78,12 @@ public class AzimuthPanel extends ExperimentPanel {
     channelType[0] = "North test sensor";
     channelType[1] = "East test sensor";
     channelType[2] = "Reference sensor " +
-                     "(use offset to specify degrees from north)";
+        "(use offset to specify degrees from north)";
 
     // don't bother instantiating axes, we need to build a custom polar plot
     // and so will just use the chartfactory methods to do our building anyway
 
-    angleChart = ChartFactory.createPolarChart( expType.getName(),
+    angleChart = ChartFactory.createPolarChart(expType.getName(),
         null, false, false, false);
     chart = angleChart;
     chartPanel.setChart(chart);
@@ -95,21 +95,25 @@ public class AzimuthPanel extends ExperimentPanel {
     */
 
     estimChart =
-        ChartFactory.createXYLineChart( expType.getName() + " Windowing",
-        "Window start", "Correlation of aligned data, Angle of rotation", null);
+        ChartFactory.createXYLineChart(expType.getName() + " Windowing",
+            "Window start", "Correlation of aligned data, Angle of rotation", null);
 
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
 
     GridBagConstraints gbc = new GridBagConstraints();
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1; gbc.weighty = 0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1;
+    gbc.weighty = 0;
     gbc.fill = GridBagConstraints.NONE;
     gbc.anchor = GridBagConstraints.EAST;
 
     gbc.anchor = GridBagConstraints.CENTER;
-    gbc.gridx = 0; gbc.gridy = 0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
     gbc.gridwidth = 3;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
     gbc.fill = GridBagConstraints.BOTH;
     this.add(chartPanel, gbc);
 
@@ -129,7 +133,8 @@ public class AzimuthPanel extends ExperimentPanel {
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartSelector, gbc);
 
-    gbc.gridx = 0; gbc.gridy += 1;
+    gbc.gridx = 0;
+    gbc.gridy += 1;
     gbc.gridwidth = 3;
     gbc.fill = GridBagConstraints.NONE;
     gbc.anchor = GridBagConstraints.CENTER;
@@ -152,7 +157,7 @@ public class AzimuthPanel extends ExperimentPanel {
   @Override
   protected void clearChartAndSetProgressData() {
     chartSelector.setSelectedIndex(0);
-    angleChart = ChartFactory.createPolarChart( expType.getName(),
+    angleChart = ChartFactory.createPolarChart(expType.getName(),
         null, false, false, false);
     chart = angleChart;
     chartPanel.setChart(chart);
@@ -200,7 +205,7 @@ public class AzimuthPanel extends ExperimentPanel {
     double[] corr = az.getCorrelations();
     StringBuilder sb = new StringBuilder("Best-fit correlation value per-window:\n");
     for (int i = 0; i < corr.length; ++i) {
-      sb.append( df.format(corr[i]) );
+      sb.append(df.format(corr[i]));
       sb.append("  ");
     }
     sb.append("\n");
@@ -220,12 +225,12 @@ public class AzimuthPanel extends ExperimentPanel {
     double value = az.getOffset();
     double angle = az.getFitAngle();
     StringBuilder angleStr = new StringBuilder();
-    angleStr.append( "FIT ANGLE: " + df.format(angle) );
-    double result = ( (value + angle) % 360 + 360) % 360;
+    angleStr.append("FIT ANGLE: " + df.format(angle));
+    double result = ((value + angle) % 360 + 360) % 360;
 
-    angleStr.append( " + " + df.format(value) + " = " + df.format(result) );
-    angleStr.append(" (+/- " + df.format( az.getUncertainty() ) + ")");
-    if( !az.hadEnoughPoints() ) {
+    angleStr.append(" + " + df.format(value) + " = " + df.format(result));
+    angleStr.append(" (+/- " + df.format(az.getUncertainty()) + ")");
+    if (!az.hadEnoughPoints()) {
       angleStr.append(" | WARNING: SMALL RANGE");
     }
     return angleStr.toString();
@@ -262,7 +267,7 @@ public class AzimuthPanel extends ExperimentPanel {
         expType.getName() + " Coherence", "Frequency (Hz)", "Coherence", xysc);
     */
 
-    angleChart = ChartFactory.createPolarChart( expType.getName(),
+    angleChart = ChartFactory.createPolarChart(expType.getName(),
         polars, true, true, false);
 
     String angleStr = getInsetStrings();
@@ -285,29 +290,29 @@ public class AzimuthPanel extends ExperimentPanel {
     XYSeriesCollection angleEstim = allData.get(1);
     XYSeriesCollection coherEstim = allData.get(2);
     String titleEst = expType.getName() + " Accuracy Estimation";
-    estimChart = ChartFactory.createXYLineChart( titleEst,
+    estimChart = ChartFactory.createXYLineChart(titleEst,
         "xaxis", "yaxis", angleEstim);
     xyp = estimChart.getXYPlot();
     xyp.setDataset(0, angleEstim);
     xyp.setDataset(1, coherEstim);
-    xyp.setRenderer( 0, new DefaultXYItemRenderer() );
+    xyp.setRenderer(0, new DefaultXYItemRenderer());
     // set color of second dataset to be blue
     XYItemRenderer renderer = new DefaultXYItemRenderer();
     renderer.setSeriesPaint(0, Color.BLUE);
     xyp.setRenderer(1, renderer);
     NumberAxis angleEstimationAxis = new NumberAxis("Angle est. (deg)");
     // angleEstimationAxis.setAutoRangeIncludesZero(false);
-    xyp.setRangeAxis( 0, angleEstimationAxis );
+    xyp.setRangeAxis(0, angleEstimationAxis);
     NumberAxis correlationAxis = new NumberAxis("Correlation est. of best fit angle");
     // correlationAxis.setAutoRangeIncludesZero(false);
-    xyp.setRangeAxis( 1, correlationAxis );
+    xyp.setRangeAxis(1, correlationAxis);
     NumberAxis xAx = new NumberAxis("Time from data start of (2000s) window (s)");
     xAx.setAutoRangeIncludesZero(false);
     xyp.setDomainAxis(xAx);
     xyp.mapDatasetToRangeAxis(0, 0);
     xyp.mapDatasetToRangeAxis(1, 1);
 
-    if ( !az.hadEnoughPoints() ) {
+    if (!az.hadEnoughPoints()) {
       xyp = estimChart.getXYPlot();
       TextTitle result = new TextTitle();
       result.setText("WARNING: NOT ENOUGH DATA FOR WINDOWED COHERENCE ESTIMATION");
@@ -320,7 +325,7 @@ public class AzimuthPanel extends ExperimentPanel {
     } else {
       double cutOff = az.getMinCorr();
       Marker highWater = new ValueMarker(cutOff);
-      highWater.setStroke( new BasicStroke( (float) 1.5 ) );
+      highWater.setStroke(new BasicStroke((float) 1.5));
       highWater.setPaint(Color.BLACK);
       xyp.addRangeMarker(1, highWater, Layer.BACKGROUND);
     }

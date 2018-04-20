@@ -1,5 +1,7 @@
 package asl.sensor.input;
 
+import asl.sensor.gui.InputPanel;
+import asl.sensor.utils.NumericUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -23,8 +25,6 @@ import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
-import asl.sensor.gui.InputPanel;
-import asl.sensor.utils.NumericUtils;
 
 /**
  * This class is used to read in and store data from instrument response files
@@ -32,8 +32,8 @@ import asl.sensor.utils.NumericUtils;
  * to parse in relevant data from those files to get values such as poles and
  * zeros and the gain stages of the detector/sensor setup.
  * See also: http://ds.iris.edu/ds/nodes/dmc/data/formats/resp/
- * @author akearns
  *
+ * @author akearns
  */
 public class InstrumentResponse {
 
@@ -44,6 +44,7 @@ public class InstrumentResponse {
 
   /**
    * Get one of the response files embedded in the program
+   *
    * @return response file embedded into the program
    * @throws IOException If no file with the given name exists (this may happen
    * if a file listed in the responses.txt file does not exist in that location
@@ -54,13 +55,14 @@ public class InstrumentResponse {
 
     ClassLoader cl = InputPanel.class.getClassLoader();
     InputStream is = cl.getResourceAsStream(fname);
-    BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
+    BufferedReader fr = new BufferedReader(new InputStreamReader(is));
     return new InstrumentResponse(fr, fname);
   }
 
   /**
    * Get list of all responses embedded into the program, derived from the
    * responses.txt file in the resources folder
+   *
    * @return Set of strings representing response filenames
    */
   public static Set<String> parseInstrumentList() {
@@ -77,7 +79,7 @@ public class InstrumentResponse {
 
     InputStream respRead = cl.getResourceAsStream("responses.txt");
     BufferedReader respBuff =
-        new BufferedReader( new InputStreamReader(respRead) );
+        new BufferedReader(new InputStreamReader(respRead));
 
     try {
       String name;
@@ -97,6 +99,7 @@ public class InstrumentResponse {
   /**
    * Take in a string representing the path to a RESP file and outputs the epochs contained in it.
    * Used to select a specific epoch for a given file via the GUI.
+   *
    * @param filename Location of a given RESP file
    * @return List of epochs (pair of start and end instances)
    * @throws IOException If there is a failure to read the resp file
@@ -107,7 +110,7 @@ public class InstrumentResponse {
 
     BufferedReader br;
     List<Pair<Instant, Instant>> epochList = new ArrayList<Pair<Instant, Instant>>();
-    br = new BufferedReader( new FileReader(filename) );
+    br = new BufferedReader(new FileReader(filename));
     epochList = getRespFileEpochs(br);
     br.close();
     return epochList;
@@ -116,6 +119,7 @@ public class InstrumentResponse {
   /**
    * Take in a file object and output the epochs contained in it. Used to select a specific
    * epoch in a given file from the GUI.
+   *
    * @param br BufferedReader wrapper for a resp file
    * @return List of epochs (pair of start and end instances)
    * @throws IOException If there is a failure to read the resp file
@@ -127,7 +131,7 @@ public class InstrumentResponse {
 
     while (line != null) {
 
-      if( line.length() == 0 ) {
+      if (line.length() == 0) {
         // empty line? need to skip it
         line = br.readLine();
         continue;
@@ -141,18 +145,18 @@ public class InstrumentResponse {
         String[] words = line.split("\\s\\s+");
         String hexIdentifier = words[0];
         switch (hexIdentifier) {
-        case "B052F22":
-          Instant start = parseTermAsDate(line);
-          // read line to get end date
-          line = br.readLine();
-          Instant end;
-          if ( line.split("\\s+")[0].equals("B052F23") ) {
-            end = parseTermAsDate(line);
-          } else {
-            end = null;
-          }
-          epochList.add( new Pair<Instant, Instant>(start, end) );
-          break;
+          case "B052F22":
+            Instant start = parseTermAsDate(line);
+            // read line to get end date
+            line = br.readLine();
+            Instant end;
+            if (line.split("\\s+")[0].equals("B052F23")) {
+              end = parseTermAsDate(line);
+            } else {
+              end = null;
+            }
+            epochList.add(new Pair<Instant, Instant>(start, end));
+            break;
         }
         line = br.readLine();
       }
@@ -164,6 +168,7 @@ public class InstrumentResponse {
 
   /**
    * Read the line defining a date (epoch start or end) as an instant
+   *
    * @param line Line of a response file that should define an epoch
    * @return Instant parsed from the given line
    */
@@ -182,6 +187,7 @@ public class InstrumentResponse {
 
   /**
    * Extract the real and imaginary terms from a pole or zero in a RESP file
+   *
    * @param line the line the zero or pole is found on in the file
    * @param array the array of zeros and poles the term will be added to
    */
@@ -190,7 +196,6 @@ public class InstrumentResponse {
     // if a number is negative, only one space between it and prev. number
     // and the previous split operation assumed > 2 spaces between numbers
     String[] words = line.split("\\s+");
-
 
     // index 0 is the identifier for the field types (used in switch-stmt)
     // index 1 is where in the list this zero or pole is
@@ -206,7 +211,7 @@ public class InstrumentResponse {
     // first, sort matching P/Z values into bins, count up the number of each
     Map<Complex, Integer> values = new HashMap<Complex, Integer>();
     for (Complex c : pzArr) {
-      if ( values.keySet().contains(c) ) {
+      if (values.keySet().contains(c)) {
         int count = values.get(c) + 1;
         values.put(c, count);
       } else {
@@ -220,7 +225,7 @@ public class InstrumentResponse {
     Set<Complex> inList = new HashSet<Complex>();
     // iterate from the array; it should have the values in the correct order
     for (Complex c : pzArr) {
-      if ( !inList.contains(c) ) {
+      if (!inList.contains(c)) {
         Pair<Complex, Integer> toAdd = new Pair<Complex, Integer>(c, values.get(c));
         valueList.add(toAdd);
         inList.add(c);
@@ -228,6 +233,7 @@ public class InstrumentResponse {
     }
     return valueList;
   }
+
   private TransferFunction transferType;
 
   // gain values, indexed by stage
@@ -248,13 +254,14 @@ public class InstrumentResponse {
 
   private double normalFreq; // cuz she's a normalFreq, normalFreq
   // (the A0 norm. factor's frequency)
+
   /**
    * Reads in a response from an already-accessed bufferedreader handle
    * and assigns it to the name given (used with embedded response files)
    * Only the last epoch of a multi-epoch response file is used.
+   *
    * @param br Handle to a buffered reader of a given RESP file
    * @param name Name of RESP file to be used internally
-   * @throws IOException
    */
   public InstrumentResponse(BufferedReader br, String name) throws IOException {
 
@@ -265,6 +272,7 @@ public class InstrumentResponse {
 
   /**
    * Create a copy of an existing response object
+   *
    * @param responseIn The response object to be copied
    */
   public InstrumentResponse(InstrumentResponse responseIn) {
@@ -273,13 +281,13 @@ public class InstrumentResponse {
     gain = responseIn.getGain();
     numStages = responseIn.getNumStages();
 
-    zeros = new ArrayList<Pair<Complex, Integer>>( responseIn.getZerosList() );
-    poles = new ArrayList<Pair<Complex, Integer>>( responseIn.getPolesList() );
+    zeros = new ArrayList<Pair<Complex, Integer>>(responseIn.getZerosList());
+    poles = new ArrayList<Pair<Complex, Integer>>(responseIn.getPolesList());
 
     unitType = responseIn.getUnits();
 
-    normalization = Double.valueOf( responseIn.getNormalization() );
-    normalFreq = Double.valueOf( responseIn.getNormalizationFrequency() );
+    normalization = Double.valueOf(responseIn.getNormalization());
+    normalFreq = Double.valueOf(responseIn.getNormalizationFrequency());
 
     name = responseIn.getName();
   }
@@ -287,8 +295,8 @@ public class InstrumentResponse {
   /**
    * Reads in an instrument response from a RESP file with the specific epoch
    * If the RESP file has multiple epochs, only the last one is used.
+   *
    * @param filename full path of the RESP file
-   * @throws IOException
    */
   public InstrumentResponse(String filename, Instant epoch) throws IOException {
     name = new File(filename).getName();
@@ -298,8 +306,8 @@ public class InstrumentResponse {
   /**
    * Reads in an instrument response from a RESP file and gets the last epoch
    * If the RESP file has multiple epochs, only the last one is used.
+   *
    * @param filename full path of the RESP file
-   * @throws IOException
    */
   public InstrumentResponse(String filename) throws IOException {
     this(filename, null);
@@ -312,6 +320,7 @@ public class InstrumentResponse {
    * The response curve produced is in units of velocity. Some results
    * will need to have the produced response curve have acceleration units,
    * which can be done by multiplying by the integration factor defined here.
+   *
    * @param frequencies inputted list of frequencies, such as FFT windows
    * @return application of the response to those frequencies
    */
@@ -338,19 +347,19 @@ public class InstrumentResponse {
       double deltaFrq = frequencies[i];
 
       // pole-zero expansion
-      Complex s = new Complex( 0, deltaFrq*transferType.getFunction() );
+      Complex s = new Complex(0, deltaFrq * transferType.getFunction());
 
       Complex numerator = Complex.ONE;
       Complex denominator = Complex.ONE;
 
       // generate the list structures and get the values with respect to transfer function
       // unfolding the paired list like this is as reasonable as most other options
-      for ( Complex zero : getZeros() ) {
-        numerator = numerator.multiply( s.subtract(zero) );
+      for (Complex zero : getZeros()) {
+        numerator = numerator.multiply(s.subtract(zero));
       }
 
-      for ( Complex pole : getPoles() ) {
-        denominator = denominator.multiply( s.subtract(pole) );
+      for (Complex pole : getPoles()) {
+        denominator = denominator.multiply(s.subtract(pole));
       }
 
       resps[i] = numerator.multiply(normalization).divide(denominator);
@@ -359,21 +368,20 @@ public class InstrumentResponse {
         // a negative number of differentiations
         // is a positive number of integrations
         // i*omega; integration is I(w) x (iw)^n
-        Complex iw = new Complex(0.0, integConstant*deltaFrq);
+        Complex iw = new Complex(0.0, integConstant * deltaFrq);
         // start at 1 in these loops because we do mult. at least once
-        for (int j = 1; j < Math.abs(diffs); j++){
+        for (int j = 1; j < Math.abs(diffs); j++) {
           iw = iw.multiply(iw);
         }
         resps[i] = resps[i].multiply(iw);
       } else if (diffs > 0) {
         // differentiation is I(w) / (-i/w)^n
-        Complex iw = new Complex(0.0, -1.0 / (integConstant*deltaFrq) );
-        for (int j = 1; j < Math.abs(diffs); j++){
+        Complex iw = new Complex(0.0, -1.0 / (integConstant * deltaFrq));
+        for (int j = 1; j < Math.abs(diffs); j++) {
           iw = iw.multiply(iw);
         }
         resps[i] = iw.multiply(resps[i]);
       }
-
 
       // lastly, scale by the scale we chose (gain0 or gain1*gain2)
       resps[i] = resps[i].multiply(scale);
@@ -388,12 +396,13 @@ public class InstrumentResponse {
    * to be (implicitly) defining a complex conjugate of the pole/zero they
    * are built into. Similarly, any poles or zeros in the initial list that
    * are duplicated are all set to have the same new value.
-   * @see #zerosToVector and #polesToVector
+   *
    * @param params Array of real and imaginary component values of poles
    * and zeros
    * @param lowFreq True if the fit values are for low-frequency components
    * @param numZeros How much of the input parameter array is zero components
    * @return New InstrumentResponse with the fit values applied to it
+   * @see #zerosToVector and #polesToVector
    */
   public InstrumentResponse
   buildResponseFromFitVector(double[] params, boolean lowFreq,
@@ -406,13 +415,13 @@ public class InstrumentResponse {
     // first covert poles and zeros back to complex values to make this easier
     List<Complex> zerosAsComplex = new ArrayList<Complex>();
     for (int i = 0; i < numZeros; i += 2) {
-      Complex c = new Complex( params[i], params[i+1] );
+      Complex c = new Complex(params[i], params[i + 1]);
       zerosAsComplex.add(c);
     }
 
     List<Complex> polesAsComplex = new ArrayList<Complex>();
     for (int i = numZeros; i < params.length; i += 2) {
-      Complex c = new Complex( params[i], params[i+1] );
+      Complex c = new Complex(params[i], params[i + 1]);
       polesAsComplex.add(c);
     }
 
@@ -439,7 +448,7 @@ public class InstrumentResponse {
       for (int i = start; i < zeros.size(); ++i) {
         Pair<Complex, Integer> valueAndCount = zeros.get(i);
         Complex zero = valueAndCount.getFirst();
-        if ( zero.abs() / NumericUtils.TAU > 1. ) {
+        if (zero.abs() / NumericUtils.TAU > 1.) {
           // zeros after this point are high-frequency
           break;
         }
@@ -456,18 +465,18 @@ public class InstrumentResponse {
       // get the number of times the original value appeared
       int count = zeros.get(i + offset).getSecond();
       Complex zero = zerosAsComplex.get(i);
-      builtZeros.add( new Pair<Complex, Integer>(zero, count) );
+      builtZeros.add(new Pair<Complex, Integer>(zero, count));
 
       // add conjugate if it has one
-      if ( zero.getImaginary() != 0. ) {
-        builtZeros.add( new Pair<Complex, Integer>( zero.conjugate(), count ) );
+      if (zero.getImaginary() != 0.) {
+        builtZeros.add(new Pair<Complex, Integer>(zero.conjugate(), count));
         ++offset; // skipping over the original conjugate pair
       }
     }
 
     // now add in all remaining zeros
     for (int i = builtZeros.size(); i < zeros.size(); ++i) {
-      builtZeros.add( zeros.get(i) );
+      builtZeros.add(zeros.get(i));
     }
 
     // now do the same thing as the zeros but for the poles
@@ -479,15 +488,15 @@ public class InstrumentResponse {
       for (int i = 0; i < poles.size(); ++i) {
         Pair<Complex, Integer> valueAndCount = poles.get(i);
         Complex pole = valueAndCount.getFirst();
-        if ( pole.abs() / NumericUtils.TAU > 1. ) {
+        if (pole.abs() / NumericUtils.TAU > 1.) {
           break;
         }
         builtPoles.add(valueAndCount);
       }
-    } else if ( isKS54000() ) {
+    } else if (isKS54000()) {
       // used in the odd KS54000 case, we don't fit the low-freq damping pole
       // there should only be the one, because the KS54000 is a weird one
-      builtPoles.add( poles.get(0) );
+      builtPoles.add(poles.get(0));
     }
 
     offset = builtPoles.size();
@@ -495,18 +504,18 @@ public class InstrumentResponse {
     for (int i = 0; i < polesAsComplex.size(); ++i) {
       int count = poles.get(i + offset).getSecond();
       Complex pole = polesAsComplex.get(i);
-      builtPoles.add( new Pair<Complex, Integer>(pole, count) );
+      builtPoles.add(new Pair<Complex, Integer>(pole, count));
 
       // add conjugate if it has one
-      if ( pole.getImaginary() != 0. ) {
-        builtPoles.add( new Pair<Complex, Integer>( pole.conjugate(), count ) );
+      if (pole.getImaginary() != 0.) {
+        builtPoles.add(new Pair<Complex, Integer>(pole.conjugate(), count));
         ++offset;
       }
     }
 
     // now add the poles that remain
     for (int i = builtPoles.size(); i < poles.size(); ++i) {
-      builtPoles.add( poles.get(i) );
+      builtPoles.add(poles.get(i));
     }
 
     // create a copy of this instrument response and set the new values
@@ -521,6 +530,7 @@ public class InstrumentResponse {
    * Get the gain stages of the RESP file. Stage x is at index x. That is,
    * the sensitivity is at 0, the sensor gain is at 1, and the digitizer
    * gain is at 2.
+   *
    * @return Array of all gain stages found in resp file, including stage 0
    */
   public double[] getGain() {
@@ -530,6 +540,7 @@ public class InstrumentResponse {
   /**
    * Return the name of this response file (i.e., STS-1Q330 or similar)
    * Used primarily for identifying response curve on plots
+   *
    * @return String containing ID of current response
    */
   public String getName() {
@@ -538,6 +549,7 @@ public class InstrumentResponse {
 
   /**
    * Get the normalization of the response
+   *
    * @return normalization constant
    */
   public double getNormalization() {
@@ -546,6 +558,7 @@ public class InstrumentResponse {
 
   /**
    * Get the normalization frequency
+   *
    * @return normalization frequency (Hz)
    */
   public double getNormalizationFrequency() {
@@ -554,6 +567,7 @@ public class InstrumentResponse {
 
   /**
    * Return the number of gain stages this response has
+   *
    * @return number of gain stages
    */
   public int getNumStages() {
@@ -562,6 +576,7 @@ public class InstrumentResponse {
 
   /**
    * Return the list of poles in the RESP file, not including error terms
+   *
    * @return List of complex numbers; index y is the yth pole in response list
    */
   public List<Complex> getPoles() {
@@ -583,6 +598,7 @@ public class InstrumentResponse {
 
   /**
    * Get the transfer function of this response file (laplacian, linear)
+   *
    * @return transfer type as an enumeration (can get factor as numeric type
    * by calling getFunction() on the returned value)
    */
@@ -592,6 +608,7 @@ public class InstrumentResponse {
 
   /**
    * Gives the unit type of the RESP file (displacement, velocity, acceleration)
+   *
    * @return Unit type as enumeration, distance measures of meters and time of
    * seconds (i.e., acceleration is m/s^2)
    */
@@ -601,6 +618,7 @@ public class InstrumentResponse {
 
   /**
    * Return the list of zeros in the RESP file, not including error terms
+   *
    * @return List of complex numbers; index y is the yth zero in response list
    */
   public List<Complex> getZeros() {
@@ -624,12 +642,13 @@ public class InstrumentResponse {
    * Determines whether or not the first pole is too low to fit even with
    * a low-frequency random cal solver operation. Mainly an issue for
    * the KS54000 RESP, since the damping curve is unusual.
+   *
    * @return True if the initial pole is too low-frequency to add to fit.
    */
   private boolean isKS54000() {
     final double CUTOFF = 1. / 1000.;
     List<Complex> pList = getPoles();
-    if ( ( pList.get(0).abs() / NumericUtils.TAU ) < CUTOFF ) {
+    if ((pList.get(0).abs() / NumericUtils.TAU) < CUTOFF) {
       // first two poles are low-frequency
       return true;
     }
@@ -640,6 +659,7 @@ public class InstrumentResponse {
   /**
    * Read in each line of a response and parse and store relevant lines
    * according to the hex value at the start of the line
+   *
    * @param br reader of a given file to be parse
    * @throws IOException if the reader cannot read the given file
    */
@@ -651,7 +671,7 @@ public class InstrumentResponse {
     if (epoch != null) {
       boolean epochFound = false;
       while (!epochFound) {
-        if( line.length() == 0 ) {
+        if (line.length() == 0) {
           // empty line? need to skip it
           line = br.readLine();
           continue;
@@ -663,9 +683,9 @@ public class InstrumentResponse {
           String hexIdentifier = words[0];
 
           switch (hexIdentifier) {
-          case "B052F22":
-            epochFound = true;
-            break;
+            case "B052F22":
+              epochFound = true;
+              break;
           }
         } // end of if statement
         line = br.readLine();
@@ -685,7 +705,7 @@ public class InstrumentResponse {
 
     while (line != null) {
 
-      if( line.length() == 0 ) {
+      if (line.length() == 0) {
         // empty line? need to skip it
         line = br.readLine();
         continue;
@@ -697,103 +717,103 @@ public class InstrumentResponse {
         String hexIdentifier = words[0];
 
         switch (hexIdentifier) {
-        case "B052F22":
-          if (epoch != null) {
-            // we already read to the desired epoch, so we can just return here
-            // otherwise, go for the last epoch and reset out the data from prev. epochs
+          case "B052F22":
+            if (epoch != null) {
+              // we already read to the desired epoch, so we can just return here
+              // otherwise, go for the last epoch and reset out the data from prev. epochs
+              break;
+            }
+            numStages = 0;
+            gains = new double[MAX_GAIN_STAGES];
+            for (int i = 0; i < gains.length; ++i) {
+              gains[i] = 1;
+            }
+            normalization = 0;
+            normalFreq = 0;
+            gainStage = -1;
+            polesArr = null;
+            zerosArr = null;
+          case "B053F03":
+            // transfer function type specified
+            // first character of third component of words
+            switch (words[2].charAt(0)) {
+              case 'A':
+                transferType = TransferFunction.LAPLACIAN;
+                break;
+              case 'B':
+                transferType = TransferFunction.LINEAR;
+                break;
+              default:
+                // defaulting to LAPLACIAN if type is different from a or b
+                // which is likely to be more correct
+                transferType = TransferFunction.LAPLACIAN;
+            }
             break;
-          }
-          numStages = 0;
-          gains = new double[MAX_GAIN_STAGES];
-          for (int i = 0; i < gains.length; ++i) {
-            gains[i] = 1;
-          }
-          normalization = 0;
-          normalFreq = 0;
-          gainStage = -1;
-          polesArr = null;
-          zerosArr = null;
-        case "B053F03":
-          // transfer function type specified
-          // first character of third component of words
-          switch ( words[2].charAt(0) ) {
-          case 'A':
-            transferType = TransferFunction.LAPLACIAN;
+          case "B053F05":
+            // parse the units of the transfer function (usually velocity)
+            // first *word* of the third component of words
+            String[] unitString = words[2].split("\\s");
+            String unit = unitString[0];
+            switch (unit.toLowerCase()) {
+              case "m/s":
+                unitType = Unit.VELOCITY;
+                break;
+              case "m/s**2":
+                unitType = Unit.ACCELERATION;
+                break;
+              default:
+                String e = "Unit type was given as " + unit + ".\n";
+                e += "Nonstandard unit, or not a velocity or acceleration";
+                throw new IOException(e);
+            }
             break;
-          case 'B':
-            transferType = TransferFunction.LINEAR;
+          case "B053F07":
+            // this is the normalization factor A0
+            // this is the entire third word of the line, as a double
+            normalization = Double.parseDouble(words[2]);
             break;
-          default:
-            // defaulting to LAPLACIAN if type is different from a or b
-            // which is likely to be more correct
-            transferType = TransferFunction.LAPLACIAN;
-          }
-          break;
-        case "B053F05":
-          // parse the units of the transfer function (usually velocity)
-          // first *word* of the third component of words
-          String[] unitString = words[2].split("\\s");
-          String unit = unitString[0];
-          switch (unit.toLowerCase()) {
-          case "m/s":
-            unitType = Unit.VELOCITY;
+          case "B053F08":
+            // this is the normalization frequency
+            // once again the entire third word of the line as double
+            normalFreq = Double.parseDouble(words[2]);
             break;
-          case "m/s**2":
-            unitType = Unit.ACCELERATION;
+          case "B053F09":
+            // the number of zeros listed in reponse pole/zero lines
+            // again, this is the entire third word, as an int
+            int numZero = Integer.parseInt(words[2]);
+            zerosArr = new Complex[numZero];
             break;
-          default:
-            String e = "Unit type was given as " + unit + ".\n";
-            e += "Nonstandard unit, or not a velocity or acceleration";
-            throw new IOException(e);
-          }
-          break;
-        case "B053F07":
-          // this is the normalization factor A0
-          // this is the entire third word of the line, as a double
-          normalization = Double.parseDouble(words[2]);
-          break;
-        case "B053F08":
-          // this is the normalization frequency
-          // once again the entire third word of the line as double
-          normalFreq = Double.parseDouble(words[2]);
-          break;
-        case "B053F09":
-          // the number of zeros listed in reponse pole/zero lines
-          // again, this is the entire third word, as an int
-          int numZero = Integer.parseInt(words[2]);
-          zerosArr = new Complex[numZero];
-          break;
-        case "B053F14":
-          // same as above line but for the number of poles
-          int numPole = Integer.parseInt(words[2]);
-          polesArr = new Complex[numPole];
-          break;
-        case "B053F10-13":
-          // these are the lists of response zeros, in order with index,
-          // real (double), imaginary (double), & corresponding error terms
-          parseTermAsComplex(line,zerosArr);
-          break;
-        case "B053F15-18":
-          // as above but for poles
-          parseTermAsComplex(line, polesArr);
-          break;
-        case "B058F03":
-          // gain stage sequence number; again, full third word as int
-          // this is used to map the gain value to an index
-          gainStage = Integer.parseInt(words[2]);
-          numStages = Math.max(numStages, gainStage);
-          break;
-        case "B058F04":
-          // should come immediately and only after the gain sequence number
-          // again, it's the third full word, this time as a double
-          // map allows us to read in the stages in whatever order
-          // in the event they're not sorted in the response file
-          // and allows us to have basically arbitrarily many stages
-          gains[gainStage] = Double.parseDouble(words[2]);
+          case "B053F14":
+            // same as above line but for the number of poles
+            int numPole = Integer.parseInt(words[2]);
+            polesArr = new Complex[numPole];
+            break;
+          case "B053F10-13":
+            // these are the lists of response zeros, in order with index,
+            // real (double), imaginary (double), & corresponding error terms
+            parseTermAsComplex(line, zerosArr);
+            break;
+          case "B053F15-18":
+            // as above but for poles
+            parseTermAsComplex(line, polesArr);
+            break;
+          case "B058F03":
+            // gain stage sequence number; again, full third word as int
+            // this is used to map the gain value to an index
+            gainStage = Integer.parseInt(words[2]);
+            numStages = Math.max(numStages, gainStage);
+            break;
+          case "B058F04":
+            // should come immediately and only after the gain sequence number
+            // again, it's the third full word, this time as a double
+            // map allows us to read in the stages in whatever order
+            // in the event they're not sorted in the response file
+            // and allows us to have basically arbitrarily many stages
+            gains[gainStage] = Double.parseDouble(words[2]);
 
-          // reset the stage to prevent data being overwritten
-          gainStage = -1;
-          break;
+            // reset the stage to prevent data being overwritten
+            gainStage = -1;
+            break;
         }
 
       } // end if line not comment
@@ -816,6 +836,7 @@ public class InstrumentResponse {
    * Library. These files can be found at http://ds.iris.edu/NRL/
    * This function currently does not parse a full response file, but instead
    * only examines fields relevant to self-noise calculations.
+   *
    * @param filename Full path to the response file
    */
   private void parseResponseFile(String filename, Instant epoch) throws IOException {
@@ -835,7 +856,7 @@ public class InstrumentResponse {
 
     BufferedReader br;
     try {
-      br = new BufferedReader( new FileReader(filename) );
+      br = new BufferedReader(new FileReader(filename));
       parserDriver(br, epoch);
       br.close();
     } catch (FileNotFoundException e) {
@@ -853,6 +874,7 @@ public class InstrumentResponse {
    * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
    * single pole. Poles with non-zero imaginary components do not have their
    * conjugate included in this vector in order to maintain constraints.
+   *
    * @param lowFreq True if the low-frequency poles are to be fit
    * @param nyquist Nyquist rate of data (upper bound on high-freq poles to fit)
    * @return RealVector with fittable pole values
@@ -868,7 +890,7 @@ public class InstrumentResponse {
 
     // starting index for poles, shift up one if lowest-freq pole is TOO low
     int start = 0;
-    if ( isKS54000() ) {
+    if (isKS54000()) {
       start = 1;
     }
 
@@ -878,15 +900,15 @@ public class InstrumentResponse {
       Complex p = pairAndValue.getFirst();
 
       double frq = p.abs() / NumericUtils.TAU;
-      if ( !lowFreq && (frq < 1.) ) {
+      if (!lowFreq && (frq < 1.)) {
         // don't include poles below 1Hz in high-frequency calibration
         continue;
       }
-      if ( lowFreq && (frq > 1.) ) {
+      if (lowFreq && (frq > 1.)) {
         // only do low frequency calibrations on poles up to
         break;
       }
-      if ( !lowFreq && (frq >= peak) ) {
+      if (!lowFreq && (frq >= peak)) {
         // don't fit poles above fraction of nyquist rate of sensor output
         break;
       }
@@ -916,6 +938,7 @@ public class InstrumentResponse {
 
   /**
    * Set name of response file, used in some plot and report generation
+   *
    * @param newName New name to give this response
    */
   public void setName(String newName) {
@@ -924,6 +947,7 @@ public class InstrumentResponse {
 
   /**
    * Replace the current poles of this response with new ones from an array
+   *
    * @param poleList Array of poles to replace the current response poles with (repeated poles
    * listed by the number of times they appear)
    */
@@ -933,6 +957,7 @@ public class InstrumentResponse {
 
   /**
    * Replace the current poles of this response with new ones from a list
+   *
    * @param poleList List of poles to replace the current response poles with (repeated poles listed
    * the number of times they appear)
    */
@@ -943,6 +968,7 @@ public class InstrumentResponse {
 
   /**
    * Apply new poles to this response object
+   *
    * @param newPoles List of paired values; first entry is a unique pole in response, and
    * second is the number of times it appears
    */
@@ -952,6 +978,7 @@ public class InstrumentResponse {
 
   /**
    * Set the list of zeros to a new array, such as after fitting from random cal
+   *
    * @param zeroList Array of zeros to replace the current response poles with (repeated zeros
    * listed every time they appear)
    */
@@ -961,6 +988,7 @@ public class InstrumentResponse {
 
   /**
    * Set the list of zeros to a new list, such as after fitting from random cal
+   *
    * @param zeroList List of zeros to replace the current response poles with (repeated zeros listed
    * every time they appear)
    */
@@ -971,6 +999,7 @@ public class InstrumentResponse {
 
   /**
    * Apply new zeros to this response object
+   *
    * @param newZeros List of paired values; first entry is a unique zero in response, and
    * second is the number of times it appears
    */
@@ -998,7 +1027,7 @@ public class InstrumentResponse {
     for (int i = 0; i < numStages; ++i) {
       sb.append(i);
       sb.append(": ");
-      sb.append( nf.format(gain[i]) );
+      sb.append(nf.format(gain[i]));
       sb.append("\n");
     }
 
@@ -1033,7 +1062,7 @@ public class InstrumentResponse {
     for (int i = 0; i < zList.size(); ++i) {
       sb.append(i);
       sb.append(": ");
-      sb.append( cf.format( zList.get(i) ) );
+      sb.append(cf.format(zList.get(i)));
       sb.append("\n");
     }
 
@@ -1043,7 +1072,7 @@ public class InstrumentResponse {
     for (int i = 0; i < pList.size(); ++i) {
       sb.append(i);
       sb.append(": ");
-      sb.append( cf.format( pList.get(i) ) );
+      sb.append(cf.format(pList.get(i)));
       sb.append("\n");
     }
 
@@ -1059,6 +1088,7 @@ public class InstrumentResponse {
    * each even-odd pair (i.e., 0-1, 2-3, 4-5) of values in the vector define a
    * single zero. Zeros with non-zero imaginary components do not have their
    * conjugate included in this vector in order to maintain constraints.
+   *
    * @param lowFreq True if the low-frequency zeros are to be fit
    * @param nyquist Nyquist rate of data (upper bound on high-freq zeros to fit)
    * @return RealVector with fittable zero values
@@ -1075,22 +1105,22 @@ public class InstrumentResponse {
       Pair<Complex, Integer> valueAndCount = zeros.get(i);
       Complex c = valueAndCount.getFirst();
 
-      if ( c.abs() == 0. ) {
+      if (c.abs() == 0.) {
         // ignore zeros that are literally zero-valued
         continue;
       }
 
       double cutoffChecker = c.abs() / NumericUtils.TAU;
 
-      if ( lowFreq && (cutoffChecker > 1.) ) {
+      if (lowFreq && (cutoffChecker > 1.)) {
         // only do low frequency calibrations on zeros up to 1Hz
         break;
       }
-      if ( !lowFreq && (cutoffChecker < 1.) ) {
+      if (!lowFreq && (cutoffChecker < 1.)) {
         // don't include zeros > 1Hz in high-frequency calibration
         continue;
       }
-      if ( !lowFreq && (cutoffChecker > peak) ) {
+      if (!lowFreq && (cutoffChecker > peak)) {
         // don't fit zeros above 80% nyquist rate of sensor output
         break;
       }

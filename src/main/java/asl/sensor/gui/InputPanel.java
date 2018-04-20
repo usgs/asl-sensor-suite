@@ -1,5 +1,13 @@
 package asl.sensor.gui;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -58,14 +66,6 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 
 /**
@@ -78,12 +78,12 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
  * to experiment calculations.
  * Some important functions this object has is to make sure that input data is all trimmed
  * to the same region for use in experiment backends, and display time regions of interest
- * @author akearns
  *
+ * @author akearns
  */
 public class InputPanel
-extends JPanel
-implements ActionListener, ChangeListener {
+    extends JPanel
+    implements ActionListener, ChangeListener {
 
   /**
    * auto-generated serialization UID
@@ -111,20 +111,21 @@ implements ActionListener, ChangeListener {
 
   /**
    * Gets the value of start or end time from slider value and DataBlock
+   *
    * @param db DataBlock corresponding to one of the plots
    * @param sliderValue Value of starting or ending time slider [0-SLIDER_MAX]
    * @return Long that represents start or end time matching slider's value
    */
   public static long getMarkerLocation(DataBlock db, int sliderValue) {
     long start = db.getStartTime();
-    long len = ( db.getInterval() ) * db.size();
+    long len = (db.getInterval()) * db.size();
     return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
   }
 
   public static int getSliderValue(DataBlock db, long timeStamp) {
     long start = db.getStartTime();
     long len = db.getInterval() * db.size();
-    return (int) ( ( SLIDER_MAX * (timeStamp - start) ) / len );
+    return (int) ((SLIDER_MAX * (timeStamp - start)) / len);
   }
 
   private int activePlots = FILE_COUNT; // how much data is being displayed
@@ -132,9 +133,9 @@ implements ActionListener, ChangeListener {
   private DataStore ds; // holds data to be plotted in each chartpanel
   private ChartPanel[] chartPanels; // show the data for a given input
   private Color[] defaultColor = {
-          ChartColor.LIGHT_RED,
-          ChartColor.LIGHT_BLUE,
-          ChartColor.LIGHT_GREEN }; // control ordering of colors
+      ChartColor.LIGHT_RED,
+      ChartColor.LIGHT_BLUE,
+      ChartColor.LIGHT_GREEN}; // control ordering of colors
   private JButton save; // save every input of note in a png plot
   private JButton zoomIn; // select a given window
   private JButton zoomOut; // revert to full data region
@@ -183,7 +184,7 @@ implements ActionListener, ChangeListener {
     channelType = new JLabel[FILE_COUNT];
     chartSubpanels = new JPanel[FILE_COUNT];
 
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
 
     ds = new DataStore();
@@ -203,7 +204,7 @@ implements ActionListener, ChangeListener {
 
     //
     VScrollPanel cont = new VScrollPanel();
-    cont.setLayout( new GridBagLayout() );
+    cont.setLayout(new GridBagLayout());
     GridBagConstraints contConstraints = new GridBagConstraints();
     contConstraints.weightx = 1.0;
     contConstraints.weighty = 1.0;
@@ -218,9 +219,9 @@ implements ActionListener, ChangeListener {
       Dimension d2 = chartSubpanels[i].getPreferredSize();
       minDim = chartSubpanels[i].getMinimumSize();
 
-      d2.setSize( d2.getWidth(), d.getHeight() );
+      d2.setSize(d2.getWidth(), d.getHeight());
 
-      chartSubpanels[i].setSize( d2 );
+      chartSubpanels[i].setSize(d2);
       cont.add(chartSubpanels[i], contConstraints);
       contConstraints.gridy += 1;
       // gbc.gridy += 1;
@@ -236,7 +237,7 @@ implements ActionListener, ChangeListener {
 
     // set size so that the result pane isn't distorted on window launch
     Dimension d = inputScrollPane.getPreferredSize();
-    d.setSize( d.getWidth() + 5, d.getHeight() );
+    d.setSize(d.getWidth() + 5, d.getHeight());
     this.setPreferredSize(d);
 
     leftSlider = new JSlider(0, SLIDER_MAX, 0);
@@ -266,7 +267,7 @@ implements ActionListener, ChangeListener {
 
     clearAll = new JButton("Clear ALL data");
     clearAll.setOpaque(true);
-    clearAll.setBackground( Color.RED.darker() );
+    clearAll.setBackground(Color.RED.darker());
     clearAll.addActionListener(this);
     clearAll.setEnabled(false);
 
@@ -296,7 +297,8 @@ implements ActionListener, ChangeListener {
 
     gbc.fill = GridBagConstraints.NONE;
     gbc.gridy += 1;
-    gbc.weighty = 0; gbc.weightx = 0;
+    gbc.weighty = 0;
+    gbc.weightx = 0;
 
     gbc.gridx = 0;
     gbc.anchor = GridBagConstraints.EAST;
@@ -309,7 +311,7 @@ implements ActionListener, ChangeListener {
     gbc.gridwidth = 1;
     gbc.anchor = GridBagConstraints.CENTER;
     gbc.gridx = 7;
-    gbc.gridy = yOfClear+1;
+    gbc.gridy = yOfClear + 1;
     gbc.gridheight = 2;
     gbc.fill = GridBagConstraints.BOTH;
 
@@ -330,14 +332,15 @@ implements ActionListener, ChangeListener {
   /**
    * Create a new data panel and add data to the charts from an existing
    * DataStore, also setting the given number of panels as visible
+   *
    * @param ds DataStore object with data to be plotted
    * @param panelsNeeded number of panels to show in the object
    */
   public InputPanel(DataStore ds, int panelsNeeded) {
     this();
     for (int i = 0; i < panelsNeeded; ++i) {
-      if ( ds.blockIsSet(i) ) {
-        seedFileNames[i].setText( ds.getBlock(i).getName() );
+      if (ds.blockIsSet(i)) {
+        seedFileNames[i].setText(ds.getBlock(i).getName());
         XYSeries ts = ds.getPlotSeries(i);
         JFreeChart chart = ChartFactory.createXYLineChart(
             ts.getKey().toString(),
@@ -348,8 +351,8 @@ implements ActionListener, ChangeListener {
             false, false, false);
         chartPanels[i].setChart(chart);
       }
-      if ( ds.responseIsSet(i) ) {
-        respFileNames[i].setText( ds.getResponse(i).getName() );
+      if (ds.responseIsSet(i)) {
+        respFileNames[i].setText(ds.getResponse(i).getName());
       }
     }
     showDataNeeded(panelsNeeded);
@@ -376,7 +379,7 @@ implements ActionListener, ChangeListener {
       JButton resp = respLoaders[i];
       FileOperationJButton appd = seedAppenders[i];
 
-      if( e.getSource() == clear ) {
+      if (e.getSource() == clear) {
         instantiateChart(i);
         ds.removeData(i);
         clear.setEnabled(false);
@@ -386,7 +389,7 @@ implements ActionListener, ChangeListener {
 
         // plot all valid range of loaded-in data or else
         // disable clearAll button if there's no other data loaded in
-        clearAll.setEnabled( ds.isAnythingSet() );
+        clearAll.setEnabled(ds.isAnythingSet());
 
         ds.trimToCommonTime();
 
@@ -395,14 +398,14 @@ implements ActionListener, ChangeListener {
         fireStateChanged();
       }
 
-      if ( e.getSource() == seed ) {
+      if (e.getSource() == seed) {
         loadData(i, seed);
       }
-      if ( e.getSource() == appd ) {
+      if (e.getSource() == appd) {
         loadData(i, appd);
       }
 
-      if ( e.getSource() == resp ) {
+      if (e.getSource() == resp) {
         // don't need a new thread because resp loading is pretty prompt
 
         Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
@@ -426,7 +429,7 @@ implements ActionListener, ChangeListener {
             "RESP File Selection",
             JOptionPane.PLAIN_MESSAGE,
             null, names.toArray(),
-            names.get(idx) );
+            names.get(idx));
 
         final String resultStr = (String) result;
 
@@ -436,7 +439,7 @@ implements ActionListener, ChangeListener {
         }
 
         // is the loaded string one of the embedded response files?
-        if ( respFilenames.contains(resultStr) ) {
+        if (respFilenames.contains(resultStr)) {
           // what was the index of the selected item?
           // used to make sure we default to that choice next round
           lastRespIndex = Collections.binarySearch(names, resultStr);
@@ -447,7 +450,7 @@ implements ActionListener, ChangeListener {
                 InstrumentResponse.loadEmbeddedResponse(fname);
             ds.setResponse(i, ir);
 
-            respFileNames[i].setText( ir.getName() );
+            respFileNames[i].setText(ir.getName());
             clear.setEnabled(true);
             clearAll.setEnabled(true);
 
@@ -460,22 +463,22 @@ implements ActionListener, ChangeListener {
           }
         } else {
           lastRespIndex = -1;
-          fc.setCurrentDirectory( new File(respDirectory) );
+          fc.setCurrentDirectory(new File(respDirectory));
           fc.resetChoosableFileFilters();
           fc.setDialogTitle("Load response file...");
           int returnVal = fc.showOpenDialog(resp);
           if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
             respDirectory = file.getParent();
-            try{
-              Instant startInst = respEpochChoose( file.getAbsolutePath() );
-              InstrumentResponse ir = new InstrumentResponse( file.getAbsolutePath(), startInst );
+            try {
+              Instant startInst = respEpochChoose(file.getAbsolutePath());
+              InstrumentResponse ir = new InstrumentResponse(file.getAbsolutePath(), startInst);
               ds.setResponse(i, ir);
-              respFileNames[i].setText( file.getName() );
+              respFileNames[i].setText(file.getName());
               clear.setEnabled(true);
               clearAll.setEnabled(true);
             } catch (IOException e2) {
-              responseErrorPopup( file.getName() );
+              responseErrorPopup(file.getName());
               e2.printStackTrace();
               return;
             }
@@ -489,7 +492,7 @@ implements ActionListener, ChangeListener {
 
     }
 
-    if ( e.getSource() == clearAll) {
+    if (e.getSource() == clearAll) {
       clearAllData();
 
       fireStateChanged();
@@ -497,25 +500,24 @@ implements ActionListener, ChangeListener {
       return;
     }
 
-
-    if ( e.getSource() == save ) {
+    if (e.getSource() == save) {
       String ext = ".png";
       fc = new JFileChooser();
-      fc.setCurrentDirectory( new File(saveDirectory) );
+      fc.setCurrentDirectory(new File(saveDirectory));
       fc.addChoosableFileFilter(
-          new FileNameExtensionFilter("PNG image (.png)",ext) );
+          new FileNameExtensionFilter("PNG image (.png)", ext));
       fc.setFileFilter(fc.getChoosableFileFilters()[1]);
       int returnVal = fc.showSaveDialog(save);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fc.getSelectedFile();
         saveDirectory = selFile.getParent();
-        if( !selFile.getName().endsWith( ext.toLowerCase() ) ) {
-          selFile = new File( selFile.toString() + ext);
+        if (!selFile.getName().endsWith(ext.toLowerCase())) {
+          selFile = new File(selFile.toString() + ext);
         }
         try {
           int height = IMAGE_HEIGHT * activePlots;
           BufferedImage bi = getAsImage(IMAGE_WIDTH, height, activePlots);
-          ImageIO.write(bi,"png",selFile);
+          ImageIO.write(bi, "png", selFile);
         } catch (IOException e1) {
           e1.printStackTrace();
         }
@@ -524,22 +526,23 @@ implements ActionListener, ChangeListener {
       return;
     }
 
-    if ( e.getSource() == zoomIn ) {
+    if (e.getSource() == zoomIn) {
       showRegionForGeneration();
       return;
     }
 
-    if ( e.getSource() == zoomOut ) {
+    if (e.getSource() == zoomOut) {
       // restore original loaded datastore
       ds.untrim(activePlots);
       for (int i = 0; i < FILE_COUNT; ++i) {
-        if ( !ds.blockIsSet(i) ) {
+        if (!ds.blockIsSet(i)) {
           continue;
         }
         resetPlotZoom(i);
       }
 
-      leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
+      leftSlider.setValue(0);
+      rightSlider.setValue(SLIDER_MAX);
       setVerticalBars();
       zoomOut.setEnabled(false);
       return;
@@ -558,7 +561,6 @@ implements ActionListener, ChangeListener {
 
   /**
    * Used to add objects to the list that will be informed when data is loaded
-   * @param listener
    */
   public void addChangeListener(ChangeListener listener) {
     listenerList.add(ChangeListener.class, listener);
@@ -611,6 +613,7 @@ implements ActionListener, ChangeListener {
 
   /**
    * Return this panel's charts as a single buffered image
+   *
    * @param plotsToShow number of plots to be placed in the image
    * @return Buffered image of the plots, writeable to file
    */
@@ -618,12 +621,13 @@ implements ActionListener, ChangeListener {
     // if all 3 plots are set, height of panel is height of image
     int height = getImageHeight(plotsToShow);
     // otherwise, we only use the height of images actually set
-    return getAsImage( IMAGE_WIDTH, height, plotsToShow );
+    return getAsImage(IMAGE_WIDTH, height, plotsToShow);
   }
 
   /**
    * Return this panel's charts as a single buffered image
    * with specified dimensions
+   *
    * @param width Width of returned image
    * @param height Height of returned image
    * @param plotsToShow Plots to be shown in the output image
@@ -644,8 +648,8 @@ implements ActionListener, ChangeListener {
 
     int loaded = plotsToShow;
     // cheap way to make sure height is a multiple of the chart count
-    height = (height*loaded)/loaded;
-    int chartHeight = height/loaded;
+    height = (height * loaded) / loaded;
+    int chartHeight = height / loaded;
 
     JFreeChart[] chartsToPrint = new JFreeChart[plotsToShow];
     for (int i = 0; i < plotsToShow; ++i) {
@@ -660,13 +664,14 @@ implements ActionListener, ChangeListener {
   /**
    * Produce the visible charts as multiple images, to be used to split
    * across multiple PDF pages when generating reports
+   *
    * @param width Width of each plot in the image
    * @param height Height of each plot in the image
    * @param plotsToShow Number of plots that are to be added to the report
    * @return list of buffered images of plots, each image to be made a PDF page
    */
   public BufferedImage[]
-      getAsMultipleImages(int width, int height, int plotsToShow) {
+  getAsMultipleImages(int width, int height, int plotsToShow) {
 
     if (plotsToShow <= 0) {
       return new BufferedImage[]{};
@@ -674,8 +679,8 @@ implements ActionListener, ChangeListener {
 
     int loaded = plotsToShow;
     // cheap way to make sure height is a multiple of the chart count
-    height = (height*loaded)/loaded;
-    int chartHeight = height/loaded;
+    height = (height * loaded) / loaded;
+    int chartHeight = height / loaded;
 
     JFreeChart[] chartsToPrint = new JFreeChart[plotsToShow];
     for (int i = 0; i < plotsToShow; ++i) {
@@ -693,12 +698,13 @@ implements ActionListener, ChangeListener {
    * When this function is called, the graphs zoom to the currently active
    * range to display selected by the sliders, which is also the range
    * passed into an experiment
+   *
    * @return A DataStore object (contains arrays of DataBlocks & Responses)
    */
   public DataStore getData() {
 
     // showRegionForGeneration();
-    if ( ds.numberOfBlocksSet() > 1 ) {
+    if (ds.numberOfBlocksSet() > 1) {
       // zooms.matchIntervals(activePlots); done at experiment level
       ds.trimToCommonTime(activePlots);
     }
@@ -709,6 +715,7 @@ implements ActionListener, ChangeListener {
   /**
    * Gets the height of resulting image of plots given default parameters,
    * so that it only needs to fit the plots that have data in them
+   *
    * @return height of image to output
    */
   public int getImageHeight(int plotsToShow) {
@@ -718,9 +725,10 @@ implements ActionListener, ChangeListener {
 
   /**
    * Returns a default image width for writing plots to file
+   *
    * @return width of image to output
    */
-  public int getImageWidth()  {
+  public int getImageWidth() {
     return allCharts.getWidth();
   }
 
@@ -728,7 +736,7 @@ implements ActionListener, ChangeListener {
     String[] outStrings = new String[indices.length];
     for (int i = 0; i < indices.length; ++i) {
       int idx = indices[i];
-      if ( !ds.responseIsSet(idx) ) {
+      if (!ds.responseIsSet(idx)) {
         System.out.println("ERROR WITH RESP AT INDEX " + idx);
       }
       outStrings[i] = ds.getResponse(idx).toString();
@@ -738,6 +746,7 @@ implements ActionListener, ChangeListener {
 
   /**
    * Instantiates the underlying chart of a chartpanel with default data
+   *
    * @param idx Index of the chartpanel to instantiate
    */
   private void instantiateChart(int idx) {
@@ -760,12 +769,13 @@ implements ActionListener, ChangeListener {
   /**
    * Load in data for a specified SEED file, to be run in a specific thread.
    * Because loading can be a slow operation, this runs in a background thread
+   *
    * @param idx Index into datastore/plots this data should be loaded
    * @param seed The JButton to passed into the fileloader
    */
   private void loadData(final int idx, final FileOperationJButton seed) {
 
-    fc.setCurrentDirectory( new File(seedDirectory) );
+    fc.setCurrentDirectory(new File(seedDirectory));
     fc.resetChoosableFileFilters();
     fc.setDialogTitle("Load SEED file...");
     int returnVal = fc.showOpenDialog(seed);
@@ -780,7 +790,7 @@ implements ActionListener, ChangeListener {
       try {
         Set<String> nameSet = seed.getFilenameSet(ds, idx, filePath);
 
-        if ( nameSet.size() > 1 ) {
+        if (nameSet.size() > 1) {
           // more than one series in the file? prompt user for it
           String[] names = nameSet.toArray(new String[0]);
           Arrays.sort(names);
@@ -799,7 +809,7 @@ implements ActionListener, ChangeListener {
             seedFileNames[idx].setText(oldName);
             return;
           }
-        } else if ( nameSet.size() > 0 ) {
+        } else if (nameSet.size() > 0) {
           // just get the first one; it's the only one in the list
           filterName = new ArrayList<String>(nameSet).get(0);
         } else {
@@ -807,16 +817,16 @@ implements ActionListener, ChangeListener {
           // because there will be at least one SNCL described in it
           // unless we are appending from a list without data for the loaded channel, etc.
           seedFileNames[idx].setText(oldName);
-          seedAppendEmptyPopup( file.getName() );
+          seedAppendEmptyPopup(file.getName());
           return;
         }
 
       } catch (SeedFormatException | IOException | RuntimeException e) {
         e.printStackTrace();
         if (seed instanceof LoadingJButton) {
-          seedLoadHandleError( idx, file.getName(), e.toString() );
+          seedLoadHandleError(idx, file.getName(), e.toString());
         } else {
-          seedAppendErrorPopup( file.getName() );
+          seedAppendErrorPopup(file.getName());
         }
 
         return;
@@ -825,7 +835,7 @@ implements ActionListener, ChangeListener {
       final String immutableFilter = filterName;
 
       // create swingworker to load large files in the background
-      SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>(){
+      SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
 
         JFreeChart chart;
         boolean caughtException = false;
@@ -865,7 +875,7 @@ implements ActionListener, ChangeListener {
           XYPlot xyp = (XYPlot) chart.getPlot();
 
           DateAxis da = new DateAxis();
-          SDF.setTimeZone( TimeZone.getTimeZone("UTC") );
+          SDF.setTimeZone(TimeZone.getTimeZone("UTC"));
           da.setLabel("UTC Time (Year.Day.Hour:Minute)");
           Font bold = da.getLabelFont();
           bold = bold.deriveFont(Font.BOLD);
@@ -885,12 +895,12 @@ implements ActionListener, ChangeListener {
 
           if (caughtException) {
 
-            if (seed instanceof AppendingJButton){
-              seedAppendErrorPopup( file.getName() );
+            if (seed instanceof AppendingJButton) {
+              seedAppendErrorPopup(file.getName());
               return;
             }
 
-            seedLoadHandleError( idx, file.getName(), returnedErrMsg );
+            seedLoadHandleError(idx, file.getName(), returnedErrMsg);
 
             return;
           }
@@ -907,13 +917,14 @@ implements ActionListener, ChangeListener {
           clearButton[idx].setEnabled(true);
 
           for (int i = 0; i < FILE_COUNT; ++i) {
-            if ( !ds.blockIsSet(i) ) {
+            if (!ds.blockIsSet(i)) {
               continue;
             }
             resetPlotZoom(i);
           }
 
-          leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
+          leftSlider.setValue(0);
+          rightSlider.setValue(SLIDER_MAX);
           setVerticalBars();
 
           zoomOut.setEnabled(false);
@@ -946,7 +957,7 @@ implements ActionListener, ChangeListener {
     errMsg.append("This file is probably not a SEED file or has a formatting error.\n\n");
     errMsg.append("A full stack trace is in the terminal -- this is the exception:\n");
     errMsg.append(err);
-    result.setText( errMsg.toString() );
+    result.setText(errMsg.toString());
     result.setBackgroundPaint(Color.red);
     result.setPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
@@ -984,6 +995,7 @@ implements ActionListener, ChangeListener {
   /**
    * Used to construct the panels for loading and displaying SEED data
    * (as well as the corresponding response file)
+   *
    * @param i Index of panel to be created, for getting references to the chart
    * panel and the appropriate actionlisteners for the loaders
    * @return composite panel of chart, loaders, and clear button
@@ -991,7 +1003,7 @@ implements ActionListener, ChangeListener {
   private JPanel makeChartSubpanel(int i) {
 
     JPanel chartSubpanel = new JPanel();
-    chartSubpanel.setLayout( new GridBagLayout() );
+    chartSubpanel.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
 
     gbc.weightx = 1.0;
@@ -1010,45 +1022,49 @@ implements ActionListener, ChangeListener {
 
     chartPanels[i].setMouseZoomable(true);
 
-    seedLoaders[i] = new LoadingJButton( "Load SEED file " + (i+1) );
+    seedLoaders[i] = new LoadingJButton("Load SEED file " + (i + 1));
     seedLoaders[i].addActionListener(this);
-    seedLoaders[i].setMaximumSize( seedLoaders[i].getMinimumSize() );
+    seedLoaders[i].setMaximumSize(seedLoaders[i].getMinimumSize());
 
     seedAppenders[i] = new AppendingJButton("Append SEED");
     seedAppenders[i].addActionListener(this);
-    seedAppenders[i].setMaximumSize( seedLoaders[i].getMinimumSize() );
+    seedAppenders[i].setMaximumSize(seedLoaders[i].getMinimumSize());
     seedAppenders[i].setEnabled(false);
 
-    JTextField text = new JTextField( "NO FILE LOADED" );
+    JTextField text = new JTextField("NO FILE LOADED");
     text.setHorizontalAlignment(SwingConstants.CENTER);
-    text.setMaximumSize( text.getPreferredSize() );
+    text.setMaximumSize(text.getPreferredSize());
     seedFileNames[i] = text;
     seedFileNames[i].setEditable(false);
 
-    respLoaders[i] = new JButton( "Load RESP file " + (i+1) );
+    respLoaders[i] = new JButton("Load RESP file " + (i + 1));
     respLoaders[i].addActionListener(this);
-    respLoaders[i].setMaximumSize( respLoaders[i].getMinimumSize() );
+    respLoaders[i].setMaximumSize(respLoaders[i].getMinimumSize());
 
-    text = new JTextField( "NO FILE LOADED" );
+    text = new JTextField("NO FILE LOADED");
     text.setHorizontalAlignment(SwingConstants.CENTER);
-    text.setMaximumSize( text.getPreferredSize() );
+    text.setMaximumSize(text.getPreferredSize());
     respFileNames[i] = text;
     respFileNames[i].setEditable(false);
 
-    clearButton[i] = new JButton( "Clear data " + (i+1) );
-    clearButton[i].setMaximumSize( clearButton[i].getMinimumSize() );
+    clearButton[i] = new JButton("Clear data " + (i + 1));
+    clearButton[i].setMaximumSize(clearButton[i].getMinimumSize());
 
-    gbc.gridx = 0; gbc.gridy = 0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
 
-    gbc.weightx = 0; gbc.weighty = 0;
+    gbc.weightx = 0;
+    gbc.weighty = 0;
     gbc.fill = GridBagConstraints.BOTH;
 
     gbc.fill = GridBagConstraints.NONE;
     chartSubpanel.add(channelType[i], gbc);
 
-    gbc.weightx = 1; gbc.weighty = 1;
+    gbc.weightx = 1;
+    gbc.weighty = 1;
     gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridwidth = 1; gbc.gridheight = 6;
+    gbc.gridwidth = 1;
+    gbc.gridheight = 6;
     gbc.gridy += 1;
     chartSubpanel.add(chartPanels[i], gbc);
 
@@ -1060,18 +1076,20 @@ implements ActionListener, ChangeListener {
 
     gbc.fill = GridBagConstraints.BOTH;
     gbc.gridx = 1;
-    gbc.gridwidth = 1; gbc.gridheight = 1;
-    gbc.weightx = 0; gbc.weighty = 0.25;
+    gbc.gridwidth = 1;
+    gbc.gridheight = 1;
+    gbc.weightx = 0;
+    gbc.weighty = 0.25;
     chartSubpanel.add(seedLoaders[i], gbc);
 
-    gbc.gridy +=1;
+    gbc.gridy += 1;
     chartSubpanel.add(seedAppenders[i], gbc);
 
     gbc.fill = GridBagConstraints.BOTH;
     gbc.weighty = 1;
     gbc.gridy += 1;
     JScrollPane jsp = new JScrollPane();
-    jsp.setMaximumSize( jsp.getMinimumSize() );
+    jsp.setMaximumSize(jsp.getMinimumSize());
     jsp.setViewportView(seedFileNames[i]);
     jsp.setVerticalScrollBarPolicy(
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
@@ -1088,7 +1106,7 @@ implements ActionListener, ChangeListener {
     gbc.weighty = 1;
     gbc.gridy += 1;
     jsp = new JScrollPane();
-    jsp.setMaximumSize( jsp.getMinimumSize() );
+    jsp.setMaximumSize(jsp.getMinimumSize());
     jsp.setViewportView(respFileNames[i]);
     jsp.setVerticalScrollBarPolicy(
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
@@ -1099,9 +1117,9 @@ implements ActionListener, ChangeListener {
     gbc.fill = GridBagConstraints.HORIZONTAL;
     gbc.weighty = 0;
     gbc.gridy += 1;
-    clearButton[i] = new JButton( "Clear data " + (i+1) );
+    clearButton[i] = new JButton("Clear data " + (i + 1));
     clearButton[i].setOpaque(true);
-    clearButton[i].setBackground( Color.RED.darker() );
+    clearButton[i].setBackground(Color.RED.darker());
     clearButton[i].addActionListener(this);
     clearButton[i].setEnabled(false);
     chartSubpanel.add(clearButton[i], gbc);
@@ -1112,7 +1130,6 @@ implements ActionListener, ChangeListener {
   /**
    * Used to remove an object from the list of those informed when
    * data is loaded in or cleared out
-   * @param listener
    */
   public void removeChangeListener(ChangeListener listener) {
     listenerList.remove(ChangeListener.class, listener);
@@ -1120,19 +1137,20 @@ implements ActionListener, ChangeListener {
 
   /**
    * Does the work to reset the zoom of a chart when the zoom button is hit
+   *
    * @param idx Index of appropriate chart/panel
    */
   private void resetPlotZoom(int idx) {
     // System.out.println("reset plot zoom");
     XYPlot xyp = chartPanels[idx].getChart().getXYPlot();
     XYSeriesCollection xys = new XYSeriesCollection();
-    xys.addSeries( ds.getBlock(idx).toXYSeries() );
-    xyp.setDataset( xys );
+    xys.addSeries(ds.getBlock(idx).toXYSeries());
+    xyp.setDataset(xys);
     xyp.getRenderer().setSeriesPaint(0,
         defaultColor[idx % defaultColor.length]);
     xyp.getDomainAxis().setAutoRange(true);
     //xyp.setRangeAxis(na);
-    if ( xyp.getSeriesCount() > 1 ) {
+    if (xyp.getSeriesCount() > 1) {
       throw new RuntimeException("TOO MUCH DATA");
     }
     chartPanels[idx].repaint();
@@ -1140,6 +1158,7 @@ implements ActionListener, ChangeListener {
 
   /**
    * Get a selected epoch from a multi-epoch response
+   *
    * @param respHandle Name of a given response to read in
    * @return Value of the start instant of the epoch that the user has chosen
    * @throws IOException Error reading resp file
@@ -1147,18 +1166,18 @@ implements ActionListener, ChangeListener {
    */
   private Instant respEpochChoose(String respHandle) throws FileNotFoundException, IOException {
 
-    DateTimeFormatter dtf = InstrumentResponse.RESP_DT_FORMAT.withZone( ZoneOffset.UTC );
+    DateTimeFormatter dtf = InstrumentResponse.RESP_DT_FORMAT.withZone(ZoneOffset.UTC);
     List<Pair<Instant, Instant>> epochs = InstrumentResponse.getRespFileEpochs(respHandle);
 
     if (epochs.size() > 1) {
       // more than one series in the file? prompt user for it
       String[] epochStrings = new String[epochs.size()];
       for (int i = 0; i < epochStrings.length; ++i) {
-        String startString = dtf.format( epochs.get(i).getFirst() );
+        String startString = dtf.format(epochs.get(i).getFirst());
         Instant endInst = epochs.get(i).getSecond();
         String endString;
         if (endInst != null) {
-          endString = dtf.format( epochs.get(i).getSecond() );
+          endString = dtf.format(epochs.get(i).getSecond());
         } else {
           endString = "(NO EPOCH END SPECIFIED)";
         }
@@ -1193,6 +1212,7 @@ implements ActionListener, ChangeListener {
   /**
    * Used to get labels for each plot to idenitify what data they need to
    * contain in order for an experiment to have enough data to run
+   *
    * @param channels List of strings to be used as panel title
    */
   public void setChannelTypes(String[] channels) {
@@ -1211,7 +1231,7 @@ implements ActionListener, ChangeListener {
    */
   public void setVerticalBars() {
 
-    if ( ds.numberOfBlocksSet() < 1 ) {
+    if (ds.numberOfBlocksSet() < 1) {
       return;
     }
 
@@ -1231,7 +1251,7 @@ implements ActionListener, ChangeListener {
     endDate.addChangeListener(this);
 
     for (int i = 0; i < FILE_COUNT; ++i) {
-      if ( !ds.blockIsSet(i) ) {
+      if (!ds.blockIsSet(i)) {
         continue;
       }
 
@@ -1239,14 +1259,14 @@ implements ActionListener, ChangeListener {
       xyp.clearDomainMarkers();
 
       Marker startMarker = new ValueMarker(startMarkerLocation);
-      startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      startMarker.setStroke(new BasicStroke((float) 1.5));
       Marker endMarker = new ValueMarker(endMarkerLocation);
-      endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      endMarker.setStroke(new BasicStroke((float) 1.5));
 
       xyp.addDomainMarker(startMarker);
       xyp.addDomainMarker(endMarker);
 
-      List<Pair<Long,Long>> gaps = ds.getBlock(i).getGapBoundaries();
+      List<Pair<Long, Long>> gaps = ds.getBlock(i).getGapBoundaries();
 
       XYDataset data = xyp.getDataset();
       XYSeriesCollection xysc = (XYSeriesCollection) data;
@@ -1260,7 +1280,7 @@ implements ActionListener, ChangeListener {
           double start = Math.max(gapStart, min);
           double end = Math.min(gapEnd, max);
           Marker gapMarker = new IntervalMarker(start, end);
-          gapMarker.setPaint( Color.ORANGE );
+          gapMarker.setPaint(Color.ORANGE);
           xyp.addDomainMarker(gapMarker);
         }
       }
@@ -1271,12 +1291,13 @@ implements ActionListener, ChangeListener {
 
   /**
    * Show the number of panels needed to load in data for a specific experiment
+   *
    * @param panelsNeeded Number of panels to show
    */
   public void showDataNeeded(int panelsNeeded) {
 
     VScrollPanel cont = new VScrollPanel();
-    cont.setLayout( new GridBagLayout() );
+    cont.setLayout(new GridBagLayout());
     GridBagConstraints contConstraints = new GridBagConstraints();
     contConstraints.weightx = 1.0;
     contConstraints.weighty = 1.0;
@@ -1288,7 +1309,7 @@ implements ActionListener, ChangeListener {
 
     // get current time range of zoom data for resetting, if any data is loaded
     long start, end;
-    if ( ds.areAnyBlocksSet() ) {
+    if (ds.areAnyBlocksSet()) {
       DataBlock db = ds.getXthLoadedBlock(1);
       start = db.getStartTime();
       end = db.getEndTime();
@@ -1298,7 +1319,7 @@ implements ActionListener, ChangeListener {
       // as much data as possible
       db = ds.getXthLoadedBlock(1);
       // was the data zoomed in more than it is now?
-      if ( start > db.getStartTime() || end < db.getEndTime() ) {
+      if (start > db.getStartTime() || end < db.getEndTime()) {
         try {
           // zooms won't be modified if an exception is thrown
           ds.trim(start, end, activePlots);
@@ -1319,12 +1340,12 @@ implements ActionListener, ChangeListener {
 
     // reset plot zoom if data is still there; clear out stale data from conflicting time ranges
     for (int i = 0; i < activePlots; ++i) {
-      if ( ds.blockIsSet(i) ){
+      if (ds.blockIsSet(i)) {
         resetPlotZoom(i);
       } else {
         instantiateChart(i);
         seedFileNames[i].setText("NO FILE LOADED");
-        if ( !ds.responseIsSet(i) ) {
+        if (!ds.responseIsSet(i)) {
           respFileNames[i].setText("NO FILE LOADED");
           clearButton[i].setEnabled(false);
         }
@@ -1335,17 +1356,18 @@ implements ActionListener, ChangeListener {
       // gbc.gridy += 1;
     }
 
-    leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
+    leftSlider.setValue(0);
+    rightSlider.setValue(SLIDER_MAX);
     setVerticalBars();
 
-    zoomIn.setEnabled( ds.numberOfBlocksSet() > 0 );
+    zoomIn.setEnabled(ds.numberOfBlocksSet() > 0);
 
     // using this test means the panel doesn't try to scroll when it's
     // only got a few inputs to deal with, when stuff is still pretty readable
     cont.setScrollableTracksViewportHeight(activePlots <= MAX_UNSCROLLED);
 
     inputScrollPane.getViewport().setView(cont);
-    inputScrollPane.setPreferredSize( cont.getPreferredSize() );
+    inputScrollPane.setPreferredSize(cont.getPreferredSize());
   }
 
   /**
@@ -1354,7 +1376,7 @@ implements ActionListener, ChangeListener {
    */
   public void showRegionForGeneration() {
 
-    if ( ds.numberOfBlocksSet() < 1 ) {
+    if (ds.numberOfBlocksSet() < 1) {
       return;
     }
 
@@ -1362,16 +1384,17 @@ implements ActionListener, ChangeListener {
     // all data should have the same range
     DataBlock db = ds.getXthLoadedBlock(1);
 
-    if ( leftSlider.getValue() != 0 || rightSlider.getValue() != SLIDER_MAX ) {
-      long start = getMarkerLocation( db, leftSlider.getValue() );
-      long end = getMarkerLocation( db, rightSlider.getValue() );
+    if (leftSlider.getValue() != 0 || rightSlider.getValue() != SLIDER_MAX) {
+      long start = getMarkerLocation(db, leftSlider.getValue());
+      long end = getMarkerLocation(db, rightSlider.getValue());
       ds.trim(start, end, activePlots);
-      leftSlider.setValue(0); rightSlider.setValue(SLIDER_MAX);
+      leftSlider.setValue(0);
+      rightSlider.setValue(SLIDER_MAX);
       zoomOut.setEnabled(true);
     }
 
     for (int i = 0; i < activePlots; ++i) {
-      if ( !ds.blockIsSet(i) ) {
+      if (!ds.blockIsSet(i)) {
         continue;
       }
       resetPlotZoom(i);
@@ -1391,9 +1414,9 @@ implements ActionListener, ChangeListener {
     int leftSliderValue = leftSlider.getValue();
     int rightSliderValue = rightSlider.getValue();
 
-    if ( e.getSource() == startDate ) {
+    if (e.getSource() == startDate) {
       // if no data to do windowing on, don't bother
-      if ( ds.numberOfBlocksSet() < 1 ) {
+      if (ds.numberOfBlocksSet() < 1) {
         return;
       }
 
@@ -1424,9 +1447,9 @@ implements ActionListener, ChangeListener {
       return;
     }
 
-    if ( e.getSource() == endDate ) {
+    if (e.getSource() == endDate) {
       // if no data to do windowing on, don't bother
-      if ( ds.numberOfBlocksSet() < 1 ) {
+      if (ds.numberOfBlocksSet() < 1) {
         return;
       }
 
@@ -1454,9 +1477,9 @@ implements ActionListener, ChangeListener {
       return;
     }
 
-    if ( e.getSource() == leftSlider ) {
+    if (e.getSource() == leftSlider) {
       validateSliderPlacement(true, leftSliderValue);
-    } else if ( e.getSource() == rightSlider ) {
+    } else if (e.getSource() == rightSlider) {
       validateSliderPlacement(false, rightSliderValue);
     }
 
@@ -1466,6 +1489,7 @@ implements ActionListener, ChangeListener {
 
   /**
    * Verify that slider locations will not violate restrictions in location
+   *
    * @param moveLeft True if left slider needs to move (false if right slider)
    * @param newLocation Value to set slider to if within restrictions
    */
@@ -1525,9 +1549,11 @@ implements ActionListener, ChangeListener {
 
     public abstract void loadInData(DataStore ds, int idx,
         String filePath, String fileFilter, int activePlots)
-            throws SeedFormatException, UnsupportedCompressionType, CodecException,
-            FileNotFoundException, RuntimeException;
-  };
+        throws SeedFormatException, UnsupportedCompressionType, CodecException,
+        FileNotFoundException, RuntimeException;
+  }
+
+  ;
 
   private class LoadingJButton extends FileOperationJButton {
 
@@ -1549,13 +1575,15 @@ implements ActionListener, ChangeListener {
     @Override
     public void loadInData(DataStore ds, int idx, String filePath,
         String fileFilter, int activePlots) throws SeedFormatException,
-                                                   UnsupportedCompressionType,
-                                                   CodecException,
-                                                   FileNotFoundException,
-                                                   RuntimeException {
+        UnsupportedCompressionType,
+        CodecException,
+        FileNotFoundException,
+        RuntimeException {
       ds.setBlock(idx, filePath, fileFilter, activePlots);
     }
-  };
+  }
+
+  ;
 
   private class AppendingJButton extends FileOperationJButton {
 
@@ -1572,7 +1600,7 @@ implements ActionListener, ChangeListener {
     public Set<String> getFilenameSet(DataStore ds, int idx, String filePath)
         throws SeedFormatException, IOException {
       String thisName = ds.getBlock(idx).getName();
-      if ( !TimeSeriesUtils.getMplexNameSet(filePath).contains(thisName) ) {
+      if (!TimeSeriesUtils.getMplexNameSet(filePath).contains(thisName)) {
         return new HashSet<String>();
       }
       Set<String> returnSet = new HashSet<String>();
@@ -1583,12 +1611,14 @@ implements ActionListener, ChangeListener {
     @Override
     public void loadInData(DataStore ds, int idx, String filePath,
         String fileFilter, int activePlots) throws SeedFormatException,
-                                                   UnsupportedCompressionType,
-                                                   CodecException, FileNotFoundException,
-                                                   RuntimeException {
+        UnsupportedCompressionType,
+        CodecException, FileNotFoundException,
+        RuntimeException {
       ds.appendBlock(idx, filePath, fileFilter, activePlots);
     }
-  };
+  }
+
+  ;
 
 }
 

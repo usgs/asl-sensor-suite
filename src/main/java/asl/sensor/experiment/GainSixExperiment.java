@@ -1,10 +1,10 @@
 package asl.sensor.experiment;
 
-import java.util.List;
-import org.jfree.data.xy.XYSeries;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
+import java.util.List;
+import org.jfree.data.xy.XYSeries;
 
 /**
  * Augmented version of relative gain experiment that includes
@@ -13,8 +13,8 @@ import asl.sensor.utils.TimeSeriesUtils;
  * the first sensor specified in the data store.
  * This experiment uses the azimuth code to do alignment in these dimensions
  * and then calls a gain backend on the data in each dimension
- * @author akearns
  *
+ * @author akearns
  */
 public class GainSixExperiment extends Experiment {
 
@@ -58,8 +58,8 @@ public class GainSixExperiment extends Experiment {
     for (int i = 0; i < DIMS; ++i) {
       stores[i] = new DataStore();
       for (int j = 0; j < 2; ++j) {
-        stores[i].setBlock( j, ds.getBlock( i + (j * DIMS) ) );
-        stores[i].setResponse( j, ds.getResponse( i + (j * DIMS) ) );
+        stores[i].setBlock(j, ds.getBlock(i + (j * DIMS)));
+        stores[i].setResponse(j, ds.getResponse(i + (j * DIMS)));
       }
     }
 
@@ -102,7 +102,7 @@ public class GainSixExperiment extends Experiment {
       StringBuilder state = new StringBuilder("Running calculations on ");
       state.append(direction[i]);
       state.append(" components...");
-      fireStateChange( state.toString() );
+      fireStateChange(state.toString());
 
       componentBackends[i].runExperimentOnData(stores[i]);
 
@@ -111,15 +111,15 @@ public class GainSixExperiment extends Experiment {
     for (Experiment exp : componentBackends) {
       // each backend only has one plot's worth of data
       // but is formatted as a list of per-plot data, so we use addAll
-      xySeriesData.addAll( exp.getData() );
+      xySeriesData.addAll(exp.getData());
       // also get the names of the data going in for use w/ PDF, metadata
     }
 
     for (int j = 0; j < componentBackends.length; ++j) {
       List<String> names = componentBackends[j].getInputNames();
       for (int i = 0; i < names.size(); i += 2) {
-        dataNames.add( names.get(i) );
-        dataNames.add( names.get(i + 1) );
+        dataNames.add(names.get(i));
+        dataNames.add(names.get(i + 1));
       }
     }
 
@@ -137,6 +137,7 @@ public class GainSixExperiment extends Experiment {
    * Uses a simpler solver for the Azimuth data. May produce an angle that
    * is 180 degrees off from expected due to use of coherence measurement
    * and limited checking of antipolar alignment
+   *
    * @param n Timeseries data from north-facing reference sensor
    * @param e Timeseries data from east-facing reference sensor
    * @param r Timeseries data from test sensor (either north or east)
@@ -156,6 +157,7 @@ public class GainSixExperiment extends Experiment {
   /**
    * Get the rotation angle used to rotate the second input set's east sensor
    * Ideally this should be close to the value used for the north azimuth
+   *
    * @return Angle of second east sensor (radians) minus 90-degree offset
    * representing angle between north and east sensors; this is the angle sent
    * to the rotation function
@@ -168,11 +170,12 @@ public class GainSixExperiment extends Experiment {
 
   /**
    * Get the frequency bounds of the data to be given to charts
+   *
    * @return Array of form {low freq bound, high freq bound}
    */
   public double[] getMinMaxFrequencies() {
     XYSeries xys = xySeriesData.get(0).getSeries(0);
-    if ( xySeriesData.get(0).getSeriesKey(0).equals("NLNM") ) {
+    if (xySeriesData.get(0).getSeriesKey(0).equals("NLNM")) {
       xys = xySeriesData.get(0).getSeries(0);
     }
     return new double[]{xys.getMinX(), xys.getMaxX()};
@@ -180,6 +183,7 @@ public class GainSixExperiment extends Experiment {
 
   /**
    * Get the rotation angle used to rotate the second input set's north sensor
+   *
    * @return Angle of second north sensor (radians)
    */
   public double getNorthAzimuth() {
@@ -192,6 +196,7 @@ public class GainSixExperiment extends Experiment {
    * that all three component gain sets have their peaks at nearly the same
    * points. The vertical sensors are most likely to be useful, as their
    * data does not need to be rotated as with the north and east sensors.
+   *
    * @param idx Index of vertical component data to use as reference
    * @return Upper and lower frequency bound of octave over given peak
    */
@@ -203,6 +208,7 @@ public class GainSixExperiment extends Experiment {
   /**
    * Get the gain mean and deviation values from a specified peak
    * frequency range.
+   *
    * @param idx Index of north component's data to use as reference
    * @param low Low frequency bound of range to get stats over
    * @param high High frequency bound of range to get stats over
@@ -223,6 +229,7 @@ public class GainSixExperiment extends Experiment {
   /**
    * Get the gain mean and deviation values from the peak frequency of the
    * given dataset; the range for stats is the octave centered at the peak.
+   *
    * @param idx Index of north component's data to use as reference
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
@@ -237,7 +244,7 @@ public class GainSixExperiment extends Experiment {
   public boolean hasEnoughData(DataStore ds) {
     int needed = blocksNeeded();
     for (int i = 0; i < needed; ++i) {
-      if ( !ds.bothComponentsSet(i) ) {
+      if (!ds.bothComponentsSet(i)) {
         return false;
       }
     }

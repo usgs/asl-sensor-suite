@@ -1,14 +1,14 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.NumericUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.NumericUtils;
 
 /**
  * Produces plots of response curves' magnitudes (Bode plot) and angle of
@@ -16,8 +16,8 @@ import asl.sensor.utils.NumericUtils;
  * No timeseries data (that is, miniSEED) is used in this calculation.
  * Response curves can be plotted in either frequency or interval space
  * (units of Hz or seconds respectively).
- * @author akearns
  *
+ * @author akearns
  */
 public class ResponseExperiment extends Experiment {
 
@@ -53,7 +53,7 @@ public class ResponseExperiment extends Experiment {
     for (int i = 0; i < freqArray.length; ++i) {
       freqArray[i] = currentFreq;
       // System.out.println(currentFreq);
-      currentFreq = a * Math.pow(10, b * (i * linearChange) );
+      currentFreq = a * Math.pow(10, b * (i * linearChange));
     }
 
     // used to prevent issues with duplicate response plotting / XYSeries names
@@ -63,16 +63,16 @@ public class ResponseExperiment extends Experiment {
     XYSeriesCollection mags = new XYSeriesCollection();
 
     for (int r = 0; r < 3; ++r) {
-      if ( !ds.responseIsSet(r) ) {
+      if (!ds.responseIsSet(r)) {
         continue;
       }
 
       InstrumentResponse ir = ds.getResponse(r);
 
-      if ( respNames.contains( ir.getName() ) ) {
+      if (respNames.contains(ir.getName())) {
         continue;
       } else {
-        respNames.add( ir.getName() );
+        respNames.add(ir.getName());
         responses.add(ir);
       }
 
@@ -82,15 +82,15 @@ public class ResponseExperiment extends Experiment {
 
       double phiPrev = 0; // use with unwrapping
       XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
-      XYSeries argument = new XYSeries (name + " " + ARGUMENT);
+      XYSeries argument = new XYSeries(name + " " + ARGUMENT);
       for (int i = 0; i < freqArray.length; ++i) {
         Complex tmp = result[i];
         double phi = NumericUtils.atanc(tmp);
         phi = NumericUtils.unwrap(phi, phiPrev);
         phiPrev = phi;
         phi = Math.toDegrees(phi);
-        double magAccel = 10 * Math.log10( tmp.abs() );
-        double xVal = 1/freqArray[i];
+        double magAccel = 10 * Math.log10(tmp.abs());
+        double xVal = 1 / freqArray[i];
         if (freqSpace) {
           xVal = freqArray[i];
         }
@@ -121,7 +121,7 @@ public class ResponseExperiment extends Experiment {
   }
 
   public InstrumentResponse[] getResponses() {
-    return responses.toArray( new InstrumentResponse[responses.size()] );
+    return responses.toArray(new InstrumentResponse[responses.size()]);
   }
 
   @Override
@@ -134,7 +134,7 @@ public class ResponseExperiment extends Experiment {
   @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < 3; ++i) {
-      if ( ds.responseIsSet(i) ) {
+      if (ds.responseIsSet(i)) {
         return true;
       }
     }
@@ -145,6 +145,7 @@ public class ResponseExperiment extends Experiment {
   /**
    * Used to set the x-axis over which the response curve is plotted,
    * either frequency (Hz) units or sample-interval (s) units
+   *
    * @param freqSpace True if the plot should use units of Hz
    */
   public void setFreqSpace(boolean freqSpace) {

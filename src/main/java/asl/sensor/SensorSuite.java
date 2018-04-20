@@ -1,5 +1,12 @@
 package asl.sensor;
 
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.gui.ExperimentPanelFactory;
+import asl.sensor.gui.InputPanel;
+import asl.sensor.gui.SwingWorkerSingleton;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -30,24 +37,17 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.JFreeChart;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.ExperimentPanelFactory;
-import asl.sensor.gui.InputPanel;
-import asl.sensor.gui.SwingWorkerSingleton;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
 
 /**
  * Main window of the sensor test program and the program's launcher
  * Mainly used for handling the input (InputPanel)
  * and output (ExperimentPanel)
  * GUI frames and making sure they fit togther and cooperate.
- * @author akearns
  *
+ * @author akearns
  */
 public class SensorSuite extends JPanel
-implements ActionListener, ChangeListener, PropertyChangeListener {
+    implements ActionListener, ChangeListener, PropertyChangeListener {
 
   /**
    *
@@ -77,14 +77,16 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     JFrame frame = new JFrame(title);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    frame.add( new SensorSuite() );
+    frame.add(new SensorSuite());
 
     frame.pack();
     frame.setVisible(true);
   }
+
   /**
    * Create space with the given dimensions as a buffer between plots
    * when writing the plots to an image file
+   *
    * @param width The width of the spacer
    * @param height The height of the spacer
    * @return A blank BufferedImage that can be concatenated with other plots
@@ -96,14 +98,16 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
         BufferedImage.TYPE_INT_RGB);
     Graphics2D tmp = space.createGraphics();
     JPanel margin = new JPanel();
-    margin.add( Box.createRigidArea( new Dimension(width,height) ) );
+    margin.add(Box.createRigidArea(new Dimension(width, height)));
     margin.printAll(tmp);
     tmp.dispose();
 
     return space;
   }
+
   /**
    * Starts the program -- instantiate the top-level GUI
+   *
    * @param args (Any parameters fed in on command line are currently ignored)
    */
   public static void main(String[] args) {
@@ -124,6 +128,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
 
   /**
    * Plots the data from an output panel and its associated input
+   *
    * @param file Filename to write to
    * @param ep Experiment panel with data to be plotted
    * @param ip Input panel holding data associated with the experiment
@@ -134,12 +139,12 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     // calls to either the experiment or input panels
 
     int inPlotCount = ep.plotsToShow();
-    String[] responses = ip.getResponseStrings( ep.getResponseIndices() );
+    String[] responses = ip.getResponseStrings(ep.getResponseIndices());
     // BufferedImage toFile = getCompiledImage();
 
     // START OF UNIQUE CODE FOR PDF CREATION HERE
     PDDocument pdf = new PDDocument();
-    ep.savePDFResults( pdf );
+    ep.savePDFResults(pdf);
 
     if (inPlotCount > 0) {
       int inHeight = ip.getImageHeight(inPlotCount) * 2;
@@ -155,7 +160,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       ReportingUtils.textListToPDFPages(pdf, responses);
     }
 
-    try{
+    try {
       pdf.save(file);
       pdf.close();
     } catch (IOException e) {
@@ -168,9 +173,9 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       String saveDirectory = file.getParent();
       StringBuilder folderName = new StringBuilder(saveDirectory);
       folderName.append("/test_results/");
-      folderName.append( file.getName().replace(".pdf","") );
+      folderName.append(file.getName().replace(".pdf", ""));
 
-      saveExperimentData( folderName.toString(), text, charts );
+      saveExperimentData(folderName.toString(), text, charts);
 
     } finally {
       if (pdf != null) {
@@ -189,6 +194,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
    * Saves data collected from an experiment to. Files will be written into
    * a specified folder, with the format "Chart#.png" and all metadata in a
    * single file referred to as "outputData.txt".
+   *
    * @param folderName Folder to write data into, presumably something like a
    * user's home directory, but inside a subdirectory of format
    * "test_results/[Experiment-specified filename]".
@@ -200,8 +206,8 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     // start in the folder the pdf is saved, add data into a new
     // subfolder for calibration data
 
-    File folder = new File( folderName.toString() );
-    if ( !folder.exists() ) {
+    File folder = new File(folderName.toString());
+    if (!folder.exists()) {
       System.out.println("Writing directory " + folderName);
       folder.mkdirs();
     }
@@ -230,6 +236,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
       }
     }
   }
+
   private JFileChooser fc; // loads in files based on parameter
   private InputPanel inputPlots;
   private JTabbedPane tabbedPane; // holds set of experiment panels
@@ -251,13 +258,13 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     // set up experiment panes in a tabbed pane
     tabbedPane = new JTabbedPane();
 
-    for ( ExperimentEnum exp : ExperimentEnum.values() ) {
+    for (ExperimentEnum exp : ExperimentEnum.values()) {
       JPanel tab = ExperimentPanelFactory.createPanel(exp);
-      tabbedPane.addTab( exp.getName(), tab);
+      tabbedPane.addTab(exp.getName(), tab);
     }
 
     Dimension d = tabbedPane.getPreferredSize();
-    d.setSize( d.getWidth() * 1.5, d.getHeight() );
+    d.setSize(d.getWidth() * 1.5, d.getHeight());
     tabbedPane.setPreferredSize(d);
     tabbedPane.addChangeListener(this);
 
@@ -267,7 +274,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     // experiments on left, input on the right; split to allow resizing
     JSplitPane mainSplit =
         new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true);
-        // boolean allows redrawing immediately on resize
+    // boolean allows redrawing immediately on resize
     mainSplit.setLeftComponent(tabbedPane);
     mainSplit.setRightComponent(inputPlots);
     // set the left-pane to resize more when window is horizontally stretched
@@ -275,18 +282,22 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     mainSplit.setOneTouchExpandable(true);
 
     // we want to make sure the split pane fills the window
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
     GridBagConstraints c = new GridBagConstraints();
-    c.gridx = 0; c.gridy = 0;
-    c.weightx = 1; c.weighty = 1;
+    c.gridx = 0;
+    c.gridy = 0;
+    c.weightx = 1;
+    c.weighty = 1;
     c.gridwidth = 2;
     c.fill = GridBagConstraints.BOTH;
 
     this.add(mainSplit, c);
 
     c.fill = GridBagConstraints.VERTICAL;
-    c.gridx = 0; c.gridy = 1;
-    c.weightx = 1.0; c.weighty = 0.0;
+    c.gridx = 0;
+    c.gridy = 1;
+    c.weightx = 1.0;
+    c.weighty = 0.0;
     c.gridwidth = 1;
 
     // now add the buttons
@@ -301,7 +312,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     generate.setEnabled(false);
     generate.addActionListener(this);
     d = generate.getPreferredSize();
-    d.setSize( d.getWidth() * 1.5, d.getHeight() * 1.5 );
+    d.setSize(d.getWidth() * 1.5, d.getHeight() * 1.5);
     generate.setMinimumSize(d);
     c.anchor = GridBagConstraints.WEST;
     this.add(generate, c);
@@ -309,8 +320,8 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     fc = new JFileChooser();
 
     ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-    inputPlots.showDataNeeded( ep.panelsNeeded() );
-    inputPlots.setChannelTypes( ep.getChannelTypes() );
+    inputPlots.showDataNeeded(ep.panelsNeeded());
+    inputPlots.setChannelTypes(ep.getChannelTypes());
 
   }
 
@@ -324,8 +335,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
   @Override
   public void actionPerformed(ActionEvent e) {
 
-
-    if ( e.getSource() == generate ) {
+    if (e.getSource() == generate) {
 
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
       ep.addPropertyChangeListener("Backend completed", this);
@@ -341,26 +351,26 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
 
       return;
 
-    } else if ( e.getSource() == savePDF ) {
+    } else if (e.getSource() == savePDF) {
 
       String ext = ".pdf";
-      fc.setCurrentDirectory( new File(saveDirectory) );
+      fc.setCurrentDirectory(new File(saveDirectory));
       fc.addChoosableFileFilter(
-          new FileNameExtensionFilter("PDF file (.pdf)",ext) );
+          new FileNameExtensionFilter("PDF file (.pdf)", ext));
       fc.setFileFilter(fc.getChoosableFileFilters()[1]);
       fc.setDialogTitle("Save PDF report...");
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
       String defaultName = ep.getPDFFilename();
 
-      fc.setSelectedFile( new File(defaultName) );
+      fc.setSelectedFile(new File(defaultName));
       int returnVal = fc.showSaveDialog(savePDF);
 
       if (returnVal == JFileChooser.APPROVE_OPTION) {
 
         File selFile = fc.getSelectedFile();
         saveDirectory = selFile.getParent();
-        if( !selFile.getName().toLowerCase().endsWith(ext) ) {
-          selFile = new File( selFile.getName() + ext);
+        if (!selFile.getName().toLowerCase().endsWith(ext)) {
+          selFile = new File(selFile.getName() + ext);
         }
 
         plotsToPDF(selFile, ep, inputPlots);
@@ -372,6 +382,7 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
 
   /**
    * Produces a buffered image of all active charts
+   *
    * @return BufferedImage that can be written to file
    */
   private BufferedImage getCompiledImage() {
@@ -406,8 +417,8 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
     Graphics2D combined = returnedImage.createGraphics();
     combined.drawImage(outPlot, null, 0, 0);
     if (null != inPlot) {
-      combined.drawImage( inPlot, null, 0,
-          outPlot.getHeight() );
+      combined.drawImage(inPlot, null, 0,
+          outPlot.getHeight());
     }
 
     combined.dispose();
@@ -418,31 +429,31 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
   /**
    * Handles function to create a PNG image with all currently-displayed plots
    * (active experiment and read-in time series data)
+   *
    * @param file File (PNG) that image will be saved to
-   * @throws IOException
    * @deprecated Use PDF output (plotstoPDF) instead
    */
   @Deprecated
   public void plotsToPNG(File file) throws IOException {
 
     // just write the bufferedimage to file
-    ImageIO.write( getCompiledImage(), "png", file );
+    ImageIO.write(getCompiledImage(), "png", file);
 
   }
 
   @Override
   public void propertyChange(PropertyChangeEvent evt) {
     // handle the completion of the swingworker thread of the backend
-    if ( evt.getPropertyName().equals("Backend completed") ) {
+    if (evt.getPropertyName().equals("Backend completed")) {
       ExperimentPanel source = (ExperimentPanel) evt.getSource();
       source.removePropertyChangeListener(this);
 
-      if ( evt.getNewValue().equals(false) ) {
+      if (evt.getNewValue().equals(false)) {
         return;
       }
 
-      if ( tabbedPane.getSelectedComponent() == source ) {
-        savePDF.setEnabled( source.hasRun() );
+      if (tabbedPane.getSelectedComponent() == source) {
+        savePDF.setEnabled(source.hasRun());
       }
     }
   }
@@ -454,17 +465,17 @@ implements ActionListener, ChangeListener, PropertyChangeListener {
   @Override
   public void stateChanged(ChangeEvent e) {
 
-    if ( e.getSource() == inputPlots ){
+    if (e.getSource() == inputPlots) {
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
       DataStore ds = inputPlots.getData();
       boolean canGenerate = ep.hasEnoughData(ds);
       generate.setEnabled(canGenerate);
-    } else if ( e.getSource() == tabbedPane ) {
+    } else if (e.getSource() == tabbedPane) {
       ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
 
-      inputPlots.setChannelTypes( ep.getChannelTypes() );
+      inputPlots.setChannelTypes(ep.getChannelTypes());
 
-      inputPlots.showDataNeeded( ep.panelsNeeded() );
+      inputPlots.showDataNeeded(ep.panelsNeeded());
       DataStore ds = inputPlots.getData();
       boolean canGenerate = ep.hasEnoughData(ds);
       boolean isSet = ep.hasRun();

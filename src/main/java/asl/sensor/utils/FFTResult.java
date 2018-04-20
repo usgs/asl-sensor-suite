@@ -1,5 +1,7 @@
 package asl.sensor.utils;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.InstrumentResponse;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -14,8 +16,6 @@ import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.InstrumentResponse;
 import uk.me.berndporr.iirj.Butterworth;
 
 /**
@@ -24,8 +24,8 @@ import uk.me.berndporr.iirj.Butterworth;
  * Most methods that either calculate or involve FFT calculations exist here,
  * such as raw PSD calculation, inverse and forward trimmed FFTs,
  * and band-pass filtering.
- * @author akearns
  *
+ * @author akearns
  */
 public class FFTResult {
 
@@ -33,6 +33,7 @@ public class FFTResult {
    * Filter out data outside of the range between the low and high frequencies;
    * can be used for a low-pass filter if low frequency is set to 0
    * and high-pass if higher frequency is set to sample rate
+   *
    * @param toFilt series of data to do a band-pass filter on
    * @param sps sample rate of the current data (samples / sec)
    * @param low low corner frequency of band-pass filter
@@ -50,7 +51,7 @@ public class FFTResult {
     Butterworth casc = new Butterworth();
     // center = low-corner location plus half the distance between the corners
     // width is exactly the distance between them
-    double width = high-low;
+    double width = high - low;
     double center = low + (width) / 2.;
     // filter library defines bandpass with center frequency and notch width
     casc.bandPass(2, sps, center, width);
@@ -67,6 +68,7 @@ public class FFTResult {
   /**
    * Wrapper to do band filter on a list of data rather than an array.
    * For more details see other definition of bandFilter
+   *
    * @param toFilt timeseries data to be filtered
    * @param sps samples per second of input data
    * @param low low corner frequency for trim
@@ -75,7 +77,6 @@ public class FFTResult {
    */
   public static List<Number>
   bandFilter(List<Number> toFilt, double sps, double low, double high) {
-
 
     double[] toFFT = new double[toFilt.size()];
 
@@ -97,6 +98,7 @@ public class FFTResult {
   /**
    * Calculates and performs an in-place cosine taper on an incoming data set.
    * Used for windowing for performing FFT.
+   *
    * @param dataSet The dataset to have the taper applied to.
    * @param taperW Width of taper to be used
    * @return Value corresponding to power loss from application of taper.
@@ -115,12 +117,12 @@ public class FFTResult {
     for (int i = 0; i < taperCurve.length; i++) {
       double taper = taperCurve[i];
       dataSet[i] *= taper;
-      int idx = dataSet.length-i-1;
+      int idx = dataSet.length - i - 1;
       dataSet[idx] *= taper;
       wss += 2.0 * taper * taper;
     }
 
-    wss += ( dataSet.length - (2 * ramp) );
+    wss += (dataSet.length - (2 * ramp));
 
     return wss;
   }
@@ -133,12 +135,12 @@ public class FFTResult {
     for (int j = 0; j < freqs.length; ++j) {
       // response curves in velocity, put them into acceleration
       Complex scaleFactor =
-          new Complex( 0.0, -1.0 / (NumericUtils.TAU * freqs[j]) );
+          new Complex(0.0, -1.0 / (NumericUtils.TAU * freqs[j]));
       Complex resp1 = freqRespd1[j].multiply(scaleFactor);
       Complex resp2 = freqRespd2[j].multiply(scaleFactor);
 
       Complex respMagnitude =
-          resp1.multiply( resp2.conjugate() );
+          resp1.multiply(resp2.conjugate());
 
       if (respMagnitude.abs() == 0) {
         respMagnitude = new Complex(Double.MIN_VALUE, 0);
@@ -156,6 +158,7 @@ public class FFTResult {
    * from inputted data series by calling the spectralCalc function, and then
    * applies the provided responses to that result. This is the Power Spectral
    * Density of the inputted data if both sets are the same.
+   *
    * @param data1 First data series
    * @param data2 Second data series
    * @param ir1 Response of instrument producing first series
@@ -190,6 +193,7 @@ public class FFTResult {
   /**
    * Return the cosine taper curve to multiply against data of a specified length, with taper of
    * given width
+   *
    * @param length Length of data being tapered (to per-element multply against)
    * @param tWidth Width of (half-) taper curve (i.e., decimal fraction of the data being tapered)
    * Because this parameter is used to create the actual length of the data, this should be half
@@ -198,13 +202,13 @@ public class FFTResult {
    */
   public static double[] getCosTaperCurveSingleSide(int length, double width) {
     // width = width/2;
-    int ramp = (int) ( ( ( (length * width) + 1) / 2.) - 1);
+    int ramp = (int) ((((length * width) + 1) / 2.) - 1);
 
     // int limit = (int) Math.ceil(ramp);
 
     double[] result = new double[ramp];
     for (int i = 0; i < ramp; i++) {
-      double taper = 0.5 * (1.0 - Math.cos(i * Math.PI / ramp) );
+      double taper = 0.5 * (1.0 - Math.cos(i * Math.PI / ramp));
       result[i] = taper;
     }
 
@@ -216,6 +220,7 @@ public class FFTResult {
    * into a plottable format.
    * Assumes that there is a text file in the .resources folder that contains
    * the NHNM data points for given input frequencies.
+   *
    * @param freqSpace True if the data's x-axis should be units of Hz
    * (otherwise it is units of seconds, the interval between samples)
    * @return Plottable data series representing the NHNM
@@ -226,7 +231,7 @@ public class FFTResult {
       ClassLoader cl = FFTResult.class.getClassLoader();
       InputStream is = cl.getResourceAsStream("NHNM.txt");
 
-      BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
+      BufferedReader fr = new BufferedReader(new InputStreamReader(is));
       String str = fr.readLine();
       while (str != null) {
         String[] values = str.split("\\s+");
@@ -236,7 +241,7 @@ public class FFTResult {
         }
         double y = Double.parseDouble(values[1]);
         if (freqSpace) {
-          xys.add(1/x, y);
+          xys.add(1 / x, y);
         } else {
           xys.add(x, y);
         }
@@ -257,6 +262,7 @@ public class FFTResult {
    * into a plottable format.
    * Assumes that there is a text file in the .resources folder that contains
    * the NLNM data points for given input frequencies. ("NLNM.txt")
+   *
    * @param freqSpace True if the data's x-axis should be units of Hz
    * (otherwise it is units of seconds, the interval between samples)
    * @return Plottable data series representing the NLNM
@@ -269,7 +275,7 @@ public class FFTResult {
 
       InputStream is = cl.getResourceAsStream("NLNM.txt");
 
-      BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
+      BufferedReader fr = new BufferedReader(new InputStreamReader(is));
       String str = fr.readLine();
       while (str != null) {
         String[] values = str.split("\\s+");
@@ -279,7 +285,7 @@ public class FFTResult {
         }
         double y = Double.parseDouble(values[3]);
         if (freqSpace) {
-          xys.add(1/x, y);
+          xys.add(1 / x, y);
         } else {
           xys.add(x, y);
         }
@@ -299,6 +305,7 @@ public class FFTResult {
   /**
    * Produce a multitaper series using a sine function for use in spectral
    * calculations (i.e., specified when calculating PSD values)
+   *
    * @param winLen Length of the window (how long the data is)
    * @param numTapers Number of tapers to apply to the data
    * @return 2D array with first dimension being the timeseries length and
@@ -308,7 +315,7 @@ public class FFTResult {
     double[][] taperMat = new double[numTapers][winLen];
 
     double denom = winLen - 1;
-    double scale = Math.sqrt( 2 / denom );
+    double scale = Math.sqrt(2 / denom);
 
     // TODO: may need to check correct loop index order for efficiency
     for (int j = 0; j < numTapers; ++j) {
@@ -328,7 +335,6 @@ public class FFTResult {
     Double wss = cosineTaper(toFFT, 0.05);
     // presumably we only need the last value of wss
 
-
     toFFT = Arrays.copyOfRange(toFFT, 0, padding);
     FastFourierTransformer fft =
         new FastFourierTransformer(DftNormalization.STANDARD);
@@ -336,11 +342,12 @@ public class FFTResult {
     Complex[] frqDomn1 = fft.transform(toFFT, TransformType.FORWARD);
     int singleSide = padding / 2 + 1;
     // use arraycopy now (as it's fast) to get the first half of the fft
-    return new Pair<Complex[], Double>( Arrays.copyOfRange(frqDomn1, 0, singleSide), wss );
+    return new Pair<Complex[], Double>(Arrays.copyOfRange(frqDomn1, 0, singleSide), wss);
   }
 
   /**
    * Apply a low pass filter to some timeseries data
+   *
    * @param toFilt Data to be filtered
    * @param sps Sample rate of the data in Hz
    * @param corner Corner frequency of LPF
@@ -363,6 +370,7 @@ public class FFTResult {
    * Function for padding and returning the result of a forward FFT.
    * This does not trim the negative frequencies of the result; it returns
    * the full FFT result as an array of Complex numbers
+   *
    * @param dataIn Array of doubles representing timeseries data
    * @return Complex array representing forward FFT values, including
    * symmetric component (second half of the function)
@@ -370,7 +378,7 @@ public class FFTResult {
   public static Complex[] simpleFFT(double[] dataIn) {
 
     int padding = 2;
-    while ( padding < dataIn.length ) {
+    while (padding < dataIn.length) {
       padding *= 2;
     }
 
@@ -385,10 +393,10 @@ public class FFTResult {
   }
 
 
-
   /**
    * Calculates the FFT of the timeseries data in a DataBlock
    * and returns the positive frequencies resulting from the FFT calculation
+   *
    * @param db DataBlock to get the timeseries data from
    * @param mustFlip True if signal from sensor is inverted (for step cal)
    * @return Complex array of FFT values and double array of corresponding
@@ -404,6 +412,7 @@ public class FFTResult {
   /**
    * Calculates the FFT of some timeseries data (double array)
    * and returns the positive frequencies resulting from the FFT calculation
+   *
    * @param data Timeseries data
    * @param sps Sample rate of the timeseries data
    * @param mustFlip True if signal is inverted (for step cal)
@@ -423,7 +432,7 @@ public class FFTResult {
     Complex[] frqDomn = simpleFFT(data);
 
     int padding = frqDomn.length;
-    int singleSide = padding/2 + 1;
+    int singleSide = padding / 2 + 1;
 
     double nyquist = sps / 2;
     double deltaFrq = nyquist / (singleSide - 1);
@@ -443,6 +452,7 @@ public class FFTResult {
   /**
    * Calculates the FFT of the timeseries data in a DataBlock
    * and returns the positive frequencies resulting from the FFT calculation
+   *
    * @param db DataBlock to get the timeseries data from
    * @param mustFlip True if signal from sensor is inverted (for step cal)
    * @return Complex array of FFT values and double array of corresponding
@@ -471,7 +481,7 @@ public class FFTResult {
     Complex[] frqDomn = simpleFFT(data);
 
     int padding = frqDomn.length;
-    int singleSide = padding/2 + 1;
+    int singleSide = padding / 2 + 1;
 
     double nyquist = db.getSampleRate() / 2;
     double deltaFrq = nyquist / (singleSide - 1);
@@ -492,6 +502,7 @@ public class FFTResult {
    * Do the inverse FFT on the result of a single-sided FFT operation.
    * The negative frequencies are reconstructed as the complex conjugates of
    * the positive corresponding frequencies
+   *
    * @param freqDomn Complex array (i.e., the result of a previous FFT calc)
    * @param trim How long the original input data was
    * @return A list of doubles representing the original timeseries of the FFT
@@ -504,7 +515,7 @@ public class FFTResult {
 
     Complex[] padded = new Complex[padding];
     System.arraycopy(freqDomn, 0, padded, 0, freqDomn.length);
-    for (int i = 1; i < padding/2; ++i) {
+    for (int i = 1; i < padding / 2; ++i) {
       // System.out.println(freqDomn.length+","+i);
       padded[padded.length - i] = padded[i].conjugate();
     }
@@ -529,6 +540,7 @@ public class FFTResult {
    * The result is smoothed but does not have the frequency response applied,
    * and so does not give a full result -- this is merely a helper function
    * for the crossPower function.
+   *
    * @param data1 DataBlock with relevant time series data
    * @param data2 DataBlock with relevant time series data
    * @return A structure with two arrays: an array of Complex numbers
@@ -539,7 +551,7 @@ public class FFTResult {
 
     // this is ugly logic here, but this saves us issues with looping
     // and calculating the same data twice
-    boolean sameData = data1.getName().equals( data2.getName() );
+    boolean sameData = data1.getName().equals(data2.getName());
 
     double[] list1 = data1.getData();
     double[] list2 = list1;
@@ -562,6 +574,7 @@ public class FFTResult {
    * The result is smoothed but does not have the frequency response applied,
    * and so does not give a full result -- this is merely a helper function
    * for the crossPower function.
+   *
    * @param list1 First list of data to be given as input
    * @param list2 Second list of data to be given as input, which can be
    * the same as the first (and if so, is ignored)
@@ -576,8 +589,8 @@ public class FFTResult {
 
     // divide into windows of 1/4, moving up 1/16 of the data at a time
 
-    int range = list1.length/4;
-    int slider = range/4;
+    int range = list1.length / 4;
+    int slider = range / 4;
 
     // period is 1/sample rate in seconds
     // since the interval data is just that multiplied by a large number
@@ -606,7 +619,7 @@ public class FFTResult {
       powSpectDens[i] = Complex.ZERO;
     }
 
-    while ( rangeEnd <= list1.length ) {
+    while (rangeEnd <= list1.length) {
 
       // give us a new list we can modify to get the data of
       double[] toFFT1 =
@@ -634,13 +647,13 @@ public class FFTResult {
         }
 
         // 2 * fft1 * fft2' / wss
-        Complex temp = val1.multiply( val2.conjugate() ).multiply(2).divide(wss);
+        Complex temp = val1.multiply(val2.conjugate()).multiply(2).divide(wss);
         powSpectDens[i] = powSpectDens[i].add(temp);
       }
 
       ++segsProcessed;
-      rangeStart  += slider;
-      rangeEnd    += slider;
+      rangeStart += slider;
+      rangeEnd += slider;
 
     }
 
@@ -665,6 +678,7 @@ public class FFTResult {
    * (Used to return data from the spectral density calculations)
    * Holds results of an FFT calculation already performed, usable in return
    * statements
+   *
    * @param inPSD Precalculated FFT result for some timeseries
    * @param inFreq Frequencies matched up to each FFT value
    */
@@ -675,6 +689,7 @@ public class FFTResult {
 
   /**
    * Get the FFT for some sort of previously calculated data
+   *
    * @return Array of FFT results, as complex numbers
    */
   public Complex[] getFFT() {
@@ -683,6 +698,7 @@ public class FFTResult {
 
   /**
    * Return the value of the FFT at the given index
+   *
    * @param idx Index to get the FFT value at
    * @return FFT value at index
    */
@@ -692,6 +708,7 @@ public class FFTResult {
 
   /**
    * Get the frequency value at the given index
+   *
    * @param idx Index to get the frequency value at
    * @return Frequency value at index
    */
@@ -701,6 +718,7 @@ public class FFTResult {
 
   /**
    * Get the frequency range for the (previously calculated) FFT
+   *
    * @return Array of frequencies (doubles), matching index to each FFT point
    */
   public double[] getFreqs() {
@@ -710,6 +728,7 @@ public class FFTResult {
   /**
    * Get the size of the complex array of FFT values, also the size of the
    * double array of frequencies for the FFT at each index
+   *
    * @return int representing size of thi's object's arrays
    */
   public int size() {

@@ -1,5 +1,8 @@
 package asl.sensor.gui;
 
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.SineExperiment;
+import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -11,9 +14,6 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.SineExperiment;
-import asl.sensor.input.DataStore;
 
 public class SinePanel extends ExperimentPanel {
 
@@ -37,10 +37,12 @@ public class SinePanel extends ExperimentPanel {
     yAxis.setLabelFont(bold);
     applyAxesToChart();
 
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
@@ -58,7 +60,7 @@ public class SinePanel extends ExperimentPanel {
     XYPlot xyp = (XYPlot) chart.getPlot();
 
     TextTitle result = new TextTitle();
-    result.setText( getInsetStrings() );
+    result.setText(getInsetStrings());
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
@@ -92,7 +94,7 @@ public class SinePanel extends ExperimentPanel {
    */
   @Override
   public String getInsetStrings() {
-    return getInsetString( (SineExperiment) expResult );
+    return getInsetString((SineExperiment) expResult);
   }
 
   public static String getInsetString(SineExperiment rexp) {
@@ -102,7 +104,7 @@ public class SinePanel extends ExperimentPanel {
     String calAmp = df.format(cAmp);
     String outAmp = df.format(oAmp);
     String ratio = df.format(cAmp / oAmp);
-    String pFreq = df.format( rexp.getEstSineFreq() );
+    String pFreq = df.format(rexp.getEstSineFreq());
     StringBuilder sb = new StringBuilder();
     sb.append("Calculated calibration amplitude: ");
     sb.append(calAmp);

@@ -1,5 +1,9 @@
 package asl.sensor.gui;
 
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.ResponseExperiment;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -29,10 +33,6 @@ import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.ResponseExperiment;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 
 /**
  * Panel used to display response curves. Includes plots of response magnitude
@@ -42,7 +42,6 @@ import asl.sensor.input.InstrumentResponse;
  * The chart to be displayed at any moment is selected with a combobox.
  *
  * @author akearns
- *
  */
 public class ResponsePanel extends ExperimentPanel {
 
@@ -87,7 +86,7 @@ public class ResponsePanel extends ExperimentPanel {
     degreeAxis.setAutoRange(true);
     ((NumberAxis) degreeAxis).setAutoRangeIncludesZero(false);
 
-    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
+    ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
@@ -108,12 +107,14 @@ public class ResponsePanel extends ExperimentPanel {
     applyAxesToChart(); // now that we've got axes defined
 
     // set the GUI components
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
 
     gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
     gbc.gridwidth = 3;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
@@ -124,10 +125,12 @@ public class ResponsePanel extends ExperimentPanel {
 
     // place the other UI elements in a single row below the chart
     gbc.gridwidth = 1;
-    gbc.weighty = 0.0; gbc.weightx = 0.0;
+    gbc.weighty = 0.0;
+    gbc.weightx = 0.0;
     gbc.anchor = GridBagConstraints.WEST;
     gbc.fill = GridBagConstraints.NONE;
-    gbc.gridy += 1; gbc.gridx = 0;
+    gbc.gridy += 1;
+    gbc.gridx = 0;
     this.add(freqSpaceBox, gbc);
 
     gbc.gridx += 1;
@@ -151,7 +154,7 @@ public class ResponsePanel extends ExperimentPanel {
 
     super.actionPerformed(e);
 
-    if ( e.getSource() == plotSelection ) {
+    if (e.getSource() == plotSelection) {
       if (!set) {
         return;
       }
@@ -164,7 +167,7 @@ public class ResponsePanel extends ExperimentPanel {
 
     }
 
-    if ( e.getSource() == copyEmbedResp ) {
+    if (e.getSource() == copyEmbedResp) {
       Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
 
       List<String> names = new ArrayList<String>(respFilenames);
@@ -177,7 +180,7 @@ public class ResponsePanel extends ExperimentPanel {
           "RESP File Selection",
           JOptionPane.PLAIN_MESSAGE,
           null, names.toArray(),
-          names.get( names.size() - 1 ) );
+          names.get(names.size() - 1));
 
       String resultStr = (String) result;
 
@@ -186,16 +189,16 @@ public class ResponsePanel extends ExperimentPanel {
 
         File respDir = new File("responses/");
 
-        if ( !respDir.exists() ) {
+        if (!respDir.exists()) {
           respDir.mkdir();
         }
 
         ClassLoader cl = InputPanel.class.getClassLoader();
         InputStream is = cl.getResourceAsStream(resultStr);
-        BufferedReader fr = new BufferedReader( new InputStreamReader(is) );
+        BufferedReader fr = new BufferedReader(new InputStreamReader(is));
         StringBuilder sb = new StringBuilder();
         String line = fr.readLine();
-        while ( line != null ) {
+        while (line != null) {
           sb.append(line);
           sb.append("\n");
           line = fr.readLine();
@@ -203,19 +206,19 @@ public class ResponsePanel extends ExperimentPanel {
         fr.close();
 
         StringBuilder fileNameOut = new StringBuilder();
-        fileNameOut.append( respDir.getCanonicalPath() );
+        fileNameOut.append(respDir.getCanonicalPath());
         fileNameOut.append("/");
         fileNameOut.append(resultStr);
         fileNameOut.append("_");
 
         SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DD");
-        Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-        String date = sdf.format( cCal.getTime() );
+        Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
+        String date = sdf.format(cCal.getTime());
         fileNameOut.append(date);
 
-        File respOut = new File( respDir.getCanonicalPath() + "/" + resultStr );
+        File respOut = new File(respDir.getCanonicalPath() + "/" + resultStr);
         FileWriter respWriter = new FileWriter(respOut, false);
-        respWriter.write( sb.toString() );
+        respWriter.write(sb.toString());
         respWriter.close();
 
       } catch (IOException e1) {
@@ -264,10 +267,10 @@ public class ResponsePanel extends ExperimentPanel {
   public String getPDFFilename() {
 
     SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+    Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
     // experiment has no time metadata to be associated with it, get time now
-    String date = sdf.format( cCal.getTime() );
+    String date = sdf.format(cCal.getTime());
 
     String test = expType.getName().replace(' ', '_');
 
@@ -289,8 +292,8 @@ public class ResponsePanel extends ExperimentPanel {
   public ValueAxis getXAxis() {
 
     // true if using Hz units
-    if ( freqSpaceBox.isSelected() ) {
-        return freqAxis;
+    if (freqSpaceBox.isSelected()) {
+      return freqAxis;
     }
 
     return xAxis;
@@ -302,7 +305,7 @@ public class ResponsePanel extends ExperimentPanel {
 
     ValueAxis[] axes = new ValueAxis[]{yAxis, degreeAxis};
 
-    if ( null == plotSelection ) {
+    if (null == plotSelection) {
       return yAxis;
     }
 
@@ -336,11 +339,11 @@ public class ResponsePanel extends ExperimentPanel {
     XYSeriesCollection argSeries = xysc.get(1);
 
     for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
-        Color toColor = COLORS[i % COLORS.length];
-        String magName = (String) magSeries.getSeriesKey(i);
-        String argName = (String) argSeries.getSeriesKey(i);
-        seriesColorMap.put(magName, toColor);
-        seriesColorMap.put(argName, toColor);
+      Color toColor = COLORS[i % COLORS.length];
+      String magName = (String) magSeries.getSeriesKey(i);
+      String argName = (String) argSeries.getSeriesKey(i);
+      seriesColorMap.put(magName, toColor);
+      seriesColorMap.put(argName, toColor);
     }
 
     argChart = buildChart(argSeries, getXAxis(), degreeAxis);

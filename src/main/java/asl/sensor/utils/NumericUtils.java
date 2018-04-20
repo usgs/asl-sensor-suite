@@ -11,16 +11,16 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 /**
  * Class containing methods to serve as math functions, mainly for angle calcs
  * and operations (stats) on complex numbers
- * @author akearns
  *
+ * @author akearns
  */
 public class NumericUtils {
 
   /**
    * Complex comparator that takes ordering by magnitude of the values
    * Used to sort response pole values mainly for use in calibrations
-   * @author akearns
    *
+   * @author akearns
    */
   public static class CpxMagComparator implements Comparator<Complex> {
 
@@ -41,16 +41,16 @@ public class NumericUtils {
         return 1;
       }
 
-      if( c1.abs() == c2.abs() ) {
+      if (c1.abs() == c2.abs()) {
         Double r1 = c1.getReal();
         Double r2 = c2.getReal();
         if (r1 != r2) {
           return r1.compareTo(r2);
         } else {
-          return (int) Math.signum( c1.getImaginary() - c2.getImaginary() );
+          return (int) Math.signum(c1.getImaginary() - c2.getImaginary());
         }
       }
-      return (int) Math.signum( c1.abs() - c2.abs() );
+      return (int) Math.signum(c1.abs() - c2.abs());
     }
 
   }
@@ -59,10 +59,11 @@ public class NumericUtils {
    * Complex comparator ordering by magnitude but listing pure-real values first
    * And then sorting complex numbers according to real value first, and then
    * by imaginary value if the real values match.
-   * @author akearns
    *
+   * @author akearns
    */
   public static class CpxRealComparator implements Comparator<Complex> {
+
     public static final CpxRealComparator instance = new CpxRealComparator();
 
     private CpxRealComparator() {
@@ -80,17 +81,17 @@ public class NumericUtils {
         return 1;
       }
 
-      if( c1.getImaginary() == 0. && c2.getImaginary() == 0. ) {
-        return (int) Math.signum( c1.getReal() - c2.getReal() );
-      } else if ( c1.getImaginary() == 0. ) {
+      if (c1.getImaginary() == 0. && c2.getImaginary() == 0.) {
+        return (int) Math.signum(c1.getReal() - c2.getReal());
+      } else if (c1.getImaginary() == 0.) {
         return -1;
-      } else if ( c2.getImaginary() == 0. ) {
+      } else if (c2.getImaginary() == 0.) {
         return 1;
       } else {
-        if( c1.getReal() == c2.getReal() ) {
-          return (int) Math.signum( c1.getImaginary() - c2.getImaginary() );
+        if (c1.getReal() == c2.getReal()) {
+          return (int) Math.signum(c1.getImaginary() - c2.getImaginary());
         } else {
-          return (int) Math.signum( c1.getReal() - c2.getReal() );
+          return (int) Math.signum(c1.getReal() - c2.getReal());
         }
       }
     }
@@ -109,24 +110,26 @@ public class NumericUtils {
    * arctan2 using the real and imaginary components of a complex number
    * (see Math.atan2 for more details). This is the angle of the complex number
    * along the positive real axis.
+   *
    * @param c Complex number to get atan value of
    * @return atan, between -pi and pi
    */
   public static double atanc(Complex c) {
 
-    final double CUTOFF = 1./1000.;
+    final double CUTOFF = 1. / 1000.;
 
-    if ( c.abs() < CUTOFF) {
+    if (c.abs() < CUTOFF) {
       return 0.;
     }
 
-    return Math.atan2( c.getImaginary(), c.getReal() );
+    return Math.atan2(c.getImaginary(), c.getReal());
   }
 
   /**
    * Sort a list of complex values according to their magnitude. Used to
    * sort poles and zeros according to their period, which is a function of
    * the magnitude.
+   *
    * @param complexes List of complex numbers to sort
    */
   public static void complexMagnitudeSorter(List<Complex> complexes) {
@@ -137,7 +140,6 @@ public class NumericUtils {
    * Sort a list of complex values so that pure real numbers appear first.
    * The real and complex numbers are then each sorted according to their real
    * value, and then by their imaginary value.
-   * @param complexes
    */
   public static void complexRealsFirstSorter(List<Complex> complexes) {
     Collections.sort(complexes, CpxRealComparator.instance);
@@ -145,6 +147,7 @@ public class NumericUtils {
 
   /**
    * Get the mean of the PSD calculation within the specified range
+   *
    * @param psd PSD calculation (frequency space / FFT)
    * @param lower Starting index of window
    * @param higher Ending index of window
@@ -152,18 +155,18 @@ public class NumericUtils {
    */
   public static double getFFTMean(FFTResult psd, int lower, int higher) {
     double result = 0;
-    int range = higher-lower;
+    int range = higher - lower;
 
     Complex[] data = psd.getFFT();
 
     for (int i = lower; i <= higher; ++i) {
-      if ( data[i].abs() >= Double.POSITIVE_INFINITY ) {
+      if (data[i].abs() >= Double.POSITIVE_INFINITY) {
         continue;
       }
       result += data[i].abs();
     }
 
-    return result/range; // since result is a double, no cast needed?
+    return result / range; // since result is a double, no cast needed?
 
   }
 
@@ -171,6 +174,7 @@ public class NumericUtils {
    * PSD Standard deviation calculation given mean ratio and specified range
    * (Get the result for mean calculation using the mean function before
    * calling this calculation; does not call the function directly)
+   *
    * @param fft1 first PSD (numerator) of relative gain standard deviation
    * @param fft2 second PSD (denominator)
    * @param meanRatio mean(fft1)/mean(fft2)
@@ -192,7 +196,7 @@ public class NumericUtils {
         continue;
       }
 
-      sigma += Math.pow( (value1 / value2) - meanRatio, 2 );
+      sigma += Math.pow((value1 / value2) - meanRatio, 2);
     }
 
     return Math.sqrt(sigma);
@@ -200,6 +204,7 @@ public class NumericUtils {
 
   /**
    * Used to find peak value of data in a certain location (based on true maximum, not magnitude)
+   *
    * @param data Some complex numeric data (i.e., result of an FFT calculation)
    * @return Location of max value of entire range of data
    */
@@ -210,6 +215,7 @@ public class NumericUtils {
   /**
    * Used to find peak value of data in a certain location (based on true maximum, not magnitude),
    * within a certain region of interest
+   *
    * @param data Some complex numeric data (i.e., result of an FFT calculation)
    * @param lBound Lower index of the region of interest
    * @param uBound Upper index of the region of interest (will be treated as length of the array if
@@ -223,7 +229,7 @@ public class NumericUtils {
 
     double max = data[lBound].abs();
     int idx = lBound;
-    for (int i = lBound+1; i < uBound; ++i) {
+    for (int i = lBound + 1; i < uBound; ++i) {
       if (data[i].abs() > max) {
         max = data[i].abs();
         idx = i;
@@ -234,6 +240,7 @@ public class NumericUtils {
 
   /**
    * Used to find peak value of data in a certain location (based on true maximum, not magnitude)
+   *
    * @param data Some numeric data (i.e., timeseries)
    * @return Location of max value of entire range of data
    */
@@ -244,6 +251,7 @@ public class NumericUtils {
   /**
    * Used to find peak value of data in a certain location (based on true maximum, not magnitude),
    * within a certain region of interest
+   *
    * @param data Some numeric data (i.e., timeseries)
    * @param lBound Lower index of the region of interest
    * @param uBound Upper index of the region of interest (will be treated as length of the array if
@@ -258,7 +266,7 @@ public class NumericUtils {
 
     double max = data[lBound];
     int idx = lBound;
-    for (int i = lBound+1; i < uBound; ++i) {
+    for (int i = lBound + 1; i < uBound; ++i) {
       if (data[i] > max) {
         max = data[i];
         idx = i;
@@ -270,6 +278,7 @@ public class NumericUtils {
   /**
    * Perform a moving average on complex data, using the specified number of points to average at
    * each point in the input
+   *
    * @param nums Complex data to be smoothed by use of moving average
    * @param points Number of points to include in moving average
    * @param forwardScan true if average should start from first point, false if starting from last
@@ -299,6 +308,7 @@ public class NumericUtils {
   /**
    * Perform a moving average on complex data, using the specified number of points to average at
    * each point in the input
+   *
    * @param nums Complex data to be smoothed by use of moving average
    * @param points Number of points to include in moving average
    * @return Smoothed data resulting from performing the moving average on input data.
@@ -311,6 +321,7 @@ public class NumericUtils {
   /**
    * Perform a moving average on real-val. data, using the specified number of points to average at
    * each point in the input
+   *
    * @param nums Numeric data to be smoothed by use of moving average
    * @param points Number of points to include in moving average
    * @param forwardScan true if average should start from first point, false if starting from last
@@ -334,6 +345,7 @@ public class NumericUtils {
 
   /**
    * Sets decimalformat object so that infinity can be printed in a PDF document
+   *
    * @param df DecimalFormat object to change the infinity symbol value of
    */
   public static void setInfinityPrintable(DecimalFormat df) {
@@ -345,15 +357,16 @@ public class NumericUtils {
   /**
    * Given a plot of data within a 2 * Pi range, check that a point is
    * continuous with a previous value.
+   *
    * @param phi Angle to fit within range of previous value (radians)
    * @param prevPhi Angle to check discontinuity against (radians)
    * @return New angle, with distance < Pi rad from the previous value
    */
   public static double unwrap(double phi, double prevPhi) {
     // sets range to [0,TAU], this syntax used because Java mod is weird
-    double newPhi = ( (phi % TAU) + TAU) % TAU;
+    double newPhi = ((phi % TAU) + TAU) % TAU;
 
-    while ( Math.abs(prevPhi - newPhi) > Math.PI ) {
+    while (Math.abs(prevPhi - newPhi) > Math.PI) {
       if (prevPhi < newPhi) {
         newPhi -= TAU;
       } else {
@@ -369,6 +382,7 @@ public class NumericUtils {
    * in radians over a range of 2 * pi, create a new curve that removes any
    * discontinuities in the plot. The starting point will be set to be as close
    * to zero as possible.
+   *
    * @param angles Array of input angles to make continuous (radians)
    * @return New array of angles where each pair of continuous points is
    * within distance < Pi rad from the previous value
