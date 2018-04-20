@@ -20,7 +20,7 @@ public class NoiseTest {
 
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  public XYSeriesCollection setUpTest1() {
+  private XYSeriesCollection setUpTest1() {
     String testFolder = folder + "noise-neg159db/";
     String[] data = new String[3];
     data[0] = "00_BH0.512.seed";
@@ -55,7 +55,7 @@ public class NoiseTest {
     return ne.getData().get(0);
   }
 
-  public XYSeriesCollection setUpTest2() {
+  private XYSeriesCollection setUpTest2() {
     String testFolder = folder + "noise-neg160db/";
     String[] data = new String[3];
     data[0] = "00_LH0.512.seed";
