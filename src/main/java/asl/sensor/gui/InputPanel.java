@@ -1155,7 +1155,13 @@ implements ActionListener, ChangeListener {
       String[] epochStrings = new String[epochs.size()];
       for (int i = 0; i < epochStrings.length; ++i) {
         String startString = dtf.format( epochs.get(i).getFirst() );
-        String endString = dtf.format( epochs.get(i).getSecond() );
+        Instant endInst = epochs.get(i).getSecond();
+        String endString;
+        if (endInst != null) {
+          endString = dtf.format( epochs.get(i).getSecond() );
+        } else {
+          endString = "(NO EPOCH END SPECIFIED)";
+        }
         StringBuilder sb = new StringBuilder(startString);
         sb.append(" | ");
         sb.append(endString);

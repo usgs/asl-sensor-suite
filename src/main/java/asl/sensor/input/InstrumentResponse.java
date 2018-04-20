@@ -145,7 +145,12 @@ public class InstrumentResponse {
           Instant start = parseTermAsDate(line);
           // read line to get end date
           line = br.readLine();
-          Instant end = parseTermAsDate(line);
+          Instant end;
+          if ( line.split("\\s+")[0].equals("B052F23") ) {
+            end = parseTermAsDate(line);
+          } else {
+            end = null;
+          }
           epochList.add( new Pair<Instant, Instant>(start, end) );
           break;
         }
