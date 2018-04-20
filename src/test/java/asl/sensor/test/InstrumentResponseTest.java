@@ -51,12 +51,12 @@ public class InstrumentResponseTest {
 
       assertEquals( Unit.VELOCITY, ir.getUnits() );
 
-      List<Complex> zrs = new ArrayList<Complex>();
+      List<Complex> zrs = new ArrayList<>();
       zrs.add( new Complex(0.000000e+00, 0.000000e+00) );
       zrs.add( new Complex(0.000000e+00, 0.000000e+00) );
       assertEquals( zrs, ir.getZeros() );
 
-      List<Complex> pls = new ArrayList<Complex>();
+      List<Complex> pls = new ArrayList<>();
       pls.add( new Complex(-2.221000e-01,  2.221000e-01) );
       pls.add( new Complex(-2.221000e-01, -2.221000e-01) );
       pls.add( new Complex(-3.918000e+01,  4.912000e+01) );
@@ -92,9 +92,9 @@ public class InstrumentResponseTest {
     for (int i = 0; i < times.length; ++i) {
       insts[i] = LocalDateTime.parse(times[i], DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC);
     }
-    List<Pair<Instant, Instant>> compareTo = new ArrayList<Pair<Instant, Instant>>();
-    compareTo.add(new Pair<Instant, Instant>(insts[0], insts[1]));
-    compareTo.add(new Pair<Instant, Instant>(insts[1], insts[2]));
+    List<Pair<Instant, Instant>> compareTo = new ArrayList<>();
+    compareTo.add(new Pair<>(insts[0], insts[1]));
+    compareTo.add(new Pair<>(insts[1], insts[2]));
 
     String filename = folder + "resp-parse/multiepoch.txt";
     try{
@@ -154,7 +154,7 @@ public class InstrumentResponseTest {
       return;
     }
 
-    List<Complex> initPoles = new ArrayList<Complex>( ir.getPoles() );
+    List<Complex> initPoles = new ArrayList<>(ir.getPoles());
     RealVector rv = ir.polesToVector(false, 100.);
     Complex c = new Complex(-20, 0);
     // poles at indices 2 and 3 are duplicated, have zero imaginary component

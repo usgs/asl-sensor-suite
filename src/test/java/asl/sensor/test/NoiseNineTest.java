@@ -37,7 +37,7 @@ public class NoiseNineTest {
   public void canRunAndPlotTest1() {
 
     String testFolder = folder + "noisenine/";
-    String[] types = new String[]{"00","10","60"};;
+    String[] types = new String[]{"00","10","60"};
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};
     String ending = ".512.seed";
@@ -56,7 +56,7 @@ public class NoiseNineTest {
     System.out.println( "start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 8);
-    cCal.set(Calendar.MINUTE, 00);
+    cCal.set(Calendar.MINUTE, 0);
     System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
 
@@ -161,7 +161,7 @@ public class NoiseNineTest {
     System.out.println( "start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR_OF_DAY, 13);
-    cCal.set(Calendar.MINUTE, 00);
+    cCal.set(Calendar.MINUTE, 0);
     cCal.set(Calendar.SECOND, 0);
     System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();

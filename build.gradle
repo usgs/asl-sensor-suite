@@ -89,7 +89,7 @@ task jarServer(type: Jar) {
 
 test {
     maxHeapSize = "4096m"
-    maxParallelForks = 4;
+    maxParallelForks = 4
     testLogging {
         events "skipped", "failed"
         afterSuite { desc, result ->
@@ -133,4 +133,5 @@ task gitSubmodule(type: Exec) {
     commandLine 'git', 'submodule', 'update', '--init'
 }
 
-build.dependsOn copyJar, copyServerJar, gitSubmodule 
+build.dependsOn copyJar, copyServerJar
+processTestResources.dependsOn gitSubmodule

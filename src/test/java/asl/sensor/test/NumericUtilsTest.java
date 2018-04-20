@@ -24,7 +24,7 @@ public class NumericUtilsTest {
 
   @Test
   public void realSorterWorksRight() {
-    List<Complex> cs = new ArrayList<Complex>();
+    List<Complex> cs = new ArrayList<>();
     cs.add( new Complex(1, 0) );
     cs.add( new Complex(2, 0) );
     cs.add( new Complex(-1, 0) );

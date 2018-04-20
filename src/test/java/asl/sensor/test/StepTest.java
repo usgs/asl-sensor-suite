@@ -99,7 +99,7 @@ public class StepTest {
   public void testWaterLevelCalc() {
     // water level calc intended to invert value unless it is 0, then set it to 0 instead
     // note that the values are scaled WRT to the maximum value of the data arrays
-    List<Complex> data = new ArrayList<Complex>();
+    List<Complex> data = new ArrayList<>();
     data.add( new Complex(1, 2) );
     data.add(Complex.ZERO);
     data.add( new Complex(2, 2) );
@@ -109,7 +109,7 @@ public class StepTest {
     data.add( new Complex(5, -10) );
     data.add( new Complex(20) );
     Complex[] arr = data.toArray(new Complex[]{});
-    data = new ArrayList<Complex>();
+    data = new ArrayList<>();
     data.add( new Complex(.2, -.4) );
     data.add(Complex.ZERO);
     data.add( new Complex(.25, -.25) );

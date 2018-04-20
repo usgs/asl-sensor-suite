@@ -131,9 +131,7 @@ public class FFTResultTest {
     }
 
     double[] paddedTS = new double[padSize];
-    for (int i = 0; i < timeSeries.length; ++i) {
-      paddedTS[i] = timeSeries[i];
-    }
+    System.arraycopy(timeSeries, 0, paddedTS, 0, timeSeries.length);
 
     // System.out.println(paddedTS.length);
 
@@ -147,9 +145,7 @@ public class FFTResultTest {
 
     Complex[] trim = new Complex[padSize];
 
-    for (int i = 0; i < trim.length; ++i) {
-      trim[i] = frqDomn[i];
-    }
+    System.arraycopy(frqDomn, 0, trim, 0, trim.length);
 
     padSize = (trim.length - 1) * 2;
 
@@ -375,7 +371,7 @@ public class FFTResultTest {
     int high = 9;
 
     List<Number> numList = Arrays.asList(numbers);
-    List<Number> subseq = new ArrayList<Number>(numList.subList(low, high));
+    List<Number> subseq = new ArrayList<>(numList.subList(low, high));
 
     for (int i = 0; i < subseq.size(); ++i) {
       int fullListIdx = i + low;
@@ -694,7 +690,7 @@ public class FFTResultTest {
   @Test
   public void testMultitaper() {
     int size = 2000;
-    List<Double> timeSeries = new ArrayList<Double>();
+    List<Double> timeSeries = new ArrayList<>();
     for (int i = 0; i < size; ++i) {
       if (i % 2 == 0) {
         timeSeries.add(-500.);
@@ -705,17 +701,16 @@ public class FFTResultTest {
 
     final int TAPERS = 12;
     double[][] taper = FFTResult.getMultitaperSeries(size, TAPERS);
-    for (int j = 0; j < taper.length; ++j) {
+    for (double[] aTaper : taper) {
       double[] toFFT = new double[size];
-      int l = toFFT.length-1; // last point
-      double[] taperCurve = taper[j];
+      int l = toFFT.length - 1; // last point
       //double taperSum = 0.;
       //System.out.println(j + "-th taper curve first point: " + taperCurve[0]);
       //System.out.println(j + "-th taper curve last point: " + taperCurve[l]);
       for (int i = 0; i < timeSeries.size(); ++i) {
         // taperSum += Math.abs(taperCurve[i]);
-        double point = timeSeries.get(i).doubleValue();
-        toFFT[i] = point * taperCurve[i];
+        double point = timeSeries.get(i);
+        toFFT[i] = point * aTaper[i];
       }
       //System.out.println(j + "-th tapered-data first point: " + toFFT[0]);
       //System.out.println(j + "-th tapered-data last point: " + toFFT[l]);
@@ -782,7 +777,7 @@ public class FFTResultTest {
     try {
       PrintWriter out;
       DataBlock db = TimeSeriesUtils.getTimeSeries(filename, dataname);
-      OffsetDateTime dt = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);;
+      OffsetDateTime dt = OffsetDateTime.ofInstant(db.getStartInstant(), ZoneOffset.UTC);
       //System.out.println(dt);
       dt = dt.withDayOfYear(236).withHour(0).withMinute(0).withSecond(0);
       //System.out.println(dt);

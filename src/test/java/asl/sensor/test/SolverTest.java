@@ -46,7 +46,7 @@ public class SolverTest {
           jcb[0][i] = (diffY - res[0]) / delta;
         }
         RealMatrix jacobian = MatrixUtils.createRealMatrix(jcb);
-        return new Pair<RealVector, RealMatrix>(ans, jacobian);
+        return new Pair<>(ans, jacobian);
       }
     };
     
@@ -130,7 +130,7 @@ public class SolverTest {
         
         RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArr);
         
-        return new Pair<RealVector, RealMatrix>(result, jacobian);        
+        return new Pair<>(result, jacobian);
       }
     };
     

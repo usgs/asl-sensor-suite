@@ -63,10 +63,7 @@ public class DataBlockTest {
         db.trim(st, ed);
         double[] data = db.getData();
         assertEquals(39600, data.length);
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
-        fail();
-      } catch (SeedFormatException | CodecException e) {
+      } catch (FileNotFoundException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }

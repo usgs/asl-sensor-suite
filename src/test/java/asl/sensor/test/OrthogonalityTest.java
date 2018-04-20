@@ -65,7 +65,7 @@ public class OrthogonalityTest {
     System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 13);
-    cCal.set(Calendar.MINUTE, 00);
+    cCal.set(Calendar.MINUTE, 0);
     System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
 
