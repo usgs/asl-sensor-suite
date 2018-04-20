@@ -1,10 +1,8 @@
 package asl.sensor.utils;
 
 import asl.sensor.input.DataBlock;
-import edu.iris.dmc.seedcodec.B1000Types;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.iris.dmc.seedcodec.DecompressedData;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
 import edu.sc.seis.seisFile.mseed.Blockette;
 import edu.sc.seis.seisFile.mseed.Blockette1000;
 import edu.sc.seis.seisFile.mseed.Btime;
@@ -327,9 +325,9 @@ public class TimeSeriesUtils {
     // remove all whitespace from station name
     station = station.replaceAll("\\s+", "");
     ;
-    fileID.append(dh.getNetworkCode() + "_");
-    fileID.append(station + "_");
-    fileID.append(dh.getLocationIdentifier() + "_");
+    fileID.append(dh.getNetworkCode()).append("_");
+    fileID.append(station).append("_");
+    fileID.append(dh.getLocationIdentifier()).append("_");
     fileID.append(dh.getChannelIdentifier());
     return fileID.toString();
   }
@@ -492,14 +490,9 @@ public class TimeSeriesUtils {
    */
   public static DataBlock getTimeSeries(String filename, String filter)
       throws FileNotFoundException, SeedFormatException, CodecException {
-
-    // XYSeries xys = null;
-    DataBlock db = null;
     Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
         getTimeSeriesMap(filename, filter);
-    db = mapToTimeSeries(intervalSeriesMapPair, filter);
-    return db;
-
+    return mapToTimeSeries(intervalSeriesMapPair, filter);
   }
 
   /**
@@ -522,12 +515,9 @@ public class TimeSeriesUtils {
   public static DataBlock getTimeSeries(String[] filenames, String filter)
       throws FileNotFoundException, SeedFormatException, CodecException {
 
-    // XYSeries xys = null;
-    DataBlock db = null;
     Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
         getTimeSeriesMap(filenames, filter);
-    db = mapToTimeSeries(intervalSeriesMapPair, filter);
-    return db;
+    return mapToTimeSeries(intervalSeriesMapPair, filter);
 
   }
 
@@ -546,9 +536,7 @@ public class TimeSeriesUtils {
   public static Pair<Long, Map<Long, double[]>>
   getTimeSeriesMap(String filename, String filter)
       throws FileNotFoundException, SeedFormatException, CodecException {
-
     return getTimeSeriesMap(new String[]{filename}, filter);
-
   }
 
   /**
@@ -574,8 +562,7 @@ public class TimeSeriesUtils {
     Map<Long, double[]> timeListMap = new HashMap<>();
 
     for (String filename : filenames) {
-      int byteSize = 512;
-      byteSize = getByteSize(filename);
+      int byteSize = getByteSize(filename);
 
       try {
         dis = new DataInputStream(new FileInputStream(filename));
@@ -715,12 +702,7 @@ public class TimeSeriesUtils {
     double[] normData = new double[data.length];
     // now scale the data accordingly
     for (int i = 0; i < data.length; ++i) {
-      // this will only trigger in the unlikely event of a time series with all values 0
-      if (absMax == 0) {
-        normData[i] = data[i] / absMax;
-      } else {
-        normData[i] = data[i] / absMax;
-      }
+      normData[i] = data[i] / absMax;
     }
     return normData;
   }
