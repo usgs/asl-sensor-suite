@@ -219,45 +219,6 @@ public class TimeSeriesUtils {
     return detrended;
   }
 
-  /**
-   * In-place subtraction of trend from each point in an incoming data set.
-   * This is a necessary step in calculating the power-spectral density.
-   *
-   * @param dataSet The data to have the trend removed from.
-   */
-  public static void detrend(List<Number> dataSet) {
-
-    double sumX = 0.0;
-    double sumY = 0.0;
-    double sumXSqd = 0.0;
-    double sumXY = 0.0;
-
-    for (int i = 0; i < dataSet.size(); ++i) {
-      sumX += i;
-      sumXSqd += (double) i * (double) i;
-      double value = dataSet.get(i).doubleValue();
-      sumXY += value * i;
-      sumY += value;
-    }
-
-    // brackets here so you don't get confused thinking this should be
-    // algebraic division (in which case we'd just factor out the size term)
-    //
-
-    double del = sumXSqd - (sumX * sumX / dataSet.size());
-
-    double slope = sumXY - (sumX * sumY / dataSet.size());
-    slope /= del;
-
-    double yOffset = (sumXSqd * sumY) - (sumX * sumXY);
-    yOffset /= del * dataSet.size();
-
-    for (int i = 0; i < dataSet.size(); ++i) {
-      dataSet.set(i, dataSet.get(i).doubleValue() - ((slope * i) + yOffset));
-    }
-
-  }
-
   public static double[] detrendEnds(double[] data) {
     int lastIdx = data.length - 1;
     double start = data[0];
