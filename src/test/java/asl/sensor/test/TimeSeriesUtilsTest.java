@@ -133,23 +133,44 @@ public class TimeSeriesUtilsTest {
   }
 
   @Test
+  public final void testDetrendLinear() {
+    double[] x = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+        18, 19, 20};
+
+    x = TimeSeriesUtils.detrend(x);
+    for (double aX : x) {
+      assertEquals(aX, 0.0, 1E-5);
+    }
+  }
+
+  @Test
   public void detrendingCycleTest() {
-
-    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4,
-        3, 2, 1 };
-
-    // List<Number> toDetrend = Arrays.asList(x);
-
-    double[] answer = { -9d, -8d, -7d, -6d, -5d, -4d, -3d, -2d, -1d, 0d, 1d, 2d,
-        3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d, 9d, 8d, 7d, 6d, 5d, 4d, 3d, 2d, 1d, 0d,
-        -1d, -2d, -3d, -4d, -5d, -6d, -7d, -8d, -9d };
-
+    /*
+     * i = 0 to 15
+     * x = sin(i)+2
+     * Best Fit: y=0.0044008753x + 2.0879739023
+     */
+    double[] x = {2.0, 2.8414709848, 2.9092974268, 2.1411200081, 1.2431975047, 1.0410757253,
+        1.7205845018, 2.6569865987, 2.9893582466, 2.4121184852, 1.4559788891, 1.0000097934,
+        1.463427082, 2.4201670368, 2.9906073557, 2.6502878402};
+    double[] answer = {-0.0879739023, 0.7490962071, 0.8125217738, 0.0399434797, -0.862379899,
+                       -1.0689025537, -0.3937946526, 0.5382065689, 0.8661773415, 0.2845367048,
+                       -0.6760037667, -1.1363737377, -0.6773573245, 0.2749817549, 0.8410211985,
+                        0.4963008076};
 
     x = TimeSeriesUtils.detrend(x);
 
-    for (int i = 0; i < x.length; i++) {
-      assertEquals( x[i],  answer[i], 0.5);
+    assertArrayEquals( x,  answer, 1E-5);
+  }
+
+  @Test
+  public final void testDetrendNoSlope() {
+    double[] x = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+    x = TimeSeriesUtils.detrend(x);
+
+    for (double aX : x) {
+      assertEquals(aX, 0.0, 1E-5);
     }
 
   }
@@ -174,20 +195,6 @@ public class TimeSeriesUtilsTest {
     List<double[]> list = new ArrayList<>();
     double[] arrayResult = concatAll(list);
     assertArrayEquals(arrayAnswer, arrayResult, 1E-10);
-  }
-
-  @Test
-  public void detrendingLinearTest() {
-
-    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
-
-    List<Number> toDetrend = Arrays.asList(x);
-    TimeSeriesUtils.detrend(toDetrend);
-
-    for (Number num : toDetrend) {
-      assertEquals(num.doubleValue(), 0.0, 0.001);
-    }
-
   }
 
   @Test
