@@ -45,6 +45,8 @@ import py4j.Py4JNetworkException;
  */
 public class CalProcessingServer {
 
+  //RandData is used externally and requires Public access on getters
+  @SuppressWarnings({"WeakerAccess", "unused"})
   public class RandData {
 
     private double[] initPoles;
@@ -56,7 +58,7 @@ public class CalProcessingServer {
     private Date[][] gapStarts;
     private Date[][] gapEnds;
 
-    public RandData(double[] fp, double[] fz, double[] ip, double[] iz, byte[][] im,
+    RandData(double[] fp, double[] fz, double[] ip, double[] iz, byte[][] im,
         String[] nm, Date[][] gpa, Date[][] gpb) {
       fitPoles = fp;
       fitZeros = fz;
@@ -143,6 +145,7 @@ public class CalProcessingServer {
    *
    * @return text representation of data from experiment
    */
+  @SuppressWarnings("unused")
   public static String getMetadataFromExp(RandomizedExperiment exp) {
     String[] data = RandomizedPanel.getInsetString(exp);
     StringBuilder sb = new StringBuilder();
@@ -158,7 +161,6 @@ public class CalProcessingServer {
     try {
       gatewayServer.start();
     } catch (Py4JNetworkException e) {
-      System.out.println("Already Running: Closing process");
       System.exit(0);
     }
     System.out.println("Gateway Server Started");
@@ -175,15 +177,15 @@ public class CalProcessingServer {
    * @param outFileName Filename of sensor output
    * @param respName Filename of response to load in
    * @param respEmbd True if response is an embedded response in program
-   * @param startTime Long representing ms-since-epoch of data start time
-   * @param endTime Long representing ms-since-epoch of data end time
+   * @param startDate Long representing ms-since-epoch of data start time
+   * @param endDate Long representing ms-since-epoch of data end time
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    */
   public RandData populateDataAndRun(String calFileName, String outFileName,
       String respName, boolean respEmbd, String startDate, String endDate, boolean lowFreq)
-      throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws IOException, SeedFormatException, CodecException {
 
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -223,16 +225,17 @@ public class CalProcessingServer {
    * @param outFileNameD2 Filename of sensor output (day 2)
    * @param respName Filename of response to load in
    * @param respEmbd True if response is an embedded response in program
-   * @param startTime ISO-861 formatted datetime string with timezone offset; start of data window
-   * @param endTime ISO-861 formatted datetime string with timezone offset; end of data window
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    */
+  @SuppressWarnings("unused")
   public RandData populateDataAndRun(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean respEmbd,
       String startDate, String endDate, boolean lowFreq)
-      throws IOException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws IOException, SeedFormatException, CodecException {
 
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
