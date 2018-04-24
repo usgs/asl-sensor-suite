@@ -54,33 +54,33 @@ public class CalProcessingServer {
   @SuppressWarnings({"WeakerAccess", "unused"})
   public class RandData {
 
-    private double[] initPoles;
-    private double[] initZeros;
+    private double[] initialPoles;
+    private double[] initialZeros;
     private double[] fitPoles;
     private double[] fitZeros;
-    private byte[][] pngs;
+    private byte[][] images;
     private String[] gapNameIdentifiers;
     private Date[][] gapStarts;
     private Date[][] gapEnds;
 
-    RandData(double[] fp, double[] fz, double[] ip, double[] iz, byte[][] im,
-        String[] nm, Date[][] gpa, Date[][] gpb) {
-      fitPoles = fp;
-      fitZeros = fz;
-      initPoles = ip;
-      initZeros = iz;
-      pngs = im;
-      gapNameIdentifiers = nm;
-      gapStarts = gpa;
-      gapEnds = gpb;
+    RandData(double[] fitPoles, double[] fitZeros, double[] initialPoles, double[] initialZeros, byte[][] images,
+        String[] gapNames, Date[][] gapStartTimes, Date[][] gapEndTimes) {
+      this.fitPoles = fitPoles;
+      this.fitZeros = fitZeros;
+      this.initialPoles = initialPoles;
+      this.initialZeros = initialZeros;
+      this.images = images;
+      gapNameIdentifiers = gapNames;
+      gapStarts = gapStartTimes;
+      gapEnds = gapEndTimes;
     }
 
     public byte[] getAmpErrorImage() {
-      return pngs[2];
+      return images[2];
     }
 
     public byte[] getAmpImage() {
-      return pngs[0];
+      return images[0];
     }
 
     public double[] getFitPoles() {
@@ -129,19 +129,19 @@ public class CalProcessingServer {
     }
 
     public double[] getInitPoles() {
-      return initPoles;
+      return initialPoles;
     }
 
     public double[] getInitZeros() {
-      return initZeros;
+      return initialZeros;
     }
 
     public byte[] getPhaseErrorImage() {
-      return pngs[3];
+      return images[3];
     }
 
     public byte[] getPhaseImage() {
-      return pngs[1];
+      return images[1];
     }
   }
 
@@ -277,8 +277,10 @@ public class CalProcessingServer {
     randomExperiment.setLowFreq(isLowFrequency);
     randomExperiment.runExperimentOnData(dataStore);
 
-    Complex[] fitZerosComplex = randomExperiment.getFitResponse().getZeros().toArray(new Complex[]{});
-    Complex[] fitPolesComplex = randomExperiment.getFitResponse().getPoles().toArray(new Complex[]{});
+    Complex[] fitZerosComplex = randomExperiment.getFitResponse().getZeros()
+        .toArray(new Complex[]{});
+    Complex[] fitPolesComplex = randomExperiment.getFitResponse().getPoles()
+        .toArray(new Complex[]{});
     Complex[] initialZerosComplex = dataStore.getResponse(1).getZeros().toArray(new Complex[]{});
     Complex[] initialPolesComplex = dataStore.getResponse(1).getPoles().toArray(new Complex[]{});
 
