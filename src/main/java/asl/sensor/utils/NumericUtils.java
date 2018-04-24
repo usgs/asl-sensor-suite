@@ -5,6 +5,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
@@ -44,7 +45,7 @@ public class NumericUtils {
       if (c1.abs() == c2.abs()) {
         Double r1 = c1.getReal();
         Double r2 = c2.getReal();
-        if (r1 != r2) {
+        if (!Objects.equals(r1, r2)) {
           return r1.compareTo(r2);
         } else {
           return (int) Math.signum(c1.getImaginary() - c2.getImaginary());
@@ -52,7 +53,6 @@ public class NumericUtils {
       }
       return (int) Math.signum(c1.abs() - c2.abs());
     }
-
   }
 
   /**

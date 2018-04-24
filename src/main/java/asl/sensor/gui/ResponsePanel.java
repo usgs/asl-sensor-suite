@@ -190,6 +190,7 @@ public class ResponsePanel extends ExperimentPanel {
         File respDir = new File("responses/");
 
         if (!respDir.exists()) {
+          //noinspection ResultOfMethodCallIgnored
           respDir.mkdir();
         }
 

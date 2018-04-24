@@ -330,7 +330,6 @@ public class FFTResult {
 
   public static Pair<Complex[], Double> getSpectralWindow(double[] toFFT, int padding) {
     // demean and detrend work in-place on the list
-    // TimeSeriesUtils.detrend(toFFT);
     TimeSeriesUtils.demeanInPlace(toFFT);
     Double wss = cosineTaper(toFFT, 0.05);
     // presumably we only need the last value of wss
@@ -473,10 +472,8 @@ public class FFTResult {
 
     double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
     data = lowPassFilter(data, sps, 0.1);
-    // data = TimeSeriesUtils.detrend(data);
     data = TimeSeriesUtils.demean(data);
     cosineTaper(data, 0.05);
-    // data = TimeSeriesUtils.normalizeByMax(data);
 
     Complex[] frqDomn = simpleFFT(data);
 
@@ -516,7 +513,6 @@ public class FFTResult {
     Complex[] padded = new Complex[padding];
     System.arraycopy(freqDomn, 0, padded, 0, freqDomn.length);
     for (int i = 1; i < padding / 2; ++i) {
-      // System.out.println(freqDomn.length+","+i);
       padded[padded.length - i] = padded[i].conjugate();
     }
 
@@ -585,6 +581,8 @@ public class FFTResult {
   public static FFTResult
   spectralCalc(double[] list1, double[] list2, long interval) {
 
+    //Only the same data if the arrays are actually the same objects.
+    //noinspection ArrayEquals
     boolean sameData = list1.equals(list2);
 
     // divide into windows of 1/4, moving up 1/16 of the data at a time

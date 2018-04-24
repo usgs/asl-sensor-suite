@@ -141,10 +141,6 @@ public class StepExperiment extends Experiment {
     stepCalSeries = TimeSeriesUtils.detrendEnds(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
 
-    // FFTResult.detrend(toDetrend);
-    // stepCalSeries = TimeSeriesUtils.normalize(filteredStepCal);
-    // stepCalSeries = filteredStepCal;
-
     // but we want the response and the data of the cal result
     sensorOutIdx = ds.getXthFullyLoadedIndex(1);
 
@@ -166,9 +162,6 @@ public class StepExperiment extends Experiment {
 
     f = 1. / (NumericUtils.TAU / pole.abs()); // corner frequency
     h = Math.abs(pole.getReal() / pole.abs()); // damping
-
-    // manual override for testing purposes
-    // f = 0.002725; h = 0.719614;
 
     double[] params = new double[]{f, h};
 

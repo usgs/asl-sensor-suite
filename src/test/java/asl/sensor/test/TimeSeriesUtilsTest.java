@@ -41,11 +41,11 @@ public class TimeSeriesUtilsTest {
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
-  public String fileID = station+"_"+location+"_"+channel+".512.seed";
+  public String fileID = station + "_" + location + "_" + channel + ".512.seed";
 
   @Test
   public void canGetFile() {
-    try{
+    try {
       String filename1 = folder + "blocktrim/" + fileID;
       FileInputStream fis = new FileInputStream(filename1);
       fis.close();
@@ -64,7 +64,7 @@ public class TimeSeriesUtilsTest {
       assertTrue(names.contains("IU_ANMO_00_LH1"));
       assertTrue(names.contains("IU_ANMO_00_LH2"));
       assertTrue(names.contains("IU_ANMO_00_LHZ"));
-      assertEquals( names.size(), 3 );
+      assertEquals(names.size(), 3);
     } catch (IOException | SeedFormatException e) {
       fail();
     }
@@ -107,7 +107,7 @@ public class TimeSeriesUtilsTest {
     // tests that demean does what it says it does and that
     // the results are applied in-place
 
-    double[] numbers = {1,2,3,4,5};
+    double[] numbers = {1, 2, 3, 4, 5};
 
     double[] numList = numbers.clone();
     double[] demeaned = numList.clone();
@@ -115,51 +115,73 @@ public class TimeSeriesUtilsTest {
     TimeSeriesUtils.demeanInPlace(demeaned);
 
     for (int i = 0; i < numList.length; ++i) {
-      assertEquals(demeaned[i], numList[i]-3, 1E-15);
+      assertEquals(demeaned[i], numList[i] - 3, 1E-15);
     }
 
   }
 
   @Test
   public void detrendAtEndsTest() {
-    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+    double[] x = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
         18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4,
-        3, 2, 1 };
+        3, 2, 1};
 
     x = TimeSeriesUtils.detrendEnds(x);
 
     assertEquals(x[0], 0, 1E-5);
-    assertEquals(x[x.length-1], 0, 1E-5);
+    assertEquals(x[x.length - 1], 0, 1E-5);
+  }
+
+  @Test
+  public final void testDetrendLinear() {
+    double[] x = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+        18, 19, 20};
+
+    x = TimeSeriesUtils.detrend(x);
+    for (double aX : x) {
+      assertEquals(aX, 0.0, 1E-5);
+    }
   }
 
   @Test
   public void detrendingCycleTest() {
-
-    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-        18, 19, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4,
-        3, 2, 1 };
-
-    // List<Number> toDetrend = Arrays.asList(x);
-
-    double[] answer = { -9d, -8d, -7d, -6d, -5d, -4d, -3d, -2d, -1d, 0d, 1d, 2d,
-        3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d, 9d, 8d, 7d, 6d, 5d, 4d, 3d, 2d, 1d, 0d,
-        -1d, -2d, -3d, -4d, -5d, -6d, -7d, -8d, -9d };
-
+    /*
+     * i = 0 to 15
+     * x = sin(i)+2
+     * Best Fit: y=0.0044008753x + 2.0879739023
+     */
+    double[] x = {2.0, 2.8414709848, 2.9092974268, 2.1411200081, 1.2431975047, 1.0410757253,
+        1.7205845018, 2.6569865987, 2.9893582466, 2.4121184852, 1.4559788891, 1.0000097934,
+        1.463427082, 2.4201670368, 2.9906073557, 2.6502878402};
+    double[] answer = {-0.0879739023, 0.7490962071, 0.8125217738, 0.0399434797, -0.862379899,
+        -1.0689025537, -0.3937946526, 0.5382065689, 0.8661773415, 0.2845367048,
+        -0.6760037667, -1.1363737377, -0.6773573245, 0.2749817549, 0.8410211985,
+        0.4963008076};
 
     x = TimeSeriesUtils.detrend(x);
 
-    for (int i = 0; i < x.length; i++) {
-      assertEquals( x[i],  answer[i], 0.5);
+    assertArrayEquals(x, answer, 1E-5);
+  }
+
+  @Test
+  public final void testDetrendNoSlope() {
+    double[] x = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+    x = TimeSeriesUtils.detrend(x);
+
+    for (double aX : x) {
+      assertEquals(aX, 0.0, 1E-5);
     }
 
   }
 
   @Test
   public void concatAllTest() {
-    double[] array1 = {1,2,3,4.5,6,7};
-    double[] array2 = {111,112,113,114.5,116,117};
-    double[] array3 = {11,12,13,14.5,16,17};
-    double[] arrayAnswer = {1,2,3,4.5,6,7, 111,112,113,114.5,116,117, 11,12,13,14.5,16,17};
+    double[] array1 = {1, 2, 3, 4.5, 6, 7};
+    double[] array2 = {111, 112, 113, 114.5, 116, 117};
+    double[] array3 = {11, 12, 13, 14.5, 16, 17};
+    double[] arrayAnswer = {1, 2, 3, 4.5, 6, 7, 111, 112, 113, 114.5, 116, 117, 11, 12, 13, 14.5,
+        16, 17};
     List<double[]> list = new ArrayList<>();
     list.add(array1);
     list.add(array2);
@@ -174,20 +196,6 @@ public class TimeSeriesUtilsTest {
     List<double[]> list = new ArrayList<>();
     double[] arrayResult = concatAll(list);
     assertArrayEquals(arrayAnswer, arrayResult, 1E-10);
-  }
-
-  @Test
-  public void detrendingLinearTest() {
-
-    Number[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
-
-    List<Number> toDetrend = Arrays.asList(x);
-    TimeSeriesUtils.detrend(toDetrend);
-
-    for (Number num : toDetrend) {
-      assertEquals(num.doubleValue(), 0.0, 0.001);
-    }
-
   }
 
   @Test
@@ -259,15 +267,15 @@ public class TimeSeriesUtilsTest {
     String filename1 = folder + "blocktrim/" + fileID;
     try {
       dis = new DataInputStream(
-            new BufferedInputStream(
-            new FileInputStream(filename1) ) );
-      while ( true ) {
+          new BufferedInputStream(
+              new FileInputStream(filename1)));
+      while (true) {
 
         try {
           // long interval = 0L;
-          SeedRecord sr = SeedRecord.read(dis,4096);
-          if(sr instanceof DataRecord) {
-            DataRecord dr = (DataRecord)sr;
+          SeedRecord sr = SeedRecord.read(dis, 4096);
+          if (sr instanceof DataRecord) {
+            DataRecord dr = (DataRecord) sr;
             // DataHeader dh = dr.getHeader();
 
             DecompressedData decomp = dr.decompress();
@@ -281,33 +289,33 @@ public class TimeSeriesUtilsTest {
             // we have to add each point individually and type convert anyway
 
             switch (dataType) {
-            case B1000Types.INTEGER:
-              int[] decomArrayInt = decomp.getAsInt();
-              for (int dataPoint : decomArrayInt ) {
-                data.add(dataPoint);
-              }
-              break;
-            case B1000Types.FLOAT:
-              float[] decomArrayFlt = decomp.getAsFloat();
-              for (float dataPoint : decomArrayFlt ) {
-                data.add(dataPoint);
-              }
-              break;
-            case B1000Types.SHORT:
-              short[] decomArrayShr = decomp.getAsShort();
-              for (short dataPoint : decomArrayShr ) {
-                data.add(dataPoint);
-              }
-              break;
-            default:
-              double[] decomArrayDbl = decomp.getAsDouble();
-              for (double dataPoint : decomArrayDbl ) {
-                data.add(dataPoint);
-              }
-              break;
+              case B1000Types.INTEGER:
+                int[] decomArrayInt = decomp.getAsInt();
+                for (int dataPoint : decomArrayInt) {
+                  data.add(dataPoint);
+                }
+                break;
+              case B1000Types.FLOAT:
+                float[] decomArrayFlt = decomp.getAsFloat();
+                for (float dataPoint : decomArrayFlt) {
+                  data.add(dataPoint);
+                }
+                break;
+              case B1000Types.SHORT:
+                short[] decomArrayShr = decomp.getAsShort();
+                for (short dataPoint : decomArrayShr) {
+                  data.add(dataPoint);
+                }
+                break;
+              default:
+                double[] decomArrayDbl = decomp.getAsDouble();
+                for (double dataPoint : decomArrayDbl) {
+                  data.add(dataPoint);
+                }
+                break;
             }
           }
-        } catch(EOFException e) {
+        } catch (EOFException e) {
           break;
         }
 
@@ -319,8 +327,8 @@ public class TimeSeriesUtilsTest {
       System.out.println("DATA BLOCK SIZE: " + data.size());
 
       DataBlock testAgainst =
-          TimeSeriesUtils.getTimeSeries(filename1, nameList.get(0) );
-      assertEquals( data.size(), testAgainst.getData().length );
+          TimeSeriesUtils.getTimeSeries(filename1, nameList.get(0));
+      assertEquals(data.size(), testAgainst.getData().length);
 
     } catch (IOException | SeedFormatException | CodecException e) {
       assertNull(e);
@@ -331,21 +339,21 @@ public class TimeSeriesUtilsTest {
   public void seisFileCanParseFile() {
     String filename1 = folder + "blocktrim/" + fileID;
     try {
-      DataInput dis = new DataInputStream( new BufferedInputStream(
-          new FileInputStream(filename1) ) );
-      try{
-        while(true) {
-          SeedRecord sr = SeedRecord.read(dis,4096);
+      DataInput dis = new DataInputStream(new BufferedInputStream(
+          new FileInputStream(filename1)));
+      try {
+        while (true) {
+          SeedRecord sr = SeedRecord.read(dis, 4096);
           if (sr instanceof DataRecord) {
-            DataRecord dr = (DataRecord)sr;
+            DataRecord dr = (DataRecord) sr;
 
             String loc = dr.getHeader().getLocationIdentifier();
-            assertTrue( loc.equals(location) );
+            assertTrue(loc.equals(location));
             String stat = dr.getHeader().getStationIdentifier().trim();
-            assertTrue( stat.equals(station) );
+            assertTrue(stat.equals(station));
 
             String chan = dr.getHeader().getChannelIdentifier();
-            assertTrue( chan.equals(channel) );
+            assertTrue(chan.equals(channel));
           }
         }
       } catch (EOFException e) {
@@ -366,11 +374,11 @@ public class TimeSeriesUtilsTest {
     String filename1 = folder + "blocktrim/" + fileID;
     try {
       while (true) {
-        dis = new DataInputStream( new BufferedInputStream(
-            new FileInputStream(filename1) ) );
-        SeedRecord sr = SeedRecord.read(dis,4096);
-        if(sr instanceof DataRecord) {
-          DataRecord dr = (DataRecord)sr;
+        dis = new DataInputStream(new BufferedInputStream(
+            new FileInputStream(filename1)));
+        SeedRecord sr = SeedRecord.read(dis, 4096);
+        if (sr instanceof DataRecord) {
+          DataRecord dr = (DataRecord) sr;
 
           int fact = dr.getHeader().getSampleRateFactor();
           int mult = dr.getHeader().getSampleRateMultiplier();
@@ -378,16 +386,16 @@ public class TimeSeriesUtilsTest {
           //System.out.println(fact+","+mult);
 
           double rate = dr.getHeader().getSampleRate();
-          assertTrue((double)fact/mult == rate);
+          assertTrue((double) fact / mult == rate);
 
           // checking the correct values for the intervals
 
-          double multOf1Hz = rate/TimeSeriesUtils.ONE_HZ;
-          long inverse = TimeSeriesUtils.ONE_HZ_INTERVAL/(long)multOf1Hz;
+          double multOf1Hz = rate / TimeSeriesUtils.ONE_HZ;
+          long inverse = TimeSeriesUtils.ONE_HZ_INTERVAL / (long) multOf1Hz;
 
-          long interval = TimeSeriesUtils.ONE_HZ_INTERVAL*mult/fact;
+          long interval = TimeSeriesUtils.ONE_HZ_INTERVAL * mult / fact;
 
-          assertEquals( inverse, interval);
+          assertEquals(inverse, interval);
           // System.out.println(interval);
 
           break;
@@ -428,8 +436,8 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public final void testDemean1to9() {
-    double[] x = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    double[] expected = { -4d, -3d, -2d, -1d, 0d, 1d, 2d, 3d, 4d };
+    double[] x = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    double[] expected = {-4d, -3d, -2d, -1d, 0d, 1d, 2d, 3d, 4d};
     TimeSeriesUtils.demeanInPlace(x);
     for (int i = 0; i < x.length; i++) {
       assertEquals(x[i], expected[i], 1E-15);
@@ -438,8 +446,8 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public final void testDetrendLinear2() {
-    double[] x = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6,
-        7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+    double[] x = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6,
+        7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
 
     x = TimeSeriesUtils.detrend(x);
     for (double aX : x) {
@@ -462,8 +470,10 @@ public class TimeSeriesUtilsTest {
       data = TimeSeriesUtils.demean(data);
       System.out.println("AVG OF DEMEANED DATA: " + TimeSeriesUtils.getMean(data));
       double[] normed = TimeSeriesUtils.normalize(data);
-      int minIdx = 0; int maxIdx = 0;
-      double min = 0; double max = 0;
+      int minIdx = 0;
+      int maxIdx = 0;
+      double min = 0;
+      double max = 0;
       for (int i = 0; i < data.length; ++i) {
         if (data[i] < min) {
           min = data[i];
@@ -477,7 +487,7 @@ public class TimeSeriesUtilsTest {
       //assertTrue(Math.abs(min) < Math.abs(max));
       assertEquals(1.0, normed[maxIdx], 1E-3);
       assertTrue(Math.abs(normed[minIdx]) < 1.0);
-      assertEquals(data[minIdx]/data[maxIdx], normed[minIdx], 1E-3);
+      assertEquals(data[minIdx] / data[maxIdx], normed[minIdx], 1E-3);
       assertEquals(-0.79, normed[minIdx], 0.01);
     } catch (IOException | SeedFormatException | CodecException e) {
       // TODO Auto-generated catch block
@@ -493,7 +503,7 @@ public class TimeSeriesUtilsTest {
       String data = TimeSeriesUtils.getMplexNameList(fname).get(0);
       DataBlock db = TimeSeriesUtils.getTimeSeries(fname, data);
 
-      Instant timeInst = Instant.ofEpochMilli( db.getStartTime() );
+      Instant timeInst = Instant.ofEpochMilli(db.getStartTime());
       OffsetDateTime dt = OffsetDateTime.ofInstant(timeInst, ZoneOffset.UTC);
       DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu.MM.dd'T'HH:mm:ss.SSS");
       String inputDate = dtf.format(dt);
