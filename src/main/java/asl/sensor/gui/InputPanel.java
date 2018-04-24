@@ -631,22 +631,13 @@ public class InputPanel
    * @return Buffered image of the plots, writeable to file
    */
   public BufferedImage getAsImage(int width, int height, int plotsToShow) {
-
     if (plotsToShow <= 0) {
       // should never be called like this but just in case
       // return an empty image
       return new BufferedImage(0, 0, BufferedImage.TYPE_INT_RGB);
     }
 
-    // int shownHeight = allCharts.getHeight();
-
-    // width = Math.min( width, chartPanels[0].getWidth() );
-    // height = Math.max( height, shownHeight );
-
-    int loaded = plotsToShow;
-    // cheap way to make sure height is a multiple of the chart count
-    height = (height * loaded) / loaded;
-    int chartHeight = height / loaded;
+    int chartHeight = height / plotsToShow;
 
     JFreeChart[] chartsToPrint = new JFreeChart[plotsToShow];
     for (int i = 0; i < plotsToShow; ++i) {
@@ -654,7 +645,6 @@ public class InputPanel
     }
 
     return ReportingUtils.chartsToImage(width, chartHeight, chartsToPrint);
-
   }
 
 
@@ -669,15 +659,11 @@ public class InputPanel
    */
   public BufferedImage[]
   getAsMultipleImages(int width, int height, int plotsToShow) {
-
     if (plotsToShow <= 0) {
       return new BufferedImage[]{};
     }
 
-    int loaded = plotsToShow;
-    // cheap way to make sure height is a multiple of the chart count
-    height = (height * loaded) / loaded;
-    int chartHeight = height / loaded;
+    int chartHeight = height / plotsToShow;
 
     JFreeChart[] chartsToPrint = new JFreeChart[plotsToShow];
     for (int i = 0; i < plotsToShow; ++i) {
@@ -686,7 +672,6 @@ public class InputPanel
 
     return ReportingUtils.chartsToImageList(
         PLOTS_PER_PAGE, width, chartHeight, chartsToPrint);
-
   }
 
   /**
@@ -699,13 +684,9 @@ public class InputPanel
    * @return A DataStore object (contains arrays of DataBlocks & Responses)
    */
   public DataStore getData() {
-
-    // showRegionForGeneration();
     if (ds.numberOfBlocksSet() > 1) {
-      // zooms.matchIntervals(activePlots); done at experiment level
       ds.trimToCommonTime(activePlots);
     }
-
     return new DataStore(ds);
   }
 
@@ -1137,7 +1118,6 @@ public class InputPanel
    * @param idx Index of appropriate chart/panel
    */
   private void resetPlotZoom(int idx) {
-    // System.out.println("reset plot zoom");
     XYPlot xyp = chartPanels[idx].getChart().getXYPlot();
     XYSeriesCollection xys = new XYSeriesCollection();
     xys.addSeries(ds.getBlock(idx).toXYSeries());
@@ -1145,7 +1125,6 @@ public class InputPanel
     xyp.getRenderer().setSeriesPaint(0,
         defaultColor[idx % defaultColor.length]);
     xyp.getDomainAxis().setAutoRange(true);
-    //xyp.setRangeAxis(na);
     if (xyp.getSeriesCount() > 1) {
       throw new RuntimeException("TOO MUCH DATA");
     }
@@ -1230,8 +1209,6 @@ public class InputPanel
     if (ds.numberOfBlocksSet() < 1) {
       return;
     }
-
-    // zooms.trimToCommonTime();
 
     int leftValue = leftSlider.getValue();
     int rightValue = rightSlider.getValue();
@@ -1349,7 +1326,6 @@ public class InputPanel
 
       cont.add(chartSubpanels[i], contConstraints);
       contConstraints.gridy += 1;
-      // gbc.gridy += 1;
     }
 
     leftSlider.setValue(0);
