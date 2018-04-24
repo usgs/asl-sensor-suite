@@ -52,6 +52,12 @@ public class SinePanel extends ExperimentPanel {
     calAxis.setLabelFont(bold);
     outAxis.setLabelFont(bold);
 
+    plotSelection = new JComboBox<String>();
+    plotSelection.addItem("Sine plot");
+    plotSelection.addItem("Linearity plot");
+    plotSelection.addActionListener(this);
+    plotSelection.setEnabled(false);
+
     this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
 
@@ -73,6 +79,7 @@ public class SinePanel extends ExperimentPanel {
     gbc.gridy += 1;
     gbc.gridx = 0;
     JPanel space = new JPanel();
+    space.setPreferredSize(plotSelection.getPreferredSize());
     this.add(space, gbc);
 
     gbc.gridx += 1;
@@ -87,11 +94,6 @@ public class SinePanel extends ExperimentPanel {
     gbc.gridx += 1;
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;
-    plotSelection = new JComboBox<String>();
-    plotSelection.addItem("Sine plot");
-    plotSelection.addItem("Linearity plot");
-    plotSelection.addActionListener(this);
-    plotSelection.setEnabled(false);
     this.add(plotSelection, gbc);
   }
 

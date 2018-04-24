@@ -1,10 +1,10 @@
 package asl.sensor.gui;
 
-import asl.sensor.input.DataStore;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
 import org.apache.commons.math3.exception.ConvergenceException;
 import org.apache.commons.math3.exception.NoDataException;
+import asl.sensor.input.DataStore;
 
 /**
  * Used as singleton instance of swingworker to prevent clogging the program
@@ -91,7 +91,7 @@ public class SwingWorkerSingleton {
             text.append(" poles defining the rolloff?)\n");
             text.append("A more detailed explanation has been output to terminal,\n");
             text.append("but here is the error message returned by the backend:\n");
-            text.append(ex.toString());
+            text.append(cause.toString());
           } else if (cause instanceof ConvergenceException) {
             text.append("Solver was unable to converge on a specific value.\n");
             text.append("A common cause of this is having too little timeseries data to");
@@ -99,16 +99,16 @@ public class SwingWorkerSingleton {
             text.append("(Are you running a low-frequency cal on high-frequency data?)\n");
             text.append("A more detailed explanation has been output to terminal,\n");
             text.append("but here is the error message returned by the backend:\n");
-            text.append(ex.toString());
+            text.append(cause.toString());
           } else {
             if (ex.getMessage() == null) {
               text.append("CANCELLED");
             } else {
-              text.append(ex.getMessage());
+              text.append(cause.getMessage());
             }
           }
           epHandle.displayErrorMessage(text.toString());
-          ex.printStackTrace();
+          cause.printStackTrace();
         } catch (InterruptedException ex) {
           String text;
           if (ex.getMessage() == null) {
@@ -117,7 +117,7 @@ public class SwingWorkerSingleton {
             text = ex.getMessage();
           }
           epHandle.displayErrorMessage(text);
-          ex.printStackTrace();
+          ex.getCause().printStackTrace();
         }
       }
     };

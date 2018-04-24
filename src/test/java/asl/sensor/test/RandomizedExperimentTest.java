@@ -5,15 +5,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.awt.Font;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -32,11 +29,9 @@ import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.gui.RandomizedPanel;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
@@ -72,6 +67,7 @@ public class RandomizedExperimentTest {
 
   }
 
+  /*
   @Test
   public void TestRandomCalCurves() throws Exception {
     String fname = folder + "kiev-random-lowfrq/";
@@ -102,6 +98,7 @@ public class RandomizedExperimentTest {
     String msg = "Expected " + ref + " and got " + got;
     assertTrue(msg, Complex.equals(ref, got, 5E-4));
   }
+  */
 
   @Test
   public void ResponseCorrectConvertedToVectorHighFreq() throws Exception{

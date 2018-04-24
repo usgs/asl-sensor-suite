@@ -1,11 +1,5 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,6 +19,12 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * This experiment takes in a randomized calibration signal and the
@@ -49,6 +49,27 @@ import org.jfree.data.xy.XYSeriesCollection;
 public class RandomizedExperiment
     extends Experiment implements ParameterValidator {
 
+  /**
+   * Get the index of the value closest to a given target frequency in a list assuming the entries
+   * in the list are equally spaced
+   * @param freqs List of frequencies to find the target location
+   * @param targetFreq Frequency of interest
+   * @return Index of closest frequency value
+   */
+  public static int getIndexOfFrequency(double[] freqs, double targetFreq) {
+    if (freqs.length == 1) {
+      return 0;
+    }
+
+    double deltaFreq = freqs[1] - freqs[0];
+    // System.out.println(deltaFreq);
+    // System.out.println(targetFreq - freqs[0]);
+    int idx = (int) Math.round((targetFreq - freqs[0]) / deltaFreq);
+    // in almost all cases the index here should be in the list, but if not, bounds check
+    idx = Math.max(idx, 0);
+    return Math.min(idx, freqs.length-1);
+  }
+
   private static final double DELTA = 1E-12;
   public static final double PEAK_MULTIPLIER = 0.4;
   //NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
@@ -68,8 +89,6 @@ public class RandomizedExperiment
   private List<Complex> fitPoles;
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
-
-  private int untrimmedPSDLength;
 
   private List<String> inputsPerCalculation;
   private List<String> outputsPerCalculation;
@@ -92,14 +111,13 @@ public class RandomizedExperiment
 
   private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
 
-  private int normalIdx; // location of value to set to 0 in curves for scaling
+  private static final double ZERO_TARGET = 0.02; // location of value to set to 0 in curves for scaling
   private int numZeros; // how many entries in parameter vector define zeros
   private int numIterations; // how much the solver ran
 
   public RandomizedExperiment() {
     super();
     lowFreq = false;
-    normalIdx = 0;
     numIterations = 0;
     freqSpace = true;
   }
@@ -117,26 +135,18 @@ public class RandomizedExperiment
     inputsPerCalculation = new ArrayList<String>();
     outputsPerCalculation = new ArrayList<String>();
 
-    normalIdx = 1;
     numIterations = 0;
 
-    // construct response plot
     DataBlock calib = ds.getBlock(0);
-
-    /*
-    if ( ds.getBlock(sensorOutIdx).getName().equals( calib.getName() ) ) {
-      sensorOutIdx = ds.getXthFullyLoadedIndex(2);
-    }
-    */
-
     DataBlock sensorOut = ds.getBlock(1);
     fitResponse = new InstrumentResponse(ds.getResponse(1));
 
-    // System.out.println(calib.size() + ", " + sensorOut.size());
-
     dataNames.add(calib.getName());
-    dataNames.add(sensorOut.getName());
+    String name = sensorOut.getName();
+    dataNames.add(name);
     dataNames.add(fitResponse.getName());
+    XYSeries calcMag = new XYSeries("Calc. resp. (" + name + ") magnitude");
+    XYSeries calcArg = new XYSeries("Calc. resp. (" + name + ") phase");
 
     InstrumentResponse initResponse = new InstrumentResponse(fitResponse);
     initialPoles = new ArrayList<Complex>(fitResponse.getPoles());
@@ -154,7 +164,6 @@ public class RandomizedExperiment
     denominatorPSD = FFTResult.spectralCalc(calib, calib);
 
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
-    untrimmedPSDLength = freqsUntrimmed.length;
 
     // store nyquist rate of data because freqs will be trimmed down later
     nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
@@ -163,6 +172,7 @@ public class RandomizedExperiment
     // trim frequency window in order to restrict range of response fits
     double minFreq, maxFreq, extFreq;
     // extfreq is how far out to extend data past range of fit
+    // maxFreq is the largest frequency that we use in the solver
     // low frequency cal fits over a different range of data
     if (lowFreq) {
       minFreq = 0.001; // 1000s period
@@ -172,197 +182,96 @@ public class RandomizedExperiment
       minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
       // get factor of nyquist rate, again due to noise
       maxFreq = PEAK_MULTIPLIER * nyquist;
-      extFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist;
+      extFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist; // i.e., 80% of nyquist
+      // maxFreq = extFreq;
     }
 
     fireStateChange("Finding and trimming data to relevant frequency range");
     // now trim frequencies to in range
-    int startIdx = -1;
-    int endIdx = -1;
-    int extIdx = -1;
-    for (int i = 0; i < freqsUntrimmed.length; ++i) {
-
-      if (freqsUntrimmed[i] < minFreq) {
-        continue;
-      } else if (startIdx < 0) {
-        startIdx = i;
-      }
-      if (freqsUntrimmed[i] > maxFreq) {
-        if (endIdx < 0) {
-          endIdx = i;
-        }
-        if (freqsUntrimmed[i] > extFreq) {
-          extIdx = i;
-          break;
-        }
-      }
-    }
-
-    double zeroTarget = 0.02; // frequency to set all curves to zero at
+    // start and end are the region of the fit area, extIdx is the full plotted region
+    int startIdx = getIndexOfFrequency(freqsUntrimmed, minFreq);
+    int endIdx = getIndexOfFrequency(freqsUntrimmed, maxFreq);
+    int extIdx = getIndexOfFrequency(freqsUntrimmed, extFreq);
 
     double[] freqsFull = Arrays.copyOfRange(freqsUntrimmed, startIdx, extIdx);
     freqs = Arrays.copyOfRange(freqsUntrimmed, startIdx, endIdx);
+
+    double zeroTarget = 0.02; // frequency to set all curves to zero at
+    int normalIdx = getIndexOfFrequency(freqs, zeroTarget);
 
     // trim the PSDs to the data in the trimmed frequency range
     // System.out.println("INDICES: " + startIdx + "," + endIdx);
     Complex[] numeratorPSDVals = numeratorPSD.getFFT();
     Complex[] denominatorPSDVals = denominatorPSD.getFFT();
-    Complex[] untrimmedResponse = new Complex[freqsUntrimmed.length];
+    double[] untrimmedAmplitude = new double[freqsUntrimmed.length];
+    double[] untrimmedPhase = new double[freqsUntrimmed.length];
 
     // calculated response from deconvolving calibration from signal
     // (this will be in displacement and need to be integrated)
-    for (int i = 0; i < untrimmedResponse.length; ++i) {
+    for (int i = 0; i < freqsUntrimmed.length; ++i) {
       Complex numer = numeratorPSDVals[i];
       double denom = denominatorPSDVals[i].abs(); // phase is 0
-      untrimmedResponse[i] = numer.divide(denom);
-      // convert from displacement to velocity
+      // the actual complex value which we'll immediately convert to doubles for use in plots/fits
+      Complex valueAtFreq = numer.divide(denom);
       Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqsUntrimmed[i]);
-      untrimmedResponse[i] = untrimmedResponse[i].multiply(scaleFactor);
+      // convert from displacement to velocity
+      valueAtFreq = valueAtFreq.multiply(scaleFactor);
+      untrimmedAmplitude[i] = 20 * Math.log10(valueAtFreq.abs());
+      untrimmedPhase[i] = NumericUtils.atanc(valueAtFreq);
     }
 
-    Complex[] plottedResponse = Arrays.copyOfRange(untrimmedResponse, startIdx, extIdx);
+    fireStateChange("Smoothing calculated resp data...");
+    // now smooth the data
+    // scan starting at the high-frequency range for low-freq data (will be trimmed) & vice-versa
+    untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude, 5, !lowFreq);
+    // phase smoothing also includes an unwrapping step
+    untrimmedPhase = NumericUtils.unwrapList(untrimmedPhase);
+    untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, 5, !lowFreq);
 
-    // now that we know length of frequency array, figure out normalization index
+    fireStateChange("Trimming calculated resp data down to range of interest...");
+    double[] plottedAmp = Arrays.copyOfRange(untrimmedAmplitude, startIdx, extIdx);
+    double[] plottedPhs = Arrays.copyOfRange(untrimmedPhase, startIdx, extIdx);
+
+    fireStateChange("Scaling & weighting calculated resp data in preparation for solving");
+    // get the data at the normalized index, use this to scale the data
+    double ampScale = plottedAmp[normalIdx];
+    double phsScale = plottedPhs[normalIdx];
+    observedResult = new double[2 * freqs.length]; // fit curve, amplitude then phase
+    weights = new double[observedResult.length];
+    maxArgWeight = 1;
+    maxMagWeight = 0;
     for (int i = 0; i < freqs.length; ++i) {
-      if (freqs[i] == zeroTarget || (i > 0 &&
-          (freqs[i] > zeroTarget && freqs[i - 1] < zeroTarget))) {
-        normalIdx = i;
-        break;
+      double xAxis = freqs[i];
+      if (!freqSpace) {
+        xAxis = 1. / freqs[i];
       }
+
+      // scale
+      double amp = plottedAmp[i];
+      double phs = plottedPhs[i];
+      amp -= ampScale;
+      phs -= phsScale;
+      phs = Math.toDegrees(phs);
+      // get weight
+      maxMagWeight = Math.max(maxMagWeight, Math.abs(amp));
+      maxArgWeight = Math.max(maxArgWeight, Math.abs(phs));
+
+      // add to plot (re-wrap phase), add to fitting array
+      int argIdx = i + freqs.length;
+      observedResult[i] = amp;
+      observedResult[argIdx] = phs;
+      calcMag.add(xAxis, amp);
+      calcArg.add(xAxis, rewrapPhase(phs));
     }
 
-    // the range over the fit is trimmed from the full plot
-    // (i.e., we may fit up to 50% of nyquist but display up to 80% in HF cals)
-    Complex[] estResponse =
-        Arrays.copyOfRange(plottedResponse, 0, freqs.length);
-
-    // next, normalize estimated response
-    String name = sensorOut.getName();
-    XYSeries calcMag = new XYSeries("Calc. resp. (" + name + ") magnitude");
-    XYSeries calcArg = new XYSeries("Calc. resp. (" + name + ") phase");
-
-    fireStateChange("Scaling data...");
-    // scaling values, used to set curve values to 0 at 1Hz
-    Complex scaleValue = estResponse[normalIdx];
-    double subtractBy = 20 * Math.log10(scaleValue.abs());
-    double rotateBy = NumericUtils.atanc(scaleValue);
-
-    // data to fit poles to; first half of data is magnitudes of resp (dB)
-    // second half of data is angles of resp (radians, scaled)
-    observedResult = new double[2 * estResponse.length];
-
-    // prevent discontinuities in angle plots
-    double phiPrev = 0.;
-
-    double[] obsdAmps = new double[estResponse.length];
-
-    for (int i = 0; i < estResponse.length; ++i) {
-      int argIdx = estResponse.length + i;
-
-      Complex estValue = estResponse[i];
-      // estValue = estValue.subtract(scaleValue);
-      double estValMag = estValue.abs();
-      double phi = NumericUtils.atanc(estValue);
-      phi -= rotateBy;
-
-      phi = NumericUtils.unwrap(phi, phiPrev);
-      // iterative step
-      phiPrev = phi;
-      phi = Math.toDegrees(phi);
-
-      if (Double.isNaN(estValMag)) {
-        observedResult[i] = 0;
-        observedResult[argIdx] = 0;
-      } else {
-        obsdAmps[i] = estValMag / scaleValue.abs();
-        observedResult[i] = 20 * Math.log10(estValMag);
-        observedResult[i] -= subtractBy;
-
-        double argument = phi;
-        // argument /= rotateBy;
-        // argument *= -1;
-        observedResult[argIdx] = argument;
-      }
-
-    }
-
-    int windowSize = 5;
-    int offset = windowSize / 2;
-    Complex[] smoothed = NumericUtils.multipointMovingAverage(untrimmedResponse, windowSize);
-    unsmoothedCurve = Arrays.copyOfRange(untrimmedResponse, startIdx, extIdx);
-    smoothedCurve = Arrays.copyOfRange(smoothed, startIdx + offset, extIdx + offset);
-    for (int i = 0; i < freqsFull.length; ++i) {
-      Complex estValue = smoothedCurve[i];
-      // estValue = estValue.subtract(scaleValue);
-      double estValMag = estValue.abs();
-      double phi = NumericUtils.atanc(estValue);
-      phi -= rotateBy;
-
-      phi = NumericUtils.unwrap(phi, phiPrev);
-      // iterative step
-      phiPrev = phi;
-      phi = Math.toDegrees(phi);
-
-      double argument;
-      if (Double.isNaN(estValMag)) {
-        estValMag = 0;
-        argument = 0;
-      } else {
-        //estValMag /= scaleValue.abs();
-        estValMag = 20 * Math.log10(estValMag);
-        estValMag -= subtractBy;
-        argument = phi;
-      }
-
-      double xAxis;
-      if (freqSpace) {
-        xAxis = freqsFull[i];
-      } else {
-        xAxis = 1. / freqsFull[i];
-      }
-      calcMag.add(xAxis, estValMag);
-      // plotted phase value should be in range -180,180
-      double plotArg = rewrapPhase(argument);
-      calcArg.add(xAxis, plotArg);
-    }
-
-    // want to set up weight-scaling for the input so rotation doesn't dominate
-    // solver's residual calculations, i.e., so no phase overfitting
-
-    fireStateChange("Getting weighting....");
-
-    maxArgWeight = 1.;
-    maxMagWeight = 0.;
-    Complex weightScaler = estResponse[normalIdx];
-    double subtractWeight = 20 * Math.log10(weightScaler.abs());
-    double rotateWeight = NumericUtils.atanc(weightScaler);
-    for (int i = 0; i < estResponse.length; ++i) {
-      // int argIdx = i + appResponse.length;
-      double magCandidate = 20 * Math.log10(estResponse[i].abs());
-      magCandidate -= subtractWeight;
-      double phiCandidate = Math.abs(NumericUtils.atanc(estResponse[i]));
-      phiCandidate -= rotateWeight;
-      if (magCandidate > maxMagWeight) {
-        maxMagWeight = magCandidate;
-      }
-      if (phiCandidate > maxArgWeight) {
-        maxArgWeight = phiCandidate;
-      }
-    }
-
-    fireStateChange("Setting weight matrix...");
-    // System.out.println(maxMagWeight);
-
-    // we have the candidate mag and phase, now to turn them into weight values
-    maxMagWeight = 1000. / maxMagWeight; // scale factor to weight over
-    if (maxArgWeight != 0.) {
+    maxMagWeight = 1000 / maxMagWeight;
+    if (maxArgWeight != 0) {
       maxArgWeight = 1. / maxArgWeight;
     }
 
-    // weight matrix
-    weights = new double[observedResult.length];
-    for (int i = 0; i < estResponse.length; ++i) {
-      int argIdx = i + estResponse.length;
+    // apply weights
+    for (int i = 0; i < freqs.length; ++i) {
+      int argIdx = i + freqs.length;
       double denom;
       if (!lowFreq) {
         if (freqs[i] < 1) {
@@ -380,6 +289,23 @@ public class RandomizedExperiment
       weights[argIdx] = maxArgWeight / denom;
       weights[i] = maxMagWeight / denom;
     }
+
+    // get the rest of the plotted data squared away
+    for (int i = freqs.length; i < freqsFull.length; ++i) {
+      double xAxis = freqsFull[i];
+      if (!freqSpace) {
+        xAxis = 1. / freqsFull[i];
+      }
+      // scale
+      double amp = plottedAmp[i];
+      double phs = plottedPhs[i];
+      amp -= ampScale;
+      phs -= phsScale;
+      // add to plot (re-wrap phase)
+      calcMag.add(xAxis, amp);
+      calcArg.add(xAxis, rewrapPhase(phs) );
+    }
+
 
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
 
@@ -528,24 +454,30 @@ public class RandomizedExperiment
       plotArg = rewrapPhase(fitValues[argIdx]);
       fitArg.add(xValue, plotArg);
 
-      if (i < obsdAmps.length) {
+      if (i < freqs.length) {
+        int obsArgIdx = i + freqs.length; // observedResult cuts off before freqsFull does
         double initAmpNumer = Math.pow(10, initialValues[i] / 20);
         double fitAmpNumer = Math.pow(10, fitValues[i] / 20);
 
-        double obsAmpDbl = obsdAmps[i];
+        double obsAmpDbl = observedResult[i];
         if (obsAmpDbl == 0.) {
           obsAmpDbl = Double.MIN_VALUE;
         }
 
+        obsAmpDbl = Math.pow(10, obsAmpDbl / 20);
+
         double errInitMag = 100. * (initAmpNumer - obsAmpDbl) / obsAmpDbl;
         double errFitMag = 100. * (fitAmpNumer - obsAmpDbl) / obsAmpDbl;
-        initResidMag.add(xValue, Math.abs(errInitMag));
-        fitResidMag.add(xValue, Math.abs(errFitMag));
+        if (!Double.isInfinite(errInitMag)) {
+          initResidMag.add(xValue, Math.abs(errInitMag));
 
-        int obsArgIdx = observedResult.length / 2 + i;
-        double observedPhase = observedResult[obsArgIdx];
-        initResidPhase.add(xValue, initialValues[argIdx] - observedPhase);
-        fitResidPhase.add(xValue, fitValues[argIdx] - observedPhase);
+        }
+        if (!Double.isInfinite(errFitMag)) {
+          fitResidMag.add(xValue, Math.abs(errFitMag));
+        }
+
+        initResidPhase.add(xValue, initialValues[argIdx] - observedResult[obsArgIdx]);
+        fitResidPhase.add(xValue, fitValues[argIdx] - observedResult[obsArgIdx]);
       }
     }
 
@@ -949,6 +881,7 @@ public class RandomizedExperiment
   }
 
   private void scaleValues(double[] unrot) {
+    int normalIdx = getIndexOfFrequency(freqs, ZERO_TARGET);
     int argStart = unrot.length / 2;
     double unrotScaleAmp = 20 * Math.log10(unrot[normalIdx]);
     double unrotScaleArg = unrot[argStart + normalIdx];
@@ -985,10 +918,6 @@ public class RandomizedExperiment
    */
   public void useFreqUnits(boolean setFreq) {
     freqSpace = setFreq;
-  }
-
-  public int getUntrimmedPSDLength() {
-    return untrimmedPSDLength;
   }
 
   /**
