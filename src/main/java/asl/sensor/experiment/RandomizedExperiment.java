@@ -71,7 +71,7 @@ public class RandomizedExperiment
   }
 
   private static final double DELTA = 1E-12;
-  public static final double PEAK_MULTIPLIER = 0.4;
+  public static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
   //NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
 
   public static final boolean PRINT_EVERYTHING = false; // need debugging statements?
@@ -159,9 +159,10 @@ public class RandomizedExperiment
     // PSD(out) / PSD(in) is the response curve (i.e., deconvolution)
     // also, use those frequencies to get the applied response to input
     fireStateChange("Getting PSDs of data...");
-    FFTResult numeratorPSD, denominatorPSD;
-    numeratorPSD = FFTResult.spectralCalc(sensorOut, calib);
+    FFTResult numeratorPSD, denominatorPSD, crossPSD;
+    numeratorPSD = FFTResult.spectralCalc(sensorOut, sensorOut);
     denominatorPSD = FFTResult.spectralCalc(calib, calib);
+    crossPSD = FFTResult.spectralCalc(sensorOut, calib);
 
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
 
@@ -203,21 +204,24 @@ public class RandomizedExperiment
     // System.out.println("INDICES: " + startIdx + "," + endIdx);
     Complex[] numeratorPSDVals = numeratorPSD.getFFT();
     Complex[] denominatorPSDVals = denominatorPSD.getFFT();
+    Complex[] crossPSDVals = crossPSD.getFFT();
     double[] untrimmedAmplitude = new double[freqsUntrimmed.length];
     double[] untrimmedPhase = new double[freqsUntrimmed.length];
 
     // calculated response from deconvolving calibration from signal
     // (this will be in displacement and need to be integrated)
     for (int i = 0; i < freqsUntrimmed.length; ++i) {
-      Complex numer = numeratorPSDVals[i];
+      Complex ampNumer = numeratorPSDVals[i];
+      Complex phaseNumer = crossPSDVals[i];
       double denom = denominatorPSDVals[i].abs(); // phase is 0
       // the actual complex value which we'll immediately convert to doubles for use in plots/fits
-      Complex valueAtFreq = numer.divide(denom);
+      Complex ampValue = ampNumer.divide(denom);
       Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqsUntrimmed[i]);
       // convert from displacement to velocity
-      valueAtFreq = valueAtFreq.multiply(scaleFactor);
-      untrimmedAmplitude[i] = 20 * Math.log10(valueAtFreq.abs());
-      untrimmedPhase[i] = NumericUtils.atanc(valueAtFreq);
+      ampValue = ampValue.multiply(scaleFactor.pow(2));
+      untrimmedAmplitude[i] = 10 * Math.log10(ampValue.abs());
+      Complex phaseValue = phaseNumer.divide(denom);
+      untrimmedPhase[i] = NumericUtils.atanc(phaseValue.multiply(scaleFactor));
     }
 
     fireStateChange("Smoothing calculated resp data...");
@@ -476,8 +480,8 @@ public class RandomizedExperiment
           fitResidMag.add(xValue, Math.abs(errFitMag));
         }
 
-        initResidPhase.add(xValue, initialValues[argIdx] - observedResult[obsArgIdx]);
-        fitResidPhase.add(xValue, fitValues[argIdx] - observedResult[obsArgIdx]);
+        initResidPhase.add(xValue, Math.abs(initialValues[argIdx] - observedResult[obsArgIdx]));
+        fitResidPhase.add(xValue, Math.abs(fitValues[argIdx] - observedResult[obsArgIdx]));
       }
     }
 
