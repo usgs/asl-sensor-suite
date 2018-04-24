@@ -9,7 +9,6 @@ import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Font;
@@ -41,7 +40,13 @@ import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
 /**
- * @author akearns
+ * CalProcessingServer allows for processing calibrations in a python environment using Py4J.
+ *
+ * It uses the Py4J default port: 25333
+ * If a process is already using that port it silently terminates.
+ *
+ * @author akearns - KBRWyle
+ * @author jholland - USGS
  */
 public class CalProcessingServer {
 
@@ -141,7 +146,7 @@ public class CalProcessingServer {
   }
 
   /**
-   * get all metadata from the function in a single file
+   * Get all metadata from the function in a single file
    *
    * @return text representation of data from experiment
    */
