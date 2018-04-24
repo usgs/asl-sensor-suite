@@ -8,7 +8,6 @@ import asl.sensor.gui.SwingWorkerSingleton;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
 import java.awt.Dimension;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -21,7 +20,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.imageio.ImageIO;
-import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -30,6 +28,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -42,67 +41,28 @@ import org.jfree.chart.JFreeChart;
  * Main window of the sensor test program and the program's launcher
  * Mainly used for handling the input (InputPanel)
  * and output (ExperimentPanel)
- * GUI frames and making sure they fit togther and cooperate.
+ * GUI frames and making sure they fit together and cooperate.
  *
  * @author akearns
  */
 public class SensorSuite extends JPanel
     implements ActionListener, ChangeListener, PropertyChangeListener {
-
-  /**
-   *
-   */
+  
   private static final long serialVersionUID = 2866426897343097822L;
-
 
   /**
    * Loads the main window for the program on launch
    */
   private static void createAndShowGUI() {
     String version = SensorSuite.class.getPackage().getImplementationVersion();
-    /*
-    URLClassLoader cl = (URLClassLoader) SensorSuite.class.getClassLoader();
-    try {
-      URL url = cl.findResource("META-INF/MANIFEST.MF");
-      Manifest manifest = new Manifest(url.openStream());
-      for ( String entry : manifest.getEntries().keySet() ) {
-        System.out.println(entry);
-      }
-      version = manifest.getEntries().get("Implementation-Version").toString();
-    } catch (IOException E) {
-      // handle
-    }
-    */
     String title = "Sensor Tester [VERSION: " + version + "]";
     JFrame frame = new JFrame(title);
-    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
     frame.add(new SensorSuite());
 
     frame.pack();
     frame.setVisible(true);
-  }
-
-  /**
-   * Create space with the given dimensions as a buffer between plots
-   * when writing the plots to an image file
-   *
-   * @param width The width of the spacer
-   * @param height The height of the spacer
-   * @return A blank BufferedImage that can be concatenated with other plots
-   */
-  public static BufferedImage getSpace(int width, int height) {
-    BufferedImage space = new BufferedImage(
-        width,
-        height,
-        BufferedImage.TYPE_INT_RGB);
-    Graphics2D tmp = space.createGraphics();
-    JPanel margin = new JPanel();
-    margin.add(Box.createRigidArea(new Dimension(width, height)));
-    margin.printAll(tmp);
-    tmp.dispose();
-
-    return space;
   }
 
   /**
@@ -118,8 +78,6 @@ public class SensorSuite extends JPanel
       @Override
       public void run() {
         Logger.getRootLogger().setLevel(Level.WARN);
-        //Turn off metal's use of bold fonts
-        // UIManager.put("swing.boldMetal", Boolean.FALSE);
         createAndShowGUI();
       }
     });
@@ -133,14 +91,13 @@ public class SensorSuite extends JPanel
    * @param ep Experiment panel with data to be plotted
    * @param ip Input panel holding data associated with the experiment
    */
-  public static void plotsToPDF(File file, ExperimentPanel ep, InputPanel ip) {
+  private static void plotsToPDF(File file, ExperimentPanel ep, InputPanel ip) {
 
     // note that PDFBox is not thread safe, so don't try to thread these
     // calls to either the experiment or input panels
 
     int inPlotCount = ep.plotsToShow();
     String[] responses = ip.getResponseStrings(ep.getResponseIndices());
-    // BufferedImage toFile = getCompiledImage();
 
     // START OF UNIQUE CODE FOR PDF CREATION HERE
     PDDocument pdf = new PDDocument();
@@ -162,7 +119,6 @@ public class SensorSuite extends JPanel
 
     try {
       pdf.save(file);
-      pdf.close();
     } catch (IOException e) {
       // if there's an error with formatting to PDF, try saving
       // the raw data instead
@@ -171,20 +127,16 @@ public class SensorSuite extends JPanel
       String text = ep.getAllTextData();
       JFreeChart[] charts = ep.getCharts();
       String saveDirectory = file.getParent();
-      StringBuilder folderName = new StringBuilder(saveDirectory);
-      folderName.append("/test_results/");
-      folderName.append(file.getName().replace(".pdf", ""));
+      String folderName = saveDirectory + "/test_results/"
+          + file.getName().replace(".pdf", "");
 
-      saveExperimentData(folderName.toString(), text, charts);
+      saveExperimentData(folderName, text, charts);
 
     } finally {
-      if (pdf != null) {
-        try {
-          pdf.close();
-        } catch (IOException e) {
-          // this shouldn't be reached and seems to violate program's examples
-          e.printStackTrace();
-        }
+      try {
+        pdf.close();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
 
@@ -201,14 +153,15 @@ public class SensorSuite extends JPanel
    * @param text Text output from an experiment
    * @param charts Array of charts produced from the experiment
    */
-  public static void
+  private static void
   saveExperimentData(String folderName, String text, JFreeChart[] charts) {
     // start in the folder the pdf is saved, add data into a new
     // subfolder for calibration data
 
-    File folder = new File(folderName.toString());
+    File folder = new File(folderName);
     if (!folder.exists()) {
       System.out.println("Writing directory " + folderName);
+      //noinspection ResultOfMethodCallIgnored
       folder.mkdirs();
     }
 
@@ -237,10 +190,11 @@ public class SensorSuite extends JPanel
     }
   }
 
-  private JFileChooser fc; // loads in files based on parameter
-  private InputPanel inputPlots;
-  private JTabbedPane tabbedPane; // holds set of experiment panels
-  private JButton generate, savePDF; // run all calculations
+  private final JFileChooser fc; // loads in files based on parameter
+  private final InputPanel inputPlots;
+  private final JTabbedPane tabbedPane; // holds set of experiment panels
+  private final JButton generate;
+  private final JButton savePDF; // run all calculations
 
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
@@ -251,7 +205,7 @@ public class SensorSuite extends JPanel
    * of sensor tests; the lower panel for displaying plots of raw data from
    * miniSEED files; the side panel for most file-IO operations
    */
-  public SensorSuite() {
+  private SensorSuite() {
 
     super();
 
@@ -377,70 +331,9 @@ public class SensorSuite extends JPanel
 
   }
 
-  /**
-   * Produces a buffered image of all active charts
-   *
-   * @return BufferedImage that can be written to file
-   */
-  private BufferedImage getCompiledImage() {
-
-    ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-    int inPlotCount = ep.plotsToShow();
-
-    int width = 1280;
-    BufferedImage outPlot = ep.getAsImage(width, 960);
-
-    width = outPlot.getWidth();
-
-    int inHeight = inputPlots.getImageHeight(inPlotCount) * 2;
-
-    int height = outPlot.getHeight();
-
-    BufferedImage inPlot = null; // unfortunate, but can't make an empty BI
-    if (inPlotCount > 0) {
-      inPlot = inputPlots.getAsImage(width, inHeight, inPlotCount);
-      height = inPlot.getHeight() + outPlot.getHeight();
-    }
-
-    // int width = Math.max( inPlot.getWidth(), outPlot.getWidth() );
-    // 5px tall buffer used to separate result plot from inputs
-    // BufferedImage space = getSpace(width, 0);
-
-    // System.out.println(space.getHeight());
-
-    BufferedImage returnedImage = new BufferedImage(width, height,
-        BufferedImage.TYPE_INT_ARGB);
-
-    Graphics2D combined = returnedImage.createGraphics();
-    combined.drawImage(outPlot, null, 0, 0);
-    if (null != inPlot) {
-      combined.drawImage(inPlot, null, 0,
-          outPlot.getHeight());
-    }
-
-    combined.dispose();
-
-    return returnedImage;
-  }
-
-  /**
-   * Handles function to create a PNG image with all currently-displayed plots
-   * (active experiment and read-in time series data)
-   *
-   * @param file File (PNG) that image will be saved to
-   * @deprecated Use PDF output (plotstoPDF) instead
-   */
-  @Deprecated
-  public void plotsToPNG(File file) throws IOException {
-
-    // just write the bufferedimage to file
-    ImageIO.write(getCompiledImage(), "png", file);
-
-  }
-
   @Override
   public void propertyChange(PropertyChangeEvent evt) {
-    // handle the completion of the swingworker thread of the backend
+    // handle the completion of the SwingWorker thread of the backend
     if (evt.getPropertyName().equals("Backend completed")) {
       ExperimentPanel source = (ExperimentPanel) evt.getSource();
       source.removePropertyChangeListener(this);

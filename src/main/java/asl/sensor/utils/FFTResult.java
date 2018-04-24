@@ -581,6 +581,8 @@ public class FFTResult {
   public static FFTResult
   spectralCalc(double[] list1, double[] list2, long interval) {
 
+    //Only the same data if the arrays are actually the same objects.
+    //noinspection ArrayEquals
     boolean sameData = list1.equals(list2);
 
     // divide into windows of 1/4, moving up 1/16 of the data at a time
