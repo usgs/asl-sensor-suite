@@ -6,7 +6,6 @@ import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -410,7 +409,7 @@ public class InputPanel
 
         Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
 
-        List<String> names = new ArrayList<String>(respFilenames);
+        List<String> names = new ArrayList<>(respFilenames);
         Collections.sort(names);
 
         String custom = "Load custom response...";
@@ -784,7 +783,7 @@ public class InputPanel
 
       seedFileNames[idx].setText("LOADING: " + file.getName());
       final String filePath = file.getAbsolutePath();
-      String filterName = "";
+      String filterName;
       try {
         Set<String> nameSet = seed.getFilenameSet(ds, idx, filePath);
 
@@ -809,7 +808,7 @@ public class InputPanel
           }
         } else if (nameSet.size() > 0) {
           // just get the first one; it's the only one in the list
-          filterName = new ArrayList<String>(nameSet).get(0);
+          filterName = new ArrayList<>(nameSet).get(0);
         } else {
           // this shouldn't occur if the seed file is formatted correctly
           // because there will be at least one SNCL described in it
@@ -1161,7 +1160,7 @@ public class InputPanel
    * @throws IOException Error reading resp file
    * @throws FileNotFoundException File does not exist
    */
-  private Instant respEpochChoose(String respHandle) throws FileNotFoundException, IOException {
+  private Instant respEpochChoose(String respHandle) throws IOException {
 
     DateTimeFormatter dtf = InstrumentResponse.RESP_DT_FORMAT.withZone(ZoneOffset.UTC);
     List<Pair<Instant, Instant>> epochs = InstrumentResponse.getRespFileEpochs(respHandle);
@@ -1542,11 +1541,11 @@ public class InputPanel
     }
 
     public abstract Set<String> getFilenameSet(DataStore ds, int idx, String filePath)
-        throws FileNotFoundException, SeedFormatException, IOException;
+        throws SeedFormatException, IOException;
 
     public abstract void loadInData(DataStore ds, int idx,
         String filePath, String fileFilter, int activePlots)
-        throws SeedFormatException, UnsupportedCompressionType, CodecException,
+        throws SeedFormatException, CodecException,
         FileNotFoundException, RuntimeException;
   }
 
@@ -1570,7 +1569,6 @@ public class InputPanel
     @Override
     public void loadInData(DataStore ds, int idx, String filePath,
         String fileFilter, int activePlots) throws SeedFormatException,
-        UnsupportedCompressionType,
         CodecException,
         FileNotFoundException,
         RuntimeException {
@@ -1594,9 +1592,9 @@ public class InputPanel
         throws SeedFormatException, IOException {
       String thisName = ds.getBlock(idx).getName();
       if (!TimeSeriesUtils.getMplexNameSet(filePath).contains(thisName)) {
-        return new HashSet<String>();
+        return new HashSet<>();
       }
-      Set<String> returnSet = new HashSet<String>();
+      Set<String> returnSet = new HashSet<>();
       returnSet.add(thisName);
       return returnSet;
     }
@@ -1604,7 +1602,6 @@ public class InputPanel
     @Override
     public void loadInData(DataStore ds, int idx, String filePath,
         String fileFilter, int activePlots) throws SeedFormatException,
-        UnsupportedCompressionType,
         CodecException, FileNotFoundException,
         RuntimeException {
       ds.appendBlock(idx, filePath, fileFilter, activePlots);
