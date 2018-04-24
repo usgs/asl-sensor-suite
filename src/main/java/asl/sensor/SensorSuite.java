@@ -47,7 +47,7 @@ import org.jfree.chart.JFreeChart;
  */
 public class SensorSuite extends JPanel
     implements ActionListener, ChangeListener, PropertyChangeListener {
-  
+
   private static final long serialVersionUID = 2866426897343097822L;
 
   /**
@@ -171,9 +171,9 @@ public class SensorSuite extends JPanel
       PrintWriter out = new PrintWriter(textName);
       out.println(text);
       out.close();
-    } catch (FileNotFoundException e2) {
+    } catch (FileNotFoundException e) {
       System.out.println("Can't write the text");
-      e2.printStackTrace();
+      e.printStackTrace();
     }
 
     for (int i = 0; i < charts.length; ++i) {
@@ -184,13 +184,13 @@ public class SensorSuite extends JPanel
       File plotPNG = new File(plotName);
       try {
         ImageIO.write(chartImage, "png", plotPNG);
-      } catch (IOException e1) {
-        e1.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
   }
 
-  private final JFileChooser fc; // loads in files based on parameter
+  private final JFileChooser fileChooser; // loads in files based on parameter
   private final InputPanel inputPlots;
   private final JTabbedPane tabbedPane; // holds set of experiment panels
   private final JButton generate;
@@ -217,9 +217,9 @@ public class SensorSuite extends JPanel
       tabbedPane.addTab(exp.getName(), tab);
     }
 
-    Dimension d = tabbedPane.getPreferredSize();
-    d.setSize(d.getWidth() * 1.5, d.getHeight());
-    tabbedPane.setPreferredSize(d);
+    Dimension dimension = tabbedPane.getPreferredSize();
+    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight());
+    tabbedPane.setPreferredSize(dimension);
     tabbedPane.addChangeListener(this);
 
     inputPlots = new InputPanel();
@@ -237,45 +237,45 @@ public class SensorSuite extends JPanel
 
     // we want to make sure the split pane fills the window
     this.setLayout(new GridBagLayout());
-    GridBagConstraints c = new GridBagConstraints();
-    c.gridx = 0;
-    c.gridy = 0;
-    c.weightx = 1;
-    c.weighty = 1;
-    c.gridwidth = 2;
-    c.fill = GridBagConstraints.BOTH;
+    GridBagConstraints constraints = new GridBagConstraints();
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1;
+    constraints.weighty = 1;
+    constraints.gridwidth = 2;
+    constraints.fill = GridBagConstraints.BOTH;
 
-    this.add(mainSplit, c);
+    this.add(mainSplit, constraints);
 
-    c.fill = GridBagConstraints.VERTICAL;
-    c.gridx = 0;
-    c.gridy = 1;
-    c.weightx = 1.0;
-    c.weighty = 0.0;
-    c.gridwidth = 1;
+    constraints.fill = GridBagConstraints.VERTICAL;
+    constraints.gridx = 0;
+    constraints.gridy = 1;
+    constraints.weightx = 1.0;
+    constraints.weighty = 0.0;
+    constraints.gridwidth = 1;
 
     // now add the buttons
     savePDF = new JButton("Generate PDF report from current test");
     savePDF.setEnabled(false);
     savePDF.addActionListener(this);
-    c.anchor = GridBagConstraints.EAST;
-    this.add(savePDF, c);
-    c.gridx += 1;
+    constraints.anchor = GridBagConstraints.EAST;
+    this.add(savePDF, constraints);
+    constraints.gridx += 1;
 
     generate = new JButton("Generate test result");
     generate.setEnabled(false);
     generate.addActionListener(this);
-    d = generate.getPreferredSize();
-    d.setSize(d.getWidth() * 1.5, d.getHeight() * 1.5);
-    generate.setMinimumSize(d);
-    c.anchor = GridBagConstraints.WEST;
-    this.add(generate, c);
+    dimension = generate.getPreferredSize();
+    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
+    generate.setMinimumSize(dimension);
+    constraints.anchor = GridBagConstraints.WEST;
+    this.add(generate, constraints);
 
-    fc = new JFileChooser();
+    fileChooser = new JFileChooser();
 
-    ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-    inputPlots.showDataNeeded(ep.panelsNeeded());
-    inputPlots.setChannelTypes(ep.getChannelTypes());
+    ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
+    inputPlots.showDataNeeded(experimentPanel.panelsNeeded());
+    inputPlots.setChannelTypes(experimentPanel.getChannelTypes());
 
   }
 
@@ -287,58 +287,58 @@ public class SensorSuite extends JPanel
    * is set to run in a separate thread.
    */
   @Override
-  public void actionPerformed(ActionEvent e) {
+  public void actionPerformed(ActionEvent event) {
 
-    if (e.getSource() == generate) {
+    if (event.getSource() == generate) {
 
-      ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-      ep.addPropertyChangeListener("Backend completed", this);
+      ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
+      experimentPanel.addPropertyChangeListener("Backend completed", this);
       savePDF.setEnabled(false);
 
       // update the input plots to show the active region being calculated
       inputPlots.showRegionForGeneration();
       // pass the inputted data to the panels that handle them
       DataStore ds = inputPlots.getData();
-      SwingWorkerSingleton.setInstance(ep, ds);
-      SwingWorker<Boolean, Void> wkr = SwingWorkerSingleton.getInstance();
-      wkr.execute();
+      SwingWorkerSingleton.setInstance(experimentPanel, ds);
+      SwingWorker<Boolean, Void> worker = SwingWorkerSingleton.getInstance();
+      worker.execute();
 
-    } else if (e.getSource() == savePDF) {
+    } else if (event.getSource() == savePDF) {
 
       String ext = ".pdf";
-      fc.setCurrentDirectory(new File(saveDirectory));
-      fc.addChoosableFileFilter(
+      fileChooser.setCurrentDirectory(new File(saveDirectory));
+      fileChooser.addChoosableFileFilter(
           new FileNameExtensionFilter("PDF file (.pdf)", ext));
-      fc.setFileFilter(fc.getChoosableFileFilters()[1]);
-      fc.setDialogTitle("Save PDF report...");
-      ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-      String defaultName = ep.getPDFFilename();
+      fileChooser.setFileFilter(fileChooser.getChoosableFileFilters()[1]);
+      fileChooser.setDialogTitle("Save PDF report...");
+      ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
+      String defaultName = experimentPanel.getPDFFilename();
 
-      fc.setSelectedFile(new File(defaultName));
-      int returnVal = fc.showSaveDialog(savePDF);
+      fileChooser.setSelectedFile(new File(defaultName));
+      int returnVal = fileChooser.showSaveDialog(savePDF);
 
       if (returnVal == JFileChooser.APPROVE_OPTION) {
 
-        File selFile = fc.getSelectedFile();
-        saveDirectory = selFile.getParent();
-        if (!selFile.getName().toLowerCase().endsWith(ext)) {
-          selFile = new File(selFile.getName() + ext);
+        File selectedFile = fileChooser.getSelectedFile();
+        saveDirectory = selectedFile.getParent();
+        if (!selectedFile.getName().toLowerCase().endsWith(ext)) {
+          selectedFile = new File(selectedFile.getName() + ext);
         }
 
-        plotsToPDF(selFile, ep, inputPlots);
+        plotsToPDF(selectedFile, experimentPanel, inputPlots);
       }
     }
 
   }
 
   @Override
-  public void propertyChange(PropertyChangeEvent evt) {
+  public void propertyChange(PropertyChangeEvent event) {
     // handle the completion of the SwingWorker thread of the backend
-    if (evt.getPropertyName().equals("Backend completed")) {
-      ExperimentPanel source = (ExperimentPanel) evt.getSource();
+    if (event.getPropertyName().equals("Backend completed")) {
+      ExperimentPanel source = (ExperimentPanel) event.getSource();
       source.removePropertyChangeListener(this);
 
-      if (evt.getNewValue().equals(false)) {
+      if (event.getNewValue().equals(false)) {
         return;
       }
 
@@ -353,22 +353,22 @@ public class SensorSuite extends JPanel
    * to determine whether or not the experiment can be run yet
    */
   @Override
-  public void stateChanged(ChangeEvent e) {
+  public void stateChanged(ChangeEvent event) {
 
-    if (e.getSource() == inputPlots) {
-      ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
-      DataStore ds = inputPlots.getData();
-      boolean canGenerate = ep.hasEnoughData(ds);
+    if (event.getSource() == inputPlots) {
+      ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
+      DataStore dataStore = inputPlots.getData();
+      boolean canGenerate = experimentPanel.hasEnoughData(dataStore);
       generate.setEnabled(canGenerate);
-    } else if (e.getSource() == tabbedPane) {
-      ExperimentPanel ep = (ExperimentPanel) tabbedPane.getSelectedComponent();
+    } else if (event.getSource() == tabbedPane) {
+      ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
 
-      inputPlots.setChannelTypes(ep.getChannelTypes());
+      inputPlots.setChannelTypes(experimentPanel.getChannelTypes());
 
-      inputPlots.showDataNeeded(ep.panelsNeeded());
-      DataStore ds = inputPlots.getData();
-      boolean canGenerate = ep.hasEnoughData(ds);
-      boolean isSet = ep.hasRun();
+      inputPlots.showDataNeeded(experimentPanel.panelsNeeded());
+      DataStore dataStore = inputPlots.getData();
+      boolean canGenerate = experimentPanel.hasEnoughData(dataStore);
+      boolean isSet = experimentPanel.hasRun();
       generate.setEnabled(canGenerate);
       savePDF.setEnabled(canGenerate && isSet);
     }
