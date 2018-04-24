@@ -548,11 +548,9 @@ public class InputPanel
 
   private void responseErrorPopup(String filename) {
     JDialog errBox = new JDialog();
-    StringBuilder errMsg = new StringBuilder("Error while loading in response file:\n");
-    errMsg.append(filename);
-    errMsg.append('\n');
-    errMsg.append("Check that file exists and is formatted correctly.");
-    JOptionPane.showMessageDialog(errBox, errMsg.toString(), "Response Loading Error",
+    String errMsg = "Error while loading in response file:\n" + filename
+        + "\nCheck that file exists and is formatted correctly.";
+    JOptionPane.showMessageDialog(errBox, errMsg, "Response Loading Error",
         JOptionPane.ERROR_MESSAGE);
   }
 
@@ -928,13 +926,11 @@ public class InputPanel
     instantiateChart(idx);
     XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
     TextTitle result = new TextTitle();
-    StringBuilder errMsg = new StringBuilder("COULD NOT LOAD IN FILE: ");
-    errMsg.append(filename);
-    errMsg.append("\n\n");
-    errMsg.append("This file is probably not a SEED file or has a formatting error.\n\n");
-    errMsg.append("A full stack trace is in the terminal -- this is the exception:\n");
-    errMsg.append(err);
-    result.setText(errMsg.toString());
+    String errMsg = "COULD NOT LOAD IN FILE: " + filename
+        + "\n\nThis file is probably not a SEED file or has a formatting error.\n\n"
+        + "A full stack trace is in the terminal -- this is the exception:\n"
+        + err;
+    result.setText(errMsg);
     result.setBackgroundPaint(Color.red);
     result.setPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
@@ -948,24 +944,22 @@ public class InputPanel
 
   private void seedAppendEmptyPopup(String filename) {
     JDialog errBox = new JDialog();
-    StringBuilder errMsg = new StringBuilder("Could not load data from seed file: ");
-    errMsg.append(filename);
-    errMsg.append('\n');
-    errMsg.append("The file appears to be formatted correctly but does not have data for the\n");
-    errMsg.append("SNCL data currently loaded in. Check that the correct file was chosen.\n");
-    errMsg.append("(No data was appended to the currently loaded data.)");
-    JOptionPane.showMessageDialog(errBox, errMsg.toString(), "Response Loading Error",
+    String errMsg = "Could not load data from seed file: " + filename
+        + '\n'
+        + "The file appears to be formatted correctly but does not have data for the\n"
+        + "SNCL data currently loaded in. Check that the correct file was chosen.\n"
+        + "(No data was appended to the currently loaded data.)";
+    JOptionPane.showMessageDialog(errBox, errMsg, "Response Loading Error",
         JOptionPane.ERROR_MESSAGE);
   }
 
   private void seedAppendErrorPopup(String filename) {
     JDialog errBox = new JDialog();
-    StringBuilder errMsg = new StringBuilder("Error while loading in seed file: ");
-    errMsg.append(filename);
-    errMsg.append('\n');
-    errMsg.append("Check that file exists and is formatted correctly.\n");
-    errMsg.append("(No data was appended to the currently loaded data.)");
-    JOptionPane.showMessageDialog(errBox, errMsg.toString(), "Response Loading Error",
+    String errMsg = "Error while loading in seed file: " + filename
+        + '\n'
+        + "Check that file exists and is formatted correctly.\n"
+        + "(No data was appended to the currently loaded data.)";
+    JOptionPane.showMessageDialog(errBox, errMsg, "Response Loading Error",
         JOptionPane.ERROR_MESSAGE);
   }
 
@@ -1156,10 +1150,7 @@ public class InputPanel
         } else {
           endString = "(NO EPOCH END SPECIFIED)";
         }
-        StringBuilder sb = new StringBuilder(startString);
-        sb.append(" | ");
-        sb.append(endString);
-        epochStrings[i] = sb.toString();
+        epochStrings[i] = startString + " | " + endString;
       }
       Arrays.sort(epochStrings);
       JDialog dialog = new JDialog();
@@ -1185,7 +1176,7 @@ public class InputPanel
   }
 
   /**
-   * Used to get labels for each plot to idenitify what data they need to
+   * Used to get labels for each plot to identify what data they need to
    * contain in order for an experiment to have enough data to run
    *
    * @param channels List of strings to be used as panel title
