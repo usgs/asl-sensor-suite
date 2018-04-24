@@ -30,6 +30,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -75,7 +76,7 @@ public class SensorSuite extends JPanel
     */
     String title = "Sensor Tester [VERSION: " + version + "]";
     JFrame frame = new JFrame(title);
-    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
     frame.add(new SensorSuite());
 
