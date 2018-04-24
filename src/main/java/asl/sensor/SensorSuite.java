@@ -209,6 +209,7 @@ public class SensorSuite extends JPanel
     File folder = new File(folderName.toString());
     if (!folder.exists()) {
       System.out.println("Writing directory " + folderName);
+      //noinspection ResultOfMethodCallIgnored
       folder.mkdirs();
     }
 
