@@ -172,10 +172,6 @@ public class FFTResultTest {
   public void fftZerosTestWelch() {
     long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
     double[] data = new double[1000];
-    // likely unnecessary loop, double arrays initialized at 0
-    for (int i = 0; i < data.length; ++i) {
-      data[i] = 0.;
-    }
     FFTResult fftr = FFTResult.spectralCalc(data, data, interval);
     Complex[] values = fftr.getFFT();
     for (Complex c : values) {
