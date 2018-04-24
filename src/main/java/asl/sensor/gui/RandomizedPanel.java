@@ -490,12 +490,12 @@ public class RandomizedPanel extends ExperimentPanel {
     return new JFreeChart[]{magChart, argChart};
   }
 
-  @Override
   /**
    * Get the index of the data holding the sensor output.
    * Note that the input data list is listed as CAL, OUT, RESP, so the
    * relevant index is the second one
    */
+  @Override
   protected int getIndexOfMainData() {
     return 1;
   }
@@ -545,7 +545,6 @@ public class RandomizedPanel extends ExperimentPanel {
     return sb.toString();
   }
 
-  @Override
   /**
    * Produce the filename of the report generated from this experiment.
    * Since response data is not directly associated with data at a given
@@ -553,6 +552,7 @@ public class RandomizedPanel extends ExperimentPanel {
    * and the first response used in the experiment.
    * @return String that will be default filename of PDF generated from data
    */
+  @Override
   public String getPDFFilename() {
 
     StringBuilder sb = new StringBuilder();

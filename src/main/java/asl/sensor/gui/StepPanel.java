@@ -221,12 +221,12 @@ public class StepPanel extends ExperimentPanel {
     return new JFreeChart[]{stepChart, magChart, phaseChart};
   }
 
-  @Override
   /**
    * Get the index of the data holding the sensor output.
    * Note that the input data list is listed as CAL, OUT, RESP, so the
    * relevant index is the second one
    */
+  @Override
   protected int getIndexOfMainData() {
     return 1;
   }

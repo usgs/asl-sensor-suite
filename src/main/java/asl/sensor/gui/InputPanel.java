@@ -1405,10 +1405,10 @@ public class InputPanel
 
   }
 
-  @Override
   /**
-   * Handles changes in value by the sliders below the charts
-   */
+    Handles changes in value by the sliders below the charts
+   **/
+  @Override
   public void stateChanged(ChangeEvent e) {
 
     int leftSliderValue = leftSlider.getValue();

@@ -750,11 +750,11 @@ public abstract class ExperimentPanel
     drawCharts();
   }
 
-  @Override
   /**
    * Used to print out status of the experiment backend onto the chart when
    * the backend status changes
    */
+  @Override
   public void stateChanged(ChangeEvent e) {
     if (e.getSource() == expResult) {
       String info = expResult.getStatus();

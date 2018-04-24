@@ -257,7 +257,6 @@ public class ResponsePanel extends ExperimentPanel {
     return new JFreeChart[]{magChart, argChart};
   }
 
-  @Override
   /**
    * Produce the filename of the report generated from this experiment.
    * Since response data is not directly associated with data at a given
@@ -265,6 +264,7 @@ public class ResponsePanel extends ExperimentPanel {
    * and the first response used in the experiment.
    * @return String that will be default filename of PDF generated from data
    */
+  @Override
   public String getPDFFilename() {
 
     SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
