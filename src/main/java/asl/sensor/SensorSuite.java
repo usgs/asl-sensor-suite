@@ -43,7 +43,7 @@ import org.jfree.chart.JFreeChart;
  * Main window of the sensor test program and the program's launcher
  * Mainly used for handling the input (InputPanel)
  * and output (ExperimentPanel)
- * GUI frames and making sure they fit togther and cooperate.
+ * GUI frames and making sure they fit together and cooperate.
  *
  * @author akearns
  */
@@ -163,7 +163,6 @@ public class SensorSuite extends JPanel
 
     try {
       pdf.save(file);
-      pdf.close();
     } catch (IOException e) {
       // if there's an error with formatting to PDF, try saving
       // the raw data instead
@@ -172,20 +171,16 @@ public class SensorSuite extends JPanel
       String text = ep.getAllTextData();
       JFreeChart[] charts = ep.getCharts();
       String saveDirectory = file.getParent();
-      StringBuilder folderName = new StringBuilder(saveDirectory);
-      folderName.append("/test_results/");
-      folderName.append(file.getName().replace(".pdf", ""));
+      String folderName = saveDirectory + "/test_results/"
+          + file.getName().replace(".pdf", "");
 
-      saveExperimentData(folderName.toString(), text, charts);
+      saveExperimentData(folderName, text, charts);
 
     } finally {
-      if (pdf != null) {
-        try {
-          pdf.close();
-        } catch (IOException e) {
-          // this shouldn't be reached and seems to violate program's examples
-          e.printStackTrace();
-        }
+      try {
+        pdf.close();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
 
@@ -207,7 +202,7 @@ public class SensorSuite extends JPanel
     // start in the folder the pdf is saved, add data into a new
     // subfolder for calibration data
 
-    File folder = new File(folderName.toString());
+    File folder = new File(folderName);
     if (!folder.exists()) {
       System.out.println("Writing directory " + folderName);
       //noinspection ResultOfMethodCallIgnored
@@ -425,24 +420,9 @@ public class SensorSuite extends JPanel
     return returnedImage;
   }
 
-  /**
-   * Handles function to create a PNG image with all currently-displayed plots
-   * (active experiment and read-in time series data)
-   *
-   * @param file File (PNG) that image will be saved to
-   * @deprecated Use PDF output (plotstoPDF) instead
-   */
-  @Deprecated
-  public void plotsToPNG(File file) throws IOException {
-
-    // just write the bufferedimage to file
-    ImageIO.write(getCompiledImage(), "png", file);
-
-  }
-
   @Override
   public void propertyChange(PropertyChangeEvent evt) {
-    // handle the completion of the swingworker thread of the backend
+    // handle the completion of the SwingWorker thread of the backend
     if (evt.getPropertyName().equals("Backend completed")) {
       ExperimentPanel source = (ExperimentPanel) evt.getSource();
       source.removePropertyChangeListener(this);
