@@ -47,10 +47,7 @@ import org.jfree.chart.JFreeChart;
  */
 public class SensorSuite extends JPanel
     implements ActionListener, ChangeListener, PropertyChangeListener {
-
-  /**
-   *
-   */
+  
   private static final long serialVersionUID = 2866426897343097822L;
 
   /**
