@@ -444,10 +444,9 @@ public class InputPanel
           // used to make sure we default to that choice next round
           lastRespIndex = Collections.binarySearch(names, resultStr);
           // final used here in the event of thread weirdness
-          final String fname = resultStr;
           try {
             InstrumentResponse ir =
-                InstrumentResponse.loadEmbeddedResponse(fname);
+                InstrumentResponse.loadEmbeddedResponse(resultStr);
             ds.setResponse(i, ir);
 
             respFileNames[i].setText(ir.getName());
@@ -457,7 +456,7 @@ public class InputPanel
             fireStateChanged();
           } catch (IOException e1) {
             // this really shouldn't be an issue with embedded responses
-            responseErrorPopup(fname);
+            responseErrorPopup(resultStr);
             e1.printStackTrace();
             return;
           }
@@ -545,7 +544,6 @@ public class InputPanel
       rightSlider.setValue(SLIDER_MAX);
       setVerticalBars();
       zoomOut.setEnabled(false);
-      return;
     }
   }
 
@@ -942,7 +940,6 @@ public class InputPanel
       };
 
       worker.execute();
-      return;
     }
   }
 
@@ -1553,8 +1550,6 @@ public class InputPanel
         FileNotFoundException, RuntimeException;
   }
 
-  ;
-
   private class LoadingJButton extends FileOperationJButton {
 
     /**
@@ -1582,8 +1577,6 @@ public class InputPanel
       ds.setBlock(idx, filePath, fileFilter, activePlots);
     }
   }
-
-  ;
 
   private class AppendingJButton extends FileOperationJButton {
 
@@ -1617,8 +1610,6 @@ public class InputPanel
       ds.appendBlock(idx, filePath, fileFilter, activePlots);
     }
   }
-
-  ;
 
 }
 
