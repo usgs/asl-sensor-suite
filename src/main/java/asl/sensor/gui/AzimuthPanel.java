@@ -43,33 +43,32 @@ public class AzimuthPanel extends ExperimentPanel {
 
   private static final long serialVersionUID = 4088024342809622854L;
   /**
-   * Thread safe reference to a DecimalFormat object.
+   * Thread safe reference to a shared DecimalFormat object.
    */
   private static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
       ThreadLocal.withInitial(() ->  new DecimalFormat("#.###"));
-  private JSpinner offsetSpinner; // select how far from north to set reference data
+  private final JSpinner offsetSpinner; // select how far from north to set reference data
   private JFreeChart angleChart, estimChart; // plot angle, plot windowed estimation angle and correlation
   // note that some overrides are necessary because angle chart is a polar plot, not xy plot
   // so things like progress updates are called in a different manner
 
-  private JComboBox<String> chartSelector;
+  private final JComboBox<String> chartSelector;
 
-  public AzimuthPanel(ExperimentEnum exp) {
+  AzimuthPanel(ExperimentEnum exp) {
     super(exp);
 
     SpinnerModel spinModel = new SpinnerNumberModel(0, -360, 360, 0.1);
     offsetSpinner = new JSpinner(spinModel);
 
-    JLabel jbl = new JLabel("Offset angle (deg.):");
-    jbl.setLabelFor(offsetSpinner);
-    jbl.setHorizontalTextPosition(SwingConstants.RIGHT);
-    jbl.setHorizontalAlignment(SwingConstants.RIGHT);
+    JLabel offsetSpinnerLabel = new JLabel("Offset angle (deg.):");
+    offsetSpinnerLabel.setLabelFor(offsetSpinner);
+    offsetSpinnerLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
+    offsetSpinnerLabel.setHorizontalAlignment(SwingConstants.RIGHT);
     JPanel labelPanel = new JPanel();
-    labelPanel.add(jbl);
+    labelPanel.add(offsetSpinnerLabel);
 
-    chartSelector = new JComboBox<String>();
+    chartSelector = new JComboBox<>();
     chartSelector.addItem("Azimuth angle");
-    //chartSelector.addItem("Coherence");
     chartSelector.addItem("Estimation");
     chartSelector.setSelectedItem(0);
     chartSelector.addActionListener(this);
@@ -78,8 +77,7 @@ public class AzimuthPanel extends ExperimentPanel {
 
     channelType[0] = "North test sensor";
     channelType[1] = "East test sensor";
-    channelType[2] = "Reference sensor " +
-        "(use offset to specify degrees from north)";
+    channelType[2] = "Reference sensor (use offset to specify degrees from north)";
 
     // don't bother instantiating axes, we need to build a custom polar plot
     // and so will just use the chartfactory methods to do our building anyway
@@ -89,57 +87,51 @@ public class AzimuthPanel extends ExperimentPanel {
     chart = angleChart;
     chartPanel.setChart(chart);
 
-    /*
-    coherenceChart =
-        ChartFactory.createXYLineChart( expType.getName() + " Coherence",
-        "Frequency (Hz)", "Coherence of best-fit angle", null);
-    */
-
     estimChart =
         ChartFactory.createXYLineChart(expType.getName() + " Windowing",
             "Window start", "Correlation of aligned data, Angle of rotation", null);
 
     this.setLayout(new GridBagLayout());
 
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.weightx = 1;
-    gbc.weighty = 0;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.EAST;
+    GridBagConstraints constraints = new GridBagConstraints();
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1;
+    constraints.weighty = 0;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.EAST;
 
-    gbc.anchor = GridBagConstraints.CENTER;
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.gridwidth = 3;
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.fill = GridBagConstraints.BOTH;
-    this.add(chartPanel, gbc);
+    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.gridwidth = 3;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.fill = GridBagConstraints.BOTH;
+    this.add(chartPanel, constraints);
 
-    gbc.weighty = 0.0;
-    gbc.gridy += 1;
-    gbc.gridwidth = 1;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.EAST;
-    this.add(jbl, gbc);
+    constraints.weighty = 0.0;
+    constraints.gridy += 1;
+    constraints.gridwidth = 1;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.EAST;
+    this.add(offsetSpinnerLabel, constraints);
 
-    gbc.gridx += 1;
-    gbc.anchor = GridBagConstraints.WEST;
-    this.add(offsetSpinner, gbc);
+    constraints.gridx += 1;
+    constraints.anchor = GridBagConstraints.WEST;
+    this.add(offsetSpinner, constraints);
 
-    gbc.gridx += 1;
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(chartSelector, gbc);
+    constraints.gridx += 1;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(chartSelector, constraints);
 
-    gbc.gridx = 0;
-    gbc.gridy += 1;
-    gbc.gridwidth = 3;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(save, gbc);
+    constraints.gridx = 0;
+    constraints.gridy += 1;
+    constraints.gridwidth = 3;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(save, constraints);
   }
 
   @Override
@@ -226,8 +218,9 @@ public class AzimuthPanel extends ExperimentPanel {
     angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.get().format(angle));
     double result = ((value + angle) % 360 + 360) % 360;
 
-    angleStr.append(" + " + DECIMAL_FORMAT.get().format(value) + " = " + DECIMAL_FORMAT.get().format(result));
-    angleStr.append(" (+/- " + DECIMAL_FORMAT.get().format(az.getUncertainty()) + ")");
+    angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(value)).append(" = ")
+        .append(DECIMAL_FORMAT.get().format(result));
+    angleStr.append(" (+/- ").append(DECIMAL_FORMAT.get().format(az.getUncertainty())).append(")");
     if (!az.hadEnoughPoints()) {
       angleStr.append(" | WARNING: SMALL RANGE");
     }
