@@ -78,7 +78,7 @@ import org.jfree.ui.RectangleAnchor;
  * Some important functions this object has is to make sure that input data is all trimmed
  * to the same region for use in experiment backends, and display time regions of interest
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class InputPanel
     extends JPanel

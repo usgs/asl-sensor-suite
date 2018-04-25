@@ -1,6 +1,8 @@
-package asl.sensor.test;
+package asl.sensor.experiment;
 
 import static org.junit.Assert.assertEquals;
+
+import asl.sensor.test.TestUtils;
 import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;

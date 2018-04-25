@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -170,9 +171,9 @@ public class InstrumentResponse {
    * Read the line defining a date (epoch start or end) as an instant
    *
    * @param line Line of a response file that should define an epoch
-   * @return Instant parsed from the given line
+   * @return Instant parsed from the given line or null if not able to parse
    */
-  private static Instant parseTermAsDate(String line) {
+   static Instant parseTermAsDate(String line) {
     // reparse the line
     String[] words = line.split("\\s+");
     // index 0 is the identifier for the field types (used in switch-stmt)
@@ -180,8 +181,13 @@ public class InstrumentResponse {
     // index 2 is the word 'End'
     // index 3 is comma-delimited date string (should be last thing in list)
     String time = words[words.length - 1];
-    DateTimeFormatter respDTFormat = DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss");
-    return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
+    try {
+      DateTimeFormatter respDTFormat = DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss");
+      return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
+    } catch (DateTimeParseException e){
+      //Unable to parse the datetime, this is expected if an epoch does not end.
+      return null;
+    }
 
   }
 

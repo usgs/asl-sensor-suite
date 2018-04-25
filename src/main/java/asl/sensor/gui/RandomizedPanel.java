@@ -49,44 +49,38 @@ import org.jfree.ui.VerticalAlignment;
  */
 public class RandomizedPanel extends ExperimentPanel {
 
-  public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
-  public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   private static final int TITLE_IDX = 0; // TODO: replace w/ title pointers
 
-  /**
-   *
-   */
   private static final long serialVersionUID = -1791709117080520178L;
 
-  public static String complexListToString(List<Complex> stringMe) {
+  public static String complexListToString(List<Complex> complexList) {
     final int MAX_LINE = 2; // maximum number of entries per line
 
-    DecimalFormat df = new DecimalFormat("#.#####");
-    NumericUtils.setInfinityPrintable(df);
-    ComplexFormat cf = new ComplexFormat(df);
-    StringBuilder sb = new StringBuilder();
+    DecimalFormat decimalFormat = new DecimalFormat("#.#####");
+    NumericUtils.setInfinityPrintable(decimalFormat);
+    ComplexFormat complexFormat = new ComplexFormat(decimalFormat);
+    StringBuilder stringBuilder = new StringBuilder();
     int numInLine = 0;
 
-    for (int i = 0; i < stringMe.size(); ++i) {
+    for (Complex number : complexList) {
 
-      Complex c = stringMe.get(i);
-      double initPrd = NumericUtils.TAU / c.abs();
+      double initPrd = NumericUtils.TAU / number.abs();
 
-      sb.append(cf.format(c));
-      sb.append(" (");
-      sb.append(df.format(initPrd));
-      sb.append(")");
+      stringBuilder.append(complexFormat.format(number));
+      stringBuilder.append(" (");
+      stringBuilder.append(decimalFormat.format(initPrd));
+      stringBuilder.append(")");
       ++numInLine;
       // want to fit two to a line for paired values
       if (numInLine >= MAX_LINE) {
-        sb.append("\n");
+        stringBuilder.append("\n");
         numInLine = 0;
       } else {
-        sb.append(", ");
+        stringBuilder.append(", ");
       }
     }
 
-    return sb.toString();
+    return stringBuilder.toString();
   }
 
   /**
@@ -404,9 +398,9 @@ public class RandomizedPanel extends ExperimentPanel {
     gbc.gridx += 1;
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;
-    plotSelection = new JComboBox<String>();
-    plotSelection.addItem(MAGNITUDE);
-    plotSelection.addItem(ARGUMENT);
+    plotSelection = new JComboBox<>();
+    plotSelection.addItem(ResponseExperiment.MAGNITUDE);
+    plotSelection.addItem(ResponseExperiment.ARGUMENT);
     plotSelection.addItem("Residual amplitude plot");
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);

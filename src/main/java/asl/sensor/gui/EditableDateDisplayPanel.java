@@ -21,7 +21,7 @@ import javax.swing.event.EventListenerList;
  * calendar values from inside this object's spinners, each one corresponding
  * to a date component between the year and the millisecond inclusive.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
