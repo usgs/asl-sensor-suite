@@ -80,7 +80,7 @@ public class AzimuthPanel extends ExperimentPanel {
     channelType[2] = "Reference sensor (use offset to specify degrees from north)";
 
     // don't bother instantiating axes, we need to build a custom polar plot
-    // and so will just use the chartfactory methods to do our building anyway
+    // and so will just use the ChartFactory methods to do our building anyway
 
     angleChart = ChartFactory.createPolarChart(expType.getName(),
         null, false, false, false);
@@ -261,14 +261,14 @@ public class AzimuthPanel extends ExperimentPanel {
     plot.clearCornerTextItems();
     plot.addCornerTextItem(angleStr);
 
-    XYSeriesCollection angleEstim = allData.get(1);
-    XYSeriesCollection coherEstim = allData.get(2);
+    XYSeriesCollection angleEstimation = allData.get(1);
+    XYSeriesCollection coherenceEstimation = allData.get(2);
     String titleEst = expType.getName() + " Accuracy Estimation";
     estimationChart = ChartFactory.createXYLineChart(titleEst,
-        "xaxis", "yaxis", angleEstim);
+        "xAxis", "yAxis", angleEstimation);
     estimationPlot = estimationChart.getXYPlot();
-    estimationPlot.setDataset(0, angleEstim);
-    estimationPlot.setDataset(1, coherEstim);
+    estimationPlot.setDataset(0, angleEstimation);
+    estimationPlot.setDataset(1, coherenceEstimation);
     estimationPlot.setRenderer(0, new DefaultXYItemRenderer());
 
     // set color of second dataset to be blue
