@@ -1,4 +1,4 @@
-package asl.sensor.test;
+package asl.sensor.experiment;
 
 public class ExperimentTest {
 

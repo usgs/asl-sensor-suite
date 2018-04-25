@@ -1,4 +1,4 @@
-package asl.sensor.test;
+package asl.sensor.utils;
 
 import static asl.sensor.utils.TimeSeriesUtils.concatAll;
 import static org.junit.Assert.assertArrayEquals;
@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import asl.sensor.input.DataBlock;
+import asl.sensor.test.TestUtils;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.B1000Types;
