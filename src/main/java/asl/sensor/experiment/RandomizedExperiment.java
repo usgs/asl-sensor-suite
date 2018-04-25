@@ -225,18 +225,26 @@ public class RandomizedExperiment
     }
 
     fireStateChange("Smoothing calculated resp data...");
+    // smoothingPoints should be an even number to prevent biasing on the half-sample
+    // since the averaging isn't done from the center of a sample but from either the left or right
+    int offset = 3; // how far to shift the data after the smoothing has been done
+    int smoothingPoints = 2 * offset;
     // now smooth the data
     // scan starting at the high-frequency range for low-freq data (will be trimmed) & vice-versa
-    untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude, 6, !lowFreq);
+    untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude,
+        smoothingPoints, !lowFreq);
     // phase smoothing also includes an unwrapping step
     untrimmedPhase = NumericUtils.unwrapList(untrimmedPhase);
-    untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, 6, !lowFreq);
+    untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, smoothingPoints,
+        !lowFreq);
 
     // experimentation with offsets to deal with the way the moving average shifts the data
     // since the plot is basically logarithmic this only matters due to the limited data
     // on the low-frequency corner
     if (lowFreq) {
-      startIdx -= 3; endIdx -= 3; extIdx -=3;
+      startIdx -= offset;
+      endIdx -= offset;
+      extIdx -= offset;
     }
 
     fireStateChange("Trimming calculated resp data down to range of interest...");
