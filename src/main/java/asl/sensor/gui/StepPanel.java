@@ -109,7 +109,7 @@ public class StepPanel extends ExperimentPanel {
     String xAxisTitle = "Time";
     String yAxisTitle = "Normalized counts";
     xAxis = new DateAxis(xAxisTitle);
-    ((DateAxis) xAxis).setDateFormatOverride(InputPanel.SDF);
+    ((DateAxis) xAxis).setDateFormatOverride(InputPanel.DATE_FORMAT);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     // xAxis.setAutoRange(true);
