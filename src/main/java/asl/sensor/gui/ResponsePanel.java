@@ -11,12 +11,9 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -185,7 +182,6 @@ public class ResponsePanel extends ExperimentPanel {
         // copy response file out of embedded set and into responses folder
 
         File respDir = new File("responses/");
-
         if (!respDir.exists()) {
           //noinspection ResultOfMethodCallIgnored
           respDir.mkdir();
@@ -214,10 +210,10 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public String[] getAdditionalReportPages() {
     ResponseExperiment respExp = (ResponseExperiment) expResult;
-    InstrumentResponse[] irs = respExp.getResponses();
-    String[] pages = new String[irs.length];
+    InstrumentResponse[] responses = respExp.getResponses();
+    String[] pages = new String[responses.length];
     for (int i = 0; i < pages.length; ++i) {
-      pages[i] = irs[i].toString();
+      pages[i] = responses[i].toString();
     }
     return pages;
   }
@@ -232,16 +228,17 @@ public class ResponsePanel extends ExperimentPanel {
    * Since response data is not directly associated with data at a given
    * time, rather than a sensor as a whole, we merely use the current date
    * and the first response used in the experiment.
+   *
    * @return String that will be default filename of PDF generated from data
    */
   @Override
   public String getPDFFilename() {
 
-    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
-    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
+    SimpleDateFormat dateFormatter = new SimpleDateFormat("YYYY.DDD");
+    dateFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+    Calendar calendar = Calendar.getInstance(dateFormatter.getTimeZone());
     // experiment has no time metadata to be associated with it, get time now
-    String date = sdf.format(cCal.getTime());
+    String date = dateFormatter.format(calendar.getTime());
 
     String test = expType.getName().replace(' ', '_');
 
@@ -253,21 +250,17 @@ public class ResponsePanel extends ExperimentPanel {
 
   @Override
   public ValueAxis getXAxis() {
-
     // true if using Hz units
     if (freqSpaceBox.isSelected()) {
       return frequencyAxis;
     }
 
     return xAxis;
-
   }
 
   @Override
   public ValueAxis getYAxis() {
-
     ValueAxis[] axes = new ValueAxis[]{yAxis, degreeAxis};
-
     if (null == plotSelection) {
       return yAxis;
     }
@@ -297,9 +290,9 @@ public class ResponsePanel extends ExperimentPanel {
     respExp.setFreqSpace(freqSpace);
     expResult.runExperimentOnData(ds);
 
-    List<XYSeriesCollection> xysc = expResult.getData();
-    XYSeriesCollection magSeries = xysc.get(0);
-    XYSeriesCollection argSeries = xysc.get(1);
+    List<XYSeriesCollection> timeSeries = expResult.getData();
+    XYSeriesCollection magSeries = timeSeries.get(0);
+    XYSeriesCollection argSeries = timeSeries.get(1);
 
     for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
       Color toColor = COLORS[i % COLORS.length];
