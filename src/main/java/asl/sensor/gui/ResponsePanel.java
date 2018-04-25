@@ -1,5 +1,7 @@
 package asl.sensor.gui;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
@@ -15,6 +17,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -47,17 +52,17 @@ public class ResponsePanel extends ExperimentPanel {
 
   private static final long serialVersionUID = 1L;
 
-  private final ValueAxis freqAxis, degreeAxis;
+  private final ValueAxis frequencyAxis, degreeAxis;
 
   private final JCheckBox freqSpaceBox;
   private final JComboBox<String> plotSelection;
 
-  private final JButton copyEmbedResp;
+  private final JButton copyEmbeddedResp;
 
-  private JFreeChart magChart, argChart;
+  private JFreeChart magnitudeChart, argumentChart;
 
-  public ResponsePanel(ExperimentEnum exp) {
-    super(exp);
+  public ResponsePanel(ExperimentEnum experiment) {
+    super(experiment);
 
     for (int i = 0; i < 3; ++i) {
       channelType[i] = "Response data (SEED data not used)";
@@ -69,9 +74,9 @@ public class ResponsePanel extends ExperimentPanel {
     String degreeAxisTitle = "phi(RESP(f))";
 
     xAxis = new LogarithmicAxis(xAxisTitle);
-    freqAxis = new LogarithmicAxis(freqAxisTitle);
+    frequencyAxis = new LogarithmicAxis(freqAxisTitle);
     xAxis.setAutoRange(true);
-    freqAxis.setAutoRange(true);
+    frequencyAxis.setAutoRange(true);
 
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
@@ -84,14 +89,14 @@ public class ResponsePanel extends ExperimentPanel {
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
-    freqAxis.setLabelFont(bold);
+    frequencyAxis.setLabelFont(bold);
     degreeAxis.setLabelFont(bold);
 
     freqSpaceBox = new JCheckBox("Use Hz units (requires regen)");
     freqSpaceBox.setSelected(true);
 
-    copyEmbedResp = new JButton("Extract an embedded response for editing");
-    copyEmbedResp.addActionListener(this);
+    copyEmbeddedResp = new JButton("Extract an embedded response for editing");
+    copyEmbeddedResp.addActionListener(this);
 
     plotSelection = new JComboBox<>();
     plotSelection.addItem(ResponseExperiment.MAGNITUDE);
@@ -102,66 +107,64 @@ public class ResponsePanel extends ExperimentPanel {
 
     // set the GUI components
     this.setLayout(new GridBagLayout());
-    GridBagConstraints gbc = new GridBagConstraints();
+    GridBagConstraints constraints = new GridBagConstraints();
 
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.gridwidth = 3;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(chartPanel, gbc);
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.gridwidth = 3;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(chartPanel, constraints);
 
-    gbc.gridy += 1;
-    gbc.weighty = 0;
-    this.add(copyEmbedResp, gbc);
+    constraints.gridy += 1;
+    constraints.weighty = 0;
+    this.add(copyEmbeddedResp, constraints);
 
     // place the other UI elements in a single row below the chart
-    gbc.gridwidth = 1;
-    gbc.weighty = 0.0;
-    gbc.weightx = 0.0;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.gridy += 1;
-    gbc.gridx = 0;
-    this.add(freqSpaceBox, gbc);
+    constraints.gridwidth = 1;
+    constraints.weighty = 0.0;
+    constraints.weightx = 0.0;
+    constraints.anchor = GridBagConstraints.WEST;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridy += 1;
+    constraints.gridx = 0;
+    this.add(freqSpaceBox, constraints);
 
-    gbc.gridx += 1;
-    gbc.weightx = 1.0;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.CENTER;
-    // gbc.gridwidth = GridBagConstraints.REMAINDER;
-    this.add(save, gbc);
+    constraints.gridx += 1;
+    constraints.weightx = 1.0;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(save, constraints);
 
     // add an empty panel as a spacer to keep the save button in the center
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.gridx += 1;
-    gbc.weightx = 0;
-    gbc.anchor = GridBagConstraints.WEST;
-    this.add(plotSelection, gbc);
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.gridx += 1;
+    constraints.weightx = 0;
+    constraints.anchor = GridBagConstraints.WEST;
+    this.add(plotSelection, constraints);
 
   }
 
   @Override
-  public void actionPerformed(ActionEvent e) {
+  public void actionPerformed(ActionEvent event) {
 
-    super.actionPerformed(e);
+    super.actionPerformed(event);
 
-    if (e.getSource() == plotSelection) {
+    if (event.getSource() == plotSelection) {
       if (!set) {
         return;
       }
 
-      JFreeChart[] charts = new JFreeChart[]{magChart, argChart};
-      int idx = plotSelection.getSelectedIndex();
-      chartPanel.setChart(charts[idx]);
+      JFreeChart[] charts = new JFreeChart[]{magnitudeChart, argumentChart};
+      int index = plotSelection.getSelectedIndex();
+      chartPanel.setChart(charts[index]);
 
       return;
-
     }
 
-    if (e.getSource() == copyEmbedResp) {
+    if (event.getSource() == copyEmbeddedResp) {
       Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
 
       List<String> names = new ArrayList<>(respFilenames);
@@ -188,36 +191,12 @@ public class ResponsePanel extends ExperimentPanel {
           respDir.mkdir();
         }
 
-        ClassLoader cl = InputPanel.class.getClassLoader();
-        InputStream is = cl.getResourceAsStream(resultStr);
-        BufferedReader fr = new BufferedReader(new InputStreamReader(is));
-        StringBuilder sb = new StringBuilder();
-        String line = fr.readLine();
-        while (line != null) {
-          sb.append(line);
-          sb.append("\n");
-          line = fr.readLine();
-        }
-        fr.close();
+        InputStream respStream = ResponsePanel.class.getResourceAsStream("/" + resultStr);
+        Path path = Paths.get(respDir.getCanonicalPath(), resultStr);
+        Files.copy(respStream, path, REPLACE_EXISTING);
 
-        StringBuilder fileNameOut = new StringBuilder();
-        fileNameOut.append(respDir.getCanonicalPath());
-        fileNameOut.append("/");
-        fileNameOut.append(resultStr);
-        fileNameOut.append("_");
-
-        SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DD");
-        Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
-        String date = sdf.format(cCal.getTime());
-        fileNameOut.append(date);
-
-        File respOut = new File(respDir.getCanonicalPath() + "/" + resultStr);
-        FileWriter respWriter = new FileWriter(respOut, false);
-        respWriter.write(sb.toString());
-        respWriter.close();
-
-      } catch (IOException e1) {
-        e1.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
   }
@@ -226,7 +205,7 @@ public class ResponsePanel extends ExperimentPanel {
   protected void drawCharts() {
 
     plotSelection.setSelectedIndex(0);
-    chart = magChart;
+    chart = magnitudeChart;
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
 
@@ -245,7 +224,7 @@ public class ResponsePanel extends ExperimentPanel {
 
   @Override
   public JFreeChart[] getCharts() {
-    return new JFreeChart[]{magChart, argChart};
+    return new JFreeChart[]{magnitudeChart, argumentChart};
   }
 
   /**
@@ -277,7 +256,7 @@ public class ResponsePanel extends ExperimentPanel {
 
     // true if using Hz units
     if (freqSpaceBox.isSelected()) {
-      return freqAxis;
+      return frequencyAxis;
     }
 
     return xAxis;
@@ -330,10 +309,10 @@ public class ResponsePanel extends ExperimentPanel {
       seriesColorMap.put(argName, toColor);
     }
 
-    argChart = buildChart(argSeries, getXAxis(), degreeAxis);
-    argChart.getXYPlot().getRangeAxis().setAutoRange(true);
-    magChart = buildChart(magSeries, getXAxis(), yAxis);
-    magChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    argumentChart = buildChart(argSeries, getXAxis(), degreeAxis);
+    argumentChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    magnitudeChart = buildChart(magSeries, getXAxis(), yAxis);
+    magnitudeChart.getXYPlot().getRangeAxis().setAutoRange(true);
   }
 
 }
