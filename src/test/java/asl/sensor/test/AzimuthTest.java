@@ -45,7 +45,7 @@ public class AzimuthTest {
 
     assertTrue( azi.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.SDF;
+    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
 
@@ -105,7 +105,7 @@ public class AzimuthTest {
 
     assertTrue( azi.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.SDF;
+    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
     /*
@@ -265,7 +265,7 @@ public class AzimuthTest {
 
     assertTrue( azi.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.SDF;
+    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
 

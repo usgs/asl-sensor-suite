@@ -89,7 +89,7 @@ public class InputPanel
    */
   private static final long serialVersionUID = -7302813951637543526L;
 
-  public static final SimpleDateFormat SDF =
+  public static final SimpleDateFormat DATE_FORMAT =
       new SimpleDateFormat("Y.DDD.HH:mm:ss");
 
   /**
@@ -828,12 +828,12 @@ public class InputPanel
           XYPlot xyp = (XYPlot) chart.getPlot();
 
           DateAxis da = new DateAxis();
-          SDF.setTimeZone(TimeZone.getTimeZone("UTC"));
+          DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
           da.setLabel("UTC Time (Year.Day.Hour:Minute)");
           Font bold = da.getLabelFont();
           bold = bold.deriveFont(Font.BOLD);
           da.setLabelFont(bold);
-          da.setDateFormatOverride(SDF);
+          da.setDateFormatOverride(DATE_FORMAT);
           xyp.setDomainAxis(da);
           int colorIdx = idx % defaultColor.length;
           xyp.getRenderer().setSeriesPaint(0, defaultColor[colorIdx]);

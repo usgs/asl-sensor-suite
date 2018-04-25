@@ -54,7 +54,7 @@ public class OrthogonalityTest {
 
     assertTrue( orth.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.SDF;
+    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
 
