@@ -227,10 +227,17 @@ public class RandomizedExperiment
     fireStateChange("Smoothing calculated resp data...");
     // now smooth the data
     // scan starting at the high-frequency range for low-freq data (will be trimmed) & vice-versa
-    untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude, 5, !lowFreq);
+    untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude, 6, !lowFreq);
     // phase smoothing also includes an unwrapping step
     untrimmedPhase = NumericUtils.unwrapList(untrimmedPhase);
-    untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, 5, !lowFreq);
+    untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, 6, !lowFreq);
+
+    // experimentation with offsets to deal with the way the moving average shifts the data
+    // since the plot is basically logarithmic this only matters due to the limited data
+    // on the low-frequency corner
+    if (lowFreq) {
+      startIdx -= 3; endIdx -= 3; extIdx -=3;
+    }
 
     fireStateChange("Trimming calculated resp data down to range of interest...");
     double[] plottedAmp = Arrays.copyOfRange(untrimmedAmplitude, startIdx, extIdx);
@@ -423,7 +430,7 @@ public class RandomizedExperiment
     fitZeros = fitResponse.getZeros();
 
     fireStateChange("Getting extended resp curves for high-freq plots...");
-    //freqs = freqsFull;
+    // we use the apply response method here to get the full range of plotted data, not just fit
     Complex[] init = initResponse.applyResponseToInput(freqsFull);
     Complex[] fit = fitResponse.applyResponseToInput(freqsFull);
     initialValues = new double[freqsFull.length * 2];
