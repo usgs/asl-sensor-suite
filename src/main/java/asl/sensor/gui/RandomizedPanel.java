@@ -58,35 +58,34 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   private static final long serialVersionUID = -1791709117080520178L;
 
-  public static String complexListToString(List<Complex> stringMe) {
+  public static String complexListToString(List<Complex> complexList) {
     final int MAX_LINE = 2; // maximum number of entries per line
 
-    DecimalFormat df = new DecimalFormat("#.#####");
-    NumericUtils.setInfinityPrintable(df);
-    ComplexFormat cf = new ComplexFormat(df);
-    StringBuilder sb = new StringBuilder();
+    DecimalFormat decimalFormat = new DecimalFormat("#.#####");
+    NumericUtils.setInfinityPrintable(decimalFormat);
+    ComplexFormat complexFormat = new ComplexFormat(decimalFormat);
+    StringBuilder stringBuilder = new StringBuilder();
     int numInLine = 0;
 
-    for (int i = 0; i < stringMe.size(); ++i) {
+    for (Complex number : complexList) {
 
-      Complex c = stringMe.get(i);
-      double initPrd = NumericUtils.TAU / c.abs();
+      double initPrd = NumericUtils.TAU / number.abs();
 
-      sb.append(cf.format(c));
-      sb.append(" (");
-      sb.append(df.format(initPrd));
-      sb.append(")");
+      stringBuilder.append(complexFormat.format(number));
+      stringBuilder.append(" (");
+      stringBuilder.append(decimalFormat.format(initPrd));
+      stringBuilder.append(")");
       ++numInLine;
       // want to fit two to a line for paired values
       if (numInLine >= MAX_LINE) {
-        sb.append("\n");
+        stringBuilder.append("\n");
         numInLine = 0;
       } else {
-        sb.append(", ");
+        stringBuilder.append(", ");
       }
     }
 
-    return sb.toString();
+    return stringBuilder.toString();
   }
 
   /**

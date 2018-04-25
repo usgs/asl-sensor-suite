@@ -45,7 +45,7 @@ public class AzimuthPanel extends ExperimentPanel {
    *
    */
   private static final long serialVersionUID = 4088024342809622854L;
-  private static final DecimalFormat df = new DecimalFormat("#.###");
+  private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.###");
   JSpinner offsetSpinner; // select how far from north to set reference data
   JFreeChart angleChart, estimChart; // plot angle, plot windowed estimation angle and correlation
   // note that some overrides are necessary because angle chart is a polar plot, not xy plot
@@ -200,18 +200,16 @@ public class AzimuthPanel extends ExperimentPanel {
 
   @Override
   public String[] getAdditionalReportPages() {
-    DecimalFormat df = new DecimalFormat("#.###");
-    AzimuthExperiment az = (AzimuthExperiment) expResult;
-    double[] corr = az.getCorrelations();
+    DecimalFormat decimalFormat = new DecimalFormat("#.###");
+    AzimuthExperiment azimuthExperiment = (AzimuthExperiment) expResult;
+    double[] corr = azimuthExperiment.getCorrelations();
     StringBuilder sb = new StringBuilder("Best-fit correlation value per-window:\n");
-    for (int i = 0; i < corr.length; ++i) {
-      sb.append(df.format(corr[i]));
-      sb.append("  ");
+    for (double aCorr : corr) {
+      sb.append(decimalFormat.format(aCorr)).append("  ");
     }
     sb.append("\n");
 
-    String[] returnStrings = new String[]{sb.toString()};
-    return returnStrings;
+    return new String[]{sb.toString()};
   }
 
   @Override
@@ -225,11 +223,11 @@ public class AzimuthPanel extends ExperimentPanel {
     double value = az.getOffset();
     double angle = az.getFitAngle();
     StringBuilder angleStr = new StringBuilder();
-    angleStr.append("FIT ANGLE: " + df.format(angle));
+    angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.format(angle));
     double result = ((value + angle) % 360 + 360) % 360;
 
-    angleStr.append(" + " + df.format(value) + " = " + df.format(result));
-    angleStr.append(" (+/- " + df.format(az.getUncertainty()) + ")");
+    angleStr.append(" + " + DECIMAL_FORMAT.format(value) + " = " + DECIMAL_FORMAT.format(result));
+    angleStr.append(" (+/- " + DECIMAL_FORMAT.format(az.getUncertainty()) + ")");
     if (!az.hadEnoughPoints()) {
       angleStr.append(" | WARNING: SMALL RANGE");
     }
