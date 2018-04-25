@@ -37,21 +37,22 @@ import org.jfree.ui.RectangleAnchor;
  * functions because the main plot uses polar orientation rather than typical
  * x-y plotting.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class AzimuthPanel extends ExperimentPanel {
 
-  /**
-   *
-   */
   private static final long serialVersionUID = 4088024342809622854L;
-  private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.###");
-  JSpinner offsetSpinner; // select how far from north to set reference data
-  JFreeChart angleChart, estimChart; // plot angle, plot windowed estimation angle and correlation
+  /**
+   * Thread safe reference to a DecimalFormat object.
+   */
+  private static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+      ThreadLocal.withInitial(() ->  new DecimalFormat("#.###"));
+  private JSpinner offsetSpinner; // select how far from north to set reference data
+  private JFreeChart angleChart, estimChart; // plot angle, plot windowed estimation angle and correlation
   // note that some overrides are necessary because angle chart is a polar plot, not xy plot
   // so things like progress updates are called in a different manner
 
-  JComboBox<String> chartSelector;
+  private JComboBox<String> chartSelector;
 
   public AzimuthPanel(ExperimentEnum exp) {
     super(exp);
@@ -200,12 +201,11 @@ public class AzimuthPanel extends ExperimentPanel {
 
   @Override
   public String[] getAdditionalReportPages() {
-    DecimalFormat decimalFormat = new DecimalFormat("#.###");
     AzimuthExperiment azimuthExperiment = (AzimuthExperiment) expResult;
     double[] corr = azimuthExperiment.getCorrelations();
     StringBuilder sb = new StringBuilder("Best-fit correlation value per-window:\n");
     for (double aCorr : corr) {
-      sb.append(decimalFormat.format(aCorr)).append("  ");
+      sb.append(AzimuthPanel.DECIMAL_FORMAT.get().format(aCorr)).append("  ");
     }
     sb.append("\n");
 
@@ -223,11 +223,11 @@ public class AzimuthPanel extends ExperimentPanel {
     double value = az.getOffset();
     double angle = az.getFitAngle();
     StringBuilder angleStr = new StringBuilder();
-    angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.format(angle));
+    angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.get().format(angle));
     double result = ((value + angle) % 360 + 360) % 360;
 
-    angleStr.append(" + " + DECIMAL_FORMAT.format(value) + " = " + DECIMAL_FORMAT.format(result));
-    angleStr.append(" (+/- " + DECIMAL_FORMAT.format(az.getUncertainty()) + ")");
+    angleStr.append(" + " + DECIMAL_FORMAT.get().format(value) + " = " + DECIMAL_FORMAT.get().format(result));
+    angleStr.append(" (+/- " + DECIMAL_FORMAT.get().format(az.getUncertainty()) + ")");
     if (!az.hadEnoughPoints()) {
       angleStr.append(" | WARNING: SMALL RANGE");
     }
