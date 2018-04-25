@@ -8,10 +8,13 @@ import asl.sensor.test.TestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
@@ -166,6 +169,27 @@ public class InstrumentResponseTest {
 
     assertTrue( initPoles.size() == endPoles.size() );
 
+  }
+
+  @Test
+  public void parseTermAsDate_date_standard_input_field22() {
+    Instant actual = InstrumentResponse.parseTermAsDate("B052F22     Start date:  2001,001,00:00:00");
+    Instant expected = LocalDate.parse("2001-01-01").atStartOfDay().toInstant(ZoneOffset.UTC);
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void parseTermAsDate_datetime_standard_input_field23() {
+    Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:  2007,337,10:15:30");
+    Instant expected = LocalDateTime.parse("2007-12-03T10:15:30").toInstant(ZoneOffset.UTC);
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void parseTermAsDate_NoEndingTime_input_field23() {
+    Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:    No Ending Time");
+    Instant expected = null;
+    assertEquals(expected, actual);
   }
 
 }
