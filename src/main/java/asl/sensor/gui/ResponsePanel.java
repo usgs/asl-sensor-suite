@@ -47,12 +47,12 @@ public class ResponsePanel extends ExperimentPanel {
 
   private static final long serialVersionUID = 1L;
 
-  private ValueAxis freqAxis, degreeAxis;
+  private final ValueAxis freqAxis, degreeAxis;
 
-  private JCheckBox freqSpaceBox;
-  private JComboBox<String> plotSelection;
+  private final JCheckBox freqSpaceBox;
+  private final JComboBox<String> plotSelection;
 
-  private JButton copyEmbedResp;
+  private final JButton copyEmbedResp;
 
   private JFreeChart magChart, argChart;
 
@@ -93,7 +93,7 @@ public class ResponsePanel extends ExperimentPanel {
     copyEmbedResp = new JButton("Extract an embedded response for editing");
     copyEmbedResp.addActionListener(this);
 
-    plotSelection = new JComboBox<String>();
+    plotSelection = new JComboBox<>();
     plotSelection.addItem(ResponseExperiment.MAGNITUDE);
     plotSelection.addItem(ResponseExperiment.ARGUMENT);
     plotSelection.addActionListener(this);
@@ -164,7 +164,7 @@ public class ResponsePanel extends ExperimentPanel {
     if (e.getSource() == copyEmbedResp) {
       Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
 
-      List<String> names = new ArrayList<String>(respFilenames);
+      List<String> names = new ArrayList<>(respFilenames);
       Collections.sort(names);
 
       JDialog dialog = new JDialog();
@@ -219,10 +219,7 @@ public class ResponsePanel extends ExperimentPanel {
       } catch (IOException e1) {
         e1.printStackTrace();
       }
-
-      return; // end of 'if response button clicked'
     }
-
   }
 
   @Override
@@ -272,15 +269,7 @@ public class ResponsePanel extends ExperimentPanel {
     int idx = getIndexOfMainData(); // first resp in list
     String name = expResult.getInputNames().get(idx);
 
-    StringBuilder sb = new StringBuilder();
-    sb.append(test);
-    sb.append('_');
-    sb.append(name);
-    sb.append('_');
-    sb.append(date);
-    sb.append(".pdf");
-    return sb.toString();
-
+    return test + '_' + name + '_' + date + ".pdf";
   }
 
   @Override
@@ -322,7 +311,7 @@ public class ResponsePanel extends ExperimentPanel {
 
     set = true;
 
-    seriesColorMap = new HashMap<String, Color>();
+    seriesColorMap = new HashMap<>();
 
     boolean freqSpace = freqSpaceBox.isSelected();
     ResponseExperiment respExp = (ResponseExperiment) expResult;
