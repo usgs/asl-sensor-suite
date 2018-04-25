@@ -45,12 +45,6 @@ import org.jfree.data.xy.XYSeriesCollection;
  */
 public class ResponsePanel extends ExperimentPanel {
 
-  // values
-  public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
-  public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
-  /**
-   *
-   */
   private static final long serialVersionUID = 1L;
 
   private ValueAxis freqAxis, degreeAxis;
@@ -100,8 +94,8 @@ public class ResponsePanel extends ExperimentPanel {
     copyEmbedResp.addActionListener(this);
 
     plotSelection = new JComboBox<String>();
-    plotSelection.addItem(MAGNITUDE);
-    plotSelection.addItem(ARGUMENT);
+    plotSelection.addItem(ResponseExperiment.MAGNITUDE);
+    plotSelection.addItem(ResponseExperiment.ARGUMENT);
     plotSelection.addActionListener(this);
 
     applyAxesToChart(); // now that we've got axes defined

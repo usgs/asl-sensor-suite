@@ -49,13 +49,8 @@ import org.jfree.ui.VerticalAlignment;
  */
 public class RandomizedPanel extends ExperimentPanel {
 
-  public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
-  public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   private static final int TITLE_IDX = 0; // TODO: replace w/ title pointers
 
-  /**
-   *
-   */
   private static final long serialVersionUID = -1791709117080520178L;
 
   public static String complexListToString(List<Complex> complexList) {
@@ -403,9 +398,9 @@ public class RandomizedPanel extends ExperimentPanel {
     gbc.gridx += 1;
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;
-    plotSelection = new JComboBox<String>();
-    plotSelection.addItem(MAGNITUDE);
-    plotSelection.addItem(ARGUMENT);
+    plotSelection = new JComboBox<>();
+    plotSelection.addItem(ResponseExperiment.MAGNITUDE);
+    plotSelection.addItem(ResponseExperiment.ARGUMENT);
     plotSelection.addItem("Residual amplitude plot");
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
