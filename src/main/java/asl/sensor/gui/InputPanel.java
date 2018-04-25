@@ -96,14 +96,14 @@ public class InputPanel
    * Default height of image produced by the save-as-image function
    * (each chart is 240 pixels tall)
    */
-  public static final int IMAGE_HEIGHT = 240;
-  public static final int IMAGE_WIDTH = 640;
+  private static final int IMAGE_HEIGHT = 240;
+  private static final int IMAGE_WIDTH = 640;
 
-  public static final int MAX_UNSCROLLED = 3;
+  private static final int MAX_UNSCROLLED = 3;
 
-  public static final int PLOTS_PER_PAGE = 3;
+  private static final int PLOTS_PER_PAGE = 3;
 
-  public static final int FILE_COUNT = DataStore.FILE_COUNT;
+  private static final int FILE_COUNT = DataStore.FILE_COUNT;
 
   private static final int MARGIN = 10; // min space of the two sliders
   public static final int SLIDER_MAX = 10000;
@@ -121,7 +121,7 @@ public class InputPanel
     return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
   }
 
-  public static int getSliderValue(DataBlock db, long timeStamp) {
+  private static int getSliderValue(DataBlock db, long timeStamp) {
     long start = db.getStartTime();
     long len = db.getInterval() * db.size();
     return (int) ((SLIDER_MAX * (timeStamp - start)) / len);
@@ -140,7 +140,6 @@ public class InputPanel
   private JButton zoomOut; // revert to full data region
   private JButton clearAll; // remove all data
   private JFileChooser fc;
-  private JPanel allCharts; // parent of the chartpanels, used for image saving
   private JSlider leftSlider;
   private JSlider rightSlider;
   private JScrollPane inputScrollPane;
@@ -564,7 +563,7 @@ public class InputPanel
   /**
    * Resets the data and blanks out all charts
    */
-  public void clearAllData() {
+  private void clearAllData() {
     ds = new DataStore();
 
     zoomIn.setEnabled(false);
@@ -596,7 +595,7 @@ public class InputPanel
    * This is done when new seed or resp data has been loaded in, mainly
    * to tell whether enough data exists to run one of the experiments
    */
-  protected void fireStateChanged() {
+  private void fireStateChanged() {
     ChangeListener[] lsners = listenerList.getListeners(ChangeListener.class);
     if (lsners != null && lsners.length > 0) {
       ChangeEvent evt = new ChangeEvent(this);
@@ -608,19 +607,6 @@ public class InputPanel
 
   /**
    * Return this panel's charts as a single buffered image
-   *
-   * @param plotsToShow number of plots to be placed in the image
-   * @return Buffered image of the plots, writeable to file
-   */
-  public BufferedImage getAsImage(int plotsToShow) {
-    // if all 3 plots are set, height of panel is height of image
-    int height = getImageHeight(plotsToShow);
-    // otherwise, we only use the height of images actually set
-    return getAsImage(IMAGE_WIDTH, height, plotsToShow);
-  }
-
-  /**
-   * Return this panel's charts as a single buffered image
    * with specified dimensions
    *
    * @param width Width of returned image
@@ -628,7 +614,7 @@ public class InputPanel
    * @param plotsToShow Plots to be shown in the output image
    * @return Buffered image of the plots, writeable to file
    */
-  public BufferedImage getAsImage(int width, int height, int plotsToShow) {
+  private BufferedImage getAsImage(int width, int height, int plotsToShow) {
     if (plotsToShow <= 0) {
       // should never be called like this but just in case
       // return an empty image
@@ -696,16 +682,6 @@ public class InputPanel
    */
   public int getImageHeight(int plotsToShow) {
     return IMAGE_HEIGHT * plotsToShow;
-  }
-
-
-  /**
-   * Returns a default image width for writing plots to file
-   *
-   * @return width of image to output
-   */
-  public int getImageWidth() {
-    return allCharts.getWidth();
   }
 
   public String[] getResponseStrings(int[] indices) {
@@ -1099,14 +1075,6 @@ public class InputPanel
   }
 
   /**
-   * Used to remove an object from the list of those informed when
-   * data is loaded in or cleared out
-   */
-  public void removeChangeListener(ChangeListener listener) {
-    listenerList.remove(ChangeListener.class, listener);
-  }
-
-  /**
    * Does the work to reset the zoom of a chart when the zoom button is hit
    *
    * @param idx Index of appropriate chart/panel
@@ -1195,7 +1163,7 @@ public class InputPanel
    * Displays the range set by the sliders using
    * vertical bars at the min and max values
    */
-  public void setVerticalBars() {
+  private void setVerticalBars() {
 
     if (ds.numberOfBlocksSet() < 1) {
       return;
@@ -1503,14 +1471,14 @@ public class InputPanel
      */
     private static final long serialVersionUID = -8181485763533504906L;
 
-    public FileOperationJButton(String text) {
+    FileOperationJButton(String text) {
       super(text);
     }
 
-    public abstract Set<String> getFilenameSet(DataStore ds, int idx, String filePath)
+    protected abstract Set<String> getFilenameSet(DataStore ds, int idx, String filePath)
         throws SeedFormatException, IOException;
 
-    public abstract void loadInData(DataStore ds, int idx,
+    protected abstract void loadInData(DataStore ds, int idx,
         String filePath, String fileFilter, int activePlots)
         throws SeedFormatException, CodecException,
         FileNotFoundException, RuntimeException;
@@ -1523,7 +1491,7 @@ public class InputPanel
      */
     private static final long serialVersionUID = -5122928259743764418L;
 
-    public LoadingJButton(String text) {
+    LoadingJButton(String text) {
       super(text);
     }
 
@@ -1550,7 +1518,7 @@ public class InputPanel
      */
     private static final long serialVersionUID = -2300184562192345233L;
 
-    public AppendingJButton(String text) {
+    AppendingJButton(String text) {
       super(text);
     }
 
