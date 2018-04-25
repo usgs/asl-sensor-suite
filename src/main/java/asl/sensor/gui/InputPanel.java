@@ -130,32 +130,33 @@ public class InputPanel
   private int activePlots = FILE_COUNT; // how much data is being displayed
 
   private DataStore ds; // holds data to be plotted in each chartpanel
-  private ChartPanel[] chartPanels; // show the data for a given input
-  private Color[] defaultColor = {
+  private final ChartPanel[] chartPanels; // show the data for a given input
+  private final Color[] defaultColor = {
       ChartColor.LIGHT_RED,
       ChartColor.LIGHT_BLUE,
       ChartColor.LIGHT_GREEN}; // control ordering of colors
-  private JButton save; // save every input of note in a png plot
-  private JButton zoomIn; // select a given window
-  private JButton zoomOut; // revert to full data region
-  private JButton clearAll; // remove all data
+  private final JButton save; // save every input of note in a png plot
+  private final JButton zoomIn; // select a given window
+  private final JButton zoomOut; // revert to full data region
+  private final JButton clearAll; // remove all data
   private JFileChooser fc;
-  private JSlider leftSlider;
-  private JSlider rightSlider;
-  private JScrollPane inputScrollPane;
+  private final JSlider leftSlider;
+  private final JSlider rightSlider;
+  private final JScrollPane inputScrollPane;
 
-  private EditableDateDisplayPanel startDate, endDate;
+  private final EditableDateDisplayPanel startDate;
+  private final EditableDateDisplayPanel endDate;
 
-  private FileOperationJButton[] seedLoaders;
-  private FileOperationJButton[] seedAppenders;
-  private JTextComponent[] seedFileNames;
-  private JButton[] respLoaders;
-  private JTextComponent[] respFileNames;
-  private JButton[] clearButton;
+  private final FileOperationJButton[] seedLoaders;
+  private final FileOperationJButton[] seedAppenders;
+  private final JTextComponent[] seedFileNames;
+  private final JButton[] respLoaders;
+  private final JTextComponent[] respFileNames;
+  private final JButton[] clearButton;
 
-  private JLabel[] channelType;
+  private final JLabel[] channelType;
 
-  private JPanel[] chartSubpanels;
+  private final JPanel[] chartSubpanels;
 
   // used to store current directory locations
   private String seedDirectory = "data";
