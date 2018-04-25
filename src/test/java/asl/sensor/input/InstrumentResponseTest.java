@@ -1,8 +1,10 @@
-package asl.sensor.test;
+package asl.sensor.input;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.test.TestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
@@ -16,9 +18,6 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.input.TransferFunction;
-import asl.sensor.input.Unit;
 import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {

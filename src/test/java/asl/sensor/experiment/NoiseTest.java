@@ -1,10 +1,11 @@
-package asl.sensor.test;
+package asl.sensor.experiment;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;

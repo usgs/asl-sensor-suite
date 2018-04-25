@@ -1,7 +1,9 @@
-package asl.sensor.test;
+package asl.sensor.input;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import asl.sensor.test.TestUtils;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.junit.Test;

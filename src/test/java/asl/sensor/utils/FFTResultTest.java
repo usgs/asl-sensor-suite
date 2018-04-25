@@ -1,9 +1,11 @@
-package asl.sensor.test;
+package asl.sensor.utils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.test.TestUtils;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;

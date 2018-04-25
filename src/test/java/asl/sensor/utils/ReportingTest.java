@@ -1,4 +1,4 @@
-package asl.sensor.test;
+package asl.sensor.utils;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;

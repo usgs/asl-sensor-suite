@@ -10,9 +10,9 @@ import asl.sensor.input.DataStore;
 public class TestUtils {
 
   // may need to change this to deal with eventual migration to main usgs github
-  static String SUBPAGE = "tests/";
-  static String TEST_DATA_LOCATION = "src/test/resources/seismic-test-data/";
-  static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
+  public static String SUBPAGE = "tests/";
+  public static String TEST_DATA_LOCATION = "src/test/resources/seismic-test-data/";
+  public static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("uuuu-DDD'T'HH:mm:ss.S");
 
   public static OffsetDateTime getEndCalendar(DataStore ds) {
     Instant time = Instant.ofEpochMilli( ds.getBlock(0).getEndTime() );

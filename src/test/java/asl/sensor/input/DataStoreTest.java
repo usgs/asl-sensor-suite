@@ -1,9 +1,11 @@
-package asl.sensor.test;
+package asl.sensor.input;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.test.TestUtils;
 import java.io.IOException;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
