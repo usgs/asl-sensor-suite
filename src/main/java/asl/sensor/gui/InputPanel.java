@@ -105,31 +105,34 @@ public class InputPanel
 
   private static final int FILE_COUNT = DataStore.FILE_COUNT;
 
-  private static final int MARGIN = 10; // min space of the two sliders
+  /**
+   * Minimum space of the two sliders.
+   */
+  private static final int MARGIN = 10;
   public static final int SLIDER_MAX = 10000;
 
   /**
    * Gets the value of start or end time from slider value and DataBlock
    *
-   * @param db DataBlock corresponding to one of the plots
+   * @param dataBlock DataBlock corresponding to one of the plots
    * @param sliderValue Value of starting or ending time slider [0-SLIDER_MAX]
    * @return Long that represents start or end time matching slider's value
    */
-  public static long getMarkerLocation(DataBlock db, int sliderValue) {
-    long start = db.getStartTime();
-    long len = (db.getInterval()) * db.size();
+  public static long getMarkerLocation(DataBlock dataBlock, int sliderValue) {
+    long start = dataBlock.getStartTime();
+    long len = (dataBlock.getInterval()) * dataBlock.size();
     return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
   }
 
-  private static int getSliderValue(DataBlock db, long timeStamp) {
-    long start = db.getStartTime();
-    long len = db.getInterval() * db.size();
-    return (int) ((SLIDER_MAX * (timeStamp - start)) / len);
+  private static int getSliderValue(DataBlock dataBlock, long timeStamp) {
+    long start = dataBlock.getStartTime();
+    long length = dataBlock.getInterval() * dataBlock.size();
+    return (int) ((SLIDER_MAX * (timeStamp - start)) / length);
   }
 
   private int activePlots = FILE_COUNT; // how much data is being displayed
 
-  private DataStore ds; // holds data to be plotted in each chartpanel
+  private DataStore dataStore; // holds data to be plotted in each chartpanel
   private final ChartPanel[] chartPanels; // show the data for a given input
   private final Color[] defaultColor = {
       ChartColor.LIGHT_RED,
@@ -139,7 +142,7 @@ public class InputPanel
   private final JButton zoomIn; // select a given window
   private final JButton zoomOut; // revert to full data region
   private final JButton clearAll; // remove all data
-  private JFileChooser fc;
+  private JFileChooser fileChooser;
   private final JSlider leftSlider;
   private final JSlider rightSlider;
   private final JScrollPane inputScrollPane;
@@ -184,16 +187,16 @@ public class InputPanel
     chartSubpanels = new JPanel[FILE_COUNT];
 
     this.setLayout(new GridBagLayout());
-    GridBagConstraints gbc = new GridBagConstraints();
+    GridBagConstraints constraints = new GridBagConstraints();
 
-    ds = new DataStore();
+    dataStore = new DataStore();
 
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.gridy = 0;
-    gbc.gridwidth = 8;
-    gbc.anchor = GridBagConstraints.CENTER;
-    gbc.fill = GridBagConstraints.BOTH;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.gridy = 0;
+    constraints.gridwidth = 8;
+    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.fill = GridBagConstraints.BOTH;
 
     inputScrollPane = new JScrollPane();
     inputScrollPane.setVerticalScrollBarPolicy(
@@ -201,7 +204,6 @@ public class InputPanel
     inputScrollPane.setHorizontalScrollBarPolicy(
         ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-    //
     VScrollPanel cont = new VScrollPanel();
     cont.setLayout(new GridBagLayout());
     GridBagConstraints contConstraints = new GridBagConstraints();
@@ -223,21 +225,19 @@ public class InputPanel
       chartSubpanels[i].setSize(d2);
       cont.add(chartSubpanels[i], contConstraints);
       contConstraints.gridy += 1;
-      // gbc.gridy += 1;
-
     }
 
     inputScrollPane.getViewport().setView(cont);
     inputScrollPane.setVisible(true);
     inputScrollPane.setMinimumSize(minDim);
 
-    this.add(inputScrollPane, gbc);
-    gbc.gridy += 1;
+    this.add(inputScrollPane, constraints);
+    constraints.gridy += 1;
 
     // set size so that the result pane isn't distorted on window launch
-    Dimension d = inputScrollPane.getPreferredSize();
-    d.setSize(d.getWidth() + 5, d.getHeight());
-    this.setPreferredSize(d);
+    Dimension dimension = inputScrollPane.getPreferredSize();
+    dimension.setSize(dimension.getWidth() + 5, dimension.getHeight());
+    this.setPreferredSize(dimension);
 
     leftSlider = new JSlider(0, SLIDER_MAX, 0);
     leftSlider.setEnabled(false);
@@ -270,60 +270,54 @@ public class InputPanel
     clearAll.addActionListener(this);
     clearAll.setEnabled(false);
 
-    int yOfClear = gbc.gridy;
+    int yOfClear = constraints.gridy;
 
-    //this.add(allCharts);
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.gridy += 2;
-    gbc.weighty = 0;
-    gbc.weightx = 1;
-    gbc.gridwidth = 1;
-    gbc.gridx = 0;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.gridy += 2;
+    constraints.weighty = 0;
+    constraints.weightx = 1;
+    constraints.gridwidth = 1;
+    constraints.gridx = 0;
 
-    this.add(leftSlider, gbc);
+    this.add(leftSlider, constraints);
 
-    gbc.gridx += 1;
-    this.add(rightSlider, gbc);
+    constraints.gridx += 1;
+    this.add(rightSlider, constraints);
 
-    gbc.gridx = 0;
-    gbc.gridy += 1;
-    this.add(startDate, gbc);
-    gbc.gridx += 1;
-    this.add(endDate, gbc);
+    constraints.gridx = 0;
+    constraints.gridy += 1;
+    this.add(startDate, constraints);
+    constraints.gridx += 1;
+    this.add(endDate, constraints);
 
-    // now we can add the space between the last plot and the save button
-    //this.add( Box.createVerticalStrut(5) );
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridy += 1;
+    constraints.weighty = 0;
+    constraints.weightx = 0;
 
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.gridy += 1;
-    gbc.weighty = 0;
-    gbc.weightx = 0;
+    constraints.gridx = 0;
+    constraints.anchor = GridBagConstraints.EAST;
+    this.add(zoomIn, constraints);
 
-    gbc.gridx = 0;
-    gbc.anchor = GridBagConstraints.EAST;
-    this.add(zoomIn, gbc);
+    constraints.gridx += 1;
+    constraints.anchor = GridBagConstraints.WEST;
+    this.add(zoomOut, constraints);
 
-    gbc.gridx += 1;
-    gbc.anchor = GridBagConstraints.WEST;
-    this.add(zoomOut, gbc);
+    constraints.gridwidth = 1;
+    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.gridx = 7;
+    constraints.gridy = yOfClear + 1;
+    constraints.gridheight = 2;
+    constraints.fill = GridBagConstraints.BOTH;
 
-    gbc.gridwidth = 1;
-    gbc.anchor = GridBagConstraints.CENTER;
-    gbc.gridx = 7;
-    gbc.gridy = yOfClear + 1;
-    gbc.gridheight = 2;
-    gbc.fill = GridBagConstraints.BOTH;
+    this.add(save, constraints);
 
-    this.add(save, gbc);
+    constraints.gridy += 2;
+    constraints.gridheight = GridBagConstraints.REMAINDER;
 
-    gbc.gridy += 2;
-    gbc.gridheight = GridBagConstraints.REMAINDER;
+    this.add(clearAll, constraints);
 
-    this.add(clearAll, gbc);
-
-    //this.add(buttons);
-
-    fc = new JFileChooser();
+    fileChooser = new JFileChooser();
     lastRespIndex = -1;
 
   }
@@ -332,15 +326,15 @@ public class InputPanel
    * Create a new data panel and add data to the charts from an existing
    * DataStore, also setting the given number of panels as visible
    *
-   * @param ds DataStore object with data to be plotted
+   * @param dataStore DataStore object with data to be plotted
    * @param panelsNeeded number of panels to show in the object
    */
-  public InputPanel(DataStore ds, int panelsNeeded) {
+  public InputPanel(DataStore dataStore, int panelsNeeded) {
     this();
     for (int i = 0; i < panelsNeeded; ++i) {
-      if (ds.blockIsSet(i)) {
-        seedFileNames[i].setText(ds.getBlock(i).getName());
-        XYSeries ts = ds.getPlotSeries(i);
+      if (dataStore.blockIsSet(i)) {
+        seedFileNames[i].setText(dataStore.getBlock(i).getName());
+        XYSeries ts = dataStore.getPlotSeries(i);
         JFreeChart chart = ChartFactory.createXYLineChart(
             ts.getKey().toString(),
             "Time",
@@ -350,8 +344,8 @@ public class InputPanel
             false, false, false);
         chartPanels[i].setChart(chart);
       }
-      if (ds.responseIsSet(i)) {
-        respFileNames[i].setText(ds.getResponse(i).getName());
+      if (dataStore.responseIsSet(i)) {
+        respFileNames[i].setText(dataStore.getResponse(i).getName());
       }
     }
     showDataNeeded(panelsNeeded);
@@ -380,7 +374,7 @@ public class InputPanel
 
       if (e.getSource() == clear) {
         instantiateChart(i);
-        ds.removeData(i);
+        dataStore.removeData(i);
         clear.setEnabled(false);
         appd.setEnabled(false);
         seedFileNames[i].setText("NO FILE LOADED");
@@ -388,9 +382,9 @@ public class InputPanel
 
         // plot all valid range of loaded-in data or else
         // disable clearAll button if there's no other data loaded in
-        clearAll.setEnabled(ds.isAnythingSet());
+        clearAll.setEnabled(dataStore.isAnythingSet());
 
-        ds.trimToCommonTime();
+        dataStore.trimToCommonTime();
 
         showRegionForGeneration();
 
@@ -412,9 +406,7 @@ public class InputPanel
         List<String> names = new ArrayList<>(respFilenames);
         Collections.sort(names);
 
-        String custom = "Load custom response...";
-
-        names.add(custom);
+        names.add("Load custom response...");
 
         int idx = lastRespIndex;
         if (lastRespIndex < 0) {
@@ -446,7 +438,7 @@ public class InputPanel
           try {
             InstrumentResponse ir =
                 InstrumentResponse.loadEmbeddedResponse(resultStr);
-            ds.setResponse(i, ir);
+            dataStore.setResponse(i, ir);
 
             respFileNames[i].setText(ir.getName());
             clear.setEnabled(true);
@@ -461,17 +453,17 @@ public class InputPanel
           }
         } else {
           lastRespIndex = -1;
-          fc.setCurrentDirectory(new File(respDirectory));
-          fc.resetChoosableFileFilters();
-          fc.setDialogTitle("Load response file...");
-          int returnVal = fc.showOpenDialog(resp);
+          fileChooser.setCurrentDirectory(new File(respDirectory));
+          fileChooser.resetChoosableFileFilters();
+          fileChooser.setDialogTitle("Load response file...");
+          int returnVal = fileChooser.showOpenDialog(resp);
           if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File file = fc.getSelectedFile();
+            File file = fileChooser.getSelectedFile();
             respDirectory = file.getParent();
             try {
               Instant startInst = respEpochChoose(file.getAbsolutePath());
               InstrumentResponse ir = new InstrumentResponse(file.getAbsolutePath(), startInst);
-              ds.setResponse(i, ir);
+              dataStore.setResponse(i, ir);
               respFileNames[i].setText(file.getName());
               clear.setEnabled(true);
               clearAll.setEnabled(true);
@@ -500,14 +492,14 @@ public class InputPanel
 
     if (e.getSource() == save) {
       String ext = ".png";
-      fc = new JFileChooser();
-      fc.setCurrentDirectory(new File(saveDirectory));
-      fc.addChoosableFileFilter(
+      fileChooser = new JFileChooser();
+      fileChooser.setCurrentDirectory(new File(saveDirectory));
+      fileChooser.addChoosableFileFilter(
           new FileNameExtensionFilter("PNG image (.png)", ext));
-      fc.setFileFilter(fc.getChoosableFileFilters()[1]);
-      int returnVal = fc.showSaveDialog(save);
+      fileChooser.setFileFilter(fileChooser.getChoosableFileFilters()[1]);
+      int returnVal = fileChooser.showSaveDialog(save);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
-        File selFile = fc.getSelectedFile();
+        File selFile = fileChooser.getSelectedFile();
         saveDirectory = selFile.getParent();
         if (!selFile.getName().endsWith(ext.toLowerCase())) {
           selFile = new File(selFile.toString() + ext);
@@ -531,9 +523,9 @@ public class InputPanel
 
     if (e.getSource() == zoomOut) {
       // restore original loaded datastore
-      ds.untrim(activePlots);
+      dataStore.untrim(activePlots);
       for (int i = 0; i < FILE_COUNT; ++i) {
-        if (!ds.blockIsSet(i)) {
+        if (!dataStore.blockIsSet(i)) {
           continue;
         }
         resetPlotZoom(i);
@@ -565,7 +557,7 @@ public class InputPanel
    * Resets the data and blanks out all charts
    */
   private void clearAllData() {
-    ds = new DataStore();
+    dataStore = new DataStore();
 
     zoomIn.setEnabled(false);
     zoomOut.setEnabled(false);
@@ -669,10 +661,10 @@ public class InputPanel
    * @return A DataStore object (contains arrays of DataBlocks & Responses)
    */
   public DataStore getData() {
-    if (ds.numberOfBlocksSet() > 1) {
-      ds.trimToCommonTime(activePlots);
+    if (dataStore.numberOfBlocksSet() > 1) {
+      dataStore.trimToCommonTime(activePlots);
     }
-    return new DataStore(ds);
+    return new DataStore(dataStore);
   }
 
   /**
@@ -689,10 +681,10 @@ public class InputPanel
     String[] outStrings = new String[indices.length];
     for (int i = 0; i < indices.length; ++i) {
       int idx = indices[i];
-      if (!ds.responseIsSet(idx)) {
+      if (!dataStore.responseIsSet(idx)) {
         System.out.println("ERROR WITH RESP AT INDEX " + idx);
       }
-      outStrings[i] = ds.getResponse(idx).toString();
+      outStrings[i] = dataStore.getResponse(idx).toString();
     }
     return outStrings;
   }
@@ -728,12 +720,12 @@ public class InputPanel
    */
   private void loadData(final int idx, final FileOperationJButton seed) {
 
-    fc.setCurrentDirectory(new File(seedDirectory));
-    fc.resetChoosableFileFilters();
-    fc.setDialogTitle("Load SEED file...");
-    int returnVal = fc.showOpenDialog(seed);
+    fileChooser.setCurrentDirectory(new File(seedDirectory));
+    fileChooser.resetChoosableFileFilters();
+    fileChooser.setDialogTitle("Load SEED file...");
+    int returnVal = fileChooser.showOpenDialog(seed);
     if (returnVal == JFileChooser.APPROVE_OPTION) {
-      final File file = fc.getSelectedFile();
+      final File file = fileChooser.getSelectedFile();
       seedDirectory = file.getParent();
       String oldName = seedFileNames[idx].getText();
 
@@ -741,7 +733,7 @@ public class InputPanel
       final String filePath = file.getAbsolutePath();
       String filterName;
       try {
-        Set<String> nameSet = seed.getFilenameSet(ds, idx, filePath);
+        Set<String> nameSet = seed.getFilenameSet(dataStore, idx, filePath);
 
         if (nameSet.size() > 1) {
           // more than one series in the file? prompt user for it
@@ -798,7 +790,7 @@ public class InputPanel
         public Integer doInBackground() {
 
           try {
-            seed.loadInData(ds, idx, filePath, immutableFilter, activePlots);
+            seed.loadInData(dataStore, idx, filePath, immutableFilter, activePlots);
           } catch (RuntimeException | SeedFormatException | CodecException |
               FileNotFoundException e) {
             returnedErrMsg = e.toString();
@@ -808,12 +800,12 @@ public class InputPanel
           }
 
           // zooms.matchIntervals(activePlots);
-          ds.untrim(activePlots);
+          dataStore.untrim(activePlots);
 
-          XYSeries ts = ds.getBlock(idx).toXYSeries();
+          XYSeries ts = dataStore.getBlock(idx).toXYSeries();
           //System.out.println("XY SERIES NAME");
           //System.out.println(ts.getKey());
-          double sRate = ds.getBlock(idx).getSampleRate();
+          double sRate = dataStore.getBlock(idx).getSampleRate();
           String rateString = " (" + sRate + " Hz)";
           chart = ChartFactory.createXYLineChart(
               ts.getKey().toString() + rateString,
@@ -870,7 +862,7 @@ public class InputPanel
           clearButton[idx].setEnabled(true);
 
           for (int i = 0; i < FILE_COUNT; ++i) {
-            if (!ds.blockIsSet(i)) {
+            if (!dataStore.blockIsSet(i)) {
               continue;
             }
             resetPlotZoom(i);
@@ -899,7 +891,7 @@ public class InputPanel
   }
 
   private void seedLoadHandleError(int idx, String filename, String err) {
-    ds.removeBlock(idx);
+    dataStore.removeBlock(idx);
     instantiateChart(idx);
     XYPlot xyp = (XYPlot) chartPanels[idx].getChart().getPlot();
     TextTitle result = new TextTitle();
@@ -1083,7 +1075,7 @@ public class InputPanel
   private void resetPlotZoom(int idx) {
     XYPlot xyp = chartPanels[idx].getChart().getXYPlot();
     XYSeriesCollection xys = new XYSeriesCollection();
-    xys.addSeries(ds.getBlock(idx).toXYSeries());
+    xys.addSeries(dataStore.getBlock(idx).toXYSeries());
     xyp.setDataset(xys);
     xyp.getRenderer().setSeriesPaint(0,
         defaultColor[idx % defaultColor.length]);
@@ -1166,13 +1158,13 @@ public class InputPanel
    */
   private void setVerticalBars() {
 
-    if (ds.numberOfBlocksSet() < 1) {
+    if (dataStore.numberOfBlocksSet() < 1) {
       return;
     }
 
     int leftValue = leftSlider.getValue();
     int rightValue = rightSlider.getValue();
-    DataBlock db = ds.getXthLoadedBlock(1);
+    DataBlock db = dataStore.getXthLoadedBlock(1);
     long startMarkerLocation = getMarkerLocation(db, leftValue);
     long endMarkerLocation = getMarkerLocation(db, rightValue);
 
@@ -1184,7 +1176,7 @@ public class InputPanel
     endDate.addChangeListener(this);
 
     for (int i = 0; i < FILE_COUNT; ++i) {
-      if (!ds.blockIsSet(i)) {
+      if (!dataStore.blockIsSet(i)) {
         continue;
       }
 
@@ -1199,7 +1191,7 @@ public class InputPanel
       xyp.addDomainMarker(startMarker);
       xyp.addDomainMarker(endMarker);
 
-      List<Pair<Long, Long>> gaps = ds.getBlock(i).getGapBoundaries();
+      List<Pair<Long, Long>> gaps = dataStore.getBlock(i).getGapBoundaries();
 
       XYDataset data = xyp.getDataset();
       XYSeriesCollection xysc = (XYSeriesCollection) data;
@@ -1242,20 +1234,20 @@ public class InputPanel
 
     // get current time range of zoom data for resetting, if any data is loaded
     long start, end;
-    if (ds.areAnyBlocksSet()) {
-      DataBlock db = ds.getXthLoadedBlock(1);
+    if (dataStore.areAnyBlocksSet()) {
+      DataBlock db = dataStore.getXthLoadedBlock(1);
       start = db.getStartTime();
       end = db.getEndTime();
 
-      ds.trimToCommonTime(activePlots);
+      dataStore.trimToCommonTime(activePlots);
       // try to trim to current active time range if possible, otherwise fit
       // as much data as possible
-      db = ds.getXthLoadedBlock(1);
+      db = dataStore.getXthLoadedBlock(1);
       // was the data zoomed in more than it is now?
       if (start > db.getStartTime() || end < db.getEndTime()) {
         try {
           // zooms won't be modified if an exception is thrown
-          ds.trim(start, end, activePlots);
+          dataStore.trim(start, end, activePlots);
           zoomOut.setEnabled(true);
         } catch (IndexOutOfBoundsException e) {
           // new time range not valid for all current data, show max range
@@ -1273,12 +1265,12 @@ public class InputPanel
 
     // reset plot zoom if data is still there; clear out stale data from conflicting time ranges
     for (int i = 0; i < activePlots; ++i) {
-      if (ds.blockIsSet(i)) {
+      if (dataStore.blockIsSet(i)) {
         resetPlotZoom(i);
       } else {
         instantiateChart(i);
         seedFileNames[i].setText("NO FILE LOADED");
-        if (!ds.responseIsSet(i)) {
+        if (!dataStore.responseIsSet(i)) {
           respFileNames[i].setText("NO FILE LOADED");
           clearButton[i].setEnabled(false);
         }
@@ -1292,7 +1284,7 @@ public class InputPanel
     rightSlider.setValue(SLIDER_MAX);
     setVerticalBars();
 
-    zoomIn.setEnabled(ds.numberOfBlocksSet() > 0);
+    zoomIn.setEnabled(dataStore.numberOfBlocksSet() > 0);
 
     // using this test means the panel doesn't try to scroll when it's
     // only got a few inputs to deal with, when stuff is still pretty readable
@@ -1308,25 +1300,25 @@ public class InputPanel
    */
   public void showRegionForGeneration() {
 
-    if (ds.numberOfBlocksSet() < 1) {
+    if (dataStore.numberOfBlocksSet() < 1) {
       return;
     }
 
     // get (any) loaded data block to map slider to domain boundary
     // all data should have the same range
-    DataBlock db = ds.getXthLoadedBlock(1);
+    DataBlock db = dataStore.getXthLoadedBlock(1);
 
     if (leftSlider.getValue() != 0 || rightSlider.getValue() != SLIDER_MAX) {
       long start = getMarkerLocation(db, leftSlider.getValue());
       long end = getMarkerLocation(db, rightSlider.getValue());
-      ds.trim(start, end, activePlots);
+      dataStore.trim(start, end, activePlots);
       leftSlider.setValue(0);
       rightSlider.setValue(SLIDER_MAX);
       zoomOut.setEnabled(true);
     }
 
     for (int i = 0; i < activePlots; ++i) {
-      if (!ds.blockIsSet(i)) {
+      if (!dataStore.blockIsSet(i)) {
         continue;
       }
       resetPlotZoom(i);
@@ -1348,12 +1340,12 @@ public class InputPanel
 
     if (e.getSource() == startDate) {
       // if no data to do windowing on, don't bother
-      if (ds.numberOfBlocksSet() < 1) {
+      if (dataStore.numberOfBlocksSet() < 1) {
         return;
       }
 
       long time = startDate.getTime();
-      DataBlock db = ds.getXthLoadedBlock(1);
+      DataBlock db = dataStore.getXthLoadedBlock(1);
 
       long startTime = db.getStartTime();
       // startValue is current value of left-side slider in ms
@@ -1381,12 +1373,12 @@ public class InputPanel
 
     if (e.getSource() == endDate) {
       // if no data to do windowing on, don't bother
-      if (ds.numberOfBlocksSet() < 1) {
+      if (dataStore.numberOfBlocksSet() < 1) {
         return;
       }
 
       long time = endDate.getTime();
-      DataBlock db = ds.getXthLoadedBlock(1);
+      DataBlock db = dataStore.getXthLoadedBlock(1);
 
       long endTime = db.getEndTime();
 
