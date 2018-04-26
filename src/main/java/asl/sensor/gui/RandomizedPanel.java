@@ -31,6 +31,7 @@ import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.CompositeTitle;
+import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.chart.title.Title;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -45,11 +46,9 @@ import org.jfree.ui.VerticalAlignment;
  * to produce output of both plots when creating a report of the results,
  * and that the typical means of assigning the visible chart cannot be used.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class RandomizedPanel extends ExperimentPanel {
-
-  private static final int TITLE_IDX = 0; // TODO: replace w/ title pointers
 
   private static final long serialVersionUID = -1791709117080520178L;
 
@@ -437,10 +436,9 @@ public class RandomizedPanel extends ExperimentPanel {
 
       if (!showParams.isSelected()) {
         for (JFreeChart chart : getCharts()) {
-          Title extra = chart.getSubtitle(TITLE_IDX);
-          chart.removeSubtitle(extra);
-          extra = chart.getSubtitle(TITLE_IDX);
-          chart.removeSubtitle(extra);
+          LegendTitle legend = chart.getLegend();
+          chart.clearSubtitles();
+          chart.addLegend(legend);
         }
       }
 
@@ -450,8 +448,6 @@ public class RandomizedPanel extends ExperimentPanel {
       */
       if (showParams.isSelected()) {
         setSubtitles();
-
-        // xyp.addAnnotation(xyt);
       }
 
       return;
@@ -665,8 +661,8 @@ public class RandomizedPanel extends ExperimentPanel {
     result.setVerticalAlignment(VerticalAlignment.BOTTOM);
     result.setPosition(RectangleEdge.BOTTOM);
     for (JFreeChart chart : getCharts()) {
-      chart.addSubtitle(TITLE_IDX, ct);
-      chart.addSubtitle(TITLE_IDX, result);
+      chart.addSubtitle(ct);
+      chart.addSubtitle(result);
     }
   }
 
@@ -679,7 +675,7 @@ public class RandomizedPanel extends ExperimentPanel {
     showParams.setSelected(false);
 
     final boolean isLowFreq = lowFreqBox.isSelected();
-    seriesColorMap = new HashMap<String, Color>();
+    seriesColorMap = new HashMap<>();
 
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
     rndExp.setLowFreq(isLowFreq);
