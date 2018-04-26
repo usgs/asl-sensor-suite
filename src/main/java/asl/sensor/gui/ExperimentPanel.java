@@ -4,6 +4,7 @@ import asl.sensor.experiment.Experiment;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -13,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -72,6 +74,25 @@ public abstract class ExperimentPanel
     implements ActionListener, ChangeListener {
 
   private static final long serialVersionUID = -5591522915365766604L;
+  public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+      ThreadLocal.withInitial(() ->  {
+        DecimalFormat format =new DecimalFormat("#.###");
+        NumericUtils.setInfinityPrintable(format);
+        return format;
+      });
+  public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
+      ThreadLocal.withInitial(() ->  {
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
+      });
+
+  public static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
+      ThreadLocal.withInitial(() ->  {
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
+      });
 
   /**
    * Append text to a chart's title (used for distinguishing random cal types).
@@ -549,8 +570,7 @@ public abstract class ExperimentPanel
    */
   public String getPDFFilename() {
 
-    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
-    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+    SimpleDateFormat sdf = DATE_FORMAT.get();
 
     String date;
     long time = expResult.getStart();

@@ -45,8 +45,7 @@ public class AzimuthPanel extends ExperimentPanel {
   /**
    * Thread safe reference to a shared DecimalFormat object.
    */
-  private static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
-      ThreadLocal.withInitial(() ->  new DecimalFormat("#.###"));
+
   private final JSpinner offsetSpinner; // select how far from north to set reference data
   private JFreeChart angleChart, estimationChart; // plot angle, plot windowed estimation angle and correlation
   // note that some overrides are necessary because angle chart is a polar plot, not xy plot

@@ -234,8 +234,7 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public String getPDFFilename() {
 
-    SimpleDateFormat dateFormatter = new SimpleDateFormat("YYYY.DDD");
-    dateFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+    SimpleDateFormat dateFormatter = ExperimentPanel.DATE_FORMAT.get();
     Calendar calendar = Calendar.getInstance(dateFormatter.getTimeZone());
     // experiment has no time metadata to be associated with it, get time now
     String date = dateFormatter.format(calendar.getTime());

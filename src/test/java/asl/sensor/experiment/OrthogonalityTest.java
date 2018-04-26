@@ -4,16 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.test.TestUtils;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.TimeZone;
 import org.junit.Test;
-import asl.sensor.experiment.OrthogonalExperiment;
-import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -56,14 +54,11 @@ public class OrthogonalityTest {
 
     assertTrue( orth.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    // sdf.setLenient(false);
+    SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
 
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     cCal.set(Calendar.HOUR, 7);
-    // cCal.set(Calendar.MINUTE, 30);
     System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 13);

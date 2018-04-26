@@ -70,14 +70,12 @@ public class GainSixPanel extends GainPanel {
     sb.append("** CALCULATED GAIN: ");
     sb.append(calcGain);
 
-    DecimalFormat df = new DecimalFormat("#.###");
-
     if (plotIdx == 0) {
       sb.append("\nNorth azimuth (deg): ");
-      sb.append(df.format(Math.toDegrees(gn.getNorthAzimuth())));
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(gn.getNorthAzimuth())));
     } else if (plotIdx == 1) {
       sb.append("\nEast azimuth (rad): ");
-      sb.append(df.format(Math.toDegrees(gn.getEastAzimuth())));
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(gn.getEastAzimuth())));
     }
 
     return sb.toString();

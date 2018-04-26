@@ -54,9 +54,7 @@ public class RandomizedPanel extends ExperimentPanel {
   private static String complexListToString(List<Complex> complexList) {
     final int MAX_LINE = 2; // maximum number of entries per line
 
-    DecimalFormat decimalFormat = new DecimalFormat("#.#####");
-    NumericUtils.setInfinityPrintable(decimalFormat);
-    ComplexFormat complexFormat = new ComplexFormat(decimalFormat);
+    ComplexFormat complexFormat = new ComplexFormat(DECIMAL_FORMAT.get());
     StringBuilder stringBuilder = new StringBuilder();
     int numInLine = 0;
 
@@ -66,7 +64,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
       stringBuilder.append(complexFormat.format(number));
       stringBuilder.append(" (");
-      stringBuilder.append(decimalFormat.format(initPrd));
+      stringBuilder.append(DECIMAL_FORMAT.get().format(initPrd));
       stringBuilder.append(")");
       ++numInLine;
       // want to fit two to a line for paired values
@@ -99,7 +97,7 @@ public class RandomizedPanel extends ExperimentPanel {
     StringBuilder csvPoles = new StringBuilder();
     StringBuilder csvZeros = new StringBuilder();
     StringBuilder csvTitle = new StringBuilder();
-    DecimalFormat csvFormat = new DecimalFormat("+#.####;-#.####");
+    DecimalFormat csvFormat = new DecimalFormat("+#.###;-#.###");
     NumericUtils.setInfinityPrintable(csvFormat);
 
     final int COL_WIDTH = 9;

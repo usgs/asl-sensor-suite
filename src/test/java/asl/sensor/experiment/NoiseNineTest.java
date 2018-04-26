@@ -3,6 +3,7 @@ package asl.sensor.experiment;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.test.TestUtils;
 import java.awt.Font;
 import java.io.File;
@@ -10,7 +11,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
-import java.util.TimeZone;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
@@ -20,9 +20,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.NoiseNineExperiment;
-import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.NoiseNinePanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.ReportingUtils;
@@ -48,9 +45,7 @@ public class NoiseNineTest {
     DataStore ds =
         setUpTest(testFolder, types, freqName, components, ending, respName, true);
 
-    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    // sdf.setLenient(false);
+    SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
 
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
@@ -151,9 +146,7 @@ public class NoiseNineTest {
     DataStore ds =
         setUpTest(testFolder, types, freqName, components, ending, respName, false);
 
-    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    // sdf.setLenient(false);
+    SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
 
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );

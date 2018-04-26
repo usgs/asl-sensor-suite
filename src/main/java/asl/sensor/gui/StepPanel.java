@@ -68,30 +68,28 @@ public class StepPanel extends ExperimentPanel {
     double cornerPrd = 1. / corner;
     double fitCornerPrd = 1. / fitCorner;
 
-    DecimalFormat df = new DecimalFormat("#.######");
-
     StringBuilder sb = new StringBuilder();
     sb.append("RESP parameters\n");
     sb.append("Corner frequency (Hz): ");
-    sb.append(df.format(corner));
+    sb.append(DECIMAL_FORMAT.get().format(corner));
     sb.append(" (");
-    sb.append(df.format(cornerPrd));
+    sb.append(DECIMAL_FORMAT.get().format(cornerPrd));
     sb.append(" secs)");
     sb.append("\n");
     sb.append("Damping: ");
-    sb.append(df.format(damping));
+    sb.append(DECIMAL_FORMAT.get().format(damping));
     sb.append("\n");
 
     StringBuilder sb2 = new StringBuilder();
     sb2.append("Best-fit parameters\n");
     sb2.append("Corner frequency (Hz): ");
-    sb2.append(df.format(fitCorner));
+    sb2.append(DECIMAL_FORMAT.get().format(fitCorner));
     sb2.append(" (");
-    sb2.append(df.format(fitCornerPrd));
+    sb2.append(DECIMAL_FORMAT.get().format(fitCornerPrd));
     sb2.append(" secs)");
     sb2.append("\n");
     sb2.append("Damping: ");
-    sb2.append(df.format(fitDamping));
+    sb2.append(DECIMAL_FORMAT.get().format(fitDamping));
     sb2.append("\n");
     return new String[]{sb.toString(), sb2.toString()};
   }
@@ -109,7 +107,7 @@ public class StepPanel extends ExperimentPanel {
     String xAxisTitle = "Time";
     String yAxisTitle = "Normalized counts";
     xAxis = new DateAxis(xAxisTitle);
-    ((DateAxis) xAxis).setDateFormatOverride(InputPanel.DATE_FORMAT);
+    ((DateAxis) xAxis).setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     // xAxis.setAutoRange(true);
