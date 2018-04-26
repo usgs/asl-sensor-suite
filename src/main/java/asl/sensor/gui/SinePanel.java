@@ -4,7 +4,11 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
+import javax.swing.JComboBox;
+import javax.swing.JPanel;
+import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
@@ -22,6 +26,10 @@ public class SinePanel extends ExperimentPanel {
    */
   private static final long serialVersionUID = 2453757553804095685L;
 
+  private JFreeChart sinesChart, linearChart;
+  private NumberAxis calAxis, outAxis;
+  private JComboBox<String> plotSelection;
+
   public SinePanel(ExperimentEnum exp) {
     super(exp);
     channelType[0] = "Calibration input";
@@ -37,34 +45,107 @@ public class SinePanel extends ExperimentPanel {
     yAxis.setLabelFont(bold);
     applyAxesToChart();
 
-    this.setLayout( new GridBagLayout() );
+    calAxis = new NumberAxis("Calibration input sample");
+    outAxis = new NumberAxis("Output sample");
+    calAxis.setAutoRange(true);
+    outAxis.setAutoRange(true);
+    calAxis.setLabelFont(bold);
+    outAxis.setLabelFont(bold);
+
+    plotSelection = new JComboBox<String>();
+    plotSelection.addItem("Sine plot");
+    plotSelection.addItem("Linearity plot");
+    plotSelection.addActionListener(this);
+    plotSelection.setEnabled(false);
+
+    this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
+
     gbc.fill = GridBagConstraints.BOTH;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
+    gbc.gridwidth = 3;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
+
+    // place the other UI elements in a single row below the chart
+    gbc.gridwidth = 1;
     gbc.weighty = 0.0;
+    gbc.weightx = 0.0;
+    gbc.anchor = GridBagConstraints.WEST;
     gbc.fill = GridBagConstraints.NONE;
     gbc.gridy += 1;
+    gbc.gridx = 0;
+    JPanel space = new JPanel();
+    space.setPreferredSize(plotSelection.getPreferredSize());
+    this.add(space, gbc);
+
+    gbc.gridx += 1;
+    gbc.weightx = 1.0;
+    gbc.fill = GridBagConstraints.NONE;
+    gbc.anchor = GridBagConstraints.CENTER;
+    // gbc.gridwidth = GridBagConstraints.REMAINDER;
     this.add(save, gbc);
+
+    // plot selection combo box
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.gridx += 1;
+    gbc.weightx = 0;
+    gbc.anchor = GridBagConstraints.WEST;
+    this.add(plotSelection, gbc);
+  }
+
+  @Override
+  public void actionPerformed(ActionEvent e) {
+
+    super.actionPerformed(e);
+
+    if (e.getSource() == plotSelection) {
+
+      if (!set) {
+        XYPlot xyp = chart.getXYPlot();
+        String label = getXAxis().getLabel();
+        xyp.getDomainAxis().setLabel(label);
+        label = getYAxis().getLabel();
+        xyp.getRangeAxis().setLabel(label);
+        return;
+      }
+
+      int idx = plotSelection.getSelectedIndex();
+      JFreeChart[] charts =
+          new JFreeChart[]{sinesChart, linearChart};
+      chart = charts[idx];
+      chartPanel.setChart(chart);
+
+      return;
+
+    }
+
   }
 
   @Override
   protected void drawCharts() {
+    plotSelection.setSelectedIndex(0);
+    plotSelection.setEnabled(true);
     XYSeriesCollection xysc = expResult.getData().get(0);
-
-    setChart(xysc);
-    XYPlot xyp = (XYPlot) chart.getPlot();
+    sinesChart = buildChart(xysc);
+    XYPlot xyp = (XYPlot) sinesChart.getPlot();
 
     TextTitle result = new TextTitle();
-    result.setText( getInsetStrings() );
+    result.setText(getInsetStrings());
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
     xyp.clearAnnotations();
     xyp.addAnnotation(xyt);
 
+    xysc = expResult.getData().get(1);
+    // may need to make this something other than an xylinechart
+    linearChart = buildChart(xysc, calAxis, outAxis);
+    appendChartTitle(linearChart, " (Linearity plot)");
+    chart = sinesChart;
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
   }
@@ -87,12 +168,27 @@ public class SinePanel extends ExperimentPanel {
     set = true;
   }
 
+  @Override
+  public JFreeChart[] getCharts() {
+    return new JFreeChart[] {sinesChart, linearChart};
+  }
+
   /**
    * Used to get the text that will represent the title text in the PDF result
    */
   @Override
   public String getInsetStrings() {
-    return getInsetString( (SineExperiment) expResult );
+    return getInsetString((SineExperiment) expResult);
+  }
+
+  /**
+   * Get the index of the data holding the sensor output.
+   * Note that the input data list is listed as CAL, OUT, RESP, so the
+   * relevant index is the second one
+   */
+  @Override
+  protected int getIndexOfMainData() {
+    return 1;
   }
 
   public static String getInsetString(SineExperiment rexp) {
@@ -102,7 +198,7 @@ public class SinePanel extends ExperimentPanel {
     String calAmp = df.format(cAmp);
     String outAmp = df.format(oAmp);
     String ratio = df.format(cAmp / oAmp);
-    String pFreq = df.format( rexp.getEstSineFreq() );
+    String pFreq = df.format(rexp.getEstSineFreq());
     StringBuilder sb = new StringBuilder();
     sb.append("Calculated calibration amplitude: ");
     sb.append(calAmp);

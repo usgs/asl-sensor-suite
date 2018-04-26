@@ -24,13 +24,14 @@ import org.jfree.chart.JFreeChart;
  * Input, output, and test classes all use these functions, so by placing them
  * in a utility function with static methods the code inside those classes can
  * be simplified and redundant calls or procedures reduced.
- * @author akearns
  *
+ * @author akearns
  */
 public class ReportingUtils {
 
   /**
    * Merge a series of buffered images and write them to a single PDF page
+   *
    * @param pdf PDF document to append the page onto
    * @param bis Series of buffered images to merge onto a single page
    */
@@ -42,6 +43,7 @@ public class ReportingUtils {
 
   /**
    * Add a buffered image to a PDDocument page
+   *
    * @param bi BufferedImage to be added to PDF
    * @param pdf PDF to have BufferedImage appended to
    */
@@ -49,21 +51,21 @@ public class ReportingUtils {
   bufferedImageToPDFPage(BufferedImage bi, PDDocument pdf) {
 
     PDRectangle rec =
-        new PDRectangle( bi.getWidth(),
-                         bi.getHeight() );
+        new PDRectangle(bi.getWidth(),
+            bi.getHeight());
     PDPage page = new PDPage(rec);
 
     try {
-      PDImageXObject  pdImageXObject =
+      PDImageXObject pdImageXObject =
           LosslessFactory.createFromImage(pdf, bi);
       pdf.addPage(page);
       PDPageContentStream contentStream =
           new PDPageContentStream(pdf, page,
-                                  PDPageContentStream.AppendMode.OVERWRITE,
-                                  true, false);
+              PDPageContentStream.AppendMode.OVERWRITE,
+              true, false);
 
-      contentStream.drawImage( pdImageXObject, 0, 0,
-          bi.getWidth(), bi.getHeight() );
+      contentStream.drawImage(pdImageXObject, 0, 0,
+          bi.getWidth(), bi.getHeight());
       contentStream.close();
 
     } catch (IOException e) {
@@ -80,6 +82,7 @@ public class ReportingUtils {
    * image has width given by that parameter and height equal to height
    * multiplied by the number of charts passed in
    * (that is, the charts are concatenated vertically)
+   *
    * @param width width of each chart plot
    * @param height height of each chart plot
    * @param jfcs series of charts to be plotted in
@@ -92,7 +95,7 @@ public class ReportingUtils {
 
     for (int i = 0; i < jfcs.length; ++i) {
       ChartPanel cp = new ChartPanel(jfcs[i]);
-      cp.setSize( new Dimension(width, height) );
+      cp.setSize(new Dimension(width, height));
       BufferedImage temp = new BufferedImage(
           cp.getWidth(),
           cp.getHeight(),
@@ -111,6 +114,7 @@ public class ReportingUtils {
    * Create a list of buffered images from a series of charts, with a specified
    * number of charts included on each image. This is used to write the charts
    * to a series of pages in a PDF report
+   *
    * @param perImg Number of charts' plots to write to a single page
    * @param width Width to set each chart's output image
    * @param height Height to set each chart's output image
@@ -126,8 +130,8 @@ public class ReportingUtils {
 
     if (totalNumber < perImg) {
       // if we can fit them all on a single page, then we'll do so
-      imageList.add( chartsToImage(width, height, charts) );
-      return imageList.toArray( new BufferedImage[]{} );
+      imageList.add(chartsToImage(width, height, charts));
+      return imageList.toArray(new BufferedImage[]{});
     }
 
     // want to keep all charts the same size;
@@ -146,7 +150,7 @@ public class ReportingUtils {
       for (int j = 0; j < perImg; ++j) {
         onOnePage[j] = charts[(perImg * i) + j];
       }
-      imageList.add( chartsToImage(width, height, onOnePage) );
+      imageList.add(chartsToImage(width, height, onOnePage));
     }
 
     // special case for a non-evenly dividing plot series
@@ -158,16 +162,17 @@ public class ReportingUtils {
       }
       BufferedImage lastPageImage = chartsToImage(width, height, lastPage);
       BufferedImage space = createWhitespace(width, height * spacerCount);
-      imageList.add( mergeBufferedImages(lastPageImage, space) );
+      imageList.add(mergeBufferedImages(lastPageImage, space));
     }
 
-    return imageList.toArray( new BufferedImage[]{} );
+    return imageList.toArray(new BufferedImage[]{});
   }
 
   /**
    * Takes in a series of charts and produces a PDF page of those charts.
    * For more details on this method, see the chartsToImage function, which
    * this method uses to produce the image to be added to the PDF
+   *
    * @param width Width of each chart to be added to the PDF
    * @param height Height of each chart to be added to the PDF
    * @param pdf PDF document to have the data appended to
@@ -188,7 +193,7 @@ public class ReportingUtils {
     Graphics2D g = out.createGraphics();
 
     g.setPaint(Color.WHITE);
-    g.fillRect ( 0, 0, out.getWidth(), out.getHeight() );
+    g.fillRect(0, 0, out.getWidth(), out.getHeight());
     g.dispose();
     return out;
   }
@@ -196,6 +201,7 @@ public class ReportingUtils {
   /**
    * Writes multiple pages of charts to a PDF file, with the number of charts
    * to display per page set according to a parameter
+   *
    * @param perPage Number of charts to put in a page at a time
    * @param width Width of each chart to write to file
    * @param height Height of each chart to write to file
@@ -206,13 +212,14 @@ public class ReportingUtils {
   groupChartsToPDFPages(int perPage, int width, int height,
       PDDocument pdf, JFreeChart... charts) {
 
-    imageListToPDFPages( pdf,
-        chartsToImageList(perPage, width, height, charts) );
+    imageListToPDFPages(pdf,
+        chartsToImageList(perPage, width, height, charts));
 
   }
 
   /**
    * Write a list of images to a pdf document, each image its own page
+   *
    * @param pdf PDF document to write to
    * @param bis List of buffered images to write. Each image is written to its
    * own PDF page.
@@ -228,6 +235,7 @@ public class ReportingUtils {
    * Utility function to combine a series of buffered images into a single
    * buffered image. Images are concatenated vertically and centered
    * horizontally into an image as wide as the widest passed-in image
+   *
    * @param bis Buffered images to send in
    * @return Single concatenated buffered image
    */
@@ -236,7 +244,7 @@ public class ReportingUtils {
     int maxWidth = 0;
     int totalHeight = 0;
     for (BufferedImage bi : bis) {
-      if ( maxWidth < bi.getWidth() ) {
+      if (maxWidth < bi.getWidth()) {
         maxWidth = bi.getWidth();
       }
       totalHeight += bi.getHeight();
@@ -250,7 +258,7 @@ public class ReportingUtils {
     for (BufferedImage bi : bis) {
       int centeringOffset = 0; // need to center the component?
       if (bi.getWidth() < maxWidth) {
-        centeringOffset = ( maxWidth - bi.getWidth() ) / 2;
+        centeringOffset = (maxWidth - bi.getWidth()) / 2;
       }
       g.drawImage(bi, null, centeringOffset, heightIndex);
       heightIndex += bi.getHeight();
@@ -263,6 +271,7 @@ public class ReportingUtils {
   /**
    * Add pages to a PDF document consisting of textual data with a series of
    * strings, where each string is written to a separate page
+   *
    * @param pdf Document to append pages of text to
    * @param toWrite Series of strings to write to PDF
    */
@@ -278,83 +287,84 @@ public class ReportingUtils {
 
   /**
    * Add a page to a PDF document consisting of textual data
+   *
    * @param toWrite String to add to a new PDF page
    * @param pdf Document to append the page to
    */
   public static void textToPDFPage(String toWrite, PDDocument pdf) {
 
-    if ( toWrite.length() == 0 ) {
+    if (toWrite.length() == 0) {
       return;
     }
 
-      PDPage page = new PDPage();
-      pdf.addPage(page);
+    PDPage page = new PDPage();
+    pdf.addPage(page);
 
-      PDFont pdfFont = PDType1Font.COURIER;
-      float fontSize = 12;
-      float leading = 1.5f * fontSize;
+    PDFont pdfFont = PDType1Font.COURIER;
+    float fontSize = 12;
+    float leading = 1.5f * fontSize;
 
-      PDRectangle mediabox = page.getMediaBox();
-      float margin = 72;
-      float width = mediabox.getWidth() - 2*margin;
-      float startX = mediabox.getLowerLeftX() + margin;
-      float startY = mediabox.getUpperRightY() - margin;
+    PDRectangle mediabox = page.getMediaBox();
+    float margin = 72;
+    float width = mediabox.getWidth() - 2 * margin;
+    float startX = mediabox.getLowerLeftX() + margin;
+    float startY = mediabox.getUpperRightY() - margin;
 
-      List<String> lines = new ArrayList<String>();
+    List<String> lines = new ArrayList<String>();
 
-      for (String text : toWrite.split("\n") ) {
+    for (String text : toWrite.split("\n")) {
 
-        int lastSpace = -1;
-        while (text.length() > 0) {
+      int lastSpace = -1;
+      while (text.length() > 0) {
 
-          int spaceIndex = text.indexOf(' ', lastSpace + 1);
-          if (spaceIndex < 0) {
-            spaceIndex = text.length();
+        int spaceIndex = text.indexOf(' ', lastSpace + 1);
+        if (spaceIndex < 0) {
+          spaceIndex = text.length();
 
-          }
-          String subString = text.substring(0, spaceIndex);
-          float size;
-          try {
-            size = fontSize * pdfFont.getStringWidth(subString) / 1000;
-            if (size > width) {
-              if (lastSpace < 0) {
-                lastSpace = spaceIndex;
-              }
-              subString = text.substring(0, lastSpace);
-              lines.add(subString);
-              text = text.substring(lastSpace).trim();
-              // System.out.printf("'%s' is line\n", subString);
-              lastSpace = -1;
-            } else if ( spaceIndex == text.length() ) {
-              lines.add(text);
-              // System.out.printf("'%s' is line\n", text);
-              text = "";
-            } else {
+        }
+        String subString = text.substring(0, spaceIndex);
+        float size;
+        try {
+          size = fontSize * pdfFont.getStringWidth(subString) / 1000;
+          if (size > width) {
+            if (lastSpace < 0) {
               lastSpace = spaceIndex;
             }
-          } catch (IOException e) {
-            e.printStackTrace();
+            subString = text.substring(0, lastSpace);
+            lines.add(subString);
+            text = text.substring(lastSpace).trim();
+            // System.out.printf("'%s' is line\n", subString);
+            lastSpace = -1;
+          } else if (spaceIndex == text.length()) {
+            lines.add(text);
+            // System.out.printf("'%s' is line\n", text);
+            text = "";
+          } else {
+            lastSpace = spaceIndex;
           }
+        } catch (IOException e) {
+          e.printStackTrace();
         }
       }
+    }
 
-      try {
-        PDPageContentStream contentStream;
-        contentStream = new PDPageContentStream(pdf, page);
-        contentStream.beginText();contentStream.setFont(pdfFont, fontSize);
-        contentStream.newLineAtOffset(startX, startY);
-        for (String line : lines) {
-          contentStream.showText(line);
-          contentStream.newLineAtOffset(0, -leading);
-        }
-        contentStream.endText();
-        contentStream.close();
-      } catch (IOException e) {
-        e.printStackTrace();
+    try {
+      PDPageContentStream contentStream;
+      contentStream = new PDPageContentStream(pdf, page);
+      contentStream.beginText();
+      contentStream.setFont(pdfFont, fontSize);
+      contentStream.newLineAtOffset(startX, startY);
+      for (String line : lines) {
+        contentStream.showText(line);
+        contentStream.newLineAtOffset(0, -leading);
       }
+      contentStream.endText();
+      contentStream.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
 
-
-      return;
+    return;
   }
 
 }

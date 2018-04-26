@@ -9,8 +9,8 @@ import asl.sensor.input.DataStore;
 /**
  * Used as singleton instance of swingworker to prevent clogging the program
  * with many dead threads and make sure experiments cancel gracefully
- * @author akearns
  *
+ * @author akearns
  */
 public class SwingWorkerSingleton {
 
@@ -23,9 +23,8 @@ public class SwingWorkerSingleton {
 
   /**
    * Get the result of running the swingworker, that is, completion status
+   *
    * @return True if the worker (i.e., experiment) completed successfully
-   * @throws InterruptedException
-   * @throws ExecutionException
    */
   public static boolean getCompleted()
       throws InterruptedException, ExecutionException {
@@ -45,11 +44,11 @@ public class SwingWorkerSingleton {
    * experiment.
    * The returned result is a boolean used to determine if the data in the
    * experiment's display panel was properly set.
+   *
    * @param active ExperimentPanel to run calculations from
    * @param ds DataStore whose data will be used in the calculations
    */
-  public static void setInstance(ExperimentPanel active, DataStore ds)
-      {
+  public static void setInstance(ExperimentPanel active, DataStore ds) {
 
     if (worker != null) {
       // clear out any old data in the chart
@@ -57,7 +56,7 @@ public class SwingWorkerSingleton {
       // if we run a new experiment while another one was calculating,
       // the result won't actually complete, so we should make it clear that
       // other panel was cancelled, and thus clear the chart / unset data
-      if ( !worker.isDone() ) {
+      if (!worker.isDone()) {
         worker.cancel(true); // cancel worker, set it to the new task
       }
     }
@@ -92,7 +91,7 @@ public class SwingWorkerSingleton {
             text.append(" poles defining the rolloff?)\n");
             text.append("A more detailed explanation has been output to terminal,\n");
             text.append("but here is the error message returned by the backend:\n");
-            text.append( ex.toString() );
+            text.append(cause.toString());
           } else if (cause instanceof ConvergenceException) {
             text.append("Solver was unable to converge on a specific value.\n");
             text.append("A common cause of this is having too little timeseries data to");
@@ -100,25 +99,25 @@ public class SwingWorkerSingleton {
             text.append("(Are you running a low-frequency cal on high-frequency data?)\n");
             text.append("A more detailed explanation has been output to terminal,\n");
             text.append("but here is the error message returned by the backend:\n");
-            text.append( ex.toString() );
+            text.append(cause.toString());
           } else {
-            if ( ex.getMessage() == null ) {
+            if (ex.getMessage() == null) {
               text.append("CANCELLED");
             } else {
-              text.append( ex.getMessage() );
+              text.append(cause.getMessage());
             }
           }
-          epHandle.displayErrorMessage( text.toString() );
-          ex.printStackTrace();
+          epHandle.displayErrorMessage(text.toString());
+          cause.printStackTrace();
         } catch (InterruptedException ex) {
           String text;
-          if ( ex.getMessage() == null ) {
+          if (ex.getMessage() == null) {
             text = "CANCELLED";
           } else {
             text = ex.getMessage();
           }
           epHandle.displayErrorMessage(text);
-          ex.printStackTrace();
+          ex.getCause().printStackTrace();
         }
       }
     };

@@ -1,5 +1,8 @@
 package asl.sensor.gui;
 
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.NoiseExperiment;
+import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -11,17 +14,14 @@ import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.NoiseExperiment;
-import asl.sensor.input.DataStore;
 
 /**
  * Panel for displaying the results of the self-noise experiment (3-input).
  * In addition to general requirements of output panels, also includes
  * a checkbox to choose between frequency and interval x-axis and
  * the variant axes for when that box is checked.
- * @author akearns
  *
+ * @author akearns
  */
 public class NoisePanel extends ExperimentPanel {
 
@@ -39,7 +39,6 @@ public class NoisePanel extends ExperimentPanel {
 
   /**
    * Constructs a new panel and lays out all the components in it
-   * @param exp
    */
   public NoisePanel(ExperimentEnum exp) {
 
@@ -50,7 +49,7 @@ public class NoisePanel extends ExperimentPanel {
       channelType[i] = "Input data (RESP required)";
     }
 
-    plotTheseInBold = new String[]{"NLNM","NHNM"};
+    plotTheseInBold = new String[]{"NLNM", "NHNM"};
 
     // instantiate local fields
     String xAxisTitle = "Period (s)";
@@ -60,7 +59,7 @@ public class NoisePanel extends ExperimentPanel {
     freqAxis = new LogarithmicAxis(freqAxisTitle);
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
-    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
+    ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
@@ -72,22 +71,26 @@ public class NoisePanel extends ExperimentPanel {
     applyAxesToChart(); // now that we've got axes defined
 
     // set the GUI components
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
 
     gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
     gbc.gridwidth = 3;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
 
     // place the other UI elements in a single row below the chart
     gbc.gridwidth = 1;
-    gbc.weighty = 0.0; gbc.weightx = 0.0;
+    gbc.weighty = 0.0;
+    gbc.weightx = 0.0;
     gbc.anchor = GridBagConstraints.WEST;
     gbc.fill = GridBagConstraints.NONE;
-    gbc.gridy += 1; gbc.gridx = 0;
+    gbc.gridy += 1;
+    gbc.gridx = 0;
     this.add(freqSpaceBox, gbc);
 
     gbc.gridx += 1;
@@ -103,7 +106,7 @@ public class NoisePanel extends ExperimentPanel {
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;
     JPanel spacer = new JPanel();
-    spacer.setPreferredSize( freqSpaceBox.getPreferredSize() );
+    spacer.setPreferredSize(freqSpaceBox.getPreferredSize());
     this.add(spacer, gbc);
   }
 
@@ -116,7 +119,7 @@ public class NoisePanel extends ExperimentPanel {
   @Override
   protected void drawCharts() {
 
-    setChart( expResult.getData().get(0) );
+    setChart(expResult.getData().get(0));
 
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
@@ -133,8 +136,8 @@ public class NoisePanel extends ExperimentPanel {
   public ValueAxis getXAxis() {
 
     // true if using Hz units
-    if ( freqSpaceBox.isSelected() ) {
-        return freqAxis;
+    if (freqSpaceBox.isSelected()) {
+      return freqAxis;
     }
 
     return xAxis;

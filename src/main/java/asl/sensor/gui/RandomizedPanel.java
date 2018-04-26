@@ -1,5 +1,10 @@
 package asl.sensor.gui;
 
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.ResponseExperiment;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -31,11 +36,6 @@ import org.jfree.chart.title.Title;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.VerticalAlignment;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.experiment.ResponseExperiment;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
 
 /**
  * Panel to display results from a randomized calibration experiment.
@@ -44,48 +44,43 @@ import asl.sensor.utils.NumericUtils;
  * The inclusion of two selectable plots means that overrides are necessary
  * to produce output of both plots when creating a report of the results,
  * and that the typical means of assigning the visible chart cannot be used.
- * @author akearns
  *
+ * @author akearns
  */
 public class RandomizedPanel extends ExperimentPanel {
 
-  public static final String MAGNITUDE = ResponseExperiment.MAGNITUDE;
-  public static final String ARGUMENT = ResponseExperiment.ARGUMENT;
   private static final int TITLE_IDX = 0; // TODO: replace w/ title pointers
 
-  /**
-   *
-   */
   private static final long serialVersionUID = -1791709117080520178L;
-  public static String complexListToString(List<Complex> stringMe) {
+
+  public static String complexListToString(List<Complex> complexList) {
     final int MAX_LINE = 2; // maximum number of entries per line
 
-    DecimalFormat df = new DecimalFormat("#.#####");
-    NumericUtils.setInfinityPrintable(df);
-    ComplexFormat cf = new ComplexFormat(df);
-    StringBuilder sb = new StringBuilder();
+    DecimalFormat decimalFormat = new DecimalFormat("#.#####");
+    NumericUtils.setInfinityPrintable(decimalFormat);
+    ComplexFormat complexFormat = new ComplexFormat(decimalFormat);
+    StringBuilder stringBuilder = new StringBuilder();
     int numInLine = 0;
 
-    for (int i = 0; i < stringMe.size(); ++i) {
+    for (Complex number : complexList) {
 
-      Complex c = stringMe.get(i);
-      double initPrd = NumericUtils.TAU / c.abs();
+      double initPrd = NumericUtils.TAU / number.abs();
 
-      sb.append( cf.format(c) );
-      sb.append(" (");
-      sb.append( df.format(initPrd) );
-      sb.append(")");
+      stringBuilder.append(complexFormat.format(number));
+      stringBuilder.append(" (");
+      stringBuilder.append(decimalFormat.format(initPrd));
+      stringBuilder.append(")");
       ++numInLine;
       // want to fit two to a line for paired values
       if (numInLine >= MAX_LINE) {
-        sb.append("\n");
+        stringBuilder.append("\n");
         numInLine = 0;
       } else {
-        sb.append(", ");
+        stringBuilder.append(", ");
       }
     }
 
-    return sb.toString();
+    return stringBuilder.toString();
   }
 
   /**
@@ -93,6 +88,7 @@ public class RandomizedPanel extends ExperimentPanel {
    * underlying experiment backend; can be called without constructing a
    * panel. Called by a non-static function in order to implement overrides, as
    * static functions do not get overridden by inheritance.
+   *
    * @param rnd RandomizedExperiment to pull data from (i.e., from a panel
    * instance)
    * @return List of strings, each one representing a new page's worth of data
@@ -113,10 +109,10 @@ public class RandomizedPanel extends ExperimentPanel {
     String[] columns = new String[]{"Init", "Fit", "Diff", "Mean", "PctDiff"};
     for (String column : columns) {
       StringBuilder paddedColumn = new StringBuilder(column);
-      while ( paddedColumn.length() < COL_WIDTH ) {
+      while (paddedColumn.length() < COL_WIDTH) {
         paddedColumn.append(" "); // add a space
       }
-      csvTitle.append( paddedColumn );
+      csvTitle.append(paddedColumn);
     }
 
     List<Complex> fitP = rnd.getFitPoles();
@@ -143,7 +139,7 @@ public class RandomizedPanel extends ExperimentPanel {
       double imagPartInit = initP.get(i).getImaginary();
 
       // make sure sign of the imaginary parts are the same
-      if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
+      if (Math.signum(imagPartFit) != Math.signum(imagPartInit)) {
         imagPartFit *= -1;
       }
 
@@ -154,11 +150,11 @@ public class RandomizedPanel extends ExperimentPanel {
       double imagAvg = (imagPartInit + imagPartFit) / 2.;
 
       double realPct = realDiff * 100 / realPartFit;
-      if ( realPartFit == 0. ) {
+      if (realPartFit == 0.) {
         realPct = 0.;
       }
       double imagPct = imagDiff * 100 / imagPartFit;
-      if ( imagPartFit == 0. ) {
+      if (imagPartFit == 0.) {
         imagPct = 0.;
       }
 
@@ -173,20 +169,20 @@ public class RandomizedPanel extends ExperimentPanel {
       for (double colNumber : realRow) {
         String column = csvFormat.format(colNumber);
         StringBuilder paddedColumn = new StringBuilder(column);
-        while ( paddedColumn.length() < COL_WIDTH ) {
+        while (paddedColumn.length() < COL_WIDTH) {
           paddedColumn.append(" "); // add a space
         }
-        csvPoles.append( paddedColumn );
+        csvPoles.append(paddedColumn);
       }
       csvPoles.append("\n");
 
       for (double colNumber : imagRow) {
         String column = csvFormat.format(colNumber);
         StringBuilder paddedColumn = new StringBuilder(column);
-        while ( paddedColumn.length() < COL_WIDTH ) {
+        while (paddedColumn.length() < COL_WIDTH) {
           paddedColumn.append(" "); // add a space
         }
-        csvPoles.append( paddedColumn );
+        csvPoles.append(paddedColumn);
       }
       csvPoles.append("\n");
 
@@ -196,12 +192,11 @@ public class RandomizedPanel extends ExperimentPanel {
     }
 
     // get statistics for differences between initial and solved parameters
-    if ( fitZ.size() > 0 ) {
+    if (fitZ.size() > 0) {
       csvZeros = new StringBuilder("ZERO VARIABLES, AS CSV:\n");
       csvZeros.append(csvTitle);
       csvZeros.append("\n");
     }
-
 
     for (int i = 0; i < fitZ.size(); ++i) {
       double realPartFit = fitZ.get(i).getReal();
@@ -211,7 +206,7 @@ public class RandomizedPanel extends ExperimentPanel {
       double imagPartInit = initZ.get(i).getImaginary();
 
       // make sure sign of the imaginary parts are the same
-      if ( Math.signum(imagPartFit) != Math.signum(imagPartInit) ) {
+      if (Math.signum(imagPartFit) != Math.signum(imagPartInit)) {
         imagPartFit *= -1;
       }
 
@@ -222,11 +217,11 @@ public class RandomizedPanel extends ExperimentPanel {
       double imagAvg = (imagPartInit + imagPartFit) / 2.;
 
       double realPct = realDiff * 100 / realPartFit;
-      if ( realPartFit == 0. ) {
+      if (realPartFit == 0.) {
         realPct = 0.;
       }
       double imagPct = imagDiff * 100 / imagPartFit;
-      if ( imagPartFit == 0. ) {
+      if (imagPartFit == 0.) {
         imagPct = 0.;
       }
 
@@ -239,20 +234,20 @@ public class RandomizedPanel extends ExperimentPanel {
       for (double colNumber : realRow) {
         String column = csvFormat.format(colNumber);
         StringBuilder paddedColumn = new StringBuilder(column);
-        while ( paddedColumn.length() < COL_WIDTH ) {
+        while (paddedColumn.length() < COL_WIDTH) {
           paddedColumn.append(" "); // add a space
         }
-        csvZeros.append( paddedColumn );
+        csvZeros.append(paddedColumn);
       }
       csvZeros.append("\n");
 
       for (double colNumber : imagRow) {
         String column = csvFormat.format(colNumber);
         StringBuilder paddedColumn = new StringBuilder(column);
-        while ( paddedColumn.length() < COL_WIDTH ) {
+        while (paddedColumn.length() < COL_WIDTH) {
           paddedColumn.append(" "); // add a space
         }
-        csvZeros.append( paddedColumn );
+        csvZeros.append(paddedColumn);
       }
       csvZeros.append("\n");
 
@@ -272,6 +267,7 @@ public class RandomizedPanel extends ExperimentPanel {
   /**
    * Static helper method for getting the formatted inset string directly
    * from a RandomizedExperiment
+   *
    * @param rnd RandomizedExperiment with data to be extracted
    * @return String format representation of data from the experiment
    */
@@ -297,8 +293,8 @@ public class RandomizedPanel extends ExperimentPanel {
     sbInit.append("Initial poles: \n");
     sbFit.append("Fit poles: \n");
 
-    sbInit.append( complexListToString(initP) );
-    sbFit.append( complexListToString(fitP) );
+    sbInit.append(complexListToString(initP));
+    sbFit.append(complexListToString(fitP));
 
     sbInit.append("\n");
     sbFit.append("\n");
@@ -306,13 +302,13 @@ public class RandomizedPanel extends ExperimentPanel {
     StringBuilder sbInitZ = new StringBuilder();
     StringBuilder sbFitZ = new StringBuilder();
 
-    if ( fitZ.size() > 0 ) {
+    if (fitZ.size() > 0) {
       sbInitZ.append("Initial zeros: \n");
       sbFitZ.append("Fit zeros: \n");
     }
 
-    sbInitZ.append( complexListToString(initZ) );
-    sbFitZ.append( complexListToString(fitZ) );
+    sbInitZ.append(complexListToString(initZ));
+    sbFitZ.append(complexListToString(fitZ));
 
     sbFit.append("\n");
     sbInit.append("\n");
@@ -342,7 +338,7 @@ public class RandomizedPanel extends ExperimentPanel {
   }
 
   private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis,
-                    residXAxis, residPrdAxis;
+      residXAxis, residPrdAxis;
   private JComboBox<String> plotSelection;
   private JCheckBox lowFreqBox, showParams, freqSpace;
   private JFreeChart magChart, argChart, residAmpChart, residPhaseChart;
@@ -363,24 +359,28 @@ public class RandomizedPanel extends ExperimentPanel {
     residAmpChart = buildChart(null, xAxis, residAmpAxis);
 
     // set the GUI components
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
 
     gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
     gbc.gridwidth = 3;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
 
     // place the other UI elements in a single row below the chart
     gbc.gridwidth = 1;
-    gbc.weighty = 0.0; gbc.weightx = 0.0;
+    gbc.weighty = 0.0;
+    gbc.weightx = 0.0;
     gbc.anchor = GridBagConstraints.WEST;
     gbc.fill = GridBagConstraints.NONE;
-    gbc.gridy += 1; gbc.gridx = 0;
+    gbc.gridy += 1;
+    gbc.gridx = 0;
     JPanel checkBoxPanel = new JPanel();
-    checkBoxPanel.setLayout( new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS) );
+    checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
     checkBoxPanel.add(lowFreqBox);
     checkBoxPanel.add(showParams);
     checkBoxPanel.add(freqSpace);
@@ -398,9 +398,9 @@ public class RandomizedPanel extends ExperimentPanel {
     gbc.gridx += 1;
     gbc.weightx = 0;
     gbc.anchor = GridBagConstraints.WEST;
-    plotSelection = new JComboBox<String>();
-    plotSelection.addItem(MAGNITUDE);
-    plotSelection.addItem(ARGUMENT);
+    plotSelection = new JComboBox<>();
+    plotSelection.addItem(ResponseExperiment.MAGNITUDE);
+    plotSelection.addItem(ResponseExperiment.ARGUMENT);
     plotSelection.addItem("Residual amplitude plot");
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
@@ -412,7 +412,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
     super.actionPerformed(e);
 
-    if ( e.getSource() == plotSelection ) {
+    if (e.getSource() == plotSelection) {
 
       if (!set) {
         XYPlot xyp = chart.getXYPlot();
@@ -433,10 +433,10 @@ public class RandomizedPanel extends ExperimentPanel {
 
     }
 
-    if ( e.getSource() == showParams ) {
+    if (e.getSource() == showParams) {
 
-      if( !showParams.isSelected() ) {
-        for ( JFreeChart chart : getCharts() ) {
+      if (!showParams.isSelected()) {
+        for (JFreeChart chart : getCharts()) {
           Title extra = chart.getSubtitle(TITLE_IDX);
           chart.removeSubtitle(extra);
           extra = chart.getSubtitle(TITLE_IDX);
@@ -448,7 +448,7 @@ public class RandomizedPanel extends ExperimentPanel {
       XYPlot xyp = magChart.getXYPlot();
       xyp.clearAnnotations();
       */
-      if ( showParams.isSelected() ) {
+      if (showParams.isSelected()) {
         setSubtitles();
 
         // xyp.addAnnotation(xyt);
@@ -484,12 +484,12 @@ public class RandomizedPanel extends ExperimentPanel {
     return new JFreeChart[]{magChart, argChart};
   }
 
-  @Override
   /**
    * Get the index of the data holding the sensor output.
    * Note that the input data list is listed as CAL, OUT, RESP, so the
    * relevant index is the second one
    */
+  @Override
   protected int getIndexOfMainData() {
     return 1;
   }
@@ -509,6 +509,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
   /**
    * Produce arrays of pole, zero, and residual data for text titles
+   *
    * @return Array of strings
    */
   public String[] getInsetStringsAsList() {
@@ -526,7 +527,7 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append(iters);
     sb.append("\n");
 
-    sb.append( super.getMetadataString() );
+    sb.append(super.getMetadataString());
 
     double[] weights = rnd.getWeights();
     sb.append("Residuals weighting:\n");
@@ -538,7 +539,6 @@ public class RandomizedPanel extends ExperimentPanel {
     return sb.toString();
   }
 
-  @Override
   /**
    * Produce the filename of the report generated from this experiment.
    * Since response data is not directly associated with data at a given
@@ -546,22 +546,23 @@ public class RandomizedPanel extends ExperimentPanel {
    * and the first response used in the experiment.
    * @return String that will be default filename of PDF generated from data
    */
+  @Override
   public String getPDFFilename() {
 
     StringBuilder sb = new StringBuilder();
-    if ( lowFreqBox.isSelected() ) {
+    if (lowFreqBox.isSelected()) {
       sb.append("Low_Frq_");
     } else {
       sb.append("High_Frq_");
     }
 
-    sb.append( super.getPDFFilename() );
+    sb.append(super.getPDFFilename());
 
     return sb.toString();
   }
 
   public ValueAxis getResidAxis() {
-    if ( null == plotSelection || freqSpace.isSelected() ) {
+    if (null == plotSelection || freqSpace.isSelected()) {
       return residXAxis;
     } else {
       return residPrdAxis;
@@ -575,7 +576,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
   @Override
   public ValueAxis getXAxis() {
-    if ( null == plotSelection || freqSpace.isSelected() ) {
+    if (null == plotSelection || freqSpace.isSelected()) {
       return xAxis;
     } else {
       return prdAxis;
@@ -615,7 +616,7 @@ public class RandomizedPanel extends ExperimentPanel {
     residPhaseAxis = new NumberAxis("Phase error (degrees)");
     residAmpAxis = new NumberAxis("Amplitude error (percentage)");
 
-    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
+    ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
@@ -640,7 +641,7 @@ public class RandomizedPanel extends ExperimentPanel {
   }
 
   private void setSubtitles() {
-    BlockContainer bc = new BlockContainer( new FlowArrangement() );
+    BlockContainer bc = new BlockContainer(new FlowArrangement());
     CompositeTitle ct = new CompositeTitle(bc);
     String[] insets = getInsetStringsAsList();
     for (String inset : insets) {
@@ -656,14 +657,14 @@ public class RandomizedPanel extends ExperimentPanel {
     int numIters = re.getIterations();
     StringBuilder sb = new StringBuilder("NUMBER OF ITERATIONS: ");
     sb.append(numIters);
-    result.setText( sb.toString() );
+    result.setText(sb.toString());
     result.setBackgroundPaint(Color.white);
 
     ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
     ct.setPosition(RectangleEdge.BOTTOM);
     result.setVerticalAlignment(VerticalAlignment.BOTTOM);
     result.setPosition(RectangleEdge.BOTTOM);
-    for ( JFreeChart chart : getCharts() ) {
+    for (JFreeChart chart : getCharts()) {
       chart.addSubtitle(TITLE_IDX, ct);
       chart.addSubtitle(TITLE_IDX, result);
     }
@@ -682,7 +683,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
     rndExp.setLowFreq(isLowFreq);
-    rndExp.useFreqUnits( freqSpace.isSelected() );
+    rndExp.useFreqUnits(freqSpace.isSelected());
     expResult.runExperimentOnData(ds);
 
     String appendFreqTitle;
@@ -720,8 +721,8 @@ public class RandomizedPanel extends ExperimentPanel {
     invertSeriesRenderingOrder(magChart);
 
     if (!isLowFreq) {
-      Marker maxFitMarker = new ValueMarker( rndExp.getMaxFitFrequency() );
-      maxFitMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+      Marker maxFitMarker = new ValueMarker(rndExp.getMaxFitFrequency());
+      maxFitMarker.setStroke(new BasicStroke((float) 1.5));
       maxFitMarker.setPaint(Color.BLACK);
       magChart.getXYPlot().addDomainMarker(maxFitMarker);
       argChart.getXYPlot().addDomainMarker(maxFitMarker);

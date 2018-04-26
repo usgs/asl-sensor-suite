@@ -1,5 +1,8 @@
 package asl.sensor.gui;
 
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.GainExperiment;
+import asl.sensor.input.DataStore;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -24,9 +27,6 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.GainExperiment;
-import asl.sensor.input.DataStore;
 
 /**
  * Panel to display the results of the gain experiment calculations.
@@ -34,11 +34,11 @@ import asl.sensor.input.DataStore;
  * this also includes selectors to set reference and calculated gain timeseries
  * targets, and sliders to set the window range over which to calculate
  * the gain statistics
- * @author akearns
  *
+ * @author akearns
  */
 public class GainPanel extends ExperimentPanel
-implements ChangeListener {
+    implements ChangeListener {
 
 
   private static final long serialVersionUID = 6697458429989867529L;
@@ -53,6 +53,7 @@ implements ChangeListener {
   /**
    * Static helper method for getting the formatted inset string directly
    * from a GainExperiment
+   *
    * @param gn GainExperiment with data to be extracted
    * @param refIdx Index of data to be loaded as reference (i.e., 0)
    * @param lowPrd low period boundary to take stats over
@@ -63,7 +64,7 @@ implements ChangeListener {
   getInsetString(GainExperiment gn, int refIdx, double lowPrd, double highPrd) {
 
     double[] meanAndStdDev =
-        gn.getStatsFromFreqs(refIdx, 1/lowPrd, 1/highPrd);
+        gn.getStatsFromFreqs(refIdx, 1 / lowPrd, 1 / highPrd);
 
     double mean = meanAndStdDev[0];
     double sDev = meanAndStdDev[1];
@@ -84,8 +85,10 @@ implements ChangeListener {
     sb.append(calcGain);
     return sb.toString();
   }
+
   /**
    * Draws the lines marking the boundaries of the current window
+   *
    * @param lowPrd lower x-axis value (period, in seconds)
    * @param highPrd upper x-axis value (period, in seconds)
    * @param chart Chart to add domain markers to
@@ -102,13 +105,14 @@ implements ChangeListener {
     XYPlot xyp = chart.getXYPlot();
     xyp.clearDomainMarkers();
     Marker startMarker = new ValueMarker(lowPrd);
-    startMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+    startMarker.setStroke(new BasicStroke((float) 1.5));
     Marker endMarker = new ValueMarker(highPrd);
-    endMarker.setStroke( new BasicStroke( (float) 1.5 ) );
+    endMarker.setStroke(new BasicStroke((float) 1.5));
     xyp.addDomainMarker(startMarker);
     xyp.addDomainMarker(endMarker);
     return chart;
   }
+
   protected JSlider leftSlider;
   protected JSlider rightSlider;
   protected JComboBox<String> refSeries;
@@ -119,7 +123,6 @@ implements ChangeListener {
 
   /**
    * Instantiate the panel, including sliders and stat calc button
-   * @param exp
    */
   public GainPanel(ExperimentEnum exp) {
     // instantiate common components
@@ -136,7 +139,7 @@ implements ChangeListener {
     xAxis = new LogarithmicAxis(xAxisTitle);
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
-    ( (NumberAxis) yAxis).setAutoRangeIncludesZero(false);
+    ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
@@ -168,17 +171,20 @@ implements ChangeListener {
     refSeries.setSelectedIndex(0);
 
     // create layout
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
 
     gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
     gbc.gridwidth = 3;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, gbc);
 
-    gbc.gridx = 0; gbc.gridy += 1;
+    gbc.gridx = 0;
+    gbc.gridy += 1;
     gbc.weighty = 0;
     gbc.gridwidth = 1;
     gbc.anchor = GridBagConstraints.EAST;
@@ -194,7 +200,8 @@ implements ChangeListener {
     gbc.weightx = 1;
     this.add(rightSlider, gbc);
 
-    gbc.gridx = 0; gbc.gridy += 1;
+    gbc.gridx = 0;
+    gbc.gridy += 1;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;
     this.add(refSeries, gbc);
@@ -213,7 +220,7 @@ implements ChangeListener {
   public void actionPerformed(ActionEvent e) {
     super.actionPerformed(e); // saving?
 
-    if ( e.getSource() == recalcButton ) {
+    if (e.getSource() == recalcButton) {
 
       setTitle();
 
@@ -221,12 +228,12 @@ implements ChangeListener {
 
       return;
     }
-    if ( e.getSource() == refSeries ) {
+    if (e.getSource() == refSeries) {
 
       // if we got here from removing the items from the list
       // (which happens when we load in new data)
       // don't do anything
-      if ( !refSeries.isEnabled() ){
+      if (!refSeries.isEnabled()) {
         return;
       }
 
@@ -258,12 +265,12 @@ implements ChangeListener {
     // plot has 3 components: source, destination, NLNM line plot
     XYSeriesCollection xyscIn = expResult.getData().get(0);
     xysc = new XYSeriesCollection();
-    xysc.addSeries( xyscIn.getSeries(refIdx) );
-    xysc.addSeries( xyscIn.getSeries(idx1) );
-    xysc.addSeries( xyscIn.getSeries("NLNM") );
+    xysc.addSeries(xyscIn.getSeries(refIdx));
+    xysc.addSeries(xyscIn.getSeries(idx1));
+    xysc.addSeries(xyscIn.getSeries("NLNM"));
 
     XYSeries xys = xysc.getSeries(0);
-    if ( xysc.getSeriesKey(0).equals("NLNM") ) {
+    if (xysc.getSeriesKey(0).equals("NLNM")) {
       xys = xysc.getSeries(1);
     }
 
@@ -278,8 +285,8 @@ implements ChangeListener {
 
     // since intervals of incoming data match, so too limits of plot
     // this is used in mapping scale of slider to x-axis values
-    low = Math.log10( xys.getMinX() ); // value when slider is 0
-    high = Math.log10( xys.getMaxX() ); // value when slider is 1000
+    low = Math.log10(xys.getMinX()); // value when slider is 0
+    high = Math.log10(xys.getMaxX()); // value when slider is 1000
     leftSliderValue = mapPeriodToSlider(DEFAULT_LOW_BOUND);
     rightSliderValue = mapPeriodToSlider(DEFAULT_UP_BOUND);
 
@@ -292,7 +299,7 @@ implements ChangeListener {
     setSliderValues(leftSliderValue, rightSliderValue);
 
     // set the domain to match the boundaries of the octave centered at peak
-    chartPanel.setChart( setDomainMarkers(DEFAULT_LOW_BOUND, DEFAULT_UP_BOUND, chart) );
+    chartPanel.setChart(setDomainMarkers(DEFAULT_LOW_BOUND, DEFAULT_UP_BOUND, chart));
 
     // and now set the sliders to match where that window is
     leftSlider.setEnabled(true);
@@ -337,7 +344,7 @@ implements ChangeListener {
     sb.append(highPrd);
     sb.append('\n');
 
-    sb.append( super.getMetadataString() );
+    sb.append(super.getMetadataString());
 
     return sb.toString();
   }
@@ -345,23 +352,25 @@ implements ChangeListener {
 
   /**
    * Converts x-axis value from log scale to linear, to get slider position
+   *
    * @param prd period value marking data window boundary
    * @return value of slider (ranges from 0 to SLIDER_MAX)
    */
   public int mapPeriodToSlider(double prd) {
-    double scale = (high - low)/SLIDER_MAX; // recall slider range is 0 to 1000
-    return (int) ( ( Math.log10(prd) - low ) / scale );
+    double scale = (high - low) / SLIDER_MAX; // recall slider range is 0 to 1000
+    return (int) ((Math.log10(prd) - low) / scale);
   }
 
   /**
    * Converts the slider position to a logarithmic scale matching x-axis values
    * which is the period given in a rate of seconds
+   *
    * @param position value of slider
    * @return x-axis value corresponding to that position
    */
   public double mapSliderToPeriod(int position) {
-    double scale = (high - low)/SLIDER_MAX; // slider range is 0 to 1000
-    return Math.pow(10, low + (scale * position) );
+    double scale = (high - low) / SLIDER_MAX; // slider range is 0 to 1000
+    return Math.pow(10, low + (scale * position));
   }
 
 
@@ -372,6 +381,7 @@ implements ChangeListener {
 
   /**
    * Used to populate the comboboxes with the incoming data
+   *
    * @param ds DataStore object being processed
    */
   private void setDataNames(DataStore ds) {
@@ -384,7 +394,7 @@ implements ChangeListener {
 
     for (int i = 0; i < 2; ++i) {
       String name = ds.getBlock(i).getName();
-      while ( preventDuplicates.contains(name) ) {
+      while (preventDuplicates.contains(name)) {
         name += "_";
       }
       preventDuplicates.add(name);
@@ -427,18 +437,18 @@ implements ChangeListener {
     super.stateChanged(e);
 
     // enforce slider boundaries
-    if ( e.getSource() == leftSlider ) {
-      if ( leftSlider.getValue() > rightSlider.getValue() - 10 ) {
-        leftSlider.setValue( rightSlider.getValue() - 10 );
-        if ( leftSlider.getValue() < 0 ) {
+    if (e.getSource() == leftSlider) {
+      if (leftSlider.getValue() > rightSlider.getValue() - 10) {
+        leftSlider.setValue(rightSlider.getValue() - 10);
+        if (leftSlider.getValue() < 0) {
           leftSlider.setValue(0);
           rightSlider.setValue(10);
         }
       }
-    } else if ( e.getSource() == rightSlider ) {
-      if ( leftSlider.getValue() + 10 > rightSlider.getValue() ) {
-        rightSlider.setValue( leftSlider.getValue() + 10 );
-        if ( rightSlider.getValue() > SLIDER_MAX ) {
+    } else if (e.getSource() == rightSlider) {
+      if (leftSlider.getValue() + 10 > rightSlider.getValue()) {
+        rightSlider.setValue(leftSlider.getValue() + 10);
+        if (rightSlider.getValue() > SLIDER_MAX) {
           rightSlider.setValue(SLIDER_MAX);
           leftSlider.setValue(SLIDER_MAX - 10);
         }
@@ -465,7 +475,7 @@ implements ChangeListener {
       double highPrd = mapSliderToPeriod(rightPos);
 
       // remove old bars and draw the new ones
-      chartPanel.setChart( setDomainMarkers(lowPrd, highPrd, chart) );
+      chartPanel.setChart(setDomainMarkers(lowPrd, highPrd, chart));
     }
   }
 

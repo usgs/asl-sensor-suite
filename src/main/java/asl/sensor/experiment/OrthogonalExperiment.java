@@ -1,14 +1,14 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 import java.util.Arrays;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * Finds the interior angle between two sensors of unknown orientation using
@@ -16,13 +16,14 @@ import asl.sensor.utils.TimeSeriesUtils;
  * orientation. The result returns the relative orientation between angles
  * using the (full, damped-windowed) azimuth calculation as an intermediate step.
  * (See AzimuthExperiment for details on how the best-fit angles are found)
- * @author akearns
  *
+ * @author akearns
  */
 public class OrthogonalExperiment extends Experiment {
 
   /**
    * Return the rotated signal given an angle and orthogonal components
+   *
    * @param refX reference signal along the x-axis
    * @param refY reference signal along the y-axis
    * @param point angle (radians) to get as rotated signal
@@ -40,7 +41,7 @@ public class OrthogonalExperiment extends Experiment {
     double cosTheta = Math.cos(theta);
 
     RealVector curValue =
-        refX.mapMultiply(sinTheta).add( refY.mapMultiply(cosTheta) );
+        refX.mapMultiply(sinTheta).add(refY.mapMultiply(cosTheta));
 
     return curValue;
   }
@@ -66,12 +67,12 @@ public class OrthogonalExperiment extends Experiment {
     String refName = refLH1Block.getName();
     dataNames.add(refName);
     DataBlock refLH2Block = ds.getXthLoadedBlock(2);
-    dataNames.add( refLH2Block.getName() );
+    dataNames.add(refLH2Block.getName());
     DataBlock testLH1Block = ds.getXthLoadedBlock(3);
     String testName = testLH1Block.getName();
     dataNames.add(testName);
     DataBlock testLH2Block = ds.getXthLoadedBlock(4);
-    dataNames.add( testLH2Block.getName() );
+    dataNames.add(testLH2Block.getName());
 
     // this code is used to get the plotted difference between ref + test, ref + rotated test
     double[] refLH1 = refLH1Block.getData();
@@ -90,7 +91,6 @@ public class OrthogonalExperiment extends Experiment {
     refLH2 = TimeSeriesUtils.detrend(refLH2);
     testLH1 = TimeSeriesUtils.detrend(testLH1);
     testLH2 = TimeSeriesUtils.detrend(testLH2);
-
 
     // note that parent class preprocessing should have already downsampled all data to same rate
     // so this just takes it down to 1Hz if it's still above that
@@ -125,16 +125,16 @@ public class OrthogonalExperiment extends Experiment {
     RealVector refY = MatrixUtils.createRealVector(refYArr);
     RealVector testY = MatrixUtils.createRealVector(testYArr);
 
-    angle = ( (angle % 360) + 360 ) % 360;
+    angle = ((angle % 360) + 360) % 360;
     // get the INTERNAL angle of the two components
     if (angle > 180) {
-      angle = (360-angle) % 360;
+      angle = (360 - angle) % 360;
     }
     diffs = new double[2];
     diffs[0] = angleY; // north
     diffs[1] = angleX; // east
-    diffs[0] = ( (diffs[0] % 360) + 360 ) % 360;
-    diffs[1] = ( (diffs[1] % 360) + 360 ) % 360;
+    diffs[0] = ((diffs[0] % 360) + 360) % 360;
+    diffs[1] = ((diffs[1] % 360) + 360) % 360;
 
     double timeAtPoint = 0.;
     double tick = interval / TimeSeriesUtils.ONE_HZ_INTERVAL;
@@ -145,13 +145,13 @@ public class OrthogonalExperiment extends Experiment {
     XYSeries diffRotSrs = new XYSeries("Diff(" + testName + ", Rotated Ref.)");
 
     RealVector diffLH1 = testY.subtract(refY);
-    RealVector diffComponents = testY.subtract( value(refX, refY, angleY) );
+    RealVector diffComponents = testY.subtract(value(refX, refY, angleY));
 
-    System.out.println( refY.getEntry(0) + "," + testY.getEntry(0) );
+    System.out.println(refY.getEntry(0) + "," + testY.getEntry(0));
 
     for (int i = 0; i < len; ++i) {
-      diffSrs.add( timeAtPoint, diffLH1.getEntry(i) );
-      diffRotSrs.add( timeAtPoint, diffComponents.getEntry(i) );
+      diffSrs.add(timeAtPoint, diffLH1.getEntry(i));
+      diffRotSrs.add(timeAtPoint, diffComponents.getEntry(i));
 
       timeAtPoint += tick;
     }
@@ -172,15 +172,19 @@ public class OrthogonalExperiment extends Experiment {
 
   /**
    * Returns the difference of the best-fit angles for the unknown sensors
+   *
    * @return Angle, in degrees
    */
   public double getFitAngle() {
     return angle;
-  };
+  }
+
+  ;
 
   /**
    * Returns the intermediate result of the calculation,
    * the azimuth angles of the unknown sensors
+   *
    * @return Array of doubles (size 2), with the north and east azimuth
    * respectively
    */
@@ -191,7 +195,7 @@ public class OrthogonalExperiment extends Experiment {
   @Override
   public boolean hasEnoughData(DataStore ds) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if ( !ds.blockIsSet(i) ) {
+      if (!ds.blockIsSet(i)) {
         return false;
       }
     }

@@ -1,5 +1,8 @@
 package asl.sensor.gui;
 
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.StepExperiment;
+import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -20,17 +23,14 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.VerticalAlignment;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.StepExperiment;
-import asl.sensor.input.DataStore;
 
 /**
  * Holds the plot results of a step experiment. Gets the timeseries data from it
  * as well as the corner and damping values gotten in the process of its
  * calculations. Aside from common elements to ExperimentPanels, also sets an
  * inset displaying parameters derived from backend fit calculation
- * @author akearns
  *
+ * @author akearns
  */
 public class StepPanel extends ExperimentPanel {
 
@@ -43,13 +43,14 @@ public class StepPanel extends ExperimentPanel {
   /**
    * Static helper method for getting the formatted inset string directly
    * from a StepExperiment
+   *
    * @param sp StepExperiment with data to be extracted
    * @return String format representation of data from the experiment
    */
   public static String getInsetString(StepExperiment sp) {
     String[] strings = getInsetStringList(sp);
     StringBuilder sb = new StringBuilder();
-    for (String str: strings) {
+    for (String str : strings) {
       sb.append(str);
       sb.append("\n");
     }
@@ -72,25 +73,25 @@ public class StepPanel extends ExperimentPanel {
     StringBuilder sb = new StringBuilder();
     sb.append("RESP parameters\n");
     sb.append("Corner frequency (Hz): ");
-    sb.append( df.format(corner) );
+    sb.append(df.format(corner));
     sb.append(" (");
-    sb.append( df.format(cornerPrd) );
-    sb.append( " secs)");
+    sb.append(df.format(cornerPrd));
+    sb.append(" secs)");
     sb.append("\n");
     sb.append("Damping: ");
-    sb.append( df.format(damping) );
+    sb.append(df.format(damping));
     sb.append("\n");
 
     StringBuilder sb2 = new StringBuilder();
     sb2.append("Best-fit parameters\n");
     sb2.append("Corner frequency (Hz): ");
-    sb2.append( df.format(fitCorner) );
+    sb2.append(df.format(fitCorner));
     sb2.append(" (");
-    sb2.append( df.format(fitCornerPrd) );
-    sb2.append( " secs)");
+    sb2.append(df.format(fitCornerPrd));
+    sb2.append(" secs)");
     sb2.append("\n");
     sb2.append("Damping: ");
-    sb2.append( df.format(fitDamping) );
+    sb2.append(df.format(fitDamping));
     sb2.append("\n");
     return new String[]{sb.toString(), sb2.toString()};
   }
@@ -108,7 +109,7 @@ public class StepPanel extends ExperimentPanel {
     String xAxisTitle = "Time";
     String yAxisTitle = "Normalized counts";
     xAxis = new DateAxis(xAxisTitle);
-    ( (DateAxis) xAxis).setDateFormatOverride(InputPanel.SDF);
+    ((DateAxis) xAxis).setDateFormatOverride(InputPanel.DATE_FORMAT);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     // xAxis.setAutoRange(true);
@@ -142,10 +143,12 @@ public class StepPanel extends ExperimentPanel {
 
     applyAxesToChart();
 
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
-    gbc.gridx = 0; gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.weightx = 1.0;
+    gbc.weighty = 1.0;
     gbc.gridwidth = 3;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;
@@ -153,9 +156,10 @@ public class StepPanel extends ExperimentPanel {
 
     // add empty space on left side to space out other components
     JPanel space = new JPanel();
-    space.setMaximumSize( plotSelection.getMaximumSize() );
-    space.setPreferredSize( plotSelection.getPreferredSize() );
-    gbc.weighty = 0.0; gbc.weightx = 1.0;
+    space.setMaximumSize(plotSelection.getMaximumSize());
+    space.setPreferredSize(plotSelection.getPreferredSize());
+    gbc.weighty = 0.0;
+    gbc.weightx = 1.0;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.gridwidth = 1;
     gbc.gridy += 1;
@@ -182,7 +186,7 @@ public class StepPanel extends ExperimentPanel {
 
     super.actionPerformed(e);
 
-    if ( e.getSource() == plotSelection ) {
+    if (e.getSource() == plotSelection) {
       if (!set) {
         applyAxesToChart();
         return;
@@ -217,24 +221,25 @@ public class StepPanel extends ExperimentPanel {
     return new JFreeChart[]{stepChart, magChart, phaseChart};
   }
 
-  @Override
   /**
    * Get the index of the data holding the sensor output.
    * Note that the input data list is listed as CAL, OUT, RESP, so the
    * relevant index is the second one
    */
+  @Override
   protected int getIndexOfMainData() {
     return 1;
   }
 
   /**
    * Used to get the text that will populate the inset box for the plots
+   *
    * @return String to place in TextTitle
    */
   @Override
   public String getInsetStrings() {
 
-    return getInsetString( (StepExperiment) expResult );
+    return getInsetString((StepExperiment) expResult);
 
   }
 
@@ -250,14 +255,14 @@ public class StepPanel extends ExperimentPanel {
     sb.append("Fit:  ");
     sb.append(resids[1]);
     sb.append('\n');
-    sb.append( super.getMetadataString() );
+    sb.append(super.getMetadataString());
     return sb.toString();
   }
 
   @Override
   public ValueAxis getXAxis() {
 
-    if ( null == plotSelection ) {
+    if (null == plotSelection) {
       return xAxis;
     }
 
@@ -269,7 +274,7 @@ public class StepPanel extends ExperimentPanel {
   @Override
   public ValueAxis getYAxis() {
 
-    if ( null == plotSelection ) {
+    if (null == plotSelection) {
       return yAxis;
     }
 
@@ -284,9 +289,9 @@ public class StepPanel extends ExperimentPanel {
   }
 
   private void setSubtitles() {
-    BlockContainer bc = new BlockContainer( new FlowArrangement() );
+    BlockContainer bc = new BlockContainer(new FlowArrangement());
     CompositeTitle ct = new CompositeTitle(bc);
-    String[] insets = getInsetStringList( (StepExperiment) expResult );
+    String[] insets = getInsetStringList((StepExperiment) expResult);
     for (String inset : insets) {
       TextTitle result = new TextTitle();
       result.setText(inset);
@@ -295,10 +300,9 @@ public class StepPanel extends ExperimentPanel {
       bc.add(result);
     }
 
-
     ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
     ct.setPosition(RectangleEdge.BOTTOM);
-    for ( JFreeChart chart : getCharts() ) {
+    for (JFreeChart chart : getCharts()) {
       chart.addSubtitle(TITLE_IDX, ct);
     }
   }
@@ -318,10 +322,8 @@ public class StepPanel extends ExperimentPanel {
     XYSeriesCollection stepData = expResult.getData().get(0);
     stepChart = buildChart(stepData, xAxis, yAxis);
 
-
     XYSeriesCollection magData = expResult.getData().get(1);
     magChart = buildChart(magData, freqAxis, magAxis);
-
 
     XYSeriesCollection phaseData = expResult.getData().get(2);
     phaseChart = buildChart(phaseData, freqAxis, phaseAxis);

@@ -1,9 +1,11 @@
-package asl.sensor.test;
+package asl.sensor.utils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.test.TestUtils;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -108,17 +110,9 @@ public class FFTResultTest {
   public void cosineTaperTest() {
     double[] x = { 5, 5, 5, 5, 5, 5 };
     double[] toTaper = x.clone();
-    // double[] tapered = { 0d, 4.5d, 5d, 5d, 4.5d, 0d };
 
     double power = FFTResult.cosineTaper(toTaper, 0.05);
-    assertEquals(1 * toTaper.length, power, 1E-3);
-
-    /*
-    for (int i = 0; i < x.length; i++) {
-      // precision to nearest tenth?
-      assertEquals(toTaper[i], tapered[i], 0.1);
-    }
-    */
+    assertEquals(toTaper.length, power, 1E-3);
   }
 
   @Test
@@ -180,10 +174,6 @@ public class FFTResultTest {
   public void fftZerosTestWelch() {
     long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
     double[] data = new double[1000];
-    // likely unnecessary loop, double arrays initialized at 0
-    for (int i = 0; i < data.length; ++i) {
-      data[i] = 0.;
-    }
     FFTResult fftr = FFTResult.spectralCalc(data, data, interval);
     Complex[] values = fftr.getFFT();
     for (Complex c : values) {

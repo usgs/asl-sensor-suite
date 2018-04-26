@@ -15,6 +15,9 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
 
+/**
+ * The purpose of this test is to ensure that the Apache solver performs as we expect.
+ */
 public class SolverTest {
 
   public double calcRosenbrock(double[] vars) {

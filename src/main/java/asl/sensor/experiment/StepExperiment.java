@@ -1,5 +1,11 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -7,22 +13,14 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
-import
-org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import
-org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
+import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
+import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * Basic outline of what this does
@@ -44,49 +42,10 @@ import asl.sensor.utils.TimeSeriesUtils;
  * In addition to the deconvolved and best-fit timeseries, this class is
  * also able to return the values for the corner frequency and damping that
  * produce them, as well as their corresponding residual values.
- * @author akearns
  *
+ * @author akearns
  */
-public class StepExperiment extends Experiment{
-
-  /**
-   * Applies a "water level" to the FFT data to prevent division by zero during deconvolutions,
-   * including inverting the FFT (mult. by -1) to make the deconvolution an act of multiplication.
-   * @param data FFT data
-   * @return FFT data, inverted and zero-corrected
-   */
-  public static Complex[] setWaterLevel(Complex[] data) {
-    Complex[] resetData = new Complex[data.length];
-    double[] sqrt = new double[data.length];
-    double max = data[0].abs();
-    int maxIdx = 0;
-    // first iteration gets abs values, scaled data
-    for (int i = 0; i < data.length; ++i) {
-      resetData[i] = data[i];
-      sqrt[i] = data[i].abs();
-      if ( max < sqrt[i] ) {
-        max = sqrt[i];
-        maxIdx = i;
-      }
-    }
-    double scaleBy = sqrt[maxIdx]*1E-30; // python code multiplies by 10^(-600/20) which is 10^-30
-    for (int i = 0; i < data.length; ++i) {
-      if (sqrt[i] < scaleBy & sqrt[i] > 0) {
-        resetData[i] = resetData[i].multiply(scaleBy / sqrt[i]);
-        sqrt[i] = resetData[i].abs();
-      }
-
-      if (sqrt[i] > 0) {
-        resetData[i] = new Complex(1., 0.).divide(resetData[i]);
-      }
-
-      if (sqrt[i] == 0) {
-        resetData[i] = Complex.ZERO;
-      }
-    }
-
-    return resetData;
-  }
+public class StepExperiment extends Experiment {
   private double f, h; //corner and damping of output (uncorrected)
   private double fCorr, hCorr; // fit parameters to turn output into cal input
   private double initResid, fitResid; // residual values
@@ -108,6 +67,46 @@ public class StepExperiment extends Experiment{
     super();
   }
 
+  /**
+   * Applies a "water level" to the FFT data to prevent division by zero during deconvolutions,
+   * including inverting the FFT (mult. by -1) to make the deconvolution an act of multiplication.
+   *
+   * @param data FFT data
+   * @return FFT data, inverted and zero-corrected
+   */
+  public static Complex[] setWaterLevel(Complex[] data) {
+    Complex[] resetData = new Complex[data.length];
+    double[] sqrt = new double[data.length];
+    double max = data[0].abs();
+    int maxIdx = 0;
+    // first iteration gets abs values, scaled data
+    for (int i = 0; i < data.length; ++i) {
+      resetData[i] = data[i];
+      sqrt[i] = data[i].abs();
+      if (max < sqrt[i]) {
+        max = sqrt[i];
+        maxIdx = i;
+      }
+    }
+    double scaleBy = sqrt[maxIdx] * 1E-30; // python code multiplies by 10^(-600/20) which is 10^-30
+    for (int i = 0; i < data.length; ++i) {
+      if (sqrt[i] < scaleBy & sqrt[i] > 0) {
+        resetData[i] = resetData[i].multiply(scaleBy / sqrt[i]);
+        sqrt[i] = resetData[i].abs();
+      }
+
+      if (sqrt[i] > 0) {
+        resetData[i] = new Complex(1., 0.).divide(resetData[i]);
+      }
+
+      if (sqrt[i] == 0) {
+        resetData[i] = Complex.ZERO;
+      }
+    }
+
+    return resetData;
+  }
+
   @Override
   protected void backend(final DataStore ds) {
 
@@ -116,7 +115,7 @@ public class StepExperiment extends Experiment{
     // assume that the first block is the raw step calibration
     // the raw calibration is defined as not having an associated response
     DataBlock stepCalRaw = ds.getXthLoadedBlock(1);
-    dataNames.add( stepCalRaw.getName() );
+    dataNames.add(stepCalRaw.getName());
 
     stepCalSeries = new double[stepCalRaw.size()];
 
@@ -142,34 +141,27 @@ public class StepExperiment extends Experiment{
     stepCalSeries = TimeSeriesUtils.detrendEnds(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
 
-    // FFTResult.detrend(toDetrend);
-    // stepCalSeries = TimeSeriesUtils.normalize(filteredStepCal);
-    // stepCalSeries = filteredStepCal;
-
     // but we want the response and the data of the cal result
     sensorOutIdx = ds.getXthFullyLoadedIndex(1);
 
     // if first data has response loaded erroneously, load in next data set
     // (otherwise first data is first fully loaded index)
-    if ( sensorOutIdx == 0 ) {
+    if (sensorOutIdx == 0) {
       sensorOutIdx = ds.getXthFullyLoadedIndex(2);
     }
 
     fireStateChange("Getting initial inverted step solution...");
     // get data of the result of the step calibration
     DataBlock sensorOutput = ds.getBlock(sensorOutIdx);
-    dataNames.add( sensorOutput.getName() );
+    dataNames.add(sensorOutput.getName());
 
     // long interval = sensorOutput.getInterval();
     InstrumentResponse ir = ds.getResponse(sensorOutIdx);
-    dataNames.add( ir.getName() );
+    dataNames.add(ir.getName());
     Complex pole = ir.getPoles().get(0);
 
-    f = 1. / (NumericUtils.TAU / pole.abs() ); // corner frequency
-    h = Math.abs( pole.getReal() / pole.abs() ); // damping
-
-    // manual override for testing purposes
-    // f = 0.002725; h = 0.719614;
+    f = 1. / (NumericUtils.TAU / pole.abs()); // corner frequency
+    h = Math.abs(pole.getReal() / pole.abs()); // damping
 
     double[] params = new double[]{f, h};
 
@@ -190,7 +182,7 @@ public class StepExperiment extends Experiment{
 
     long now = start;
     XYSeries xys = new XYSeries("STEP *^(-1) RESP");
-    XYSeries scs = new XYSeries( stepCalRaw.getName() );
+    XYSeries scs = new XYSeries(stepCalRaw.getName());
     for (double point : toPlot) {
       double seconds = now;
       xys.add(seconds, point);
@@ -219,7 +211,7 @@ public class StepExperiment extends Experiment{
 
       @Override
       public Pair<RealVector, RealMatrix> value(RealVector point) {
-          return jacobian(point);
+        return jacobian(point);
       }
 
     };
@@ -277,26 +269,26 @@ public class StepExperiment extends Experiment{
     // now add the plots of response curve and magnitude from init & fit value
 
     // p1 = -(h+i*sqrt(1-h^2))*2*pi*f
-    Complex p1 = new Complex( hCorr, Math.sqrt( 1 - Math.pow(hCorr, 2) ) );
-    p1 = p1.multiply( -1 * NumericUtils.TAU * fCorr );
-    Complex p2 = new Complex( hCorr, -1 * Math.sqrt( 1 - Math.pow(hCorr, 2) ) );
-    p2 = p2.multiply( -1 * NumericUtils.TAU * fCorr);
+    Complex p1 = new Complex(hCorr, Math.sqrt(1 - Math.pow(hCorr, 2)));
+    p1 = p1.multiply(-1 * NumericUtils.TAU * fCorr);
+    Complex p2 = new Complex(hCorr, -1 * Math.sqrt(1 - Math.pow(hCorr, 2)));
+    p2 = p2.multiply(-1 * NumericUtils.TAU * fCorr);
 
     InstrumentResponse fitResp = new InstrumentResponse(ir);
     List<Complex> poles = fitResp.getPoles();
     poles.set(0, p1);
     poles.set(1, p2);
     fitResp.setPoles(poles);
-    fitResp.setName( fitResp.getName() + " [FIT]" );
+    fitResp.setName(fitResp.getName() + " [FIT]");
 
     // go ahead and plot magnitude and phase of data
     Complex[] inputCurve = ir.applyResponseToInput(freqs);
     Complex[] fitCurve = fitResp.applyResponseToInput(freqs);
 
-    XYSeries inMag = new XYSeries( ir.getName() + " " + " magnitude" );
-    XYSeries inPhase = new XYSeries ( ir.getName() + " " + " phase" );
-    XYSeries fitMag = new XYSeries( fitResp.getName() + " " + " magnitude" );
-    XYSeries fitPhase = new XYSeries ( fitResp.getName() + " " + " phase" );
+    XYSeries inMag = new XYSeries(ir.getName() + " " + " magnitude");
+    XYSeries inPhase = new XYSeries(ir.getName() + " " + " phase");
+    XYSeries fitMag = new XYSeries(fitResp.getName() + " " + " magnitude");
+    XYSeries fitPhase = new XYSeries(fitResp.getName() + " " + " phase");
 
     double phiPrevIn = .0;
     double phiPrevFit = .0;
@@ -320,11 +312,11 @@ public class StepExperiment extends Experiment{
       phiFit = Math.toDegrees(phiFit);
 
       double magAccelIn = tmpIn.abs();
-      inMag.add( freqs[i], 10 * Math.log10(magAccelIn) );
+      inMag.add(freqs[i], 10 * Math.log10(magAccelIn));
       inPhase.add(freqs[i], phiIn);
 
       double magAccelFit = tmpFit.abs();
-      fitMag.add( freqs[i], 10 * Math.log10(magAccelFit) );
+      fitMag.add(freqs[i], 10 * Math.log10(magAccelFit));
       fitPhase.add(freqs[i], phiFit);
     }
 
@@ -348,6 +340,7 @@ public class StepExperiment extends Experiment{
   /**
    * Does the deconvolution of the response calculated from the corner freq. (f)
    * and damping (h) parameters passed in
+   *
    * @param params Double array of form {f,h}
    * @return The timeseries resulting from deconvolution of the calculated
    * response from the sensor-input timeseries (done in frequency space)
@@ -365,7 +358,7 @@ public class StepExperiment extends Experiment{
 
     // term inside the square root in the calculations of p1, p2
     // (h^2-1)
-    Complex tempResult = new Complex( Math.pow(h, 2) - 1 );
+    Complex tempResult = new Complex(Math.pow(h, 2) - 1);
 
     double omega = 2 * Math.PI * f; // omega_0
 
@@ -373,12 +366,12 @@ public class StepExperiment extends Experiment{
     Complex hCast = new Complex(h);
 
     // - (h + sqrt(h^2-1))
-    Complex pole1 = hCast.add( tempResult.sqrt() ).multiply(-1);
+    Complex pole1 = hCast.add(tempResult.sqrt()).multiply(-1);
     pole1 = pole1.multiply(omega);
-      // cannot modify complex numbers "in-place"; they MUST be (re)assigned
+    // cannot modify complex numbers "in-place"; they MUST be (re)assigned
 
     // - (h - sqrt(h^2-1))
-    Complex pole2 = hCast.subtract( tempResult.sqrt() ).multiply(-1);
+    Complex pole2 = hCast.subtract(tempResult.sqrt()).multiply(-1);
     pole2 = pole2.multiply(omega);
 
     // calculate the FFT of the response
@@ -388,9 +381,9 @@ public class StepExperiment extends Experiment{
     respFFT[0] = Complex.ONE;
     for (int i = 1; i < respFFT.length; ++i) {
       // replaced freqs[i] with 2*pi*i*f
-      Complex factor = new Complex(0, 2*Math.PI*freqs[i]);
+      Complex factor = new Complex(0, 2 * Math.PI * freqs[i]);
       // (2*pi*i*f - p1) * (2*pi*f*i - p2)
-      Complex denom = factor.subtract(pole1).multiply( factor.subtract(pole2) );
+      Complex denom = factor.subtract(pole1).multiply(factor.subtract(pole2));
       respFFT[i] = factor.divide(denom);
     }
 
@@ -406,7 +399,7 @@ public class StepExperiment extends Experiment{
     }
 
     int lastIdx = toDeconvolve.length - 1;
-    toDeconvolve[lastIdx] = new Complex( toDeconvolve[lastIdx].abs(), 0. );
+    toDeconvolve[lastIdx] = new Complex(toDeconvolve[lastIdx].abs(), 0.);
 
     // return data to time space
     double[] returnValue = FFTResult.singleSidedInverseFFT(toDeconvolve, inverseTrim);
@@ -422,6 +415,7 @@ public class StepExperiment extends Experiment{
 
   /**
    * Returns the corner, damping, and residual values from fit in that order
+   *
    * @return Double array with fit values of f, h, and residual
    */
   public double[] getFitParams() {
@@ -431,6 +425,7 @@ public class StepExperiment extends Experiment{
   /**
    * Returns the corner, damping, and residual from the initial parameters
    * calculated from the resp input as a double array in that order
+   *
    * @return Double array with the specified f, h, r values
    */
   public double[] getInitParams() {
@@ -439,6 +434,7 @@ public class StepExperiment extends Experiment{
 
   /**
    * Return the residual values of initial and fit parameters
+   *
    * @return Array whose entries are, respectively, the initial and
    * fit residuals
    */
@@ -448,12 +444,13 @@ public class StepExperiment extends Experiment{
 
   @Override
   public boolean hasEnoughData(DataStore ds) {
-    return ( ds.blockIsSet(0) && ds.bothComponentsSet(1) );
+    return (ds.blockIsSet(0) && ds.bothComponentsSet(1));
   }
 
   /**
    * Computes the forward change in value of the calculations for response
    * formed from a given corner and damping value
+   *
    * @param variables Vector with the corner and damping values (in that order) from which the
    * derivatives are calculated
    * @return The result at the passed-in point plus the approximate derivative

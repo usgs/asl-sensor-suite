@@ -1,7 +1,9 @@
-package asl.sensor.test;
+package asl.sensor.experiment;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.test.TestUtils;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +48,7 @@ public class NoiseNineTest {
     DataStore ds =
         setUpTest(testFolder, types, freqName, components, ending, respName, true);
 
-    SimpleDateFormat sdf = InputPanel.SDF;
+    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
 
@@ -149,7 +151,7 @@ public class NoiseNineTest {
     DataStore ds =
         setUpTest(testFolder, types, freqName, components, ending, respName, false);
 
-    SimpleDateFormat sdf = InputPanel.SDF;
+    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
 

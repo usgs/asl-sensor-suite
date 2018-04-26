@@ -1,5 +1,7 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -12,8 +14,6 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
 
 /**
  * This function defines template patterns for each type of sensor experiment
@@ -43,24 +43,21 @@ import asl.sensor.input.DataStore;
  * the experiment should be run.
  *
  * @author akearns
- *
  */
 public abstract class Experiment {
 
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
 
-  public static final String STATUS = "status";
-
   /**
    * Helper function to add data from a datastore object (the PSD calculation)
    * into an XYSeriesCollection to eventually be plotted
    * Used in both self-noise and relative gain calculations
+   *
    * @param ds DataStore to collect data from
    * @param freqSpace True if using units of Hz, False if units of s
    * (sample rate vs. interval between points)
    * @param idx Specifies which of the datablocks in the datastore to get the data from
-   * @param xysc
    */
   public static void addToPlot(
       final DataStore ds,
@@ -69,7 +66,7 @@ public abstract class Experiment {
       XYSeriesCollection xysc) {
 
     XYSeries powerSeries =
-        new XYSeries( "PSD " + ds.getBlock(idx).getName() + " [" + idx +"]" );
+        new XYSeries("PSD " + ds.getBlock(idx).getName() + " [" + idx + "]");
 
     Complex[] resultPSD = ds.getPSD(idx).getFFT();
     double[] freqs = ds.getPSD(idx).getFreqs();
@@ -78,11 +75,11 @@ public abstract class Experiment {
   }
 
   /**
-   *
    * Helper function to add data from a PSD calculation (Complex freq. space series and
    * corresponding frequencies taken from the FFTResult object produced by the calculation)
    * into an XYSeriesCollection to eventually be plotted.
    * Used in both self-noise and relative gain calculations
+   *
    * @param powerSeries XYSeries data to load given PSD calculations into
    * @param resultPSD FFT data produced by the PSD
    * @param freqs Frequency corresponding to PSD value at given index
@@ -97,15 +94,15 @@ public abstract class Experiment {
       XYSeriesCollection xysc) {
 
     for (int j = 0; j < freqs.length; ++j) {
-      if (1/freqs[j] > 1.0E3) {
+      if (1 / freqs[j] > 1.0E3) {
         continue;
       }
 
-      double temp = 10 * Math.log10( resultPSD[j].abs() );
+      double temp = 10 * Math.log10(resultPSD[j].abs());
       if (freqSpace) {
         powerSeries.add(freqs[j], temp);
       } else {
-        powerSeries.add(1/freqs[j], temp);
+        powerSeries.add(1 / freqs[j], temp);
       }
     }
 
@@ -131,7 +128,8 @@ public abstract class Experiment {
    * Initialize all fields common to experiment objects
    */
   public Experiment() {
-    start = 0L; end = 0L;
+    start = 0L;
+    end = 0L;
     dataNames = new ArrayList<String>();
     status = "";
     eventHelper = new EventListenerList();
@@ -141,15 +139,17 @@ public abstract class Experiment {
   /**
    * Add an object to the list of objects to be notified when the experiment's
    * status changes
+   *
    * @param listener ChangeListener to be notified (i.e., parent panel)
    */
   public void addChangeListener(ChangeListener listener) {
-     eventHelper.add(ChangeListener.class, listener);
+    eventHelper.add(ChangeListener.class, listener);
   }
 
   /**
    * Abstract function that runs the calculations specific to a given procedure
    * (Overwritten by concrete experiments with specific operations)
+   *
    * @param ds Object containing the raw timeseries data to process
    */
   protected abstract void backend(final DataStore ds);
@@ -157,6 +157,7 @@ public abstract class Experiment {
   /**
    * Return the number of data blocks needed by the experiment
    * (Used in determining the number of input plots needed to be shown)
+   *
    * @return Number of blocks needed as integer
    */
   public abstract int blocksNeeded();
@@ -164,6 +165,7 @@ public abstract class Experiment {
   /**
    * Update processing status and notify listeners of change
    * (Used to show messages displaying the progress of the function on the GUI)
+   *
    * @param newStatus Status change message to notify listeners of
    */
   protected void fireStateChange(String newStatus) {
@@ -188,6 +190,7 @@ public abstract class Experiment {
    * setData function / backend will produce initialization errors (NPE).
    * The results are returned as a list, where each list is the data to be
    * placed into a separate chart.
+   *
    * @return Plottable data
    */
   public List<XYSeriesCollection> getData() {
@@ -196,6 +199,7 @@ public abstract class Experiment {
 
   /**
    * Get the end time of the data sent into this experiment, when timeseries data is used
+   *
    * @return End time, in microseconds
    */
   public long getEnd() {
@@ -207,6 +211,7 @@ public abstract class Experiment {
    * representing regions within the given window where data does not exist
    * Gaps in data can show up in experiments as noise or other glitches and
    * may be evidence of a failing sensor in some cases
+   *
    * @return Map from data names to list of paired values representing gap durations (start, end)
    */
   public Map<String, List<Pair<Date, Date>>> getGapRegions() {
@@ -216,6 +221,7 @@ public abstract class Experiment {
   /**
    * Get the names of data sent into program (set during backend calculations),
    * mainly used in report metadata generation
+   *
    * @return Names of data sent into the program (SNCLs, response filenames)
    */
   public List<String> getInputNames() {
@@ -224,6 +230,7 @@ public abstract class Experiment {
 
   /**
    * Get the start time of the data sent into this experiment, when timeseries data is used
+   *
    * @return Start time, in microseconds
    */
   public long getStart() {
@@ -233,6 +240,7 @@ public abstract class Experiment {
   /**
    * Return newest status message produced by this program
    * (Used to get the actual status messages that should be displayed in the GUI while processing)
+   *
    * @return String representing status of program
    */
   public String getStatus() {
@@ -243,6 +251,7 @@ public abstract class Experiment {
    * Used to check if the current input has enough data to do the calculation.
    * (i.e., if data requires 2 timeseries, check the first two datablocks in the datastore have
    * data and return true if so)
+   *
    * @param ds DataStore to be fed into experiment calculation
    * @return True if there is enough data to be run
    */
@@ -251,6 +260,7 @@ public abstract class Experiment {
   /**
    * Return an array of indices of responses used by an index, to include
    * data in report generation
+   *
    * @return Indices in which responses are required
    */
   public int[] listActiveResponseIndices() {
@@ -262,10 +272,11 @@ public abstract class Experiment {
    * Remove changelistener from list of listeners notified on status change
    * (Generally not used but may be useful for implementing forwarding status messages from data
    * subcomponents)
+   *
    * @param listener Listener to remove from list
    */
   public void removeChangeListener(ChangeListener listener) {
-      eventHelper.remove(ChangeListener.class, listener);
+    eventHelper.remove(ChangeListener.class, listener);
   }
 
   /**
@@ -273,6 +284,7 @@ public abstract class Experiment {
    * method which is different for each type of experiment)
    * This function specifically (rather than the backend implementation) is
    * where interval consistency is checked before doing calculations.
+   *
    * @param ds Timeseries data to be processed
    */
   public void runExperimentOnData(final DataStore ds) {
@@ -281,7 +293,7 @@ public abstract class Experiment {
 
     fireStateChange("Beginning loading data...");
 
-    if ( hasEnoughData(ds) && ( blocksNeeded() == 0 ) ) {
+    if (hasEnoughData(ds) && (blocksNeeded() == 0)) {
       // prevent null issue
       xySeriesData = new ArrayList<XYSeriesCollection>();
       start = 0L;
@@ -301,13 +313,13 @@ public abstract class Experiment {
 
     xySeriesData = new ArrayList<XYSeriesCollection>();
 
-    ds.matchIntervals( blocksNeeded() );
+    ds.matchIntervals(blocksNeeded());
 
     gapRegions = new HashMap<String, List<Pair<Date, Date>>>();
     for (int i = 0; i < blocksNeeded(); ++i) {
       // in the case of spectrum panel, not all data inputs may be set
       // lockout check to make sure enough needed data is set already done, so this is OK
-      if ( !ds.blockIsSet(i) ) {
+      if (!ds.blockIsSet(i)) {
         continue;
       }
       DataBlock block = ds.getBlock(i);
@@ -316,9 +328,9 @@ public abstract class Experiment {
       List<Pair<Long, Long>> gaps = block.getGapBoundaries();
       List<Pair<Date, Date>> gapsAsDates = new ArrayList<Pair<Date, Date>>();
       for (Pair<Long, Long> gap : gaps) {
-        Date start = new Date( gap.getFirst() );
-        Date end = new Date( gap.getSecond() );
-        gapsAsDates.add( new Pair<Date, Date>(start, end) );
+        Date start = new Date(gap.getFirst());
+        Date end = new Date(gap.getSecond());
+        gapsAsDates.add(new Pair<Date, Date>(start, end));
       }
       gapRegions.put(name, gapsAsDates);
     }

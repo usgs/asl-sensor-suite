@@ -1,8 +1,10 @@
-package asl.sensor.test;
+package asl.sensor.experiment;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.test.TestUtils;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -45,7 +47,7 @@ public class AzimuthTest {
 
     assertTrue( azi.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.SDF;
+    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
 
@@ -105,7 +107,7 @@ public class AzimuthTest {
 
     assertTrue( azi.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.SDF;
+    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
     /*
@@ -265,7 +267,7 @@ public class AzimuthTest {
 
     assertTrue( azi.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.SDF;
+    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
     sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
     // sdf.setLenient(false);
 

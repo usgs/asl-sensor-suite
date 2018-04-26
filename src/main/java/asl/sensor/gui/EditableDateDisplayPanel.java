@@ -1,5 +1,6 @@
 package asl.sensor.gui;
 
+import asl.sensor.utils.TimeSeriesUtils;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.time.Instant;
@@ -12,7 +13,6 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * This panel presents an alternate means of range-trimming to the standard
@@ -20,8 +20,8 @@ import asl.sensor.utils.TimeSeriesUtils;
  * can be used to set data boundaries. The data is edited by manipulating
  * calendar values from inside this object's spinners, each one corresponding
  * to a date component between the year and the millisecond inclusive.
- * @author akearns
  *
+ * @author akearns - KBRWyle
  */
 public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
@@ -97,7 +97,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
     // build panel
     GridBagConstraints gbc = new GridBagConstraints();
-    this.setLayout( new GridBagLayout() );
+    this.setLayout(new GridBagLayout());
 
     gbc.weightx = 1.0;
     gbc.gridx = 0;
@@ -146,6 +146,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
   /**
    * Initialize a panel with a specific initial time value
+   *
    * @param timeStamp Java epoch time (ms)
    */
   public EditableDateDisplayPanel(long timeStamp) {
@@ -156,6 +157,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
   /**
    * Register a Swing component to be notified when this object changes
    * (add it to the callback list)
+   *
    * @param listener swing component to be notified of this panel's state
    */
   public void addChangeListener(ChangeListener listener) {
@@ -177,6 +179,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
   /**
    * Get the time specified by this panel's components in milliseconds
+   *
    * @return The time based on the calendar componets
    */
   public long getTime() {
@@ -185,6 +188,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
   /**
    * Remove a Swing component from the list of active listeners to this panel
+   *
    * @param listener Swing component no longer listening to this object
    */
   public void removeChangeListener(ChangeListener listener) {
@@ -193,40 +197,40 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
   /**
    * Convert time in milliseconds to calendar components to populate panel
+   *
    * @param timeStamp Time to set this panel to
    */
   public void setValues(long timeStamp) {
 
-    if ( timeStamp == getTime() ) {
+    if (timeStamp == getTime()) {
       return; // don't do anything if no change is necessary
     }
 
-    dt = OffsetDateTime.ofInstant( Instant.ofEpochMilli(timeStamp), ZoneOffset.UTC);
-    year.setValue( dt.getYear() );
-    day.setValue( dt.getDayOfYear() );
-    hour.setValue( dt.getHour() );
-    minute.setValue( dt.getMinute() );
-    second.setValue( dt.getSecond() );
-    millisecond.setValue( dt.getNano() / TimeSeriesUtils.TO_MILLI_FACTOR );
+    dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(timeStamp), ZoneOffset.UTC);
+    year.setValue(dt.getYear());
+    day.setValue(dt.getDayOfYear());
+    hour.setValue(dt.getHour());
+    minute.setValue(dt.getMinute());
+    second.setValue(dt.getSecond());
+    millisecond.setValue(dt.getNano() / TimeSeriesUtils.TO_MILLI_FACTOR);
 
   }
 
   @Override
   public void stateChanged(ChangeEvent e) {
 
-
-    if ( e.getSource() == year ) {
-      dt = dt.withYear( (int) year.getValue() );
-    } else if ( e.getSource() == day ) {
-      dt = dt.withDayOfYear( (int) day.getValue() );
-    } else if ( e.getSource() == hour ) {
-      dt = dt.withHour( (int) hour.getValue() );
-    } else if ( e.getSource() == minute ) {
-      dt = dt.withMinute( (int) minute.getValue() );
-    } else if ( e.getSource() == second ) {
-      dt = dt.withSecond( (int) second.getValue() );
-    } else if ( e.getSource() == millisecond ) {
-      dt = dt.withNano( (int) millisecond.getValue() * TimeSeriesUtils.TO_MILLI_FACTOR );
+    if (e.getSource() == year) {
+      dt = dt.withYear((int) year.getValue());
+    } else if (e.getSource() == day) {
+      dt = dt.withDayOfYear((int) day.getValue());
+    } else if (e.getSource() == hour) {
+      dt = dt.withHour((int) hour.getValue());
+    } else if (e.getSource() == minute) {
+      dt = dt.withMinute((int) minute.getValue());
+    } else if (e.getSource() == second) {
+      dt = dt.withSecond((int) second.getValue());
+    } else if (e.getSource() == millisecond) {
+      dt = dt.withNano((int) millisecond.getValue() * TimeSeriesUtils.TO_MILLI_FACTOR);
     }
 
     fireStateChanged(); // percolate change in component up to any containers
