@@ -335,30 +335,24 @@ public class GainPanel extends ExperimentPanel
   /**
    * Used to populate the comboboxes with the incoming data
    *
-   * @param ds DataStore object being processed
+   * @param dataStore DataStore object being processed
    */
-  private void setDataNames(DataStore ds) {
-
+  private void setDataNames(DataStore dataStore) {
     referenceSeries.setEnabled(false);
-
     referenceSeries.removeAllItems();
-
     Set<String> preventDuplicates = new HashSet<>();
-
     for (int i = 0; i < 2; ++i) {
-      String name = ds.getBlock(i).getName();
+      String name = dataStore.getBlock(i).getName();
       while (preventDuplicates.contains(name)) {
         name += "_";
       }
       preventDuplicates.add(name);
       referenceSeries.addItem(name);
     }
-
     referenceSeries.setSelectedIndex(0);
   }
 
   protected void setSliderValues(int leftSliderValue, int rightSliderValue) {
-
     // enforce constraint that left slider value is the smaller one
     int leftTemp = Math.min(leftSliderValue, rightSliderValue);
     rightSliderValue = Math.max(leftSliderValue, rightSliderValue);
@@ -408,9 +402,6 @@ public class GainPanel extends ExperimentPanel
     }
 
     if (event.getSource() == leftSlider || event.getSource() == rightSlider) {
-
-      // now we need to redraw the vertical bars
-
       // new slider window means new results on calculation
       recalcButton.setEnabled(true);
 
@@ -433,16 +424,11 @@ public class GainPanel extends ExperimentPanel
 
   @Override
   protected void updateData(final DataStore dataStore) {
-
     set = true;
-
     setDataNames(dataStore);
-
     expResult.runExperimentOnData(dataStore);
-
     // need to have 2 series for relative gain
     referenceSeries.setEnabled(true);
-
   }
 
 }
