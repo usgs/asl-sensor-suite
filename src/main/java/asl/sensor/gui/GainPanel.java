@@ -70,10 +70,10 @@ public class GainPanel extends ExperimentPanel
     double referenceGain = meanAndStdDev[2];
     double calculatedGain = meanAndStdDev[3];
 
-    return "ratio: " + mean
-        + "\nsigma: " + standardDeviation
-        + "\nref. gain: " + referenceGain
-        + "\n** CALCULATED GAIN: " + calculatedGain;
+    return "ratio: " + DECIMAL_FORMAT.get().format(mean)
+        + "\nsigma: " +  DECIMAL_FORMAT.get().format(standardDeviation)
+        + "\nref. gain: " +  DECIMAL_FORMAT.get().format(referenceGain)
+        + "\n** CALCULATED GAIN: " +  DECIMAL_FORMAT.get().format(calculatedGain);
   }
 
   /**
