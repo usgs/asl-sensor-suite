@@ -40,50 +40,40 @@ import org.jfree.ui.RectangleAnchor;
 public class GainPanel extends ExperimentPanel
     implements ChangeListener {
 
-
   private static final long serialVersionUID = 6697458429989867529L;
 
   /**
    * Max value of slider (ranges from 0 to 1000, converted to log10 scale)
    */
-  public static final int SLIDER_MAX = 1000;
-  public static final double DEFAULT_UP_BOUND = 9.; // low bound is 9 seconds period
-  public static final double DEFAULT_LOW_BOUND = 3.;
+  private static final int SLIDER_MAX = 1000;
+  static final double DEFAULT_UP_BOUND = 9.; // low bound is 9 seconds period
+  static final double DEFAULT_LOW_BOUND = 3.;
 
   /**
    * Static helper method for getting the formatted inset string directly
    * from a GainExperiment
    *
-   * @param gn GainExperiment with data to be extracted
-   * @param refIdx Index of data to be loaded as reference (i.e., 0)
-   * @param lowPrd low period boundary to take stats over
-   * @param highPrd high period boundary to take stats over
-   * @return String with data representation of experiment results (mean, sdev)
+   * @param experiment GainExperiment with data to be extracted
+   * @param referenceIndex Index of data to be loaded as reference (i.e., 0)
+   * @param lowPeriod low period boundary to take stats over
+   * @param highPeriod high period boundary to take stats over
+   * @return String with data representation of experiment results (mean, standard deviation)
    */
-  public static String
-  getInsetString(GainExperiment gn, int refIdx, double lowPrd, double highPrd) {
+  private static String getInsetString(
+      GainExperiment experiment, int referenceIndex, double lowPeriod, double highPeriod) {
 
     double[] meanAndStdDev =
-        gn.getStatsFromFreqs(refIdx, 1 / lowPrd, 1 / highPrd);
+        experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
 
     double mean = meanAndStdDev[0];
-    double sDev = meanAndStdDev[1];
-    double refGain = meanAndStdDev[2];
-    double calcGain = meanAndStdDev[3];
+    double standardDeviation = meanAndStdDev[1];
+    double referenceGain = meanAndStdDev[2];
+    double calculatedGain = meanAndStdDev[3];
 
-    StringBuilder sb = new StringBuilder();
-    sb.append("ratio: ");
-    sb.append(mean);
-    sb.append("\n");
-    sb.append("sigma: ");
-    sb.append(sDev);
-    sb.append("\n");
-    sb.append("ref. gain: ");
-    sb.append(refGain);
-    sb.append("\n");
-    sb.append("** CALCULATED GAIN: ");
-    sb.append(calcGain);
-    return sb.toString();
+    return "ratio: " + mean
+        + "\nsigma: " + standardDeviation
+        + "\nref. gain: " + referenceGain
+        + "\n** CALCULATED GAIN: " + calculatedGain;
   }
 
   /**
@@ -94,39 +84,38 @@ public class GainPanel extends ExperimentPanel
    * @param chart Chart to add domain markers to
    * @return XYPlot XYPlot with new domain markers set
    */
-  protected static JFreeChart
-  setDomainMarkers(double lowPrd, double highPrd, JFreeChart chart) {
+  static JFreeChart setDomainMarkers(double lowPrd, double highPrd, JFreeChart chart) {
 
     // make sure lower value is assigned to left, higher to right
     double tempLow = Math.min(lowPrd, highPrd);
     highPrd = Math.max(lowPrd, highPrd);
     lowPrd = tempLow;
 
-    XYPlot xyp = chart.getXYPlot();
-    xyp.clearDomainMarkers();
+    XYPlot plot = chart.getXYPlot();
+    plot.clearDomainMarkers();
     Marker startMarker = new ValueMarker(lowPrd);
     startMarker.setStroke(new BasicStroke((float) 1.5));
     Marker endMarker = new ValueMarker(highPrd);
     endMarker.setStroke(new BasicStroke((float) 1.5));
-    xyp.addDomainMarker(startMarker);
-    xyp.addDomainMarker(endMarker);
+    plot.addDomainMarker(startMarker);
+    plot.addDomainMarker(endMarker);
     return chart;
   }
 
-  protected JSlider leftSlider;
-  protected JSlider rightSlider;
-  protected JComboBox<String> refSeries;
+  final JSlider leftSlider;
+  final JSlider rightSlider;
+  final JComboBox<String> referenceSeries;
 
-  protected JButton recalcButton;
+  final JButton recalcButton;
 
-  protected double low, high;
+  protected double lowPeriod, highPeriod;
 
   /**
    * Instantiate the panel, including sliders and stat calc button
    */
-  public GainPanel(ExperimentEnum exp) {
+  GainPanel(ExperimentEnum experiment) {
     // instantiate common components
-    super(exp);
+    super(experiment);
 
     for (int i = 0; i < 2; ++i) {
       channelType[i] = "Input data (RESP required)";
@@ -159,56 +148,56 @@ public class GainPanel extends ExperimentPanel
     recalcButton.addActionListener(this);
 
     // add dummy entries to the combo box, but don't let them get filled
-    refSeries = new JComboBox<String>();
-    refSeries.addActionListener(this);
-    refSeries.setEnabled(false);
+    referenceSeries = new JComboBox<>();
+    referenceSeries.addActionListener(this);
+    referenceSeries.setEnabled(false);
 
     for (int i = 0; i < 2; ++i) {
       String out = "FILE NOT LOADED (" + i + ")";
-      refSeries.addItem(out);
+      referenceSeries.addItem(out);
     }
 
-    refSeries.setSelectedIndex(0);
+    referenceSeries.setSelectedIndex(0);
 
     // create layout
     this.setLayout(new GridBagLayout());
-    GridBagConstraints gbc = new GridBagConstraints();
+    GridBagConstraints constraints = new GridBagConstraints();
 
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.gridwidth = 3;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(chartPanel, gbc);
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.gridwidth = 3;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(chartPanel, constraints);
 
-    gbc.gridx = 0;
-    gbc.gridy += 1;
-    gbc.weighty = 0;
-    gbc.gridwidth = 1;
-    gbc.anchor = GridBagConstraints.EAST;
-    this.add(leftSlider, gbc);
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.gridx += 1;
-    gbc.anchor = GridBagConstraints.CENTER;
-    gbc.weightx = 0;
-    this.add(recalcButton, gbc);
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx += 1;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.weightx = 1;
-    this.add(rightSlider, gbc);
+    constraints.gridx = 0;
+    constraints.gridy += 1;
+    constraints.weighty = 0;
+    constraints.gridwidth = 1;
+    constraints.anchor = GridBagConstraints.EAST;
+    this.add(leftSlider, constraints);
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridx += 1;
+    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.weightx = 0;
+    this.add(recalcButton, constraints);
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx += 1;
+    constraints.anchor = GridBagConstraints.WEST;
+    constraints.weightx = 1;
+    this.add(rightSlider, constraints);
 
-    gbc.gridx = 0;
-    gbc.gridy += 1;
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(refSeries, gbc);
-    gbc.weightx = 0;
-    gbc.gridx += 1;
-    gbc.fill = GridBagConstraints.NONE;
-    this.add(save, gbc);
+    constraints.gridx = 0;
+    constraints.gridy += 1;
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(referenceSeries, constraints);
+    constraints.weightx = 0;
+    constraints.gridx += 1;
+    constraints.fill = GridBagConstraints.NONE;
+    this.add(save, constraints);
 
   }
 
@@ -217,31 +206,24 @@ public class GainPanel extends ExperimentPanel
    * timeseries are selected or the recalculate button is hit
    */
   @Override
-  public void actionPerformed(ActionEvent e) {
-    super.actionPerformed(e); // saving?
+  public void actionPerformed(ActionEvent event) {
+    super.actionPerformed(event); // saving?
 
-    if (e.getSource() == recalcButton) {
-
+    if (event.getSource() == recalcButton) {
       setTitle();
-
       recalcButton.setEnabled(false);
-
       return;
     }
-    if (e.getSource() == refSeries) {
-
+    if (event.getSource() == referenceSeries) {
       // if we got here from removing the items from the list
       // (which happens when we load in new data)
       // don't do anything
-      if (!refSeries.isEnabled()) {
+      if (!referenceSeries.isEnabled()) {
         return;
       }
-
       // if we selected a new series to plot, redraw the chart
       drawCharts();
-
     }
-
   }
 
 
@@ -256,43 +238,33 @@ public class GainPanel extends ExperimentPanel
   @Override
   protected void drawCharts() {
 
-    final int refIdx = refSeries.getSelectedIndex();
-    final int idx1 = (refIdx + 1) % 2;
+    final int referenceIndex = referenceSeries.getSelectedIndex();
+    final int index1 = (referenceIndex + 1) % 2;
 
     int leftSliderValue, rightSliderValue;
-    XYSeriesCollection xysc;
+    XYSeriesCollection timeSeries;
 
     // plot has 3 components: source, destination, NLNM line plot
-    XYSeriesCollection xyscIn = expResult.getData().get(0);
-    xysc = new XYSeriesCollection();
-    xysc.addSeries(xyscIn.getSeries(refIdx));
-    xysc.addSeries(xyscIn.getSeries(idx1));
-    xysc.addSeries(xyscIn.getSeries("NLNM"));
+    XYSeriesCollection timeSeriesIn = expResult.getData().get(0);
+    timeSeries = new XYSeriesCollection();
+    timeSeries.addSeries(timeSeriesIn.getSeries(referenceIndex));
+    timeSeries.addSeries(timeSeriesIn.getSeries(index1));
+    timeSeries.addSeries(timeSeriesIn.getSeries("NLNM"));
 
-    XYSeries xys = xysc.getSeries(0);
-    if (xysc.getSeriesKey(0).equals("NLNM")) {
-      xys = xysc.getSeries(1);
+    XYSeries xys = timeSeries.getSeries(0);
+    if (timeSeries.getSeriesKey(0).equals("NLNM")) {
+      xys = timeSeries.getSeries(1);
     }
-
-    /*
-    // want to default to octave centered at highest value of fixed freq
-    freqRange = gn.getOctaveCenteredAtPeak(refIdx);
-
-    // get the locations (x-axis values) of frequency range as intervals
-    lowPrd = Math.min(1/freqRange[0], 1/freqRange[1]);
-    highPrd = Math.max(1/freqRange[0], 1/freqRange[1]);
-    */
 
     // since intervals of incoming data match, so too limits of plot
     // this is used in mapping scale of slider to x-axis values
-    low = Math.log10(xys.getMinX()); // value when slider is 0
-    high = Math.log10(xys.getMaxX()); // value when slider is 1000
+    lowPeriod = Math.log10(xys.getMinX()); // value when slider is 0
+    highPeriod = Math.log10(xys.getMaxX()); // value when slider is 1000
     leftSliderValue = mapPeriodToSlider(DEFAULT_LOW_BOUND);
     rightSliderValue = mapPeriodToSlider(DEFAULT_UP_BOUND);
 
-    setChart(xysc);
+    setChart(timeSeries);
 
-    // obviously, set the chart
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(false);
 
@@ -312,53 +284,34 @@ public class GainPanel extends ExperimentPanel
 
   @Override
   public String getInsetStrings() {
-    int leftPos = leftSlider.getValue();
-    double lowPrd = mapSliderToPeriod(leftPos);
-    int rightPos = rightSlider.getValue();
-    double highPrd = mapSliderToPeriod(rightPos);
+    double lowPeriod = mapSliderToPeriod(leftSlider.getValue());
+    double highPeriod = mapSliderToPeriod(rightSlider.getValue());
 
-    // remove old bars and draw the new ones
-    // setDomainMarkers(lowPrd, highPrd, xyp);
+    GainExperiment experiment = (GainExperiment) expResult;
 
-    int refIdx = refSeries.getSelectedIndex();
-
-    GainExperiment gn = (GainExperiment) expResult;
-
-    return getInsetString(gn, refIdx, lowPrd, highPrd);
+    return getInsetString(experiment, referenceSeries.getSelectedIndex(), lowPeriod, highPeriod);
   }
 
   @Override
   public String getMetadataString() {
-
     // get range of data over which the gain statistics were calculated
-    int leftPos = leftSlider.getValue();
-    double lowPrd = mapSliderToPeriod(leftPos);
-    int rightPos = rightSlider.getValue();
-    double highPrd = mapSliderToPeriod(rightPos);
+    double lowPeriod = mapSliderToPeriod(leftSlider.getValue());
+    double highPeriod = mapSliderToPeriod(rightSlider.getValue());
 
-    StringBuilder sb = new StringBuilder();
-
-    sb.append("Range used in stat calculation: ");
-    sb.append(lowPrd);
-    sb.append(" to ");
-    sb.append(highPrd);
-    sb.append('\n');
-
-    sb.append(super.getMetadataString());
-
-    return sb.toString();
+    return "Range used in stat calculation: " + lowPeriod + " to " + highPeriod + '\n'
+        + super.getMetadataString();
   }
 
 
   /**
    * Converts x-axis value from log scale to linear, to get slider position
    *
-   * @param prd period value marking data window boundary
+   * @param period period value marking data window boundary
    * @return value of slider (ranges from 0 to SLIDER_MAX)
    */
-  public int mapPeriodToSlider(double prd) {
-    double scale = (high - low) / SLIDER_MAX; // recall slider range is 0 to 1000
-    return (int) ((Math.log10(prd) - low) / scale);
+  int mapPeriodToSlider(double period) {
+    double scale = (highPeriod - lowPeriod) / SLIDER_MAX; // recall slider range is 0 to 1000
+    return (int) ((Math.log10(period) - lowPeriod) / scale);
   }
 
   /**
@@ -368,9 +321,9 @@ public class GainPanel extends ExperimentPanel
    * @param position value of slider
    * @return x-axis value corresponding to that position
    */
-  public double mapSliderToPeriod(int position) {
-    double scale = (high - low) / SLIDER_MAX; // slider range is 0 to 1000
-    return Math.pow(10, low + (scale * position));
+  double mapSliderToPeriod(int position) {
+    double scale = (highPeriod - lowPeriod) / SLIDER_MAX; // slider range is 0 to 1000
+    return Math.pow(10, lowPeriod + (scale * position));
   }
 
 
@@ -386,11 +339,11 @@ public class GainPanel extends ExperimentPanel
    */
   private void setDataNames(DataStore ds) {
 
-    refSeries.setEnabled(false);
+    referenceSeries.setEnabled(false);
 
-    refSeries.removeAllItems();
+    referenceSeries.removeAllItems();
 
-    Set<String> preventDuplicates = new HashSet<String>();
+    Set<String> preventDuplicates = new HashSet<>();
 
     for (int i = 0; i < 2; ++i) {
       String name = ds.getBlock(i).getName();
@@ -398,10 +351,10 @@ public class GainPanel extends ExperimentPanel
         name += "_";
       }
       preventDuplicates.add(name);
-      refSeries.addItem(name);
+      referenceSeries.addItem(name);
     }
 
-    refSeries.setSelectedIndex(0);
+    referenceSeries.setSelectedIndex(0);
   }
 
   protected void setSliderValues(int leftSliderValue, int rightSliderValue) {
@@ -420,24 +373,23 @@ public class GainPanel extends ExperimentPanel
    * in an inset box on the chart, also used as text in report generation
    */
   private void setTitle() {
-    XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
+    XYPlot plot = (XYPlot) chartPanel.getChart().getPlot();
     TextTitle result = new TextTitle();
-    String temp = getInsetStrings();
-    result.setText(temp);
+    result.setText(getInsetStrings());
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
+    plot.clearAnnotations();
+    plot.addAnnotation(xyt);
   }
 
   @Override
-  public void stateChanged(ChangeEvent e) {
+  public void stateChanged(ChangeEvent event) {
 
-    super.stateChanged(e);
+    super.stateChanged(event);
 
     // enforce slider boundaries
-    if (e.getSource() == leftSlider) {
+    if (event.getSource() == leftSlider) {
       if (leftSlider.getValue() > rightSlider.getValue() - 10) {
         leftSlider.setValue(rightSlider.getValue() - 10);
         if (leftSlider.getValue() < 0) {
@@ -445,7 +397,7 @@ public class GainPanel extends ExperimentPanel
           rightSlider.setValue(10);
         }
       }
-    } else if (e.getSource() == rightSlider) {
+    } else if (event.getSource() == rightSlider) {
       if (leftSlider.getValue() + 10 > rightSlider.getValue()) {
         rightSlider.setValue(leftSlider.getValue() + 10);
         if (rightSlider.getValue() > SLIDER_MAX) {
@@ -455,7 +407,7 @@ public class GainPanel extends ExperimentPanel
       }
     }
 
-    if (e.getSource() == leftSlider || e.getSource() == rightSlider) {
+    if (event.getSource() == leftSlider || event.getSource() == rightSlider) {
 
       // now we need to redraw the vertical bars
 
@@ -480,16 +432,16 @@ public class GainPanel extends ExperimentPanel
   }
 
   @Override
-  protected void updateData(final DataStore ds) {
+  protected void updateData(final DataStore dataStore) {
 
     set = true;
 
-    setDataNames(ds);
+    setDataNames(dataStore);
 
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
 
     // need to have 2 series for relative gain
-    refSeries.setEnabled(true);
+    referenceSeries.setEnabled(true);
 
   }
 
