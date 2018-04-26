@@ -1,7 +1,5 @@
 package asl.sensor.input;
 
-import asl.sensor.gui.InputPanel;
-import asl.sensor.utils.NumericUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -26,6 +24,8 @@ import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
+import asl.sensor.gui.InputPanel;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * This class is used to read in and store data from instrument response files
@@ -261,6 +261,8 @@ public class InstrumentResponse {
   private double normalFreq; // cuz she's a normalFreq, normalFreq
   // (the A0 norm. factor's frequency)
 
+  private Instant epochStart, epochEnd;
+
   /**
    * Reads in a response from an already-accessed bufferedreader handle
    * and assigns it to the name given (used with embedded response files)
@@ -296,6 +298,8 @@ public class InstrumentResponse {
     normalFreq = Double.valueOf(responseIn.getNormalizationFrequency());
 
     name = responseIn.getName();
+    epochStart = responseIn.getEpochStart();
+    epochEnd = responseIn.getEpochEnd();
   }
 
   /**
@@ -685,8 +689,12 @@ public class InstrumentResponse {
 
           switch (hexIdentifier) {
             case "B052F22":
-              epochFound = true;
-              break;
+              Instant start = parseTermAsDate(line);
+              if (start.equals(epoch)) {
+                epochStart = start;
+                epochFound = true;
+                break;
+              }
           }
         } // end of if statement
         line = br.readLine();
@@ -724,6 +732,7 @@ public class InstrumentResponse {
               // otherwise, go for the last epoch and reset out the data from prev. epochs
               break;
             }
+            epochStart = parseTermAsDate(line);
             numStages = 0;
             gains = new double[MAX_GAIN_STAGES];
             for (int i = 0; i < gains.length; ++i) {
@@ -734,6 +743,10 @@ public class InstrumentResponse {
             gainStage = -1;
             polesArr = null;
             zerosArr = null;
+            break;
+          case "B052F23":
+            epochEnd = parseTermAsDate(line);
+            break;
           case "B053F03":
             // transfer function type specified
             // first character of third component of words
@@ -1022,6 +1035,15 @@ public class InstrumentResponse {
     sb.append("Response name: ");
     sb.append(name);
     sb.append('\n');
+    sb.append("Epoch start: ");
+    sb.append(RESP_DT_FORMAT.format(epochStart));
+    sb.append('\n');
+    if (epochEnd != null) {
+      sb.append("Epoch end: ");
+      sb.append(RESP_DT_FORMAT.format(epochEnd));
+      sb.append('\n');
+    }
+
     sb.append("Gain stage values: ");
     sb.append('\n');
 
@@ -1078,6 +1100,22 @@ public class InstrumentResponse {
     }
 
     return sb.toString();
+  }
+
+  /**
+   * Get the start time of the epoch of this response data
+   * @return Epoch expressed as an instant
+   */
+  public Instant getEpochStart() {
+    return epochStart;
+  }
+
+  /**
+   * Get the end time of the epoch of this response data
+   * @return Epoch expressed as an instant (can be null)
+   */
+  public Instant getEpochEnd() {
+    return epochEnd;
   }
 
   /**

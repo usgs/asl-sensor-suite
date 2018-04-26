@@ -240,7 +240,7 @@ public class RandomizedExperiment
 
     // experimentation with offsets to deal with the way the moving average shifts the data
     // since the plot is basically logarithmic this only matters due to the limited data
-    // on the low-frequency corner
+    // on the low-frequency corner -- shifting here by half the smoothing re-centers the data
     if (lowFreq) {
       startIdx -= offset;
       endIdx -= offset;
