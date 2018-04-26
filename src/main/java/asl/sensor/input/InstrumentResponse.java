@@ -41,7 +41,7 @@ public class InstrumentResponse {
   private static final int MAX_GAIN_STAGES = 10;
   public static final double PEAK_MULTIPLIER = 0.8;
   public static final DateTimeFormatter RESP_DT_FORMAT =
-      DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss");
+      DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
 
   /**
    * Get one of the response files embedded in the program
@@ -181,12 +181,23 @@ public class InstrumentResponse {
     // index 2 is the word 'End'
     // index 3 is comma-delimited date string (should be last thing in list)
     String time = words[words.length - 1];
+    DateTimeFormatter respDTFormat =
+        DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
     try {
-      DateTimeFormatter respDTFormat = DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss");
       return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
     } catch (DateTimeParseException e){
-      //Unable to parse the datetime, this is expected if an epoch does not end.
-      return null;
+      // used to handle weird case where sub-second fields are specified
+      // i.e., looks like "uuuu,DDD,HH:mm:ss.[milliseconds]"
+      // in which case we trim out the last part (which isn't parsable by the pattern) and retry
+      // if we still can't parse, then we just return null, because this probably isn't a date
+      int indexToTrim = e.getErrorIndex();
+      time = time.substring(0, indexToTrim);
+      try {
+        return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
+      } catch (DateTimeParseException e1) {
+        // Unable to parse the datetime even after trim, this is expected if an epoch does not end.
+        return null;
+      }
     }
 
   }
