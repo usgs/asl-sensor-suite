@@ -33,7 +33,6 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
-import org.jfree.chart.title.Title;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.VerticalAlignment;
@@ -52,7 +51,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
   private static final long serialVersionUID = -1791709117080520178L;
 
-  public static String complexListToString(List<Complex> complexList) {
+  private static String complexListToString(List<Complex> complexList) {
     final int MAX_LINE = 2; // maximum number of entries per line
 
     DecimalFormat decimalFormat = new DecimalFormat("#.#####");
@@ -88,8 +87,7 @@ public class RandomizedPanel extends ExperimentPanel {
    * panel. Called by a non-static function in order to implement overrides, as
    * static functions do not get overridden by inheritance.
    *
-   * @param rnd RandomizedExperiment to pull data from (i.e., from a panel
-   * instance)
+   * @param rnd RandomizedExperiment to pull data from (i.e., from a panel instance)
    * @return List of strings, each one representing a new page's worth of data
    */
   public static String[] getAdditionalReportPages(RandomizedExperiment rnd) {
@@ -126,9 +124,7 @@ public class RandomizedPanel extends ExperimentPanel {
     }
 
     // get statistics for differences between initial and solved parameters
-    csvPoles = new StringBuilder("POLE VARIABLES, AS CSV:\n");
-    csvPoles.append(csvTitle);
-    csvPoles.append("\n");
+    csvPoles.append("POLE VARIABLES, AS CSV:\n").append(csvTitle).append("\n");
 
     for (int i = 0; i < fitP.size(); ++i) {
       double realPartFit = fitP.get(i).getReal();
@@ -337,7 +333,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
   private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis,
       residXAxis, residPrdAxis;
-  private JComboBox<String> plotSelection;
+  private final JComboBox<String> plotSelection;
   private JCheckBox lowFreqBox, showParams, freqSpace;
   private JFreeChart magChart, argChart, residAmpChart, residPhaseChart;
 
@@ -495,7 +491,7 @@ public class RandomizedPanel extends ExperimentPanel {
    *
    * @return Array of strings
    */
-  public String[] getInsetStringsAsList() {
+  private String[] getInsetStringsAsList() {
     RandomizedExperiment rnd = (RandomizedExperiment) expResult;
     return getInsetString(rnd);
   }
@@ -527,6 +523,7 @@ public class RandomizedPanel extends ExperimentPanel {
    * Since response data is not directly associated with data at a given
    * time, rather than a sensor as a whole, we merely use the current date
    * and the first response used in the experiment.
+   *
    * @return String that will be default filename of PDF generated from data
    */
   @Override
@@ -544,7 +541,7 @@ public class RandomizedPanel extends ExperimentPanel {
     return sb.toString();
   }
 
-  public ValueAxis getResidAxis() {
+  private ValueAxis getResidAxis() {
     if (null == plotSelection || freqSpace.isSelected()) {
       return residXAxis;
     } else {
