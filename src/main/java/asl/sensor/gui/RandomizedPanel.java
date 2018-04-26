@@ -87,14 +87,14 @@ public class RandomizedPanel extends ExperimentPanel {
    * panel. Called by a non-static function in order to implement overrides, as
    * static functions do not get overridden by inheritance.
    *
-   * @param rnd RandomizedExperiment to pull data from (i.e., from a panel instance)
+   * @param experiment RandomizedExperiment to pull data from (i.e., from a panel instance)
    * @return List of strings, each one representing a new page's worth of data
    */
-  public static String[] getAdditionalReportPages(RandomizedExperiment rnd) {
+  public static String[] getAdditionalReportPages(RandomizedExperiment experiment) {
 
     // TODO: refactor this now that period values are included in
     // the inset portion of the report text instead of merely in the extra data
-    StringBuilder sb = new StringBuilder();
+    StringBuilder resultString = new StringBuilder();
 
     StringBuilder csvPoles = new StringBuilder();
     StringBuilder csvZeros = new StringBuilder();
@@ -107,17 +107,17 @@ public class RandomizedPanel extends ExperimentPanel {
     for (String column : columns) {
       StringBuilder paddedColumn = new StringBuilder(column);
       while (paddedColumn.length() < COL_WIDTH) {
-        paddedColumn.append(" "); // add a space
+        paddedColumn.append(" ");
       }
       csvTitle.append(paddedColumn);
     }
 
-    List<Complex> fitP = rnd.getFitPoles();
-    List<Complex> initP = rnd.getInitialPoles();
-    List<Complex> fitZ = rnd.getFitZeros();
-    List<Complex> initZ = rnd.getInitialZeros();
+    List<Complex> fitP = experiment.getFitPoles();
+    List<Complex> initP = experiment.getInitialPoles();
+    List<Complex> fitZ = experiment.getFitZeros();
+    List<Complex> initZ = experiment.getInitialZeros();
 
-    boolean solverNotRun = rnd.getSolverState();
+    boolean solverNotRun = experiment.getSolverState();
 
     if (solverNotRun) {
       return new String[]{};
@@ -251,10 +251,10 @@ public class RandomizedPanel extends ExperimentPanel {
       }
     }
 
-    sb.append(csvPoles);
-    sb.append(csvZeros);
+    resultString.append(csvPoles);
+    resultString.append(csvZeros);
 
-    return new String[]{sb.toString()};
+    return new String[]{resultString.toString()};
   }
 
 
@@ -262,55 +262,55 @@ public class RandomizedPanel extends ExperimentPanel {
    * Static helper method for getting the formatted inset string directly
    * from a RandomizedExperiment
    *
-   * @param rnd RandomizedExperiment with data to be extracted
+   * @param experiment RandomizedExperiment with data to be extracted
    * @return String format representation of data from the experiment
    */
-  public static String[] getInsetString(RandomizedExperiment rnd) {
+  public static String[] getInsetString(RandomizedExperiment experiment) {
 
-    List<Complex> fitP = rnd.getFitPoles();
-    List<Complex> initP = rnd.getInitialPoles();
-    List<Complex> fitZ = rnd.getFitZeros();
-    List<Complex> initZ = rnd.getInitialZeros();
+    List<Complex> fitPoles = experiment.getFitPoles();
+    List<Complex> initialPoles = experiment.getInitialPoles();
+    List<Complex> fitZeros = experiment.getFitZeros();
+    List<Complex> initialZeros = experiment.getInitialZeros();
 
-    if (fitP == null) {
+    if (fitPoles == null) {
       return new String[]{""};
     }
 
-    boolean solverNotRun = rnd.getSolverState();
+    boolean solverNotRun = experiment.getSolverState();
 
-    double initResid = rnd.getInitResidual();
-    double fitResid = rnd.getFitResidual();
+    double initialResidual = experiment.getInitResidual();
+    double fitResidual = experiment.getFitResidual();
 
-    StringBuilder sbInit = new StringBuilder();
-    StringBuilder sbFit = new StringBuilder();
+    StringBuilder sbInitialPoles = new StringBuilder();
+    StringBuilder sbFitPoles = new StringBuilder();
     // add poles, initial then fit (single loop, append the two builders)
-    sbInit.append("Initial poles: \n");
-    sbFit.append("Fit poles: \n");
+    sbInitialPoles.append("Initial poles: \n");
+    sbFitPoles.append("Fit poles: \n");
 
-    sbInit.append(complexListToString(initP));
-    sbFit.append(complexListToString(fitP));
+    sbInitialPoles.append(complexListToString(initialPoles));
+    sbFitPoles.append(complexListToString(fitPoles));
 
-    sbInit.append("\n");
-    sbFit.append("\n");
+    sbInitialPoles.append("\n");
+    sbFitPoles.append("\n");
 
     StringBuilder sbInitZ = new StringBuilder();
     StringBuilder sbFitZ = new StringBuilder();
 
-    if (fitZ.size() > 0) {
+    if (fitZeros.size() > 0) {
       sbInitZ.append("Initial zeros: \n");
       sbFitZ.append("Fit zeros: \n");
     }
 
-    sbInitZ.append(complexListToString(initZ));
-    sbFitZ.append(complexListToString(fitZ));
+    sbInitZ.append(complexListToString(initialZeros));
+    sbFitZ.append(complexListToString(fitZeros));
 
-    sbFit.append("\n");
-    sbInit.append("\n");
+    sbFitPoles.append("\n");
+    sbInitialPoles.append("\n");
     sbInitZ.append("\n");
     sbFitZ.append("\n");
 
     if (!solverNotRun) {
-      sbInit.append(sbFit);
+      sbInitialPoles.append(sbFitPoles);
     }
 
     if (!solverNotRun) {
@@ -321,24 +321,24 @@ public class RandomizedPanel extends ExperimentPanel {
     sbR.append("Residuals:");
     sbR.append('\n');
     sbR.append("Initial (nom. resp curve): ");
-    sbR.append(initResid);
+    sbR.append(initialResidual);
     sbR.append('\n');
     if (!solverNotRun) {
       sbR.append("Best fit: ");
-      sbR.append(fitResid);
+      sbR.append(fitResidual);
     }
 
-    return new String[]{sbInit.toString(), sbInitZ.toString(), sbR.toString()};
+    return new String[]{sbInitialPoles.toString(), sbInitZ.toString(), sbR.toString()};
   }
 
-  private ValueAxis degreeAxis, residPhaseAxis, residAmpAxis, prdAxis,
-      residXAxis, residPrdAxis;
+  private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
+      residualXAxis, residualPeriodAxis;
   private final JComboBox<String> plotSelection;
-  private JCheckBox lowFreqBox, showParams, freqSpace;
-  private JFreeChart magChart, argChart, residAmpChart, residPhaseChart;
+  private JCheckBox lowFrequencyBox, showParams, frequencySpace;
+  private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
 
-  public RandomizedPanel(ExperimentEnum exp) {
-    super(exp);
+  public RandomizedPanel(ExperimentEnum experiment) {
+    super(experiment);
 
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
@@ -347,58 +347,57 @@ public class RandomizedPanel extends ExperimentPanel {
 
     applyAxesToChart(); // now that we've got axes defined
 
-    magChart = buildChart(null, xAxis, yAxis);
-    argChart = buildChart(null, xAxis, degreeAxis);
-    residPhaseChart = buildChart(null, xAxis, residPhaseAxis);
-    residAmpChart = buildChart(null, xAxis, residAmpAxis);
+    magnitudeChart = buildChart(null, xAxis, yAxis);
+    argumentChart = buildChart(null, xAxis, degreeAxis);
+    residualPhaseChart = buildChart(null, xAxis, residualPhaseAxis);
+    residualAmplitudeChart = buildChart(null, xAxis, residualAmplitudeAxis);
 
     // set the GUI components
     this.setLayout(new GridBagLayout());
-    GridBagConstraints gbc = new GridBagConstraints();
+    GridBagConstraints constraints = new GridBagConstraints();
 
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.gridwidth = 3;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(chartPanel, gbc);
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.gridwidth = 3;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(chartPanel, constraints);
 
     // place the other UI elements in a single row below the chart
-    gbc.gridwidth = 1;
-    gbc.weighty = 0.0;
-    gbc.weightx = 0.0;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.gridy += 1;
-    gbc.gridx = 0;
+    constraints.gridwidth = 1;
+    constraints.weighty = 0.0;
+    constraints.weightx = 0.0;
+    constraints.anchor = GridBagConstraints.WEST;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridy += 1;
+    constraints.gridx = 0;
     JPanel checkBoxPanel = new JPanel();
     checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
-    checkBoxPanel.add(lowFreqBox);
+    checkBoxPanel.add(lowFrequencyBox);
     checkBoxPanel.add(showParams);
-    checkBoxPanel.add(freqSpace);
-    this.add(checkBoxPanel, gbc);
+    checkBoxPanel.add(frequencySpace);
+    this.add(checkBoxPanel, constraints);
 
-    gbc.gridx += 1;
-    gbc.weightx = 1.0;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.CENTER;
-    // gbc.gridwidth = GridBagConstraints.REMAINDER;
-    this.add(save, gbc);
+    constraints.gridx += 1;
+    constraints.weightx = 1.0;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(save, constraints);
 
     // plot selection combo box
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.gridx += 1;
-    gbc.weightx = 0;
-    gbc.anchor = GridBagConstraints.WEST;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.gridx += 1;
+    constraints.weightx = 0;
+    constraints.anchor = GridBagConstraints.WEST;
     plotSelection = new JComboBox<>();
     plotSelection.addItem(ResponseExperiment.MAGNITUDE);
     plotSelection.addItem(ResponseExperiment.ARGUMENT);
     plotSelection.addItem("Residual amplitude plot");
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
-    this.add(plotSelection, gbc);
+    this.add(plotSelection, constraints);
   }
 
   @Override
@@ -407,18 +406,19 @@ public class RandomizedPanel extends ExperimentPanel {
 
     if (e.getSource() == plotSelection) {
       if (!set) {
-        XYPlot xyp = chart.getXYPlot();
+        XYPlot plot = chart.getXYPlot();
         String label = getXAxis().getLabel();
-        xyp.getDomainAxis().setLabel(label);
+        plot.getDomainAxis().setLabel(label);
         label = getYAxis().getLabel();
-        xyp.getRangeAxis().setLabel(label);
+        plot.getRangeAxis().setLabel(label);
         return;
       }
 
-      int idx = plotSelection.getSelectedIndex();
+      int index = plotSelection.getSelectedIndex();
       JFreeChart[] charts =
-          new JFreeChart[]{magChart, argChart, residAmpChart, residPhaseChart};
-      chart = charts[idx];
+          new JFreeChart[]{magnitudeChart, argumentChart, residualAmplitudeChart,
+              residualPhaseChart};
+      chart = charts[index];
       chartPanel.setChart(chart);
       return;
     }
@@ -443,7 +443,7 @@ public class RandomizedPanel extends ExperimentPanel {
     // just force the active plot at the start to be the amplitude plot
     showParams.setSelected(true);
     showParams.setEnabled(true);
-    chart = magChart;
+    chart = magnitudeChart;
     chartPanel.setChart(chart);
     plotSelection.setSelectedIndex(0);
     chartPanel.setMouseZoomable(true);
@@ -452,15 +452,12 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   public String[] getAdditionalReportPages() {
     // produce output of poles and zeros as period values in new report page
-
-    RandomizedExperiment rnd = (RandomizedExperiment) expResult;
-
-    return getAdditionalReportPages(rnd);
+    return getAdditionalReportPages((RandomizedExperiment) expResult);
   }
 
   @Override
   public JFreeChart[] getCharts() {
-    return new JFreeChart[]{magChart, argChart};
+    return new JFreeChart[]{magnitudeChart, argumentChart};
   }
 
   /**
@@ -492,30 +489,29 @@ public class RandomizedPanel extends ExperimentPanel {
    * @return Array of strings
    */
   private String[] getInsetStringsAsList() {
-    RandomizedExperiment rnd = (RandomizedExperiment) expResult;
-    return getInsetString(rnd);
+    return getInsetString((RandomizedExperiment) expResult);
   }
 
   @Override
   public String getMetadataString() {
-    RandomizedExperiment rnd = (RandomizedExperiment) expResult;
-    StringBuilder sb = new StringBuilder();
+    RandomizedExperiment experiment = (RandomizedExperiment) expResult;
+    StringBuilder result = new StringBuilder();
 
-    int iters = rnd.getIterations();
-    sb.append("Iteration count from solver: ");
-    sb.append(iters);
-    sb.append("\n");
+    int iters = experiment.getIterations();
+    result.append("Iteration count from solver: ");
+    result.append(iters);
+    result.append("\n");
 
-    sb.append(super.getMetadataString());
+    result.append(super.getMetadataString());
 
-    double[] weights = rnd.getWeights();
-    sb.append("Residuals weighting:\n");
-    sb.append("    Amplitude: ");
-    sb.append(weights[0]);
-    sb.append("\n");
-    sb.append("    Phase: ");
-    sb.append(weights[1]);
-    return sb.toString();
+    double[] weights = experiment.getWeights();
+    result.append("Residuals weighting:\n");
+    result.append("    Amplitude: ");
+    result.append(weights[0]);
+    result.append("\n");
+    result.append("    Phase: ");
+    result.append(weights[1]);
+    return result.toString();
   }
 
   /**
@@ -528,52 +524,45 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   @Override
   public String getPDFFilename() {
-
-    StringBuilder sb = new StringBuilder();
-    if (lowFreqBox.isSelected()) {
-      sb.append("Low_Frq_");
+    if (lowFrequencyBox.isSelected()) {
+      return "Low_Frq_" + super.getPDFFilename();
     } else {
-      sb.append("High_Frq_");
+      return "High_Frq_" + super.getPDFFilename();
     }
-
-    sb.append(super.getPDFFilename());
-
-    return sb.toString();
   }
 
   private ValueAxis getResidAxis() {
-    if (null == plotSelection || freqSpace.isSelected()) {
-      return residXAxis;
+    if (null == plotSelection || frequencySpace.isSelected()) {
+      return residualXAxis;
     } else {
-      return residPrdAxis;
+      return residualPeriodAxis;
     }
   }
 
   @Override
   public JFreeChart[] getSecondPageCharts() {
-    return new JFreeChart[]{residAmpChart, residPhaseChart};
+    return new JFreeChart[]{residualAmplitudeChart, residualPhaseChart};
   }
 
   @Override
   public ValueAxis getXAxis() {
-    if (null == plotSelection || freqSpace.isSelected()) {
+    if (null == plotSelection || frequencySpace.isSelected()) {
       return xAxis;
     } else {
-      return prdAxis;
+      return periodAxis;
     }
   }
 
   @Override
   public ValueAxis getYAxis() {
-
     if (null == plotSelection) {
       return yAxis;
     }
 
-    int idx = plotSelection.getSelectedIndex();
+    int index = plotSelection.getSelectedIndex();
     ValueAxis[] out =
-        new ValueAxis[]{yAxis, degreeAxis, residAmpAxis, residPhaseAxis};
-    return out[idx];
+        new ValueAxis[]{yAxis, degreeAxis, residualAmplitudeAxis, residualPhaseAxis};
+    return out[index];
   }
 
   private void initAxes() {
@@ -583,9 +572,9 @@ public class RandomizedPanel extends ExperimentPanel {
     String degreeAxisTitle = "phi(RESP(f))";
 
     xAxis = new LogarithmicAxis(xAxisTitle);
-    prdAxis = new LogarithmicAxis(prdAxisTitle);
-    residXAxis = new LogarithmicAxis(xAxisTitle);
-    residPrdAxis = new LogarithmicAxis(prdAxisTitle);
+    periodAxis = new LogarithmicAxis(prdAxisTitle);
+    residualXAxis = new LogarithmicAxis(xAxisTitle);
+    residualPeriodAxis = new LogarithmicAxis(prdAxisTitle);
 
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
@@ -593,26 +582,26 @@ public class RandomizedPanel extends ExperimentPanel {
     degreeAxis = new NumberAxis(degreeAxisTitle);
     degreeAxis.setAutoRange(true);
 
-    residPhaseAxis = new NumberAxis("Phase error (degrees)");
-    residAmpAxis = new NumberAxis("Amplitude error (percentage)");
+    residualPhaseAxis = new NumberAxis("Phase error (degrees)");
+    residualAmplitudeAxis = new NumberAxis("Amplitude error (percentage)");
 
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     degreeAxis.setLabelFont(bold);
-    residPhaseAxis.setLabelFont(bold);
-    residAmpAxis.setLabelFont(bold);
+    residualPhaseAxis.setLabelFont(bold);
+    residualAmplitudeAxis.setLabelFont(bold);
 
-    lowFreqBox = new JCheckBox("Low frequency calibration");
-    lowFreqBox.setSelected(true);
+    lowFrequencyBox = new JCheckBox("Low frequency calibration");
+    lowFrequencyBox.setSelected(true);
 
     showParams = new JCheckBox("Show params");
     showParams.setEnabled(false);
     showParams.addActionListener(this);
 
-    freqSpace = new JCheckBox("Use Hz units (req. regen)");
-    freqSpace.setSelected(true);
+    frequencySpace = new JCheckBox("Use Hz units (req. regen)");
+    frequencySpace.setSelected(true);
   }
 
   @Override
@@ -627,7 +616,6 @@ public class RandomizedPanel extends ExperimentPanel {
     for (String inset : insets) {
       TextTitle result = new TextTitle();
       result.setText(inset);
-      // result.setFont( new Font("Dialog", Font.BOLD, 12) );
       result.setBackgroundPaint(Color.white);
       bc.add(result);
     }
@@ -650,18 +638,15 @@ public class RandomizedPanel extends ExperimentPanel {
 
   @Override
   protected void updateData(DataStore ds) {
-
-    //initAxes();
-
     set = true;
     showParams.setSelected(false);
 
-    final boolean isLowFreq = lowFreqBox.isSelected();
+    final boolean isLowFreq = lowFrequencyBox.isSelected();
     seriesColorMap = new HashMap<>();
 
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
     rndExp.setLowFreq(isLowFreq);
-    rndExp.useFreqUnits(freqSpace.isSelected());
+    rndExp.useFreqUnits(frequencySpace.isSelected());
     expResult.runExperimentOnData(ds);
 
     String appendFreqTitle;
@@ -690,20 +675,20 @@ public class RandomizedPanel extends ExperimentPanel {
 
     getXAxis().setAutoRange(true);
 
-    argChart = buildChart(argSeries, getXAxis(), degreeAxis);
-    argChart.getXYPlot().getRangeAxis().setAutoRange(true);
-    invertSeriesRenderingOrder(argChart);
+    argumentChart = buildChart(argSeries, getXAxis(), degreeAxis);
+    argumentChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    invertSeriesRenderingOrder(argumentChart);
 
-    magChart = buildChart(magSeries, getXAxis(), yAxis);
-    magChart.getXYPlot().getRangeAxis().setAutoRange(true);
-    invertSeriesRenderingOrder(magChart);
+    magnitudeChart = buildChart(magSeries, getXAxis(), yAxis);
+    magnitudeChart.getXYPlot().getRangeAxis().setAutoRange(true);
+    invertSeriesRenderingOrder(magnitudeChart);
 
     if (!isLowFreq) {
       Marker maxFitMarker = new ValueMarker(rndExp.getMaxFitFrequency());
       maxFitMarker.setStroke(new BasicStroke((float) 1.5));
       maxFitMarker.setPaint(Color.BLACK);
-      magChart.getXYPlot().addDomainMarker(maxFitMarker);
-      argChart.getXYPlot().addDomainMarker(maxFitMarker);
+      magnitudeChart.getXYPlot().addDomainMarker(maxFitMarker);
+      argumentChart.getXYPlot().addDomainMarker(maxFitMarker);
     }
 
     String inset = getInsetStrings();
@@ -711,17 +696,17 @@ public class RandomizedPanel extends ExperimentPanel {
     result.setText(inset);
     result.setBackgroundPaint(Color.white);
 
-    appendChartTitle(argChart, appendFreqTitle);
-    appendChartTitle(magChart, appendFreqTitle);
+    appendChartTitle(argumentChart, appendFreqTitle);
+    appendChartTitle(magnitudeChart, appendFreqTitle);
 
     // get residuals plots
-    XYItemRenderer xyir; // use this to set series paints to set the last color to use 3rd color
-    residAmpChart = buildChart(xysc.get(2), getResidAxis(), residAmpAxis);
-    xyir = residAmpChart.getXYPlot().getRenderer();
-    xyir.setSeriesPaint(1, COLORS[2]);
-    residPhaseChart = buildChart(xysc.get(3), getResidAxis(), residPhaseAxis);
-    xyir = residPhaseChart.getXYPlot().getRenderer();
-    xyir.setSeriesPaint(1, COLORS[2]);
+    XYItemRenderer renderer; // use this to set series paints to set the last color to use 3rd color
+    residualAmplitudeChart = buildChart(xysc.get(2), getResidAxis(), residualAmplitudeAxis);
+    renderer = residualAmplitudeChart.getXYPlot().getRenderer();
+    renderer.setSeriesPaint(1, COLORS[2]);
+    residualPhaseChart = buildChart(xysc.get(3), getResidAxis(), residualPhaseAxis);
+    renderer = residualPhaseChart.getXYPlot().getRenderer();
+    renderer.setSeriesPaint(1, COLORS[2]);
 
     setSubtitles();
   }
