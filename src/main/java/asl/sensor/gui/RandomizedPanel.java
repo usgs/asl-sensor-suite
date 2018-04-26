@@ -258,8 +258,7 @@ public class RandomizedPanel extends ExperimentPanel {
     sb.append(csvPoles);
     sb.append(csvZeros);
 
-    String[] out = new String[]{sb.toString()}; // just a single new page
-    return out;
+    return new String[]{sb.toString()};
   }
 
 
@@ -408,11 +407,9 @@ public class RandomizedPanel extends ExperimentPanel {
 
   @Override
   public void actionPerformed(ActionEvent e) {
-
     super.actionPerformed(e);
 
     if (e.getSource() == plotSelection) {
-
       if (!set) {
         XYPlot xyp = chart.getXYPlot();
         String label = getXAxis().getLabel();
@@ -427,13 +424,10 @@ public class RandomizedPanel extends ExperimentPanel {
           new JFreeChart[]{magChart, argChart, residAmpChart, residPhaseChart};
       chart = charts[idx];
       chartPanel.setChart(chart);
-
       return;
-
     }
 
     if (e.getSource() == showParams) {
-
       if (!showParams.isSelected()) {
         for (JFreeChart chart : getCharts()) {
           LegendTitle legend = chart.getLegend();
@@ -442,17 +436,10 @@ public class RandomizedPanel extends ExperimentPanel {
         }
       }
 
-      /*
-      XYPlot xyp = magChart.getXYPlot();
-      xyp.clearAnnotations();
-      */
       if (showParams.isSelected()) {
         setSubtitles();
       }
-
-      return;
     }
-
   }
 
   @Override
@@ -651,9 +638,7 @@ public class RandomizedPanel extends ExperimentPanel {
     TextTitle result = new TextTitle();
     RandomizedExperiment re = (RandomizedExperiment) expResult;
     int numIters = re.getIterations();
-    StringBuilder sb = new StringBuilder("NUMBER OF ITERATIONS: ");
-    sb.append(numIters);
-    result.setText(sb.toString());
+    result.setText("NUMBER OF ITERATIONS: " + numIters);
     result.setBackgroundPaint(Color.white);
 
     ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
