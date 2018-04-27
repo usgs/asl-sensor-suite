@@ -17,9 +17,6 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -207,8 +204,8 @@ public abstract class ExperimentPanel
       channelType[i] = "NOT USED";
     }
 
-    seriesColorMap = new HashMap<String, Color>();
-    seriesDashedSet = new HashSet<String>();
+    seriesColorMap = new HashMap<>();
+    seriesDashedSet = new HashSet<>();
     plotTheseInBold = new String[]{};
 
     expType = exp;
@@ -312,11 +309,15 @@ public abstract class ExperimentPanel
         false,
         false);
 
+    if (xyDataset == null) {
+      return chart;
+    }
+
     // apply effects to the components that require it (i.e., NLNM time series)
     XYPlot xyPlot = chart.getXYPlot();
     XYItemRenderer xyir = xyPlot.getRenderer();
 
-    if (xyDataset != null && seriesColorMap.size() == 0) {
+    if (seriesColorMap.size() == 0) {
       int modulus = COLORS.length;
       for (int seriesIdx = 0; seriesIdx < xyDataset.getSeriesCount(); ++seriesIdx) {
         xyir.setSeriesPaint(seriesIdx, COLORS[seriesIdx % modulus]);
@@ -349,7 +350,6 @@ public abstract class ExperimentPanel
         stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
         xyir.setSeriesStroke(seriesIdx, stroke);
       }
-
     }
 
     if (!(plotTheseInBold.length == 0)) {
@@ -562,15 +562,15 @@ public abstract class ExperimentPanel
    */
   public String getPDFFilename() {
 
-    SimpleDateFormat sdf = DATE_FORMAT.get();
+    SimpleDateFormat dateFormat = DATE_FORMAT.get();
 
     String date;
     long time = expResult.getStart();
     if (time > 0) {
-      date = sdf.format(time);
+      date = dateFormat.format(time);
     } else {
-      Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
-      date = sdf.format(cCal.getTime());
+      Calendar cCal = Calendar.getInstance(dateFormat.getTimeZone());
+      date = dateFormat.format(cCal.getTime());
     }
 
     // turn spaces into underscores
@@ -580,17 +580,9 @@ public abstract class ExperimentPanel
     test = test.replace('(', '_');
     test = test.replace(')', '_');
 
-    int idx = getIndexOfMainData();
-    String name = expResult.getInputNames().get(idx); // name of input data
+    String name = expResult.getInputNames().get(getIndexOfMainData()); // name of input data
 
-    StringBuilder sb = new StringBuilder();
-    sb.append(test);
-    sb.append('_');
-    sb.append(name);
-    sb.append('_');
-    sb.append(date);
-    sb.append(".pdf");
-    return sb.toString();
+    return test + '_' + name + '_' + date + ".pdf";
 
   }
 
@@ -716,7 +708,6 @@ public abstract class ExperimentPanel
     sb.append(getTimeStampString(expResult));
     ReportingUtils.textToPDFPage(sb.toString(), pdf);
     ReportingUtils.textListToPDFPages(pdf, getAdditionalReportPages());
-    return;
   }
 
   /**
