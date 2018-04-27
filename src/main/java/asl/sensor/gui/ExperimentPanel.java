@@ -476,21 +476,6 @@ public abstract class ExperimentPanel
   }
 
   /**
-   * Return image of panel's plots with specified dimensions
-   * Used to compile PNG image of all charts contained in this panel
-   *
-   * @param width Width of output image in pixels
-   * @param height Height of output image in pixels
-   * @return buffered image of this panel's chart
-   */
-  public BufferedImage getAsImage(int width, int height) {
-
-    JFreeChart[] jfcs = getCharts();
-    return ReportingUtils.chartsToImage(width, height, jfcs);
-
-  }
-
-  /**
    * Returns the identifiers of each input plot being used, such as
    * "calibration input" for the calibration tests.
    *
