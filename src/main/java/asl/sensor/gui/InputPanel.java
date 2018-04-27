@@ -19,7 +19,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -29,7 +28,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TimeZone;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -88,9 +86,6 @@ public class InputPanel
    * auto-generated serialization UID
    */
   private static final long serialVersionUID = -7302813951637543526L;
-
-  public static final SimpleDateFormat DATE_FORMAT =
-      new SimpleDateFormat("Y.DDD.HH:mm:ss");
 
   /**
    * Default height of image produced by the save-as-image function
@@ -812,12 +807,11 @@ public class InputPanel
           XYPlot xyPlot = (XYPlot) chart.getPlot();
 
           DateAxis dateAxis = new DateAxis();
-          DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
           dateAxis.setLabel("UTC Time (Year.Day.Hour:Minute)");
           Font bold = dateAxis.getLabelFont();
           bold = bold.deriveFont(Font.BOLD);
           dateAxis.setLabelFont(bold);
-          dateAxis.setDateFormatOverride(DATE_FORMAT);
+          dateAxis.setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
           xyPlot.setDomainAxis(dateAxis);
           int colorIndex = index % defaultColor.length;
           xyPlot.getRenderer().setSeriesPaint(0, defaultColor[colorIndex]);

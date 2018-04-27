@@ -40,19 +40,18 @@ public class NoiseNinePanel extends NoisePanel {
    */
   public static String getInsetString(NoiseNineExperiment exp) {
     NoiseNineExperiment nne = exp;
-    DecimalFormat df = new DecimalFormat("#.###");
     double[] angles = nne.getNorthAngles();
     StringBuilder sb = new StringBuilder();
     sb.append("Angle of rotation of north sensor 2 (deg): ");
-    sb.append(df.format(Math.toDegrees(angles[0])));
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
     sb.append("\nAngle of rotation of north sensor 3 (deg): ");
-    sb.append(df.format(Math.toDegrees(angles[1])));
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
     sb.append("\n");
     angles = nne.getEastAngles();
     sb.append("Angle of rotation of east sensor 2 (deg): ");
-    sb.append(df.format(Math.toDegrees(angles[0])));
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
     sb.append("\nAngle of rotation of east sensor 3 (deg): ");
-    sb.append(df.format(Math.toDegrees(angles[1])));
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
     return sb.toString();
   }
 
@@ -198,13 +197,12 @@ public class NoiseNinePanel extends NoisePanel {
    */
   private String getEastChartString() {
     NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
-    DecimalFormat df = new DecimalFormat("#.###");
     double[] angles = nne.getEastAngles();
     StringBuilder sb = new StringBuilder();
     sb.append("Angle of rotation of east sensor 2 (deg): ");
-    sb.append(df.format(Math.toDegrees(angles[0])));
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
     sb.append("\nAngle of rotation of east sensor 3 (deg): ");
-    sb.append(df.format(Math.toDegrees(angles[1])));
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
     return sb.toString();
   }
 
@@ -224,13 +222,12 @@ public class NoiseNinePanel extends NoisePanel {
    */
   private String getNorthChartString() {
     NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
-    DecimalFormat df = new DecimalFormat("#.###");
     double[] angles = nne.getNorthAngles();
     StringBuilder sb = new StringBuilder();
     sb.append("Angle of rotation of north sensor 2 (deg): ");
-    sb.append(df.format(Math.toDegrees(angles[0])));
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
     sb.append("\nAngle of rotation of north sensor 3 (deg): ");
-    sb.append(df.format(Math.toDegrees(angles[1])));
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
     return sb.toString();
   }
 

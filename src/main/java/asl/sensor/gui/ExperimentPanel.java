@@ -4,6 +4,7 @@ import asl.sensor.experiment.Experiment;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -13,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -72,6 +74,25 @@ public abstract class ExperimentPanel
     implements ActionListener, ChangeListener {
 
   private static final long serialVersionUID = -5591522915365766604L;
+  public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+      ThreadLocal.withInitial(() ->  {
+        DecimalFormat format =new DecimalFormat("#.###");
+        NumericUtils.setInfinityPrintable(format);
+        return format;
+      });
+  public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
+      ThreadLocal.withInitial(() ->  {
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
+      });
+
+  public static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
+      ThreadLocal.withInitial(() ->  {
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
+      });
 
   /**
    * Append text to a chart's title (used for distinguishing random cal types).
@@ -94,26 +115,17 @@ public abstract class ExperimentPanel
   public static String getTimeStampString(Experiment expResult) {
     StringBuilder sb = new StringBuilder();
 
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("y.DDD.HH:mm:ss.SSS");
-    OffsetDateTime dt = OffsetDateTime.now(ZoneOffset.UTC);
-
     sb.append("Time of report generation:\n");
-    sb.append(dtf.format(dt));
+    sb.append(DATE_TIME_FORMAT.get().format(OffsetDateTime.now(ZoneOffset.UTC)));
     sb.append('\n');
 
     long startTime = expResult.getStart();
     long endTime = expResult.getEnd();
-    if (!(startTime == 0L && endTime == 0L)) {
-      dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneOffset.UTC);
-
+    if (startTime != 0L && endTime != 0L) {
       sb.append("Data start time:\n");
-      sb.append(dtf.format(dt));
-      sb.append('\n');
-
-      dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(endTime), ZoneOffset.UTC);
-
-      sb.append("Data end time:\n");
-      sb.append(dtf.format(dt));
+      sb.append(DATE_TIME_FORMAT.get().format(Instant.ofEpochMilli(startTime)));
+      sb.append("\nData end time:\n");
+      sb.append(DATE_TIME_FORMAT.get().format(Instant.ofEpochMilli(endTime)));
       sb.append('\n');
     }
     return sb.toString();
@@ -549,8 +561,7 @@ public abstract class ExperimentPanel
    */
   public String getPDFFilename() {
 
-    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
-    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+    SimpleDateFormat sdf = DATE_FORMAT.get();
 
     String date;
     long time = expResult.getStart();

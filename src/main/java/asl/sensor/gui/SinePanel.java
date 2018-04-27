@@ -192,13 +192,12 @@ public class SinePanel extends ExperimentPanel {
   }
 
   public static String getInsetString(SineExperiment rexp) {
-    DecimalFormat df = new DecimalFormat("#.#######");
     double cAmp = rexp.getCalAmplitude();
     double oAmp = rexp.getOutAmplitude();
-    String calAmp = df.format(cAmp);
-    String outAmp = df.format(oAmp);
-    String ratio = df.format(cAmp / oAmp);
-    String pFreq = df.format(rexp.getEstSineFreq());
+    String calAmp = DECIMAL_FORMAT.get().format(cAmp);
+    String outAmp = DECIMAL_FORMAT.get().format(oAmp);
+    String ratio = DECIMAL_FORMAT.get().format(cAmp / oAmp);
+    String pFreq = DECIMAL_FORMAT.get().format(rexp.getEstSineFreq());
     StringBuilder sb = new StringBuilder();
     sb.append("Calculated calibration amplitude: ");
     sb.append(calAmp);

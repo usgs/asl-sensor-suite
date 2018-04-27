@@ -70,14 +70,12 @@ public class GainSixPanel extends GainPanel {
     sb.append("** CALCULATED GAIN: ");
     sb.append(calcGain);
 
-    DecimalFormat df = new DecimalFormat("#.###");
-
     if (plotIdx == 0) {
       sb.append("\nNorth azimuth (deg): ");
-      sb.append(df.format(Math.toDegrees(gn.getNorthAzimuth())));
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(gn.getNorthAzimuth())));
     } else if (plotIdx == 1) {
       sb.append("\nEast azimuth (rad): ");
-      sb.append(df.format(Math.toDegrees(gn.getEastAzimuth())));
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(gn.getEastAzimuth())));
     }
 
     return sb.toString();
@@ -152,7 +150,7 @@ public class GainSixPanel extends GainPanel {
     gbc.gridy += 1;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.anchor = GridBagConstraints.CENTER;
-    this.add(refSeries, gbc);
+    this.add(referenceSeries, gbc);
     gbc.weightx = 0;
     gbc.gridx += 1;
     gbc.fill = GridBagConstraints.NONE;
@@ -176,9 +174,9 @@ public class GainSixPanel extends GainPanel {
    * timeseries are selected or the recalculate button is hit
    */
   @Override
-  public void actionPerformed(ActionEvent e) {
+  public void actionPerformed(ActionEvent event) {
 
-    if (e.getSource() == recalcButton) {
+    if (event.getSource() == recalcButton) {
 
       // TODO: set title for each chart;
       setTitle();
@@ -188,9 +186,9 @@ public class GainSixPanel extends GainPanel {
       return;
     }
 
-    super.actionPerformed(e); // saving?
+    super.actionPerformed(event); // saving?
 
-    if (e.getSource() == plotSelection) {
+    if (event.getSource() == plotSelection) {
       int idx = plotSelection.getSelectedIndex();
 
       JFreeChart[] charts = getCharts();
@@ -215,7 +213,7 @@ public class GainSixPanel extends GainPanel {
   @Override
   protected void drawCharts() {
 
-    final int refIdx = refSeries.getSelectedIndex();
+    final int refIdx = referenceSeries.getSelectedIndex();
     final int idx1 = (refIdx + 1) % 2;
     int leftSliderValue, rightSliderValue;
 
@@ -233,8 +231,8 @@ public class GainSixPanel extends GainPanel {
 
     // since intervals of incoming data match, so too limits of plot
     // this is used in mapping scale of slider to x-axis values
-    low = Math.log10(minMax[0]); // value when slider is 0
-    high = Math.log10(minMax[1]); // value when slider is 1000
+    lowPeriod = Math.log10(minMax[0]); // value when slider is 0
+    highPeriod = Math.log10(minMax[1]); // value when slider is 1000
     leftSliderValue = mapPeriodToSlider(DEFAULT_LOW_BOUND);
     rightSliderValue = mapPeriodToSlider(DEFAULT_UP_BOUND);
 
@@ -301,7 +299,7 @@ public class GainSixPanel extends GainPanel {
     // remove old bars and draw the new ones
     // setDomainMarkers(lowPrd, highPrd, xyp);
 
-    int refIdx = refSeries.getSelectedIndex();
+    int refIdx = referenceSeries.getSelectedIndex();
 
     GainSixExperiment gn = (GainSixExperiment) expResult;
 
@@ -335,14 +333,14 @@ public class GainSixPanel extends GainPanel {
    */
   private void setDataNames(DataStore ds) {
 
-    refSeries.setEnabled(false);
+    referenceSeries.setEnabled(false);
 
-    refSeries.removeAllItems();
+    referenceSeries.removeAllItems();
 
-    refSeries.addItem("Data from sensor set 1");
-    refSeries.addItem("Data from sensor set 2");
+    referenceSeries.addItem("Data from sensor set 1");
+    referenceSeries.addItem("Data from sensor set 2");
 
-    refSeries.setSelectedIndex(0);
+    referenceSeries.setSelectedIndex(0);
   }
 
   /**
@@ -366,9 +364,9 @@ public class GainSixPanel extends GainPanel {
   }
 
   @Override
-  public void stateChanged(ChangeEvent e) {
+  public void stateChanged(ChangeEvent event) {
 
-    super.stateChanged(e);
+    super.stateChanged(event);
 
     /*
     // enforce slider boundaries, same as deriving class
@@ -420,16 +418,16 @@ public class GainSixPanel extends GainPanel {
   }
 
   @Override
-  protected void updateData(final DataStore ds) {
+  protected void updateData(final DataStore dataStore) {
 
     set = true;
 
-    setDataNames(ds);
+    setDataNames(dataStore);
 
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
 
     // need to have 2 series for relative gain
-    refSeries.setEnabled(true);
+    referenceSeries.setEnabled(true);
 
   }
 
