@@ -28,7 +28,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
-import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -72,20 +71,20 @@ public abstract class ExperimentPanel
 
   private static final long serialVersionUID = -5591522915365766604L;
   public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
-      ThreadLocal.withInitial(() ->  {
-        DecimalFormat format =new DecimalFormat("#.###");
+      ThreadLocal.withInitial(() -> {
+        DecimalFormat format = new DecimalFormat("#.###");
         NumericUtils.setInfinityPrintable(format);
         return format;
       });
   public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
-      ThreadLocal.withInitial(() ->  {
+      ThreadLocal.withInitial(() -> {
         SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
 
   public static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
-      ThreadLocal.withInitial(() ->  {
+      ThreadLocal.withInitial(() -> {
         SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
@@ -564,7 +563,11 @@ public abstract class ExperimentPanel
     test = test.replace('(', '_');
     test = test.replace(')', '_');
 
-    String name = expResult.getInputNames().get(getIndexOfMainData()); // name of input data
+    List<String> names = expResult.getInputNames();
+    String name = "";
+    if (names.size() < getIndexOfMainData()) {
+      name = names.get(getIndexOfMainData()); // name of input data
+    }
 
     return test + '_' + name + '_' + date + ".pdf";
 
@@ -637,17 +640,16 @@ public abstract class ExperimentPanel
   }
 
   /**
-   * Function template for informing main window of number of panels to display
-   * to fit all data needed by the program
+   * Get the number of panels to display to fit all data needed by the program
    *
-   * @return Number of plots to show in the input panel
+   * @return  Number of plots to show in the input panel
    */
   public abstract int panelsNeeded();
 
   /**
    * Number of panels to return in an output report
    *
-   * @return number of panels to include
+   * @return Number of panels to include
    */
   public int plotsToShow() {
     return panelsNeeded();
@@ -698,7 +700,6 @@ public abstract class ExperimentPanel
 
   }
 
-
   /**
    * Used to plot the results of a backend function from an experiment
    * using a collection of XYSeries mapped by strings. This will be set to
@@ -707,9 +708,7 @@ public abstract class ExperimentPanel
    * @param xyDataset collection of XYSeries to plot
    */
   protected void setChart(XYSeriesCollection xyDataset) {
-
     chart = buildChart(xyDataset);
-
   }
 
   /**
@@ -725,21 +724,20 @@ public abstract class ExperimentPanel
    * the backend status changes
    */
   @Override
-  public void stateChanged(ChangeEvent e) {
-    if (e.getSource() == expResult) {
+  public void stateChanged(ChangeEvent event) {
+    if (event.getSource() == expResult) {
       String info = expResult.getStatus();
       displayInfoMessage(info);
     }
   }
 
   /**
-   * Function template for sending input to a backend fucntion and collecting
-   * the corresponding data
+   * Function template for sending input to a backend fucntion and collecting the corresponding data.
+   * Details of how to run updateData are left up to the implementing panel however, the boolean "set" should be set to true to enable PDF saving
    *
-   * @param ds DataStore object containing seed and resp files
+   * @param dataStore DataStore object containing seed and resp files
    */
-  protected abstract void updateData(final DataStore ds);
-  // details of how to run updateData are left up to the implementing panel
-  // however, the boolean "set" should be set to true to enable PDF saving
+  protected abstract void updateData(final DataStore dataStore);
+
 
 }

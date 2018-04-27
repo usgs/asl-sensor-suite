@@ -311,11 +311,11 @@ public class StepPanel extends ExperimentPanel {
    * the parameters used in the plot calculations
    */
   @Override
-  protected void updateData(final DataStore ds) {
+  protected void updateData(final DataStore dataStore) {
 
     set = true;
 
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
 
     XYSeriesCollection stepData = expResult.getData().get(0);
     stepChart = buildChart(stepData, xAxis, yAxis);

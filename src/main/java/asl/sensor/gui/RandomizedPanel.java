@@ -635,7 +635,7 @@ public class RandomizedPanel extends ExperimentPanel {
   }
 
   @Override
-  protected void updateData(DataStore ds) {
+  protected void updateData(DataStore dataStore) {
     set = true;
     showParams.setSelected(false);
 
@@ -645,7 +645,7 @@ public class RandomizedPanel extends ExperimentPanel {
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
     rndExp.setLowFreq(isLowFreq);
     rndExp.useFreqUnits(frequencySpace.isSelected());
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
 
     String appendFreqTitle;
 
