@@ -96,7 +96,7 @@ public abstract class ExperimentPanel
    * @param chart Chart whose title will be modified
    * @param appendText Text to append to chart's current title
    */
-  public static void appendChartTitle(JFreeChart chart, String appendText) {
+  static void appendChartTitle(JFreeChart chart, String appendText) {
     String titleText = chart.getTitle().getText();
     chart.getTitle().setText(titleText + appendText);
   }
@@ -156,9 +156,9 @@ public abstract class ExperimentPanel
   // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
 
-  protected final JFileChooser fc; // save image when image save button clicked
+  private final JFileChooser fc; // save image when image save button clicked
 
-  public final ExperimentEnum expType;
+  final ExperimentEnum expType;
   // used to define experiment of each plot object (i.e., chart name)
 
   protected Experiment expResult;
@@ -173,25 +173,25 @@ public abstract class ExperimentPanel
   // used to give details in input panel about what users needs to load where
   protected boolean set; // true if the experiment has run
 
-  protected String[] plotTheseInBold; // given in the implementing function
+  String[] plotTheseInBold; // given in the implementing function
   // this is a String because bolded names are intended to be fixed
   // (i.e., NLNM, NHNM, not dependent on user input)
-  protected Map<String, Color> seriesColorMap;
+  Map<String, Color> seriesColorMap;
 
-  protected final Set<String> seriesDashedSet;
+  final Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
 
   // three PSDs, three self-noise calcs
 
-  protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
+  final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
 
   /**
    * Construct a new panel, using a backend defined by the passed-in enum
    *
-   * @param exp Experiment enum with corresponding backend for factory
+   * @param experiment Experiment enum with corresponding backend for factory
    * instantiation
    */
-  public ExperimentPanel(ExperimentEnum exp) {
+  public ExperimentPanel(ExperimentEnum experiment) {
 
     set = false;
 
@@ -206,8 +206,8 @@ public abstract class ExperimentPanel
     seriesDashedSet = new HashSet<>();
     plotTheseInBold = new String[]{};
 
-    expType = exp;
-    expResult = ExperimentFactory.createExperiment(exp);
+    expType = experiment;
+    expResult = ExperimentFactory.createExperiment(experiment);
     expResult.addChangeListener(this);
 
     chart = ChartFactory.createXYLineChart(expType.getName(),
@@ -618,16 +618,16 @@ public abstract class ExperimentPanel
   }
 
   /**
-   * Function used to query backend on whether or not a datastore has all the
+   * Function used to query backend on whether or not a DataStore has all the
    * data that a backend needs to calculate. This is used mainly to inform
    * the main window (see SensorSuite class) that the generate result button
    * can be set active
    *
-   * @param ds Datastore to run data check on
+   * @param dataStore DataStore to run data check on
    * @return True if the backend can run with the data provided
    */
-  public boolean hasEnoughData(final DataStore ds) {
-    return expResult.hasEnoughData(ds);
+  public boolean hasEnoughData(final DataStore dataStore) {
+    return expResult.hasEnoughData(dataStore);
   }
 
   /**
@@ -663,7 +663,7 @@ public abstract class ExperimentPanel
    *
    * @param pdf PDF document to append data to
    */
-  public void saveInsetDataText(PDDocument pdf) {
+  private void saveInsetDataText(PDDocument pdf) {
 
     StringBuilder sb = new StringBuilder(getInsetStrings());
     if (sb.length() > 0) {
