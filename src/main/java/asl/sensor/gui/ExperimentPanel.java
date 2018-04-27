@@ -11,7 +11,6 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -149,16 +148,16 @@ public abstract class ExperimentPanel
 
   }
 
-  protected JButton save; // easy access to saving output as png
+  protected final JButton save; // easy access to saving output as png
 
   protected JFreeChart chart; // the chart shown in the panel
 
-  protected ChartPanel chartPanel; // component used to hold the shown chart
+  protected final ChartPanel chartPanel; // component used to hold the shown chart
   // (if an experiment has multiple charts to show, ideally each should be
   // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
 
-  protected JFileChooser fc; // save image when image save button clicked
+  protected final JFileChooser fc; // save image when image save button clicked
 
   public final ExperimentEnum expType;
   // used to define experiment of each plot object (i.e., chart name)
@@ -171,7 +170,7 @@ public abstract class ExperimentPanel
   protected ValueAxis xAxis, yAxis;
   // default axes to use with the default chart
 
-  public String[] channelType;
+  public final String[] channelType;
   // used to give details in input panel about what users needs to load where
   protected boolean set; // true if the experiment has run
 
@@ -180,7 +179,7 @@ public abstract class ExperimentPanel
   // (i.e., NLNM, NHNM, not dependent on user input)
   protected Map<String, Color> seriesColorMap;
 
-  protected Set<String> seriesDashedSet;
+  protected final Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
 
   // three PSDs, three self-noise calcs
@@ -652,23 +651,6 @@ public abstract class ExperimentPanel
    */
   public int plotsToShow() {
     return panelsNeeded();
-  }
-
-  /**
-   * Function to call to run experiment backend on specific data, using the
-   * given swingworker
-   *
-   * @param ds Data to evaluate the backend on
-   * @param worker Worker thread to run the backend in, presumably the
-   * worker object originating in the main class for the suite
-   */
-  public SwingWorker<Boolean, Void>
-  runExperiment(final DataStore ds, SwingWorker<Boolean, Void> worker) {
-
-    worker.execute();
-
-    return worker;
-
   }
 
   /**
