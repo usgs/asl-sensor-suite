@@ -11,15 +11,11 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,7 +28,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
-import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -76,20 +71,20 @@ public abstract class ExperimentPanel
 
   private static final long serialVersionUID = -5591522915365766604L;
   public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
-      ThreadLocal.withInitial(() ->  {
-        DecimalFormat format =new DecimalFormat("#.###");
+      ThreadLocal.withInitial(() -> {
+        DecimalFormat format = new DecimalFormat("#.###");
         NumericUtils.setInfinityPrintable(format);
         return format;
       });
   public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
-      ThreadLocal.withInitial(() ->  {
+      ThreadLocal.withInitial(() -> {
         SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
 
   public static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
-      ThreadLocal.withInitial(() ->  {
+      ThreadLocal.withInitial(() -> {
         SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
@@ -101,7 +96,7 @@ public abstract class ExperimentPanel
    * @param chart Chart whose title will be modified
    * @param appendText Text to append to chart's current title
    */
-  public static void appendChartTitle(JFreeChart chart, String appendText) {
+  static void appendChartTitle(JFreeChart chart, String appendText) {
     String titleText = chart.getTitle().getText();
     chart.getTitle().setText(titleText + appendText);
   }
@@ -152,18 +147,18 @@ public abstract class ExperimentPanel
 
   }
 
-  protected JButton save; // easy access to saving output as png
+  protected final JButton save; // easy access to saving output as png
 
   protected JFreeChart chart; // the chart shown in the panel
 
-  protected ChartPanel chartPanel; // component used to hold the shown chart
+  protected final ChartPanel chartPanel; // component used to hold the shown chart
   // (if an experiment has multiple charts to show, ideally each should be
   // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
 
-  protected JFileChooser fc; // save image when image save button clicked
+  private final JFileChooser fc; // save image when image save button clicked
 
-  public final ExperimentEnum expType;
+  final ExperimentEnum expType;
   // used to define experiment of each plot object (i.e., chart name)
 
   protected Experiment expResult;
@@ -174,29 +169,29 @@ public abstract class ExperimentPanel
   protected ValueAxis xAxis, yAxis;
   // default axes to use with the default chart
 
-  public String[] channelType;
+  public final String[] channelType;
   // used to give details in input panel about what users needs to load where
   protected boolean set; // true if the experiment has run
 
-  protected String[] plotTheseInBold; // given in the implementing function
+  String[] plotTheseInBold; // given in the implementing function
   // this is a String because bolded names are intended to be fixed
   // (i.e., NLNM, NHNM, not dependent on user input)
-  protected Map<String, Color> seriesColorMap;
+  Map<String, Color> seriesColorMap;
 
-  protected Set<String> seriesDashedSet;
+  final Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
 
   // three PSDs, three self-noise calcs
 
-  protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
+  final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
 
   /**
    * Construct a new panel, using a backend defined by the passed-in enum
    *
-   * @param exp Experiment enum with corresponding backend for factory
+   * @param experiment Experiment enum with corresponding backend for factory
    * instantiation
    */
-  public ExperimentPanel(ExperimentEnum exp) {
+  public ExperimentPanel(ExperimentEnum experiment) {
 
     set = false;
 
@@ -207,12 +202,12 @@ public abstract class ExperimentPanel
       channelType[i] = "NOT USED";
     }
 
-    seriesColorMap = new HashMap<String, Color>();
-    seriesDashedSet = new HashSet<String>();
+    seriesColorMap = new HashMap<>();
+    seriesDashedSet = new HashSet<>();
     plotTheseInBold = new String[]{};
 
-    expType = exp;
-    expResult = ExperimentFactory.createExperiment(exp);
+    expType = experiment;
+    expResult = ExperimentFactory.createExperiment(experiment);
     expResult.addChangeListener(this);
 
     chart = ChartFactory.createXYLineChart(expType.getName(),
@@ -264,7 +259,7 @@ public abstract class ExperimentPanel
   /**
    * Gets the axes to be used to plot the data
    */
-  protected void applyAxesToChart() {
+  void applyAxesToChart() {
     XYPlot xyp = chart.getXYPlot();
     xyp.setDomainAxis(getXAxis());
     xyp.setRangeAxis(getYAxis());
@@ -312,11 +307,15 @@ public abstract class ExperimentPanel
         false,
         false);
 
+    if (xyDataset == null) {
+      return chart;
+    }
+
     // apply effects to the components that require it (i.e., NLNM time series)
     XYPlot xyPlot = chart.getXYPlot();
     XYItemRenderer xyir = xyPlot.getRenderer();
 
-    if (xyDataset != null && seriesColorMap.size() == 0) {
+    if (seriesColorMap.size() == 0) {
       int modulus = COLORS.length;
       for (int seriesIdx = 0; seriesIdx < xyDataset.getSeriesCount(); ++seriesIdx) {
         xyir.setSeriesPaint(seriesIdx, COLORS[seriesIdx % modulus]);
@@ -349,7 +348,6 @@ public abstract class ExperimentPanel
         stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
         xyir.setSeriesStroke(seriesIdx, stroke);
       }
-
     }
 
     if (!(plotTheseInBold.length == 0)) {
@@ -476,21 +474,6 @@ public abstract class ExperimentPanel
   }
 
   /**
-   * Return image of panel's plots with specified dimensions
-   * Used to compile PNG image of all charts contained in this panel
-   *
-   * @param width Width of output image in pixels
-   * @param height Height of output image in pixels
-   * @return buffered image of this panel's chart
-   */
-  public BufferedImage getAsImage(int width, int height) {
-
-    JFreeChart[] jfcs = getCharts();
-    return ReportingUtils.chartsToImage(width, height, jfcs);
-
-  }
-
-  /**
    * Returns the identifiers of each input plot being used, such as
    * "calibration input" for the calibration tests.
    *
@@ -562,15 +545,15 @@ public abstract class ExperimentPanel
    */
   public String getPDFFilename() {
 
-    SimpleDateFormat sdf = DATE_FORMAT.get();
+    SimpleDateFormat dateFormat = DATE_FORMAT.get();
 
     String date;
     long time = expResult.getStart();
     if (time > 0) {
-      date = sdf.format(time);
+      date = dateFormat.format(time);
     } else {
-      Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
-      date = sdf.format(cCal.getTime());
+      Calendar cCal = Calendar.getInstance(dateFormat.getTimeZone());
+      date = dateFormat.format(cCal.getTime());
     }
 
     // turn spaces into underscores
@@ -580,17 +563,13 @@ public abstract class ExperimentPanel
     test = test.replace('(', '_');
     test = test.replace(')', '_');
 
-    int idx = getIndexOfMainData();
-    String name = expResult.getInputNames().get(idx); // name of input data
+    List<String> names = expResult.getInputNames();
+    String name = "";
+    if (names.size() < getIndexOfMainData()) {
+      name = names.get(getIndexOfMainData()); // name of input data
+    }
 
-    StringBuilder sb = new StringBuilder();
-    sb.append(test);
-    sb.append('_');
-    sb.append(name);
-    sb.append('_');
-    sb.append(date);
-    sb.append(".pdf");
-    return sb.toString();
+    return test + '_' + name + '_' + date + ".pdf";
 
   }
 
@@ -639,16 +618,16 @@ public abstract class ExperimentPanel
   }
 
   /**
-   * Function used to query backend on whether or not a datastore has all the
+   * Function used to query backend on whether or not a DataStore has all the
    * data that a backend needs to calculate. This is used mainly to inform
    * the main window (see SensorSuite class) that the generate result button
    * can be set active
    *
-   * @param ds Datastore to run data check on
+   * @param dataStore DataStore to run data check on
    * @return True if the backend can run with the data provided
    */
-  public boolean hasEnoughData(final DataStore ds) {
-    return expResult.hasEnoughData(ds);
+  public boolean hasEnoughData(final DataStore dataStore) {
+    return expResult.hasEnoughData(dataStore);
   }
 
   /**
@@ -661,37 +640,19 @@ public abstract class ExperimentPanel
   }
 
   /**
-   * Function template for informing main window of number of panels to display
-   * to fit all data needed by the program
+   * Get the number of panels to display to fit all data needed by the program
    *
-   * @return Number of plots to show in the input panel
+   * @return  Number of plots to show in the input panel
    */
   public abstract int panelsNeeded();
 
   /**
    * Number of panels to return in an output report
    *
-   * @return number of panels to include
+   * @return Number of panels to include
    */
   public int plotsToShow() {
     return panelsNeeded();
-  }
-
-  /**
-   * Function to call to run experiment backend on specific data, using the
-   * given swingworker
-   *
-   * @param ds Data to evaluate the backend on
-   * @param worker Worker thread to run the backend in, presumably the
-   * worker object originating in the main class for the suite
-   */
-  public SwingWorker<Boolean, Void>
-  runExperiment(final DataStore ds, SwingWorker<Boolean, Void> worker) {
-
-    worker.execute();
-
-    return worker;
-
   }
 
   /**
@@ -702,7 +663,7 @@ public abstract class ExperimentPanel
    *
    * @param pdf PDF document to append data to
    */
-  public void saveInsetDataText(PDDocument pdf) {
+  private void saveInsetDataText(PDDocument pdf) {
 
     StringBuilder sb = new StringBuilder(getInsetStrings());
     if (sb.length() > 0) {
@@ -716,7 +677,6 @@ public abstract class ExperimentPanel
     sb.append(getTimeStampString(expResult));
     ReportingUtils.textToPDFPage(sb.toString(), pdf);
     ReportingUtils.textListToPDFPages(pdf, getAdditionalReportPages());
-    return;
   }
 
   /**
@@ -740,7 +700,6 @@ public abstract class ExperimentPanel
 
   }
 
-
   /**
    * Used to plot the results of a backend function from an experiment
    * using a collection of XYSeries mapped by strings. This will be set to
@@ -749,9 +708,7 @@ public abstract class ExperimentPanel
    * @param xyDataset collection of XYSeries to plot
    */
   protected void setChart(XYSeriesCollection xyDataset) {
-
     chart = buildChart(xyDataset);
-
   }
 
   /**
@@ -767,21 +724,20 @@ public abstract class ExperimentPanel
    * the backend status changes
    */
   @Override
-  public void stateChanged(ChangeEvent e) {
-    if (e.getSource() == expResult) {
+  public void stateChanged(ChangeEvent event) {
+    if (event.getSource() == expResult) {
       String info = expResult.getStatus();
       displayInfoMessage(info);
     }
   }
 
   /**
-   * Function template for sending input to a backend fucntion and collecting
-   * the corresponding data
+   * Function template for sending input to a backend fucntion and collecting the corresponding data.
+   * Details of how to run updateData are left up to the implementing panel however, the boolean "set" should be set to true to enable PDF saving
    *
-   * @param ds DataStore object containing seed and resp files
+   * @param dataStore DataStore object containing seed and resp files
    */
-  protected abstract void updateData(final DataStore ds);
-  // details of how to run updateData are left up to the implementing panel
-  // however, the boolean "set" should be set to true to enable PDF saving
+  protected abstract void updateData(final DataStore dataStore);
+
 
 }

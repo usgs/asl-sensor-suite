@@ -159,13 +159,13 @@ public class SpectrumPanel extends ExperimentPanel {
    * Initially called function to calculate self-noise when data is passed in
    */
   @Override
-  protected void updateData(final DataStore ds) {
+  protected void updateData(final DataStore dataStore) {
 
     set = true;
 
     plotCount = 0;
     for (int i = 0; i < panelsNeeded(); ++i) {
-      if (ds.bothComponentsSet(i)) {
+      if (dataStore.bothComponentsSet(i)) {
         ++plotCount;
       }
     }
@@ -176,7 +176,7 @@ public class SpectrumPanel extends ExperimentPanel {
 
     SpectrumExperiment psdExp = (SpectrumExperiment) expResult;
     psdExp.setFreqSpace(freqSpaceImmutable);
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
 
     XYSeriesCollection xysc = expResult.getData().get(0);
 

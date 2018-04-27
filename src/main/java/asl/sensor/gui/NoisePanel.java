@@ -154,7 +154,7 @@ public class NoisePanel extends ExperimentPanel {
    * Initially called function to calculate self-noise when data is passed in
    */
   @Override
-  protected void updateData(final DataStore ds) {
+  protected void updateData(final DataStore dataStore) {
 
     set = true;
 
@@ -164,7 +164,7 @@ public class NoisePanel extends ExperimentPanel {
 
     NoiseExperiment noisExp = (NoiseExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
 
     XYSeriesCollection xysc = expResult.getData().get(0);
 

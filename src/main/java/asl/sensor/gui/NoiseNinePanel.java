@@ -237,7 +237,7 @@ public class NoiseNinePanel extends NoisePanel {
   }
 
   @Override
-  public void updateData(final DataStore ds) {
+  public void updateData(final DataStore dataStore) {
 
     set = true;
 
@@ -248,7 +248,7 @@ public class NoiseNinePanel extends NoisePanel {
     NoiseNineExperiment noisExp = (NoiseNineExperiment) expResult;
     noisExp.setFreqSpace(freqSpaceImmutable);
 
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
 
     for (int j = 0; j < 3; ++j) {
       XYSeriesCollection xysc = expResult.getData().get(j);

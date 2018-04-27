@@ -115,11 +115,11 @@ public class OrthogonalPanel extends ExperimentPanel {
   }
 
   @Override
-  protected void updateData(final DataStore ds) {
+  protected void updateData(final DataStore dataStore) {
 
     set = true;
 
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
   }
 
 }
