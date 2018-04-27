@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -116,16 +117,16 @@ public abstract class ExperimentPanel
     StringBuilder sb = new StringBuilder();
 
     sb.append("Time of report generation:\n");
-    sb.append(DATE_TIME_FORMAT.get().format(OffsetDateTime.now(ZoneOffset.UTC)));
+    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.now())));
     sb.append('\n');
 
     long startTime = expResult.getStart();
     long endTime = expResult.getEnd();
     if (startTime != 0L && endTime != 0L) {
       sb.append("Data start time:\n");
-      sb.append(DATE_TIME_FORMAT.get().format(Instant.ofEpochMilli(startTime)));
+      sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(startTime))));
       sb.append("\nData end time:\n");
-      sb.append(DATE_TIME_FORMAT.get().format(Instant.ofEpochMilli(endTime)));
+      sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(endTime))));
       sb.append('\n');
     }
     return sb.toString();
