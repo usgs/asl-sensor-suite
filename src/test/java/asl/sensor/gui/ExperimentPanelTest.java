@@ -72,6 +72,12 @@ public class ExperimentPanelTest {
     assertTrue(panel.getPDFFilename().endsWith(".pdf"));
   }
 
+  @Test
+  public void plotsToShow_DefaultToPanelsNeeded() {
+    //This since plotsToShow isn't overridden, it should match PanelsNeeded().
+    assertEquals(panel.panelsNeeded(), panel.plotsToShow());
+  }
+
 
   class MockPanel extends ExperimentPanel {
 
@@ -88,7 +94,7 @@ public class ExperimentPanelTest {
 
     @Override
     public int panelsNeeded() {
-      return 0;
+      return 61;
     }
 
     @Override

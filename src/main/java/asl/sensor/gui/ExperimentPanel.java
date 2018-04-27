@@ -259,7 +259,7 @@ public abstract class ExperimentPanel
   /**
    * Gets the axes to be used to plot the data
    */
-  protected void applyAxesToChart() {
+  void applyAxesToChart() {
     XYPlot xyp = chart.getXYPlot();
     xyp.setDomainAxis(getXAxis());
     xyp.setRangeAxis(getYAxis());
