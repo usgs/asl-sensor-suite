@@ -82,7 +82,7 @@ public abstract class ExperimentPanel
       });
   public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
       ThreadLocal.withInitial(() ->  {
-        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss");
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
@@ -115,26 +115,17 @@ public abstract class ExperimentPanel
   public static String getTimeStampString(Experiment expResult) {
     StringBuilder sb = new StringBuilder();
 
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("y.DDD.HH:mm:ss.SSS");
-    OffsetDateTime dt = OffsetDateTime.now(ZoneOffset.UTC);
-
     sb.append("Time of report generation:\n");
-    sb.append(dtf.format(dt));
+    sb.append(DATE_TIME_FORMAT.get().format(OffsetDateTime.now(ZoneOffset.UTC)));
     sb.append('\n');
 
     long startTime = expResult.getStart();
     long endTime = expResult.getEnd();
-    if (!(startTime == 0L && endTime == 0L)) {
-      dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneOffset.UTC);
-
+    if (startTime != 0L && endTime != 0L) {
       sb.append("Data start time:\n");
-      sb.append(dtf.format(dt));
-      sb.append('\n');
-
-      dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(endTime), ZoneOffset.UTC);
-
-      sb.append("Data end time:\n");
-      sb.append(dtf.format(dt));
+      sb.append(DATE_TIME_FORMAT.get().format(Instant.ofEpochMilli(startTime)));
+      sb.append("\nData end time:\n");
+      sb.append(DATE_TIME_FORMAT.get().format(Instant.ofEpochMilli(endTime)));
       sb.append('\n');
     }
     return sb.toString();
