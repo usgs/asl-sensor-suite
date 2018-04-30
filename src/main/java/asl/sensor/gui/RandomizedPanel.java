@@ -399,10 +399,10 @@ public class RandomizedPanel extends ExperimentPanel {
   }
 
   @Override
-  public void actionPerformed(ActionEvent e) {
-    super.actionPerformed(e);
+  public void actionPerformed(ActionEvent event) {
+    super.actionPerformed(event);
 
-    if (e.getSource() == plotSelection) {
+    if (event.getSource() == plotSelection) {
       if (!set) {
         XYPlot plot = chart.getXYPlot();
         String label = getXAxis().getLabel();
@@ -421,7 +421,7 @@ public class RandomizedPanel extends ExperimentPanel {
       return;
     }
 
-    if (e.getSource() == showParams) {
+    if (event.getSource() == showParams) {
       if (!showParams.isSelected()) {
         for (JFreeChart chart : getCharts()) {
           LegendTitle legend = chart.getLegend();
