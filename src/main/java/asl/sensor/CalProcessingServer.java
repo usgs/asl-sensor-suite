@@ -28,6 +28,7 @@ import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.SineExperiment;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.RandomizedPanel;
@@ -58,6 +59,11 @@ public class CalProcessingServer {
     protected Map<String, double[]> numerMap;
     protected Map<String, byte[]> imageMap;
 
+    public CalResult() {
+      numerMap = new HashMap<String, double[]>();
+      imageMap = new HashMap<String, byte[]>();
+    }
+
     public Map<String, byte[]> getImageMap() {
       return imageMap;
     }
@@ -71,7 +77,6 @@ public class CalProcessingServer {
     // constuctor to be used with step calibrations
     StepData(byte[][] images, double[] initParams, double[] fitParams) {
       super();
-      numerMap = new HashMap<String, double[]>();
       double fitCorner = fitParams[0];
       double fitDamping = fitParams[1];
       double fitResid = fitParams[2];
@@ -84,10 +89,21 @@ public class CalProcessingServer {
       numerMap.put("Initial-corner", new double[]{initCorner});
       numerMap.put("Initial-damping", new double[]{initDamping});
       numerMap.put("Initial-residual", new double[]{initResid});
-      imageMap = new HashMap<String, byte[]>();
       imageMap.put("Step-plot", images[0]);
       imageMap.put("Resp-amplitudes", images[1]);
       imageMap.put("Resp-phases", images[2]);
+    }
+  }
+
+  public class SineData extends CalResult {
+    SineData(byte[][] images, double calAmp, double outAmp, double freq, double ratio) {
+      super();
+      numerMap.put("Calibration-amplitude", new double[]{calAmp});
+      numerMap.put("Output-signal-amplitude", new double[]{outAmp});
+      numerMap.put("Estimated signal frequency", new double[]{freq});
+      numerMap.put("Calibration-to-output ratio", new double[]{ratio});
+      imageMap.put("Sines-plot", images[0]);
+      imageMap.put("Linearity", images[1]);
     }
   }
 
@@ -374,8 +390,71 @@ public class CalProcessingServer {
 
   }
 
+  public CalResult runSine(String calFileName, String outFileName,
+      String respName, boolean useEmbeddedResp, String startDate, String endDate)
+          throws SeedFormatException, CodecException, IOException {
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
+
+    DataStore ds = new DataStore();
+    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
+    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    InstrumentResponse ir;
+    if (useEmbeddedResp) {
+      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+    } else {
+      ir = new InstrumentResponse(respName);
+    }
+
+    ds.setBlock(0, calBlock);
+    ds.setBlock(1, outBlock);
+    ds.setResponse(1, ir);
+    ds.trim(start, end);
+
+    return runExpGetDataSine(ds);
+
+  }
+
   @SuppressWarnings("unused")
-  public CalResult runExpGetDataStep(DataStore ds) throws IOException {
+  private CalResult runExpGetDataSine(DataStore ds) throws IOException {
+    SineExperiment sine = new SineExperiment();
+    sine.runExperimentOnData(ds);
+    List<XYSeriesCollection> plots = sine.getData();
+    double calAmplitude = sine.getCalAmplitude();
+    double outAmplitude = sine.getOutAmplitude();
+    double estFreq = sine.getEstSineFreq();
+    double ratio = calAmplitude / outAmplitude;
+
+    JFreeChart sineChart = ChartFactory.createXYLineChart(
+        "Sine Calibration",
+        "Time from data start (s)",
+        "Normalized calibration signals (counts)",
+        plots.get(0));
+
+   JFreeChart linearityChart = ChartFactory.createXYLineChart(
+       "Sine cal. Linearity",
+       "Value of sampled cal data (counts)",
+       "Value of sampled sensor output (counts)",
+       plots.get(1));
+
+   JFreeChart[] charts = {sineChart, linearityChart};
+
+   BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+   byte[][] pngByteArrays = new byte[images.length][];
+   for (int i = 0; i < images.length; ++i) {
+     ByteArrayOutputStream out = new ByteArrayOutputStream();
+     ImageIO.write(images[i], "png", out);
+     pngByteArrays[i] = out.toByteArray();
+   }
+   return new SineData(pngByteArrays, calAmplitude, outAmplitude, estFreq, ratio);
+  }
+
+  @SuppressWarnings("unused")
+  private CalResult runExpGetDataStep(DataStore ds) throws IOException {
     StepExperiment step = new StepExperiment();
     step.runExperimentOnData(ds);
     double[] fitParams = step.getFitParams();
