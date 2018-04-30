@@ -48,7 +48,7 @@ public class AzimuthExperiment extends Experiment {
 
   private double latestCorrelation = 0.; // cache correlation estimates during windowing
 
-  private double angle, uncert;
+  private double angle, uncertainty;
 
   private double[] correlations; // best-fit correlations used to find windows w/ good estimates
   private double[] angles;
@@ -214,14 +214,14 @@ public class AzimuthExperiment extends Experiment {
     double bestTheta = bestGuessAngle;
     final long twoThouSecs = 2000L * TimeSeriesUtils.ONE_HZ_INTERVAL;
     // 1000 ms per second, range length
-    final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
-    int numWindows = (int) ((timeRange - twoThouSecs) / fiveHundSecs);
+    final long fiveHundredSecs = twoThouSecs / 4L; // distance between windows
+    int numWindows = (int) ((timeRange - twoThouSecs) / fiveHundredSecs);
     // look at 2000s windows, sliding over 500s of data at a time
     for (int i = 0; i < numWindows; ++i) {
       fireStateChange("Fitting angle over data in window " + (i + 1) + " of " + numWindows);
 
       // get start and end indices from given times
-      long wdStart = fiveHundSecs * i; // start of 500s-sliding window
+      long wdStart = fiveHundredSecs * i; // start of 500s-sliding window
       long wdEnd = wdStart + twoThouSecs; // end of window (2000s long)
 
       int startIdx = (int) (wdStart / interval);
@@ -328,15 +328,15 @@ public class AzimuthExperiment extends Experiment {
       }
       averageAngle /= acceptedAngles.size();
 
-      uncert = 0.;
+      uncertainty = 0.;
 
       // now get standard deviation
       for (double angle : acceptedAngles) {
-        uncert += Math.pow(angle - averageAngle, 2);
+        uncertainty += Math.pow(angle - averageAngle, 2);
       }
 
-      uncert = Math.sqrt(uncert / acceptedAngles.size());
-      uncert *= 2; // two-sigma gets us 95% confidence interval
+      uncertainty = Math.sqrt(uncertainty / acceptedAngles.size());
+      uncertainty *= 2; // two-sigma gets us 95% confidence interval
 
       // do this calculation to get plot of freq/correlation, a side effect
       // of running evaluation at the given point; this will be plotted
@@ -366,17 +366,17 @@ public class AzimuthExperiment extends Experiment {
     fromNorth.add(offset, 1);
     fromNorth.add(offset, 0);
 
-    XYSeriesCollection xysc = new XYSeriesCollection();
-    xysc.addSeries(ref);
-    xysc.addSeries(set);
-    xysc.addSeries(fromNorth);
-    xySeriesData.add(xysc);
+    XYSeriesCollection plotTimeseries = new XYSeriesCollection();
+    plotTimeseries.addSeries(ref);
+    plotTimeseries.addSeries(set);
+    plotTimeseries.addSeries(fromNorth);
+    xySeriesData.add(plotTimeseries);
 
-    xysc = new XYSeriesCollection();
+    plotTimeseries = new XYSeriesCollection();
     XYSeries timeMapAngle = new XYSeries("Best-fit angle per window (not including ref. shift)");
     XYSeries timeMapCorrelation = new XYSeries("Correlation estimate per window");
-    xysc.addSeries(timeMapAngle);
-    xysc.addSeries(timeMapCorrelation);
+    plotTimeseries.addSeries(timeMapAngle);
+    plotTimeseries.addSeries(timeMapCorrelation);
 
     for (int i = 0; i < angles.length; ++i) {
       long xVal = i * 500;
@@ -529,7 +529,7 @@ public class AzimuthExperiment extends Experiment {
    * @return Uncertainty estimation of the current angle (from variance)
    */
   public double getUncertainty() {
-    return Math.toDegrees(uncert);
+    return Math.toDegrees(uncertainty);
   }
 
   /**
@@ -568,10 +568,10 @@ public class AzimuthExperiment extends Experiment {
     double[] rotatedDiff =
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
 
-    PearsonsCorrelation pearonsCorrelation = new PearsonsCorrelation();
-    double value = pearonsCorrelation.correlation(refNorth, testRotated);
+    PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
+    double value = pearsonsCorrelation.correlation(refNorth, testRotated);
     RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
-    double deltaY = pearonsCorrelation.correlation(refNorth, rotatedDiff);
+    double deltaY = pearsonsCorrelation.correlation(refNorth, rotatedDiff);
     double change = (deltaY - value) / diff;
     double[][] jacobianArray = new double[][]{{change}};
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
