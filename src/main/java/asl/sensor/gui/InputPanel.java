@@ -82,9 +82,6 @@ public class InputPanel
     extends JPanel
     implements ActionListener, ChangeListener {
 
-  /**
-   * auto-generated serialization UID
-   */
   private static final long serialVersionUID = -7302813951637543526L;
 
   /**
@@ -315,35 +312,6 @@ public class InputPanel
     fileChooser = new JFileChooser();
     lastRespIndex = -1;
 
-  }
-
-  /**
-   * Create a new data panel and add data to the charts from an existing
-   * DataStore, also setting the given number of panels as visible
-   *
-   * @param dataStore DataStore object with data to be plotted
-   * @param panelsNeeded number of panels to show in the object
-   */
-  public InputPanel(DataStore dataStore, int panelsNeeded) {
-    this();
-    for (int i = 0; i < panelsNeeded; ++i) {
-      if (dataStore.blockIsSet(i)) {
-        seedFileNames[i].setText(dataStore.getBlock(i).getName());
-        XYSeries ts = dataStore.getPlotSeries(i);
-        JFreeChart chart = ChartFactory.createXYLineChart(
-            ts.getKey().toString(),
-            "Time",
-            "Counts",
-            new XYSeriesCollection(ts),
-            PlotOrientation.VERTICAL,
-            false, false, false);
-        chartPanels[i].setChart(chart);
-      }
-      if (dataStore.responseIsSet(i)) {
-        respFileNames[i].setText(dataStore.getResponse(i).getName());
-      }
-    }
-    showDataNeeded(panelsNeeded);
   }
 
   /**
