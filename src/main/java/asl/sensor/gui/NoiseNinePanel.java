@@ -8,7 +8,6 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.text.DecimalFormat;
 import javax.swing.JComboBox;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
@@ -23,31 +22,27 @@ import org.jfree.ui.RectangleAnchor;
  * but includes multiple plots, one for each linear axis in 3D space
  * (north-south, east-west, up-down) and a combo box to select them
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class NoiseNinePanel extends NoisePanel {
 
-  /**
-   *
-   */
   private static final long serialVersionUID = -8049021432657749975L;
 
   /**
    * Get string of data to used when building PDFs in specific circumstances
    *
-   * @param exp Experiment to extract data from
+   * @param experiment Experiment to extract data from
    * @return String representing experiment data (rotation angles)
    */
-  public static String getInsetString(NoiseNineExperiment exp) {
-    NoiseNineExperiment nne = exp;
-    double[] angles = nne.getNorthAngles();
+  public static String getInsetString(NoiseNineExperiment experiment) {
+    double[] angles = experiment.getNorthAngles();
     StringBuilder sb = new StringBuilder();
     sb.append("Angle of rotation of north sensor 2 (deg): ");
     sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
     sb.append("\nAngle of rotation of north sensor 3 (deg): ");
     sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
     sb.append("\n");
-    angles = nne.getEastAngles();
+    angles = experiment.getEastAngles();
     sb.append("Angle of rotation of east sensor 2 (deg): ");
     sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
     sb.append("\nAngle of rotation of east sensor 3 (deg): ");
@@ -55,19 +50,19 @@ public class NoiseNinePanel extends NoisePanel {
     return sb.toString();
   }
 
-  protected JComboBox<String> plotSelection;
+  private final JComboBox<String> plotSelection;
 
-  protected JFreeChart northChart, eastChart, vertChart;
+  private JFreeChart northChart, eastChart, verticalChart;
 
   /**
    * Construct panel and lay out its components
    *
-   * @param exp Enum to get relevant experiment backend from factory (NoiseNineExperiment)
+   * @param experiment Enum to get relevant experiment backend from factory (NoiseNineExperiment)
    */
-  public NoiseNinePanel(ExperimentEnum exp) {
-    super(exp);
+  NoiseNinePanel(ExperimentEnum experiment) {
+    super(experiment);
 
-    expResult = ExperimentFactory.createExperiment(exp);
+    expResult = ExperimentFactory.createExperiment(experiment);
 
     set = false;
 
@@ -79,7 +74,7 @@ public class NoiseNinePanel extends NoisePanel {
     }
 
     this.setLayout(new GridBagLayout());
-    GridBagConstraints gbc = new GridBagConstraints();
+    GridBagConstraints constraints = new GridBagConstraints();
 
     String xTitle = getXAxis().getLabel();
     String yTitle = getYAxis().getLabel();
@@ -90,79 +85,79 @@ public class NoiseNinePanel extends NoisePanel {
     eastChart =
         ChartFactory.createXYLineChart(expType.getName() + " (East)",
             xTitle, yTitle, null);
-    vertChart =
+    verticalChart =
         ChartFactory.createXYLineChart(expType.getName() + " (Vertical)",
             xTitle, yTitle, null);
 
     chart = northChart;
     chartPanel.setChart(chart);
 
-    removeAll(); // get rid of blank spacer jpanel from super
+    removeAll(); // get rid of blank spacer JPanel from super
     // (everything else will get redrawn)
 
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.gridwidth = 3;
-    gbc.anchor = GridBagConstraints.CENTER;
-    add(chartPanel, gbc);
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.gridwidth = 3;
+    constraints.anchor = GridBagConstraints.CENTER;
+    add(chartPanel, constraints);
 
     // place the other UI elements in a single row below the chart
-    gbc.gridwidth = 1;
-    gbc.weighty = 0.0;
-    gbc.weightx = 0.0;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.gridy += 1;
-    gbc.gridx = 0;
-    add(freqSpaceBox, gbc);
+    constraints.gridwidth = 1;
+    constraints.weighty = 0.0;
+    constraints.weightx = 0.0;
+    constraints.anchor = GridBagConstraints.WEST;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridy += 1;
+    constraints.gridx = 0;
+    add(freqSpaceBox, constraints);
 
-    gbc.gridx += 1;
-    gbc.weightx = 1.0;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.CENTER;
-    // gbc.gridwidth = GridBagConstraints.REMAINDER;
-    add(save, gbc);
+    constraints.gridx += 1;
+    constraints.weightx = 1.0;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.CENTER;
+    add(save, constraints);
 
     // combo box to select items
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.gridx += 1;
-    gbc.weightx = 0;
-    gbc.anchor = GridBagConstraints.WEST;
-    plotSelection = new JComboBox<String>();
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.gridx += 1;
+    constraints.weightx = 0;
+    constraints.anchor = GridBagConstraints.WEST;
+    plotSelection = new JComboBox<>();
     plotSelection.addItem("North component plot");
     plotSelection.addItem("East component plot");
     plotSelection.addItem("Vertical component plot");
     plotSelection.addActionListener(this);
-    add(plotSelection, gbc);
+    add(plotSelection, constraints);
 
     revalidate();
 
   }
 
   @Override
-  public void actionPerformed(ActionEvent e) {
+  public void actionPerformed(ActionEvent event) {
 
-    super.actionPerformed(e);
+    super.actionPerformed(event);
 
-    if (e.getSource() == plotSelection) {
+    if (event.getSource() == plotSelection) {
 
-      int idx = plotSelection.getSelectedIndex();
-      if (idx == 0) {
-        chart = northChart;
-      } else if (idx == 1) {
-        chart = eastChart;
-      } else {
-        chart = vertChart;
+      int index = plotSelection.getSelectedIndex();
+      switch (index) {
+        case 0:
+          chart = northChart;
+          break;
+        case 1:
+          chart = eastChart;
+          break;
+        default:
+          chart = verticalChart;
+          break;
       }
 
       chartPanel.setChart(chart);
       chartPanel.setMouseZoomable(true);
-
-      return;
-
     }
 
   }
@@ -170,14 +165,18 @@ public class NoiseNinePanel extends NoisePanel {
   @Override
   protected void drawCharts() {
 
-    int idx = plotSelection.getSelectedIndex();
+    int index = plotSelection.getSelectedIndex();
 
-    if (idx == 0) {
-      chart = northChart;
-    } else if (idx == 1) {
-      chart = eastChart;
-    } else {
-      chart = vertChart;
+    switch (index) {
+      case 0:
+        chart = northChart;
+        break;
+      case 1:
+        chart = eastChart;
+        break;
+      default:
+        chart = verticalChart;
+        break;
     }
 
     chartPanel.setChart(chart);
@@ -187,7 +186,7 @@ public class NoiseNinePanel extends NoisePanel {
 
   @Override
   public JFreeChart[] getCharts() {
-    return new JFreeChart[]{northChart, eastChart, vertChart};
+    return new JFreeChart[]{northChart, eastChart, verticalChart};
   }
 
   /**
@@ -196,23 +195,18 @@ public class NoiseNinePanel extends NoisePanel {
    * @return String displaying angles of rotation for the 2nd, 3rd east sensors
    */
   private String getEastChartString() {
-    NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
-    double[] angles = nne.getEastAngles();
-    StringBuilder sb = new StringBuilder();
-    sb.append("Angle of rotation of east sensor 2 (deg): ");
-    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
-    sb.append("\nAngle of rotation of east sensor 3 (deg): ");
-    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
-    return sb.toString();
+    NoiseNineExperiment experiment = (NoiseNineExperiment) expResult;
+    double[] angles = experiment.getEastAngles();
+    return "Angle of rotation of east sensor 2 (deg): "
+        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
+        + "\nAngle of rotation of east sensor 3 (deg): "
+        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
   }
 
   @Override
   public String getInsetStrings() {
-    StringBuilder sb = new StringBuilder(getNorthChartString());
-    sb.append("\n");
-    sb.append(getEastChartString());
-    sb.append("\n");
-    return sb.toString();
+    return getNorthChartString() + "\n"
+        + getEastChartString() + "\n";
   }
 
   /**
@@ -223,12 +217,10 @@ public class NoiseNinePanel extends NoisePanel {
   private String getNorthChartString() {
     NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
     double[] angles = nne.getNorthAngles();
-    StringBuilder sb = new StringBuilder();
-    sb.append("Angle of rotation of north sensor 2 (deg): ");
-    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
-    sb.append("\nAngle of rotation of north sensor 3 (deg): ");
-    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
-    return sb.toString();
+    return "Angle of rotation of north sensor 2 (deg): "
+        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
+        + "\nAngle of rotation of north sensor 3 (deg): "
+        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
   }
 
   @Override
@@ -241,20 +233,18 @@ public class NoiseNinePanel extends NoisePanel {
 
     set = true;
 
-    boolean freqSpace = freqSpaceBox.isSelected();
+    final boolean freqSpaceImmutable = freqSpaceBox.isSelected();
 
-    final boolean freqSpaceImmutable = freqSpace;
-
-    NoiseNineExperiment noisExp = (NoiseNineExperiment) expResult;
-    noisExp.setFreqSpace(freqSpaceImmutable);
+    NoiseNineExperiment noiseExperiment = (NoiseNineExperiment) expResult;
+    noiseExperiment.setFreqSpace(freqSpaceImmutable);
 
     expResult.runExperimentOnData(dataStore);
 
     for (int j = 0; j < 3; ++j) {
-      XYSeriesCollection xysc = expResult.getData().get(j);
+      XYSeriesCollection timeseries = expResult.getData().get(j);
 
       for (int i = 0; i < NOISE_PLOT_COUNT; ++i) {
-        String name = (String) xysc.getSeriesKey(i);
+        String name = (String) timeseries.getSeriesKey(i);
         System.out.println(name);
         Color plotColor = COLORS[i % 3];
         seriesColorMap.put(name, plotColor);
@@ -269,37 +259,30 @@ public class NoiseNinePanel extends NoisePanel {
 
     set = true;
 
-    System.out.println("Charts being set!");
-
     northChart = buildChart(expResult.getData().get(0));
     northChart.setTitle("Self-noise (NORTH)");
-    XYPlot xyp = northChart.getXYPlot();
+    XYPlot plot = northChart.getXYPlot();
     TextTitle angle = new TextTitle();
-    String temp = getNorthChartString();
-    angle.setText(temp);
+
+    angle.setText(getNorthChartString());
     angle.setBackgroundPaint(Color.white);
-    XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, angle,
+    XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, angle,
         RectangleAnchor.TOP_RIGHT);
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
-    System.out.println("North chart set!");
+    plot.clearAnnotations();
+    plot.addAnnotation(title);
 
     eastChart = buildChart(expResult.getData().get(1));
     eastChart.setTitle("Self-noise (EAST)");
-    xyp = eastChart.getXYPlot();
+    plot = eastChart.getXYPlot();
     angle = new TextTitle();
-    temp = getEastChartString();
-    angle.setText(temp);
+    angle.setText(getEastChartString());
     angle.setBackgroundPaint(Color.white);
-    xyt = new XYTitleAnnotation(0.98, 0.98, angle,
-        RectangleAnchor.TOP_RIGHT);
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
-    System.out.println("East chart set!");
+    title = new XYTitleAnnotation(0.98, 0.98, angle, RectangleAnchor.TOP_RIGHT);
+    plot.clearAnnotations();
+    plot.addAnnotation(title);
 
-    vertChart = buildChart(expResult.getData().get(2));
-    vertChart.setTitle("Self-noise (VERTICAL)");
-    System.out.println("Vert chart set!");
+    verticalChart = buildChart(expResult.getData().get(2));
+    verticalChart.setTitle("Self-noise (VERTICAL)");
 
   }
 
