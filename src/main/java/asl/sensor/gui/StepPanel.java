@@ -8,7 +8,6 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.text.DecimalFormat;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import org.jfree.chart.JFreeChart;
@@ -44,7 +43,7 @@ public class StepPanel extends ExperimentPanel {
    * @param experiment StepExperiment with data to be extracted
    * @return String format representation of data from the experiment
    */
-  public static String getInsetString(StepExperiment experiment) {
+  private static String getInsetString(StepExperiment experiment) {
     String[] strings = getInsetStringList(experiment);
     StringBuilder sb = new StringBuilder();
     for (String str : strings) {
@@ -65,35 +64,33 @@ public class StepPanel extends ExperimentPanel {
     double cornerPrd = 1. / corner;
     double fitCornerPrd = 1. / fitCorner;
 
-    StringBuilder sb = new StringBuilder();
-    sb.append("RESP parameters\n");
-    sb.append("Corner frequency (Hz): ");
-    sb.append(DECIMAL_FORMAT.get().format(corner));
-    sb.append(" (");
-    sb.append(DECIMAL_FORMAT.get().format(cornerPrd));
-    sb.append(" secs)");
-    sb.append("\n");
-    sb.append("Damping: ");
-    sb.append(DECIMAL_FORMAT.get().format(damping));
-    sb.append("\n");
+    String sb = "RESP parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(corner)
+        + " ("
+        + DECIMAL_FORMAT.get().format(cornerPrd)
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(damping)
+        + "\n";
 
-    StringBuilder sb2 = new StringBuilder();
-    sb2.append("Best-fit parameters\n");
-    sb2.append("Corner frequency (Hz): ");
-    sb2.append(DECIMAL_FORMAT.get().format(fitCorner));
-    sb2.append(" (");
-    sb2.append(DECIMAL_FORMAT.get().format(fitCornerPrd));
-    sb2.append(" secs)");
-    sb2.append("\n");
-    sb2.append("Damping: ");
-    sb2.append(DECIMAL_FORMAT.get().format(fitDamping));
-    sb2.append("\n");
-    return new String[]{sb.toString(), sb2.toString()};
+    String sb2 = "Best-fit parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(fitCorner)
+        + " ("
+        + DECIMAL_FORMAT.get().format(fitCornerPrd)
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(fitDamping)
+        + "\n";
+    return new String[]{sb, sb2};
   }
 
-  private JComboBox<String> plotSelection;
+  private final JComboBox<String> plotSelection;
   private JFreeChart stepChart, magChart, phaseChart;
-  private ValueAxis freqAxis, magAxis, phaseAxis;
+  private final ValueAxis freqAxis;
+  private final ValueAxis magAxis;
+  private final ValueAxis phaseAxis;
 
   StepPanel(ExperimentEnum experiment) {
     super(experiment);
@@ -130,7 +127,7 @@ public class StepPanel extends ExperimentPanel {
     phaseAxis.setAutoRange(true);
     ((NumberAxis) phaseAxis).setAutoRangeIncludesZero(false);
 
-    plotSelection = new JComboBox<String>();
+    plotSelection = new JComboBox<>();
     plotSelection.addItem("Step function");
     plotSelection.addItem("Response amplitude");
     plotSelection.addItem("Response phase");
