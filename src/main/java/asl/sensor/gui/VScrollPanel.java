@@ -11,17 +11,13 @@ import javax.swing.Scrollable;
  * doesn't get shrunk when too many inputs are needed for an experiment
  * such as for 9-component self-noise.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class VScrollPanel extends JPanel implements Scrollable {
 
-
-  /**
-   *
-   */
   private static final long serialVersionUID = -4358405572297138013L;
 
-  boolean scaleVerticallyNotScroll = false;
+  private boolean scaleVerticallyNotScroll = false;
 
   @Override
   public Dimension getPreferredScrollableViewportSize() {
