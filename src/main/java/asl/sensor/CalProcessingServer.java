@@ -1,15 +1,5 @@
 package asl.sensor;
 
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.RandomizedPanel;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
@@ -20,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -36,6 +27,17 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.StepExperiment;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.gui.RandomizedPanel;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
@@ -49,6 +51,45 @@ import py4j.Py4JNetworkException;
  * @author jholland - USGS
  */
 public class CalProcessingServer {
+
+
+  @SuppressWarnings({"WeakerAccess", "unused"})
+  public abstract class CalResult {
+    protected Map<String, double[]> numerMap;
+    protected Map<String, byte[]> imageMap;
+
+    public Map<String, byte[]> getImageMap() {
+      return imageMap;
+    }
+
+    public Map<String, double[]> getNumerMap() {
+      return numerMap;
+    }
+  }
+
+  public class StepData extends CalResult {
+    // constuctor to be used with step calibrations
+    StepData(byte[][] images, double[] initParams, double[] fitParams) {
+      super();
+      numerMap = new HashMap<String, double[]>();
+      double fitCorner = fitParams[0];
+      double fitDamping = fitParams[1];
+      double fitResid = fitParams[2];
+      double initCorner = initParams[0];
+      double initDamping = initParams[1];
+      double initResid = initParams[2];
+      numerMap.put("Fit-corner", new double[]{fitCorner});
+      numerMap.put("Fit-damping", new double[]{fitDamping});
+      numerMap.put("Fit-residual", new double[]{fitResid});
+      numerMap.put("Initial-corner", new double[]{initCorner});
+      numerMap.put("Initial-damping", new double[]{initDamping});
+      numerMap.put("Initial-residual", new double[]{initResid});
+      imageMap = new HashMap<String, byte[]>();
+      imageMap.put("Step-plot", images[0]);
+      imageMap.put("Resp-amplitudes", images[1]);
+      imageMap.put("Resp-phases", images[2]);
+    }
+  }
 
   //RandData is used externally and requires Public access on getters
   @SuppressWarnings({"WeakerAccess", "unused"})
@@ -73,6 +114,24 @@ public class CalProcessingServer {
       gapNameIdentifiers = gapNames;
       gapStarts = gapStartTimes;
       gapEnds = gapEndTimes;
+    }
+
+    public Map<String, byte[]> getImageMap() {
+      Map<String, byte[]> imageMap = new HashMap<String, byte[]>();
+      imageMap.put("amplitude", images[0]);
+      imageMap.put("phase", images[1]);
+      imageMap.put("amplitude-error", images[2]);
+      imageMap.put("phase-error", images[3]);
+      return imageMap;
+    }
+
+    public Map<String, double[]> getNumericMap() {
+      Map<String, double[]> numerMap = new HashMap<String, double[]>();
+      numerMap.put("fit-poles", fitPoles);
+      numerMap.put("fit-zeros", fitZeros);
+      numerMap.put("initial-poles", initialPoles);
+      numerMap.put("initial-zeros", initialZeros);
+      return numerMap;
     }
 
     public byte[] getAmpErrorImage() {
@@ -188,10 +247,9 @@ public class CalProcessingServer {
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    */
-  public RandData populateDataAndRun(String calFileName, String outFileName,
+  public RandData runRand(String calFileName, String outFileName,
       String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq)
       throws IOException, SeedFormatException, CodecException {
-
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -216,8 +274,28 @@ public class CalProcessingServer {
       ds.resample(10.); // more than 5 Hz should be unnecessary for low-frequency curve fitting
     }
 
-    return runExpGetData(ds, lowFreq);
+    return runExpGetDataRand(ds, lowFreq);
+  }
 
+  /**
+   * Acquire data and run calibration over it.
+   * Returns the experiment (all data kept locally to maintain thread safety)
+   *
+   * @param calFileName Filename of calibration signal
+   * @param outFileName Filename of sensor output
+   * @param respName Filename of response to load in
+   * @param useEmbeddedResp True if response is an embedded response in program
+   * @param startDate Long representing ms-since-epoch of data start time
+   * @param endDate Long representing ms-since-epoch of data end time
+   * @param lowFreq True if a low-freq cal should be run
+   * @return Data from running the experiment (plots and fit pole/zero values)
+   * @throws IOException If a string does not refer to a valid accessible file
+   */
+  public RandData populateDataAndRun(String calFileName, String outFileName,
+      String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq)
+      throws IOException, SeedFormatException, CodecException {
+    return
+        runRand(calFileName, outFileName, respName, useEmbeddedResp, startDate, endDate, lowFreq);
   }
 
   /**
@@ -236,12 +314,10 @@ public class CalProcessingServer {
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    */
-  @SuppressWarnings("unused")
-  public RandData populateDataAndRun(String calFileNameD1, String calFileNameD2,
+  public RandData runRand(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean useEmbeddedResp,
       String startDate, String endDate, boolean lowFreq)
       throws IOException, SeedFormatException, CodecException {
-
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -266,11 +342,122 @@ public class CalProcessingServer {
     ds.setResponse(1, ir);
     ds.trim(start, end);
 
-    return runExpGetData(ds, lowFreq);
+    return runExpGetDataRand(ds, lowFreq);
+  }
+
+  public CalResult runStep(String calFileName, String outFileName,
+      String respName, boolean useEmbeddedResp, String startDate, String endDate)
+          throws SeedFormatException, CodecException, IOException {
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
+
+    DataStore ds = new DataStore();
+    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
+    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    InstrumentResponse ir;
+    if (useEmbeddedResp) {
+      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+    } else {
+      ir = new InstrumentResponse(respName);
+    }
+
+    ds.setBlock(0, calBlock);
+    ds.setBlock(1, outBlock);
+    ds.setResponse(1, ir);
+    ds.trim(start, end);
+
+    return runExpGetDataStep(ds);
 
   }
 
-  private RandData runExpGetData(DataStore dataStore, boolean isLowFrequency) throws IOException {
+  @SuppressWarnings("unused")
+  public CalResult runExpGetDataStep(DataStore ds) throws IOException {
+    StepExperiment step = new StepExperiment();
+    step.runExperimentOnData(ds);
+    double[] fitParams = step.getFitParams();
+    double[] initParams = step.getInitParams();
+    List<XYSeriesCollection> plots = step.getData();
+    // order of plots -- step function, resp amplitudes, resp phases
+
+    NumberAxis stepAxis = new NumberAxis("Step counts");
+    NumberAxis timeAxis = new NumberAxis("Time from data start (s)");
+    NumberAxis ampAxis = new NumberAxis("RESP Amplitude [10 * log10(RESP(f))]");
+    NumberAxis phaseAxis = new NumberAxis("RESP Phase (deg.)");
+    LogarithmicAxis freqAxis = new LogarithmicAxis("Frequency (f)");
+    Font bold = stepAxis.getLabelFont().deriveFont(Font.BOLD);
+    stepAxis.setLabelFont(bold);
+    timeAxis.setLabelFont(bold);
+    ampAxis.setLabelFont(bold);
+    phaseAxis.setLabelFont(bold);
+    freqAxis.setLabelFont(bold);
+
+    JFreeChart stepChart = ChartFactory.createXYLineChart(
+        "Step Calibration",
+        timeAxis.getLabel(),
+        stepAxis.getLabel(),
+        plots.get(0));
+    stepChart.getXYPlot().setDomainAxis(timeAxis);
+    stepChart.getXYPlot().setRangeAxis(stepAxis);
+
+    JFreeChart respAmpChart = ChartFactory.createXYLineChart(
+        "Step Calibration - Resp Amplitude Comparison",
+        freqAxis.getLabel(),
+        ampAxis.getLabel(),
+        plots.get(1));
+    respAmpChart.getXYPlot().setDomainAxis(freqAxis);
+    respAmpChart.getXYPlot().setRangeAxis(ampAxis);
+
+    JFreeChart respPhaseChart = ChartFactory.createXYLineChart(
+        "Step Calibration - Resp Phase Comparison",
+        freqAxis.getLabel(),
+        phaseAxis.getLabel(),
+        plots.get(2));
+    respPhaseChart.getXYPlot().setDomainAxis(freqAxis);
+    respPhaseChart.getXYPlot().setRangeAxis(phaseAxis);
+    JFreeChart[] charts = {stepChart, respAmpChart, respPhaseChart};
+
+    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    byte[][] pngByteArrays = new byte[images.length][];
+    for (int i = 0; i < images.length; ++i) {
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      ImageIO.write(images[i], "png", out);
+      pngByteArrays[i] = out.toByteArray();
+    }
+    return new StepData(pngByteArrays, fitParams, initParams);
+  }
+
+  /**
+   * Acquire data and run calibration over it. Used to handle calibrations that cross day boundaries
+   * Returns the experiment (all data kept locally to maintain thread safety)
+   *
+   * @param calFileNameD1 Filename of calibration signal (day 1)
+   * @param calFileNameD2 Filename of calibration signal (day 2)
+   * @param outFileNameD1 Filename of sensor output (day 1)
+   * @param outFileNameD2 Filename of sensor output (day 2)
+   * @param respName Filename of response to load in
+   * @param useEmbeddedResp True if response is an embedded response in program
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @param lowFreq True if a low-freq cal should be run
+   * @return Data from running the experiment (plots and fit pole/zero values)
+   * @throws IOException If a string does not refer to a valid accessible file
+   */
+  @SuppressWarnings("unused")
+  public RandData populateDataAndRun(String calFileNameD1, String calFileNameD2,
+      String outFileNameD1, String outFileNameD2, String respName, boolean useEmbeddedResp,
+      String startDate, String endDate, boolean lowFreq)
+      throws IOException, SeedFormatException, CodecException {
+
+    return runRand(calFileNameD1, calFileNameD2, outFileNameD1, outFileNameD2, respName,
+        useEmbeddedResp, startDate, endDate, lowFreq);
+
+  }
+
+  private RandData runExpGetDataRand(DataStore dataStore, boolean isLowFrequency) throws IOException {
 
     RandomizedExperiment randomExperiment = new RandomizedExperiment();
 
@@ -309,7 +496,7 @@ public class CalProcessingServer {
     JFreeChart[] charts = new JFreeChart[xySeriesCollections.size()];
 
     String xAxisTitle = "Frequency (Hz)";
-    String amplitudeAxisTitle = "10 * log10( RESP(f) )";
+    String amplitudeAxisTitle = "20 * log10( RESP(f) )";
     String phaseAxisTitle = "phi(RESP(f))";
 
     ValueAxis xAxis = new LogarithmicAxis(xAxisTitle);
@@ -338,7 +525,7 @@ public class CalProcessingServer {
     }
 
     charts[0] = ChartFactory.createXYLineChart(
-        title,
+        title + " Amplitude",
         xAxis.getLabel(),
         amplitudeAxis.getLabel(),
         xySeriesCollections.get(0),
@@ -352,7 +539,7 @@ public class CalProcessingServer {
     ExperimentPanel.invertSeriesRenderingOrder(charts[0]);
 
     charts[1] = ChartFactory.createXYLineChart(
-        title,
+        title + " Phase",
         xAxis.getLabel(),
         phaseAxis.getLabel(),
         xySeriesCollections.get(1),
@@ -366,7 +553,7 @@ public class CalProcessingServer {
     ExperimentPanel.invertSeriesRenderingOrder(charts[1]);
 
     charts[2] = ChartFactory.createXYLineChart(
-        title,
+        title + " Amplitude Error",
         residualXAxis.getLabel(),
         residualAmplitudeAxis.getLabel(),
         xySeriesCollections.get(2),
@@ -380,7 +567,7 @@ public class CalProcessingServer {
     ExperimentPanel.invertSeriesRenderingOrder(charts[2]);
 
     charts[3] = ChartFactory.createXYLineChart(
-        title,
+        title + "Phase Error",
         residualXAxis.getLabel(),
         residualPhaseAxis.getLabel(),
         xySeriesCollections.get(3),
