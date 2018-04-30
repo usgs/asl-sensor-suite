@@ -184,11 +184,6 @@ public class AzimuthExperiment extends Experiment {
 
     fireStateChange("Found initial guess for angle: " + bestGuessAngle);
 
-    // how much data we need (i.e., iteration length) to check 10 seconds
-    // used when checking if alignment is off by 180 degrees
-    // int tenSecondsLength = (int)  ( sps * 10 ) + 1;
-    // int antipolarTrimLen = tenSecondsLength * 100; // thousand secs?
-
     if (simpleCalc) {
       // used for orthogonality & multi-component self-noise and gain
       // where a 'pretty good' estimate of the angle is all we need
@@ -272,18 +267,19 @@ public class AzimuthExperiment extends Experiment {
         bestTheta = currentWindowAngle;
       }
 
-      angleCorrelationMap.put(
-          wdStart, new Pair<>(currentWindowAngle, correlation));
+      angleCorrelationMap.put(wdStart, new Pair<>(currentWindowAngle, correlation));
       sortedCorrelation.add(correlation);
     }
 
     int minCorrelations = 5;
     angles = new double[]{};
     correlations = new double[]{};
-    // TODO: can refactor this to break out if numWindows is < 5
     if (angleCorrelationMap.size() < minCorrelations) {
       fireStateChange("Window size too small for good angle estimation...");
-      angle = bestGuessAngle % tau; // tempAngle is the initial estimate from before windowing occurs
+
+      // The initial best estimate from before windowing occurs
+      angle = bestGuessAngle % tau;
+
     } else {
       // get the best-correlation estimations of angle and average them
       enoughPts = true;
@@ -385,7 +381,6 @@ public class AzimuthExperiment extends Experiment {
     for (int i = 0; i < angles.length; ++i) {
       long xVal = i * 500;
       double angle = angles[i];
-      // angle += Math.toRadians(offset);
       angle = (angle % tau);
       double correlation = correlations[i];
       timeMapCorrelation.add(xVal, correlation);
@@ -428,9 +423,13 @@ public class AzimuthExperiment extends Experiment {
     return correlations;
   }
 
-  // This is the damped jacobian function for windowed estimates
-  // we use a different cost function for initial estimate since using the
-  // squared correlation would make x, 180+x produce the same values
+  /**
+   * This is the damped jacobian function for windowed estimates
+   * we use a different cost function for initial estimate since using the
+   * squared correlation would make x, 180+x produce the same values
+   *
+   * @return Jacobian Function
+   */
   private MultivariateJacobianFunction
   getDampedJacobianFunction(double[] l1, double[] l2, double[] l3, double cr, double th) {
 
@@ -543,9 +542,9 @@ public class AzimuthExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if (!ds.blockIsSet(i)) {
+      if (!dataStore.blockIsSet(i)) {
         return false;
       }
     }
@@ -569,10 +568,10 @@ public class AzimuthExperiment extends Experiment {
     double[] rotatedDiff =
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
 
-    PearsonsCorrelation pc = new PearsonsCorrelation();
-    double value = pc.correlation(refNorth, testRotated);
+    PearsonsCorrelation pearonsCorrelation = new PearsonsCorrelation();
+    double value = pearonsCorrelation.correlation(refNorth, testRotated);
     RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
-    double deltaY = pc.correlation(refNorth, rotatedDiff);
+    double deltaY = pearonsCorrelation.correlation(refNorth, rotatedDiff);
     double change = (deltaY - value) / diff;
     double[][] jacobianArray = new double[][]{{change}};
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
@@ -620,13 +619,13 @@ public class AzimuthExperiment extends Experiment {
     double[] rotatedDiff =
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
 
-    PearsonsCorrelation pc = new PearsonsCorrelation();
-    double value = pc.correlation(refNorth, testRotated);
+    PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
+    double value = pearsonsCorrelation.correlation(refNorth, testRotated);
     latestCorrelation = value;
     double damping = (bestCorr - 1) * (theta - bestTheta);
     value = Math.pow(value - 1 + damping, 2);
     RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
-    double deltaY = pc.correlation(refNorth, rotatedDiff);
+    double deltaY = pearsonsCorrelation.correlation(refNorth, rotatedDiff);
     damping = (bestCorr - 1) * (thetaDelta - bestTheta);
     deltaY = Math.pow(deltaY - 1 + damping, 2);
     double change = (deltaY - value) / diff;
