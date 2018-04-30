@@ -35,7 +35,7 @@ import org.jfree.ui.RectangleAnchor;
  * targets, and sliders to set the window range over which to calculate
  * the gain statistics
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class GainPanel extends ExperimentPanel
     implements ChangeListener {
@@ -108,7 +108,7 @@ public class GainPanel extends ExperimentPanel
 
   final JButton recalcButton;
 
-  protected double lowPeriod, highPeriod;
+  double lowPeriod, highPeriod;
 
   /**
    * Instantiate the panel, including sliders and stat calc button
@@ -352,7 +352,7 @@ public class GainPanel extends ExperimentPanel
     referenceSeries.setSelectedIndex(0);
   }
 
-  protected void setSliderValues(int leftSliderValue, int rightSliderValue) {
+  void setSliderValues(int leftSliderValue, int rightSliderValue) {
     // enforce constraint that left slider value is the smaller one
     int leftTemp = Math.min(leftSliderValue, rightSliderValue);
     rightSliderValue = Math.max(leftSliderValue, rightSliderValue);
