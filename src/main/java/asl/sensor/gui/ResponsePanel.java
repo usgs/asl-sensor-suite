@@ -278,7 +278,7 @@ public class ResponsePanel extends ExperimentPanel {
   }
 
   @Override
-  protected void updateData(DataStore ds) {
+  protected void updateData(DataStore dataStore) {
 
     set = true;
 
@@ -287,7 +287,7 @@ public class ResponsePanel extends ExperimentPanel {
     boolean freqSpace = freqSpaceBox.isSelected();
     ResponseExperiment respExp = (ResponseExperiment) expResult;
     respExp.setFreqSpace(freqSpace);
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
 
     List<XYSeriesCollection> timeSeries = expResult.getData();
     XYSeriesCollection magSeries = timeSeries.get(0);

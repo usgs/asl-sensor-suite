@@ -156,8 +156,8 @@ public class SinePanel extends ExperimentPanel {
   }
 
   @Override
-  protected void updateData(DataStore ds) {
-    expResult.runExperimentOnData(ds);
+  protected void updateData(DataStore dataStore) {
+    expResult.runExperimentOnData(dataStore);
 
     XYSeriesCollection xysc = expResult.getData().get(0);
     for (int i = 0; i < xysc.getSeriesCount(); ++i) {
