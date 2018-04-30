@@ -34,9 +34,6 @@ import org.jfree.ui.VerticalAlignment;
  */
 public class StepPanel extends ExperimentPanel {
 
-  /**
-   *
-   */
   private static final long serialVersionUID = 3693391540945130688L;
   private static final int TITLE_IDX = 0;
 
@@ -44,11 +41,11 @@ public class StepPanel extends ExperimentPanel {
    * Static helper method for getting the formatted inset string directly
    * from a StepExperiment
    *
-   * @param sp StepExperiment with data to be extracted
+   * @param experiment StepExperiment with data to be extracted
    * @return String format representation of data from the experiment
    */
-  public static String getInsetString(StepExperiment sp) {
-    String[] strings = getInsetStringList(sp);
+  public static String getInsetString(StepExperiment experiment) {
+    String[] strings = getInsetStringList(experiment);
     StringBuilder sb = new StringBuilder();
     for (String str : strings) {
       sb.append(str);
@@ -57,9 +54,9 @@ public class StepPanel extends ExperimentPanel {
     return sb.toString();
   }
 
-  private static String[] getInsetStringList(StepExperiment sp) {
-    double[] rolloff = sp.getInitParams();
-    double[] fit = sp.getFitParams();
+  private static String[] getInsetStringList(StepExperiment experiment) {
+    double[] rolloff = experiment.getInitParams();
+    double[] fit = experiment.getFitParams();
     double corner = rolloff[0];
     double damping = rolloff[1];
     double fitCorner = fit[0];
@@ -98,8 +95,8 @@ public class StepPanel extends ExperimentPanel {
   private JFreeChart stepChart, magChart, phaseChart;
   private ValueAxis freqAxis, magAxis, phaseAxis;
 
-  public StepPanel(ExperimentEnum exp) {
-    super(exp);
+  StepPanel(ExperimentEnum experiment) {
+    super(experiment);
 
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
@@ -142,37 +139,37 @@ public class StepPanel extends ExperimentPanel {
     applyAxesToChart();
 
     this.setLayout(new GridBagLayout());
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.gridwidth = 3;
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(chartPanel, gbc);
+    GridBagConstraints constraints = new GridBagConstraints();
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.gridwidth = 3;
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(chartPanel, constraints);
 
     // add empty space on left side to space out other components
     JPanel space = new JPanel();
     space.setMaximumSize(plotSelection.getMaximumSize());
     space.setPreferredSize(plotSelection.getPreferredSize());
-    gbc.weighty = 0.0;
-    gbc.weightx = 1.0;
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridwidth = 1;
-    gbc.gridy += 1;
-    this.add(space, gbc);
+    constraints.weighty = 0.0;
+    constraints.weightx = 1.0;
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridwidth = 1;
+    constraints.gridy += 1;
+    this.add(space, constraints);
 
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.CENTER;
-    gbc.gridx += 1;
-    gbc.weightx = 0.0;
-    this.add(save, gbc);
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.gridx += 1;
+    constraints.weightx = 0.0;
+    this.add(save, constraints);
 
-    gbc.weightx = 1.0;
-    gbc.gridx += 1;
-    gbc.anchor = GridBagConstraints.LINE_END;
-    this.add(plotSelection, gbc);
+    constraints.weightx = 1.0;
+    constraints.gridx += 1;
+    constraints.anchor = GridBagConstraints.LINE_END;
+    this.add(plotSelection, constraints);
 
     plotTheseInBold = new String[]{};
 
@@ -180,11 +177,11 @@ public class StepPanel extends ExperimentPanel {
   }
 
   @Override
-  public void actionPerformed(ActionEvent e) {
+  public void actionPerformed(ActionEvent event) {
 
-    super.actionPerformed(e);
+    super.actionPerformed(event);
 
-    if (e.getSource() == plotSelection) {
+    if (event.getSource() == plotSelection) {
       if (!set) {
         applyAxesToChart();
         return;
@@ -197,19 +194,16 @@ public class StepPanel extends ExperimentPanel {
       chartPanel.setChart(chart);
       chartPanel.restoreAutoBounds();
       chartPanel.validate();
-
-      return;
     }
-
   }
 
   @Override
   protected void drawCharts() {
     JFreeChart[] charts = getCharts();
-    int idx = plotSelection.getSelectedIndex();
-    chart = charts[idx];
+    int index = plotSelection.getSelectedIndex();
+    chart = charts[index];
 
-    chartPanel.setChart(charts[idx]);
+    chartPanel.setChart(charts[index]);
     chartPanel.restoreAutoBounds();
     chartPanel.validate();
   }
@@ -243,15 +237,14 @@ public class StepPanel extends ExperimentPanel {
 
   @Override
   public String getMetadataString() {
-    StepExperiment stex = (StepExperiment) expResult;
+    StepExperiment experiment = (StepExperiment) expResult;
     StringBuilder sb = new StringBuilder();
     sb.append("Residuals:\n");
-    double[] resids = stex.getResiduals();
+    double[] residuals = experiment.getResiduals();
     sb.append("Initial:  ");
-    sb.append(resids[0]);
-    sb.append('\n');
-    sb.append("Fit:  ");
-    sb.append(resids[1]);
+    sb.append(residuals[0]);
+    sb.append("\nFit:  ");
+    sb.append(residuals[1]);
     sb.append('\n');
     sb.append(super.getMetadataString());
     return sb.toString();
@@ -259,26 +252,22 @@ public class StepPanel extends ExperimentPanel {
 
   @Override
   public ValueAxis getXAxis() {
-
     if (null == plotSelection) {
       return xAxis;
     }
 
     ValueAxis[] array = new ValueAxis[]{xAxis, freqAxis, freqAxis};
-    int idx = plotSelection.getSelectedIndex();
-    return array[idx];
+    return array[plotSelection.getSelectedIndex()];
   }
 
   @Override
   public ValueAxis getYAxis() {
-
     if (null == plotSelection) {
       return yAxis;
     }
 
     ValueAxis[] array = new ValueAxis[]{yAxis, magAxis, phaseAxis};
-    int idx = plotSelection.getSelectedIndex();
-    return array[idx];
+    return array[plotSelection.getSelectedIndex()];
   }
 
   @Override
@@ -287,21 +276,20 @@ public class StepPanel extends ExperimentPanel {
   }
 
   private void setSubtitles() {
-    BlockContainer bc = new BlockContainer(new FlowArrangement());
-    CompositeTitle ct = new CompositeTitle(bc);
+    BlockContainer container = new BlockContainer(new FlowArrangement());
+    CompositeTitle title = new CompositeTitle(container);
     String[] insets = getInsetStringList((StepExperiment) expResult);
     for (String inset : insets) {
       TextTitle result = new TextTitle();
       result.setText(inset);
-      // result.setFont( new Font("Dialog", Font.BOLD, 12) );
       result.setBackgroundPaint(Color.white);
-      bc.add(result);
+      container.add(result);
     }
 
-    ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
-    ct.setPosition(RectangleEdge.BOTTOM);
+    title.setVerticalAlignment(VerticalAlignment.BOTTOM);
+    title.setPosition(RectangleEdge.BOTTOM);
     for (JFreeChart chart : getCharts()) {
-      chart.addSubtitle(TITLE_IDX, ct);
+      chart.addSubtitle(TITLE_IDX, title);
     }
   }
 
