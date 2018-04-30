@@ -7,7 +7,6 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.event.ActionEvent;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -21,44 +20,34 @@ import org.jfree.data.xy.XYSeriesCollection;
  * a checkbox to choose between frequency and interval x-axis and
  * the variant axes for when that box is checked.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class SpectrumPanel extends ExperimentPanel {
 
-  /**
-   * Auto-generated serialize ID
-   */
   private static final long serialVersionUID = 9018553361096758354L;
 
-  protected JCheckBox freqSpaceBox;
+  private final JCheckBox freqSpaceBox;
   private int plotCount;
-  // three PSDs, three self-noise calcs
 
-  private NumberAxis freqAxis;
+  private final NumberAxis freqAxis;
 
   /**
    * Constructs a new panel and lays out all the components in it
    */
-  public SpectrumPanel(ExperimentEnum exp) {
-
+  SpectrumPanel(ExperimentEnum experiment) {
     // create chart, chartPanel, save button & file chooser,
-    super(exp);
+    super(experiment);
 
     plotCount = 0;
-
     for (int i = 0; i < 3; ++i) {
       channelType[i] = "Input data (RESP required)";
     }
 
     plotTheseInBold = new String[]{"NLNM", "NHNM"};
 
-    // instantiate local fields
-    String xAxisTitle = "Period (s)";
-    String freqAxisTitle = "Frequency (Hz)";
-    String yAxisTitle = "Power (rel. 1 (m/s^2)^2/Hz)";
-    xAxis = new LogarithmicAxis(xAxisTitle);
-    freqAxis = new LogarithmicAxis(freqAxisTitle);
-    yAxis = new NumberAxis(yAxisTitle);
+    xAxis = new LogarithmicAxis("Period (s)");
+    freqAxis = new LogarithmicAxis("Frequency (Hz)");
+    yAxis = new NumberAxis("Power (rel. 1 (m/s^2)^2/Hz)");
     yAxis.setAutoRange(true);
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
     Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
@@ -73,58 +62,48 @@ public class SpectrumPanel extends ExperimentPanel {
 
     // set the GUI components
     this.setLayout(new GridBagLayout());
-    GridBagConstraints gbc = new GridBagConstraints();
+    GridBagConstraints constraints = new GridBagConstraints();
 
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.gridwidth = 3;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(chartPanel, gbc);
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.gridwidth = 3;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(chartPanel, constraints);
 
     // place the other UI elements in a single row below the chart
-    gbc.gridwidth = 1;
-    gbc.weighty = 0.0;
-    gbc.weightx = 0.0;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.gridy += 1;
-    gbc.gridx = 0;
-    this.add(freqSpaceBox, gbc);
+    constraints.gridwidth = 1;
+    constraints.weighty = 0.0;
+    constraints.weightx = 0.0;
+    constraints.anchor = GridBagConstraints.WEST;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridy += 1;
+    constraints.gridx = 0;
+    this.add(freqSpaceBox, constraints);
 
-    gbc.gridx += 1;
-    gbc.weightx = 1.0;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.CENTER;
-    // gbc.gridwidth = GridBagConstraints.REMAINDER;
-    this.add(save, gbc);
+    constraints.gridx += 1;
+    constraints.weightx = 1.0;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(save, constraints);
 
     // add an empty panel as a spacer to keep the save button in the center
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.gridx += 1;
-    gbc.weightx = 0;
-    gbc.anchor = GridBagConstraints.WEST;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridx += 1;
+    constraints.weightx = 0;
+    constraints.anchor = GridBagConstraints.WEST;
     JPanel spacer = new JPanel();
     spacer.setPreferredSize(freqSpaceBox.getPreferredSize());
-    this.add(spacer, gbc);
-  }
-
-  @Override
-  public void actionPerformed(ActionEvent e) {
-    // overridden in the event we add more stuff to this panel
-    super.actionPerformed(e); // only actionlistener here
+    this.add(spacer, constraints);
   }
 
   @Override
   protected void drawCharts() {
-
     setChart(expResult.getData().get(0));
-
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
-
   }
 
   /**
@@ -135,14 +114,11 @@ public class SpectrumPanel extends ExperimentPanel {
    */
   @Override
   public ValueAxis getXAxis() {
-
     // true if using Hz units
     if (freqSpaceBox.isSelected()) {
       return freqAxis;
     }
-
     return xAxis;
-
   }
 
   @Override
@@ -160,7 +136,6 @@ public class SpectrumPanel extends ExperimentPanel {
    */
   @Override
   protected void updateData(final DataStore dataStore) {
-
     set = true;
 
     plotCount = 0;
@@ -170,18 +145,13 @@ public class SpectrumPanel extends ExperimentPanel {
       }
     }
 
-    boolean freqSpace = freqSpaceBox.isSelected();
-
-    final boolean freqSpaceImmutable = freqSpace;
-
-    SpectrumExperiment psdExp = (SpectrumExperiment) expResult;
-    psdExp.setFreqSpace(freqSpaceImmutable);
+    ((SpectrumExperiment) expResult).setFreqSpace(freqSpaceBox.isSelected());
     expResult.runExperimentOnData(dataStore);
 
-    XYSeriesCollection xysc = expResult.getData().get(0);
+    XYSeriesCollection timeseries = expResult.getData().get(0);
 
     for (int i = 0; i < plotCount; ++i) {
-      String name = (String) xysc.getSeriesKey(i);
+      String name = (String) timeseries.getSeriesKey(i);
       if (null == name) {
         continue;
       }
@@ -189,6 +159,4 @@ public class SpectrumPanel extends ExperimentPanel {
       seriesColorMap.put(name, plotColor);
     }
   }
-
-
 }
