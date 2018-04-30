@@ -99,10 +99,8 @@ public class GainSixExperiment extends Experiment {
 
     for (int i = 0; i < DIMS; ++i) {
 
-      StringBuilder state = new StringBuilder("Running calculations on ");
-      state.append(direction[i]);
-      state.append(" components...");
-      fireStateChange(state.toString());
+      String state = "Running calculations on " + direction[i] + " components...";
+      fireStateChange(state);
 
       componentBackends[i].runExperimentOnData(stores[i]);
 
@@ -190,21 +188,6 @@ public class GainSixExperiment extends Experiment {
     return north2Angle;
   }
 
-
-  /**
-   * Get octave centered around peak of vertical components. We assume
-   * that all three component gain sets have their peaks at nearly the same
-   * points. The vertical sensors are most likely to be useful, as their
-   * data does not need to be rotated as with the north and east sensors.
-   *
-   * @param idx Index of vertical component data to use as reference
-   * @return Upper and lower frequency bound of octave over given peak
-   */
-  public double[] getOctaveCenteredAtPeak(int idx) {
-    // we assume the vertical sensor, as it is not rotated, is
-    return componentBackends[2].getOctaveCenteredAtPeak(idx);
-  }
-
   /**
    * Get the gain mean and deviation values from a specified peak
    * frequency range.
@@ -223,21 +206,6 @@ public class GainSixExperiment extends Experiment {
     }
 
     return result;
-  }
-
-
-  /**
-   * Get the gain mean and deviation values from the peak frequency of the
-   * given dataset; the range for stats is the octave centered at the peak.
-   *
-   * @param idx Index of north component's data to use as reference
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
-   */
-  public double[][] getStatsFromPeak(int idx) {
-
-    double[] octave = getOctaveCenteredAtPeak(idx);
-    return getStatsFromFreqs(idx, octave[0], octave[1]);
-
   }
 
   @Override

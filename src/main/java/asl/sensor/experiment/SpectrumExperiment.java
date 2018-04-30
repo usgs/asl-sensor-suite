@@ -1,7 +1,6 @@
 package asl.sensor.experiment;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import org.jfree.data.xy.XYSeriesCollection;
 
@@ -65,12 +64,6 @@ public class SpectrumExperiment extends Experiment {
       respIndices[i] = idx;
       dataNames.add(ds.getBlock(idx).getName());
       dataNames.add(ds.getResponse(idx).getName());
-    }
-
-    InstrumentResponse[] responses = new InstrumentResponse[respIndices.length];
-
-    for (int i = 0; i < respIndices.length; ++i) {
-      responses[i] = ds.getResponse(respIndices[i]);
     }
 
     fireStateChange("Getting PSDs of each series...");

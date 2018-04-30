@@ -90,11 +90,6 @@ public class RandomizedExperiment
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
 
-  private List<String> inputsPerCalculation;
-  private List<String> outputsPerCalculation;
-
-  private Complex[] unsmoothedCurve, smoothedCurve;
-
   // when true, doesn't run solver, in event parameters have an issue
   // (does the solver seem to have frozen? try rebuilding with this as true,
   // and then run the plot -- show nominal resp. and estimated curves)
@@ -131,9 +126,6 @@ public class RandomizedExperiment
   protected void backend(DataStore ds) {
 
     boolean dontSolve = getSolverState(); // true if we should NOT run solver
-
-    inputsPerCalculation = new ArrayList<String>();
-    outputsPerCalculation = new ArrayList<String>();
 
     numIterations = 0;
 
@@ -243,7 +235,6 @@ public class RandomizedExperiment
     // on the low-frequency corner -- shifting here by half the smoothing re-centers the data
     if (lowFreq) {
       startIdx -= offset;
-      endIdx -= offset;
       extIdx -= offset;
     }
 
@@ -405,8 +396,6 @@ public class RandomizedExperiment
 
     fireStateChange("Got initial evaluation; running solver...");
 
-    double[] initialValues =
-        jacobian.value(initialGuess).getFirst().toArray();
 
     RealVector finalResultVector;
 
@@ -422,15 +411,12 @@ public class RandomizedExperiment
     fitResidual = optimum.getCost();
     double[] fitParams = optimum.getPoint().toArray();
     // get results from evaluating the function at the two points
-    double[] fitValues =
-        jacobian.value(optimum.getPoint()).getFirst().toArray();
+
 
     XYSeries initResidMag = new XYSeries("Percent error of init. amplitude");
     XYSeries initResidPhase = new XYSeries("Diff. with init phase");
     XYSeries fitResidMag = new XYSeries("Percent error of fit amplitude");
     XYSeries fitResidPhase = new XYSeries("Diff with fit phase");
-
-    // InstrumentResponse init = ds.getResponse(sensorOutIdx);
 
     fitResponse = fitResponse.buildResponseFromFitVector(
         fitParams, lowFreq, numZeros);
@@ -441,8 +427,8 @@ public class RandomizedExperiment
     // we use the apply response method here to get the full range of plotted data, not just fit
     Complex[] init = initResponse.applyResponseToInput(freqsFull);
     Complex[] fit = fitResponse.applyResponseToInput(freqsFull);
-    initialValues = new double[freqsFull.length * 2];
-    fitValues = new double[freqsFull.length * 2];
+    double[] initialValues = new double[freqsFull.length * 2];
+    double[] fitValues = new double[freqsFull.length * 2];
     for (int i = 0; i < freqsFull.length; ++i) {
       int argIdx = freqsFull.length + i;
       initialValues[i] = init[i].abs();
@@ -575,23 +561,6 @@ public class RandomizedExperiment
     return curValue;
   }
 
-  /**
-   * Return a 2D array containing the values of the y-axis of each of the
-   * plotted curves. The order is {input resp, calc resp, fit resp}.
-   * The second index is the y-values ordered by corresponding freq
-   *
-   * @return 2D array with each of the amplitude response curves
-   */
-  public double[][] getAmplitudesAsArrays() {
-    XYSeriesCollection mags = xySeriesData.get(0);
-    double[][] out = new double[mags.getSeriesCount()][];
-    for (int i = 0; i < out.length; ++i) {
-      XYSeries xys = mags.getSeries(i);
-      out[i] = xys.toArray()[1];
-    }
-    return out;
-  }
-
 
   /**
    * Get the poles that the solver has found to best-fit the est. response
@@ -629,14 +598,6 @@ public class RandomizedExperiment
     return fitResponse;
   }
 
-  public Complex[] getSmoothedCalcResp() {
-    return smoothedCurve;
-  }
-
-  public Complex[] getUnsmoothedCalcResp() {
-    return unsmoothedCurve;
-  }
-
   /**
    * Get the zeros fitted from the experiment
    *
@@ -653,15 +614,6 @@ public class RandomizedExperiment
     }
     NumericUtils.complexRealsFirstSorter(zerosOut);
     return zerosOut;
-  }
-
-  /**
-   * Get the range of frequencies over which the data was plotted
-   *
-   * @return list of frequencies, sorted order
-   */
-  public double[] getFreqList() {
-    return freqs;
   }
 
   /**
@@ -709,10 +661,6 @@ public class RandomizedExperiment
     return initialResidual;
   }
 
-  public List<String> getInputsToPrint() {
-    return inputsPerCalculation;
-  }
-
   /**
    * Get the number of times the algorithm iterated to produce the optimum
    * response fit, from the underlying least squares solver
@@ -725,27 +673,6 @@ public class RandomizedExperiment
 
   public double getMaxFitFrequency() {
     return freqs[freqs.length - 1];
-  }
-
-  public List<String> getOutputsToPrint() {
-    return outputsPerCalculation;
-  }
-
-  /**
-   * Return a 2D array containing the values of the y-axis of each of the
-   * plotted curves. The order is {input resp, calc resp, fit resp}.
-   * The second index is the y-values ordered by corresponding freq
-   *
-   * @return 2D array with each of the phase response curves
-   */
-  public double[][] getPhasesAsArrays() {
-    XYSeriesCollection phases = xySeriesData.get(0);
-    double[][] out = new double[phases.getSeriesCount()][];
-    for (int i = 0; i < out.length; ++i) {
-      XYSeries xys = phases.getSeries(i);
-      out[i] = xys.toArray()[1];
-    }
-    return out;
   }
 
   /**
@@ -800,8 +727,6 @@ public class RandomizedExperiment
     if (PRINT_EVERYTHING) {
       String in = Arrays.toString(currentVars);
       String out = Arrays.toString(mag);
-      inputsPerCalculation.add(in);
-      outputsPerCalculation.add(out);
       if (OUTPUT_TO_TERMINAL) {
         System.out.println(in);
         System.out.println(out);
@@ -823,9 +748,7 @@ public class RandomizedExperiment
       }
 
       double[] changedVars = new double[currentVars.length];
-      for (int j = 0; j < currentVars.length; ++j) {
-        changedVars[j] = currentVars[j];
-      }
+      System.arraycopy(currentVars, 0, changedVars, 0, currentVars.length);
 
       double diffX = changedVars[i] - DELTA;
       changedVars[i] = diffX;

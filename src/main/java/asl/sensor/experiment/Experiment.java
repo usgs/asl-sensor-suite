@@ -269,17 +269,6 @@ public abstract class Experiment {
   }
 
   /**
-   * Remove changelistener from list of listeners notified on status change
-   * (Generally not used but may be useful for implementing forwarding status messages from data
-   * subcomponents)
-   *
-   * @param listener Listener to remove from list
-   */
-  public void removeChangeListener(ChangeListener listener) {
-    eventHelper.remove(ChangeListener.class, listener);
-  }
-
-  /**
    * Driver to do data processing on inputted data (calls a concrete backend
    * method which is different for each type of experiment)
    * This function specifically (rather than the backend implementation) is
@@ -341,9 +330,4 @@ public abstract class Experiment {
 
     fireStateChange("Calculations done!");
   }
-
-  public void setTerminalPrintStatus(boolean print) {
-    statusToTerminal = print;
-  }
-
 }

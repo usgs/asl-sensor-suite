@@ -179,8 +179,6 @@ public class OrthogonalExperiment extends Experiment {
     return angle;
   }
 
-  ;
-
   /**
    * Returns the intermediate result of the calculation,
    * the azimuth angles of the unknown sensors
