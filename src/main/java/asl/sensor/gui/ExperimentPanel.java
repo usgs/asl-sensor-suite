@@ -70,7 +70,7 @@ public abstract class ExperimentPanel
     implements ActionListener, ChangeListener {
 
   private static final long serialVersionUID = -5591522915365766604L;
-  public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+  static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
       ThreadLocal.withInitial(() -> {
         DecimalFormat format = new DecimalFormat("#.###");
         NumericUtils.setInfinityPrintable(format);
@@ -83,7 +83,7 @@ public abstract class ExperimentPanel
         return format;
       });
 
-  public static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
+  static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
       ThreadLocal.withInitial(() -> {
         SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -145,11 +145,11 @@ public abstract class ExperimentPanel
 
   }
 
-  protected final JButton save; // easy access to saving output as png
+  final JButton save; // easy access to saving output as png
 
   protected JFreeChart chart; // the chart shown in the panel
 
-  protected final ChartPanel chartPanel; // component used to hold the shown chart
+  final ChartPanel chartPanel; // component used to hold the shown chart
   // (if an experiment has multiple charts to show, ideally each should be
   // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
@@ -159,7 +159,7 @@ public abstract class ExperimentPanel
   final ExperimentEnum expType;
   // used to define experiment of each plot object (i.e., chart name)
 
-  protected Experiment expResult;
+  Experiment expResult;
   // experiment actually being run (call its 'setData' method to run backend)
   // experiments use builder pattern -- set necessary variables like
   // angle offset or x-axis units before running the experiment
@@ -167,7 +167,7 @@ public abstract class ExperimentPanel
   protected ValueAxis xAxis, yAxis;
   // default axes to use with the default chart
 
-  public final String[] channelType;
+  final String[] channelType;
   // used to give details in input panel about what users needs to load where
   protected boolean set; // true if the experiment has run
 
@@ -383,7 +383,7 @@ public abstract class ExperimentPanel
   /**
    * Clear chart data and display text that it is loading new data
    */
-  protected void clearChartAndSetProgressData() {
+  void clearChartAndSetProgressData() {
     clearChart();
     displayInfoMessage("Running calculation...");
   }
@@ -409,7 +409,7 @@ public abstract class ExperimentPanel
   /**
    * Overlay informational text, such as extra results and statistics for plots
    */
-  public void displayInfoMessage(String infoMsg) {
+  void displayInfoMessage(String infoMsg) {
     XYPlot plot = (XYPlot) chartPanel.getChart().getPlot();
     TextTitle result = new TextTitle();
     result.setText(infoMsg);
@@ -435,7 +435,7 @@ public abstract class ExperimentPanel
    *
    * @return Array of strings, each one to be written to a new report page
    */
-  public String[] getAdditionalReportPages() {
+  String[] getAdditionalReportPages() {
     return new String[]{};
   }
 
@@ -497,7 +497,7 @@ public abstract class ExperimentPanel
    *
    * @return Index of data used to get naem for report
    */
-  protected int getIndexOfMainData() {
+  int getIndexOfMainData() {
     return 0;
   }
 
@@ -507,7 +507,7 @@ public abstract class ExperimentPanel
    *
    * @return String with any relevant parameters in it
    */
-  public String getInsetStrings() {
+  String getInsetStrings() {
     return "";
   }
 
@@ -520,7 +520,7 @@ public abstract class ExperimentPanel
    *
    * @return A string with any additional data to be included in the PDF report
    */
-  public String getMetadataString() {
+  String getMetadataString() {
     List<String> names = expResult.getInputNames();
     StringBuilder sb = new StringBuilder("Input filenames, ");
     sb.append(" with SEED and RESP files paired as appropriate:\n");
@@ -584,7 +584,7 @@ public abstract class ExperimentPanel
    *
    * @return List of charts to show on a second page of PDF reports
    */
-  public JFreeChart[] getSecondPageCharts() {
+  JFreeChart[] getSecondPageCharts() {
     return new JFreeChart[]{};
   }
 
