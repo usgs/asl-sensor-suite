@@ -8,9 +8,7 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.text.DecimalFormat;
 import javax.swing.JComboBox;
-import javax.swing.event.ChangeEvent;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
@@ -22,35 +20,31 @@ import org.jfree.ui.RectangleAnchor;
 /**
  * Six-input extension for RelativeGain gui
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class GainSixPanel extends GainPanel {
 
-
-  /**
-   *
-   */
   private static final long serialVersionUID = 6140615094847886109L;
 
   /**
    * Static helper method for getting the formatted inset string directly
    * from a GainExperiment
    *
-   * @param gn GainSixExperiment with data to be extracted
-   * @param plotIdx Plot to have this inset applied to
-   * @param refIdx Index of data to be loaded as reference (i.e., 0)
-   * @param lowPrd low period boundary to take stats over
-   * @param highPrd high period boundary to take stats over
-   * @return String with data representation of experiment results (mean, sdev)
+   * @param experiment GainSixExperiment with data to be extracted
+   * @param plotIndex Plot to have this inset applied to
+   * @param referenceIndex Index of data to be loaded as reference (i.e., 0)
+   * @param lowPeriod low period boundary to take stats over
+   * @param highPeriod high period boundary to take stats over
+   * @return String with data representation of experiment results (mean, standard Deviation)
    */
-  public static String
-  getInsetString(GainSixExperiment gn, int plotIdx,
-      int refIdx, double lowPrd, double highPrd) {
+  private static String
+  getInsetString(GainSixExperiment experiment, int plotIndex,
+      int referenceIndex, double lowPeriod, double highPeriod) {
 
     double[][] meanAndStdDevAll =
-        gn.getStatsFromFreqs(refIdx, 1 / lowPrd, 1 / highPrd);
+        experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
 
-    double[] meanAndStdDev = meanAndStdDevAll[plotIdx];
+    double[] meanAndStdDev = meanAndStdDevAll[plotIndex];
 
     double mean = meanAndStdDev[0];
     double sDev = meanAndStdDev[1];
@@ -70,28 +64,30 @@ public class GainSixPanel extends GainPanel {
     sb.append("** CALCULATED GAIN: ");
     sb.append(calcGain);
 
-    if (plotIdx == 0) {
+    if (plotIndex == 0) {
       sb.append("\nNorth azimuth (deg): ");
-      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(gn.getNorthAzimuth())));
-    } else if (plotIdx == 1) {
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getNorthAzimuth())));
+    } else if (plotIndex == 1) {
       sb.append("\nEast azimuth (rad): ");
-      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(gn.getEastAzimuth())));
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getEastAzimuth())));
     }
 
     return sb.toString();
   }
 
-  protected JFreeChart northChart, eastChart, vertChart; // gain result per dimensional component
-  protected JComboBox<String> plotSelection; // which chart to display in window?
+  private JFreeChart northChart;
+  private JFreeChart eastChart;
+  private JFreeChart verticalChart; // gain result per dimensional component
+  private final JComboBox<String> plotSelection; // which chart to display in window?
 
   /**
    * Instantiate the panel, including sliders and stat calc button
    */
-  public GainSixPanel(ExperimentEnum exp) {
+  public GainSixPanel(ExperimentEnum experiment) {
     // instantiate common components
-    super(exp);
+    super(experiment);
     // make sure the experiment is gain-six
-    expResult = ExperimentFactory.createExperiment(exp);
+    expResult = ExperimentFactory.createExperiment(experiment);
 
     for (int i = 0; i < 2; ++i) {
       int num = i + 1;
@@ -111,61 +107,61 @@ public class GainSixPanel extends GainPanel {
     eastChart =
         ChartFactory.createXYLineChart(expType.getName() + " (East)",
             xTitle, yTitle, null);
-    vertChart =
+    verticalChart =
         ChartFactory.createXYLineChart(expType.getName() + " (Vertical)",
             xTitle, yTitle, null);
 
     // create layout
     removeAll();
     this.setLayout(new GridBagLayout());
-    GridBagConstraints gbc = new GridBagConstraints();
+    GridBagConstraints constraints = new GridBagConstraints();
 
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    gbc.weightx = 1.0;
-    gbc.weighty = 1.0;
-    gbc.gridwidth = 3;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(chartPanel, gbc);
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.gridwidth = 3;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(chartPanel, constraints);
 
-    gbc.gridx = 0;
-    gbc.gridy += 1;
-    gbc.weighty = 0;
-    gbc.gridwidth = 1;
-    gbc.anchor = GridBagConstraints.EAST;
-    this.add(leftSlider, gbc);
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.gridx += 1;
-    gbc.anchor = GridBagConstraints.CENTER;
-    gbc.weightx = 0;
-    this.add(recalcButton, gbc);
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.gridx += 1;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.weightx = 1;
-    this.add(rightSlider, gbc);
+    constraints.gridx = 0;
+    constraints.gridy += 1;
+    constraints.weighty = 0;
+    constraints.gridwidth = 1;
+    constraints.anchor = GridBagConstraints.EAST;
+    this.add(leftSlider, constraints);
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridx += 1;
+    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.weightx = 0;
+    this.add(recalcButton, constraints);
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx += 1;
+    constraints.anchor = GridBagConstraints.WEST;
+    constraints.weightx = 1;
+    this.add(rightSlider, constraints);
 
-    gbc.gridx = 0;
-    gbc.gridy += 1;
-    gbc.fill = GridBagConstraints.BOTH;
-    gbc.anchor = GridBagConstraints.CENTER;
-    this.add(referenceSeries, gbc);
-    gbc.weightx = 0;
-    gbc.gridx += 1;
-    gbc.fill = GridBagConstraints.NONE;
-    this.add(save, gbc);
+    constraints.gridx = 0;
+    constraints.gridy += 1;
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(referenceSeries, constraints);
+    constraints.weightx = 0;
+    constraints.gridx += 1;
+    constraints.fill = GridBagConstraints.NONE;
+    this.add(save, constraints);
 
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.gridx += 1;
-    gbc.weightx = 0;
-    gbc.anchor = GridBagConstraints.WEST;
-    plotSelection = new JComboBox<String>();
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.gridx += 1;
+    constraints.weightx = 0;
+    constraints.anchor = GridBagConstraints.WEST;
+    plotSelection = new JComboBox<>();
     plotSelection.addItem("North component plot");
     plotSelection.addItem("East component plot");
     plotSelection.addItem("Vertical component plot");
     plotSelection.addActionListener(this);
-    add(plotSelection, gbc);
+    add(plotSelection, constraints);
 
   }
 
@@ -175,31 +171,23 @@ public class GainSixPanel extends GainPanel {
    */
   @Override
   public void actionPerformed(ActionEvent event) {
-
     if (event.getSource() == recalcButton) {
-
       // TODO: set title for each chart;
       setTitle();
-
       recalcButton.setEnabled(false);
-
       return;
     }
 
     super.actionPerformed(event); // saving?
 
     if (event.getSource() == plotSelection) {
-      int idx = plotSelection.getSelectedIndex();
+      int index = plotSelection.getSelectedIndex();
 
       JFreeChart[] charts = getCharts();
-      chart = charts[idx];
-
+      chart = charts[index];
       chartPanel.setChart(chart);
       chartPanel.setMouseZoomable(true);
-
-      return;
     }
-
   }
 
   /**
@@ -213,21 +201,11 @@ public class GainSixPanel extends GainPanel {
   @Override
   protected void drawCharts() {
 
-    final int refIdx = referenceSeries.getSelectedIndex();
-    final int idx1 = (refIdx + 1) % 2;
+    final int referenceIndex = referenceSeries.getSelectedIndex();
+    final int index1 = (referenceIndex + 1) % 2;
     int leftSliderValue, rightSliderValue;
 
-    GainSixExperiment gn = (GainSixExperiment) expResult;
-
-    /*
-    // want to default to octave centered at highest value of fixed freq
-    freqRange = gn.getOctaveCenteredAtPeak(refIdx);
-
-    // get the locations (x-axis values) of frequency range as intervals
-    lowPrd = Math.min(1/freqRange[0], 1/freqRange[1]);
-    highPrd = Math.max(1/freqRange[0], 1/freqRange[1]);
-    */
-    double[] minMax = gn.getMinMaxFrequencies();
+    double[] minMax = ((GainSixExperiment) expResult).getMinMaxFrequencies();
 
     // since intervals of incoming data match, so too limits of plot
     // this is used in mapping scale of slider to x-axis values
@@ -239,13 +217,13 @@ public class GainSixPanel extends GainPanel {
     // plot has 3 components: source, destination, NLNM line plot
     JFreeChart[] charts = getCharts();
     for (int i = 0; i < charts.length; ++i) {
-      XYSeriesCollection xyscIn = expResult.getData().get(i);
-      XYSeriesCollection xysc = new XYSeriesCollection();
-      xysc.addSeries(xyscIn.getSeries(refIdx));
-      xysc.addSeries(xyscIn.getSeries(idx1));
-      xysc.addSeries(xyscIn.getSeries("NLNM"));
+      XYSeriesCollection timeseriesIn = expResult.getData().get(i);
+      XYSeriesCollection timeseries = new XYSeriesCollection();
+      timeseries.addSeries(timeseriesIn.getSeries(referenceIndex));
+      timeseries.addSeries(timeseriesIn.getSeries(index1));
+      timeseries.addSeries(timeseriesIn.getSeries("NLNM"));
 
-      charts[i] = buildChart(xysc);
+      charts[i] = buildChart(timeseries);
 
       // set vertical bars and enable sliders
       setSliderValues(leftSliderValue, rightSliderValue);
@@ -262,13 +240,12 @@ public class GainSixPanel extends GainPanel {
     // make sure pointers to each chart are set properly
     northChart = charts[0];
     eastChart = charts[1];
-    vertChart = charts[2];
+    verticalChart = charts[2];
 
     // lastly, display the calculated statistics in a textbox in the corner
     setTitle();
 
-    int idx = plotSelection.getSelectedIndex();
-    chart = charts[idx];
+    chart = charts[plotSelection.getSelectedIndex()];
 
     // obviously, set the chart
     chartPanel.setChart(chart);
@@ -278,7 +255,7 @@ public class GainSixPanel extends GainPanel {
 
   @Override
   public JFreeChart[] getCharts() {
-    return new JFreeChart[]{northChart, eastChart, vertChart};
+    return new JFreeChart[]{northChart, eastChart, verticalChart};
   }
 
 
@@ -287,23 +264,19 @@ public class GainSixPanel extends GainPanel {
    * its own unique inset; all inset strings are compiled in the getInsetString
    * method.
    *
-   * @param idx Index of experiment sub-index to get data from
+   * @param index Index of experiment sub-index to get data from
    * @return String of results returned by that experiment
    */
-  private String getInsetStringPerChart(int idx) {
-    int leftPos = leftSlider.getValue();
-    double lowPrd = mapSliderToPeriod(leftPos);
-    int rightPos = rightSlider.getValue();
-    double highPrd = mapSliderToPeriod(rightPos);
+  private String getInsetStringPerChart(int index) {
+    double lowPeriod = mapSliderToPeriod(leftSlider.getValue());
+    double highPeriod = mapSliderToPeriod(rightSlider.getValue());
 
-    // remove old bars and draw the new ones
-    // setDomainMarkers(lowPrd, highPrd, xyp);
-
-    int refIdx = referenceSeries.getSelectedIndex();
-
-    GainSixExperiment gn = (GainSixExperiment) expResult;
-
-    return getInsetString(gn, idx, refIdx, lowPrd, highPrd);
+    return getInsetString(
+        (GainSixExperiment) expResult,
+        index,
+        referenceSeries.getSelectedIndex(),
+        lowPeriod,
+        highPeriod);
   }
 
   @Override
@@ -328,10 +301,8 @@ public class GainSixPanel extends GainPanel {
 
   /**
    * Used to populate the comboboxes with the incoming data
-   *
-   * @param ds DataStore object being processed
    */
-  private void setDataNames(DataStore ds) {
+  private void setDataNames() {
 
     referenceSeries.setEnabled(false);
 
@@ -350,71 +321,16 @@ public class GainSixPanel extends GainPanel {
   private void setTitle() {
     JFreeChart[] charts = getCharts();
     for (int i = 0; i < charts.length; ++i) {
-      XYPlot xyp = charts[i].getXYPlot();
+      XYPlot plot = charts[i].getXYPlot();
       TextTitle result = new TextTitle();
-      String temp = getInsetStringPerChart(i);
-      result.setText(temp);
+      result.setText(getInsetStringPerChart(i));
       result.setBackgroundPaint(Color.white);
-      XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
+      XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, result,
           RectangleAnchor.TOP_RIGHT);
-      xyp.clearAnnotations();
-      xyp.addAnnotation(xyt);
+      plot.clearAnnotations();
+      plot.addAnnotation(title);
     }
 
-  }
-
-  @Override
-  public void stateChanged(ChangeEvent event) {
-
-    super.stateChanged(event);
-
-    /*
-    // enforce slider boundaries, same as deriving class
-    if ( e.getSource() == leftSlider ) {
-      if ( leftSlider.getValue() > rightSlider.getValue() - 10 ) {
-        leftSlider.setValue( rightSlider.getValue() - 10 );
-        if ( leftSlider.getValue() < 0 ) {
-          leftSlider.setValue(0);
-          rightSlider.setValue(10);
-        }
-      }
-    } else if ( e.getSource() == rightSlider ) {
-      if ( leftSlider.getValue() + 10 > rightSlider.getValue() ) {
-        rightSlider.setValue( leftSlider.getValue() + 10 );
-        if ( rightSlider.getValue() > SLIDER_MAX ) {
-          rightSlider.setValue(SLIDER_MAX);
-          leftSlider.setValue(SLIDER_MAX - 10);
-        }
-      }
-    }
-
-    if (e.getSource() == leftSlider || e.getSource() == rightSlider) {
-
-      // now we need to redraw the vertical bars
-
-      // new slider window means new results on calculation
-      recalcButton.setEnabled(true);
-
-      // get plots (where we put the vertical bars)
-      // ** THIS IS WHAT IS DIFFERENT **
-      for ( JFreeChart chart : getCharts() ) {
-        XYPlot xyp = chart.getXYPlot();
-
-        // clear out annotations to prevent issues with misleading data
-        xyp.clearAnnotations();
-
-        // convert slider locations to (log-scale) frequency
-        int leftPos = leftSlider.getValue();
-        double lowPrd = mapSliderToPeriod(leftPos);
-        int rightPos = rightSlider.getValue();
-        double highPrd = mapSliderToPeriod(rightPos);
-
-        // remove old bars and draw the new ones
-        setDomainMarkers(lowPrd, highPrd, chart);
-      }
-
-    }
-    */
   }
 
   @Override
@@ -422,7 +338,7 @@ public class GainSixPanel extends GainPanel {
 
     set = true;
 
-    setDataNames(dataStore);
+    setDataNames();
 
     expResult.runExperimentOnData(dataStore);
 

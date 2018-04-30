@@ -8,7 +8,6 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.text.DecimalFormat;
 import java.util.List;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -42,9 +41,6 @@ import org.jfree.ui.RectangleAnchor;
 public class AzimuthPanel extends ExperimentPanel {
 
   private static final long serialVersionUID = 4088024342809622854L;
-  /**
-   * Thread safe reference to a shared DecimalFormat object.
-   */
 
   private final JSpinner offsetSpinner; // select how far from north to set reference data
   private JFreeChart angleChart, estimationChart; // plot angle, plot windowed estimation angle and correlation
@@ -53,8 +49,8 @@ public class AzimuthPanel extends ExperimentPanel {
 
   private final JComboBox<String> chartSelector;
 
-  AzimuthPanel(ExperimentEnum exp) {
-    super(exp);
+  AzimuthPanel(ExperimentEnum experiment) {
+    super(experiment);
 
     SpinnerModel spinModel = new SpinnerNumberModel(0, -360, 360, 0.1);
     offsetSpinner = new JSpinner(spinModel);
@@ -170,7 +166,7 @@ public class AzimuthPanel extends ExperimentPanel {
   }
 
   @Override
-  public void displayInfoMessage(String infoMsg) {
+  void displayInfoMessage(String infoMsg) {
 
     if (chartSelector.getSelectedIndex() == 0) {
       PolarPlot plot = (PolarPlot) angleChart.getPlot();
@@ -209,7 +205,7 @@ public class AzimuthPanel extends ExperimentPanel {
   }
 
   @Override
-  public String getInsetStrings() {
+  String getInsetStrings() {
     AzimuthExperiment experiment = (AzimuthExperiment) expResult;
     double value = experiment.getOffset();
     double angle = experiment.getFitAngle();
@@ -305,5 +301,4 @@ public class AzimuthPanel extends ExperimentPanel {
 
     chartSelector.setSelectedIndex(0);
   }
-
 }

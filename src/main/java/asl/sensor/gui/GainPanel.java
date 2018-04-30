@@ -35,7 +35,7 @@ import org.jfree.ui.RectangleAnchor;
  * targets, and sliders to set the window range over which to calculate
  * the gain statistics
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class GainPanel extends ExperimentPanel
     implements ChangeListener {
@@ -71,9 +71,9 @@ public class GainPanel extends ExperimentPanel
     double calculatedGain = meanAndStdDev[3];
 
     return "ratio: " + DECIMAL_FORMAT.get().format(mean)
-        + "\nsigma: " +  DECIMAL_FORMAT.get().format(standardDeviation)
-        + "\nref. gain: " +  DECIMAL_FORMAT.get().format(referenceGain)
-        + "\n** CALCULATED GAIN: " +  DECIMAL_FORMAT.get().format(calculatedGain);
+        + "\nsigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
+        + "\nref. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
+        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain);
   }
 
   /**
@@ -108,7 +108,7 @@ public class GainPanel extends ExperimentPanel
 
   final JButton recalcButton;
 
-  protected double lowPeriod, highPeriod;
+  double lowPeriod, highPeriod;
 
   /**
    * Instantiate the panel, including sliders and stat calc button
@@ -283,7 +283,7 @@ public class GainPanel extends ExperimentPanel
   }
 
   @Override
-  public String getInsetStrings() {
+  String getInsetStrings() {
     double lowPeriod = mapSliderToPeriod(leftSlider.getValue());
     double highPeriod = mapSliderToPeriod(rightSlider.getValue());
 
@@ -352,7 +352,7 @@ public class GainPanel extends ExperimentPanel
     referenceSeries.setSelectedIndex(0);
   }
 
-  protected void setSliderValues(int leftSliderValue, int rightSliderValue) {
+  void setSliderValues(int leftSliderValue, int rightSliderValue) {
     // enforce constraint that left slider value is the smaller one
     int leftTemp = Math.min(leftSliderValue, rightSliderValue);
     rightSliderValue = Math.max(leftSliderValue, rightSliderValue);
