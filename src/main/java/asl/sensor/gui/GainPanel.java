@@ -71,9 +71,9 @@ public class GainPanel extends ExperimentPanel
     double calculatedGain = meanAndStdDev[3];
 
     return "ratio: " + DECIMAL_FORMAT.get().format(mean)
-        + "\nsigma: " +  DECIMAL_FORMAT.get().format(standardDeviation)
-        + "\nref. gain: " +  DECIMAL_FORMAT.get().format(referenceGain)
-        + "\n** CALCULATED GAIN: " +  DECIMAL_FORMAT.get().format(calculatedGain);
+        + "\nsigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
+        + "\nref. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
+        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain);
   }
 
   /**

@@ -221,7 +221,8 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     } else if (event.getSource() == second) {
       currentTime = currentTime.withSecond((int) second.getValue());
     } else if (event.getSource() == millisecond) {
-      currentTime = currentTime.withNano((int) millisecond.getValue() * TimeSeriesUtils.TO_MILLI_FACTOR);
+      currentTime = currentTime
+          .withNano((int) millisecond.getValue() * TimeSeriesUtils.TO_MILLI_FACTOR);
     }
 
     fireStateChanged(); // percolate change in component up to any containers

@@ -636,7 +636,7 @@ public abstract class ExperimentPanel
   /**
    * Get the number of panels to display to fit all data needed by the program
    *
-   * @return  Number of plots to show in the input panel
+   * @return Number of plots to show in the input panel
    */
   public abstract int panelsNeeded();
 

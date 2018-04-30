@@ -1,10 +1,10 @@
 package asl.sensor.gui;
 
+import asl.sensor.input.DataStore;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
 import org.apache.commons.math3.exception.ConvergenceException;
 import org.apache.commons.math3.exception.NoDataException;
-import asl.sensor.input.DataStore;
 
 /**
  * Used as singleton instance of swingworker to prevent clogging the program
