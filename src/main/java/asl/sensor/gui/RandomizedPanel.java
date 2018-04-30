@@ -472,7 +472,7 @@ public class RandomizedPanel extends ExperimentPanel {
    * Used to get the text that will represent the title text in the PDF result
    */
   @Override
-  public String getInsetStrings() {
+  String getInsetStrings() {
     StringBuilder sb = new StringBuilder();
     for (String str : getInsetStringsAsList()) {
       sb.append(str);

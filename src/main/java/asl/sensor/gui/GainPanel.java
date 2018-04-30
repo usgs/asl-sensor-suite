@@ -283,7 +283,7 @@ public class GainPanel extends ExperimentPanel
   }
 
   @Override
-  public String getInsetStrings() {
+  String getInsetStrings() {
     double lowPeriod = mapSliderToPeriod(leftSlider.getValue());
     double highPeriod = mapSliderToPeriod(rightSlider.getValue());
 

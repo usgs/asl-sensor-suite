@@ -12,7 +12,6 @@ import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
-import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
 
 /**
@@ -89,7 +88,7 @@ public class OrthogonalPanel extends ExperimentPanel {
   }
 
   @Override
-  public String getInsetStrings() {
+  String getInsetStrings() {
     return getInsetString((OrthogonalExperiment) expResult);
   }
 

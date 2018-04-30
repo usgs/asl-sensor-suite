@@ -163,7 +163,7 @@ public class SinePanel extends ExperimentPanel {
    * Used to get the text that will represent the title text in the PDF result
    */
   @Override
-  public String getInsetStrings() {
+  String getInsetStrings() {
     return getInsetString((SineExperiment) expResult);
   }
 

@@ -166,7 +166,7 @@ public class AzimuthPanel extends ExperimentPanel {
   }
 
   @Override
-  public void displayInfoMessage(String infoMsg) {
+  void displayInfoMessage(String infoMsg) {
 
     if (chartSelector.getSelectedIndex() == 0) {
       PolarPlot plot = (PolarPlot) angleChart.getPlot();
@@ -205,7 +205,7 @@ public class AzimuthPanel extends ExperimentPanel {
   }
 
   @Override
-  public String getInsetStrings() {
+  String getInsetStrings() {
     AzimuthExperiment experiment = (AzimuthExperiment) expResult;
     double value = experiment.getOffset();
     double angle = experiment.getFitAngle();
