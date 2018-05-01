@@ -11,21 +11,28 @@ public class DataStoreUtils {
   public static DataStore createFromNames(String respName, String calibrationInName,
       String sensorOutputName) {
     try {
-      InstrumentResponse ir = new InstrumentResponse(respName);
+
 
       DataStore ds = new DataStore();
 
-      ds.setBlock(0, calibrationInName);
-      ds.setBlock(1, sensorOutputName);
+      if(calibrationInName != null) {
+        ds.setBlock(0, calibrationInName);
+      }
+      if(sensorOutputName != null) {
+        ds.setBlock(1, sensorOutputName);
+      }
 
-      ds.setResponse(1, ir);
+      if(respName != null) {
+        InstrumentResponse ir = new InstrumentResponse(respName);
+        ds.setResponse(1, ir);
+      }
 
       return ds;
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
     }
-    //Never gets here
+    //If it gets here, it has already failed.
     return new DataStore();
   }
 }
