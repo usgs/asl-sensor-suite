@@ -1,12 +1,12 @@
 package asl.sensor.experiment;
 
+import org.apache.commons.math3.complex.Complex;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.NumericUtils;
-import org.apache.commons.math3.complex.Complex;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * Gain experiment does tests to determine a relative gain value of a sensor's
@@ -108,10 +108,6 @@ public class GainExperiment extends Experiment {
       InstrumentResponse ir = ds.getResponse(indices[i]);
       double[] gains = ir.getGain();
       gainStage1[i] = gains[1];
-      double accumulator = 1.0;
-      for (int j = 2; j < gains.length; ++j) {
-        accumulator *= gains[j];
-      }
     }
 
     fftResults = new FFTResult[NUMBER_TO_LOAD];
