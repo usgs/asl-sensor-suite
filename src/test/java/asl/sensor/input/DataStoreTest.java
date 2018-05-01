@@ -67,7 +67,6 @@ public class DataStoreTest {
   public void decimationMatchesFrequency() {
     long interval40Hz = (TimeSeriesUtils.ONE_HZ_INTERVAL / 40);
     long interval25Hz = (TimeSeriesUtils.ONE_HZ_INTERVAL / 25);
-    // long interval = TimeSeriesUtils.ONE_HZ_INTERVAL;
 
     long start = 0;
 

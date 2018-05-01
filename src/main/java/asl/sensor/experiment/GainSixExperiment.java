@@ -3,7 +3,6 @@ package asl.sensor.experiment;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
-import java.util.List;
 import org.jfree.data.xy.XYSeries;
 
 /**
@@ -14,61 +13,60 @@ import org.jfree.data.xy.XYSeries;
  * This experiment uses the azimuth code to do alignment in these dimensions
  * and then calls a gain backend on the data in each dimension
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class GainSixExperiment extends Experiment {
 
-  private static final int DIMS = 3; // number of known space dimensions
+  private static final int DIMENSIONS = 3; // number of known space dimensions
 
-  // used to store the intermediate result data of each of N,S,V components
-  // (in that order)
+  // used to store the intermediate result data of each of N,S,V components (in that order)
   private GainExperiment[] componentBackends;
-  private int[] indices;
+  private final int[] indices;
   private double north2Angle, east2Angle;
 
-  public GainSixExperiment() {
+  GainSixExperiment() {
     super();
 
-    componentBackends = new GainExperiment[DIMS];
+    componentBackends = new GainExperiment[DIMENSIONS];
     for (int i = 0; i < componentBackends.length; i++) {
       componentBackends[i] = new GainExperiment();
     }
 
-    indices = new int[6]; // TODO: change to get set during backend?
+    indices = new int[6];
     for (int i = 0; i < indices.length; ++i) {
       indices[i] = i;
     }
   }
 
   @Override
-  protected void backend(DataStore ds) {
+  protected void backend(DataStore dataStore) {
 
-    componentBackends = new GainExperiment[DIMS];
+    componentBackends = new GainExperiment[DIMENSIONS];
     for (int i = 0; i < componentBackends.length; i++) {
       componentBackends[i] = new GainExperiment();
     }
 
-    long interval = ds.getBlock(0).getInterval();
-    long start = ds.getBlock(0).getStartTime();
-    long end = ds.getBlock(0).getEndTime();
+    long interval = dataStore.getBlock(0).getInterval();
+    long start = dataStore.getBlock(0).getStartTime();
+    long end = dataStore.getBlock(0).getEndTime();
 
-    DataStore[] stores = new DataStore[DIMS];
+    DataStore[] stores = new DataStore[DIMENSIONS];
 
     fireStateChange("Separating data into directional components...");
-    for (int i = 0; i < DIMS; ++i) {
+    for (int i = 0; i < DIMENSIONS; ++i) {
       stores[i] = new DataStore();
       for (int j = 0; j < 2; ++j) {
-        stores[i].setBlock(j, ds.getBlock(i + (j * DIMS)));
-        stores[i].setResponse(j, ds.getResponse(i + (j * DIMS)));
+        stores[i].setBlock(j, dataStore.getBlock(i + (j * DIMENSIONS)));
+        stores[i].setResponse(j, dataStore.getResponse(i + (j * DIMENSIONS)));
       }
     }
 
     //first get the first set of data (NSV), then second
-    double[] north1Sensor = ds.getBlock(0).getData();
-    double[] east1Sensor = ds.getBlock(1).getData();
+    double[] north1Sensor = dataStore.getBlock(0).getData();
+    double[] east1Sensor = dataStore.getBlock(1).getData();
 
-    double[] north2Sensor = ds.getBlock(3).getData();
-    double[] east2Sensor = ds.getBlock(4).getData();
+    double[] north2Sensor = dataStore.getBlock(3).getData();
+    double[] east2Sensor = dataStore.getBlock(4).getData();
 
     // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting second north sensor orientation...");
@@ -88,24 +86,18 @@ public class GainSixExperiment extends Experiment {
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
     DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(ds.getBlock(3), ds.getBlock(4), north2Angle);
+        TimeSeriesUtils.rotate(dataStore.getBlock(3), dataStore.getBlock(4), north2Angle);
     stores[0].setBlock(1, north2Rotated);
     DataBlock east2Rotated =
-        TimeSeriesUtils.rotateX(ds.getBlock(3), ds.getBlock(4), east2Angle);
+        TimeSeriesUtils.rotateX(dataStore.getBlock(3), dataStore.getBlock(4), east2Angle);
     stores[1].setBlock(1, east2Rotated);
 
     // now get the datasets to plug into the datastore
     String[] direction = new String[]{"north", "east", "vertical"};
 
-    for (int i = 0; i < DIMS; ++i) {
-
-      StringBuilder state = new StringBuilder("Running calculations on ");
-      state.append(direction[i]);
-      state.append(" components...");
-      fireStateChange(state.toString());
-
+    for (int i = 0; i < DIMENSIONS; ++i) {
+      fireStateChange("Running calculations on " + direction[i] + " components...");
       componentBackends[i].runExperimentOnData(stores[i]);
-
     }
 
     for (Experiment exp : componentBackends) {
@@ -115,12 +107,8 @@ public class GainSixExperiment extends Experiment {
       // also get the names of the data going in for use w/ PDF, metadata
     }
 
-    for (int j = 0; j < componentBackends.length; ++j) {
-      List<String> names = componentBackends[j].getInputNames();
-      for (int i = 0; i < names.size(); i += 2) {
-        dataNames.add(names.get(i));
-        dataNames.add(names.get(i + 1));
-      }
+    for (GainExperiment componentBackend : componentBackends) {
+      dataNames.addAll(componentBackend.getInputNames());
     }
 
 
@@ -190,54 +178,23 @@ public class GainSixExperiment extends Experiment {
     return north2Angle;
   }
 
-
-  /**
-   * Get octave centered around peak of vertical components. We assume
-   * that all three component gain sets have their peaks at nearly the same
-   * points. The vertical sensors are most likely to be useful, as their
-   * data does not need to be rotated as with the north and east sensors.
-   *
-   * @param idx Index of vertical component data to use as reference
-   * @return Upper and lower frequency bound of octave over given peak
-   */
-  public double[] getOctaveCenteredAtPeak(int idx) {
-    // we assume the vertical sensor, as it is not rotated, is
-    return componentBackends[2].getOctaveCenteredAtPeak(idx);
-  }
-
   /**
    * Get the gain mean and deviation values from a specified peak
    * frequency range.
    *
-   * @param idx Index of north component's data to use as reference
+   * @param index Index of north component's data to use as reference
    * @param low Low frequency bound of range to get stats over
    * @param high High frequency bound of range to get stats over
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-  public double[][] getStatsFromFreqs(int idx, double low, double high) {
-    double[][] result = new double[DIMS][];
+  public double[][] getStatsFromFreqs(int index, double low, double high) {
+    double[][] result = new double[DIMENSIONS][];
     // vertical component requires no rotation
 
-    for (int i = 0; i < DIMS; ++i) {
-      result[i] = componentBackends[i].getStatsFromFreqs(idx, low, high);
+    for (int i = 0; i < DIMENSIONS; ++i) {
+      result[i] = componentBackends[i].getStatsFromFreqs(index, low, high);
     }
-
     return result;
-  }
-
-
-  /**
-   * Get the gain mean and deviation values from the peak frequency of the
-   * given dataset; the range for stats is the octave centered at the peak.
-   *
-   * @param idx Index of north component's data to use as reference
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
-   */
-  public double[][] getStatsFromPeak(int idx) {
-
-    double[] octave = getOctaveCenteredAtPeak(idx);
-    return getStatsFromFreqs(idx, octave[0], octave[1]);
-
   }
 
   @Override

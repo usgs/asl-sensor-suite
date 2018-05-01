@@ -25,8 +25,6 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 /**
- * More specific javadoc will be incoming, but for now a brief explanation
- * of the angle conventions used
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
  * reference sensor assumed to be north. The rotation angle between the
  * reference sensor and the unknown components is solved for via least-squares
@@ -42,7 +40,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  * 'Relative azimuth inversion by way of damped maximum correlation estimates',
  * Elsevier Computers and Geosciences 43 (2012)
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class AzimuthExperiment extends Experiment {
 
@@ -50,10 +48,8 @@ public class AzimuthExperiment extends Experiment {
 
   private double latestCorrelation = 0.; // cache correlation estimates during windowing
 
-  private double angle, uncert;
-  // private double[] freqs;
+  private double angle, uncertainty;
 
-  // private double[] coherence;
   private double[] correlations; // best-fit correlations used to find windows w/ good estimates
   private double[] angles;
   private List<Double> acceptedAngles;
@@ -61,7 +57,7 @@ public class AzimuthExperiment extends Experiment {
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
 
-  public AzimuthExperiment() {
+  AzimuthExperiment() {
     super();
     simpleCalc = false;
   }
@@ -72,34 +68,34 @@ public class AzimuthExperiment extends Experiment {
    *
    * @param testNorth timeseries data from presumed north-facing test sensor
    * @param testEast timeseries data from presumed east-facing test sensor
-   * @param refNorth timeseries data from known north-facing sensor
+   * @param referenceNorth timeseries data from known north-facing sensor
    * @param interval sampling interval of data
    * @param start start time of data
    * @param end end time of data
    */
   protected void alternateEntryPoint(
       double[] testNorth, double[] testEast,
-      double[] refNorth, long interval, long start, long end) {
-    dataNames = new ArrayList<String>();
+      double[] referenceNorth, long interval, long start, long end) {
+    dataNames = new ArrayList<>();
     dataNames.add("N");
     dataNames.add("E");
     dataNames.add("R");
     simpleCalc = true;
 
-    backend(testNorth.clone(), testEast.clone(), refNorth.clone(),
+    backend(testNorth.clone(), testEast.clone(), referenceNorth.clone(),
         interval, start, end);
   }
 
   @Override
-  protected void backend(final DataStore ds) {
+  protected void backend(final DataStore dataStore) {
     // assume the first two are the reference and the second two are the test
     // we just need the timeseries, don't actually care about response
 
-    DataBlock testNorthBlock = ds.getXthLoadedBlock(1);
-    DataBlock testEastBlock = ds.getXthLoadedBlock(2);
-    DataBlock refNorthBlock = ds.getXthLoadedBlock(3);
+    DataBlock testNorthBlock = dataStore.getXthLoadedBlock(1);
+    DataBlock testEastBlock = dataStore.getXthLoadedBlock(2);
+    DataBlock refNorthBlock = dataStore.getXthLoadedBlock(3);
 
-    dataNames = new ArrayList<String>();
+    dataNames = new ArrayList<>();
     dataNames.add(testNorthBlock.getName());
     dataNames.add(testEastBlock.getName());
     dataNames.add(refNorthBlock.getName());
@@ -154,13 +150,13 @@ public class AzimuthExperiment extends Experiment {
     // should there be a normalization step here?
 
     // data will be downsampled to 1 if > 1Hz rate, else will keep sample rate from input
-    double sps = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / interval);
+    double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / interval);
     double low = 1. / 8; // filter from 8 seconds interval
     double high = 1. / 3; // up to 3 seconds interval
 
-    initTestNorth = FFTResult.bandFilter(initTestNorth, sps, low, high);
-    initTestEast = FFTResult.bandFilter(initTestEast, sps, low, high);
-    initRefNorth = FFTResult.bandFilter(initRefNorth, sps, low, high);
+    initTestNorth = FFTResult.bandFilter(initTestNorth, samplesPerSecond, low, high);
+    initTestEast = FFTResult.bandFilter(initTestEast, samplesPerSecond, low, high);
+    initRefNorth = FFTResult.bandFilter(initRefNorth, samplesPerSecond, low, high);
 
     MultivariateJacobianFunction jacobian =
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
@@ -182,24 +178,17 @@ public class AzimuthExperiment extends Experiment {
 
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
-    double tempAngle = angleVector.getEntry(0);
-    tempAngle = ((tempAngle % NumericUtils.TAU) + NumericUtils.TAU)
+    double bestGuessAngle = angleVector.getEntry(0);
+    bestGuessAngle = ((bestGuessAngle % NumericUtils.TAU) + NumericUtils.TAU)
         % NumericUtils.TAU;
 
-    String newStatus = "Found initial guess for angle: " + tempAngle;
-    fireStateChange(newStatus);
-
-    // how much data we need (i.e., iteration length) to check 10 seconds
-    // used when checking if alignment is off by 180 degrees
-    // int tenSecondsLength = (int)  ( sps * 10 ) + 1;
-    // int antipolarTrimLen = tenSecondsLength * 100; // thousand secs?
+    fireStateChange("Found initial guess for angle: " + bestGuessAngle);
 
     if (simpleCalc) {
-
       // used for orthogonality & multi-component self-noise and gain
       // where a 'pretty good' estimate of the angle is all we need
       // just stop here, don't do windowing
-      angle = tempAngle;
+      angle = bestGuessAngle;
       return;
     }
 
@@ -212,8 +201,8 @@ public class AzimuthExperiment extends Experiment {
     // first double -- angle estimate over window
     // second double -- correlation from that estimate over the window
     Map<Long, Pair<Double, Double>> angleCorrelationMap =
-        new HashMap<Long, Pair<Double, Double>>();
-    List<Double> sortedCorrelation = new ArrayList<Double>();
+        new HashMap<>();
+    List<Double> sortedCorrelation = new ArrayList<>();
 
     // want (correlation-1+damping) to be as close to 0 as possible
     RealVector target = MatrixUtils.createRealVector(new double[]{0});
@@ -222,24 +211,17 @@ public class AzimuthExperiment extends Experiment {
     // for the purpose of providing damped estimates
     // (improves susceptibility to noise)
     double bestCorr = jacobian.value(angleVector).getFirst().getEntry(0);
-    double bestTheta = tempAngle;
+    double bestTheta = bestGuessAngle;
     final long twoThouSecs = 2000L * TimeSeriesUtils.ONE_HZ_INTERVAL;
     // 1000 ms per second, range length
-    final long fiveHundSecs = twoThouSecs / 4L; // distance between windows
-    int numWindows = (int) ((timeRange - twoThouSecs) / fiveHundSecs);
+    final long fiveHundredSecs = twoThouSecs / 4L; // distance between windows
+    int numWindows = (int) ((timeRange - twoThouSecs) / fiveHundredSecs);
     // look at 2000s windows, sliding over 500s of data at a time
     for (int i = 0; i < numWindows; ++i) {
-      StringBuilder sb = new StringBuilder();
-      sb.append("Fitting angle over data in window ");
-      sb.append(i + 1);
-      sb.append(" of ");
-      sb.append(numWindows);
-      newStatus = sb.toString();
-
-      fireStateChange(newStatus);
+      fireStateChange("Fitting angle over data in window " + (i + 1) + " of " + numWindows);
 
       // get start and end indices from given times
-      long wdStart = fiveHundSecs * i; // start of 500s-sliding window
+      long wdStart = fiveHundredSecs * i; // start of 500s-sliding window
       long wdEnd = wdStart + twoThouSecs; // end of window (2000s long)
 
       int startIdx = (int) (wdStart / interval);
@@ -253,9 +235,9 @@ public class AzimuthExperiment extends Experiment {
       testEastWin = TimeSeriesUtils.detrend(testEastWin);
       refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
 
-      testNorthWin = FFTResult.bandFilter(testNorthWin, sps, low, high);
-      testEastWin = FFTResult.bandFilter(testEastWin, sps, low, high);
-      refNorthWin = FFTResult.bandFilter(refNorthWin, sps, low, high);
+      testNorthWin = FFTResult.bandFilter(testNorthWin, samplesPerSecond, low, high);
+      testEastWin = FFTResult.bandFilter(testEastWin, samplesPerSecond, low, high);
+      refNorthWin = FFTResult.bandFilter(refNorthWin, samplesPerSecond, low, high);
 
       jacobian =
           getDampedJacobianFunction(testNorthWin, testEastWin, refNorthWin, bestCorr, bestTheta);
@@ -274,29 +256,30 @@ public class AzimuthExperiment extends Experiment {
       RealVector angleVectorWindow = optimumY.getPoint();
       findAngleWindow.evaluate(angleVectorWindow);
       // call to evaluate at best-fit point gives corresponding latestCorrelation as side effect
-      double angleTemp = angleVectorWindow.getEntry(0);
+      double currentWindowAngle = angleVectorWindow.getEntry(0);
 
-      angleTemp = ((angleTemp % tau) + tau) % tau;
+      currentWindowAngle = ((currentWindowAngle % tau) + tau) % tau;
 
       double correlation = latestCorrelation;
 
       if (correlation > bestCorr) {
         bestCorr = correlation;
-        bestTheta = angleTemp;
+        bestTheta = currentWindowAngle;
       }
 
-      angleCorrelationMap.put(
-          wdStart, new Pair<Double, Double>(angleTemp, correlation));
+      angleCorrelationMap.put(wdStart, new Pair<>(currentWindowAngle, correlation));
       sortedCorrelation.add(correlation);
     }
 
     int minCorrelations = 5;
     angles = new double[]{};
     correlations = new double[]{};
-    // TODO: can refactor this to break out if numWindows is < 5
     if (angleCorrelationMap.size() < minCorrelations) {
       fireStateChange("Window size too small for good angle estimation...");
-      angle = tempAngle % tau; // tempAngle is the initial estimate from before windowing occurs
+
+      // The initial best estimate from before windowing occurs
+      angle = bestGuessAngle % tau;
+
     } else {
       // get the best-correlation estimations of angle and average them
       enoughPts = true;
@@ -309,13 +292,13 @@ public class AzimuthExperiment extends Experiment {
       minCorr = sortedCorrelation.get(sortedCorrelation.size() - 1);
 
       // store good values for use in std dev calculation
-      acceptedAngles = new ArrayList<Double>();
+      acceptedAngles = new ArrayList<>();
 
       // deal with wraparound issue
       correlations = new double[angleCorrelationMap.size()];
       angles = new double[angleCorrelationMap.size()];
 
-      List<Long> times = new ArrayList<Long>(angleCorrelationMap.keySet());
+      List<Long> times = new ArrayList<>(angleCorrelationMap.keySet());
       Collections.sort(times);
 
       for (int i = 0; i < times.size(); ++i) {
@@ -345,15 +328,15 @@ public class AzimuthExperiment extends Experiment {
       }
       averageAngle /= acceptedAngles.size();
 
-      uncert = 0.;
+      uncertainty = 0.;
 
       // now get standard deviation
       for (double angle : acceptedAngles) {
-        uncert += Math.pow(angle - averageAngle, 2);
+        uncertainty += Math.pow(angle - averageAngle, 2);
       }
 
-      uncert = Math.sqrt(uncert / acceptedAngles.size());
-      uncert *= 2; // two-sigma gets us 95% confidence interval
+      uncertainty = Math.sqrt(uncertainty / acceptedAngles.size());
+      uncertainty *= 2; // two-sigma gets us 95% confidence interval
 
       // do this calculation to get plot of freq/correlation, a side effect
       // of running evaluation at the given point; this will be plotted
@@ -383,23 +366,21 @@ public class AzimuthExperiment extends Experiment {
     fromNorth.add(offset, 1);
     fromNorth.add(offset, 0);
 
-    // xySeriesData = new XYSeriesCollection();
-    XYSeriesCollection xysc = new XYSeriesCollection();
-    xysc.addSeries(ref);
-    xysc.addSeries(set);
-    xysc.addSeries(fromNorth);
-    xySeriesData.add(xysc);
+    XYSeriesCollection plotTimeseries = new XYSeriesCollection();
+    plotTimeseries.addSeries(ref);
+    plotTimeseries.addSeries(set);
+    plotTimeseries.addSeries(fromNorth);
+    xySeriesData.add(plotTimeseries);
 
-    xysc = new XYSeriesCollection();
+    plotTimeseries = new XYSeriesCollection();
     XYSeries timeMapAngle = new XYSeries("Best-fit angle per window (not including ref. shift)");
     XYSeries timeMapCorrelation = new XYSeries("Correlation estimate per window");
-    xysc.addSeries(timeMapAngle);
-    xysc.addSeries(timeMapCorrelation);
+    plotTimeseries.addSeries(timeMapAngle);
+    plotTimeseries.addSeries(timeMapCorrelation);
 
     for (int i = 0; i < angles.length; ++i) {
       long xVal = i * 500;
       double angle = angles[i];
-      // angle += Math.toRadians(offset);
       angle = (angle % tau);
       double correlation = correlations[i];
       timeMapCorrelation.add(xVal, correlation);
@@ -442,14 +423,19 @@ public class AzimuthExperiment extends Experiment {
     return correlations;
   }
 
-  // This is the damped jacobian function for windowed estimates
-  // we use a different cost function for initial estimate since using the
-  // squared correlation would make x, 180+x produce the same values
+  /**
+   * This is the damped jacobian function for windowed estimates
+   * we use a different cost function for initial estimate since using the
+   * squared correlation would make x, 180+x produce the same values
+   *
+   * @return Jacobian Function
+   */
   private MultivariateJacobianFunction
   getDampedJacobianFunction(double[] l1, double[] l2, double[] l3, double cr, double th) {
 
     // make my func the j-func, I want that func-y stuff
-    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
+
+    return new MultivariateJacobianFunction() {
 
       final double[] finalTestNorth = l1;
       final double[] finalTestEast = l2;
@@ -466,10 +452,7 @@ public class AzimuthExperiment extends Experiment {
             bestCorr,
             bestTheta);
       }
-
     };
-
-    return jFunc;
   }
 
   /**
@@ -506,7 +489,7 @@ public class AzimuthExperiment extends Experiment {
 
     // make my func the j-func, I want that func-y stuff
     // make my func the j-func, I want that func-y stuff
-    MultivariateJacobianFunction jFunc = new MultivariateJacobianFunction() {
+    return new MultivariateJacobianFunction() {
 
       final double[] finalTestNorth = l1;
       final double[] finalTestEast = l2;
@@ -520,7 +503,6 @@ public class AzimuthExperiment extends Experiment {
             finalTestEast);
       }
     };
-    return jFunc;
   }
 
   /**
@@ -547,7 +529,7 @@ public class AzimuthExperiment extends Experiment {
    * @return Uncertainty estimation of the current angle (from variance)
    */
   public double getUncertainty() {
-    return Math.toDegrees(uncert);
+    return Math.toDegrees(uncertainty);
   }
 
   /**
@@ -560,9 +542,9 @@ public class AzimuthExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if (!ds.blockIsSet(i)) {
+      if (!dataStore.blockIsSet(i)) {
         return false;
       }
     }
@@ -586,14 +568,14 @@ public class AzimuthExperiment extends Experiment {
     double[] rotatedDiff =
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
 
-    PearsonsCorrelation pc = new PearsonsCorrelation();
-    double value = pc.correlation(refNorth, testRotated);
+    PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
+    double value = pearsonsCorrelation.correlation(refNorth, testRotated);
     RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
-    double deltaY = pc.correlation(refNorth, rotatedDiff);
+    double deltaY = pearsonsCorrelation.correlation(refNorth, rotatedDiff);
     double change = (deltaY - value) / diff;
     double[][] jacobianArray = new double[][]{{change}};
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
-    return new Pair<RealVector, RealMatrix>(valueVec, jacobian);
+    return new Pair<>(valueVec, jacobian);
 
   }
 
@@ -637,19 +619,19 @@ public class AzimuthExperiment extends Experiment {
     double[] rotatedDiff =
         TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
 
-    PearsonsCorrelation pc = new PearsonsCorrelation();
-    double value = pc.correlation(refNorth, testRotated);
+    PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
+    double value = pearsonsCorrelation.correlation(refNorth, testRotated);
     latestCorrelation = value;
     double damping = (bestCorr - 1) * (theta - bestTheta);
     value = Math.pow(value - 1 + damping, 2);
     RealVector valueVec = MatrixUtils.createRealVector(new double[]{value});
-    double deltaY = pc.correlation(refNorth, rotatedDiff);
+    double deltaY = pearsonsCorrelation.correlation(refNorth, rotatedDiff);
     damping = (bestCorr - 1) * (thetaDelta - bestTheta);
     deltaY = Math.pow(deltaY - 1 + damping, 2);
     double change = (deltaY - value) / diff;
     double[][] jacobianArray = new double[][]{{change}};
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
-    return new Pair<RealVector, RealMatrix>(valueVec, jacobian);
+    return new Pair<>(valueVec, jacobian);
 
   }
 

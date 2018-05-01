@@ -1,12 +1,9 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.NumericUtils;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -63,7 +60,6 @@ public class GainExperiment extends Experiment {
   }
 
   private double[] gainStage1;
-  private double[] otherGainStages; // product of gain stages 2 and up
   private FFTResult[] fftResults;
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
   private double ratio, sigma;
@@ -105,7 +101,6 @@ public class GainExperiment extends Experiment {
     }
 
     gainStage1 = new double[NUMBER_TO_LOAD];
-    otherGainStages = new double[NUMBER_TO_LOAD];
 
     fireStateChange("Accumulating gain values...");
     // InstrumentResponse[] resps = ds.getResponses();
@@ -117,11 +112,9 @@ public class GainExperiment extends Experiment {
       for (int j = 2; j < gains.length; ++j) {
         accumulator *= gains[j];
       }
-      otherGainStages[i] = accumulator;
     }
 
     fftResults = new FFTResult[NUMBER_TO_LOAD];
-    List<DataBlock> blocksPlotting = new ArrayList<DataBlock>();
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.setAutoWidth(true);
 
@@ -135,7 +128,6 @@ public class GainExperiment extends Experiment {
       double[] freqs = fftResults[i].getFreqs();
       // false, because we don't want to plot in frequency space
       addToPlot(xys, fft, freqs, false, xysc);
-      blocksPlotting.add(ds.getBlock(idx));
     }
 
     fireStateChange("Getting NLNM data...");
