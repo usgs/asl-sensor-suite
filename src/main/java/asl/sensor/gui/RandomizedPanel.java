@@ -1,10 +1,5 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.experiment.ResponseExperiment;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -17,7 +12,12 @@ import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.complex.ComplexFormat;
 import org.jfree.chart.JFreeChart;
@@ -36,6 +36,11 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.VerticalAlignment;
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.ResponseExperiment;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * Panel to display results from a randomized calibration experiment.
@@ -334,9 +339,19 @@ public class RandomizedPanel extends ExperimentPanel {
   private final JComboBox<String> plotSelection;
   private JCheckBox lowFrequencyBox, showParams, frequencySpace;
   private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
+  private JSpinner nyquistMultiplier;
 
   public RandomizedPanel(ExperimentEnum experiment) {
     super(experiment);
+
+    SpinnerModel spinModel = new SpinnerNumberModel(80., 30., 80., 1.);
+    nyquistMultiplier = new JSpinner(spinModel);
+    JLabel nyquistMultiplierLabel = new JLabel("% bound of nyquist for HF cals");
+    nyquistMultiplierLabel.setLabelFor(nyquistMultiplier);
+    nyquistMultiplierLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
+    nyquistMultiplierLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+    JPanel labelPanel = new JPanel();
+    labelPanel.add(nyquistMultiplierLabel);
 
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
@@ -381,21 +396,43 @@ public class RandomizedPanel extends ExperimentPanel {
     constraints.gridx += 1;
     constraints.weightx = 1.0;
     constraints.fill = GridBagConstraints.NONE;
-    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.anchor = GridBagConstraints.SOUTH;
     this.add(save, constraints);
 
     // plot selection combo box
-    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.fill = GridBagConstraints.BOTH;
     constraints.gridx += 1;
     constraints.weightx = 0;
-    constraints.anchor = GridBagConstraints.WEST;
+    constraints.anchor = GridBagConstraints.EAST;
     plotSelection = new JComboBox<>();
     plotSelection.addItem(ResponseExperiment.MAGNITUDE);
     plotSelection.addItem(ResponseExperiment.ARGUMENT);
     plotSelection.addItem("Residual amplitude plot");
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
-    this.add(plotSelection, constraints);
+    JPanel rightSidePanel = new JPanel();
+    rightSidePanel.setLayout(new GridBagLayout());
+    GridBagConstraints rightSideConstraints = new GridBagConstraints();
+    rightSideConstraints.fill = GridBagConstraints.NONE;
+    rightSideConstraints.anchor = GridBagConstraints.CENTER;
+    rightSideConstraints.weightx = 0;
+    rightSideConstraints.weighty = 0;
+    rightSideConstraints.gridy = 0;
+    rightSideConstraints.gridx = 0;
+    rightSideConstraints.gridwidth = 1;
+    rightSidePanel.add(nyquistMultiplier, rightSideConstraints);
+    rightSideConstraints.gridx += 1;
+    rightSideConstraints.fill = GridBagConstraints.BOTH;
+    rightSideConstraints.anchor = GridBagConstraints.EAST;
+    rightSidePanel.add(nyquistMultiplierLabel, rightSideConstraints);
+    rightSideConstraints.weightx = 1;
+    rightSideConstraints.weighty = 1;
+    rightSideConstraints.gridwidth = 2;
+    rightSideConstraints.gridx = 0;
+    rightSideConstraints.gridy += 1;
+    rightSidePanel.add(plotSelection, rightSideConstraints);
+    constraints.fill = GridBagConstraints.BOTH;
+    this.add(rightSidePanel, constraints);
   }
 
   @Override
@@ -642,9 +679,13 @@ public class RandomizedPanel extends ExperimentPanel {
     final boolean isLowFreq = lowFrequencyBox.isSelected();
     seriesColorMap = new HashMap<>();
 
+    // we display as % but backend expects this to be used
+    double multiplier = (double) nyquistMultiplier.getValue() / 100.;
+
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
     rndExp.setLowFreq(isLowFreq);
     rndExp.useFreqUnits(frequencySpace.isSelected());
+    rndExp.setNyquistMultiplier(multiplier);
     expResult.runExperimentOnData(dataStore);
 
     String appendFreqTitle;

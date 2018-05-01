@@ -105,6 +105,7 @@ public class RandomizedExperiment
   private boolean freqSpace;
 
   private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
+  private double nyquistMultiplier; // region up to nyquist to take for data
 
   private static final double ZERO_TARGET = 0.02; // location of value to set to 0 in curves for scaling
   private int numZeros; // how many entries in parameter vector define zeros
@@ -115,6 +116,7 @@ public class RandomizedExperiment
     lowFreq = false;
     numIterations = 0;
     freqSpace = true;
+    nyquistMultiplier = PEAK_MULTIPLIER;
   }
 
   /*
@@ -174,7 +176,7 @@ public class RandomizedExperiment
     } else {
       minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
       // get factor of nyquist rate, again due to noise
-      maxFreq = PEAK_MULTIPLIER * nyquist;
+      maxFreq = nyquistMultiplier * nyquist;
       extFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist; // i.e., 80% of nyquist
       // maxFreq = extFreq;
     }
@@ -327,8 +329,8 @@ public class RandomizedExperiment
     // variable. (we also need to ignore conjugate values, for constraints)
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
 
-    initialPoleGuess = fitResponse.polesToVector(lowFreq, nyquist);
-    initialZeroGuess = fitResponse.zerosToVector(lowFreq, nyquist);
+    initialPoleGuess = fitResponse.polesToVector(lowFreq, nyquistMultiplier * nyquist);
+    initialZeroGuess = fitResponse.zerosToVector(lowFreq, nyquistMultiplier * nyquist);
     numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
 
@@ -820,6 +822,21 @@ public class RandomizedExperiment
     // NOTE: not used by corresponding panel, overrides with active indices
     // of components in the combo-box
     return new int[]{1};
+  }
+
+  /**
+   * Set the new peak multiplier for the data region under analysis.
+   * This should be a positive value, and is bounded by 0.8 (@see NumericUtils.PEAK_MULTIPLIER)
+   * This may be useful when trying to run the solver over a high-frequency calibration where
+   * the data is particularly noisy in some of the higher-frequency bounds, causing a bad corner
+   * fit to occur. We also enforce this to be over 0.3 as well.
+   * @param newMultiplier New maximum fraction of nyquist rate to fit data over (should be
+   * from 0.3 to 0.8).
+   */
+  public void setNyquistMultiplier(double newMultiplier) {
+    System.out.println("NEW MULTIPLIER PASSED: " + newMultiplier);
+    nyquistMultiplier = Math.min(newMultiplier, PEAK_MULTIPLIER);
+    nyquistMultiplier = Math.max(0.3, nyquistMultiplier);
   }
 
   private void scaleValues(double[] unrot) {
