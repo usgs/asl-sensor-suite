@@ -7,18 +7,14 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import asl.sensor.test.TestUtils;
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.Test;
 import asl.sensor.gui.InputPanel;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import org.junit.Test;
 
 public class DataStoreTest {
 
@@ -27,13 +23,13 @@ public class DataStoreTest {
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
-  public String fileID = station+"_"+location+"_"+channel+".512.seed";
+  public String fileID = station + "_" + location + "_" + channel + ".512.seed";
 
   @Test
-  public void trim_BCIPData_timeAndLengthMatch() {
+  public void trim_BCIPData_timeAndLengthMatch_firstValuesMatch() {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
-    String calName =  dataFolderName + "CB_BC0.512.seed";
+    String calName = dataFolderName + "CB_BC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
 
     DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
@@ -52,8 +48,27 @@ public class DataStoreTest {
     assertEquals(start, ds.getBlock(1).getStartTime());
     assertEquals(end, ds.getBlock(1).getEndTime());
 
-    assertEquals(180000, ds.getBlock(0).getData().length);
-    assertEquals(180000, ds.getBlock(1).getData().length);
+    double[] dataIn = ds.getBlock(0).getData();
+    double[] dataOut = ds.getBlock(1).getData();
+
+    assertEquals(180000, dataIn.length);
+    assertEquals(180000, dataOut.length);
+    double[] dataOutFrontExpected = {3144, 3193, 3444, 5648, 13154, 23191, 30286, 34405, 34299,
+        28745};
+    double[] dataInFrontExpected = {19794, 28962, 259083, 561389, 581833, 488582, 333575, -57416,
+        -276434, -142344};
+
+    double[] dataInBackExpected = {1074917, 1407337, 1224311, 807605, 385362, -27351,
+        -128151, 18800, -84357, -145258};
+    double[] dataOutBackExpected = {256572, 235521, 217799, 205593, 202182, 204611, 204693,
+        204504, 208574, 210550};
+
+    for (int i = 0; i < 10; i++) {
+      assertEquals(dataOutFrontExpected[i], dataOut[i], 1E-5);
+      assertEquals(dataInFrontExpected[i], dataIn[i], 1E-5);
+      assertEquals(dataOutBackExpected[i], dataOut[180000 - 1 - i], 1E-5);
+      assertEquals(dataInBackExpected[i], dataIn[180000 - 1 - i], 1E-5);
+    }
   }
 
   @Test
@@ -83,10 +98,10 @@ public class DataStoreTest {
       // function under test
       ds.trimToCommonTime();
 
-      assertEquals( ds.getBlock(1).getStartTime(), loc1);
-      assertEquals( ds.getBlock(1).getEndTime(), loc2);
-      assertEquals( db.size(), ds.getBlock(1).size() );
-      assertNotEquals( db.size(), oldSize );
+      assertEquals(ds.getBlock(1).getStartTime(), loc1);
+      assertEquals(ds.getBlock(1).getEndTime(), loc2);
+      assertEquals(db.size(), ds.getBlock(1).size());
+      assertNotEquals(db.size(), oldSize);
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
@@ -120,12 +135,12 @@ public class DataStoreTest {
     ds.setBlock(1, block40Hz);
     ds.matchIntervals();
 
-    assertEquals( ds.getBlock(1).getInterval(), interval25Hz );
-    assertEquals( ds.getBlock(0).size(), ds.getBlock(1).size() );
+    assertEquals(ds.getBlock(1).getInterval(), interval25Hz);
+    assertEquals(ds.getBlock(0).size(), ds.getBlock(1).size());
     // make sure that the data has been initialized (i.e., not all 0)
     // if data wasn't being set correctly, result would be all zeros
     boolean notAllZero = false;
-    for ( Number val : ds.getBlock(1).getData() ) {
+    for (Number val : ds.getBlock(1).getData()) {
       if (val.doubleValue() != 0.) {
         notAllZero = true;
       }
