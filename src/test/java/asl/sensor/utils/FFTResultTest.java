@@ -815,4 +815,11 @@ public class FFTResultTest {
     }
   }
 
+  @Test
+  public void findFFTPaddingLength_standardValues() {
+    assertEquals(65536, FFTResult.findFFTPaddingLength(45000));
+    assertEquals(2, FFTResult.findFFTPaddingLength(2));
+    assertEquals(65536, FFTResult.findFFTPaddingLength(65535));
+    assertEquals(65536, FFTResult.findFFTPaddingLength(65536));
+  }
 }
