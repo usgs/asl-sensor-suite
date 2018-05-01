@@ -1,5 +1,7 @@
 package asl.sensor.input;
 
+import static asl.sensor.test.TestUtils.RESP_LOCATION;
+import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -7,6 +9,9 @@ import static org.junit.Assert.fail;
 
 import asl.sensor.test.TestUtils;
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataBlock;
@@ -23,6 +28,33 @@ public class DataStoreTest {
   public String location = "00";
   public String channel = "BH0";
   public String fileID = station+"_"+location+"_"+channel+".512.seed";
+
+  @Test
+  public void trim_BCIPData_timeAndLengthMatch() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String calName =  dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
+    cCal = cCal.withHour(18).withMinute(49).withSecond(0).withNano(0);
+    long start = cCal.toInstant().toEpochMilli();
+
+    cCal = cCal.withHour(19).withMinute(4);
+    long end = cCal.toInstant().toEpochMilli();
+
+    ds.trim(start, end);
+
+    assertEquals(start, ds.getBlock(0).getStartTime());
+    assertEquals(end, ds.getBlock(0).getEndTime());
+
+    assertEquals(start, ds.getBlock(1).getStartTime());
+    assertEquals(end, ds.getBlock(1).getEndTime());
+
+    assertEquals(180000, ds.getBlock(0).getData().length);
+    assertEquals(180000, ds.getBlock(1).getData().length);
+  }
 
   @Test
   public void commonTimeTrimMatchesLength() {
@@ -59,8 +91,6 @@ public class DataStoreTest {
       e.printStackTrace();
       fail();
     }
-
-
   }
 
   @Test
