@@ -46,8 +46,7 @@ import asl.sensor.utils.TimeSeriesUtils;
  *
  * @author akearns - KBRWyle
  */
-public class RandomizedExperiment
-    extends Experiment implements ParameterValidator {
+public class RandomizedExperiment extends Experiment implements ParameterValidator {
 
   /**
    * Get the index of the value closest to a given target frequency in a list assuming the entries
@@ -106,12 +105,12 @@ public class RandomizedExperiment
    * @see asl.sensor.experiment.Experiment#backend(asl.sensor.input.DataStore)
    */
   @Override
-  protected void backend(DataStore ds) {
+  protected void backend(DataStore dataStore) {
     numIterations = 0;
 
-    DataBlock calib = ds.getBlock(0);
-    DataBlock sensorOut = ds.getBlock(1);
-    fitResponse = new InstrumentResponse(ds.getResponse(1));
+    DataBlock calib = dataStore.getBlock(0);
+    DataBlock sensorOut = dataStore.getBlock(1);
+    fitResponse = new InstrumentResponse(dataStore.getResponse(1));
 
     dataNames.add(calib.getName());
     String name = sensorOut.getName();
