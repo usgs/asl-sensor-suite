@@ -458,19 +458,14 @@ public class RandomizedExperimentTest {
 
     assertTrue( rCal.hasEnoughData(ds) );
     rCal.runExperimentOnData(ds);
+    rCal.setLowFreq(false);
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
-        //new Complex(-0.037, 0.037),
-        //new Complex(-0.037, -0.037),
-        new Complex(-374.8, 0),
-        //new Complex(-520.3,0),
-        //new Complex(-1053,-1005),
-        //new Complex(-1053,1005),
-        //new Complex(-13300.0,0),
-        new Complex(34.36739870776367,0),
-        new Complex(-101.17033498402674,388.4469528350759),
-        new Complex(-101.17033498402674,-388.4469528350759),
-        new Complex(-241.33932705943866,0)};
+        new Complex(-306.7741224387797, 0),
+        new Complex(-3.4804079210157486,0),
+        new Complex(-101.27715855875556,-387.9300826976112),
+        new Complex(-101.27715855875556,387.9300826976112)
+    };
     for(int i = 0; i < fitPoles.size(); i++){
       assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
