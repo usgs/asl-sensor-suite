@@ -1,10 +1,13 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.test.TestUtils.RESP_LOCATION;
+import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import asl.sensor.input.DataStoreUtils;
 import asl.sensor.test.TestUtils;
 import java.awt.Font;
 import java.io.File;
@@ -27,9 +30,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 import asl.sensor.CalProcessingServer;
 import asl.sensor.CalProcessingServer.RandData;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.ExperimentFactory;
-import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
@@ -42,32 +42,7 @@ public class RandomizedExperimentTest {
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
   String testRespName = folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
 
-  public DataStore getFromList(List<String> setUpFilenames) throws IOException {
 
-    String respName = setUpFilenames.get(0);
-    String calName = setUpFilenames.get(1);
-    String sensOutName = setUpFilenames.get(2);
-
-    System.out.println(respName);
-    System.out.println(calName);
-    System.out.println(sensOutName);
-
-    InstrumentResponse ir = new InstrumentResponse(respName);
-
-    DataStore ds = new DataStore();
-    try {
-      ds.setBlock(0, calName);
-      ds.setBlock(1, sensOutName);
-    } catch (SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
-
-    ds.setResponse(1, ir);
-
-    return ds;
-
-  }
 
   /*
   @Test
@@ -276,17 +251,12 @@ public class RandomizedExperimentTest {
 
   public DataStore setUpTest1() throws IOException {
 
-    List<String> fileList = new ArrayList<>();
     String respName = testRespName;
     String dataFolderName = folder + "random-high-32+70i/";
     String calName =  dataFolderName + "_EC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
 
-    fileList.add(respName);
-    fileList.add(calName);
-    fileList.add(sensOutName);
-
-    DataStore ds = getFromList(fileList);
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
     OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
 
     cCal = cCal.withMinute(36);
@@ -331,26 +301,6 @@ public class RandomizedExperimentTest {
       String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
       JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
 
-      /*
-      // one-time set of coding to placate Ringler, outputting data
-      double[][] ampRespIn = xysc.get(0).getSeries(0).toArray();
-      double[][] phsRespIn = xysc.get(1).getSeries(0).toArray();
-      double[] freqs = ampRespIn[0];
-      double[] amps = ampRespIn[1];
-      double[] phas = phsRespIn[1];
-      StringBuilder sbTemp = new StringBuilder();
-      for (int i = 0; i < freqs.length; ++i) {
-        sbTemp.append(freqs[i]);
-        sbTemp.append(": ");
-        sbTemp.append(amps[i]);
-        sbTemp.append(", ");
-        sbTemp.append(phas[i]);
-        sbTemp.append("\n");
-      }
-      PrintWriter strOut = new PrintWriter("testResultImages/STS1-power.txt");
-      strOut.write( sbTemp.toString() );
-      strOut.close();
-       */
 
       String xAxisTitle = "Frequency (Hz)";
       NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
@@ -484,4 +434,95 @@ public class RandomizedExperimentTest {
     }
   }
 
+  @Test
+  public void runExperiment_BCIP_HFCalibration() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String calName =  dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
+    cCal = cCal.withHour(18).withMinute(49).withSecond(0).withNano(0);
+    long start = cCal.toInstant().toEpochMilli();
+
+    cCal = cCal.withHour(19).withMinute(4);
+    long end = cCal.toInstant().toEpochMilli();
+
+    ds.trim(start, end);
+
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+
+    rCal.setLowFreq(false);
+
+    assertTrue( rCal.hasEnoughData(ds) );
+    rCal.runExperimentOnData(ds);
+    List<Complex> fitPoles = rCal.getFitPoles();
+    Complex[] expectedPoles = {
+        //new Complex(-0.037, 0.037),
+        //new Complex(-0.037, -0.037),
+        new Complex(-374.8, 0),
+        //new Complex(-520.3,0),
+        //new Complex(-1053,-1005),
+        //new Complex(-1053,1005),
+        //new Complex(-13300.0,0),
+        new Complex(34.36739870776367,0),
+        new Complex(-101.17033498402674,388.4469528350759),
+        new Complex(-101.17033498402674,-388.4469528350759),
+        new Complex(-241.33932705943866,0)};
+    for(int i = 0; i < fitPoles.size(); i++){
+      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
+      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
+    }
+
+
+  }
+
+  @Test
+  public void hasEnoughData_missingInputData() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, null, sensOutName);
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+    assertFalse( rCal.hasEnoughData(ds) );
+  }
+
+  @Test
+  public void hasEnoughData_missingOutputData() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String calName =  dataFolderName + "CB_BC0.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, null);
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+    assertFalse( rCal.hasEnoughData(ds) );
+  }
+
+  @Test
+  public void hasEnoughData_missingBothData() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, null, null);
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+    assertFalse( rCal.hasEnoughData(ds) );
+  }
+
+  @Test
+  public void hasEnoughData_hasEnoughData() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String calName =  dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+    assertTrue( rCal.hasEnoughData(ds) );
+  }
 }
