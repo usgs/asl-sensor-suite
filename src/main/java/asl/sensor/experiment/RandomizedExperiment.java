@@ -62,8 +62,6 @@ public class RandomizedExperiment
     }
 
     double deltaFreq = freqs[1] - freqs[0];
-    // System.out.println(deltaFreq);
-    // System.out.println(targetFreq - freqs[0]);
     int idx = (int) Math.round((targetFreq - freqs[0]) / deltaFreq);
     // in almost all cases the index here should be in the list, but if not, bounds check
     idx = Math.max(idx, 0);
@@ -72,11 +70,6 @@ public class RandomizedExperiment
 
   private static final double DELTA = 1E-12;
   public static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
-  //NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
-
-  public static final boolean PRINT_EVERYTHING = false; // need debugging statements?
-  // bool logic used so that if PRINT_EVERYTHING is false, this won't work
-  private static final boolean OUTPUT_TO_TERMINAL = false;
 
   // To whomever has to maintain this code after I'm gone:
   // I'm sorry, I'm so so sorry
@@ -332,10 +325,6 @@ public class RandomizedExperiment
     initialZeroGuess = fitResponse.zerosToVector(lowFreq, nyquistMultiplier * nyquist);
     numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
-
-    if (OUTPUT_TO_TERMINAL) {
-      System.out.println(Arrays.toString(observedResult));
-    }
 
     // now, solve for the response that gets us the best-fit response curve
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
@@ -710,9 +699,6 @@ public class RandomizedExperiment
    */
   private Pair<RealVector, RealMatrix>
   jacobian(RealVector variables) {
-
-    // variables = validate(variables);
-
     int numVars = variables.getDimension();
 
     double[] currentVars = new double[numVars];
@@ -722,15 +708,6 @@ public class RandomizedExperiment
     }
 
     double[] mag = evaluateResponse(currentVars);
-
-    if (PRINT_EVERYTHING) {
-      String in = Arrays.toString(currentVars);
-      String out = Arrays.toString(mag);
-      if (OUTPUT_TO_TERMINAL) {
-        System.out.println(in);
-        System.out.println(out);
-      }
-    }
 
     double[][] jacobian = new double[mag.length][numVars];
     // now take the backward difference of each value
@@ -767,51 +744,8 @@ public class RandomizedExperiment
 
     RealVector result = MatrixUtils.createRealVector(mag);
     RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
-    if (OUTPUT_TO_TERMINAL) {
-      // currently only looking at data about the sign of the jacobian
-      int colDim = jMat.getColumnDimension();
-      double[] rmsJbn = new double[colDim];
-      for (int i = 0; i < colDim; ++i) {
-        RealVector v = jMat.getColumnVector(i);
-        double rms = 0.;
-        int numPositive = 0;
-        int numNegative = 0;
-        for (int j = 0; j < v.getDimension(); ++j) {
-          double entry = v.getEntry(j);
-          rms += Math.pow(entry, 2);
-          if (entry < 0.) {
-            ++numPositive;
-          } else if (entry > 0.) {
-            ++numNegative;
-          }
-        }
-        rms /= v.getDimension();
-        rms = Math.sqrt(rms);
-        String init = "Jacobian value for variable " + i;
-        if (numPositive > numNegative) {
-          System.out.println(init + " is mostly positive.");
-          System.out.println("Values: " + numPositive + ", " + numNegative);
-        } else if (numPositive < numNegative) {
-          System.out.println(init + " is mostly negative.");
-          System.out.println("Values: " + numPositive + ", " + numNegative);
-        } else {
-          System.out.println(init + " has equal +/-.");
-          System.out.println("Values: " + numPositive + ", " + numNegative);
-        }
-        System.out.println("The RMS value is " + rms);
-      }
-
-      // get the residual values and print that out
-      double resid = 0.;
-      for (int i = 0; i < mag.length; ++i) {
-        double sumSqd = Math.pow(mag[i] - observedResult[i], 2);
-        resid += weights[i] * sumSqd;
-      }
-      System.out.println("Current residual: " + resid);
-    }
 
     return new Pair<>(result, jMat);
-
   }
 
   @Override
