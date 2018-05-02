@@ -44,7 +44,7 @@ import asl.sensor.utils.TimeSeriesUtils;
  * "Estimating Pole-Zero Errors in GSN-IRIS/USGS Network Calibration Metadata",
  * Bulletin of the Seismological Society of America, Vol 102 (Apr. 2012).
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class RandomizedExperiment
     extends Experiment implements ParameterValidator {
@@ -70,12 +70,6 @@ public class RandomizedExperiment
 
   private static final double DELTA = 1E-12;
   public static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
-
-  // To whomever has to maintain this code after I'm gone:
-  // I'm sorry, I'm so so sorry
-  // I suppose it's a little neater now that some functions are part of the
-  // response class? It's still inherently nasty due to issues relating to
-  // converting complex lists into arrays of doubles in order to use the solver
 
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
@@ -187,7 +181,6 @@ public class RandomizedExperiment
     int normalIdx = getIndexOfFrequency(freqs, zeroTarget);
 
     // trim the PSDs to the data in the trimmed frequency range
-    // System.out.println("INDICES: " + startIdx + "," + endIdx);
     Complex[] numeratorPSDVals = numeratorPSD.getFFT();
     Complex[] denominatorPSDVals = denominatorPSD.getFFT();
     Complex[] crossPSDVals = crossPSD.getFFT();
@@ -220,7 +213,7 @@ public class RandomizedExperiment
     untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude,
         smoothingPoints, !lowFreq);
     // phase smoothing also includes an unwrapping step
-    untrimmedPhase = NumericUtils.unwrapList(untrimmedPhase);
+    untrimmedPhase = NumericUtils.unwrapArray(untrimmedPhase);
     untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, smoothingPoints,
         !lowFreq);
 
@@ -265,7 +258,7 @@ public class RandomizedExperiment
       observedResult[i] = amp;
       observedResult[argIdx] = phs;
       calcMag.add(xAxis, amp);
-      calcArg.add(xAxis, rewrapPhase(phs));
+      calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs));
     }
 
     maxMagWeight = 1000 / maxMagWeight;
@@ -307,7 +300,7 @@ public class RandomizedExperiment
       phs -= phsScale;
       // add to plot (re-wrap phase)
       calcMag.add(xAxis, amp);
-      calcArg.add(xAxis, rewrapPhase(phs) );
+      calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs) );
     }
 
 
@@ -441,10 +434,10 @@ public class RandomizedExperiment
       int argIdx = initialValues.length / 2 + i;
       double plotArg;
       initMag.add(xValue, initialValues[i]);
-      plotArg = rewrapPhase(initialValues[argIdx]);
+      plotArg = NumericUtils.rewrapAngleDegrees(initialValues[argIdx]);
       initArg.add(xValue, plotArg);
       fitMag.add(xValue, fitValues[i]);
-      plotArg = rewrapPhase(fitValues[argIdx]);
+      plotArg = NumericUtils.rewrapAngleDegrees(fitValues[argIdx]);
       fitArg.add(xValue, plotArg);
 
       if (i < freqs.length) {
@@ -835,15 +828,4 @@ public class RandomizedExperiment
     }
     return poleParams;
   }
-
-  private double rewrapPhase(double phi) {
-    while (phi < -180) {
-      phi += 360;
-    }
-    while (phi > 180) {
-      phi -= 360;
-    }
-    return phi;
-  }
-
 }
