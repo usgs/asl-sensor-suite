@@ -77,16 +77,11 @@ public class RandomizedExperiment
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
 
-  // when true, doesn't run solver, in event parameters have an issue
-  // (does the solver seem to have frozen? try rebuilding with this as true,
-  // and then run the plot -- show nominal resp. and estimated curves)
-  public final boolean SKIP_SOLVING = false;
-
   private boolean lowFreq; // fit the low- or high-frequency poles?
 
   private InstrumentResponse fitResponse;
 
-  private double[] freqs, observedResult, weights;
+  private double[] freqs;
 
   private boolean freqSpace;
 
@@ -112,9 +107,6 @@ public class RandomizedExperiment
    */
   @Override
   protected void backend(DataStore ds) {
-
-    boolean dontSolve = getSolverState(); // true if we should NOT run solver
-
     numIterations = 0;
 
     DataBlock calib = ds.getBlock(0);
@@ -233,8 +225,8 @@ public class RandomizedExperiment
     // get the data at the normalized index, use this to scale the data
     double ampScale = plottedAmp[normalIdx];
     double phsScale = plottedPhs[normalIdx];
-    observedResult = new double[2 * freqs.length]; // fit curve, amplitude then phase
-    weights = new double[observedResult.length];
+    double[] observedResult = new double[2 * freqs.length];
+    double[] weights = new double[observedResult.length];
     maxArgWeight = 1;
     maxMagWeight = 0;
     for (int i = 0; i < freqs.length; ++i) {
@@ -380,17 +372,13 @@ public class RandomizedExperiment
 
     RealVector finalResultVector;
 
-    if (!dontSolve) {
-      LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
-      finalResultVector = optimum.getPoint();
-      numIterations = optimum.getIterations();
-    } else {
-      finalResultVector = initialGuess;
-    }
+    LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+    finalResultVector = optimum.getPoint();
+    numIterations = optimum.getIterations();
 
-    LeastSquaresProblem.Evaluation optimum = lsp.evaluate(finalResultVector);
-    fitResidual = optimum.getCost();
-    double[] fitParams = optimum.getPoint().toArray();
+    LeastSquaresProblem.Evaluation evaluation = lsp.evaluate(finalResultVector);
+    fitResidual = evaluation.getCost();
+    double[] fitParams = evaluation.getPoint().toArray();
     // get results from evaluating the function at the two points
 
 
@@ -470,34 +458,24 @@ public class RandomizedExperiment
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.addSeries(initMag);
     xysc.addSeries(calcMag);
-    if (!dontSolve) {
-      xysc.addSeries(fitMag);
-    }
-
+    xysc.addSeries(fitMag);
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
     xysc.addSeries(initArg);
     xysc.addSeries(calcArg);
-    if (!dontSolve) {
-      xysc.addSeries(fitArg);
-    }
+    xysc.addSeries(fitArg);
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidMag);
-    if (!dontSolve) {
-      xysc.addSeries(fitResidMag);
-    }
+    xysc.addSeries(fitResidMag);
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidPhase);
-    if (!dontSolve) {
-      xysc.addSeries(fitResidPhase);
-    }
+    xysc.addSeries(fitResidPhase);
     xySeriesData.add(xysc);
-
   }
 
   @Override
@@ -654,16 +632,6 @@ public class RandomizedExperiment
 
   public double getMaxFitFrequency() {
     return freqs[freqs.length - 1];
-  }
-
-  /**
-   * Used to determine whether to run the solver or not; disabling the solver
-   * is useful for determining the quality of a given calibration function
-   *
-   * @return True if the solver is to be run
-   */
-  public boolean getSolverState() {
-    return SKIP_SOLVING;
   }
 
   /**
