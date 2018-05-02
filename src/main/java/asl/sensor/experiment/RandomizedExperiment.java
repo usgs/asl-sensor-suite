@@ -100,7 +100,6 @@ public class RandomizedExperiment
   private InstrumentResponse fitResponse;
 
   private double[] freqs, observedResult, weights;
-  private double nyquist;
 
   private boolean freqSpace;
 
@@ -143,8 +142,8 @@ public class RandomizedExperiment
     XYSeries calcArg = new XYSeries("Calc. resp. (" + name + ") phase");
 
     InstrumentResponse initResponse = new InstrumentResponse(fitResponse);
-    initialPoles = new ArrayList<Complex>(fitResponse.getPoles());
-    initialZeros = new ArrayList<Complex>(fitResponse.getZeros());
+    initialPoles = new ArrayList<>(fitResponse.getPoles());
+    initialZeros = new ArrayList<>(fitResponse.getZeros());
 
     // get the plots of the calculated response from deconvolution
     // PSD(out, in) / PSD(in, in) gives us PSD(out) / PSD(in) while removing
@@ -161,7 +160,7 @@ public class RandomizedExperiment
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
 
     // store nyquist rate of data because freqs will be trimmed down later
-    nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
+    double nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
     nyquist = nyquist / 2.;
 
     // trim frequency window in order to restrict range of response fits
@@ -348,9 +347,7 @@ public class RandomizedExperiment
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         ++numIterations;
         fireStateChange("Fitting, iteration count " + numIterations);
-        Pair<RealVector, RealMatrix> pair =
-            jacobian(point);
-        return pair;
+        return jacobian(point);
       }
 
     };
@@ -570,8 +567,8 @@ public class RandomizedExperiment
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    List<Complex> polesOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(fitPoles);
+    List<Complex> polesOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(fitPoles);
     retain.removeAll(initialPoles);
     for (Complex c : fitPoles) {
       if (retain.contains(c)) {
@@ -606,8 +603,8 @@ public class RandomizedExperiment
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    List<Complex> zerosOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(fitZeros);
+    List<Complex> zerosOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(fitZeros);
     retain.removeAll(initialZeros);
     for (Complex c : fitZeros) {
       if (retain.contains(c)) {
@@ -624,8 +621,8 @@ public class RandomizedExperiment
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    List<Complex> polesOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(initialPoles);
+    List<Complex> polesOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(initialPoles);
     retain.removeAll(fitPoles);
     for (Complex c : initialPoles) {
       if (retain.contains(c)) {
@@ -642,8 +639,8 @@ public class RandomizedExperiment
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    List<Complex> zerosOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(initialZeros);
+    List<Complex> zerosOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(initialZeros);
     retain.removeAll(fitZeros);
     for (Complex c : initialZeros) {
       if (retain.contains(c)) {
@@ -813,7 +810,7 @@ public class RandomizedExperiment
       System.out.println("Current residual: " + resid);
     }
 
-    return new Pair<RealVector, RealMatrix>(result, jMat);
+    return new Pair<>(result, jMat);
 
   }
 
