@@ -97,8 +97,6 @@ public class NumericUtils {
     }
   }
 
-  public static CpxMagComparator cmc;
-
   /**
    * 2 * Pi, sometimes also referred to as Tau.
    * The number of radians in a full circle.
@@ -397,6 +395,21 @@ public class NumericUtils {
     }
 
     return out;
+  }
+
+  /**
+   * rap a degree to be between -180 and 180
+   * @param angle in degrees
+   * @return same angle but between -180 and 180
+   */
+  public static double rewrapAngleDegrees(double angle) {
+    while (angle < -180) {
+      angle += 360;
+    }
+    while (angle > 180) {
+      angle -= 360;
+    }
+    return angle;
   }
 
 }
