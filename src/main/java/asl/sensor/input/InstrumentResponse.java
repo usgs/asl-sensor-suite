@@ -920,7 +920,6 @@ public class InstrumentResponse {
     }
 
     for (int i = start; i < poles.size(); ++i) {
-
       Pair<Complex, Integer> pairAndValue = poles.get(i);
       Complex p = pairAndValue.getFirst();
 
@@ -948,7 +947,6 @@ public class InstrumentResponse {
       if (imagPart != 0.) {
         ++i; // skip complex conjuagte
       }
-
     }
 
     // turn into array to be turned into vector
