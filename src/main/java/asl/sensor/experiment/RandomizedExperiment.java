@@ -834,7 +834,6 @@ public class RandomizedExperiment
    * from 0.3 to 0.8).
    */
   public void setNyquistMultiplier(double newMultiplier) {
-    System.out.println("NEW MULTIPLIER PASSED: " + newMultiplier);
     nyquistMultiplier = Math.min(newMultiplier, PEAK_MULTIPLIER);
     nyquistMultiplier = Math.max(0.3, nyquistMultiplier);
   }
