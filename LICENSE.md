@@ -45,11 +45,6 @@ As a collection, this software is licensed under the GPL.
 	URL: https://mvnrepository.com/artifact/org.jfree/jfreechart
 	License: GNU Lesser General Public License (LGPL)
 
-###### jtstand
-
-	URL: https://mvnrepository.com/artifact/org.codehaus.jtstand/jtstand-core
-	License: LGPL
-
 ###### SeisFile
 	
 	URL: https://mvnrepository.com/artifact/edu.sc.seis/seisFile

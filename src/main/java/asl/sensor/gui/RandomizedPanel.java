@@ -120,12 +120,6 @@ public class RandomizedPanel extends ExperimentPanel {
     List<Complex> fitZ = experiment.getFitZeros();
     List<Complex> initZ = experiment.getInitialZeros();
 
-    boolean solverNotRun = experiment.getSolverState();
-
-    if (solverNotRun) {
-      return new String[]{};
-    }
-
     // get statistics for differences between initial and solved parameters
     csvPoles.append("POLE VARIABLES, AS CSV:\n").append(csvTitle).append("\n");
 
@@ -279,8 +273,6 @@ public class RandomizedPanel extends ExperimentPanel {
       return new String[]{""};
     }
 
-    boolean solverNotRun = experiment.getSolverState();
-
     double initialResidual = experiment.getInitResidual();
     double fitResidual = experiment.getFitResidual();
 
@@ -312,13 +304,9 @@ public class RandomizedPanel extends ExperimentPanel {
     sbInitZ.append("\n");
     sbFitZ.append("\n");
 
-    if (!solverNotRun) {
-      sbInitialPoles.append(sbFitPoles);
-    }
+    sbInitialPoles.append(sbFitPoles);
 
-    if (!solverNotRun) {
-      sbInitZ.append(sbFitZ);
-    }
+    sbInitZ.append(sbFitZ);
 
     StringBuilder sbR = new StringBuilder();
     sbR.append("Residuals:");
@@ -326,10 +314,8 @@ public class RandomizedPanel extends ExperimentPanel {
     sbR.append("Initial (nom. resp curve): ");
     sbR.append(initialResidual);
     sbR.append('\n');
-    if (!solverNotRun) {
-      sbR.append("Best fit: ");
-      sbR.append(fitResidual);
-    }
+    sbR.append("Best fit: ");
+    sbR.append(fitResidual);
 
     return new String[]{sbInitialPoles.toString(), sbInitZ.toString(), sbR.toString()};
   }

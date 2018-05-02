@@ -16,9 +16,6 @@ dependencies {
     // https://mvnrepository.com/artifact/org.jfree/jfreechart
     compile group: 'org.jfree', name: 'jfreechart', version: '1.0.19'
 
-    // https://mvnrepository.com/artifact/org.codehaus.jtstand/jtstand-core
-    compile group: 'org.codehaus.jtstand', name: 'jtstand-core', version: '1.5.13'
-
     // https://mvnrepository.com/artifact/edu.sc.seis/seisFile
     compile group: 'edu.sc.seis', name: 'seisFile', version: '1.7.3'
 

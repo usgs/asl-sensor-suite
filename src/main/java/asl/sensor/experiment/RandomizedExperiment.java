@@ -44,10 +44,9 @@ import asl.sensor.utils.TimeSeriesUtils;
  * "Estimating Pole-Zero Errors in GSN-IRIS/USGS Network Calibration Metadata",
  * Bulletin of the Seismological Society of America, Vol 102 (Apr. 2012).
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
-public class RandomizedExperiment
-    extends Experiment implements ParameterValidator {
+public class RandomizedExperiment extends Experiment implements ParameterValidator {
 
   /**
    * Get the index of the value closest to a given target frequency in a list assuming the entries
@@ -62,8 +61,6 @@ public class RandomizedExperiment
     }
 
     double deltaFreq = freqs[1] - freqs[0];
-    // System.out.println(deltaFreq);
-    // System.out.println(targetFreq - freqs[0]);
     int idx = (int) Math.round((targetFreq - freqs[0]) / deltaFreq);
     // in almost all cases the index here should be in the list, but if not, bounds check
     idx = Math.max(idx, 0);
@@ -72,17 +69,6 @@ public class RandomizedExperiment
 
   private static final double DELTA = 1E-12;
   public static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
-  //NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
-
-  public static final boolean PRINT_EVERYTHING = false; // need debugging statements?
-  // bool logic used so that if PRINT_EVERYTHING is false, this won't work
-  private static final boolean OUTPUT_TO_TERMINAL = false;
-
-  // To whomever has to maintain this code after I'm gone:
-  // I'm sorry, I'm so so sorry
-  // I suppose it's a little neater now that some functions are part of the
-  // response class? It's still inherently nasty due to issues relating to
-  // converting complex lists into arrays of doubles in order to use the solver
 
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
@@ -90,17 +76,11 @@ public class RandomizedExperiment
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
 
-  // when true, doesn't run solver, in event parameters have an issue
-  // (does the solver seem to have frozen? try rebuilding with this as true,
-  // and then run the plot -- show nominal resp. and estimated curves)
-  public final boolean SKIP_SOLVING = false;
-
   private boolean lowFreq; // fit the low- or high-frequency poles?
 
   private InstrumentResponse fitResponse;
 
-  private double[] freqs, observedResult, weights;
-  private double nyquist;
+  private double[] freqs;
 
   private boolean freqSpace;
 
@@ -125,15 +105,12 @@ public class RandomizedExperiment
    * @see asl.sensor.experiment.Experiment#backend(asl.sensor.input.DataStore)
    */
   @Override
-  protected void backend(DataStore ds) {
-
-    boolean dontSolve = getSolverState(); // true if we should NOT run solver
-
+  protected void backend(DataStore dataStore) {
     numIterations = 0;
 
-    DataBlock calib = ds.getBlock(0);
-    DataBlock sensorOut = ds.getBlock(1);
-    fitResponse = new InstrumentResponse(ds.getResponse(1));
+    DataBlock calib = dataStore.getBlock(0);
+    DataBlock sensorOut = dataStore.getBlock(1);
+    fitResponse = new InstrumentResponse(dataStore.getResponse(1));
 
     dataNames.add(calib.getName());
     String name = sensorOut.getName();
@@ -143,8 +120,8 @@ public class RandomizedExperiment
     XYSeries calcArg = new XYSeries("Calc. resp. (" + name + ") phase");
 
     InstrumentResponse initResponse = new InstrumentResponse(fitResponse);
-    initialPoles = new ArrayList<Complex>(fitResponse.getPoles());
-    initialZeros = new ArrayList<Complex>(fitResponse.getZeros());
+    initialPoles = new ArrayList<>(fitResponse.getPoles());
+    initialZeros = new ArrayList<>(fitResponse.getZeros());
 
     // get the plots of the calculated response from deconvolution
     // PSD(out, in) / PSD(in, in) gives us PSD(out) / PSD(in) while removing
@@ -161,7 +138,7 @@ public class RandomizedExperiment
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
 
     // store nyquist rate of data because freqs will be trimmed down later
-    nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
+    double nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
     nyquist = nyquist / 2.;
 
     // trim frequency window in order to restrict range of response fits
@@ -195,7 +172,6 @@ public class RandomizedExperiment
     int normalIdx = getIndexOfFrequency(freqs, zeroTarget);
 
     // trim the PSDs to the data in the trimmed frequency range
-    // System.out.println("INDICES: " + startIdx + "," + endIdx);
     Complex[] numeratorPSDVals = numeratorPSD.getFFT();
     Complex[] denominatorPSDVals = denominatorPSD.getFFT();
     Complex[] crossPSDVals = crossPSD.getFFT();
@@ -228,7 +204,7 @@ public class RandomizedExperiment
     untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude,
         smoothingPoints, !lowFreq);
     // phase smoothing also includes an unwrapping step
-    untrimmedPhase = NumericUtils.unwrapList(untrimmedPhase);
+    untrimmedPhase = NumericUtils.unwrapArray(untrimmedPhase);
     untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, smoothingPoints,
         !lowFreq);
 
@@ -248,8 +224,8 @@ public class RandomizedExperiment
     // get the data at the normalized index, use this to scale the data
     double ampScale = plottedAmp[normalIdx];
     double phsScale = plottedPhs[normalIdx];
-    observedResult = new double[2 * freqs.length]; // fit curve, amplitude then phase
-    weights = new double[observedResult.length];
+    double[] observedResult = new double[2 * freqs.length];
+    double[] weights = new double[observedResult.length];
     maxArgWeight = 1;
     maxMagWeight = 0;
     for (int i = 0; i < freqs.length; ++i) {
@@ -273,7 +249,7 @@ public class RandomizedExperiment
       observedResult[i] = amp;
       observedResult[argIdx] = phs;
       calcMag.add(xAxis, amp);
-      calcArg.add(xAxis, rewrapPhase(phs));
+      calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs));
     }
 
     maxMagWeight = 1000 / maxMagWeight;
@@ -315,7 +291,7 @@ public class RandomizedExperiment
       phs -= phsScale;
       // add to plot (re-wrap phase)
       calcMag.add(xAxis, amp);
-      calcArg.add(xAxis, rewrapPhase(phs) );
+      calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs) );
     }
 
 
@@ -334,10 +310,6 @@ public class RandomizedExperiment
     numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
 
-    if (OUTPUT_TO_TERMINAL) {
-      System.out.println(Arrays.toString(observedResult));
-    }
-
     // now, solve for the response that gets us the best-fit response curve
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector obsResVector = MatrixUtils.createRealVector(observedResult);
@@ -348,9 +320,7 @@ public class RandomizedExperiment
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         ++numIterations;
         fireStateChange("Fitting, iteration count " + numIterations);
-        Pair<RealVector, RealMatrix> pair =
-            jacobian(point);
-        return pair;
+        return jacobian(point);
       }
 
     };
@@ -401,17 +371,13 @@ public class RandomizedExperiment
 
     RealVector finalResultVector;
 
-    if (!dontSolve) {
-      LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
-      finalResultVector = optimum.getPoint();
-      numIterations = optimum.getIterations();
-    } else {
-      finalResultVector = initialGuess;
-    }
+    LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+    finalResultVector = optimum.getPoint();
+    numIterations = optimum.getIterations();
 
-    LeastSquaresProblem.Evaluation optimum = lsp.evaluate(finalResultVector);
-    fitResidual = optimum.getCost();
-    double[] fitParams = optimum.getPoint().toArray();
+    LeastSquaresProblem.Evaluation evaluation = lsp.evaluate(finalResultVector);
+    fitResidual = evaluation.getCost();
+    double[] fitParams = evaluation.getPoint().toArray();
     // get results from evaluating the function at the two points
 
 
@@ -455,10 +421,10 @@ public class RandomizedExperiment
       int argIdx = initialValues.length / 2 + i;
       double plotArg;
       initMag.add(xValue, initialValues[i]);
-      plotArg = rewrapPhase(initialValues[argIdx]);
+      plotArg = NumericUtils.rewrapAngleDegrees(initialValues[argIdx]);
       initArg.add(xValue, plotArg);
       fitMag.add(xValue, fitValues[i]);
-      plotArg = rewrapPhase(fitValues[argIdx]);
+      plotArg = NumericUtils.rewrapAngleDegrees(fitValues[argIdx]);
       fitArg.add(xValue, plotArg);
 
       if (i < freqs.length) {
@@ -491,34 +457,24 @@ public class RandomizedExperiment
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.addSeries(initMag);
     xysc.addSeries(calcMag);
-    if (!dontSolve) {
-      xysc.addSeries(fitMag);
-    }
-
+    xysc.addSeries(fitMag);
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
     xysc.addSeries(initArg);
     xysc.addSeries(calcArg);
-    if (!dontSolve) {
-      xysc.addSeries(fitArg);
-    }
+    xysc.addSeries(fitArg);
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidMag);
-    if (!dontSolve) {
-      xysc.addSeries(fitResidMag);
-    }
+    xysc.addSeries(fitResidMag);
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidPhase);
-    if (!dontSolve) {
-      xysc.addSeries(fitResidPhase);
-    }
+    xysc.addSeries(fitResidPhase);
     xySeriesData.add(xysc);
-
   }
 
   @Override
@@ -570,8 +526,8 @@ public class RandomizedExperiment
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    List<Complex> polesOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(fitPoles);
+    List<Complex> polesOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(fitPoles);
     retain.removeAll(initialPoles);
     for (Complex c : fitPoles) {
       if (retain.contains(c)) {
@@ -606,8 +562,8 @@ public class RandomizedExperiment
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    List<Complex> zerosOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(fitZeros);
+    List<Complex> zerosOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(fitZeros);
     retain.removeAll(initialZeros);
     for (Complex c : fitZeros) {
       if (retain.contains(c)) {
@@ -624,8 +580,8 @@ public class RandomizedExperiment
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    List<Complex> polesOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(initialPoles);
+    List<Complex> polesOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(initialPoles);
     retain.removeAll(fitPoles);
     for (Complex c : initialPoles) {
       if (retain.contains(c)) {
@@ -642,8 +598,8 @@ public class RandomizedExperiment
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    List<Complex> zerosOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(initialZeros);
+    List<Complex> zerosOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(initialZeros);
     retain.removeAll(fitZeros);
     for (Complex c : initialZeros) {
       if (retain.contains(c)) {
@@ -678,16 +634,6 @@ public class RandomizedExperiment
   }
 
   /**
-   * Used to determine whether to run the solver or not; disabling the solver
-   * is useful for determining the quality of a given calibration function
-   *
-   * @return True if the solver is to be run
-   */
-  public boolean getSolverState() {
-    return SKIP_SOLVING;
-  }
-
-  /**
    * Get the values used to weight the residual calculation function.
    * The first value is the magnitude weighting, the second is phase.
    *
@@ -713,9 +659,6 @@ public class RandomizedExperiment
    */
   private Pair<RealVector, RealMatrix>
   jacobian(RealVector variables) {
-
-    // variables = validate(variables);
-
     int numVars = variables.getDimension();
 
     double[] currentVars = new double[numVars];
@@ -725,15 +668,6 @@ public class RandomizedExperiment
     }
 
     double[] mag = evaluateResponse(currentVars);
-
-    if (PRINT_EVERYTHING) {
-      String in = Arrays.toString(currentVars);
-      String out = Arrays.toString(mag);
-      if (OUTPUT_TO_TERMINAL) {
-        System.out.println(in);
-        System.out.println(out);
-      }
-    }
 
     double[][] jacobian = new double[mag.length][numVars];
     // now take the backward difference of each value
@@ -770,51 +704,8 @@ public class RandomizedExperiment
 
     RealVector result = MatrixUtils.createRealVector(mag);
     RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
-    if (OUTPUT_TO_TERMINAL) {
-      // currently only looking at data about the sign of the jacobian
-      int colDim = jMat.getColumnDimension();
-      double[] rmsJbn = new double[colDim];
-      for (int i = 0; i < colDim; ++i) {
-        RealVector v = jMat.getColumnVector(i);
-        double rms = 0.;
-        int numPositive = 0;
-        int numNegative = 0;
-        for (int j = 0; j < v.getDimension(); ++j) {
-          double entry = v.getEntry(j);
-          rms += Math.pow(entry, 2);
-          if (entry < 0.) {
-            ++numPositive;
-          } else if (entry > 0.) {
-            ++numNegative;
-          }
-        }
-        rms /= v.getDimension();
-        rms = Math.sqrt(rms);
-        String init = "Jacobian value for variable " + i;
-        if (numPositive > numNegative) {
-          System.out.println(init + " is mostly positive.");
-          System.out.println("Values: " + numPositive + ", " + numNegative);
-        } else if (numPositive < numNegative) {
-          System.out.println(init + " is mostly negative.");
-          System.out.println("Values: " + numPositive + ", " + numNegative);
-        } else {
-          System.out.println(init + " has equal +/-.");
-          System.out.println("Values: " + numPositive + ", " + numNegative);
-        }
-        System.out.println("The RMS value is " + rms);
-      }
 
-      // get the residual values and print that out
-      double resid = 0.;
-      for (int i = 0; i < mag.length; ++i) {
-        double sumSqd = Math.pow(mag[i] - observedResult[i], 2);
-        resid += weights[i] * sumSqd;
-      }
-      System.out.println("Current residual: " + resid);
-    }
-
-    return new Pair<RealVector, RealMatrix>(result, jMat);
-
+    return new Pair<>(result, jMat);
   }
 
   @Override
@@ -904,15 +795,4 @@ public class RandomizedExperiment
     }
     return poleParams;
   }
-
-  private double rewrapPhase(double phi) {
-    while (phi < -180) {
-      phi += 360;
-    }
-    while (phi > 180) {
-      phi -= 360;
-    }
-    return phi;
-  }
-
 }
