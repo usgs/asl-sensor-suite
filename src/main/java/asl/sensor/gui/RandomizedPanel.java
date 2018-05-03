@@ -461,9 +461,14 @@ public class RandomizedPanel extends ExperimentPanel {
 
   @Override
   protected void drawCharts() {
-    // just force the active plot at the start to be the amplitude plot
+    // disable the listener here so that this selection override doesn't cause a race condition
+    // since it's not being completed on the dispatch thread
+    showParams.removeActionListener(this);
     showParams.setSelected(true);
     showParams.setEnabled(true);
+    setSubtitles();
+    showParams.addActionListener(this);
+    // just force the active plot at the start to be the amplitude plot
     chart = magnitudeChart;
     chartPanel.setChart(chart);
     plotSelection.setSelectedIndex(0);
