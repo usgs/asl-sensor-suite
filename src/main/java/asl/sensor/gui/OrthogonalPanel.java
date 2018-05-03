@@ -31,9 +31,9 @@ public class OrthogonalPanel extends ExperimentPanel {
     double angle = ort.getFitAngle();
 
     return "Calculated angle between non-reference sensors:\n"
-        + angle
+        + DECIMAL_FORMAT.get().format(angle)
         + "\nRough est. orientation angles for (non-ref) LH1, LH2 respectively:\n"
-        + Arrays.toString(fit);
+        + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])+"]";
   }
 
   OrthogonalPanel(ExperimentEnum experiment) {
