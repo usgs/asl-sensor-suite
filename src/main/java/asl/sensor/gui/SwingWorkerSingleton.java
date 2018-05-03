@@ -1,6 +1,7 @@
 package asl.sensor.gui;
 
 import asl.sensor.input.DataStore;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
 import org.apache.commons.math3.exception.ConvergenceException;
@@ -43,7 +44,9 @@ public class SwingWorkerSingleton {
       // the result won't actually complete, so we should make it clear that
       // other panel was cancelled, and thus clear the chart / unset data
       if (!worker.isDone()) {
-        worker.cancel(true); // cancel worker, set it to the new task
+        try {
+          worker.cancel(true); // cancel worker, set it to the new task
+        } catch (CancellationException ignore) {}
       }
     }
 
