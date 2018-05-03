@@ -312,10 +312,10 @@ public class RandomizedPanel extends ExperimentPanel {
     sbR.append("Residuals:");
     sbR.append('\n');
     sbR.append("Initial (nom. resp curve): ");
-    sbR.append(initialResidual);
+    sbR.append(DECIMAL_FORMAT.get().format(initialResidual));
     sbR.append('\n');
     sbR.append("Best fit: ");
-    sbR.append(fitResidual);
+    sbR.append(DECIMAL_FORMAT.get().format(fitResidual));
 
     return new String[]{sbInitialPoles.toString(), sbInitZ.toString(), sbR.toString()};
   }
