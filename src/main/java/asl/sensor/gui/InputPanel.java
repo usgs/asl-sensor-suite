@@ -1,12 +1,5 @@
 package asl.sensor.gui;
 
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -19,7 +12,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -29,7 +21,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TimeZone;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -65,6 +56,13 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 
 /**
@@ -84,13 +82,7 @@ public class InputPanel
     extends JPanel
     implements ActionListener, ChangeListener {
 
-  /**
-   * auto-generated serialization UID
-   */
   private static final long serialVersionUID = -7302813951637543526L;
-
-  public static final SimpleDateFormat DATE_FORMAT =
-      new SimpleDateFormat("Y.DDD.HH:mm:ss");
 
   /**
    * Default height of image produced by the save-as-image function
@@ -323,35 +315,6 @@ public class InputPanel
   }
 
   /**
-   * Create a new data panel and add data to the charts from an existing
-   * DataStore, also setting the given number of panels as visible
-   *
-   * @param dataStore DataStore object with data to be plotted
-   * @param panelsNeeded number of panels to show in the object
-   */
-  public InputPanel(DataStore dataStore, int panelsNeeded) {
-    this();
-    for (int i = 0; i < panelsNeeded; ++i) {
-      if (dataStore.blockIsSet(i)) {
-        seedFileNames[i].setText(dataStore.getBlock(i).getName());
-        XYSeries ts = dataStore.getPlotSeries(i);
-        JFreeChart chart = ChartFactory.createXYLineChart(
-            ts.getKey().toString(),
-            "Time",
-            "Counts",
-            new XYSeriesCollection(ts),
-            PlotOrientation.VERTICAL,
-            false, false, false);
-        chartPanels[i].setChart(chart);
-      }
-      if (dataStore.responseIsSet(i)) {
-        respFileNames[i].setText(dataStore.getResponse(i).getName());
-      }
-    }
-    showDataNeeded(panelsNeeded);
-  }
-
-  /**
    * Dispatches commands when interface buttons are clicked.
    * When the save button is clicked, dispatches the command to save plots as
    * an image. When the zoom buttons are clicked, scales the plot to only
@@ -405,8 +368,13 @@ public class InputPanel
 
         List<String> names = new ArrayList<>(respFilenames);
         Collections.sort(names);
-
         names.add("Load custom response...");
+        String[] nameArray = new String[names.size()];
+        for (int k = 0; k < nameArray.length; ++k) {
+          String name = names.get(k);
+          name = name.replace("resps/","");
+          nameArray[k] = name;
+        }
 
         int index = lastRespIndex;
         if (lastRespIndex < 0) {
@@ -419,8 +387,8 @@ public class InputPanel
             "Select a response to load:",
             "RESP File Selection",
             JOptionPane.PLAIN_MESSAGE,
-            null, names.toArray(),
-            names.get(index));
+            null, nameArray,
+            nameArray[index]);
 
         final String resultStr = (String) result;
 
@@ -429,15 +397,17 @@ public class InputPanel
           return;
         }
 
+        String embeddedPath = "resps/" + resultStr;
+
         // is the loaded string one of the embedded response files?
-        if (respFilenames.contains(resultStr)) {
+        if (respFilenames.contains(embeddedPath)) {
           // what was the index of the selected item?
           // used to make sure we default to that choice next round
-          lastRespIndex = Collections.binarySearch(names, resultStr);
+          lastRespIndex = Collections.binarySearch(names, embeddedPath);
           // final used here in the event of thread weirdness
           try {
             InstrumentResponse instrumentResponse =
-                InstrumentResponse.loadEmbeddedResponse(resultStr);
+                InstrumentResponse.loadEmbeddedResponse(embeddedPath);
             dataStore.setResponse(i, instrumentResponse);
 
             respFileNames[i].setText(instrumentResponse.getName());
@@ -812,12 +782,11 @@ public class InputPanel
           XYPlot xyPlot = (XYPlot) chart.getPlot();
 
           DateAxis dateAxis = new DateAxis();
-          DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
           dateAxis.setLabel("UTC Time (Year.Day.Hour:Minute)");
           Font bold = dateAxis.getLabelFont();
           bold = bold.deriveFont(Font.BOLD);
           dateAxis.setLabelFont(bold);
-          dateAxis.setDateFormatOverride(DATE_FORMAT);
+          dateAxis.setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
           xyPlot.setDomainAxis(dateAxis);
           int colorIndex = index % defaultColor.length;
           xyPlot.getRenderer().setSeriesPaint(0, defaultColor[colorIndex]);

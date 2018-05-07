@@ -561,6 +561,14 @@ public class FFTResult {
 
   }
 
+  static int findFFTPaddingLength(int size) {
+    int padding = 2;
+    while (padding < size) {
+      padding = padding << 1;
+    }
+    return padding;
+  }
+
   /**
    * Helper function to calculate power spectral density / crosspower.
    * Takes in two time series data and produces the windowed FFT over each.
@@ -598,10 +606,7 @@ public class FFTResult {
     double period = 1.0 / TimeSeriesUtils.ONE_HZ_INTERVAL;
     period *= interval;
 
-    int padding = 2;
-    while (padding < range) {
-      padding *= 2;
-    }
+    int padding = findFFTPaddingLength(range);
 
     int singleSide = padding / 2 + 1;
     double deltaFreq = 1. / (padding * period);

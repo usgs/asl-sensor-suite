@@ -44,45 +44,31 @@ import asl.sensor.utils.TimeSeriesUtils;
  * "Estimating Pole-Zero Errors in GSN-IRIS/USGS Network Calibration Metadata",
  * Bulletin of the Seismological Society of America, Vol 102 (Apr. 2012).
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
-public class RandomizedExperiment
-    extends Experiment implements ParameterValidator {
+public class RandomizedExperiment extends Experiment implements ParameterValidator {
 
   /**
    * Get the index of the value closest to a given target frequency in a list assuming the entries
    * in the list are equally spaced
-   * @param freqs List of frequencies to find the target location
-   * @param targetFreq Frequency of interest
+   * @param frequencies List of frequencies to find the target location
+   * @param targetFrequency Frequency of interest
    * @return Index of closest frequency value
    */
-  public static int getIndexOfFrequency(double[] freqs, double targetFreq) {
-    if (freqs.length == 1) {
+  public static int getIndexOfFrequency(double[] frequencies, double targetFrequency) {
+    if (frequencies.length == 1) {
       return 0;
     }
 
-    double deltaFreq = freqs[1] - freqs[0];
-    // System.out.println(deltaFreq);
-    // System.out.println(targetFreq - freqs[0]);
-    int idx = (int) Math.round((targetFreq - freqs[0]) / deltaFreq);
+    double deltaFreq = frequencies[1] - frequencies[0];
+    int index = (int) Math.round((targetFrequency - frequencies[0]) / deltaFreq);
     // in almost all cases the index here should be in the list, but if not, bounds check
-    idx = Math.max(idx, 0);
-    return Math.min(idx, freqs.length-1);
+    index = Math.max(index, 0);
+    return Math.min(index, frequencies.length-1);
   }
 
   private static final double DELTA = 1E-12;
   public static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
-  //NumericUtils.PEAK_MULTIPLIER; // max pole-fit frequency
-
-  public static final boolean PRINT_EVERYTHING = false; // need debugging statements?
-  // bool logic used so that if PRINT_EVERYTHING is false, this won't work
-  private static final boolean OUTPUT_TO_TERMINAL = false;
-
-  // To whomever has to maintain this code after I'm gone:
-  // I'm sorry, I'm so so sorry
-  // I suppose it's a little neater now that some functions are part of the
-  // response class? It's still inherently nasty due to issues relating to
-  // converting complex lists into arrays of doubles in order to use the solver
 
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
@@ -90,26 +76,20 @@ public class RandomizedExperiment
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
 
-  private List<String> inputsPerCalculation;
-  private List<String> outputsPerCalculation;
-
-  private Complex[] unsmoothedCurve, smoothedCurve;
-
-  // when true, doesn't run solver, in event parameters have an issue
-  // (does the solver seem to have frozen? try rebuilding with this as true,
-  // and then run the plot -- show nominal resp. and estimated curves)
-  public final boolean SKIP_SOLVING = false;
-
-  private boolean lowFreq; // fit the low- or high-frequency poles?
+  /**
+   * True if calibration is low frequency.
+   * This affects which poles are fitted, either low or high frequencies.
+   */
+  private boolean isLowFrequencyCalibration;
 
   private InstrumentResponse fitResponse;
 
-  private double[] freqs, observedResult, weights;
-  private double nyquist;
+  private double[] freqs;
 
-  private boolean freqSpace;
+  private boolean plotUsingHz;
 
   private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
+  private double nyquistMultiplier; // region up to nyquist to take for data
 
   private static final double ZERO_TARGET = 0.02; // location of value to set to 0 in curves for scaling
   private int numZeros; // how many entries in parameter vector define zeros
@@ -117,9 +97,10 @@ public class RandomizedExperiment
 
   public RandomizedExperiment() {
     super();
-    lowFreq = false;
+    isLowFrequencyCalibration = false;
     numIterations = 0;
-    freqSpace = true;
+    plotUsingHz = true;
+    nyquistMultiplier = PEAK_MULTIPLIER;
   }
 
   /*
@@ -128,18 +109,12 @@ public class RandomizedExperiment
    * @see asl.sensor.experiment.Experiment#backend(asl.sensor.input.DataStore)
    */
   @Override
-  protected void backend(DataStore ds) {
-
-    boolean dontSolve = getSolverState(); // true if we should NOT run solver
-
-    inputsPerCalculation = new ArrayList<String>();
-    outputsPerCalculation = new ArrayList<String>();
-
+  protected void backend(DataStore dataStore) {
     numIterations = 0;
 
-    DataBlock calib = ds.getBlock(0);
-    DataBlock sensorOut = ds.getBlock(1);
-    fitResponse = new InstrumentResponse(ds.getResponse(1));
+    DataBlock calib = dataStore.getBlock(0);
+    DataBlock sensorOut = dataStore.getBlock(1);
+    fitResponse = new InstrumentResponse(dataStore.getResponse(1));
 
     dataNames.add(calib.getName());
     String name = sensorOut.getName();
@@ -149,8 +124,8 @@ public class RandomizedExperiment
     XYSeries calcArg = new XYSeries("Calc. resp. (" + name + ") phase");
 
     InstrumentResponse initResponse = new InstrumentResponse(fitResponse);
-    initialPoles = new ArrayList<Complex>(fitResponse.getPoles());
-    initialZeros = new ArrayList<Complex>(fitResponse.getZeros());
+    initialPoles = new ArrayList<>(fitResponse.getPoles());
+    initialZeros = new ArrayList<>(fitResponse.getZeros());
 
     // get the plots of the calculated response from deconvolution
     // PSD(out, in) / PSD(in, in) gives us PSD(out) / PSD(in) while removing
@@ -167,41 +142,42 @@ public class RandomizedExperiment
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
 
     // store nyquist rate of data because freqs will be trimmed down later
-    nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
+    double nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
     nyquist = nyquist / 2.;
 
     // trim frequency window in order to restrict range of response fits
-    double minFreq, maxFreq, extFreq;
+    double minFreq, maxFreq, maxPlotFreq;
     // extfreq is how far out to extend data past range of fit
     // maxFreq is the largest frequency that we use in the solver
     // low frequency cal fits over a different range of data
-    if (lowFreq) {
+    if (isLowFrequencyCalibration) {
       minFreq = 0.001; // 1000s period
       maxFreq = 0.05; // 20s period
-      extFreq = maxFreq;
+      maxPlotFreq = maxFreq;
     } else {
       minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
       // get factor of nyquist rate, again due to noise
-      maxFreq = PEAK_MULTIPLIER * nyquist;
-      extFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist; // i.e., 80% of nyquist
+      maxFreq = nyquistMultiplier * nyquist;
+      maxPlotFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist; // i.e., 80% of nyquist
       // maxFreq = extFreq;
     }
 
     fireStateChange("Finding and trimming data to relevant frequency range");
     // now trim frequencies to in range
     // start and end are the region of the fit area, extIdx is the full plotted region
-    int startIdx = getIndexOfFrequency(freqsUntrimmed, minFreq);
-    int endIdx = getIndexOfFrequency(freqsUntrimmed, maxFreq);
-    int extIdx = getIndexOfFrequency(freqsUntrimmed, extFreq);
+    int startIndex = getIndexOfFrequency(freqsUntrimmed, minFreq);
+    int endIndex = getIndexOfFrequency(freqsUntrimmed, maxFreq);
 
-    double[] freqsFull = Arrays.copyOfRange(freqsUntrimmed, startIdx, extIdx);
-    freqs = Arrays.copyOfRange(freqsUntrimmed, startIdx, endIdx);
+    //Used for plotting full range
+    int maxPlotIndex = getIndexOfFrequency(freqsUntrimmed, maxPlotFreq);
+
+    double[] plottingFreqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, maxPlotIndex);
+    freqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, endIndex);
 
     double zeroTarget = 0.02; // frequency to set all curves to zero at
     int normalIdx = getIndexOfFrequency(freqs, zeroTarget);
 
     // trim the PSDs to the data in the trimmed frequency range
-    // System.out.println("INDICES: " + startIdx + "," + endIdx);
     Complex[] numeratorPSDVals = numeratorPSD.getFFT();
     Complex[] denominatorPSDVals = denominatorPSD.getFFT();
     Complex[] crossPSDVals = crossPSD.getFFT();
@@ -232,36 +208,35 @@ public class RandomizedExperiment
     // now smooth the data
     // scan starting at the high-frequency range for low-freq data (will be trimmed) & vice-versa
     untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude,
-        smoothingPoints, !lowFreq);
+        smoothingPoints, !isLowFrequencyCalibration);
     // phase smoothing also includes an unwrapping step
-    untrimmedPhase = NumericUtils.unwrapList(untrimmedPhase);
+    untrimmedPhase = NumericUtils.unwrapArray(untrimmedPhase);
     untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, smoothingPoints,
-        !lowFreq);
+        !isLowFrequencyCalibration);
 
     // experimentation with offsets to deal with the way the moving average shifts the data
     // since the plot is basically logarithmic this only matters due to the limited data
     // on the low-frequency corner -- shifting here by half the smoothing re-centers the data
-    if (lowFreq) {
-      startIdx -= offset;
-      endIdx -= offset;
-      extIdx -= offset;
+    if (isLowFrequencyCalibration) {
+      startIndex -= offset;
+      maxPlotIndex -= offset;
     }
 
     fireStateChange("Trimming calculated resp data down to range of interest...");
-    double[] plottedAmp = Arrays.copyOfRange(untrimmedAmplitude, startIdx, extIdx);
-    double[] plottedPhs = Arrays.copyOfRange(untrimmedPhase, startIdx, extIdx);
+    double[] plottedAmp = Arrays.copyOfRange(untrimmedAmplitude, startIndex, maxPlotIndex);
+    double[] plottedPhs = Arrays.copyOfRange(untrimmedPhase, startIndex, maxPlotIndex);
 
     fireStateChange("Scaling & weighting calculated resp data in preparation for solving");
     // get the data at the normalized index, use this to scale the data
     double ampScale = plottedAmp[normalIdx];
     double phsScale = plottedPhs[normalIdx];
-    observedResult = new double[2 * freqs.length]; // fit curve, amplitude then phase
-    weights = new double[observedResult.length];
+    double[] observedResult = new double[2 * freqs.length];
+    double[] weights = new double[observedResult.length];
     maxArgWeight = 1;
     maxMagWeight = 0;
     for (int i = 0; i < freqs.length; ++i) {
       double xAxis = freqs[i];
-      if (!freqSpace) {
+      if (!plotUsingHz) {
         xAxis = 1. / freqs[i];
       }
 
@@ -280,7 +255,7 @@ public class RandomizedExperiment
       observedResult[i] = amp;
       observedResult[argIdx] = phs;
       calcMag.add(xAxis, amp);
-      calcArg.add(xAxis, rewrapPhase(phs));
+      calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs));
     }
 
     maxMagWeight = 1000 / maxMagWeight;
@@ -292,7 +267,7 @@ public class RandomizedExperiment
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = i + freqs.length;
       double denom;
-      if (!lowFreq) {
+      if (!isLowFrequencyCalibration) {
         if (freqs[i] < 1) {
           denom = 1; // weight everything up to 1Hz equally
         } else {
@@ -310,10 +285,10 @@ public class RandomizedExperiment
     }
 
     // get the rest of the plotted data squared away
-    for (int i = freqs.length; i < freqsFull.length; ++i) {
-      double xAxis = freqsFull[i];
-      if (!freqSpace) {
-        xAxis = 1. / freqsFull[i];
+    for (int i = freqs.length; i < plottingFreqs.length; ++i) {
+      double xAxis = plottingFreqs[i];
+      if (!plotUsingHz) {
+        xAxis = 1. / plottingFreqs[i];
       }
       // scale
       double amp = plottedAmp[i];
@@ -322,7 +297,7 @@ public class RandomizedExperiment
       phs -= phsScale;
       // add to plot (re-wrap phase)
       calcMag.add(xAxis, amp);
-      calcArg.add(xAxis, rewrapPhase(phs) );
+      calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs) );
     }
 
 
@@ -336,14 +311,10 @@ public class RandomizedExperiment
     // variable. (we also need to ignore conjugate values, for constraints)
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
 
-    initialPoleGuess = fitResponse.polesToVector(lowFreq, nyquist);
-    initialZeroGuess = fitResponse.zerosToVector(lowFreq, nyquist);
+    initialPoleGuess = fitResponse.polesToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
+    initialZeroGuess = fitResponse.zerosToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
     numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
-
-    if (OUTPUT_TO_TERMINAL) {
-      System.out.println(Arrays.toString(observedResult));
-    }
 
     // now, solve for the response that gets us the best-fit response curve
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
@@ -355,9 +326,7 @@ public class RandomizedExperiment
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         ++numIterations;
         fireStateChange("Fitting, iteration count " + numIterations);
-        Pair<RealVector, RealMatrix> pair =
-            jacobian(point);
-        return pair;
+        return jacobian(point);
       }
 
     };
@@ -367,7 +336,7 @@ public class RandomizedExperiment
     // probably acceptable tolerance for clean low-frequency cals BUT
     // high frequency cals are noisy and slow to converge
     // so this branch is to enable using higher tolerance to deal with that
-    if (!lowFreq) {
+    if (!isLowFrequencyCalibration) {
       costTolerance = 1.0E-15;
       paramTolerance = 1.0E-10;
     }
@@ -405,46 +374,37 @@ public class RandomizedExperiment
 
     fireStateChange("Got initial evaluation; running solver...");
 
-    double[] initialValues =
-        jacobian.value(initialGuess).getFirst().toArray();
 
     RealVector finalResultVector;
 
-    if (!dontSolve) {
-      LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
-      finalResultVector = optimum.getPoint();
-      numIterations = optimum.getIterations();
-    } else {
-      finalResultVector = initialGuess;
-    }
+    LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+    finalResultVector = optimum.getPoint();
+    numIterations = optimum.getIterations();
 
-    LeastSquaresProblem.Evaluation optimum = lsp.evaluate(finalResultVector);
-    fitResidual = optimum.getCost();
-    double[] fitParams = optimum.getPoint().toArray();
+    LeastSquaresProblem.Evaluation evaluation = lsp.evaluate(finalResultVector);
+    fitResidual = evaluation.getCost();
+    double[] fitParams = evaluation.getPoint().toArray();
     // get results from evaluating the function at the two points
-    double[] fitValues =
-        jacobian.value(optimum.getPoint()).getFirst().toArray();
+
 
     XYSeries initResidMag = new XYSeries("Percent error of init. amplitude");
     XYSeries initResidPhase = new XYSeries("Diff. with init phase");
     XYSeries fitResidMag = new XYSeries("Percent error of fit amplitude");
     XYSeries fitResidPhase = new XYSeries("Diff with fit phase");
 
-    // InstrumentResponse init = ds.getResponse(sensorOutIdx);
-
     fitResponse = fitResponse.buildResponseFromFitVector(
-        fitParams, lowFreq, numZeros);
+        fitParams, isLowFrequencyCalibration, numZeros);
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
 
     fireStateChange("Getting extended resp curves for high-freq plots...");
     // we use the apply response method here to get the full range of plotted data, not just fit
-    Complex[] init = initResponse.applyResponseToInput(freqsFull);
-    Complex[] fit = fitResponse.applyResponseToInput(freqsFull);
-    initialValues = new double[freqsFull.length * 2];
-    fitValues = new double[freqsFull.length * 2];
-    for (int i = 0; i < freqsFull.length; ++i) {
-      int argIdx = freqsFull.length + i;
+    Complex[] init = initResponse.applyResponseToInput(plottingFreqs);
+    Complex[] fit = fitResponse.applyResponseToInput(plottingFreqs);
+    double[] initialValues = new double[plottingFreqs.length * 2];
+    double[] fitValues = new double[plottingFreqs.length * 2];
+    for (int i = 0; i < plottingFreqs.length; ++i) {
+      int argIdx = plottingFreqs.length + i;
       initialValues[i] = init[i].abs();
       initialValues[argIdx] = NumericUtils.atanc(init[i]);
       fitValues[i] = fit[i].abs();
@@ -456,21 +416,21 @@ public class RandomizedExperiment
 
     fireStateChange("Compiling data into plots...");
 
-    for (int i = 0; i < freqsFull.length; ++i) {
+    for (int i = 0; i < plottingFreqs.length; ++i) {
       double xValue;
-      if (freqSpace) {
-        xValue = freqsFull[i];
+      if (plotUsingHz) {
+        xValue = plottingFreqs[i];
       } else {
-        xValue = 1. / freqsFull[i];
+        xValue = 1. / plottingFreqs[i];
       }
 
       int argIdx = initialValues.length / 2 + i;
       double plotArg;
       initMag.add(xValue, initialValues[i]);
-      plotArg = rewrapPhase(initialValues[argIdx]);
+      plotArg = NumericUtils.rewrapAngleDegrees(initialValues[argIdx]);
       initArg.add(xValue, plotArg);
       fitMag.add(xValue, fitValues[i]);
-      plotArg = rewrapPhase(fitValues[argIdx]);
+      plotArg = NumericUtils.rewrapAngleDegrees(fitValues[argIdx]);
       fitArg.add(xValue, plotArg);
 
       if (i < freqs.length) {
@@ -503,34 +463,24 @@ public class RandomizedExperiment
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.addSeries(initMag);
     xysc.addSeries(calcMag);
-    if (!dontSolve) {
-      xysc.addSeries(fitMag);
-    }
-
+    xysc.addSeries(fitMag);
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
     xysc.addSeries(initArg);
     xysc.addSeries(calcArg);
-    if (!dontSolve) {
-      xysc.addSeries(fitArg);
-    }
+    xysc.addSeries(fitArg);
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidMag);
-    if (!dontSolve) {
-      xysc.addSeries(fitResidMag);
-    }
+    xysc.addSeries(fitResidMag);
     xySeriesData.add(xysc);
 
     xysc = new XYSeriesCollection();
     xysc.addSeries(initResidPhase);
-    if (!dontSolve) {
-      xysc.addSeries(fitResidPhase);
-    }
+    xysc.addSeries(fitResidPhase);
     xySeriesData.add(xysc);
-
   }
 
   @Override
@@ -555,7 +505,7 @@ public class RandomizedExperiment
     // prevent terrible case where, say, only high-freq poles above nyquist rate
     if (variables.length > 0) {
       testResp = fitResponse.buildResponseFromFitVector(
-          variables, lowFreq, numZeros);
+          variables, isLowFrequencyCalibration, numZeros);
     } else {
       System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
     }
@@ -575,23 +525,6 @@ public class RandomizedExperiment
     return curValue;
   }
 
-  /**
-   * Return a 2D array containing the values of the y-axis of each of the
-   * plotted curves. The order is {input resp, calc resp, fit resp}.
-   * The second index is the y-values ordered by corresponding freq
-   *
-   * @return 2D array with each of the amplitude response curves
-   */
-  public double[][] getAmplitudesAsArrays() {
-    XYSeriesCollection mags = xySeriesData.get(0);
-    double[][] out = new double[mags.getSeriesCount()][];
-    for (int i = 0; i < out.length; ++i) {
-      XYSeries xys = mags.getSeries(i);
-      out[i] = xys.toArray()[1];
-    }
-    return out;
-  }
-
 
   /**
    * Get the poles that the solver has found to best-fit the est. response
@@ -599,8 +532,8 @@ public class RandomizedExperiment
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    List<Complex> polesOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(fitPoles);
+    List<Complex> polesOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(fitPoles);
     retain.removeAll(initialPoles);
     for (Complex c : fitPoles) {
       if (retain.contains(c)) {
@@ -629,22 +562,14 @@ public class RandomizedExperiment
     return fitResponse;
   }
 
-  public Complex[] getSmoothedCalcResp() {
-    return smoothedCurve;
-  }
-
-  public Complex[] getUnsmoothedCalcResp() {
-    return unsmoothedCurve;
-  }
-
   /**
    * Get the zeros fitted from the experiment
    *
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    List<Complex> zerosOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(fitZeros);
+    List<Complex> zerosOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(fitZeros);
     retain.removeAll(initialZeros);
     for (Complex c : fitZeros) {
       if (retain.contains(c)) {
@@ -656,22 +581,13 @@ public class RandomizedExperiment
   }
 
   /**
-   * Get the range of frequencies over which the data was plotted
-   *
-   * @return list of frequencies, sorted order
-   */
-  public double[] getFreqList() {
-    return freqs;
-  }
-
-  /**
    * Get poles used in input response, for reference against best-fit poles
    *
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    List<Complex> polesOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(initialPoles);
+    List<Complex> polesOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(initialPoles);
     retain.removeAll(fitPoles);
     for (Complex c : initialPoles) {
       if (retain.contains(c)) {
@@ -688,8 +604,8 @@ public class RandomizedExperiment
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    List<Complex> zerosOut = new ArrayList<Complex>();
-    Set<Complex> retain = new HashSet<Complex>(initialZeros);
+    List<Complex> zerosOut = new ArrayList<>();
+    Set<Complex> retain = new HashSet<>(initialZeros);
     retain.removeAll(fitZeros);
     for (Complex c : initialZeros) {
       if (retain.contains(c)) {
@@ -709,10 +625,6 @@ public class RandomizedExperiment
     return initialResidual;
   }
 
-  public List<String> getInputsToPrint() {
-    return inputsPerCalculation;
-  }
-
   /**
    * Get the number of times the algorithm iterated to produce the optimum
    * response fit, from the underlying least squares solver
@@ -725,37 +637,6 @@ public class RandomizedExperiment
 
   public double getMaxFitFrequency() {
     return freqs[freqs.length - 1];
-  }
-
-  public List<String> getOutputsToPrint() {
-    return outputsPerCalculation;
-  }
-
-  /**
-   * Return a 2D array containing the values of the y-axis of each of the
-   * plotted curves. The order is {input resp, calc resp, fit resp}.
-   * The second index is the y-values ordered by corresponding freq
-   *
-   * @return 2D array with each of the phase response curves
-   */
-  public double[][] getPhasesAsArrays() {
-    XYSeriesCollection phases = xySeriesData.get(0);
-    double[][] out = new double[phases.getSeriesCount()][];
-    for (int i = 0; i < out.length; ++i) {
-      XYSeries xys = phases.getSeries(i);
-      out[i] = xys.toArray()[1];
-    }
-    return out;
-  }
-
-  /**
-   * Used to determine whether to run the solver or not; disabling the solver
-   * is useful for determining the quality of a given calibration function
-   *
-   * @return True if the solver is to be run
-   */
-  public boolean getSolverState() {
-    return SKIP_SOLVING;
   }
 
   /**
@@ -784,9 +665,6 @@ public class RandomizedExperiment
    */
   private Pair<RealVector, RealMatrix>
   jacobian(RealVector variables) {
-
-    // variables = validate(variables);
-
     int numVars = variables.getDimension();
 
     double[] currentVars = new double[numVars];
@@ -796,17 +674,6 @@ public class RandomizedExperiment
     }
 
     double[] mag = evaluateResponse(currentVars);
-
-    if (PRINT_EVERYTHING) {
-      String in = Arrays.toString(currentVars);
-      String out = Arrays.toString(mag);
-      inputsPerCalculation.add(in);
-      outputsPerCalculation.add(out);
-      if (OUTPUT_TO_TERMINAL) {
-        System.out.println(in);
-        System.out.println(out);
-      }
-    }
 
     double[][] jacobian = new double[mag.length][numVars];
     // now take the backward difference of each value
@@ -823,9 +690,7 @@ public class RandomizedExperiment
       }
 
       double[] changedVars = new double[currentVars.length];
-      for (int j = 0; j < currentVars.length; ++j) {
-        changedVars[j] = currentVars[j];
-      }
+      System.arraycopy(currentVars, 0, changedVars, 0, currentVars.length);
 
       double diffX = changedVars[i] - DELTA;
       changedVars[i] = diffX;
@@ -845,51 +710,8 @@ public class RandomizedExperiment
 
     RealVector result = MatrixUtils.createRealVector(mag);
     RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
-    if (OUTPUT_TO_TERMINAL) {
-      // currently only looking at data about the sign of the jacobian
-      int colDim = jMat.getColumnDimension();
-      double[] rmsJbn = new double[colDim];
-      for (int i = 0; i < colDim; ++i) {
-        RealVector v = jMat.getColumnVector(i);
-        double rms = 0.;
-        int numPositive = 0;
-        int numNegative = 0;
-        for (int j = 0; j < v.getDimension(); ++j) {
-          double entry = v.getEntry(j);
-          rms += Math.pow(entry, 2);
-          if (entry < 0.) {
-            ++numPositive;
-          } else if (entry > 0.) {
-            ++numNegative;
-          }
-        }
-        rms /= v.getDimension();
-        rms = Math.sqrt(rms);
-        String init = "Jacobian value for variable " + i;
-        if (numPositive > numNegative) {
-          System.out.println(init + " is mostly positive.");
-          System.out.println("Values: " + numPositive + ", " + numNegative);
-        } else if (numPositive < numNegative) {
-          System.out.println(init + " is mostly negative.");
-          System.out.println("Values: " + numPositive + ", " + numNegative);
-        } else {
-          System.out.println(init + " has equal +/-.");
-          System.out.println("Values: " + numPositive + ", " + numNegative);
-        }
-        System.out.println("The RMS value is " + rms);
-      }
 
-      // get the residual values and print that out
-      double resid = 0.;
-      for (int i = 0; i < mag.length; ++i) {
-        double sumSqd = Math.pow(mag[i] - observedResult[i], 2);
-        resid += weights[i] * sumSqd;
-      }
-      System.out.println("Current residual: " + resid);
-    }
-
-    return new Pair<RealVector, RealMatrix>(result, jMat);
-
+    return new Pair<>(result, jMat);
   }
 
   @Override
@@ -899,13 +721,27 @@ public class RandomizedExperiment
     return new int[]{1};
   }
 
+  /**
+   * Set the new peak multiplier for the data region under analysis.
+   * This should be a positive value, and is bounded by 0.8 (@see NumericUtils.PEAK_MULTIPLIER)
+   * This may be useful when trying to run the solver over a high-frequency calibration where
+   * the data is particularly noisy in some of the higher-frequency bounds, causing a bad corner
+   * fit to occur. We also enforce this to be over 0.3 as well.
+   * @param newMultiplier New maximum fraction of nyquist rate to fit data over (should be
+   * from 0.3 to 0.8).
+   */
+  public void setNyquistMultiplier(double newMultiplier) {
+    nyquistMultiplier = Math.min(newMultiplier, PEAK_MULTIPLIER);
+    nyquistMultiplier = Math.max(0.3, nyquistMultiplier);
+  }
+
   private void scaleValues(double[] unrot) {
     int normalIdx = getIndexOfFrequency(freqs, ZERO_TARGET);
     int argStart = unrot.length / 2;
     double unrotScaleAmp = 20 * Math.log10(unrot[normalIdx]);
     double unrotScaleArg = unrot[argStart + normalIdx];
     double phiPrev = 0;
-    if (lowFreq) {
+    if (isLowFrequencyCalibration) {
       phiPrev = unrot[3 * unrot.length / 4];
     }
     for (int i = 0; i < argStart; ++i) {
@@ -924,10 +760,10 @@ public class RandomizedExperiment
    * low frequency calibrations set the first two poles; high frequency
    * calibrations set the remaining poles
    *
-   * @param lowFreq True if a low frequency calibration is to be used
+   * @param isLowFrequencyCalibration True if a low frequency calibration is to be used
    */
-  public void setLowFreq(boolean lowFreq) {
-    this.lowFreq = lowFreq;
+  public void setLowFrequencyCalibration(boolean isLowFrequencyCalibration) {
+    this.isLowFrequencyCalibration = isLowFrequencyCalibration;
   }
 
   /**
@@ -935,8 +771,8 @@ public class RandomizedExperiment
    *
    * @param setFreq true if plots should be in frequency units (Hz)
    */
-  public void useFreqUnits(boolean setFreq) {
-    freqSpace = setFreq;
+  public void setPlotUsingHz(boolean setFreq) {
+    plotUsingHz = setFreq;
   }
 
   /**
@@ -965,15 +801,4 @@ public class RandomizedExperiment
     }
     return poleParams;
   }
-
-  private double rewrapPhase(double phi) {
-    while (phi < -180) {
-      phi += 360;
-    }
-    while (phi > 180) {
-      phi -= 360;
-    }
-    return phi;
-  }
-
 }

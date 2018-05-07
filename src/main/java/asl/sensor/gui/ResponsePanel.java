@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.TimeZone;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -234,8 +233,7 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public String getPDFFilename() {
 
-    SimpleDateFormat dateFormatter = new SimpleDateFormat("YYYY.DDD");
-    dateFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+    SimpleDateFormat dateFormatter = ExperimentPanel.DATE_FORMAT.get();
     Calendar calendar = Calendar.getInstance(dateFormatter.getTimeZone());
     // experiment has no time metadata to be associated with it, get time now
     String date = dateFormatter.format(calendar.getTime());
@@ -279,7 +277,7 @@ public class ResponsePanel extends ExperimentPanel {
   }
 
   @Override
-  protected void updateData(DataStore ds) {
+  protected void updateData(DataStore dataStore) {
 
     set = true;
 
@@ -288,7 +286,7 @@ public class ResponsePanel extends ExperimentPanel {
     boolean freqSpace = freqSpaceBox.isSelected();
     ResponseExperiment respExp = (ResponseExperiment) expResult;
     respExp.setFreqSpace(freqSpace);
-    expResult.runExperimentOnData(ds);
+    expResult.runExperimentOnData(dataStore);
 
     List<XYSeriesCollection> timeSeries = expResult.getData();
     XYSeriesCollection magSeries = timeSeries.get(0);

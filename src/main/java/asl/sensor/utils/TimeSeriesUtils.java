@@ -234,8 +234,8 @@ public class TimeSeriesUtils {
   }
 
   /**
-   * Downsamples data by a multiple of passed factor. Result is
-   * data.length/factor cells in size
+   * Downsamples data by a multiple of passed factor.
+   * Result is data.length/factor cells in size, data.length is expected to be even multiple of factor
    * Requires previous use of a low-pass filter to avoid aliasing
    *
    * @param data The timeseries to be downsampled

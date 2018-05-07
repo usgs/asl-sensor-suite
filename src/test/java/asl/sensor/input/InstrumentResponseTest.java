@@ -3,24 +3,21 @@ package asl.sensor.input;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import asl.sensor.test.TestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;
+import asl.sensor.test.TestUtils;
 import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
@@ -148,8 +145,7 @@ public class InstrumentResponseTest {
 
     InstrumentResponse ir;
     try {
-      ir =
-          InstrumentResponse.loadEmbeddedResponse("STS-5A_Q330HR_BH_40");
+      ir = new InstrumentResponse(TestUtils.RESP_LOCATION + "STS-5A_Q330HR_BH_40");
     } catch (IOException e) {
       fail();
       e.printStackTrace();

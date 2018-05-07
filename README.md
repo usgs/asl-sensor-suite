@@ -7,7 +7,7 @@ This program is used to analyze various aspects of seismic sensor data in order 
 ### Requirements
 
 ##### Software
-This program is designed to be used with Java 1.8, but should also be compatible with Java 1.7.
+This program is designed to be used with Java 1.8. Some early releases were more compatible with 1.7 but changes to the date/time libraries used in recent releases will have made it incompatible.
 This program also requires Gradle in order to be run from source. For instructions on installing Gradle, see https://gradle.org/install
 NOTE: because Gradle requires access to the maven repositories to download dependencies, there may be build issues when running the program on DOI-networked computers. The instructions for using DOI certificates for maven authentication can be found under the Java subheader at https://github.com/usgs/best-practices/blob/master/WorkingWithinSSLIntercept.md. You will also need the file "DOIRootCA.crt" from the linked page near the top detailing how to configure git.
 For those using Mac computers, the last step for trusting the certificate in Java may be slightly different. If installing the certificate using the instructions above fails, try using this command instead (NOTE: requires administrative access due to the use of the sudo command) https://blog.alwold.com/2011/06/30/how-to-trust-a-certificate-in-java-on-mac-os-x/
@@ -21,7 +21,7 @@ While releases are regularly updated with major feature changes included in the 
 
 ##### Command Line
 The program can be compiled by using the commands `gradle compileJava` which will compile the source code, or `gradle build` which will also run the unit tests.
-Running the program can be done by either opening the jar through a filebrowser or running either `gradle run`, which launches the jar file, or `java -jar build/libs/SensorTestSuite$version_number$.jar` after the program has been built, with $version_number$ replaced with the current version, such as 0.9.0. The gradle build script also allows the built jar file to be placed in the root directory; if `gradle compileJava` was previously run, then `gradle copyJar` will move it there. Note that `gradle build` includes this step by default.
+Running the program can be done by either opening the jar through a filebrowser or running either `gradle run`, which launches the jar file, or `java -jar build/libs/SensorTestSuite$version_number$.jar` after the program has been built, with $version_number$ replaced with the current version, based on the value of the parameter 'version' in the build.gradle file. The gradle build script also allows the built jar file to be placed in the root directory; if `gradle compileJava` was previously run, then `gradle copyJar` will move it there. Note that `gradle build` includes this step by default.
 
 ##### Eclipse
 For those who wish to compile and run this program with Eclipse, run the command `gradle eclipse` and then, inside eclipse, go to File>"Open projects from file system..." and direct Eclipse to the root folder of the test suite. Now the code will be available as an Eclipse project. For more information on using Eclipse, consult the Eclipse documentation.
@@ -76,15 +76,20 @@ This function solves for poles to attempt to fit the response curve calculated f
 
 When using embedded response files, it is strongly recommended to use an appropriate response file with "nocoil" in the name, as these remove the calibration coil's response from the file and thus generate more accurate results of calculations.
 
-Note that plots have been scaled in order to produce more representative fits of response curves. For high-frequency calibrations, the curves are all set to be equal to zero at 1 Hz; for low-frequency calibrations, this point occurs at 0.2 Hz.
+Note that plots have been scaled in order to produce more representative fits of response curves. This point occurs at 0.2 Hz for high-frequency cals (which is also the lowest-frequency point being fit to) and at 0.02 Hz for low-frequency cals.
 
 Older high-frequency cals may produce lots of noise on the high-frequency end confounding the solver, especially depending on how the calibration was produced.
 This program includes a second checker tab which does not run the solver for 
 response parameters, but can be used to determine whether or not the calculated response from the sensor output is good enough to be used for the solver. 
-Noisy calibrations or ones whose output otherwise varies significantly from the given nominal response may take a long time to solve or produce errors that lead to the solver being unable to converge on any solution. 
-IT IS STRONGLY ENCOURAGED TO RUN THE NO-SOLVER RANDOM CAL PANEL ON DATA THAT PRODUCES A CONVERGENCE ERROR DURING SOLVING IN ORDER TO DIAGNOSE POTENTIAL ISSUES WITH THE CALIBRATION ITSELF.
+Noisy calibrations or ones whose output otherwise varies significantly from the given nominal response may take a long time to solve or produce errors that lead to the solver being unable to converge on any solution.
+
+The most common source of error is trying to solve for the wrong type of calibration compared to the input. Most high-frequency calibration data this program was tested with is sampled at 200Hz and is typically 15 minutes in length. Low-frequency calibrations may be around 10-20Hz but are about 8 hours long. Trying to run a high-frequency calibration on data lower than 40Hz will almost certainly produce an error, as may trying to run a low-frequency cal on data less than a few hours.
 
 Note also that for the graphical output, the red curve is the response curve of the RESP loaded into the program, the blue curve is the calculated response of the sensor by deconvolving the calibration input from the sensor output, and the green curve is a response curve using the best-fit poles and zeros. A good fit is one in which the green curve lines up with the blue curve as much as possible.
+
+#### Sine calibration
+
+This panel is used to solve for the difference in amplitude between an input and output sine wave. Because the sine wave should have a fixed frequency, there is no response file used. This panel estimates amplitudes by calculating the sine wave RMS values and then scaled the input to the output by the ratio of those values. In addition, the program estimates the wavelength in order to give a rough estimate of the actual frequency of the calibration; it may be off by a few Hz in comparison to the expected frequency, though, and is mostly useful for guaranteeing that the calibration signal isn't being generated in a faulty way.
 
 #### Azimuth
 
@@ -95,6 +100,12 @@ Azimuth takes in 3 inputs. The first two are orthogonal sensors assumed to be re
 Orthogonality takes in four inputs, two each from sensors known or assumed to be orthogonal, and finds the true (interior) angle between the second two sensors if the first two sensors are truly orthogonal.
 
 The input files have a specific order: the first and third inputs are for north-facing sensors, and the second and fourth are for east-facing sensors. As noted above, the first two sensors are assumed to be 90 degrees apart for the purpose of the test; the second two sensors' orientation is what is solved for.
+
+The output angles provided to get the estimate of the orientation of the test sensors may be in different quadrants from the expected value. This should not affect the quality of the estimate being provided by the solver for the angle between the sensors, however. If a more precise estimate of the angle is required, using the two known sensors as the test N and E in the azimuth panel, with the data under consideration as the reference sensor should provide the (inverse of) the actual orientation angle of the sensor in question.
+
+#### Spectrum
+
+This panel plots the PSD of 1-3 different sets of data, using both SEED and RESP data. Note that the data must have an intersecting time range in order to be loaded in. The data plotted in this panel is also produced during a self-noise test; this panel is most useful when wanting to get the power spectrum of one sensor in particular, as the relative gain and self-noise calculations can do the same for 2 or 3 sets of data respectively. 
 
 #### Response
 

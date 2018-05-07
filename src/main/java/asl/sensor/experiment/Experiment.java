@@ -1,7 +1,5 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -14,6 +12,8 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
 
 /**
  * This function defines template patterns for each type of sensor experiment
@@ -269,17 +269,6 @@ public abstract class Experiment {
   }
 
   /**
-   * Remove changelistener from list of listeners notified on status change
-   * (Generally not used but may be useful for implementing forwarding status messages from data
-   * subcomponents)
-   *
-   * @param listener Listener to remove from list
-   */
-  public void removeChangeListener(ChangeListener listener) {
-    eventHelper.remove(ChangeListener.class, listener);
-  }
-
-  /**
    * Driver to do data processing on inputted data (calls a concrete backend
    * method which is different for each type of experiment)
    * This function specifically (rather than the backend implementation) is
@@ -293,9 +282,12 @@ public abstract class Experiment {
 
     fireStateChange("Beginning loading data...");
 
+    dataNames = new ArrayList<String>();
+    xySeriesData = new ArrayList<XYSeriesCollection>();
+    gapRegions = new HashMap<String, List<Pair<Date, Date>>>();
+
     if (hasEnoughData(ds) && (blocksNeeded() == 0)) {
-      // prevent null issue
-      xySeriesData = new ArrayList<XYSeriesCollection>();
+      // prevent null issue when doing response data, which does not really have times
       start = 0L;
       end = 0L;
       backend(ds);
@@ -309,13 +301,9 @@ public abstract class Experiment {
     start = db.getStartTime();
     end = db.getEndTime();
 
-    dataNames = new ArrayList<String>();
-
-    xySeriesData = new ArrayList<XYSeriesCollection>();
-
     ds.matchIntervals(blocksNeeded());
 
-    gapRegions = new HashMap<String, List<Pair<Date, Date>>>();
+    // populate gapregions data
     for (int i = 0; i < blocksNeeded(); ++i) {
       // in the case of spectrum panel, not all data inputs may be set
       // lockout check to make sure enough needed data is set already done, so this is OK
@@ -341,9 +329,4 @@ public abstract class Experiment {
 
     fireStateChange("Calculations done!");
   }
-
-  public void setTerminalPrintStatus(boolean print) {
-    statusToTerminal = print;
-  }
-
 }

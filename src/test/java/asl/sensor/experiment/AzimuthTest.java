@@ -4,15 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.test.TestUtils;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.TimeZone;
 import org.junit.Test;
-import asl.sensor.experiment.AzimuthExperiment;
-import asl.sensor.gui.InputPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -47,11 +45,7 @@ public class AzimuthTest {
 
     assertTrue( azi.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    // sdf.setLenient(false);
-
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    Calendar cCal = Calendar.getInstance( ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone() );
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     cCal.set(Calendar.HOUR_OF_DAY, 18);
     cCal.set(Calendar.MINUTE, 0);
@@ -107,23 +101,6 @@ public class AzimuthTest {
 
     assertTrue( azi.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    // sdf.setLenient(false);
-    /*
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
-    cCal.set(Calendar.HOUR, 10);
-    cCal.set(Calendar.MINUTE, 30);
-    System.out.println("start: " + sdf.format( cCal.getTime() ) );
-    long start = cCal.getTime().getTime();
-    cCal.set(Calendar.HOUR, 15);
-    cCal.set(Calendar.MINUTE, 00);
-    //System.out.println("end: " + sdf.format( cCal.getTime() ) );
-    long end = cCal.getTime().getTime();
-
-    ds.trim(start, end, 2);
-     */
     azi.runExperimentOnData(ds);
 
     System.out.println( azi.getFitAngle() );
@@ -267,19 +244,13 @@ public class AzimuthTest {
 
     assertTrue( azi.hasEnoughData(ds) );
 
-    SimpleDateFormat sdf = InputPanel.DATE_FORMAT;
-    sdf.setTimeZone( TimeZone.getTimeZone("UTC") );
-    // sdf.setLenient(false);
-
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
+    Calendar cCal = Calendar.getInstance( ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone() );
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     cCal.set(Calendar.HOUR_OF_DAY, 12);
     cCal.set(Calendar.MINUTE, 0);
-    //System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR_OF_DAY, 14);
     cCal.set(Calendar.MINUTE, 0);
-    //System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end);

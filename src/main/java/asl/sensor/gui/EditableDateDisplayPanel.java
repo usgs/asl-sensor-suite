@@ -25,24 +25,25 @@ import javax.swing.event.EventListenerList;
  */
 public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
-  /**
-   *
-   */
   private static final long serialVersionUID = -1649983797482938586L;
 
-  private JSpinner year, day, hour, minute, second, millisecond;
-  private JLabel yLabel, dLabel, hLabel, mLabel, sLabel, msLabel;
-  private EventListenerList listeners;
-  private OffsetDateTime dt; // holds the data for the current time
+  private final JSpinner year;
+  private final JSpinner day;
+  private final JSpinner hour;
+  private final JSpinner minute;
+  private final JSpinner second;
+  private final JSpinner millisecond;
+  private final EventListenerList listeners;
+  private OffsetDateTime currentTime; // holds the data for the current time
 
   /**
    * Constructor initializes components, layouts, and listeners.
    */
-  public EditableDateDisplayPanel() {
+  EditableDateDisplayPanel() {
 
     listeners = new EventListenerList();
 
-    dt = OffsetDateTime.now(ZoneOffset.UTC);
+    currentTime = OffsetDateTime.now(ZoneOffset.UTC);
 
     SpinnerNumberModel model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -53,7 +54,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     JSpinner.NumberEditor editor = new JSpinner.NumberEditor(year, "#");
     year.setEditor(editor);
     year.addChangeListener(this);
-    yLabel = new JLabel("(Y)");
+    JLabel yLabel = new JLabel("(Y)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -61,7 +62,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(366);
     day = new JSpinner(model);
     day.addChangeListener(this);
-    dLabel = new JLabel("(D)");
+    JLabel dLabel = new JLabel("(D)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -69,7 +70,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(23);
     hour = new JSpinner(model);
     hour.addChangeListener(this);
-    hLabel = new JLabel("(H-24)");
+    JLabel hLabel = new JLabel("(H-24)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -77,7 +78,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(59);
     minute = new JSpinner(model);
     minute.addChangeListener(this);
-    mLabel = new JLabel("(M)");
+    JLabel mLabel = new JLabel("(M)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -85,7 +86,7 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(59);
     second = new JSpinner(model);
     second.addChangeListener(this);
-    sLabel = new JLabel("(S)");
+    JLabel sLabel = new JLabel("(S)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -93,65 +94,55 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(999);
     millisecond = new JSpinner(model);
     millisecond.addChangeListener(this);
-    msLabel = new JLabel("(ms)");
+    JLabel msLabel = new JLabel("(ms)");
 
     // build panel
-    GridBagConstraints gbc = new GridBagConstraints();
+    GridBagConstraints constraints = new GridBagConstraints();
     this.setLayout(new GridBagLayout());
 
-    gbc.weightx = 1.0;
-    gbc.gridx = 0;
-    gbc.gridy = 0;
-    this.add(year, gbc);
-    gbc.weightx = 0.;
-    gbc.gridy = 1;
-    this.add(yLabel, gbc);
-    gbc.weightx = 1.0;
-    gbc.gridy = 0;
-    gbc.gridx += 1;
-    this.add(day, gbc);
-    gbc.weightx = 0.;
-    gbc.gridy = 1;
-    this.add(dLabel, gbc);
-    gbc.weightx = 1.0;
-    gbc.gridy = 0;
-    gbc.gridx += 1;
-    this.add(hour, gbc);
-    gbc.weightx = 0.;
-    gbc.gridy = 1;
-    this.add(hLabel, gbc);
-    gbc.weightx = 1.0;
-    gbc.gridy = 0;
-    gbc.gridx += 1;
-    this.add(minute, gbc);
-    gbc.weightx = 0.;
-    gbc.gridy = 1;
-    this.add(mLabel, gbc);
-    gbc.weightx = 1.0;
-    gbc.gridy = 0;
-    gbc.gridx += 1;
-    this.add(second, gbc);
-    gbc.weightx = 0.;
-    gbc.gridy = 1;
-    this.add(sLabel, gbc);
-    gbc.weightx = 1.0;
-    gbc.gridy = 0;
-    gbc.gridx += 1;
-    this.add(millisecond, gbc);
-    gbc.weightx = 0.;
-    gbc.gridy = 1;
-    this.add(msLabel, gbc);
+    constraints.weightx = 1.0;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    this.add(year, constraints);
+    constraints.weightx = 0.;
+    constraints.gridy = 1;
+    this.add(yLabel, constraints);
+    constraints.weightx = 1.0;
+    constraints.gridy = 0;
+    constraints.gridx += 1;
+    this.add(day, constraints);
+    constraints.weightx = 0.;
+    constraints.gridy = 1;
+    this.add(dLabel, constraints);
+    constraints.weightx = 1.0;
+    constraints.gridy = 0;
+    constraints.gridx += 1;
+    this.add(hour, constraints);
+    constraints.weightx = 0.;
+    constraints.gridy = 1;
+    this.add(hLabel, constraints);
+    constraints.weightx = 1.0;
+    constraints.gridy = 0;
+    constraints.gridx += 1;
+    this.add(minute, constraints);
+    constraints.weightx = 0.;
+    constraints.gridy = 1;
+    this.add(mLabel, constraints);
+    constraints.weightx = 1.0;
+    constraints.gridy = 0;
+    constraints.gridx += 1;
+    this.add(second, constraints);
+    constraints.weightx = 0.;
+    constraints.gridy = 1;
+    this.add(sLabel, constraints);
+    constraints.weightx = 1.0;
+    constraints.gridy = 0;
+    constraints.gridx += 1;
+    this.add(millisecond, constraints);
+    constraints.weightx = 0.;
+    constraints.gridy = 1;
+    this.add(msLabel, constraints);
 
-  }
-
-  /**
-   * Initialize a panel with a specific initial time value
-   *
-   * @param timeStamp Java epoch time (ms)
-   */
-  public EditableDateDisplayPanel(long timeStamp) {
-    this();
-    setValues(timeStamp);
   }
 
   /**
@@ -168,11 +159,11 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
    * Notifies listening components that the state of this object has changed
    */
   private void fireStateChanged() {
-    ChangeListener[] lsners = listeners.getListeners(ChangeListener.class);
-    if (lsners != null && lsners.length > 0) {
+    ChangeListener[] listeners = this.listeners.getListeners(ChangeListener.class);
+    if (listeners != null && listeners.length > 0) {
       ChangeEvent evt = new ChangeEvent(this);
-      for (ChangeListener lsnr : lsners) {
-        lsnr.stateChanged(evt);
+      for (ChangeListener listener : listeners) {
+        listener.stateChanged(evt);
       }
     }
   }
@@ -180,10 +171,10 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
   /**
    * Get the time specified by this panel's components in milliseconds
    *
-   * @return The time based on the calendar componets
+   * @return The time based on the calendar components
    */
   public long getTime() {
-    return dt.toInstant().toEpochMilli();
+    return currentTime.toInstant().toEpochMilli();
   }
 
   /**
@@ -206,31 +197,32 @@ public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
       return; // don't do anything if no change is necessary
     }
 
-    dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(timeStamp), ZoneOffset.UTC);
-    year.setValue(dt.getYear());
-    day.setValue(dt.getDayOfYear());
-    hour.setValue(dt.getHour());
-    minute.setValue(dt.getMinute());
-    second.setValue(dt.getSecond());
-    millisecond.setValue(dt.getNano() / TimeSeriesUtils.TO_MILLI_FACTOR);
+    currentTime = OffsetDateTime.ofInstant(Instant.ofEpochMilli(timeStamp), ZoneOffset.UTC);
+    year.setValue(currentTime.getYear());
+    day.setValue(currentTime.getDayOfYear());
+    hour.setValue(currentTime.getHour());
+    minute.setValue(currentTime.getMinute());
+    second.setValue(currentTime.getSecond());
+    millisecond.setValue(currentTime.getNano() / TimeSeriesUtils.TO_MILLI_FACTOR);
 
   }
 
   @Override
-  public void stateChanged(ChangeEvent e) {
+  public void stateChanged(ChangeEvent event) {
 
-    if (e.getSource() == year) {
-      dt = dt.withYear((int) year.getValue());
-    } else if (e.getSource() == day) {
-      dt = dt.withDayOfYear((int) day.getValue());
-    } else if (e.getSource() == hour) {
-      dt = dt.withHour((int) hour.getValue());
-    } else if (e.getSource() == minute) {
-      dt = dt.withMinute((int) minute.getValue());
-    } else if (e.getSource() == second) {
-      dt = dt.withSecond((int) second.getValue());
-    } else if (e.getSource() == millisecond) {
-      dt = dt.withNano((int) millisecond.getValue() * TimeSeriesUtils.TO_MILLI_FACTOR);
+    if (event.getSource() == year) {
+      currentTime = currentTime.withYear((int) year.getValue());
+    } else if (event.getSource() == day) {
+      currentTime = currentTime.withDayOfYear((int) day.getValue());
+    } else if (event.getSource() == hour) {
+      currentTime = currentTime.withHour((int) hour.getValue());
+    } else if (event.getSource() == minute) {
+      currentTime = currentTime.withMinute((int) minute.getValue());
+    } else if (event.getSource() == second) {
+      currentTime = currentTime.withSecond((int) second.getValue());
+    } else if (event.getSource() == millisecond) {
+      currentTime = currentTime
+          .withNano((int) millisecond.getValue() * TimeSeriesUtils.TO_MILLI_FACTOR);
     }
 
     fireStateChanged(); // percolate change in component up to any containers

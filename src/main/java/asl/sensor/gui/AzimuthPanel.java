@@ -1,15 +1,12 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.AzimuthExperiment;
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.input.DataStore;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
-import java.text.DecimalFormat;
 import java.util.List;
+import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -31,6 +28,9 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleAnchor;
+import asl.sensor.experiment.AzimuthExperiment;
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.input.DataStore;
 
 /**
  * Wrapper class to display result from Azimuth. Overrides some parent
@@ -42,11 +42,7 @@ import org.jfree.ui.RectangleAnchor;
 public class AzimuthPanel extends ExperimentPanel {
 
   private static final long serialVersionUID = 4088024342809622854L;
-  /**
-   * Thread safe reference to a shared DecimalFormat object.
-   */
-  private static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
-      ThreadLocal.withInitial(() ->  new DecimalFormat("#.###"));
+
   private final JSpinner offsetSpinner; // select how far from north to set reference data
   private JFreeChart angleChart, estimationChart; // plot angle, plot windowed estimation angle and correlation
   // note that some overrides are necessary because angle chart is a polar plot, not xy plot
@@ -54,8 +50,8 @@ public class AzimuthPanel extends ExperimentPanel {
 
   private final JComboBox<String> chartSelector;
 
-  AzimuthPanel(ExperimentEnum exp) {
-    super(exp);
+  AzimuthPanel(ExperimentEnum experiment) {
+    super(experiment);
 
     SpinnerModel spinModel = new SpinnerNumberModel(0, -360, 360, 0.1);
     offsetSpinner = new JSpinner(spinModel);
@@ -94,12 +90,6 @@ public class AzimuthPanel extends ExperimentPanel {
     this.setLayout(new GridBagLayout());
 
     GridBagConstraints constraints = new GridBagConstraints();
-    constraints.gridx = 0;
-    constraints.gridy = 0;
-    constraints.weightx = 1;
-    constraints.weighty = 0;
-    constraints.fill = GridBagConstraints.NONE;
-    constraints.anchor = GridBagConstraints.EAST;
 
     constraints.anchor = GridBagConstraints.CENTER;
     constraints.gridx = 0;
@@ -110,28 +100,27 @@ public class AzimuthPanel extends ExperimentPanel {
     constraints.fill = GridBagConstraints.BOTH;
     this.add(chartPanel, constraints);
 
+    JPanel offsetPanel = new JPanel();
+    offsetPanel.setLayout(new BoxLayout(offsetPanel, BoxLayout.X_AXIS));
+    offsetPanel.add(offsetSpinnerLabel);
+    offsetPanel.add(offsetSpinner);
     constraints.weighty = 0.0;
     constraints.gridy += 1;
     constraints.gridwidth = 1;
     constraints.fill = GridBagConstraints.NONE;
-    constraints.anchor = GridBagConstraints.EAST;
-    this.add(offsetSpinnerLabel, constraints);
+    constraints.anchor = GridBagConstraints.WEST;
+    this.add(offsetPanel, constraints);
 
     constraints.gridx += 1;
-    constraints.anchor = GridBagConstraints.WEST;
-    this.add(offsetSpinner, constraints);
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.SOUTH;
+    this.add(save, constraints);
 
     constraints.gridx += 1;
     constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.anchor = GridBagConstraints.CENTER;
     this.add(chartSelector, constraints);
 
-    constraints.gridx = 0;
-    constraints.gridy += 1;
-    constraints.gridwidth = 3;
-    constraints.fill = GridBagConstraints.NONE;
-    constraints.anchor = GridBagConstraints.CENTER;
-    this.add(save, constraints);
   }
 
   @Override
@@ -171,7 +160,7 @@ public class AzimuthPanel extends ExperimentPanel {
   }
 
   @Override
-  public void displayInfoMessage(String infoMsg) {
+  void displayInfoMessage(String infoMsg) {
 
     if (chartSelector.getSelectedIndex() == 0) {
       PolarPlot plot = (PolarPlot) angleChart.getPlot();
@@ -210,7 +199,7 @@ public class AzimuthPanel extends ExperimentPanel {
   }
 
   @Override
-  public String getInsetStrings() {
+  String getInsetStrings() {
     AzimuthExperiment experiment = (AzimuthExperiment) expResult;
     double value = experiment.getOffset();
     double angle = experiment.getFitAngle();
@@ -306,5 +295,4 @@ public class AzimuthPanel extends ExperimentPanel {
 
     chartSelector.setSelectedIndex(0);
   }
-
 }

@@ -2,13 +2,6 @@ package asl.sensor.experiment;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
-import asl.sensor.experiment.NoiseExperiment;
-import asl.sensor.input.DataStore;
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -16,6 +9,11 @@ import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
+import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class NoiseTest {
 
@@ -27,16 +25,16 @@ public class NoiseTest {
     data[0] = "00_BH0.512.seed";
     data[1] = "10_BH0.512.seed";
     data[2] = "TST6." + data[0];
-    String resp = "T-compact_Q330HR_BH_40";
+    String resp = TestUtils.RESP_LOCATION + "T-compact_Q330HR_BH_40";
     DataStore ds = new DataStore();
     for (int i = 0; i < data.length; ++i) {
       try {
         ds.setBlock(i, testFolder + data[i]);
+        ds.setResponse(i, resp);
       } catch (IOException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }
-      ds.setEmbedResponse(i, resp);
     }
 
     OffsetDateTime startCal =
@@ -62,16 +60,16 @@ public class NoiseTest {
     data[0] = "00_LH0.512.seed";
     data[1] = "10_LH0.512.seed";
     data[2] = "TST6." + data[0];
-    String resp = "T-compact_Q330HR_BH_40";
+    String resp = TestUtils.RESP_LOCATION + "T-compact_Q330HR_BH_40";
     DataStore ds = new DataStore();
     for (int i = 0; i < data.length; ++i) {
       try {
         ds.setBlock(i, testFolder + data[i]);
+        ds.setResponse(i, resp);
       } catch (IOException | SeedFormatException | CodecException e) {
         e.printStackTrace();
         fail();
       }
-      ds.setEmbedResponse(i, resp);
     }
     OffsetDateTime startCal =
         OffsetDateTime.ofInstant( ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);

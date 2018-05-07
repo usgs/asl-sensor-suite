@@ -97,8 +97,6 @@ public class NumericUtils {
     }
   }
 
-  public static CpxMagComparator cmc;
-
   /**
    * 2 * Pi, sometimes also referred to as Tau.
    * The number of radians in a full circle.
@@ -355,15 +353,15 @@ public class NumericUtils {
   }
 
   /**
-   * Given a plot of data within a 2 * Pi range, check that a point is
-   * continuous with a previous value.
+   * Given a plot of data within a 2 * Pi range, check that a point is within
+   * Pi of the previous value.
    *
    * @param phi Angle to fit within range of previous value (radians)
    * @param prevPhi Angle to check discontinuity against (radians)
    * @return New angle, with distance < Pi rad from the previous value
    */
   public static double unwrap(double phi, double prevPhi) {
-    // sets range to [0,TAU], this syntax used because Java mod is weird
+    // sets range to [0,TAU]
     double newPhi = ((phi % TAU) + TAU) % TAU;
 
     while (Math.abs(prevPhi - newPhi) > Math.PI) {
@@ -373,7 +371,6 @@ public class NumericUtils {
         newPhi += TAU;
       }
     }
-
     return newPhi;
   }
 
@@ -387,7 +384,7 @@ public class NumericUtils {
    * @return New array of angles where each pair of continuous points is
    * within distance < Pi rad from the previous value
    */
-  public static double[] unwrapList(double[] angles) {
+  public static double[] unwrapArray(double[] angles) {
     double[] out = new double[angles.length];
     double prevPhi = 0.;
 
@@ -397,6 +394,21 @@ public class NumericUtils {
     }
 
     return out;
+  }
+
+  /**
+   * Wrap a degree to be between -180 and 180
+   * @param angle in degrees
+   * @return same angle but between -180 and 180
+   */
+  public static double rewrapAngleDegrees(double angle) {
+    while (angle < -180) {
+      angle += 360;
+    }
+    while (angle > 180) {
+      angle -= 360;
+    }
+    return angle;
   }
 
 }

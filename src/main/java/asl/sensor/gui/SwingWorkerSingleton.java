@@ -1,10 +1,11 @@
 package asl.sensor.gui;
 
+import asl.sensor.input.DataStore;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
 import org.apache.commons.math3.exception.ConvergenceException;
 import org.apache.commons.math3.exception.NoDataException;
-import asl.sensor.input.DataStore;
 
 /**
  * Used as singleton instance of swingworker to prevent clogging the program
@@ -16,20 +17,6 @@ public class SwingWorkerSingleton {
 
   private static SwingWorker<Boolean, Void> worker;
   private static ExperimentPanel epHandle;
-
-  public static void cancel() {
-    worker.cancel(true);
-  }
-
-  /**
-   * Get the result of running the swingworker, that is, completion status
-   *
-   * @return True if the worker (i.e., experiment) completed successfully
-   */
-  public static boolean getCompleted()
-      throws InterruptedException, ExecutionException {
-    return worker.get();
-  }
 
   public static SwingWorker<Boolean, Void> getInstance() {
     return worker;
@@ -57,7 +44,9 @@ public class SwingWorkerSingleton {
       // the result won't actually complete, so we should make it clear that
       // other panel was cancelled, and thus clear the chart / unset data
       if (!worker.isDone()) {
-        worker.cancel(true); // cancel worker, set it to the new task
+        try {
+          worker.cancel(true); // cancel worker, set it to the new task
+        } catch (CancellationException ignore) {}
       }
     }
 
@@ -97,6 +86,14 @@ public class SwingWorkerSingleton {
             text.append("A common cause of this is having too little timeseries data to");
             text.append(" process.\n");
             text.append("(Are you running a low-frequency cal on high-frequency data?)\n");
+            text.append("A more detailed explanation has been output to terminal,\n");
+            text.append("but here is the error message returned by the backend:\n");
+            text.append(cause.toString());
+          } else if (cause instanceof ArrayIndexOutOfBoundsException) {
+            text.append("Solver attempted to access nonexistent data\n");
+            text.append("A common cause of this is having too little timeseries data to");
+            text.append(" process.\n");
+            text.append("(Are you running a low-frequency cal on a small amount of data?)\n");
             text.append("A more detailed explanation has been output to terminal,\n");
             text.append("but here is the error message returned by the backend:\n");
             text.append(cause.toString());

@@ -1,14 +1,14 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.NumericUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * Produces plots of response curves' magnitudes (Bode plot) and angle of

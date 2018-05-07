@@ -4,21 +4,20 @@ import asl.sensor.experiment.Experiment;
 import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +28,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
-import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -72,6 +70,25 @@ public abstract class ExperimentPanel
     implements ActionListener, ChangeListener {
 
   private static final long serialVersionUID = -5591522915365766604L;
+  static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        DecimalFormat format = new DecimalFormat("#.###");
+        NumericUtils.setInfinityPrintable(format);
+        return format;
+      });
+  public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
+      });
+
+  static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
+      });
 
   /**
    * Append text to a chart's title (used for distinguishing random cal types).
@@ -79,7 +96,7 @@ public abstract class ExperimentPanel
    * @param chart Chart whose title will be modified
    * @param appendText Text to append to chart's current title
    */
-  public static void appendChartTitle(JFreeChart chart, String appendText) {
+  static void appendChartTitle(JFreeChart chart, String appendText) {
     String titleText = chart.getTitle().getText();
     chart.getTitle().setText(titleText + appendText);
   }
@@ -87,33 +104,23 @@ public abstract class ExperimentPanel
   /**
    * Get start and end times of data for experiments that use time series data
    *
-   * @param expResult experiment with data already added
-   * @return string representing the start and end of the
-   * experiment's data range
+   * @param experiment experiment with data already added
+   * @return string representing the start and end of the experiment's data range
    */
-  public static String getTimeStampString(Experiment expResult) {
+  public static String getTimeStampString(Experiment experiment) {
     StringBuilder sb = new StringBuilder();
 
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("y.DDD.HH:mm:ss.SSS");
-    OffsetDateTime dt = OffsetDateTime.now(ZoneOffset.UTC);
-
     sb.append("Time of report generation:\n");
-    sb.append(dtf.format(dt));
+    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.now())));
     sb.append('\n');
 
-    long startTime = expResult.getStart();
-    long endTime = expResult.getEnd();
-    if (!(startTime == 0L && endTime == 0L)) {
-      dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneOffset.UTC);
-
+    long startTime = experiment.getStart();
+    long endTime = experiment.getEnd();
+    if (startTime != 0L && endTime != 0L) {
       sb.append("Data start time:\n");
-      sb.append(dtf.format(dt));
-      sb.append('\n');
-
-      dt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(endTime), ZoneOffset.UTC);
-
-      sb.append("Data end time:\n");
-      sb.append(dtf.format(dt));
+      sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(startTime))));
+      sb.append("\nData end time:\n");
+      sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(endTime))));
       sb.append('\n');
     }
     return sb.toString();
@@ -129,31 +136,30 @@ public abstract class ExperimentPanel
    * an XY plot (i.e., is an XYLineSeries chart)
    */
   public static void invertSeriesRenderingOrder(JFreeChart chart) {
-    XYPlot xyp = chart.getXYPlot();
-    SeriesRenderingOrder sro = xyp.getSeriesRenderingOrder();
-    if (sro.equals(SeriesRenderingOrder.FORWARD)) {
-      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.REVERSE);
+    XYPlot plot = chart.getXYPlot();
+    if (plot.getSeriesRenderingOrder().equals(SeriesRenderingOrder.FORWARD)) {
+      plot.setSeriesRenderingOrder(SeriesRenderingOrder.REVERSE);
     } else {
-      xyp.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
+      plot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
     }
 
   }
 
-  protected JButton save; // easy access to saving output as png
+  final JButton save; // easy access to saving output as png
 
   protected JFreeChart chart; // the chart shown in the panel
 
-  protected ChartPanel chartPanel; // component used to hold the shown chart
+  final ChartPanel chartPanel; // component used to hold the shown chart
   // (if an experiment has multiple charts to show, ideally each should be
   // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
 
-  protected JFileChooser fc; // save image when image save button clicked
+  private final JFileChooser fileChooser; // save image when image save button clicked
 
-  public final ExperimentEnum expType;
+  final ExperimentEnum expType;
   // used to define experiment of each plot object (i.e., chart name)
 
-  protected Experiment expResult;
+  Experiment expResult;
   // experiment actually being run (call its 'setData' method to run backend)
   // experiments use builder pattern -- set necessary variables like
   // angle offset or x-axis units before running the experiment
@@ -161,30 +167,27 @@ public abstract class ExperimentPanel
   protected ValueAxis xAxis, yAxis;
   // default axes to use with the default chart
 
-  public String[] channelType;
+  final String[] channelType;
   // used to give details in input panel about what users needs to load where
   protected boolean set; // true if the experiment has run
 
-  protected String[] plotTheseInBold; // given in the implementing function
+  String[] plotTheseInBold; // given in the implementing function
   // this is a String because bolded names are intended to be fixed
   // (i.e., NLNM, NHNM, not dependent on user input)
-  protected Map<String, Color> seriesColorMap;
+  Map<String, Color> seriesColorMap;
 
-  protected Set<String> seriesDashedSet;
+  final Set<String> seriesDashedSet;
   // these are map/set because they are based on the data read in, not fixed
 
-  // three PSDs, three self-noise calcs
-
-  protected final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
+  final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
 
   /**
    * Construct a new panel, using a backend defined by the passed-in enum
    *
-   * @param exp Experiment enum with corresponding backend for factory
+   * @param experiment Experiment enum with corresponding backend for factory
    * instantiation
    */
-  public ExperimentPanel(ExperimentEnum exp) {
-
+  public ExperimentPanel(ExperimentEnum experiment) {
     set = false;
 
     channelType = new String[DataStore.FILE_COUNT];
@@ -194,20 +197,19 @@ public abstract class ExperimentPanel
       channelType[i] = "NOT USED";
     }
 
-    seriesColorMap = new HashMap<String, Color>();
-    seriesDashedSet = new HashSet<String>();
+    seriesColorMap = new HashMap<>();
+    seriesDashedSet = new HashSet<>();
     plotTheseInBold = new String[]{};
 
-    expType = exp;
-    expResult = ExperimentFactory.createExperiment(exp);
+    expType = experiment;
+    expResult = ExperimentFactory.createExperiment(experiment);
     expResult.addChangeListener(this);
 
     chart = ChartFactory.createXYLineChart(expType.getName(),
         "", "", null);
     chartPanel = new ChartPanel(chart);
-    // chartPanel.setMouseZoomable(false);
 
-    fc = new JFileChooser();
+    fileChooser = new JFileChooser();
 
     save = new JButton("Save plot (PNG)");
     save.addActionListener(this);
@@ -226,16 +228,16 @@ public abstract class ExperimentPanel
    * when the save button is clicked.
    */
   @Override
-  public void actionPerformed(ActionEvent e) {
+  public void actionPerformed(ActionEvent event) {
 
-    if (e.getSource() == save) {
+    if (event.getSource() == save) {
       String ext = ".png";
-      fc.addChoosableFileFilter(
+      fileChooser.addChoosableFileFilter(
           new FileNameExtensionFilter("PNG image (.png)", ext));
-      fc.setFileFilter(fc.getChoosableFileFilters()[1]);
-      int returnVal = fc.showSaveDialog(save);
+      fileChooser.setFileFilter(fileChooser.getChoosableFileFilters()[1]);
+      int returnVal = fileChooser.showSaveDialog(save);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
-        File selFile = fc.getSelectedFile();
+        File selFile = fileChooser.getSelectedFile();
         if (!selFile.getName().endsWith(ext.toLowerCase())) {
           selFile = new File(selFile.toString() + ext);
         }
@@ -251,10 +253,10 @@ public abstract class ExperimentPanel
   /**
    * Gets the axes to be used to plot the data
    */
-  protected void applyAxesToChart() {
-    XYPlot xyp = chart.getXYPlot();
-    xyp.setDomainAxis(getXAxis());
-    xyp.setRangeAxis(getYAxis());
+  void applyAxesToChart() {
+    XYPlot plot = chart.getXYPlot();
+    plot.setDomainAxis(getXAxis());
+    plot.setRangeAxis(getYAxis());
   }
 
   /**
@@ -282,50 +284,54 @@ public abstract class ExperimentPanel
    * y is magnitude and phase).
    *
    * @param xyDataset Data to be plotted
-   * @param x X-axis to be applied to the chart
-   * @param y Y-axis to be applied to the chart
+   * @param xAxis X-axis to be applied to the chart
+   * @param yAxis Y-axis to be applied to the chart
    * @return XY Line Chart with the corresponding data in it
    */
   public JFreeChart
-  buildChart(XYSeriesCollection xyDataset, ValueAxis x, ValueAxis y) {
+  buildChart(XYSeriesCollection xyDataset, ValueAxis xAxis, ValueAxis yAxis) {
 
     JFreeChart chart = ChartFactory.createXYLineChart(
         expType.getName(),
-        x.getLabel(),
-        y.getLabel(),
+        xAxis.getLabel(),
+        yAxis.getLabel(),
         xyDataset,
         PlotOrientation.VERTICAL,
         true, // include legend
         false,
         false);
 
+    if (xyDataset == null) {
+      return chart;
+    }
+
     // apply effects to the components that require it (i.e., NLNM time series)
     XYPlot xyPlot = chart.getXYPlot();
-    XYItemRenderer xyir = xyPlot.getRenderer();
+    XYItemRenderer renderer = xyPlot.getRenderer();
 
-    if (xyDataset != null && seriesColorMap.size() == 0) {
+    if (seriesColorMap.size() == 0) {
       int modulus = COLORS.length;
       for (int seriesIdx = 0; seriesIdx < xyDataset.getSeriesCount(); ++seriesIdx) {
-        xyir.setSeriesPaint(seriesIdx, COLORS[seriesIdx % modulus]);
+        renderer.setSeriesPaint(seriesIdx, COLORS[seriesIdx % modulus]);
       }
     }
 
     // force certain colors and whether or not a line should be dashed
 
     for (String series : seriesColorMap.keySet()) {
-      int seriesIdx = xyDataset.getSeriesIndex(series);
-      if (seriesIdx >= 0) {
-        xyir.setSeriesPaint(seriesIdx, seriesColorMap.get(series));
+      int seriesIndex = xyDataset.getSeriesIndex(series);
+      if (seriesIndex >= 0) {
+        renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series));
       } else {
         continue;
       }
 
       if (seriesDashedSet.contains(series)) {
-        xyir.setSeriesPaint(seriesIdx, seriesColorMap.get(series).darker());
+        renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series).darker());
 
-        BasicStroke stroke = (BasicStroke) xyir.getSeriesStroke(seriesIdx);
+        BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
         if (stroke == null) {
-          stroke = (BasicStroke) xyir.getBaseStroke();
+          stroke = (BasicStroke) renderer.getBaseStroke();
         }
         float width = stroke.getLineWidth();
         int join = stroke.getLineJoin();
@@ -334,9 +340,8 @@ public abstract class ExperimentPanel
         float[] dashing = new float[]{1, 4};
 
         stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
-        xyir.setSeriesStroke(seriesIdx, stroke);
+        renderer.setSeriesStroke(seriesIndex, stroke);
       }
-
     }
 
     if (!(plotTheseInBold.length == 0)) {
@@ -346,18 +351,18 @@ public abstract class ExperimentPanel
           continue;
         }
 
-        BasicStroke stroke = (BasicStroke) xyir.getSeriesStroke(seriesIdx);
+        BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIdx);
         if (stroke == null) {
-          stroke = (BasicStroke) xyir.getBaseStroke();
+          stroke = (BasicStroke) renderer.getBaseStroke();
         }
         stroke = new BasicStroke(stroke.getLineWidth() * 2);
-        xyir.setSeriesStroke(seriesIdx, stroke);
-        xyir.setSeriesPaint(seriesIdx, new Color(0, 0, 0));
+        renderer.setSeriesStroke(seriesIdx, stroke);
+        renderer.setSeriesPaint(seriesIdx, new Color(0, 0, 0));
       }
     }
 
-    xyPlot.setDomainAxis(x);
-    xyPlot.setRangeAxis(y);
+    xyPlot.setDomainAxis(xAxis);
+    xyPlot.setRangeAxis(yAxis);
 
     return chart;
   }
@@ -378,7 +383,7 @@ public abstract class ExperimentPanel
   /**
    * Clear chart data and display text that it is loading new data
    */
-  protected void clearChartAndSetProgressData() {
+  void clearChartAndSetProgressData() {
     clearChart();
     displayInfoMessage("Running calculation...");
   }
@@ -390,29 +395,29 @@ public abstract class ExperimentPanel
    */
   public void displayErrorMessage(String errMsg) {
     clearChart();
-    XYPlot xyp = (XYPlot) chart.getPlot();
+    XYPlot plot = (XYPlot) chart.getPlot();
     TextTitle result = new TextTitle();
     result.setText(errMsg);
     result.setBackgroundPaint(Color.red);
     result.setPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
         RectangleAnchor.CENTER);
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
+    plot.clearAnnotations();
+    plot.addAnnotation(xyt);
   }
 
   /**
    * Overlay informational text, such as extra results and statistics for plots
    */
-  public void displayInfoMessage(String infoMsg) {
-    XYPlot xyp = (XYPlot) chartPanel.getChart().getPlot();
+  void displayInfoMessage(String infoMsg) {
+    XYPlot plot = (XYPlot) chartPanel.getChart().getPlot();
     TextTitle result = new TextTitle();
     result.setText(infoMsg);
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.5, 0.5, result,
         RectangleAnchor.CENTER);
-    xyp.clearAnnotations();
-    xyp.addAnnotation(xyt);
+    plot.clearAnnotations();
+    plot.addAnnotation(xyt);
   }
 
   /**
@@ -430,7 +435,7 @@ public abstract class ExperimentPanel
    *
    * @return Array of strings, each one to be written to a new report page
    */
-  public String[] getAdditionalReportPages() {
+  String[] getAdditionalReportPages() {
     return new String[]{};
   }
 
@@ -463,21 +468,6 @@ public abstract class ExperimentPanel
   }
 
   /**
-   * Return image of panel's plots with specified dimensions
-   * Used to compile PNG image of all charts contained in this panel
-   *
-   * @param width Width of output image in pixels
-   * @param height Height of output image in pixels
-   * @return buffered image of this panel's chart
-   */
-  public BufferedImage getAsImage(int width, int height) {
-
-    JFreeChart[] jfcs = getCharts();
-    return ReportingUtils.chartsToImage(width, height, jfcs);
-
-  }
-
-  /**
    * Returns the identifiers of each input plot being used, such as
    * "calibration input" for the calibration tests.
    *
@@ -507,7 +497,7 @@ public abstract class ExperimentPanel
    *
    * @return Index of data used to get naem for report
    */
-  protected int getIndexOfMainData() {
+  int getIndexOfMainData() {
     return 0;
   }
 
@@ -517,7 +507,7 @@ public abstract class ExperimentPanel
    *
    * @return String with any relevant parameters in it
    */
-  public String getInsetStrings() {
+  String getInsetStrings() {
     return "";
   }
 
@@ -530,7 +520,7 @@ public abstract class ExperimentPanel
    *
    * @return A string with any additional data to be included in the PDF report
    */
-  public String getMetadataString() {
+  String getMetadataString() {
     List<String> names = expResult.getInputNames();
     StringBuilder sb = new StringBuilder("Input filenames, ");
     sb.append(" with SEED and RESP files paired as appropriate:\n");
@@ -549,16 +539,15 @@ public abstract class ExperimentPanel
    */
   public String getPDFFilename() {
 
-    SimpleDateFormat sdf = new SimpleDateFormat("YYYY.DDD");
-    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+    SimpleDateFormat dateFormat = DATE_FORMAT.get();
 
     String date;
     long time = expResult.getStart();
     if (time > 0) {
-      date = sdf.format(time);
+      date = dateFormat.format(time);
     } else {
-      Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
-      date = sdf.format(cCal.getTime());
+      Calendar cCal = Calendar.getInstance(dateFormat.getTimeZone());
+      date = dateFormat.format(cCal.getTime());
     }
 
     // turn spaces into underscores
@@ -568,17 +557,13 @@ public abstract class ExperimentPanel
     test = test.replace('(', '_');
     test = test.replace(')', '_');
 
-    int idx = getIndexOfMainData();
-    String name = expResult.getInputNames().get(idx); // name of input data
+    List<String> names = expResult.getInputNames();
+    String name = "";
+    if (names.size() < getIndexOfMainData()) {
+      name = names.get(getIndexOfMainData()); // name of input data
+    }
 
-    StringBuilder sb = new StringBuilder();
-    sb.append(test);
-    sb.append('_');
-    sb.append(name);
-    sb.append('_');
-    sb.append(date);
-    sb.append(".pdf");
-    return sb.toString();
+    return test + '_' + name + '_' + date + ".pdf";
 
   }
 
@@ -599,7 +584,7 @@ public abstract class ExperimentPanel
    *
    * @return List of charts to show on a second page of PDF reports
    */
-  public JFreeChart[] getSecondPageCharts() {
+  JFreeChart[] getSecondPageCharts() {
     return new JFreeChart[]{};
   }
 
@@ -627,16 +612,16 @@ public abstract class ExperimentPanel
   }
 
   /**
-   * Function used to query backend on whether or not a datastore has all the
+   * Function used to query backend on whether or not a DataStore has all the
    * data that a backend needs to calculate. This is used mainly to inform
    * the main window (see SensorSuite class) that the generate result button
    * can be set active
    *
-   * @param ds Datastore to run data check on
+   * @param dataStore DataStore to run data check on
    * @return True if the backend can run with the data provided
    */
-  public boolean hasEnoughData(final DataStore ds) {
-    return expResult.hasEnoughData(ds);
+  public boolean hasEnoughData(final DataStore dataStore) {
+    return expResult.hasEnoughData(dataStore);
   }
 
   /**
@@ -649,8 +634,7 @@ public abstract class ExperimentPanel
   }
 
   /**
-   * Function template for informing main window of number of panels to display
-   * to fit all data needed by the program
+   * Get the number of panels to display to fit all data needed by the program
    *
    * @return Number of plots to show in the input panel
    */
@@ -659,27 +643,10 @@ public abstract class ExperimentPanel
   /**
    * Number of panels to return in an output report
    *
-   * @return number of panels to include
+   * @return Number of panels to include
    */
   public int plotsToShow() {
     return panelsNeeded();
-  }
-
-  /**
-   * Function to call to run experiment backend on specific data, using the
-   * given swingworker
-   *
-   * @param ds Data to evaluate the backend on
-   * @param worker Worker thread to run the backend in, presumably the
-   * worker object originating in the main class for the suite
-   */
-  public SwingWorker<Boolean, Void>
-  runExperiment(final DataStore ds, SwingWorker<Boolean, Void> worker) {
-
-    worker.execute();
-
-    return worker;
-
   }
 
   /**
@@ -690,7 +657,7 @@ public abstract class ExperimentPanel
    *
    * @param pdf PDF document to append data to
    */
-  public void saveInsetDataText(PDDocument pdf) {
+  private void saveInsetDataText(PDDocument pdf) {
 
     StringBuilder sb = new StringBuilder(getInsetStrings());
     if (sb.length() > 0) {
@@ -704,7 +671,6 @@ public abstract class ExperimentPanel
     sb.append(getTimeStampString(expResult));
     ReportingUtils.textToPDFPage(sb.toString(), pdf);
     ReportingUtils.textListToPDFPages(pdf, getAdditionalReportPages());
-    return;
   }
 
   /**
@@ -728,7 +694,6 @@ public abstract class ExperimentPanel
 
   }
 
-
   /**
    * Used to plot the results of a backend function from an experiment
    * using a collection of XYSeries mapped by strings. This will be set to
@@ -737,9 +702,7 @@ public abstract class ExperimentPanel
    * @param xyDataset collection of XYSeries to plot
    */
   protected void setChart(XYSeriesCollection xyDataset) {
-
     chart = buildChart(xyDataset);
-
   }
 
   /**
@@ -755,21 +718,20 @@ public abstract class ExperimentPanel
    * the backend status changes
    */
   @Override
-  public void stateChanged(ChangeEvent e) {
-    if (e.getSource() == expResult) {
+  public void stateChanged(ChangeEvent event) {
+    if (event.getSource() == expResult) {
       String info = expResult.getStatus();
       displayInfoMessage(info);
     }
   }
 
   /**
-   * Function template for sending input to a backend fucntion and collecting
-   * the corresponding data
+   * Function template for sending input to a backend fucntion and collecting the corresponding data.
+   * Details of how to run updateData are left up to the implementing panel however, the boolean "set" should be set to true to enable PDF saving
    *
-   * @param ds DataStore object containing seed and resp files
+   * @param dataStore DataStore object containing seed and resp files
    */
-  protected abstract void updateData(final DataStore ds);
-  // details of how to run updateData are left up to the implementing panel
-  // however, the boolean "set" should be set to true to enable PDF saving
+  protected abstract void updateData(final DataStore dataStore);
+
 
 }

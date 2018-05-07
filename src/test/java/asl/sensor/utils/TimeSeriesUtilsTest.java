@@ -1,6 +1,8 @@
 package asl.sensor.utils;
 
 import static asl.sensor.utils.TimeSeriesUtils.concatAll;
+import static asl.sensor.utils.TimeSeriesUtils.downsample;
+import static asl.sensor.utils.TimeSeriesUtils.euclidGCD;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -167,13 +169,27 @@ public class TimeSeriesUtilsTest {
   @Test
   public final void testDetrendNoSlope() {
     double[] x = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-
     x = TimeSeriesUtils.detrend(x);
-
     for (double aX : x) {
       assertEquals(aX, 0.0, 1E-5);
     }
+  }
 
+  @Test
+  public final void downsample_thirdOfFrequency() {
+    double[]  in = {1,2,3,4,5,6,7,8,9,10, 11, 12};
+    int factor = 3;
+    double[] expected = {1, 4, 7, 10};
+    double[] out = downsample(in, factor);
+    assertArrayEquals(expected, out, 1E-5);
+  }
+
+  @Test
+  public final void euclidGCD_basicTest() {
+    assertEquals( 50l, euclidGCD(100, 50));
+    assertEquals( 50l, euclidGCD(50, 100));
+    assertEquals( 3l, euclidGCD(999, 105));
+    assertEquals( 2l, euclidGCD(2147483612,2137483646));
   }
 
   @Test
@@ -384,23 +400,17 @@ public class TimeSeriesUtilsTest {
           int fact = dr.getHeader().getSampleRateFactor();
           int mult = dr.getHeader().getSampleRateMultiplier();
 
-          //System.out.println(fact+","+mult);
-
-          double rate = dr.getHeader().getSampleRate();
+          double rate = dr.getSampleRate();
           assertTrue((double) fact / mult == rate);
 
           // checking the correct values for the intervals
-
           double multOf1Hz = rate / TimeSeriesUtils.ONE_HZ;
           long inverse = TimeSeriesUtils.ONE_HZ_INTERVAL / (long) multOf1Hz;
 
           long interval = TimeSeriesUtils.ONE_HZ_INTERVAL * mult / fact;
 
           assertEquals(inverse, interval);
-          // System.out.println(interval);
-
           break;
-
         }
       }
     } catch (IOException | SeedFormatException e) {
@@ -432,7 +442,6 @@ public class TimeSeriesUtilsTest {
       e.printStackTrace();
       fail();
     }
-
   }
 
   @Test
