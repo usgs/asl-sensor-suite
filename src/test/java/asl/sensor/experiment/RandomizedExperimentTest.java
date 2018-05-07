@@ -64,7 +64,7 @@ public class RandomizedExperimentTest {
     ds.trim(st, ed);
 
     RandomizedExperiment re = new RandomizedExperiment();
-    re.setLowFreq(true);
+    re.setLowFrequencyCalibration(true);
     re.runExperimentOnData(ds);
 
     assertEquals(262144/2 + 1, re.getUntrimmedPSDLength());
@@ -287,7 +287,7 @@ public class RandomizedExperimentTest {
       RandomizedExperiment rCal = (RandomizedExperiment)
           ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
 
-      rCal.setLowFreq(false);
+      rCal.setLowFrequencyCalibration(false);
 
       assertTrue( rCal.hasEnoughData(ds) );
       rCal.runExperimentOnData(ds);
@@ -454,11 +454,11 @@ public class RandomizedExperimentTest {
     RandomizedExperiment rCal = (RandomizedExperiment)
         ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
 
-    rCal.setLowFreq(false);
+    rCal.setLowFrequencyCalibration(false);
 
     assertTrue( rCal.hasEnoughData(ds) );
     rCal.runExperimentOnData(ds);
-    rCal.setLowFreq(false);
+    rCal.setLowFrequencyCalibration(false);
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
         new Complex(-306.7741224387797, 0),
@@ -471,7 +471,8 @@ public class RandomizedExperimentTest {
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
     }
 
-
+    assertEquals(50.11489080838925, rCal.getFitResidual(), 1E-7);
+    assertEquals(1082.7313334829698, rCal.getInitResidual(), 1E-7);
   }
 
   @Test

@@ -540,7 +540,7 @@ public class CalProcessingServer {
 
     RandomizedExperiment randomExperiment = new RandomizedExperiment();
 
-    randomExperiment.setLowFreq(isLowFrequency);
+    randomExperiment.setLowFrequencyCalibration(isLowFrequency);
     randomExperiment.runExperimentOnData(dataStore);
 
     Complex[] fitZerosComplex = randomExperiment.getFitResponse().getZeros()

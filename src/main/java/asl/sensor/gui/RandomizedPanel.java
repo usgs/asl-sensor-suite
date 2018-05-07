@@ -674,8 +674,8 @@ public class RandomizedPanel extends ExperimentPanel {
     double multiplier = (double) nyquistMultiplier.getValue() / 100.;
 
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
-    rndExp.setLowFreq(isLowFreq);
-    rndExp.useFreqUnits(frequencySpace.isSelected());
+    rndExp.setLowFrequencyCalibration(isLowFreq);
+    rndExp.setPlotUsingHz(frequencySpace.isSelected());
     rndExp.setNyquistMultiplier(multiplier);
     expResult.runExperimentOnData(dataStore);
 
