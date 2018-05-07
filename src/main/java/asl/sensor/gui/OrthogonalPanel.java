@@ -1,18 +1,17 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.OrthogonalExperiment;
-import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.util.Arrays;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.ui.RectangleAnchor;
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.experiment.OrthogonalExperiment;
+import asl.sensor.input.DataStore;
 
 /**
  * Panel to display results of Orthogonal Experiment.
