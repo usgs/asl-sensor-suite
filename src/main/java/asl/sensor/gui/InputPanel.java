@@ -1,12 +1,5 @@
 package asl.sensor.gui;
 
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -63,6 +56,13 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 
 /**
@@ -368,8 +368,13 @@ public class InputPanel
 
         List<String> names = new ArrayList<>(respFilenames);
         Collections.sort(names);
-
         names.add("Load custom response...");
+        String[] nameArray = new String[names.size()];
+        for (int k = 0; k < nameArray.length; ++k) {
+          String name = names.get(k);
+          name = name.replace("resps/","");
+          nameArray[k] = name;
+        }
 
         int index = lastRespIndex;
         if (lastRespIndex < 0) {
@@ -382,8 +387,8 @@ public class InputPanel
             "Select a response to load:",
             "RESP File Selection",
             JOptionPane.PLAIN_MESSAGE,
-            null, names.toArray(),
-            names.get(index));
+            null, nameArray,
+            nameArray[index]);
 
         final String resultStr = (String) result;
 
@@ -392,15 +397,17 @@ public class InputPanel
           return;
         }
 
+        String embeddedPath = "resps/" + resultStr;
+
         // is the loaded string one of the embedded response files?
-        if (respFilenames.contains(resultStr)) {
+        if (respFilenames.contains(embeddedPath)) {
           // what was the index of the selected item?
           // used to make sure we default to that choice next round
-          lastRespIndex = Collections.binarySearch(names, resultStr);
+          lastRespIndex = Collections.binarySearch(names, embeddedPath);
           // final used here in the event of thread weirdness
           try {
             InstrumentResponse instrumentResponse =
-                InstrumentResponse.loadEmbeddedResponse(resultStr);
+                InstrumentResponse.loadEmbeddedResponse(embeddedPath);
             dataStore.setResponse(i, instrumentResponse);
 
             respFileNames[i].setText(instrumentResponse.getName());

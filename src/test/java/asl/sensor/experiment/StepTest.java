@@ -3,15 +3,13 @@ package asl.sensor.experiment;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import asl.sensor.test.TestUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.junit.Test;
-import asl.sensor.experiment.StepExperiment;
 import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
@@ -28,7 +26,7 @@ public class StepTest {
     try {
       ds.setBlock(0, testFolder + fname1);
       ds.setBlock(1, testFolder + fname2);
-      ds.setEmbedResponse(1, "STS1T5_Q330HR");
+      ds.setEmbedResponse(1, "resps/STS1T5_Q330HR");
       String startString = "2018-038T15:25:00.0";
       String endString = "2018-038T16:00:00.0";
       long st = TestUtils.timeStringToEpochMilli(startString);
@@ -54,7 +52,7 @@ public class StepTest {
     try {
       ds.setBlock(0, testFolder + fname1);
       ds.setBlock(1, testFolder + fname2);
-      ds.setEmbedResponse(1, "STS25_Q330HR");
+      ds.setEmbedResponse(1, "resps/STS2gen3_Q330HR");
       String startString = "2018-037T20:02:00.0";
       String endString = "2018-037T20:17:00.0";
       long st = TestUtils.timeStringToEpochMilli(startString);
@@ -80,7 +78,7 @@ public class StepTest {
     try {
       ds.setBlock(0, testFolder + fname1);
       ds.setBlock(1, testFolder + fname2);
-      ds.setEmbedResponse(1, "STS1T5_Q330HR");
+      ds.setEmbedResponse(1, "resps/STS1T5_Q330HR");
       String startString = "2017-248T05:00:00.0";
       String endString = "2017-248T05:30:00.0";
       long st = TestUtils.timeStringToEpochMilli(startString);
@@ -106,7 +104,7 @@ public class StepTest {
     try {
       ds.setBlock(0, testFolder + fname1);
       ds.setBlock(1, testFolder + fname2);
-      ds.setEmbedResponse(1, "TR360_Q330HR");
+      ds.setEmbedResponse(1, "resps/TR360_Q330HR");
       String startString = "2018-102T22:22:00.0";
       String endString = "2018-102T23:00:00.0";
       long st = TestUtils.timeStringToEpochMilli(startString);
