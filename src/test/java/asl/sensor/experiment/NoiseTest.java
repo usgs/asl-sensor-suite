@@ -25,7 +25,7 @@ public class NoiseTest {
     data[0] = "00_BH0.512.seed";
     data[1] = "10_BH0.512.seed";
     data[2] = "TST6." + data[0];
-    String resp = testFolder + "T-compact_Q330HR_BH_40";
+    String resp = TestUtils.RESP_LOCATION + "T-compact_Q330HR_BH_40";
     DataStore ds = new DataStore();
     for (int i = 0; i < data.length; ++i) {
       try {
@@ -60,7 +60,7 @@ public class NoiseTest {
     data[0] = "00_LH0.512.seed";
     data[1] = "10_LH0.512.seed";
     data[2] = "TST6." + data[0];
-    String resp = folder + "noise-neg159db/" + "T-compact_Q330HR_BH_40";
+    String resp = TestUtils.RESP_LOCATION + "T-compact_Q330HR_BH_40";
     DataStore ds = new DataStore();
     for (int i = 0; i < data.length; ++i) {
       try {

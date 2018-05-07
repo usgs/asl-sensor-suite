@@ -39,7 +39,7 @@ public class NoiseNineTest {
     String freqName = "_BH";
     String[] components = new String[]{"1","2","Z"};
     String ending = ".512.seed";
-    String respName = testFolder + "STS-1_Q330HR_BH_20";
+    String respName = TestUtils.RESP_LOCATION + "STS-1_Q330HR_BH_20";
 
     DataStore ds =
         setUpTest(testFolder, types, freqName, components, ending, respName, false);

@@ -145,7 +145,7 @@ public class InstrumentResponseTest {
 
     InstrumentResponse ir;
     try {
-      ir = new InstrumentResponse(folder + "loose-resps/STS-5A_Q330HR_BH_40");
+      ir = new InstrumentResponse(TestUtils.RESP_LOCATION + "STS-5A_Q330HR_BH_40");
     } catch (IOException e) {
       fail();
       e.printStackTrace();
