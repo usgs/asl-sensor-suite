@@ -38,29 +38,40 @@ As a collection, this software is licensed under the GPL.
 	
 
 ### Libraries
+  Libraries are downloaded from https://mvnrepository.com.  
 	Below are copyright notices for included libraries:  
 
 ###### JFreeChart
-
-	URL: https://mvnrepository.com/artifact/org.jfree/jfreechart
-	License: GNU Lesser General Public License (LGPL)
+	(C) Copyright 2000-2013, by Object Refinery Limited and Contributors.   
+	URL: http://www.jfree.org/jfreechart/  
+	License: GNU Lesser General Public License (LGPL)  
 
 ###### SeisFile
-	
-	URL: https://mvnrepository.com/artifact/edu.sc.seis/seisFile
-	License: GNU Public License (GPL) 3.0
+	URL: http://www.seis.sc.edu/seisFile.html  
+	License: GNU Public License (GPL) 3.0  
+
+###### SeedCodec
+	URL: http://www.seis.sc.edu/seedCodec.html  
+	License: GNU Public License (GPL) 3.0  
+
 
 ###### PDFBox
-
-	URL: https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox
-	License: Apache 2.0
+	Copyright 2015 The Apache Software Foundation.
+	URL: https://pdfbox.apache.org/  
+	License: Apache License v2.0  
 
 ###### Apache Commons Math 3
+	Copyright 2001-2016 The Apache Software Foundation
 	
-	URL: https://mvnrepository.com/artifact/org.apache.commons/commons-math3
-	License: Apache 2.0
+	This product includes software developed at
+	The Apache Software Foundation (http://www.apache.org/).
+	
+	This product includes software developed for Orekit by
+	CS Systèmes d'Information (http://www.c-s.fr/)  
+	Copyright 2010-2012 CS Systèmes d'Information	URL: https://mvnrepository.com/artifact/org.apache.commons/commons-math3  
+	License: Apache License v2.0  
 
-###### Apache Commons Logging
-	
-	URL: https://mvnrepository.com/artifact/commons-logging/commons-logging
-	License: Apache 2.0
+###### Py4J
+	Copyright (c) 2009-2018, Barthelemy Dagenais and individual contributors.
+	URL: https://www.py4j.org
+	License: BSD 3-Clause Variant
