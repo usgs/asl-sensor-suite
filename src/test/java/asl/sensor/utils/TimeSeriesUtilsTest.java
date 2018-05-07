@@ -400,23 +400,17 @@ public class TimeSeriesUtilsTest {
           int fact = dr.getHeader().getSampleRateFactor();
           int mult = dr.getHeader().getSampleRateMultiplier();
 
-          //System.out.println(fact+","+mult);
-
-          double rate = dr.getHeader().getSampleRate();
+          double rate = dr.getSampleRate();
           assertTrue((double) fact / mult == rate);
 
           // checking the correct values for the intervals
-
           double multOf1Hz = rate / TimeSeriesUtils.ONE_HZ;
           long inverse = TimeSeriesUtils.ONE_HZ_INTERVAL / (long) multOf1Hz;
 
           long interval = TimeSeriesUtils.ONE_HZ_INTERVAL * mult / fact;
 
           assertEquals(inverse, interval);
-          // System.out.println(interval);
-
           break;
-
         }
       }
     } catch (IOException | SeedFormatException e) {
@@ -448,7 +442,6 @@ public class TimeSeriesUtilsTest {
       e.printStackTrace();
       fail();
     }
-
   }
 
   @Test

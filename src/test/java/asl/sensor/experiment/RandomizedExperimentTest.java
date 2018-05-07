@@ -39,43 +39,9 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class RandomizedExperimentTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
-  String testRespName = folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
+  public static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String testRespName = folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
 
-
-
-  /*
-  @Test
-  public void TestRandomCalCurves() throws Exception {
-    String fname = folder + "kiev-random-lowfrq/";
-    String cal = "_BC0.512.seed";
-    String out = "00_BH1.512.seed";
-    InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS25_Q330HR");
-    DataBlock calB = TimeSeriesUtils.getFirstTimeSeries(fname + cal);
-    DataBlock outB = TimeSeriesUtils.getFirstTimeSeries(fname + out);
-    DataStore ds = new DataStore();
-    ds.setBlock(0, calB);
-    ds.setBlock(1, outB);
-    ds.setResponse(1, ir);
-
-    String startString = "2018-044T23:37:00.0";
-    long st = TestUtils.timeStringToEpochMilli(startString);
-    long ed = st + (8 * 60 * 60 * 1000);
-    ds.trim(st, ed);
-
-    RandomizedExperiment re = new RandomizedExperiment();
-    re.setLowFrequencyCalibration(true);
-    re.runExperimentOnData(ds);
-
-    assertEquals(262144/2 + 1, re.getUntrimmedPSDLength());
-
-    Complex ref = new Complex(-0.01243, -0.01176);
-    Complex got = re.getFitPoles().get(0);
-
-    String msg = "Expected " + ref + " and got " + got;
-    assertTrue(msg, Complex.equals(ref, got, 5E-4));
-  }
-  */
 
   @Test
   public void ResponseCorrectConvertedToVectorHighFreq() throws Exception{
