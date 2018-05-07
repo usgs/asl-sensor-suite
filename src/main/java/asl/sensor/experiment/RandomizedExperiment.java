@@ -51,20 +51,20 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   /**
    * Get the index of the value closest to a given target frequency in a list assuming the entries
    * in the list are equally spaced
-   * @param freqs List of frequencies to find the target location
-   * @param targetFreq Frequency of interest
+   * @param frequencies List of frequencies to find the target location
+   * @param targetFrequency Frequency of interest
    * @return Index of closest frequency value
    */
-  public static int getIndexOfFrequency(double[] freqs, double targetFreq) {
-    if (freqs.length == 1) {
+  public static int getIndexOfFrequency(double[] frequencies, double targetFrequency) {
+    if (frequencies.length == 1) {
       return 0;
     }
 
-    double deltaFreq = freqs[1] - freqs[0];
-    int idx = (int) Math.round((targetFreq - freqs[0]) / deltaFreq);
+    double deltaFreq = frequencies[1] - frequencies[0];
+    int index = (int) Math.round((targetFrequency - frequencies[0]) / deltaFreq);
     // in almost all cases the index here should be in the list, but if not, bounds check
-    idx = Math.max(idx, 0);
-    return Math.min(idx, freqs.length-1);
+    index = Math.max(index, 0);
+    return Math.min(index, frequencies.length-1);
   }
 
   private static final double DELTA = 1E-12;
@@ -76,13 +76,17 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
 
-  private boolean lowFreq; // fit the low- or high-frequency poles?
+  /**
+   * True if calibration is low frequency.
+   * This affects which poles are fitted, either low or high frequencies.
+   */
+  private boolean isLowFrequencyCalibration;
 
   private InstrumentResponse fitResponse;
 
   private double[] freqs;
 
-  private boolean freqSpace;
+  private boolean plotUsingHz;
 
   private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
   private double nyquistMultiplier; // region up to nyquist to take for data
@@ -93,9 +97,9 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
   public RandomizedExperiment() {
     super();
-    lowFreq = false;
+    isLowFrequencyCalibration = false;
     numIterations = 0;
-    freqSpace = true;
+    plotUsingHz = true;
     nyquistMultiplier = PEAK_MULTIPLIER;
   }
 
@@ -142,31 +146,33 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     nyquist = nyquist / 2.;
 
     // trim frequency window in order to restrict range of response fits
-    double minFreq, maxFreq, extFreq;
+    double minFreq, maxFreq, maxPlotFreq;
     // extfreq is how far out to extend data past range of fit
     // maxFreq is the largest frequency that we use in the solver
     // low frequency cal fits over a different range of data
-    if (lowFreq) {
+    if (isLowFrequencyCalibration) {
       minFreq = 0.001; // 1000s period
       maxFreq = 0.05; // 20s period
-      extFreq = maxFreq;
+      maxPlotFreq = maxFreq;
     } else {
       minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
       // get factor of nyquist rate, again due to noise
       maxFreq = nyquistMultiplier * nyquist;
-      extFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist; // i.e., 80% of nyquist
+      maxPlotFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist; // i.e., 80% of nyquist
       // maxFreq = extFreq;
     }
 
     fireStateChange("Finding and trimming data to relevant frequency range");
     // now trim frequencies to in range
     // start and end are the region of the fit area, extIdx is the full plotted region
-    int startIdx = getIndexOfFrequency(freqsUntrimmed, minFreq);
-    int endIdx = getIndexOfFrequency(freqsUntrimmed, maxFreq);
-    int extIdx = getIndexOfFrequency(freqsUntrimmed, extFreq);
+    int startIndex = getIndexOfFrequency(freqsUntrimmed, minFreq);
+    int endIndex = getIndexOfFrequency(freqsUntrimmed, maxFreq);
 
-    double[] freqsFull = Arrays.copyOfRange(freqsUntrimmed, startIdx, extIdx);
-    freqs = Arrays.copyOfRange(freqsUntrimmed, startIdx, endIdx);
+    //Used for plotting full range
+    int maxPlotIndex = getIndexOfFrequency(freqsUntrimmed, maxPlotFreq);
+
+    double[] plottingFreqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, maxPlotIndex);
+    freqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, endIndex);
 
     double zeroTarget = 0.02; // frequency to set all curves to zero at
     int normalIdx = getIndexOfFrequency(freqs, zeroTarget);
@@ -202,23 +208,23 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     // now smooth the data
     // scan starting at the high-frequency range for low-freq data (will be trimmed) & vice-versa
     untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude,
-        smoothingPoints, !lowFreq);
+        smoothingPoints, !isLowFrequencyCalibration);
     // phase smoothing also includes an unwrapping step
     untrimmedPhase = NumericUtils.unwrapArray(untrimmedPhase);
     untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, smoothingPoints,
-        !lowFreq);
+        !isLowFrequencyCalibration);
 
     // experimentation with offsets to deal with the way the moving average shifts the data
     // since the plot is basically logarithmic this only matters due to the limited data
     // on the low-frequency corner -- shifting here by half the smoothing re-centers the data
-    if (lowFreq) {
-      startIdx -= offset;
-      extIdx -= offset;
+    if (isLowFrequencyCalibration) {
+      startIndex -= offset;
+      maxPlotIndex -= offset;
     }
 
     fireStateChange("Trimming calculated resp data down to range of interest...");
-    double[] plottedAmp = Arrays.copyOfRange(untrimmedAmplitude, startIdx, extIdx);
-    double[] plottedPhs = Arrays.copyOfRange(untrimmedPhase, startIdx, extIdx);
+    double[] plottedAmp = Arrays.copyOfRange(untrimmedAmplitude, startIndex, maxPlotIndex);
+    double[] plottedPhs = Arrays.copyOfRange(untrimmedPhase, startIndex, maxPlotIndex);
 
     fireStateChange("Scaling & weighting calculated resp data in preparation for solving");
     // get the data at the normalized index, use this to scale the data
@@ -230,7 +236,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     maxMagWeight = 0;
     for (int i = 0; i < freqs.length; ++i) {
       double xAxis = freqs[i];
-      if (!freqSpace) {
+      if (!plotUsingHz) {
         xAxis = 1. / freqs[i];
       }
 
@@ -261,7 +267,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = i + freqs.length;
       double denom;
-      if (!lowFreq) {
+      if (!isLowFrequencyCalibration) {
         if (freqs[i] < 1) {
           denom = 1; // weight everything up to 1Hz equally
         } else {
@@ -279,10 +285,10 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     }
 
     // get the rest of the plotted data squared away
-    for (int i = freqs.length; i < freqsFull.length; ++i) {
-      double xAxis = freqsFull[i];
-      if (!freqSpace) {
-        xAxis = 1. / freqsFull[i];
+    for (int i = freqs.length; i < plottingFreqs.length; ++i) {
+      double xAxis = plottingFreqs[i];
+      if (!plotUsingHz) {
+        xAxis = 1. / plottingFreqs[i];
       }
       // scale
       double amp = plottedAmp[i];
@@ -305,8 +311,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     // variable. (we also need to ignore conjugate values, for constraints)
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
 
-    initialPoleGuess = fitResponse.polesToVector(lowFreq, nyquistMultiplier * nyquist);
-    initialZeroGuess = fitResponse.zerosToVector(lowFreq, nyquistMultiplier * nyquist);
+    initialPoleGuess = fitResponse.polesToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
+    initialZeroGuess = fitResponse.zerosToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
     numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
 
@@ -330,7 +336,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     // probably acceptable tolerance for clean low-frequency cals BUT
     // high frequency cals are noisy and slow to converge
     // so this branch is to enable using higher tolerance to deal with that
-    if (!lowFreq) {
+    if (!isLowFrequencyCalibration) {
       costTolerance = 1.0E-15;
       paramTolerance = 1.0E-10;
     }
@@ -387,18 +393,18 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     XYSeries fitResidPhase = new XYSeries("Diff with fit phase");
 
     fitResponse = fitResponse.buildResponseFromFitVector(
-        fitParams, lowFreq, numZeros);
+        fitParams, isLowFrequencyCalibration, numZeros);
     fitPoles = fitResponse.getPoles();
     fitZeros = fitResponse.getZeros();
 
     fireStateChange("Getting extended resp curves for high-freq plots...");
     // we use the apply response method here to get the full range of plotted data, not just fit
-    Complex[] init = initResponse.applyResponseToInput(freqsFull);
-    Complex[] fit = fitResponse.applyResponseToInput(freqsFull);
-    double[] initialValues = new double[freqsFull.length * 2];
-    double[] fitValues = new double[freqsFull.length * 2];
-    for (int i = 0; i < freqsFull.length; ++i) {
-      int argIdx = freqsFull.length + i;
+    Complex[] init = initResponse.applyResponseToInput(plottingFreqs);
+    Complex[] fit = fitResponse.applyResponseToInput(plottingFreqs);
+    double[] initialValues = new double[plottingFreqs.length * 2];
+    double[] fitValues = new double[plottingFreqs.length * 2];
+    for (int i = 0; i < plottingFreqs.length; ++i) {
+      int argIdx = plottingFreqs.length + i;
       initialValues[i] = init[i].abs();
       initialValues[argIdx] = NumericUtils.atanc(init[i]);
       fitValues[i] = fit[i].abs();
@@ -410,12 +416,12 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
     fireStateChange("Compiling data into plots...");
 
-    for (int i = 0; i < freqsFull.length; ++i) {
+    for (int i = 0; i < plottingFreqs.length; ++i) {
       double xValue;
-      if (freqSpace) {
-        xValue = freqsFull[i];
+      if (plotUsingHz) {
+        xValue = plottingFreqs[i];
       } else {
-        xValue = 1. / freqsFull[i];
+        xValue = 1. / plottingFreqs[i];
       }
 
       int argIdx = initialValues.length / 2 + i;
@@ -499,7 +505,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     // prevent terrible case where, say, only high-freq poles above nyquist rate
     if (variables.length > 0) {
       testResp = fitResponse.buildResponseFromFitVector(
-          variables, lowFreq, numZeros);
+          variables, isLowFrequencyCalibration, numZeros);
     } else {
       System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
     }
@@ -735,7 +741,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     double unrotScaleAmp = 20 * Math.log10(unrot[normalIdx]);
     double unrotScaleArg = unrot[argStart + normalIdx];
     double phiPrev = 0;
-    if (lowFreq) {
+    if (isLowFrequencyCalibration) {
       phiPrev = unrot[3 * unrot.length / 4];
     }
     for (int i = 0; i < argStart; ++i) {
@@ -754,10 +760,10 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * low frequency calibrations set the first two poles; high frequency
    * calibrations set the remaining poles
    *
-   * @param lowFreq True if a low frequency calibration is to be used
+   * @param isLowFrequencyCalibration True if a low frequency calibration is to be used
    */
-  public void setLowFreq(boolean lowFreq) {
-    this.lowFreq = lowFreq;
+  public void setLowFrequencyCalibration(boolean isLowFrequencyCalibration) {
+    this.isLowFrequencyCalibration = isLowFrequencyCalibration;
   }
 
   /**
@@ -765,8 +771,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    *
    * @param setFreq true if plots should be in frequency units (Hz)
    */
-  public void useFreqUnits(boolean setFreq) {
-    freqSpace = setFreq;
+  public void setPlotUsingHz(boolean setFreq) {
+    plotUsingHz = setFreq;
   }
 
   /**
