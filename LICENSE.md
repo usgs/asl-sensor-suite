@@ -54,9 +54,8 @@ As a collection, this software is licensed under the GPL.
 	URL: http://www.seis.sc.edu/seedCodec.html  
 	License: GNU Public License (GPL) 3.0  
 
-
 ###### PDFBox
-	Copyright 2015 The Apache Software Foundation.
+	Copyright 2015 The Apache Software Foundation.  
 	URL: https://pdfbox.apache.org/  
 	License: Apache License v2.0  
 

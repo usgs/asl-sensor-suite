@@ -195,7 +195,7 @@ public class FFTResult {
    * given width
    *
    * @param length Length of data being tapered (to per-element multply against)
-   * @param tWidth Width of (half-) taper curve (i.e., decimal fraction of the data being tapered)
+   * @param width Width of (half-) taper curve (i.e., decimal fraction of the data being tapered)
    * Because this parameter is used to create the actual length of the data, this should be half
    * the value of the full taper.
    * @return Start of taper curve, symmetric to end, with all other entries being implicitly 1.0
