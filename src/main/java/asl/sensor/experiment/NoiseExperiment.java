@@ -1,12 +1,12 @@
 package asl.sensor.experiment;
 
+import org.apache.commons.math3.complex.Complex;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
-import org.apache.commons.math3.complex.Complex;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * Produces the data for a self-noise test. Calculates PSD to get cross-power.
@@ -120,7 +120,7 @@ public class NoiseExperiment extends Experiment {
     fireStateChange("Doing noise esimation calculations...");
 
     for (int i = 1; i < freqs.length; ++i) {
-      if (1 / freqs[i] > 1.0E3) {
+      if (1 / freqs[i] > MAX_PLOT_PERIOD) {
         continue;
       }
 

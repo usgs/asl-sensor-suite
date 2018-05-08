@@ -49,6 +49,8 @@ public abstract class Experiment {
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
 
+  public static final double MAX_PLOT_PERIOD = 1.0E6;
+
   /**
    * Helper function to add data from a datastore object (the PSD calculation)
    * into an XYSeriesCollection to eventually be plotted
@@ -94,7 +96,7 @@ public abstract class Experiment {
       XYSeriesCollection xysc) {
 
     for (int j = 0; j < freqs.length; ++j) {
-      if (1 / freqs[j] > 1.0E6) {
+      if (1 / freqs[j] > MAX_PLOT_PERIOD) {
         continue;
       }
 
