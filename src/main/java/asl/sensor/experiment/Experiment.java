@@ -94,7 +94,7 @@ public abstract class Experiment {
       XYSeriesCollection xysc) {
 
     for (int j = 0; j < freqs.length; ++j) {
-      if (1 / freqs[j] > 1.0E3) {
+      if (1 / freqs[j] > 1.0E6) {
         continue;
       }
 

@@ -1,7 +1,5 @@
 package asl.sensor.utils;
 
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.InstrumentResponse;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -16,6 +14,8 @@ import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.InstrumentResponse;
 import uk.me.berndporr.iirj.Butterworth;
 
 /**
@@ -236,9 +236,6 @@ public class FFTResult {
       while (str != null) {
         String[] values = str.split("\\s+");
         double x = Double.parseDouble(values[0]); // period, in seconds
-        if (x > 1.0E3 + 1) {
-          break;
-        }
         double y = Double.parseDouble(values[1]);
         if (freqSpace) {
           xys.add(1 / x, y);
@@ -280,7 +277,7 @@ public class FFTResult {
       while (str != null) {
         String[] values = str.split("\\s+");
         double x = Double.parseDouble(values[0]); // period, in seconds
-        if (x > 1.0E3 + 1) {
+        if (x > 1.0E6 + 1) {
           break;
         }
         double y = Double.parseDouble(values[3]);
