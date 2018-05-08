@@ -727,7 +727,6 @@ public class RandomizedPanel extends ExperimentPanel {
     renderer = residualPhaseChart.getXYPlot().getRenderer();
     renderer.setSeriesPaint(1, COLORS[2]);
 
-    setSubtitles();
   }
 
 }
