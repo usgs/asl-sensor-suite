@@ -60,7 +60,7 @@ public class SensorSuite extends JPanel
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
     frame.add(new SensorSuite());
-    frame.setPreferredSize(new Dimension(1600, 900));
+    frame.setPreferredSize(new Dimension(1280, 800));
     frame.pack();
     frame.setVisible(true);
   }
