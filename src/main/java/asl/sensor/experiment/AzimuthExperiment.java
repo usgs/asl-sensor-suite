@@ -1,10 +1,5 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,6 +18,11 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
@@ -157,6 +157,12 @@ public class AzimuthExperiment extends Experiment {
     initTestNorth = FFTResult.bandFilter(initTestNorth, samplesPerSecond, low, high);
     initTestEast = FFTResult.bandFilter(initTestEast, samplesPerSecond, low, high);
     initRefNorth = FFTResult.bandFilter(initRefNorth, samplesPerSecond, low, high);
+
+    int len = Math.min(initTestNorth.length, initTestEast.length);
+    len = Math.min(len, initRefNorth.length);
+    initTestNorth = Arrays.copyOfRange(initTestNorth, 0, len);
+    initTestEast = Arrays.copyOfRange(initTestEast, 0, len);
+    initRefNorth = Arrays.copyOfRange(initRefNorth, 0, len);
 
     MultivariateJacobianFunction jacobian =
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
