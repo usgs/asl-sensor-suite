@@ -1,6 +1,7 @@
 package asl.sensor;
 
 import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -643,6 +644,7 @@ public class CalProcessingServer {
     xyPlot = charts[2].getXYPlot();
     xyPlot.setDomainAxis(residualXAxis);
     xyPlot.setRangeAxis(residualAmplitudeAxis);
+    xyPlot.getRenderer().setSeriesPaint(1, Color.GREEN);
     ExperimentPanel.invertSeriesRenderingOrder(charts[2]);
 
     charts[3] = ChartFactory.createXYLineChart(
@@ -657,6 +659,7 @@ public class CalProcessingServer {
     xyPlot = charts[3].getXYPlot();
     xyPlot.setDomainAxis(residualXAxis);
     xyPlot.setRangeAxis(residualPhaseAxis);
+    xyPlot.getRenderer().setSeriesPaint(1, Color.GREEN);
     ExperimentPanel.invertSeriesRenderingOrder(charts[3]);
 
     if (!isLowFrequency) {
