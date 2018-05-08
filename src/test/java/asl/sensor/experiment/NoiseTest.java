@@ -110,6 +110,9 @@ public class NoiseTest {
     for (int j = 0; j < psd.getItemCount(); ++j) {
       XYDataItem psdxy = psd.getDataItem(j);
       double x = psdxy.getX().doubleValue();
+      if (x > high) {
+        break;
+      }
       if (x >= low && x <= high) {
         psdResults += psdxy.getY().doubleValue();
         ++psdPoints;
@@ -155,6 +158,9 @@ public class NoiseTest {
     for (int j = 0; j < psd.getItemCount(); ++j) {
       XYDataItem psdxy = psd.getDataItem(j);
       double x = psdxy.getX().doubleValue();
+      if (x > high) {
+        break;
+      }
       if (x >= low && x <= high) {
         psdResults += psdxy.getY().doubleValue();
         ++psdPoints;
@@ -194,6 +200,9 @@ public class NoiseTest {
     for (int j = 0; j < psd.getItemCount(); ++j) {
       XYDataItem psdxy = psd.getDataItem(j);
       double x = psdxy.getX().doubleValue();
+      if (x > high) {
+        break;
+      }
       if (x >= low && x <= high) {
         psdResults += psdxy.getY().doubleValue();
         ++psdPoints;
@@ -232,6 +241,9 @@ public class NoiseTest {
     for (int j = 0; j < psd.getItemCount(); ++j) {
       XYDataItem psdxy = psd.getDataItem(j);
       double x = psdxy.getX().doubleValue();
+      if (x > high) {
+        break;
+      }
       if (x >= low && x <= high) {
         psdResults += psdxy.getY().doubleValue();
         ++psdPoints;
