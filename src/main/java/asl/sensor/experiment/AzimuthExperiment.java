@@ -158,6 +158,7 @@ public class AzimuthExperiment extends Experiment {
     initTestEast = FFTResult.bandFilter(initTestEast, samplesPerSecond, low, high);
     initRefNorth = FFTResult.bandFilter(initRefNorth, samplesPerSecond, low, high);
 
+    // enforce length constraint -- all data must be the same length
     int len = Math.min(initTestNorth.length, initTestEast.length);
     len = Math.min(len, initRefNorth.length);
     initTestNorth = Arrays.copyOfRange(initTestNorth, 0, len);
