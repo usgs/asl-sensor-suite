@@ -1,0 +1,92 @@
+\documentclass[12pt]{amsart}
+\usepackage{amsmath,amsfonts,amsthm, amscd, mathrsfs, amssymb}
+
+
+\usepackage{fullpage}
+
+\linespread{1.6}
+
+
+\begin{document}
+
+
+\title{Method for Self-Noise Estimates in Broadband Seismometers}
+\author{Adam T. Ringler}
+\author{Rafael Figueroa-Briceno}
+\date{\today}
+\address{U.S. Geological Survey, Albuquerque Seismological Laboratory, P.O. Box 82010, Albuquerque, NM 87198-2010}
+\email{aringler@usgs.gov} 
+
+\maketitle
+
+
+
+
+\section{Introduction}
+
+\subsection{Self-Noise Test Setup}
+Depending on the type of instrument and frequencies of interest a number of different test configurations
+and methods have been developed.  Our goal here is to simply give the setup guidelines for routine broadband 
+self-noise estimates.  We do not focus on the more complex problem of better constraining the long-period self-noise
+of a seismometer.
+
+\begin{enumerate}
+
+    \item Install three seismometers (2 references and 1 test sensor) in a a quiet vault.  The sensors should be installed as close as
+    possible without interfering with additional thermal isolation.  This should include a fleece cap as well as an exterior foam box.
+    % Include a Figure of an example installation
+    
+    \item Once the sensors have been installed being recording data an a digitizer with sufficient resolution to record the noise of the seismometers.
+    To verify that your digitizer has sufficient resolution you can perform this self-noise test on data from the digitizer that has been obtained by 
+    terminating the output with a 10 $\Omega$ resistor.  No part of the self-noise of the digitizer should be above the self-noise of the seismometer that you 
+    will be testing.
+    
+    \item Record all sensors at 40 samples per second.  
+    
+    \item After the sensors have settled sufficientely collect 6 hours of data where there are no transients larger than XX above the standard deviation
+    of the time window being used.
+    
+    \item Estimate the self-noise by computing the corss-powers between all three sensors in test.  For estimating the cross-power use a Welch method
+    with a $5\%$ cosine taper, windows with $2^14$ points and $2^12$ points of overlap.  
+    
+    % Need to decide on the Welch method
+    \item Using the nomainl response correct the power and the noise estimated in the previous step.  Your results should now be in units of $(m/s^2)^2 /Hz$.
+    
+    \item Convert from linear units to $dB$.
+    
+    \item Plot all results relative to the Peterson NLNM.
+    % Include pass/fail criteria as well as statistics
+    
+\end{enumerate}
+
+
+
+
+
+\begin{thebibliography}{10}
+\providecommand{\url}[1]{{#1}}
+\providecommand{\urlprefix}{URL }
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{DOI~\discretionary{}{}{}#1}\else
+  \providecommand{\doi}{DOI~\discretionary{}{}{}\begingroup
+  \urlstyle{rm}\Url}\fi
+
+% Add in all the additional references
+
+\bibitem{Sleeman}
+Sleeman, R., van Wettum, A., and Trampert, J.
+\newblock Bull. Seism. Soc. Am. \textbf{96}, 258--271 (2006)
+
+
+\end{thebibliography}
+
+
+
+
+%\bibliographystyle{spmpsci}
+%\bibliography{ref2.bib}   % name your BibTeX data base
+%\nocite{*}
+ 
+
+
+\end{document}
