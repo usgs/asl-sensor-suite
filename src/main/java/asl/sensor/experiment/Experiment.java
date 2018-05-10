@@ -96,6 +96,7 @@ public abstract class Experiment {
       final boolean freqSpace,
       XYSeriesCollection xysc) {
 
+    // Smooth the PSD data before it goes out to the plots
     Complex[] smoothedPSD = NumericUtils.multipointMovingAverage(resultPSD, 9, false);
     // for the last 3 points, do 7, 5, 3 last points
     Complex last3 = Complex.ZERO;
