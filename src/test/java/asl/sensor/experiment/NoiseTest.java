@@ -92,7 +92,7 @@ public class NoiseTest {
   @Test
   public void testResultsData1PSD1() {
     int idx = 0;
-    double psdCheck = -159.73;
+    double psdCheck = -159.59;
     double noiseCheck = -161.17;
     // everything below here same for every test
     XYSeriesCollection xysc = setUpTest1();
@@ -110,6 +110,9 @@ public class NoiseTest {
     for (int j = 0; j < psd.getItemCount(); ++j) {
       XYDataItem psdxy = psd.getDataItem(j);
       double x = psdxy.getX().doubleValue();
+      if (x > high) {
+        break;
+      }
       if (x >= low && x <= high) {
         psdResults += psdxy.getY().doubleValue();
         ++psdPoints;
@@ -137,7 +140,7 @@ public class NoiseTest {
   @Test
   public void testResultsData1PSD2() {
     int idx = 1;
-    double psdCheck = -161.19;
+    double psdCheck = -161.00;
     double noiseCheck = -162.41;
     // everything below here same for every test
     XYSeriesCollection xysc = setUpTest1();
@@ -155,6 +158,9 @@ public class NoiseTest {
     for (int j = 0; j < psd.getItemCount(); ++j) {
       XYDataItem psdxy = psd.getDataItem(j);
       double x = psdxy.getX().doubleValue();
+      if (x > high) {
+        break;
+      }
       if (x >= low && x <= high) {
         psdResults += psdxy.getY().doubleValue();
         ++psdPoints;
@@ -176,7 +182,7 @@ public class NoiseTest {
   @Test
   public void testResultsData1PSD3() {
     int idx = 2;
-    double psdCheck = -157.76;
+    double psdCheck = -157.70;
     double noiseCheck = -158.66;
     // everything below here same for every test
     XYSeriesCollection xysc = setUpTest1();
@@ -194,6 +200,9 @@ public class NoiseTest {
     for (int j = 0; j < psd.getItemCount(); ++j) {
       XYDataItem psdxy = psd.getDataItem(j);
       double x = psdxy.getX().doubleValue();
+      if (x > high) {
+        break;
+      }
       if (x >= low && x <= high) {
         psdResults += psdxy.getY().doubleValue();
         ++psdPoints;
@@ -214,7 +223,7 @@ public class NoiseTest {
   @Test
   public void testResultsData2PSD1() {
     int idx = 0;
-    double psdCheck = -159.77;
+    double psdCheck = -159.61;
     double noiseCheck = -161.16;
     // everything below here same for every test
     XYSeriesCollection xysc = setUpTest2();
@@ -232,6 +241,9 @@ public class NoiseTest {
     for (int j = 0; j < psd.getItemCount(); ++j) {
       XYDataItem psdxy = psd.getDataItem(j);
       double x = psdxy.getX().doubleValue();
+      if (x > high) {
+        break;
+      }
       if (x >= low && x <= high) {
         psdResults += psdxy.getY().doubleValue();
         ++psdPoints;

@@ -1,12 +1,5 @@
 package asl.sensor;
 
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.ExperimentPanelFactory;
-import asl.sensor.gui.InputPanel;
-import asl.sensor.gui.SwingWorkerSingleton;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -36,6 +29,13 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.JFreeChart;
+import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.gui.ExperimentPanelFactory;
+import asl.sensor.gui.InputPanel;
+import asl.sensor.gui.SwingWorkerSingleton;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.ReportingUtils;
 
 /**
  * Main window of the sensor test program and the program's launcher
@@ -60,7 +60,7 @@ public class SensorSuite extends JPanel
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
     frame.add(new SensorSuite());
-
+    frame.setPreferredSize(new Dimension(1280, 800));
     frame.pack();
     frame.setVisible(true);
   }
@@ -217,13 +217,15 @@ public class SensorSuite extends JPanel
       tabbedPane.addTab(exp.getName(), tab);
     }
 
-    Dimension dimension = tabbedPane.getPreferredSize();
-    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight());
-    tabbedPane.setPreferredSize(dimension);
-    tabbedPane.addChangeListener(this);
-
     inputPlots = new InputPanel();
     inputPlots.addChangeListener(this);
+
+    Dimension dimension = tabbedPane.getPreferredSize();
+    inputPlots.setPreferredSize(dimension);
+    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight());
+    tabbedPane.setMinimumSize(dimension);
+    tabbedPane.addChangeListener(this);
+
 
     // experiments on left, input on the right; split to allow resizing
     JSplitPane mainSplit =

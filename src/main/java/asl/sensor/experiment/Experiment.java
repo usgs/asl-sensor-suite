@@ -14,6 +14,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * This function defines template patterns for each type of sensor experiment
@@ -48,6 +49,8 @@ public abstract class Experiment {
 
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
+
+  public static final double MAX_PLOT_PERIOD = 1.0E6;
 
   /**
    * Helper function to add data from a datastore object (the PSD calculation)
@@ -93,12 +96,35 @@ public abstract class Experiment {
       final boolean freqSpace,
       XYSeriesCollection xysc) {
 
+    // Smooth the PSD data before it goes out to the plots
+    Complex[] smoothedPSD = NumericUtils.multipointMovingAverage(resultPSD, 9, false);
+    // for the last 3 points, do 7, 5, 3 last points
+    Complex last3 = Complex.ZERO;
+    Complex last5 = Complex.ZERO;
+    Complex last7 = Complex.ZERO;
+    for (int i = 0; i < 7; ++i) {
+      if (i < 3) {
+        last3 = last3.add(resultPSD[i]);
+      }
+      if (i < 5) {
+        last5 = last5.add(resultPSD[i]);
+      }
+      last7 = last7.add(resultPSD[i]);
+    }
+
+    int idx = smoothedPSD.length-1;
+    smoothedPSD[idx] = last3.divide(3);
+    --idx;
+    smoothedPSD[idx] = last5.divide(5);
+    --idx;
+    smoothedPSD[idx] = last7.divide(7);
+
     for (int j = 0; j < freqs.length; ++j) {
-      if (1 / freqs[j] > 1.0E3) {
+      if (1 / freqs[j] > MAX_PLOT_PERIOD) {
         continue;
       }
 
-      double temp = 10 * Math.log10(resultPSD[j].abs());
+      double temp = 10 * Math.log10(smoothedPSD[j].abs());
       if (freqSpace) {
         powerSeries.add(freqs[j], temp);
       } else {

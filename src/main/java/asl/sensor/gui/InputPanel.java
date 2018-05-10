@@ -1062,7 +1062,7 @@ public class InputPanel
           "Response Epoch Selection",
           JOptionPane.PLAIN_MESSAGE,
           null, epochStrings,
-          epochStrings[0]);
+          epochStrings[epochStrings.length-1]); // default to most recent
       if (result instanceof String) {
         int index = Arrays.binarySearch(epochStrings, result);
         return epochs.get(index).getFirst();

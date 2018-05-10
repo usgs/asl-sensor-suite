@@ -366,6 +366,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
     // place the other UI elements in a single row below the chart
     constraints.gridwidth = 1;
+    constraints.gridheight = 2;
     constraints.weighty = 0.0;
     constraints.weightx = 0.0;
     constraints.anchor = GridBagConstraints.WEST;
@@ -387,38 +388,26 @@ public class RandomizedPanel extends ExperimentPanel {
 
     // plot selection combo box
     constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridheight = 1;
+    constraints.gridy = 1;
     constraints.gridx += 1;
     constraints.weightx = 0;
-    constraints.anchor = GridBagConstraints.EAST;
+    constraints.anchor = GridBagConstraints.CENTER;
+    JPanel nyquistLimitPanel = new JPanel();
+    nyquistLimitPanel.setLayout(new BoxLayout(nyquistLimitPanel, BoxLayout.X_AXIS));
+    nyquistLimitPanel.add(nyquistMultiplier);
+    nyquistLimitPanel.add(nyquistMultiplierLabel);
+    this.add(nyquistLimitPanel, constraints);
+
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridy += 1;
     plotSelection = new JComboBox<>();
     plotSelection.addItem(ResponseExperiment.MAGNITUDE);
     plotSelection.addItem(ResponseExperiment.ARGUMENT);
     plotSelection.addItem("Residual amplitude plot");
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
-    JPanel rightSidePanel = new JPanel();
-    rightSidePanel.setLayout(new GridBagLayout());
-    GridBagConstraints rightSideConstraints = new GridBagConstraints();
-    rightSideConstraints.fill = GridBagConstraints.NONE;
-    rightSideConstraints.anchor = GridBagConstraints.CENTER;
-    rightSideConstraints.weightx = 0;
-    rightSideConstraints.weighty = 0;
-    rightSideConstraints.gridy = 0;
-    rightSideConstraints.gridx = 0;
-    rightSideConstraints.gridwidth = 1;
-    rightSidePanel.add(nyquistMultiplier, rightSideConstraints);
-    rightSideConstraints.gridx += 1;
-    rightSideConstraints.fill = GridBagConstraints.BOTH;
-    rightSideConstraints.anchor = GridBagConstraints.EAST;
-    rightSidePanel.add(nyquistMultiplierLabel, rightSideConstraints);
-    rightSideConstraints.weightx = 1;
-    rightSideConstraints.weighty = 1;
-    rightSideConstraints.gridwidth = 2;
-    rightSideConstraints.gridx = 0;
-    rightSideConstraints.gridy += 1;
-    rightSidePanel.add(plotSelection, rightSideConstraints);
-    constraints.fill = GridBagConstraints.BOTH;
-    this.add(rightSidePanel, constraints);
+    this.add(plotSelection, constraints);
   }
 
   @Override
@@ -738,7 +727,6 @@ public class RandomizedPanel extends ExperimentPanel {
     renderer = residualPhaseChart.getXYPlot().getRenderer();
     renderer.setSeriesPaint(1, COLORS[2]);
 
-    setSubtitles();
   }
 
 }
