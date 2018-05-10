@@ -159,11 +159,11 @@ public class AzimuthExperiment extends Experiment {
     initRefNorth = FFTResult.bandFilter(initRefNorth, samplesPerSecond, low, high);
 
     // enforce length constraint -- all data must be the same length
-    int len = Math.min(initTestNorth.length, initTestEast.length);
-    len = Math.min(len, initRefNorth.length);
-    initTestNorth = Arrays.copyOfRange(initTestNorth, 0, len);
-    initTestEast = Arrays.copyOfRange(initTestEast, 0, len);
-    initRefNorth = Arrays.copyOfRange(initRefNorth, 0, len);
+    double[][] data = matchArrayLengths(initTestNorth, initTestEast, initRefNorth);
+    initTestNorth = data[0];
+    initTestEast = data[1];
+    initRefNorth = data[2];
+    data = null;
 
     MultivariateJacobianFunction jacobian =
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
@@ -664,5 +664,16 @@ public class AzimuthExperiment extends Experiment {
    */
   public void setSimple(boolean isSimple) {
     simpleCalc = isSimple;
+  }
+
+  public static double[][] matchArrayLengths(double[]... toTrim) {
+    int len = toTrim[0].length;
+    for (double[] timeseries : toTrim) {
+      len = Math.min(len, timeseries.length);
+    }
+    for (int i = 0; i < toTrim.length; ++i) {
+      toTrim[i] = Arrays.copyOfRange(toTrim[i], 0, len);
+    }
+    return toTrim;
   }
 }
