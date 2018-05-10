@@ -1,9 +1,5 @@
 package asl.sensor.input;
 
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -17,6 +13,10 @@ import java.util.Map;
 import java.util.TimeZone;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 /**
  * Holds the time series and metadata for a miniSEED file loaded in by the user.
@@ -174,18 +174,6 @@ public class DataBlock {
 
     int numPoints =
         (int) Math.ceil((trimmedEnd - trimmedStart) / ((double) interval));
-    /*
-    // make sure the correct number of points are loaded in to prevent
-    // off-by-one errors later on
-    // add one point if the data is aligned closely enough
-    long addOneFormula = ( (trimmedStart - startTime) % interval ) +
-                         ( (endTime - trimmedEnd) % interval);
-    boolean notAligned = addOneFormula > interval / 2 || addOneFormula == 0;
-    if ( notAligned ) {
-      ++numPoints;
-    }
-    */
-    // System.out.println("num. points: " + numPoints);
 
     cachedTimeSeries = new double[numPoints];
     int lastFilledIndex = 0;
@@ -258,11 +246,16 @@ public class DataBlock {
     if (interval != targetInterval) {
       cachedTimeSeries =
           TimeSeriesUtils.decimate(cachedTimeSeries, interval, targetInterval);
+      // prevent issues cause by rounding of time series length after downsampling
+      int finalNumPoints =
+          (int) Math.ceil((trimmedEnd - trimmedStart) / ((double) targetInterval));
+      if (finalNumPoints < cachedTimeSeries.length) {
+        cachedTimeSeries = Arrays.copyOfRange(cachedTimeSeries, 0, finalNumPoints);
+      }
     }
 
     rebuildList = false;
     return cachedTimeSeries;
-
   }
 
   /**

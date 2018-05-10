@@ -3,15 +3,12 @@ package asl.sensor.experiment;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.test.TestUtils;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import org.junit.Test;
+import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -19,6 +16,22 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 public class AzimuthTest {
 
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+
+  @Test
+  public void matchArrayLengths() {
+    double[] arr1 = new double[41753];
+    double[] arr2 = new double[41753];
+    double[] arr3 = new double[41754];
+    double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
+    assertEquals(3, results.length);
+    double[] testArr1 = results[0];
+    double[] testArr2 = results[1];
+    double[] testArr3 = results[2];
+    results = null;
+    assertEquals(testArr1.length, 41753);
+    assertEquals(testArr2.length, 41753);
+    assertEquals(testArr3.length, 41753);
+  }
 
   @Test
   public void findsAntipolarCorrectly() {
@@ -49,20 +62,14 @@ public class AzimuthTest {
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     cCal.set(Calendar.HOUR_OF_DAY, 18);
     cCal.set(Calendar.MINUTE, 0);
-    //System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR_OF_DAY, 20);
     cCal.set(Calendar.MINUTE, 30);
-    //System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end, 2);
 
-    System.out.println("FOR ANTIPOLAR TEST:");
     azi.runExperimentOnData(ds);
-
-    System.out.println( azi.getFitAngle() );
-    System.out.println("ANTIPOLAR TEST COMPLETED");
     assertEquals( 16., azi.getFitAngle(), 2. );
 
   }
@@ -102,8 +109,6 @@ public class AzimuthTest {
     assertTrue( azi.hasEnoughData(ds) );
 
     azi.runExperimentOnData(ds);
-
-    System.out.println( azi.getFitAngle() );
     assertEquals(15.0, azi.getFitAngle(), 1.);
     assertEquals(0.4, azi.getUncertainty(), 0.5);
 
@@ -261,7 +266,6 @@ public class AzimuthTest {
     if( ang > 180) {
       ang -= 360.;
     }
-    System.out.println( ang );
     assertEquals( 0., ang, 2. );
 
   }
@@ -286,9 +290,6 @@ public class AzimuthTest {
 
       AzimuthExperiment az = new AzimuthExperiment();
       az.runExperimentOnData(ds);
-      System.out.println( Arrays.toString( az.getBestFitAngles() ) );
-      System.out.println( Arrays.toString( az.getAcceptedAngles() ) );
-      System.out.println( az.getFitAngle() + "," + az.getUncertainty() );
 
       assertEquals(3.2, az.getFitAngle(), 0.5);
       assertEquals(0.5, az.getUncertainty(), 0.5);
@@ -329,8 +330,6 @@ public class AzimuthTest {
     AzimuthExperiment ae = new AzimuthExperiment();
     ae.runExperimentOnData(ds);
     double fitAngle = ae.getFitAngle();
-    System.out.println(sb.toString() + " | " + ( (fitAngle % 360) + 360) % 360 );
-
     assertEquals(angle, fitAngle, 1.0);
 
   }
