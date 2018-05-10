@@ -4,10 +4,10 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 rm *.jar
 git fetch --all
-git checkout origin/devel
+git checkout -f origin/devel
 
 # Set version number to #.#.#_bYYJJJ_CommitHash
-sed -i -E "s/(version\s*=\s*'[0-9]\.[0-9]\.[0-9])(')/\1_b$(date +%y%j)_$(git rev-parse --short HEAD)\2/" build.gradle
+sed -i -E "s/(version\s*=\s*'[0-9]*\.[0-9]*\.[0-9]*)(')/\1_b$(date +%y%j)_$(git rev-parse --short HEAD)\2/" build.gradle
 gradle copyJar
 gradle copyServerJar
 # Undo our change
