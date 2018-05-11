@@ -18,19 +18,82 @@ public class AzimuthExperimentTest {
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
-  public void matchArrayLengths() {
+  public void matchArrayLengths_offByOne() {
     double[] arr1 = new double[41753];
     double[] arr2 = new double[41753];
     double[] arr3 = new double[41754];
     double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
+
     assertEquals(3, results.length);
     double[] testArr1 = results[0];
     double[] testArr2 = results[1];
     double[] testArr3 = results[2];
-    results = null;
+
     assertEquals(testArr1.length, 41753);
     assertEquals(testArr2.length, 41753);
     assertEquals(testArr3.length, 41753);
+  }
+
+  @Test
+  public void matchArrayLengths_multipleLow() {
+    double[] arr1 = new double[41855];
+    double[] arr2 = new double[41754];
+    double[] arr3 = new double[41751];
+    double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
+
+    assertEquals(3, results.length);
+    double[] testArr1 = results[0];
+    double[] testArr2 = results[1];
+    double[] testArr3 = results[2];
+
+    assertEquals(testArr1.length, 41751);
+    assertEquals(testArr2.length, 41751);
+    assertEquals(testArr3.length, 41751);
+  }
+
+  @Test
+  public void matchArrayLengths_offByMany() {
+    double[] arr1 = new double[3000];
+    double[] arr2 = new double[41753];
+    double[] arr3 = new double[41754];
+    double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
+
+    assertEquals(3, results.length);
+    double[] testArr1 = results[0];
+    double[] testArr2 = results[1];
+    double[] testArr3 = results[2];
+
+    assertEquals(testArr1.length, 3000);
+    assertEquals(testArr2.length, 3000);
+    assertEquals(testArr3.length, 3000);
+  }
+
+  @Test
+  public void matchArrayLengths_equalLengths() {
+    double[] arr1 = new double[41753];
+    double[] arr2 = new double[41753];
+    double[] arr3 = new double[41753];
+    double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
+
+    assertEquals(3, results.length);
+    double[] testArr1 = results[0];
+    double[] testArr2 = results[1];
+    double[] testArr3 = results[2];
+
+    assertEquals(testArr1.length, 41753);
+    assertEquals(testArr2.length, 41753);
+    assertEquals(testArr3.length, 41753);
+  }
+
+  @Test
+  public void matchArrayLengths_singleArray() {
+    double[] arr1 = new double[41753];
+    double[][] results = AzimuthExperiment.matchArrayLengths(arr1);
+
+    assertEquals(1, results.length);
+    double[] testArr1 = results[0];
+
+    assertEquals(testArr1.length, 41753);
   }
 
   @Test
