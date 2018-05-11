@@ -51,8 +51,6 @@ public class AzimuthExperiment extends Experiment {
   private double angle, uncertainty;
 
   private double[] correlations; // best-fit correlations used to find windows w/ good estimates
-  private double[] angles;
-  private List<Double> acceptedAngles;
   private double minCorr; // lowest correlation value still used in angle estimation
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
@@ -283,7 +281,7 @@ public class AzimuthExperiment extends Experiment {
     }
 
     int minCorrelations = 5;
-    angles = new double[]{};
+    double[] angles = new double[]{};
     correlations = new double[]{};
     if (angleCorrelationMap.size() < minCorrelations) {
       fireStateChange("Window size too small for good angle estimation...");
@@ -303,7 +301,7 @@ public class AzimuthExperiment extends Experiment {
       minCorr = sortedCorrelation.get(sortedCorrelation.size() - 1);
 
       // store good values for use in std dev calculation
-      acceptedAngles = new ArrayList<>();
+      List<Double> acceptedAngles = new ArrayList<>();
 
       // deal with wraparound issue
       correlations = new double[angleCorrelationMap.size()];
@@ -406,23 +404,6 @@ public class AzimuthExperiment extends Experiment {
   @Override
   public int blocksNeeded() {
     return 3;
-  }
-
-  public double[] getAcceptedAngles() {
-    double[] acceptedDeg = new double[acceptedAngles.size()];
-    for (int i = 0; i < acceptedDeg.length; ++i) {
-      acceptedDeg[i] = Math.toDegrees(acceptedAngles.get(i));
-    }
-    return acceptedDeg;
-  }
-
-  /**
-   * Get the series of best-fit angles over each of the windowed ranges of data
-   *
-   * @return Array of best-fit angles
-   */
-  public double[] getBestFitAngles() {
-    return angles;
   }
 
   /**
