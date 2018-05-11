@@ -33,7 +33,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   @Override
-  protected void backend(DataStore ds) {
+  protected void backend(DataStore dataStore) {
 
     northAngles = new double[2];
     eastAngles = new double[2];
@@ -41,8 +41,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // NOTE: this may need to change in the event of a test using > 9 inputs
     for (int i = 0; i < 9; ++i) {
       // doing this loop here saves us time and significant lines of code
-      dataNames.add(ds.getBlock(i).getName());
-      dataNames.add(ds.getResponse(i).getName());
+      dataNames.add(dataStore.getBlock(i).getName());
+      dataNames.add(dataStore.getResponse(i).getName());
     }
 
     DataStore[] stores = new DataStore[DIMS];
@@ -50,8 +50,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
     for (int i = 0; i < DIMS; ++i) {
       stores[i] = new DataStore();
       for (int j = 0; j < 3; ++j) {
-        stores[i].setBlock(j, ds.getBlock(i + (j * DIMS)));
-        stores[i].setResponse(j, ds.getResponse(i + (j * DIMS)));
+        stores[i].setBlock(j, dataStore.getBlock(i + (j * DIMS)));
+        stores[i].setResponse(j, dataStore.getResponse(i + (j * DIMS)));
       }
     }
 
@@ -61,18 +61,18 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // and then rotate some of those sensors to get new datablocks
     // we can only compact the code so hard, and this is an easier arrangement
     // than, say, trying to index into a series of arraylists
-    double[] north1Sensor = ds.getBlock(0).getData();
-    double[] east1Sensor = ds.getBlock(1).getData();
+    double[] north1Sensor = dataStore.getBlock(0).getData();
+    double[] east1Sensor = dataStore.getBlock(1).getData();
     // index 2 is a vertical sensor
-    double[] north2Sensor = ds.getBlock(3).getData();
-    double[] east2Sensor = ds.getBlock(4).getData();
+    double[] north2Sensor = dataStore.getBlock(3).getData();
+    double[] east2Sensor = dataStore.getBlock(4).getData();
     // index 5 is a vertical sensor
-    double[] north3Sensor = ds.getBlock(6).getData();
-    double[] east3Sensor = ds.getBlock(7).getData();
+    double[] north3Sensor = dataStore.getBlock(6).getData();
+    double[] east3Sensor = dataStore.getBlock(7).getData();
 
-    long interval = ds.getBlock(0).getInterval();
-    long start = ds.getBlock(0).getStartTime();
-    long end = ds.getBlock(0).getEndTime();
+    long interval = dataStore.getBlock(0).getInterval();
+    long start = dataStore.getBlock(0).getStartTime();
+    long end = dataStore.getBlock(0).getEndTime();
 
     StringBuilder sb = new StringBuilder();
     sb.append("Beginning rotations (offset angle esimates)\n");
@@ -98,10 +98,10 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
     DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(ds.getBlock(3), ds.getBlock(4), northAngles[0]);
+        TimeSeriesUtils.rotate(dataStore.getBlock(3), dataStore.getBlock(4), northAngles[0]);
     stores[0].setBlock(1, north2Rotated);
     DataBlock east2Rotated =
-        TimeSeriesUtils.rotateX(ds.getBlock(3), ds.getBlock(4), eastAngles[0]);
+        TimeSeriesUtils.rotateX(dataStore.getBlock(3), dataStore.getBlock(4), eastAngles[0]);
     stores[1].setBlock(1, east2Rotated);
 
     // see also the rotation used in the 9-input self noise backend
@@ -115,10 +115,10 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
     DataBlock north3Rotated =
-        TimeSeriesUtils.rotate(ds.getBlock(6), ds.getBlock(7), northAngles[1]);
+        TimeSeriesUtils.rotate(dataStore.getBlock(6), dataStore.getBlock(7), northAngles[1]);
     stores[0].setBlock(2, north3Rotated);
     DataBlock east3Rotated =
-        TimeSeriesUtils.rotateX(ds.getBlock(6), ds.getBlock(7), eastAngles[1]);
+        TimeSeriesUtils.rotateX(dataStore.getBlock(6), dataStore.getBlock(7), eastAngles[1]);
     stores[1].setBlock(2, east3Rotated);
     fireStateChange("All offset horizontal data rotated!");
 

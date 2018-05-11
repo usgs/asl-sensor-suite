@@ -56,22 +56,22 @@ public class OrthogonalExperiment extends Experiment {
   }
 
   @Override
-  protected void backend(final DataStore ds) {
+  protected void backend(final DataStore dataStore) {
 
     // TODO: refactor using faster access point for azimuth?
-    long interval = ds.getXthLoadedBlock(1).getInterval();
+    long interval = dataStore.getXthLoadedBlock(1).getInterval();
 
     // assume the first two are the test and the second two are the reference?
     // we just need four timeseries, don't actually care about response
-    DataBlock refLH1Block = ds.getXthLoadedBlock(1);
+    DataBlock refLH1Block = dataStore.getXthLoadedBlock(1);
     String refName = refLH1Block.getName();
     dataNames.add(refName);
-    DataBlock refLH2Block = ds.getXthLoadedBlock(2);
+    DataBlock refLH2Block = dataStore.getXthLoadedBlock(2);
     dataNames.add(refLH2Block.getName());
-    DataBlock testLH1Block = ds.getXthLoadedBlock(3);
+    DataBlock testLH1Block = dataStore.getXthLoadedBlock(3);
     String testName = testLH1Block.getName();
     dataNames.add(testName);
-    DataBlock testLH2Block = ds.getXthLoadedBlock(4);
+    DataBlock testLH2Block = dataStore.getXthLoadedBlock(4);
     dataNames.add(testLH2Block.getName());
 
     // this code is used to get the plotted difference between ref + test, ref + rotated test

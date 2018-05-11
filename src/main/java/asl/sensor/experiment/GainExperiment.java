@@ -86,7 +86,7 @@ public class GainExperiment extends Experiment {
    * calculate an estimation of gain from the second series.
    */
   @Override
-  protected void backend(final DataStore ds) {
+  protected void backend(final DataStore dataStore) {
 
     indices = new int[NUMBER_TO_LOAD];
     // indices here is a linear array pointing to where
@@ -94,10 +94,10 @@ public class GainExperiment extends Experiment {
 
     for (int i = 0; i < NUMBER_TO_LOAD; ++i) {
       // XthFullyLoaded starts at 1 (i.e., get first full-loaded), not 0
-      int idx = ds.getXthFullyLoadedIndex(i + 1);
+      int idx = dataStore.getXthFullyLoadedIndex(i + 1);
       indices[i] = idx;
-      dataNames.add(ds.getBlock(idx).getName());
-      dataNames.add(ds.getResponse(idx).getName());
+      dataNames.add(dataStore.getBlock(idx).getName());
+      dataNames.add(dataStore.getResponse(idx).getName());
     }
 
     gainStage1 = new double[NUMBER_TO_LOAD];
@@ -105,7 +105,7 @@ public class GainExperiment extends Experiment {
     fireStateChange("Accumulating gain values...");
     // InstrumentResponse[] resps = ds.getResponses();
     for (int i = 0; i < indices.length; ++i) {
-      InstrumentResponse ir = ds.getResponse(indices[i]);
+      InstrumentResponse ir = dataStore.getResponse(indices[i]);
       double[] gains = ir.getGain();
       gainStage1[i] = gains[1];
     }
@@ -117,9 +117,9 @@ public class GainExperiment extends Experiment {
     for (int i = 0; i < indices.length; ++i) {
       fireStateChange("Getting PSD " + i + "...");
       int idx = indices[i];
-      String name = "PSD " + ds.getBlock(idx).getName() + " [" + idx + "]";
+      String name = "PSD " + dataStore.getBlock(idx).getName() + " [" + idx + "]";
       XYSeries xys = new XYSeries(name);
-      fftResults[i] = ds.getPSD(idx);
+      fftResults[i] = dataStore.getPSD(idx);
       Complex[] fft = fftResults[i].getFFT();
       double[] freqs = fftResults[i].getFreqs();
       // false, because we don't want to plot in frequency space
