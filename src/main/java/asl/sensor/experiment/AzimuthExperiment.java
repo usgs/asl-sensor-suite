@@ -670,6 +670,14 @@ public class AzimuthExperiment extends Experiment {
     simpleCalc = isSimple;
   }
 
+  /**
+   * Used for test case verification.
+   * @return simpleCalc
+   */
+  boolean getSimpleCalc() {
+    return simpleCalc;
+  }
+
   public static double[][] matchArrayLengths(double[]... toTrim) {
     int len = toTrim[0].length;
     for (double[] timeseries : toTrim) {

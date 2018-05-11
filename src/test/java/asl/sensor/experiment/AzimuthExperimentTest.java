@@ -1,9 +1,16 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.test.TestUtils.RESP_LOCATION;
+import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.input.DataStoreUtils;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Calendar;
 import org.junit.Test;
 import asl.sensor.gui.ExperimentPanel;
@@ -424,6 +431,51 @@ public class AzimuthExperimentTest {
       e.printStackTrace();
       fail();
     }
+  }
+
+  @Test
+  public void alternateEntryPoint_testInitializationUnchanged_DefaultFalseSimpleCalc() {
+    double[] north = new double[10000];
+    Arrays.fill(north, 1);
+    double[] east = new double[10000];
+    Arrays.fill(east, 2);
+    double[] referenceNorth = new double[10000];
+    Arrays.fill(referenceNorth, 1);
+    long interval = 1;
+    long start = 0;
+    long end = 9;
+    AzimuthExperiment experiment = new AzimuthExperiment();
+    experiment.alternateEntryPoint(north, east, referenceNorth, interval, start, end);
+
+    assertFalse(experiment.getSimpleCalc());
+    assertTrue(experiment.dataNames.contains("N"));
+    assertTrue(experiment.dataNames.contains("E"));
+    assertTrue(experiment.dataNames.contains("R"));
+
+    assertNotNull(experiment.xySeriesData);
+  }
+
+  @Test
+  public void alternateEntryPoint_testInitializationUnchangedTrue() {
+    double[] north = new double[10000];
+    Arrays.fill(north, 1);
+    double[] east = new double[10000];
+    Arrays.fill(east, 2);
+    double[] referenceNorth = new double[10000];
+    Arrays.fill(referenceNorth, 1);
+    long interval = 1;
+    long start = 0;
+    long end = 9;
+    AzimuthExperiment experiment = new AzimuthExperiment();
+    experiment.setSimple(true);
+    experiment.alternateEntryPoint(north, east, referenceNorth, interval, start, end);
+
+    assertTrue(experiment.getSimpleCalc());
+    assertTrue(experiment.dataNames.contains("N"));
+    assertTrue(experiment.dataNames.contains("E"));
+    assertTrue(experiment.dataNames.contains("R"));
+
+    assertNotNull(experiment.xySeriesData);
   }
 
 }
