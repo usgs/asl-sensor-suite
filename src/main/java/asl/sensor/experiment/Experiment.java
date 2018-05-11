@@ -196,11 +196,11 @@ public abstract class Experiment {
    */
   protected void fireStateChange(String newStatus) {
     status = newStatus;
-    ChangeListener[] lsners = eventHelper.getListeners(ChangeListener.class);
-    if (lsners != null && lsners.length > 0) {
-      ChangeEvent evt = new ChangeEvent(this);
-      for (ChangeListener lsnr : lsners) {
-        lsnr.stateChanged(evt);
+    ChangeListener[] listeners = eventHelper.getListeners(ChangeListener.class);
+    if (listeners != null && listeners.length > 0) {
+      ChangeEvent event = new ChangeEvent(this);
+      for (ChangeListener listener : listeners) {
+        listener.stateChanged(event);
       }
     }
   }
