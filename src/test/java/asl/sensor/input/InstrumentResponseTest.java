@@ -190,8 +190,9 @@ public class InstrumentResponseTest {
 
   @Test
   public void parseTermAsDate_starttime_no_seconds() {
-    //This should parse a line that is missing the seconds field.
-    fail();
+    Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:  2007,337,10:15");
+    Instant expected = LocalDateTime.parse("2007-12-03T10:15:00").toInstant(ZoneOffset.UTC);
+    assertEquals(expected, actual);
   }
 
 }
