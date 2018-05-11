@@ -443,8 +443,8 @@ public class StepExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
-    return (ds.blockIsSet(0) && ds.bothComponentsSet(1));
+  public boolean hasEnoughData(DataStore dataStore) {
+    return (dataStore.blockIsSet(0) && dataStore.bothComponentsSet(1));
   }
 
   /**

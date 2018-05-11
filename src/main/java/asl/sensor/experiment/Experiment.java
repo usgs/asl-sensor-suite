@@ -273,10 +273,10 @@ public abstract class Experiment {
    * (i.e., if data requires 2 timeseries, check the first two datablocks in the datastore have
    * data and return true if so)
    *
-   * @param ds DataStore to be fed into experiment calculation
+   * @param dataStore DataStore to be fed into experiment calculation
    * @return True if there is enough data to be run
    */
-  public abstract boolean hasEnoughData(final DataStore ds);
+  public abstract boolean hasEnoughData(final DataStore dataStore);
 
   /**
    * Return an array of indices of responses used by an index, to include
@@ -295,11 +295,9 @@ public abstract class Experiment {
    * This function specifically (rather than the backend implementation) is
    * where interval consistency is checked before doing calculations.
    *
-   * @param ds Timeseries data to be processed
+   * @param dataStore Timeseries data to be processed
    */
-  public void runExperimentOnData(final DataStore ds) {
-
-    status = "";
+  public void runExperimentOnData(final DataStore dataStore) {
 
     fireStateChange("Beginning loading data...");
 
@@ -307,31 +305,31 @@ public abstract class Experiment {
     xySeriesData = new ArrayList<>();
     gapRegions = new HashMap<>();
 
-    if (hasEnoughData(ds) && (blocksNeeded() == 0)) {
+    if (hasEnoughData(dataStore) && (blocksNeeded() == 0)) {
       // prevent null issue when doing response data, which does not really have times
       start = 0L;
       end = 0L;
-      backend(ds);
+      backend(dataStore);
       return;
     }
 
     // TODO: may want to do a check that enough data exists and throw exception as necessary
 
-    final DataBlock db = ds.getXthLoadedBlock(1);
+    final DataBlock db = dataStore.getXthLoadedBlock(1);
 
     start = db.getStartTime();
     end = db.getEndTime();
 
-    ds.matchIntervals(blocksNeeded());
+    dataStore.matchIntervals(blocksNeeded());
 
     // populate gapregions data
     for (int i = 0; i < blocksNeeded(); ++i) {
       // in the case of spectrum panel, not all data inputs may be set
       // lockout check to make sure enough needed data is set already done, so this is OK
-      if (!ds.blockIsSet(i)) {
+      if (!dataStore.blockIsSet(i)) {
         continue;
       }
-      DataBlock block = ds.getBlock(i);
+      DataBlock block = dataStore.getBlock(i);
       String name = block.getName();
       // gaps already is calculated based on trimmed start and end times
       List<Pair<Long, Long>> gaps = block.getGapBoundaries();
@@ -346,7 +344,7 @@ public abstract class Experiment {
 
     fireStateChange("Beginning calculations...");
 
-    backend(ds);
+    backend(dataStore);
 
     fireStateChange("Calculations done!");
   }

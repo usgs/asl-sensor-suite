@@ -191,9 +191,9 @@ public class OrthogonalExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if (!ds.blockIsSet(i)) {
+      if (!dataStore.blockIsSet(i)) {
         return false;
       }
     }

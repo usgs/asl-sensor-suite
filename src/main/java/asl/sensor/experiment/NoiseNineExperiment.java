@@ -191,9 +191,9 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if (!ds.bothComponentsSet(i)) {
+      if (!dataStore.bothComponentsSet(i)) {
         return false;
       }
     }

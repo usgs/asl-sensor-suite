@@ -132,9 +132,9 @@ public class ResponseExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < 3; ++i) {
-      if (ds.responseIsSet(i)) {
+      if (dataStore.responseIsSet(i)) {
         return true;
       }
     }
