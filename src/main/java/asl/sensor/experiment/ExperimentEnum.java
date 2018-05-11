@@ -19,7 +19,6 @@ public enum ExperimentEnum {
   STCAL("Step calibration"),
   RANDM("Randomized calibration"),
   SINCL("Sine calibration"),
-  // RNDBG ("Rdm. cal. verification"),
   AZMTH("Azimuth"),
   ORTHO("Orthogonality"),
   SPECT("Power-spectrum"),

@@ -118,7 +118,6 @@ public class NoiseExperiment extends Experiment {
     }
 
     fireStateChange("Doing noise esimation calculations...");
-
     for (int i = 1; i < freqs.length; ++i) {
       if (1 / freqs[i] > MAX_PLOT_PERIOD) {
         continue;
