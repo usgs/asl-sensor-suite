@@ -3,6 +3,7 @@ package asl.sensor.input;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -146,6 +147,35 @@ public class DataStoreTest {
       }
     }
     assertTrue(notAllZero);
+  }
+
+  @Test
+  public void bothComponentsSet_bothSet_True() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String calName =  dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    DataStore dataStore = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+
+    assertTrue(dataStore.bothComponentsSet(1));
+  }
+
+  @Test
+  public void bothComponentsSet_dataSet_respMissing_False() {
+    //verify true for when data is set, but resp missing
+    assertFalse(true);
+  }
+
+  @Test
+  public void bothComponentsSet_dataMissing_respSet_False() {
+    //verify true for when both are set
+    assertFalse(true);
+  }
+
+  @Test
+  public void bothComponentsSet_bothMissing_False() {
+    //verify true for when both are set
+    assertFalse(true);
   }
 
 }
