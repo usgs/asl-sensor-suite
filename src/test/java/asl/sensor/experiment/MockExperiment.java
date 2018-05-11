@@ -8,6 +8,10 @@ public class MockExperiment extends Experiment {
   boolean backendCalled = false;
   boolean hasEnoughDataCalled = false;
   boolean blocksNeededCalled = false;
+  /**
+   * Counts the total number of times fireStateChange was called.
+   * It is used for verifing that methods are still calling when we expect them too.
+   */
   int numberOfChangesFired = 0;
 
   MockExperiment() {
