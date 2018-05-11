@@ -63,8 +63,8 @@ public class AzimuthExperiment extends Experiment {
   }
 
   /**
-   * Entry point for this experiment to guarantee the use of the simple solver
-   * and require less overhead, callable from another experiment
+   * Entry point for this experiment to simplify the execution.
+   * Callable from another experiment.
    *
    * @param testNorth timeseries data from presumed north-facing test sensor
    * @param testEast timeseries data from presumed east-facing test sensor
@@ -76,13 +76,19 @@ public class AzimuthExperiment extends Experiment {
   protected void alternateEntryPoint(
       double[] testNorth, double[] testEast,
       double[] referenceNorth, long interval, long start, long end) {
+
+    /*
+     * Since this is called from other experiments the super.runExperimentOnData()
+     * is never called to initialize these values.
+     */
     dataNames = new ArrayList<>();
     dataNames.add("N");
     dataNames.add("E");
     dataNames.add("R");
-    simpleCalc = true;
 
-    backend(testNorth.clone(), testEast.clone(), referenceNorth.clone(),
+    xySeriesData = new ArrayList<>();
+
+    backendHelper(testNorth.clone(), testEast.clone(), referenceNorth.clone(),
         interval, start, end);
   }
 
@@ -95,7 +101,6 @@ public class AzimuthExperiment extends Experiment {
     DataBlock testEastBlock = dataStore.getXthLoadedBlock(2);
     DataBlock refNorthBlock = dataStore.getXthLoadedBlock(3);
 
-    dataNames = new ArrayList<>();
     dataNames.add(testNorthBlock.getName());
     dataNames.add(testEastBlock.getName());
     dataNames.add(refNorthBlock.getName());
@@ -109,7 +114,7 @@ public class AzimuthExperiment extends Experiment {
     double[] testEast = testEastBlock.getData();
     double[] refNorth = refNorthBlock.getData();
 
-    backend(testNorth, testEast, refNorth, interval, startTime, endTime);
+    backendHelper(testNorth, testEast, refNorth, interval, startTime, endTime);
 
   }
 
@@ -123,7 +128,7 @@ public class AzimuthExperiment extends Experiment {
    * @param startTime Start time of data
    * @param endTime End time of data
    */
-  private void backend(
+  private void backendHelper(
       double[] testNorth, double[] testEast,
       double[] refNorth, long interval, long startTime, long endTime) {
 
