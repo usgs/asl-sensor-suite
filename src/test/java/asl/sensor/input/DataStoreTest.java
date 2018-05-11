@@ -166,21 +166,21 @@ public class DataStoreTest {
     String calName =  dataFolderName + "CB_BC0.512.seed";
     DataStore dataStore = DataStoreUtils.createFromNames(null, calName, null);
 
-    assertFalse(dataStore.bothComponentsSet(0));    assertFalse(true);
+    assertFalse(dataStore.bothComponentsSet(0));
   }
 
   @Test
   public void bothComponentsSet_dataMissing_respSet_False() {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     DataStore dataStore = DataStoreUtils.createFromNames(respName, null, null);
-    assertFalse(dataStore.bothComponentsSet(1));    assertFalse(true);
+    assertFalse(dataStore.bothComponentsSet(1));
   }
 
   @Test
   public void bothComponentsSet_bothMissing_False() {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     DataStore dataStore = DataStoreUtils.createFromNames(respName, null, null);
-    assertFalse(dataStore.bothComponentsSet(0));    assertFalse(true);    assertFalse(true);
+    assertFalse(dataStore.bothComponentsSet(0));
   }
 
 }
