@@ -322,11 +322,16 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
 
+      final double[] freqsSet = freqs;
+      final int numZerosSet = numZeros;
+      final boolean isLowFrequency = isLowFrequencyCalibration;
+      final InstrumentResponse fitSet = fitResponse;
+
       @Override
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         ++numIterations;
         fireStateChange("Fitting, iteration count " + numIterations);
-        return jacobian(point);
+        return jacobian(point, freqsSet, numZerosSet, fitSet, isLowFrequency);
       }
 
     };
@@ -411,8 +416,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       fitValues[argIdx] = NumericUtils.atanc(fit[i]);
     }
     fireStateChange("Scaling extended resps...");
-    scaleValues(initialValues);
-    scaleValues(fitValues);
+    scaleValues(initialValues, freqs, isLowFrequencyCalibration);
+    scaleValues(fitValues, freqs, isLowFrequencyCalibration);
 
     fireStateChange("Compiling data into plots...");
 
@@ -498,7 +503,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * @param variables values to set the instrument response to
    * @return Doubles representing new response curve evaluation
    */
-  private double[] evaluateResponse(double[] variables) {
+  private static double[] evaluateResponse(double[] variables, double[] freqs, int numZeros,
+      InstrumentResponse fitResponse, boolean isLowFrequencyCalibration) {
 
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
 
@@ -520,7 +526,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       curValue[argIdx] = NumericUtils.atanc(c);
     }
 
-    scaleValues(curValue);
+    scaleValues(curValue, freqs, isLowFrequencyCalibration);
 
     return curValue;
   }
@@ -663,7 +669,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * @return RealVector with evaluation at current response value and
    * RealMatrix with backward difference of that response (Jacobian)
    */
-  private Pair<RealVector, RealMatrix> jacobian(RealVector variables) {
+  private static Pair<RealVector, RealMatrix> jacobian(RealVector variables, double[] freqs,
+      int numZeros, InstrumentResponse fitResponse, boolean isLowFreq) {
     int numVars = variables.getDimension();
 
     double[] currentVars = new double[numVars];
@@ -672,7 +679,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       currentVars[i] = variables.getEntry(i);
     }
 
-    double[] mag = evaluateResponse(currentVars);
+    double[] mag = evaluateResponse(currentVars, freqs, numZeros, fitResponse, isLowFreq);
 
     double[][] jacobian = new double[mag.length][numVars];
     // now take the backward difference of each value
@@ -694,7 +701,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       double diffX = changedVars[i] - DELTA;
       changedVars[i] = diffX;
       double[] diffY =
-          evaluateResponse(changedVars);
+          evaluateResponse(changedVars, freqs, numZeros, fitResponse, isLowFreq);
 
       for (int j = 0; j < diffY.length; ++j) {
         if (changedVars[i] - currentVars[i] == 0.) {
@@ -734,7 +741,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     nyquistMultiplier = Math.max(0.3, nyquistMultiplier);
   }
 
-  private void scaleValues(double[] unrot) {
+  private static void scaleValues(double[] unrot, double[] freqs, boolean isLowFrequencyCalibration) {
     int normalIdx = getIndexOfFrequency(freqs, ZERO_TARGET);
     int argStart = unrot.length / 2;
     double unrotScaleAmp = 20 * Math.log10(unrot[normalIdx]);
