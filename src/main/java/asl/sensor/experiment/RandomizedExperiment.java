@@ -68,7 +68,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   }
 
   private static final double DELTA = 1E-12;
-  public static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
+  private static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
 
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
@@ -265,23 +265,23 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
     // apply weights
     for (int i = 0; i < freqs.length; ++i) {
-      int argIdx = i + freqs.length;
-      double denom;
+      int argIndex = i + freqs.length;
+      double denominator;
       if (!isLowFrequencyCalibration) {
         if (freqs[i] < 1) {
-          denom = 1; // weight everything up to 1Hz equally
+          denominator = 1; // weight everything up to 1Hz equally
         } else {
-          denom = freqs[i]; // set everything (else) to 1/f weighting
+          denominator = freqs[i]; // set everything (else) to 1/f weighting
         }
       } else {
         if (freqs[i] < .01) {
-          denom = freqs[i];
+          denominator = freqs[i];
         } else {
-          denom = .01;
+          denominator = .01;
         }
       }
-      weights[argIdx] = maxArgWeight / denom;
-      weights[i] = maxMagWeight / denom;
+      weights[argIndex] = maxArgWeight / denominator;
+      weights[i] = maxMagWeight / denominator;
     }
 
     // get the rest of the plotted data squared away
@@ -650,8 +650,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
-    return (ds.blockIsSet(0) && ds.bothComponentsSet(1));
+  public boolean hasEnoughData(DataStore dataStore) {
+    return (dataStore.blockIsSet(0) && dataStore.bothComponentsSet(1));
   }
 
   /**
@@ -663,7 +663,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * @return RealVector with evaluation at current response value and
    * RealMatrix with backward difference of that response (Jacobian)
    */
-  private Pair<RealVector, RealMatrix>
+  Pair<RealVector, RealMatrix>
   jacobian(RealVector variables) {
     int numVars = variables.getDimension();
 
@@ -709,9 +709,9 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     }
 
     RealVector result = MatrixUtils.createRealVector(mag);
-    RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
+    RealMatrix jacobianMatrix = MatrixUtils.createRealMatrix(jacobian);
 
-    return new Pair<>(result, jMat);
+    return new Pair<>(result, jacobianMatrix);
   }
 
   @Override
