@@ -4,7 +4,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import java.io.IOException;
 import org.junit.Test;
 import asl.sensor.input.DataStore;
@@ -29,17 +28,34 @@ public class SpectrumExperimentTest {
   }
 
   @Test
-  public void backend_standardData() {
+  public void backend_standardData() throws SeedFormatException, UnsupportedCompressionType,
+  CodecException, IOException {
     //There doesn't appear to be any "good results" to compare against since it primarily plots.
     //We can at least check the below
-
+    SpectrumExperiment experiment = new SpectrumExperiment();
+    DataStore ds = new DataStore();
+    String resp = TestUtils.RESP_LOCATION + "T-compact_Q330HR_BH_40";
+    String testData1 = folder + "noise-neg159db/" + "00_BH0.512.seed";
+    ds.setBlock(0, testData1);
+    long start = ds.getCommonTime().getFirst();
+    long end = ds.getCommonTime().getSecond();
+    end = (end - start) / 4 + start; // trim data to 1/4 its current length to speed up cal
+    ds.trim(start, end);
+    ds.setResponse(0, resp);
+    experiment.runExperimentOnData(ds);
     //assert datanames was correctly populated
-
+    assertEquals(2, experiment.dataNames.size());
+    assertEquals("XX_TST5_00_BH0", experiment.dataNames.get(0));
+    assertEquals("T-compact_Q330HR_BH_40", experiment.dataNames.get(1));
     //assert respIndices was correctly populated
-
+    assertEquals(0, experiment.listActiveResponseIndices()[0]);
     //assert xySeriesData was populated
-
-    fail();
+    assertEquals(1, experiment.getData().size());
+    String[] keycheck = {"PSD XX_TST5_00_BH0 [0]", "NLNM", "NHNM"};
+    for (int i = 0; i < experiment.getData().get(0).getSeriesCount(); ++i) {
+      String key = (String) experiment.getData().get(0).getSeriesKey(i);
+      assertEquals(keycheck[i], key);
+    }
   }
 
   @Test
