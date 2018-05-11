@@ -20,7 +20,7 @@ public class AzimuthExperimentTest {
   @Test
   public void matchArrayLengths_offByOne() {
     double[] arr1 = new double[41753];
-    double[] arr2 = new double[41753];
+    double[] arr2 = new double[41754];
     double[] arr3 = new double[41754];
     double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
 
