@@ -138,7 +138,6 @@ public abstract class Experiment {
 
   protected long start;
   protected long end;
-  protected boolean statusToTerminal;
   protected List<XYSeriesCollection> xySeriesData;
   private String status;
   protected List<String> dataNames; // list of filenames of seed, resp files
@@ -146,9 +145,9 @@ public abstract class Experiment {
   // current set of experiments for this list:
   // SEED, RESP (if used), SEED, RESP (if used), etc.
   // That is, place response files after their associated timeseries
-  protected Map<String, List<Pair<Date, Date>>> gapRegions;
+  private Map<String, List<Pair<Date, Date>>> gapRegions;
 
-  private EventListenerList eventHelper;
+  private final EventListenerList eventHelper;
 
   /**
    * Initialize all fields common to experiment objects
@@ -156,10 +155,9 @@ public abstract class Experiment {
   public Experiment() {
     start = 0L;
     end = 0L;
-    dataNames = new ArrayList<String>();
+    dataNames = new ArrayList<>();
     status = "";
     eventHelper = new EventListenerList();
-    statusToTerminal = false;
   }
 
   /**
@@ -195,11 +193,6 @@ public abstract class Experiment {
    * @param newStatus Status change message to notify listeners of
    */
   protected void fireStateChange(String newStatus) {
-
-    if (statusToTerminal) {
-      System.out.println(newStatus);
-    }
-
     status = newStatus;
     ChangeListener[] lsners = eventHelper.getListeners(ChangeListener.class);
     if (lsners != null && lsners.length > 0) {
@@ -308,9 +301,9 @@ public abstract class Experiment {
 
     fireStateChange("Beginning loading data...");
 
-    dataNames = new ArrayList<String>();
-    xySeriesData = new ArrayList<XYSeriesCollection>();
-    gapRegions = new HashMap<String, List<Pair<Date, Date>>>();
+    dataNames = new ArrayList<>();
+    xySeriesData = new ArrayList<>();
+    gapRegions = new HashMap<>();
 
     if (hasEnoughData(ds) && (blocksNeeded() == 0)) {
       // prevent null issue when doing response data, which does not really have times
@@ -340,11 +333,11 @@ public abstract class Experiment {
       String name = block.getName();
       // gaps already is calculated based on trimmed start and end times
       List<Pair<Long, Long>> gaps = block.getGapBoundaries();
-      List<Pair<Date, Date>> gapsAsDates = new ArrayList<Pair<Date, Date>>();
+      List<Pair<Date, Date>> gapsAsDates = new ArrayList<>();
       for (Pair<Long, Long> gap : gaps) {
         Date start = new Date(gap.getFirst());
         Date end = new Date(gap.getSecond());
-        gapsAsDates.add(new Pair<Date, Date>(start, end));
+        gapsAsDates.add(new Pair<>(start, end));
       }
       gapRegions.put(name, gapsAsDates);
     }
