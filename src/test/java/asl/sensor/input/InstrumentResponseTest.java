@@ -182,10 +182,16 @@ public class InstrumentResponseTest {
   }
 
   @Test
-  public void parseTermAsDate_NoEndingTime_input_field23() {
+  public void parseTermAsDate_noEndingTime_input_field23() {
     Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:    No Ending Time");
     Instant expected = null;
     assertEquals(expected, actual);
+  }
+
+  @Test
+  public void parseTermAsDate_starttime_no_seconds() {
+    //This should parse a line that is missing the seconds field.
+    fail();
   }
 
 }
