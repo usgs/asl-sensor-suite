@@ -1,9 +1,16 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.test.TestUtils.RESP_LOCATION;
+import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.input.DataStoreUtils;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Calendar;
 import org.junit.Test;
 import asl.sensor.gui.ExperimentPanel;
@@ -13,24 +20,87 @@ import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
-public class AzimuthTest {
+public class AzimuthExperimentTest {
 
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
-  public void matchArrayLengths() {
+  public void matchArrayLengths_offByOne() {
     double[] arr1 = new double[41753];
-    double[] arr2 = new double[41753];
+    double[] arr2 = new double[41754];
     double[] arr3 = new double[41754];
     double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
+
     assertEquals(3, results.length);
     double[] testArr1 = results[0];
     double[] testArr2 = results[1];
     double[] testArr3 = results[2];
-    results = null;
+
     assertEquals(testArr1.length, 41753);
     assertEquals(testArr2.length, 41753);
     assertEquals(testArr3.length, 41753);
+  }
+
+  @Test
+  public void matchArrayLengths_multipleLow() {
+    double[] arr1 = new double[41855];
+    double[] arr2 = new double[41754];
+    double[] arr3 = new double[41751];
+    double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
+
+    assertEquals(3, results.length);
+    double[] testArr1 = results[0];
+    double[] testArr2 = results[1];
+    double[] testArr3 = results[2];
+
+    assertEquals(testArr1.length, 41751);
+    assertEquals(testArr2.length, 41751);
+    assertEquals(testArr3.length, 41751);
+  }
+
+  @Test
+  public void matchArrayLengths_offByMany() {
+    double[] arr1 = new double[3000];
+    double[] arr2 = new double[41753];
+    double[] arr3 = new double[41754];
+    double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
+
+    assertEquals(3, results.length);
+    double[] testArr1 = results[0];
+    double[] testArr2 = results[1];
+    double[] testArr3 = results[2];
+
+    assertEquals(testArr1.length, 3000);
+    assertEquals(testArr2.length, 3000);
+    assertEquals(testArr3.length, 3000);
+  }
+
+  @Test
+  public void matchArrayLengths_equalLengths() {
+    double[] arr1 = new double[41753];
+    double[] arr2 = new double[41753];
+    double[] arr3 = new double[41753];
+    double[][] results = AzimuthExperiment.matchArrayLengths(arr1, arr2, arr3);
+
+    assertEquals(3, results.length);
+    double[] testArr1 = results[0];
+    double[] testArr2 = results[1];
+    double[] testArr3 = results[2];
+
+    assertEquals(testArr1.length, 41753);
+    assertEquals(testArr2.length, 41753);
+    assertEquals(testArr3.length, 41753);
+  }
+
+  @Test
+  public void matchArrayLengths_singleArray() {
+    double[] arr1 = new double[41753];
+    double[][] results = AzimuthExperiment.matchArrayLengths(arr1);
+
+    assertEquals(1, results.length);
+    double[] testArr1 = results[0];
+
+    assertEquals(testArr1.length, 41753);
   }
 
   @Test
@@ -361,6 +431,51 @@ public class AzimuthTest {
       e.printStackTrace();
       fail();
     }
+  }
+
+  @Test
+  public void alternateEntryPoint_testInitializationUnchanged_DefaultFalseSimpleCalc() {
+    double[] north = new double[10000];
+    Arrays.fill(north, 1);
+    double[] east = new double[10000];
+    Arrays.fill(east, 2);
+    double[] referenceNorth = new double[10000];
+    Arrays.fill(referenceNorth, 1);
+    long interval = 1;
+    long start = 0;
+    long end = 9;
+    AzimuthExperiment experiment = new AzimuthExperiment();
+    experiment.alternateEntryPoint(north, east, referenceNorth, interval, start, end);
+
+    assertFalse(experiment.getSimpleCalc());
+    assertTrue(experiment.dataNames.contains("N"));
+    assertTrue(experiment.dataNames.contains("E"));
+    assertTrue(experiment.dataNames.contains("R"));
+
+    assertNotNull(experiment.xySeriesData);
+  }
+
+  @Test
+  public void alternateEntryPoint_testInitializationUnchangedTrue() {
+    double[] north = new double[10000];
+    Arrays.fill(north, 1);
+    double[] east = new double[10000];
+    Arrays.fill(east, 2);
+    double[] referenceNorth = new double[10000];
+    Arrays.fill(referenceNorth, 1);
+    long interval = 1;
+    long start = 0;
+    long end = 9;
+    AzimuthExperiment experiment = new AzimuthExperiment();
+    experiment.setSimple(true);
+    experiment.alternateEntryPoint(north, east, referenceNorth, interval, start, end);
+
+    assertTrue(experiment.getSimpleCalc());
+    assertTrue(experiment.dataNames.contains("N"));
+    assertTrue(experiment.dataNames.contains("E"));
+    assertTrue(experiment.dataNames.contains("R"));
+
+    assertNotNull(experiment.xySeriesData);
   }
 
 }
