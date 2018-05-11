@@ -163,7 +163,6 @@ public class AzimuthExperiment extends Experiment {
     initTestNorth = data[0];
     initTestEast = data[1];
     initRefNorth = data[2];
-    data = null;
 
     MultivariateJacobianFunction jacobian =
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
