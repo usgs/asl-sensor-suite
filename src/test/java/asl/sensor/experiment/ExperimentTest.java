@@ -5,6 +5,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
 
+import java.util.ArrayList;
 import org.junit.Test;
 
 public class ExperimentTest {
@@ -32,6 +33,37 @@ public class ExperimentTest {
   public void listActiveResponseIndices_defaultImplementation(){
     Experiment experiment = new MockExperiment();
     assertArrayEquals(new int[]{}, experiment.listActiveResponseIndices());
+  }
+
+  @Test
+  public void runExperimentOnData_doesItCheckForDataAndBlocksThenShortCircuit_doesItCallBackend() {
+    MockExperiment experiment = new MockExperiment();
+    experiment.runExperimentOnData(null);
+
+    assertTrue(experiment.hasEnoughDataCalled);
+    assertTrue(experiment.backendCalled);
+    assertTrue(experiment.blocksNeededCalled);
+
+    assertEquals(1, experiment.numberOfChangesFired);
+  }
+
+  @Test
+  public void runExperimentOnData_doesItReinitializeFields() {
+    Experiment experiment = new MockExperiment();
+    //Dirty everything
+    experiment.start = 1L;
+    experiment.end = 2L;
+    experiment.dataNames.add("Not Empty");
+    //experiment.xySeriesData defaults to null
+    //experiment.getGapRegions defaults to null;
+
+    experiment.runExperimentOnData(null);
+
+    //These should have been reinitialized
+    assertEquals(0L, experiment.getStart());
+    assertEquals(0L, experiment.getEnd());
+    assertTrue(experiment.getInputNames().isEmpty());
+    assertTrue(experiment.getGapRegions().isEmpty());
   }
 
 

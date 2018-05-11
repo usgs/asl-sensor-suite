@@ -27,7 +27,7 @@ public class MockExperiment extends Experiment {
   @Override
   public int blocksNeeded() {
     blocksNeededCalled = true;
-    return 3;
+    return 0;
   }
 
   @Override
