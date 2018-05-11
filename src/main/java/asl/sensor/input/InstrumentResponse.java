@@ -186,17 +186,24 @@ public class InstrumentResponse {
     try {
       return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
     } catch (DateTimeParseException e){
-      // used to handle weird case where sub-second fields are specified
-      // i.e., looks like "uuuu,DDD,HH:mm:ss.[milliseconds]"
-      // in which case we trim out the last part (which isn't parsable by the pattern) and retry
-      // if we still can't parse, then we just return null, because this probably isn't a date
       int indexToTrim = e.getErrorIndex();
-      time = time.substring(0, indexToTrim);
+      // first, try to parse it in the case the line didn't have seconds defined
       try {
-        return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
+        DateTimeFormatter noSecondsFormat =
+            DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm").withZone(ZoneOffset.UTC);
+        return LocalDateTime.parse(time, noSecondsFormat).toInstant(ZoneOffset.UTC);
       } catch (DateTimeParseException e1) {
-        // Unable to parse the datetime even after trim, this is expected if an epoch does not end.
-        return null;
+        // used to handle weird case where sub-second fields are specified
+        // i.e., looks like "uuuu,DDD,HH:mm:ss.[milliseconds]"
+        // in which case we trim out the last part (which isn't parsable by the pattern) and retry
+        // if we still can't parse, then we just return null, because this probably isn't a date
+        time = time.substring(0, indexToTrim);
+        try {
+          return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
+        } catch (DateTimeParseException e2) {
+          // Unable to parse the datetime even after trim, this is expected if an epoch does not end.
+          return null;
+        }
       }
     }
 
