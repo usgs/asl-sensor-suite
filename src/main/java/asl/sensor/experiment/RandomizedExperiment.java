@@ -663,8 +663,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * @return RealVector with evaluation at current response value and
    * RealMatrix with backward difference of that response (Jacobian)
    */
-  Pair<RealVector, RealMatrix>
-  jacobian(RealVector variables) {
+  private Pair<RealVector, RealMatrix> jacobian(RealVector variables) {
     int numVars = variables.getDimension();
 
     double[] currentVars = new double[numVars];
