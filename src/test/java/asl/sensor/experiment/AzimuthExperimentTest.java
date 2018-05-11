@@ -13,7 +13,7 @@ import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
-public class AzimuthTest {
+public class AzimuthExperimentTest {
 
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
