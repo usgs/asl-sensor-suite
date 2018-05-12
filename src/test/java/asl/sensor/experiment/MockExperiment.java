@@ -8,6 +8,9 @@ public class MockExperiment extends Experiment {
   boolean backendCalled = false;
   boolean hasEnoughDataCalled = false;
   boolean blocksNeededCalled = false;
+
+  boolean setHasEnoughData = true;
+  int numberBlocksNeeded = 0;
   /**
    * Counts the total number of times fireStateChange was called.
    * It is used for verifing that methods are still calling when we expect them too.
@@ -27,13 +30,13 @@ public class MockExperiment extends Experiment {
   @Override
   public int blocksNeeded() {
     blocksNeededCalled = true;
-    return 0;
+    return numberBlocksNeeded;
   }
 
   @Override
   public boolean hasEnoughData(DataStore dataStore) {
     hasEnoughDataCalled = true;
-    return true;
+    return setHasEnoughData;
   }
 
   private class changeCountingListener implements ChangeListener {
