@@ -4,7 +4,7 @@ package asl.sensor.experiment;
  * Enumerated type defining each kind of test, done so GUI has list of all experiments available
  * and for use in dispatching in the ExperimentFactory method
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public enum ExperimentEnum {
 
