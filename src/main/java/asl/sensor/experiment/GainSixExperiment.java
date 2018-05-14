@@ -126,19 +126,19 @@ public class GainSixExperiment extends Experiment {
    * is 180 degrees off from expected due to use of coherence measurement
    * and limited checking of antipolar alignment
    *
-   * @param n Timeseries data from north-facing reference sensor
-   * @param e Timeseries data from east-facing reference sensor
-   * @param r Timeseries data from test sensor (either north or east)
+   * @param north Timeseries data from north-facing reference sensor
+   * @param east Timeseries data from east-facing reference sensor
+   * @param reference Timeseries data from test sensor (either north or east)
    * @param interval Sampling interval of the data
    * @param start Start time of data
    * @param end End time of data
    * @return double representing radian-unit rotation angle of data
    */
-  private double getAzimuth(double[] n, double[] e, double[] r,
+  private double getAzimuth(double[] north, double[] east, double[] reference,
       long interval, long start, long end) {
     AzimuthExperiment azi = new AzimuthExperiment();
     azi.setSimple(false); // don't do the faster angle calculation
-    azi.alternateEntryPoint(n, e, r, interval, start, end);
+    azi.alternateEntryPoint(north, east, reference, interval, start, end);
     return azi.getFitAngleRad();
   }
 
@@ -183,16 +183,16 @@ public class GainSixExperiment extends Experiment {
    * frequency range.
    *
    * @param index Index of north component's data to use as reference
-   * @param low Low frequency bound of range to get stats over
-   * @param high High frequency bound of range to get stats over
+   * @param lowerBound Low frequency bound of range to get stats over
+   * @param upperBound High frequency bound of range to get stats over
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-  public double[][] getStatsFromFreqs(int index, double low, double high) {
+  public double[][] getStatsFromFreqs(int index, double lowerBound, double upperBound) {
     double[][] result = new double[DIMENSIONS][];
     // vertical component requires no rotation
 
     for (int i = 0; i < DIMENSIONS; ++i) {
-      result[i] = componentBackends[i].getStatsFromFreqs(index, low, high);
+      result[i] = componentBackends[i].getStatsFromFreqs(index, lowerBound, upperBound);
     }
     return result;
   }
