@@ -82,7 +82,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // angle is set negative because we are finding angle of reference input
     // which is what north2Sensor is here
     fireStateChange("Getting second north sensor orientation...");
-    northAngles[0] = -getAzimuth(north1Sensor, east1Sensor,
+    northAngles[0] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         north2Sensor, interval, start, end);
 
     fireStateChange("Getting second east sensor orientation...");
@@ -92,7 +92,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // azimuth of east sensor
     // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other
     // rotation direction
-    eastAngles[0] = -getAzimuth(north1Sensor, east1Sensor,
+    eastAngles[0] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         east2Sensor, interval, start, end) + (3 * Math.PI / 2);
 
     // now to rotate the data according to these angles
@@ -106,10 +106,10 @@ public class NoiseNineExperiment extends NoiseExperiment {
 
     // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting third north sensor orientation...");
-    northAngles[1] = -getAzimuth(north1Sensor, east1Sensor,
+    northAngles[1] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         north3Sensor, interval, start, end);
     fireStateChange("Getting third east sensor orientation...");
-    eastAngles[1] = -getAzimuth(north1Sensor, east1Sensor,
+    eastAngles[1] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         east3Sensor, interval, start, end) + (3 * Math.PI / 2);
 
     // now to rotate the data according to these angles
@@ -142,30 +142,6 @@ public class NoiseNineExperiment extends NoiseExperiment {
   @Override
   public int blocksNeeded() {
     return 9;
-  }
-
-  /**
-   * Private function used to get the orientation of inputted data
-   * (Specifically, aligns the second and third horiz. inputs with the first)
-   * Uses a simpler solver for the Azimuth data. May produce an angle that
-   * is 180 degrees off from expected due to use of coherence measurement
-   * and limited checking of antipolar alignment
-   *
-   * @param north Timeseries data from north-facing reference sensor
-   * @param east Timeseries data from east-facing reference sensor
-   * @param reference Timeseries data from test sensor (either north or east)
-   * @param interval Sampling interval of the data
-   * @param start Start time of data
-   * @param end End time of data
-   * @return double representing radian-unit rotation angle of data
-   */
-  private double getAzimuth(double[] north, double[] east, double[] reference,
-      long interval, long start, long end) {
-    // TODO: MAKE SURE THIS WORKS
-    AzimuthExperiment azi = new AzimuthExperiment();
-    azi.setSimple(false); // don't do the faster angle calculation
-    azi.alternateEntryPoint(north, east, reference, interval, start, end);
-    return azi.getFitAngleRad();
   }
 
   /**
