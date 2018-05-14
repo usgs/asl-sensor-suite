@@ -192,21 +192,15 @@ public class GainExperiment extends Experiment {
    * the mean and standard deviation ratios
    *
    * @param refIdx Index of first curve to be plotted (numerator PSD)
-   * @param lowFq Lower-bound of frequency window of PSD
-   * @param highFq Upper-bound of frequency window of PSD
+   * @param lowerBound Lower-bound of frequency window of PSD
+   * @param upperBound Upper-bound of frequency window of PSD
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-  public double[] getStatsFromFreqs(int refIdx, double lowFq, double highFq) {
-
+  public double[] getStatsFromFreqs(int refIdx, double lowerBound, double upperBound) {
     FFTResult plot0 = fftResults[refIdx];
 
-
-    double temp = Math.min(lowFq, highFq);
-    highFq = Math.max(lowFq, highFq);
-    lowFq = temp;
-
-    int lowIndex = FFTResult.getIndexOfFrequency(plot0.getFreqs(), lowFq);
-    int highIndex = FFTResult.getIndexOfFrequency(plot0.getFreqs(), highFq);
+    int lowIndex = FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.min(lowerBound, upperBound));
+    int highIndex = FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.max(lowerBound, upperBound));
 
     return getStatsFromIndices(refIdx, lowIndex, highIndex);
   }
