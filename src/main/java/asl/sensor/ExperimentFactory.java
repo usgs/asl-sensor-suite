@@ -168,12 +168,14 @@ public enum ExperimentFactory {
 
   /**
    * Creates the associated Experiment for the enum
+   *
    * @return new Experiment
    */
   public abstract Experiment createExperiment();
 
   /**
    * Create a new panel for the GUI.
+   *
    * @return an ExperimentPanel for associated class.
    */
   public abstract ExperimentPanel createPanel();
