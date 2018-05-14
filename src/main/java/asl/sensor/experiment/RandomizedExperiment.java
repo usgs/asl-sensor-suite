@@ -48,25 +48,6 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class RandomizedExperiment extends Experiment implements ParameterValidator {
 
-  /**
-   * Get the index of the value closest to a given target frequency in a list assuming the entries
-   * in the list are equally spaced
-   * @param frequencies List of frequencies to find the target location
-   * @param targetFrequency Frequency of interest
-   * @return Index of closest frequency value
-   */
-  public static int getIndexOfFrequency(double[] frequencies, double targetFrequency) {
-    if (frequencies.length == 1) {
-      return 0;
-    }
-
-    double deltaFreq = frequencies[1] - frequencies[0];
-    int index = (int) Math.round((targetFrequency - frequencies[0]) / deltaFreq);
-    // in almost all cases the index here should be in the list, but if not, bounds check
-    index = Math.max(index, 0);
-    return Math.min(index, frequencies.length-1);
-  }
-
   static final double DELTA = 1E-12;
   private static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
 
@@ -165,17 +146,17 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     fireStateChange("Finding and trimming data to relevant frequency range");
     // now trim frequencies to in range
     // start and end are the region of the fit area, extIdx is the full plotted region
-    int startIndex = getIndexOfFrequency(freqsUntrimmed, minFreq);
-    int endIndex = getIndexOfFrequency(freqsUntrimmed, maxFreq);
+    int startIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, minFreq);
+    int endIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxFreq);
 
     //Used for plotting full range
-    int maxPlotIndex = getIndexOfFrequency(freqsUntrimmed, maxPlotFreq);
+    int maxPlotIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxPlotFreq);
 
     double[] plottingFreqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, maxPlotIndex);
     freqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, endIndex);
 
     double zeroTarget = 0.02; // frequency to set all curves to zero at
-    int normalIdx = getIndexOfFrequency(freqs, zeroTarget);
+    int normalIdx = FFTResult.getIndexOfFrequency(freqs, zeroTarget);
 
     // trim the PSDs to the data in the trimmed frequency range
     Complex[] numeratorPSDVals = numeratorPSD.getFFT();
@@ -742,7 +723,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   }
 
   static void scaleValues(double[] unrot, double[] freqs, boolean isLowFrequencyCalibration) {
-    int normalIdx = getIndexOfFrequency(freqs, ZERO_TARGET);
+    int normalIdx = FFTResult.getIndexOfFrequency(freqs, ZERO_TARGET);
     int argStart = unrot.length / 2;
     double unrotScaleAmp = 20 * Math.log10(unrot[normalIdx]);
     double unrotScaleArg = unrot[argStart + normalIdx];

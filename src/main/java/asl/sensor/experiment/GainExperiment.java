@@ -200,13 +200,15 @@ public class GainExperiment extends Experiment {
 
     FFTResult plot0 = fftResults[refIdx];
 
-    double[] freqBoundaries = new double[2];
-    freqBoundaries[0] = Math.min(lowFq, highFq);
-    freqBoundaries[1] = Math.max(lowFq, highFq);
 
-    int[] indices = getRange(plot0.getFreqs(), freqBoundaries);
+    double temp = Math.min(lowFq, highFq);
+    highFq = Math.max(lowFq, highFq);
+    lowFq = temp;
 
-    return getStatsFromIndices(refIdx, indices[0], indices[1]);
+    int lowIndex = FFTResult.getIndexOfFrequency(plot0.getFreqs(), lowFq);
+    int highIndex = FFTResult.getIndexOfFrequency(plot0.getFreqs(), highFq);
+
+    return getStatsFromIndices(refIdx, lowIndex, highIndex);
   }
 
   /**
