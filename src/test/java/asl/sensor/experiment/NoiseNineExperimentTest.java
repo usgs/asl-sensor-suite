@@ -1,12 +1,15 @@
 package asl.sensor.experiment;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import asl.sensor.ExperimentFactory;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.gui.NoiseNinePanel;
+import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.Font;
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
@@ -19,11 +22,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.NoiseNinePanel;
-import asl.sensor.input.DataStore;
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.ReportingUtils;
 
 public class NoiseNineExperimentTest {
 
@@ -115,13 +113,8 @@ public class NoiseNineExperimentTest {
     }
 
     String testResult = testResultFolder + "Nine-Noise-Test.pdf";
-    try {
-      pdf.save( new File(testResult) );
-      pdf.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
+    pdf.save( new File(testResult) );
+    pdf.close();
   }
 
   @Test
@@ -245,5 +238,4 @@ public class NoiseNineExperimentTest {
     }
     return ds;
   }
-
 }
