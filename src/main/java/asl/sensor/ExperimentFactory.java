@@ -160,7 +160,7 @@ public enum ExperimentFactory {
       return new ResponsePanel(this);
     }
   };
-  private String name;
+  private final String name;
 
   ExperimentFactory(String name) {
     this.name = name;
