@@ -50,7 +50,7 @@ public class AzimuthPanel extends ExperimentPanel {
 
   private final JComboBox<String> chartSelector;
 
-  AzimuthPanel(ExperimentFactory experiment) {
+  public AzimuthPanel(ExperimentFactory experiment) {
     super(experiment);
 
     SpinnerModel spinModel = new SpinnerNumberModel(0, -360, 360, 0.1);

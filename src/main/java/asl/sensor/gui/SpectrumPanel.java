@@ -34,7 +34,7 @@ public class SpectrumPanel extends ExperimentPanel {
   /**
    * Constructs a new panel and lays out all the components in it
    */
-  SpectrumPanel(ExperimentFactory experiment) {
+  public SpectrumPanel(ExperimentFactory experiment) {
     // create chart, chartPanel, save button & file chooser,
     super(experiment);
 

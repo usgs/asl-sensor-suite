@@ -35,7 +35,7 @@ public class OrthogonalPanel extends ExperimentPanel {
         + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])+"]";
   }
 
-  OrthogonalPanel(ExperimentFactory experiment) {
+  public OrthogonalPanel(ExperimentFactory experiment) {
     super(experiment);
 
     channelType[0] = "North reference sensor";

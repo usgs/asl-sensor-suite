@@ -35,7 +35,7 @@ public class NoisePanel extends ExperimentPanel {
   /**
    * Constructs a new panel and lays out all the components in it
    */
-  NoisePanel(ExperimentFactory experiment) {
+  public NoisePanel(ExperimentFactory experiment) {
 
     // create chart, chartPanel, save button & file chooser,
     super(experiment);

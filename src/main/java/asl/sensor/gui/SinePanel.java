@@ -27,7 +27,7 @@ public class SinePanel extends ExperimentPanel {
   private final NumberAxis outAxis;
   private final JComboBox<String> plotSelection;
 
-  SinePanel(ExperimentFactory experiment) {
+  public SinePanel(ExperimentFactory experiment) {
     super(experiment);
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output (no RESP needed)";

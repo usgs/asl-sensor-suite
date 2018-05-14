@@ -92,7 +92,7 @@ public class StepPanel extends ExperimentPanel {
   private final ValueAxis magAxis;
   private final ValueAxis phaseAxis;
 
-  StepPanel(ExperimentFactory experiment) {
+  public StepPanel(ExperimentFactory experiment) {
     super(experiment);
 
     channelType[0] = "Calibration input";

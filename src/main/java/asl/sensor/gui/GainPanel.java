@@ -113,7 +113,7 @@ public class GainPanel extends ExperimentPanel
   /**
    * Instantiate the panel, including sliders and stat calc button
    */
-  GainPanel(ExperimentFactory experiment) {
+  public GainPanel(ExperimentFactory experiment) {
     // instantiate common components
     super(experiment);
 

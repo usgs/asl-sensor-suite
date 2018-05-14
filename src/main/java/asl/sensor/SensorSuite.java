@@ -30,7 +30,6 @@ import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.JFreeChart;
 import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.ExperimentPanelFactory;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.SwingWorkerSingleton;
 import asl.sensor.input.DataStore;
@@ -212,8 +211,7 @@ public class SensorSuite extends JPanel
     tabbedPane = new JTabbedPane();
 
     for (ExperimentFactory exp : ExperimentFactory.values()) {
-      JPanel tab = ExperimentPanelFactory.createPanel(exp);
-      tabbedPane.addTab(exp.getName(), tab);
+      tabbedPane.addTab(exp.getName(), exp.createPanel());
     }
 
     inputPlots = new InputPanel();

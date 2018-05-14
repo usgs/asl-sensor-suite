@@ -58,7 +58,7 @@ public class NoiseNinePanel extends NoisePanel {
    *
    * @param experiment Enum to get relevant experiment backend from factory (NoiseNineExperiment)
    */
-  NoiseNinePanel(ExperimentFactory experiment) {
+  public NoiseNinePanel(ExperimentFactory experiment) {
     super(experiment);
 
     expResult = experiment.createExperiment();
