@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import asl.sensor.test.TestUtils;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -30,15 +28,37 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.sensor.test.TestUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class FFTResultTest {
 
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+
+  @Test
+  public void testGetFreqIndex_freqInList() {
+    double[] freqs = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    assertEquals(5, FFTResult.getIndexOfFrequency(freqs, 5));
+  }
+
+  @Test
+  public void testGetFreqIndex_freqBetweenValues() {
+    double[] freqs = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    assertEquals(5, FFTResult.getIndexOfFrequency(freqs, 5.25));
+  }
+
+  @Test
+  public void testGetFreqIndex_freqLessThanBounds() {
+    double[] freqs = {5, 6, 7, 8, 9, 10, 11, 12};
+    assertEquals(0, FFTResult.getIndexOfFrequency(freqs, 2));
+  }
+
+  @Test
+  public void testGetFreqIndex_freqGreaterThanBounds() {
+    double[] freqs = {5, 6, 7, 8, 9, 10, 11, 12};
+    assertEquals(freqs.length - 1, FFTResult.getIndexOfFrequency(freqs, 50));
+  }
 
   @Test
   public void calcPSDTest() {
