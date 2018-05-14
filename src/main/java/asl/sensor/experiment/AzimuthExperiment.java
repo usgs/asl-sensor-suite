@@ -55,6 +55,29 @@ public class AzimuthExperiment extends Experiment {
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
 
+  /**
+   * Function used to get the orientation of inputted data
+   * (Specifically, aligns the second and third horiz. inputs with the first)
+   * Uses a simpler solver for the Azimuth data. May produce an angle that
+   * is 180 degrees off from expected due to use of coherence measurement
+   * and limited checking of antipolar alignment
+   *
+   * @param north Timeseries data from north-facing reference sensor
+   * @param east Timeseries data from east-facing reference sensor
+   * @param reference Timeseries data from test sensor (either north or east)
+   * @param interval Sampling interval of the data
+   * @param start Start time of data
+   * @param end End time of data
+   * @return double representing radian-unit rotation angle of data
+   */
+  static double getAzimuth(double[] north, double[] east, double[] reference,
+      long interval, long start, long end) {
+    AzimuthExperiment azimuthExperiment = new AzimuthExperiment();
+    azimuthExperiment.setSimple(false); // don't do the faster angle calculation
+    azimuthExperiment.alternateEntryPoint(north, east, reference, interval, start, end);
+    return azimuthExperiment.getFitAngleRad();
+  }
+
   public AzimuthExperiment() {
     super();
     simpleCalc = false;

@@ -70,7 +70,7 @@ public class GainSixExperiment extends Experiment {
 
     // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting second north sensor orientation...");
-    north2Angle = -getAzimuth(north1Sensor, east1Sensor,
+    north2Angle = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         north2Sensor, interval, start, end);
 
     fireStateChange("Getting second east sensor orientation...");
@@ -80,7 +80,7 @@ public class GainSixExperiment extends Experiment {
     // azimuth of east sensor
     // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other
     // rotation direction
-    east2Angle = -getAzimuth(north1Sensor, east1Sensor,
+    east2Angle = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         east2Sensor, interval, start, end) + (3 * Math.PI / 2);
 
     // now to rotate the data according to these angles
@@ -117,29 +117,6 @@ public class GainSixExperiment extends Experiment {
   @Override
   public int blocksNeeded() {
     return 6;
-  }
-
-  /**
-   * Private function used to get the orientation of inputted data
-   * (Specifically, aligns the second east and north input with the first)
-   * Uses a simpler solver for the Azimuth data. May produce an angle that
-   * is 180 degrees off from expected due to use of coherence measurement
-   * and limited checking of antipolar alignment
-   *
-   * @param n Timeseries data from north-facing reference sensor
-   * @param e Timeseries data from east-facing reference sensor
-   * @param r Timeseries data from test sensor (either north or east)
-   * @param interval Sampling interval of the data
-   * @param start Start time of data
-   * @param end End time of data
-   * @return double representing radian-unit rotation angle of data
-   */
-  private double getAzimuth(double[] n, double[] e, double[] r,
-      long interval, long start, long end) {
-    AzimuthExperiment azi = new AzimuthExperiment();
-    azi.setSimple(false); // don't do the faster angle calculation
-    azi.alternateEntryPoint(n, e, r, interval, start, end);
-    return azi.getFitAngleRad();
   }
 
   /**
@@ -183,16 +160,16 @@ public class GainSixExperiment extends Experiment {
    * frequency range.
    *
    * @param index Index of north component's data to use as reference
-   * @param low Low frequency bound of range to get stats over
-   * @param high High frequency bound of range to get stats over
+   * @param lowerBound Low frequency bound of range to get stats over
+   * @param upperBound High frequency bound of range to get stats over
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-  public double[][] getStatsFromFreqs(int index, double low, double high) {
+  public double[][] getStatsFromFreqs(int index, double lowerBound, double upperBound) {
     double[][] result = new double[DIMENSIONS][];
     // vertical component requires no rotation
 
     for (int i = 0; i < DIMENSIONS; ++i) {
-      result[i] = componentBackends[i].getStatsFromFreqs(index, low, high);
+      result[i] = componentBackends[i].getStatsFromFreqs(index, lowerBound, upperBound);
     }
     return result;
   }

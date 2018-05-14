@@ -1,17 +1,15 @@
 package asl.sensor.experiment;
 
-import static asl.sensor.test.TestUtils.RESP_LOCATION;
-import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import asl.sensor.input.DataStoreUtils;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Random;
 import org.junit.Test;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.input.DataStore;
@@ -148,7 +146,7 @@ public class AzimuthExperimentTest {
     return "ANMO.10";
   }
 
-  public String getNoisyData() {
+  private String getNoisyData() {
     return "FUNA.00";
   }
 
@@ -370,7 +368,7 @@ public class AzimuthExperimentTest {
     }
   }
 
-  public void testsFromSprockets(int angle, String staCha) {
+  private void testsFromSprockets(int angle, String staCha) {
     StringBuilder sb = new StringBuilder();
     sb.append(angle);
     // format for filenames is 002, 010, 358, etc.; prepend 0s if needed
@@ -478,5 +476,48 @@ public class AzimuthExperimentTest {
     assertNotNull(experiment.xySeriesData);
   }
 
+  @Test
+  public void getAzimuth_simpleRotatedTest(){
+    //create data 90 degrees off.
+    double[] north = new double[10000];
+    double[] east = new double[10000];
+    double[] referenceNorth = new double[10000];
+    Random rand = new Random();
+    rand.setSeed(42);
+    for (int i = 0; i < north.length; i++){
+      north[i] = rand.nextDouble();
+      east[i] = rand.nextDouble();
+      referenceNorth[i] = east[i];
+    }
+    long interval = 40;
+    long start = 0;
+    long end = 10000;
+    assertEquals(
+        4.71250648,
+        AzimuthExperiment.getAzimuth(north, east, referenceNorth, interval, start, end),
+        10E-7);
+  }
+
+  @Test
+  public void getAzimuth_simpleUnrotatedTest(){
+    //create data 90 degrees off.
+    double[] north = new double[10000];
+    double[] east = new double[10000];
+    double[] referenceNorth = new double[10000];
+    Random rand = new Random();
+    rand.setSeed(43);
+    for (int i = 0; i < north.length; i++){
+      north[i] = rand.nextDouble();
+      east[i] = rand.nextDouble();
+      referenceNorth[i] = north[i];
+    }
+    long interval = 40;
+    long start = 0;
+    long end = 10000;
+    assertEquals(
+        0.0,
+        AzimuthExperiment.getAzimuth(north, east, referenceNorth, interval, start, end),
+        10E-7);
+  }
 }
 
