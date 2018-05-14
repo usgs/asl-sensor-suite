@@ -51,7 +51,7 @@ public class RandomizedExperimentTest {
 
 
   @Test
-  public void TestEvaluationOfJacobian() throws IOException {
+  public void testEvaluationOfJacobian() throws IOException {
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
     ir = new InstrumentResponse(fname);
@@ -105,7 +105,7 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void ResponseCorrectConvertedToVectorHighFreq() throws Exception{
+  public void responseCorrectConvertedToVectorHighFreq() throws Exception{
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
     ir = new InstrumentResponse(fname);
@@ -137,7 +137,7 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void ResponseCorrectlyConvertedToVectorLowFreq() {
+  public void responseCorrectlyConvertedToVectorLowFreq() {
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
     try {
@@ -161,7 +161,7 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void ResponseSetCorrectlyHighFreq() {
+  public void responseSetCorrectlyHighFreq() {
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
 
