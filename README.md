@@ -1,4 +1,4 @@
-# ASL_Sensor_Suite
+# ASL Sensor Test Suite
 
 ### Purpose
 
