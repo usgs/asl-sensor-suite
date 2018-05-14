@@ -1,5 +1,8 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -12,9 +15,6 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
 
 /**
  * This function defines template patterns for each type of sensor experiment
@@ -32,7 +32,7 @@ import asl.sensor.utils.NumericUtils;
  * containing the relevant values.
  *
  * Some experiment implementations may not only produce XY series data to be
- * plotted by the corresponding GUI implemntation, but also produce additional
+ * plotted by the corresponding GUI implementation, but also produce additional
  * statistical data relevant to the plots, such as residual calculations
  * or the values of best-fit parameters given a series of inputs. These should
  * not be called unless the experiment has already been run, as they will
@@ -43,36 +43,36 @@ import asl.sensor.utils.NumericUtils;
  * panels should read in data during their updateData routine, which is where
  * the experiment should be run.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public abstract class Experiment {
 
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
 
-  public static final double MAX_PLOT_PERIOD = 1.0E6;
+  static final double MAX_PLOT_PERIOD = 1.0E6;
 
   /**
-   * Helper function to add data from a datastore object (the PSD calculation)
+   * Helper function to add data from a DataStore object (the PSD calculation)
    * into an XYSeriesCollection to eventually be plotted
    * Used in both self-noise and relative gain calculations
    *
-   * @param ds DataStore to collect data from
+   * @param dataStore DataStore to collect data from
    * @param freqSpace True if using units of Hz, False if units of s
    * (sample rate vs. interval between points)
-   * @param idx Specifies which of the datablocks in the datastore to get the data from
+   * @param index Specifies which of the DataBlocks in the DataStore to get the data from
    */
-  public static void addToPlot(
-      final DataStore ds,
+  static void addToPlot(
+      final DataStore dataStore,
       final boolean freqSpace,
-      final int idx,
+      final int index,
       XYSeriesCollection xysc) {
 
     XYSeries powerSeries =
-        new XYSeries("PSD " + ds.getBlock(idx).getName() + " [" + idx + "]");
+        new XYSeries("PSD " + dataStore.getBlock(index).getName() + " [" + index + "]");
 
-    Complex[] resultPSD = ds.getPSD(idx).getFFT();
-    double[] freqs = ds.getPSD(idx).getFreqs();
+    Complex[] resultPSD = dataStore.getPSD(index).getFFT();
+    double[] freqs = dataStore.getPSD(index).getFreqs();
 
     addToPlot(powerSeries, resultPSD, freqs, freqSpace, xysc);
   }
@@ -89,7 +89,7 @@ public abstract class Experiment {
    * @param freqSpace True if using units of Hz, False if units of s
    * @param xysc XYSeriesCollection the given XYSeries will be loaded into
    */
-  public static void addToPlot(
+  static void addToPlot(
       final XYSeries powerSeries,
       final Complex[] resultPSD,
       final double[] freqs,
@@ -112,7 +112,7 @@ public abstract class Experiment {
       last7 = last7.add(resultPSD[i]);
     }
 
-    int idx = smoothedPSD.length-1;
+    int idx = smoothedPSD.length - 1;
     smoothedPSD[idx] = last3.divide(3);
     --idx;
     smoothedPSD[idx] = last5.divide(5);
@@ -123,7 +123,6 @@ public abstract class Experiment {
       if (1 / freqs[j] > MAX_PLOT_PERIOD) {
         continue;
       }
-
       double temp = 10 * Math.log10(smoothedPSD[j].abs());
       if (freqSpace) {
         powerSeries.add(freqs[j], temp);
@@ -133,18 +132,21 @@ public abstract class Experiment {
     }
 
     xysc.addSeries(powerSeries);
-
   }
 
   protected long start;
   protected long end;
   protected List<XYSeriesCollection> xySeriesData;
   private String status;
-  protected List<String> dataNames; // list of filenames of seed, resp files
-  // NOTE: if implementing new experiment, best to use consistent ordering with
-  // current set of experiments for this list:
-  // SEED, RESP (if used), SEED, RESP (if used), etc.
-  // That is, place response files after their associated timeseries
+
+  /**
+   * list of filenames of seed, resp files
+   * NOTE: if implementing new experiment, best to use consistent ordering with
+   * current set of experiments for this list:
+   * SEED, RESP (if used), SEED, RESP (if used), etc.
+   * That is, place response files after their associated timeseries
+   */
+  protected List<String> dataNames;
   private Map<String, List<Pair<Date, Date>>> gapRegions;
 
   private final EventListenerList eventHelper;
@@ -174,9 +176,9 @@ public abstract class Experiment {
    * Abstract function that runs the calculations specific to a given procedure
    * (Overwritten by concrete experiments with specific operations)
    *
-   * @param ds Object containing the raw timeseries data to process
+   * @param dataStore Object containing the raw timeseries data to process
    */
-  protected abstract void backend(final DataStore ds);
+  protected abstract void backend(final DataStore dataStore);
 
   /**
    * Return the number of data blocks needed by the experiment
@@ -194,11 +196,11 @@ public abstract class Experiment {
    */
   protected void fireStateChange(String newStatus) {
     status = newStatus;
-    ChangeListener[] lsners = eventHelper.getListeners(ChangeListener.class);
-    if (lsners != null && lsners.length > 0) {
-      ChangeEvent evt = new ChangeEvent(this);
-      for (ChangeListener lsnr : lsners) {
-        lsnr.stateChanged(evt);
+    ChangeListener[] listeners = eventHelper.getListeners(ChangeListener.class);
+    if (listeners != null && listeners.length > 0) {
+      ChangeEvent event = new ChangeEvent(this);
+      for (ChangeListener listener : listeners) {
+        listener.stateChanged(event);
       }
     }
   }
@@ -271,10 +273,10 @@ public abstract class Experiment {
    * (i.e., if data requires 2 timeseries, check the first two datablocks in the datastore have
    * data and return true if so)
    *
-   * @param ds DataStore to be fed into experiment calculation
+   * @param dataStore DataStore to be fed into experiment calculation
    * @return True if there is enough data to be run
    */
-  public abstract boolean hasEnoughData(final DataStore ds);
+  public abstract boolean hasEnoughData(final DataStore dataStore);
 
   /**
    * Return an array of indices of responses used by an index, to include
@@ -293,11 +295,9 @@ public abstract class Experiment {
    * This function specifically (rather than the backend implementation) is
    * where interval consistency is checked before doing calculations.
    *
-   * @param ds Timeseries data to be processed
+   * @param dataStore Timeseries data to be processed
    */
-  public void runExperimentOnData(final DataStore ds) {
-
-    status = "";
+  public void runExperimentOnData(final DataStore dataStore) {
 
     fireStateChange("Beginning loading data...");
 
@@ -305,31 +305,31 @@ public abstract class Experiment {
     xySeriesData = new ArrayList<>();
     gapRegions = new HashMap<>();
 
-    if (hasEnoughData(ds) && (blocksNeeded() == 0)) {
+    if (hasEnoughData(dataStore) && (blocksNeeded() == 0)) {
       // prevent null issue when doing response data, which does not really have times
       start = 0L;
       end = 0L;
-      backend(ds);
+      backend(dataStore);
       return;
     }
 
     // TODO: may want to do a check that enough data exists and throw exception as necessary
 
-    final DataBlock db = ds.getXthLoadedBlock(1);
+    final DataBlock db = dataStore.getXthLoadedBlock(1);
 
     start = db.getStartTime();
     end = db.getEndTime();
 
-    ds.matchIntervals(blocksNeeded());
+    dataStore.matchIntervals(blocksNeeded());
 
     // populate gapregions data
     for (int i = 0; i < blocksNeeded(); ++i) {
       // in the case of spectrum panel, not all data inputs may be set
       // lockout check to make sure enough needed data is set already done, so this is OK
-      if (!ds.blockIsSet(i)) {
+      if (!dataStore.blockIsSet(i)) {
         continue;
       }
-      DataBlock block = ds.getBlock(i);
+      DataBlock block = dataStore.getBlock(i);
       String name = block.getName();
       // gaps already is calculated based on trimmed start and end times
       List<Pair<Long, Long>> gaps = block.getGapBoundaries();
@@ -344,7 +344,7 @@ public abstract class Experiment {
 
     fireStateChange("Beginning calculations...");
 
-    backend(ds);
+    backend(dataStore);
 
     fireStateChange("Calculations done!");
   }

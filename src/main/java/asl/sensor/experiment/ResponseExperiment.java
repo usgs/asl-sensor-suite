@@ -34,7 +34,7 @@ public class ResponseExperiment extends Experiment {
   }
 
   @Override
-  protected void backend(DataStore ds) {
+  protected void backend(DataStore dataStore) {
 
     responses = new HashSet<InstrumentResponse>();
 
@@ -63,11 +63,11 @@ public class ResponseExperiment extends Experiment {
     XYSeriesCollection mags = new XYSeriesCollection();
 
     for (int r = 0; r < 3; ++r) {
-      if (!ds.responseIsSet(r)) {
+      if (!dataStore.responseIsSet(r)) {
         continue;
       }
 
-      InstrumentResponse ir = ds.getResponse(r);
+      InstrumentResponse ir = dataStore.getResponse(r);
 
       if (respNames.contains(ir.getName())) {
         continue;
@@ -132,9 +132,9 @@ public class ResponseExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < 3; ++i) {
-      if (ds.responseIsSet(i)) {
+      if (dataStore.responseIsSet(i)) {
         return true;
       }
     }

@@ -31,16 +31,16 @@ public class SineExperiment extends Experiment {
   }
 
   @Override
-  protected void backend(DataStore ds) {
+  protected void backend(DataStore dataStore) {
     calSDev = 0.;
     outSDev = 0.;
     peakPeakFreq = 0.;
 
-    double[] calTimeSeries = ds.getBlock(0).getData().clone();
-    double[] outTimeSeries = ds.getBlock(1).getData().clone();
+    double[] calTimeSeries = dataStore.getBlock(0).getData().clone();
+    double[] outTimeSeries = dataStore.getBlock(1).getData().clone();
 
-    dataNames.add(ds.getBlock(0).getName());
-    dataNames.add(ds.getBlock(1).getName());
+    dataNames.add(dataStore.getBlock(0).getName());
+    dataNames.add(dataStore.getBlock(1).getName());
 
 
     // get the sine wave frequency by measuring wavelengths (get distance between peaks)
@@ -71,9 +71,9 @@ public class SineExperiment extends Experiment {
 
     // add plots sine waves
     XYSeriesCollection xysc = new XYSeriesCollection();
-    XYSeries cal = new XYSeries(ds.getBlock(0).getName() + " [cal]");
-    XYSeries out = new XYSeries(ds.getBlock(1).getName() + " [out, scaled]");
-    double interval = ds.getBlock(0).getInterval() / (double) TimeSeriesUtils.ONE_HZ_INTERVAL;
+    XYSeries cal = new XYSeries(dataStore.getBlock(0).getName() + " [cal]");
+    XYSeries out = new XYSeries(dataStore.getBlock(1).getName() + " [out, scaled]");
+    double interval = dataStore.getBlock(0).getInterval() / (double) TimeSeriesUtils.ONE_HZ_INTERVAL;
     for (int i = 0; i < calTimeSeries.length; ++i) {
       cal.add(interval * i, calTimeSeries[i]);
       out.add(interval * i, outTimeSeries[i] * calSDev / outSDev);
@@ -85,7 +85,7 @@ public class SineExperiment extends Experiment {
     // produce linearity plots
     xysc = new XYSeriesCollection();
     // booleans: don't autosort, do allow duplicate values
-    XYSeries lin = new XYSeries(ds.getBlock(1).getName() + " linearity", false, true);
+    XYSeries lin = new XYSeries(dataStore.getBlock(1).getName() + " linearity", false, true);
     for (int i = 0; i < calTimeSeries.length; ++i) {
       lin.add(calTimeSeries[i], outTimeSeries[i]);
     }
@@ -99,9 +99,9 @@ public class SineExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if (!ds.blockIsSet(i)) {
+      if (!dataStore.blockIsSet(i)) {
         return false;
       }
     }
