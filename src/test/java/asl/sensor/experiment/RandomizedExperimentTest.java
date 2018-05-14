@@ -2,6 +2,7 @@ package asl.sensor.experiment;
 
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -18,7 +19,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
@@ -33,7 +36,10 @@ import asl.sensor.CalProcessingServer;
 import asl.sensor.CalProcessingServer.RandData;
 import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataStore;
+import asl.sensor.input.DataStoreUtils;
 import asl.sensor.input.InstrumentResponse;
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -45,7 +51,61 @@ public class RandomizedExperimentTest {
 
 
   @Test
-  public void ResponseCorrectConvertedToVectorHighFreq() throws Exception{
+  public void testEvaluationOfJacobian() throws IOException {
+    String fname = folder + "resp-parse/TST5_response.txt";
+    InstrumentResponse ir;
+    ir = new InstrumentResponse(fname);
+    double[] freqs = new double[80];
+    for (int i = 0; i < freqs.length; ++i) {
+      freqs[i] = i;
+    }
+    boolean isLowFrequencyCalibration = false;
+    RealVector initialGuess, initialPoleGuess, initialZeroGuess;
+    initialPoleGuess = ir.polesToVector(isLowFrequencyCalibration, 80.);
+    initialZeroGuess = ir.zerosToVector(isLowFrequencyCalibration, 80.);
+    int numZeros = initialZeroGuess.getDimension();
+    initialGuess = initialZeroGuess.append(initialPoleGuess);
+    Pair<RealVector, RealMatrix> jacobianResult =
+        RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, isLowFrequencyCalibration);
+    // evaluate the data for reference
+    Complex[] result = ir.applyResponseToInput(freqs);
+    double[] testData = new double[2 * result.length];
+    for (int i = 0; i < result.length; ++i) {
+      int argIdx = i + result.length;
+      Complex c = result[i];
+      testData[i] = c.abs();
+      testData[argIdx] = NumericUtils.atanc(c);
+    }
+    RandomizedExperiment.scaleValues(testData, freqs, isLowFrequencyCalibration);
+    // test that the Jacobian first result is the actual evaluation
+    double[] functionEvaluation = jacobianResult.getFirst().toArray();
+    assertArrayEquals(testData, functionEvaluation, 1E-2);
+    // now compare the forward difference to the first difference in the array
+    RealVector testAgainst = initialGuess.copy();
+    double changingVar = testAgainst.getEntry(0);
+    testAgainst.setEntry(0, changingVar - RandomizedExperiment.DELTA);
+    InstrumentResponse testDiffResponse =
+        ir.buildResponseFromFitVector(testAgainst.toArray(), isLowFrequencyCalibration, numZeros);
+    Complex[] diffResult = testDiffResponse.applyResponseToInput(freqs);
+    double[] testDiffData = new double[2 * diffResult.length];
+    for (int i = 0; i < diffResult.length; ++i) {
+      int argIdx = i + result.length;
+      Complex c = diffResult[i];
+      testDiffData[i] = c.abs();
+      testDiffData[argIdx] = NumericUtils.atanc(c);
+    }
+    RandomizedExperiment.scaleValues(testDiffData, freqs, isLowFrequencyCalibration);
+    double[] firstJacobian = new double[testDiffData.length];
+    for (int i = 0; i < testDiffData.length; ++i) {
+      firstJacobian[i] = testData[i] - testDiffData[i];
+      firstJacobian[i] /= (changingVar - (testAgainst.getEntry(0)));
+    }
+    double[] testFirstJacobianAgainst = jacobianResult.getSecond().getColumnVector(0).toArray();
+    assertArrayEquals(testFirstJacobianAgainst, firstJacobian, 1E-3);
+  }
+
+  @Test
+  public void responseCorrectConvertedToVectorHighFreq() throws Exception{
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
     ir = new InstrumentResponse(fname);
@@ -77,7 +137,7 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void ResponseCorrectlyConvertedToVectorLowFreq() {
+  public void responseCorrectlyConvertedToVectorLowFreq() {
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
     try {
@@ -101,7 +161,7 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void ResponseSetCorrectlyHighFreq() {
+  public void responseSetCorrectlyHighFreq() {
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
 

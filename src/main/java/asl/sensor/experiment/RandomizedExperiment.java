@@ -67,7 +67,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     return Math.min(index, frequencies.length-1);
   }
 
-  private static final double DELTA = 1E-12;
+  static final double DELTA = 1E-12;
   private static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
 
   private double initialResidual, fitResidual;
@@ -669,7 +669,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * @return RealVector with evaluation at current response value and
    * RealMatrix with backward difference of that response (Jacobian)
    */
-  private static Pair<RealVector, RealMatrix> jacobian(RealVector variables, double[] freqs,
+  static Pair<RealVector, RealMatrix> jacobian(RealVector variables, double[] freqs,
       int numZeros, InstrumentResponse fitResponse, boolean isLowFreq) {
     int numVars = variables.getDimension();
 
@@ -741,7 +741,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     nyquistMultiplier = Math.max(0.3, nyquistMultiplier);
   }
 
-  private static void scaleValues(double[] unrot, double[] freqs, boolean isLowFrequencyCalibration) {
+  static void scaleValues(double[] unrot, double[] freqs, boolean isLowFrequencyCalibration) {
     int normalIdx = getIndexOfFrequency(freqs, ZERO_TARGET);
     int argStart = unrot.length / 2;
     double unrotScaleAmp = 20 * Math.log10(unrot[normalIdx]);
