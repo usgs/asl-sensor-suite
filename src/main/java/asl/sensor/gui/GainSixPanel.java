@@ -1,7 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.ExperimentFactory;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -83,11 +82,11 @@ public class GainSixPanel extends GainPanel {
   /**
    * Instantiate the panel, including sliders and stat calc button
    */
-  public GainSixPanel(ExperimentEnum experiment) {
+  public GainSixPanel(ExperimentFactory experiment) {
     // instantiate common components
     super(experiment);
     // make sure the experiment is gain-six
-    expResult = ExperimentFactory.createExperiment(experiment);
+    expResult = experiment.createExperiment();
 
     for (int i = 0; i < 2; ++i) {
       int num = i + 1;
