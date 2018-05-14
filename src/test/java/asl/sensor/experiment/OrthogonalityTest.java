@@ -5,16 +5,16 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
 import org.junit.Test;
-import asl.sensor.input.DataStore;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class OrthogonalityTest {
 
@@ -52,27 +52,27 @@ public class OrthogonalityTest {
 
     OrthogonalExperiment orth = new OrthogonalExperiment();
 
-    assertTrue( orth.hasEnoughData(ds) );
+    assertTrue(orth.hasEnoughData(ds));
 
     SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
 
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
+    Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getStartTime());
     cCal.set(Calendar.HOUR, 7);
-    System.out.println("start: " + sdf.format( cCal.getTime() ) );
+    System.out.println("start: " + sdf.format(cCal.getTime()));
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 13);
     cCal.set(Calendar.MINUTE, 0);
-    System.out.println("end: " + sdf.format( cCal.getTime() ) );
+    System.out.println("end: " + sdf.format(cCal.getTime()));
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end);
 
     orth.runExperimentOnData(ds);
 
-    System.out.println( orth.getFitAngle() );
-    System.out.println( Arrays.toString( orth.getSolutionParams() ) );
-    assertEquals( 94., orth.getFitAngle(), 1. );
+    System.out.println(orth.getFitAngle());
+    System.out.println(Arrays.toString(orth.getSolutionParams()));
+    assertEquals(94., orth.getFitAngle(), 1.);
 
   }
 
@@ -200,7 +200,7 @@ public class OrthogonalityTest {
     StringBuilder sb = new StringBuilder();
     sb.append(angle);
     // format for filenames is 002, 010, 358, etc.; prepend 0s if needed
-    while(sb.length() < 3) {
+    while (sb.length() < 3) {
       sb.insert(0, '0');
     }
     String data1 = "IU." + staCha + ".BH1";
@@ -236,7 +236,7 @@ public class OrthogonalityTest {
       OrthogonalExperiment oe = new OrthogonalExperiment();
       oe.runExperimentOnData(ds);
       double fitAngle = oe.getFitAngle();
-      System.out.println( Arrays.toString(oe.getSolutionParams()) );
+      System.out.println(Arrays.toString(oe.getSolutionParams()));
 
       double expectedAngle = angle;
       if (expectedAngle > 180) {

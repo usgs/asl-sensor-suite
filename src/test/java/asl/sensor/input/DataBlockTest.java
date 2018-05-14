@@ -3,15 +3,14 @@ package asl.sensor.input;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import asl.sensor.test.TestUtils;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import org.junit.Test;
 import asl.sensor.gui.InputPanel;
-import asl.sensor.input.DataBlock;
+import asl.sensor.test.TestUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import org.junit.Test;
 
 public class DataBlockTest {
 
@@ -20,7 +19,7 @@ public class DataBlockTest {
   public String station = "TST5";
   public String location = "00";
   public String channel = "BH0";
-  public String fileID = station+"_"+location+"_"+channel+".512.seed";
+  public String fileID = station + "_" + location + "_" + channel + ".512.seed";
 
   @Test
   public void trimsCorrectly() {
@@ -34,15 +33,14 @@ public class DataBlockTest {
 
       int sizeOld = db.size();
 
-
       // these get tested in DataPanelTest
       long loc1 = InputPanel.getMarkerLocation(db, left);
       long loc2 = InputPanel.getMarkerLocation(db, right);
 
       db.trim(loc1, loc2);
 
-      assertEquals( loc1, db.getStartTime() );
-      assertEquals( sizeOld/2, db.size() );
+      assertEquals(loc1, db.getStartTime());
+      assertEquals(sizeOld / 2, db.size());
 
     } catch (SeedFormatException | CodecException | IOException e) {
       // TODO Auto-generated catch block
@@ -53,22 +51,22 @@ public class DataBlockTest {
 
   @Test
   public void trimsCOWICorrectly() {
-      String filename = folder + "cowi-multitests/C100823215422_COWI.LHx";
-      String dataname = "US_COWI_  _LHN";
-      DataBlock db;
-      try {
-        db = TimeSeriesUtils.getTimeSeries(filename, dataname);
-        String startString = "2010-236T02:00:00.0";
-        String endString = "2010-236T13:00:00.0";
-        long st = TestUtils.timeStringToEpochMilli(startString);
-        long ed = TestUtils.timeStringToEpochMilli(endString);
-        db.trim(st, ed);
-        double[] data = db.getData();
-        assertEquals(39600, data.length);
-      } catch (FileNotFoundException | SeedFormatException | CodecException e) {
-        e.printStackTrace();
-        fail();
-      }
+    String filename = folder + "cowi-multitests/C100823215422_COWI.LHx";
+    String dataname = "US_COWI_  _LHN";
+    DataBlock db;
+    try {
+      db = TimeSeriesUtils.getTimeSeries(filename, dataname);
+      String startString = "2010-236T02:00:00.0";
+      String endString = "2010-236T13:00:00.0";
+      long st = TestUtils.timeStringToEpochMilli(startString);
+      long ed = TestUtils.timeStringToEpochMilli(endString);
+      db.trim(st, ed);
+      double[] data = db.getData();
+      assertEquals(39600, data.length);
+    } catch (FileNotFoundException | SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail();
+    }
   }
 
   @Test

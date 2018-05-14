@@ -12,17 +12,16 @@ public class DataStoreUtils {
       String sensorOutputName) {
     try {
 
-
       DataStore ds = new DataStore();
 
-      if(calibrationInName != null) {
+      if (calibrationInName != null) {
         ds.setBlock(0, calibrationInName);
       }
-      if(sensorOutputName != null) {
+      if (sensorOutputName != null) {
         ds.setBlock(1, sensorOutputName);
       }
 
-      if(respName != null) {
+      if (respName != null) {
         InstrumentResponse ir = new InstrumentResponse(respName);
         ds.setResponse(1, ir);
       }

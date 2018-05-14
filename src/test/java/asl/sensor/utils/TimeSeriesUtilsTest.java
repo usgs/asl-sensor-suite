@@ -12,8 +12,6 @@ import static org.junit.Assert.fail;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.test.TestUtils;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.B1000Types;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.iris.dmc.seedcodec.DecompressedData;
@@ -177,7 +175,7 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public final void downsample_thirdOfFrequency() {
-    double[]  in = {1,2,3,4,5,6,7,8,9,10, 11, 12};
+    double[] in = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     int factor = 3;
     double[] expected = {1, 4, 7, 10};
     double[] out = downsample(in, factor);
@@ -186,10 +184,10 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public final void euclidGCD_basicTest() {
-    assertEquals( 50l, euclidGCD(100, 50));
-    assertEquals( 50l, euclidGCD(50, 100));
-    assertEquals( 3l, euclidGCD(999, 105));
-    assertEquals( 2l, euclidGCD(2147483612,2137483646));
+    assertEquals(50l, euclidGCD(100, 50));
+    assertEquals(50l, euclidGCD(50, 100));
+    assertEquals(3l, euclidGCD(999, 105));
+    assertEquals(2l, euclidGCD(2147483612, 2137483646));
   }
 
   @Test

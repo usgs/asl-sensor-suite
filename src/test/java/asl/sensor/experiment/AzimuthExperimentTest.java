@@ -6,17 +6,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Random;
-import org.junit.Test;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Random;
+import org.junit.Test;
 
 public class AzimuthExperimentTest {
 
@@ -124,10 +124,10 @@ public class AzimuthExperimentTest {
 
     AzimuthExperiment azi = new AzimuthExperiment();
 
-    assertTrue( azi.hasEnoughData(ds) );
+    assertTrue(azi.hasEnoughData(ds));
 
-    Calendar cCal = Calendar.getInstance( ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone() );
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
+    Calendar cCal = Calendar.getInstance(ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getStartTime());
     cCal.set(Calendar.HOUR_OF_DAY, 18);
     cCal.set(Calendar.MINUTE, 0);
     long start = cCal.getTime().getTime();
@@ -138,7 +138,7 @@ public class AzimuthExperimentTest {
     ds.trim(start, end, 2);
 
     azi.runExperimentOnData(ds);
-    assertEquals( 16., azi.getFitAngle(), 2. );
+    assertEquals(16., azi.getFitAngle(), 2.);
 
   }
 
@@ -174,7 +174,7 @@ public class AzimuthExperimentTest {
 
     AzimuthExperiment azi = new AzimuthExperiment();
 
-    assertTrue( azi.hasEnoughData(ds) );
+    assertTrue(azi.hasEnoughData(ds));
 
     azi.runExperimentOnData(ds);
     assertEquals(15.0, azi.getFitAngle(), 1.);
@@ -315,10 +315,10 @@ public class AzimuthExperimentTest {
 
     AzimuthExperiment azi = new AzimuthExperiment();
 
-    assertTrue( azi.hasEnoughData(ds) );
+    assertTrue(azi.hasEnoughData(ds));
 
-    Calendar cCal = Calendar.getInstance( ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone() );
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
+    Calendar cCal = Calendar.getInstance(ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getStartTime());
     cCal.set(Calendar.HOUR_OF_DAY, 12);
     cCal.set(Calendar.MINUTE, 0);
     long start = cCal.getTime().getTime();
@@ -331,10 +331,10 @@ public class AzimuthExperimentTest {
     azi.runExperimentOnData(ds);
     double ang = azi.getFitAngle();
 
-    if( ang > 180) {
+    if (ang > 180) {
       ang -= 360.;
     }
-    assertEquals( 0., ang, 2. );
+    assertEquals(0., ang, 2.);
 
   }
 
@@ -372,7 +372,7 @@ public class AzimuthExperimentTest {
     StringBuilder sb = new StringBuilder();
     sb.append(angle);
     // format for filenames is 002, 010, 358, etc.; prepend 0s if needed
-    while(sb.length() < 3) {
+    while (sb.length() < 3) {
       sb.insert(0, '0');
     }
     String data1 = "IU." + staCha + ".BH1";
@@ -386,9 +386,9 @@ public class AzimuthExperimentTest {
     testSubfolder = root + testSubfolder;
     refSubfolder = root + refSubfolder;
     try {
-      ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1) );
-      ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2) );
-      ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1) );
+      ds.setBlock(0, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data1));
+      ds.setBlock(1, TimeSeriesUtils.getFirstTimeSeries(testSubfolder + data2));
+      ds.setBlock(2, TimeSeriesUtils.getFirstTimeSeries(refSubfolder + data1));
     } catch (SeedFormatException | CodecException | IOException e) {
       e.printStackTrace();
       fail();
@@ -477,14 +477,14 @@ public class AzimuthExperimentTest {
   }
 
   @Test
-  public void getAzimuth_simpleRotatedTest(){
+  public void getAzimuth_simpleRotatedTest() {
     //create data 90 degrees off.
     double[] north = new double[10000];
     double[] east = new double[10000];
     double[] referenceNorth = new double[10000];
     Random rand = new Random();
     rand.setSeed(42);
-    for (int i = 0; i < north.length; i++){
+    for (int i = 0; i < north.length; i++) {
       north[i] = rand.nextDouble();
       east[i] = rand.nextDouble();
       referenceNorth[i] = east[i];
@@ -499,14 +499,14 @@ public class AzimuthExperimentTest {
   }
 
   @Test
-  public void getAzimuth_simpleUnrotatedTest(){
+  public void getAzimuth_simpleUnrotatedTest() {
     //create data 90 degrees off.
     double[] north = new double[10000];
     double[] east = new double[10000];
     double[] referenceNorth = new double[10000];
     Random rand = new Random();
     rand.setSeed(43);
-    for (int i = 0; i < north.length; i++){
+    for (int i = 0; i < north.length; i++) {
       north[i] = rand.nextDouble();
       east[i] = rand.nextDouble();
       referenceNorth[i] = north[i];
