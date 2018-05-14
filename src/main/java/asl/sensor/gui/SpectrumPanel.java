@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.SpectrumExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -34,7 +34,7 @@ public class SpectrumPanel extends ExperimentPanel {
   /**
    * Constructs a new panel and lays out all the components in it
    */
-  SpectrumPanel(ExperimentEnum experiment) {
+  SpectrumPanel(ExperimentFactory experiment) {
     // create chart, chartPanel, save button & file chooser,
     super(experiment);
 

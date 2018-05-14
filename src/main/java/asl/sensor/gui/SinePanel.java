@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.SineExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -27,7 +27,7 @@ public class SinePanel extends ExperimentPanel {
   private final NumberAxis outAxis;
   private final JComboBox<String> plotSelection;
 
-  SinePanel(ExperimentEnum experiment) {
+  SinePanel(ExperimentFactory experiment) {
     super(experiment);
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output (no RESP needed)";

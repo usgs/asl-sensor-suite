@@ -25,7 +25,7 @@ public class SpectrumExperiment extends Experiment {
   /**
    * Instantiates a noise experiment -- axis titles and scales
    */
-  SpectrumExperiment() {
+  public SpectrumExperiment() {
     super();
     respIndices = new int[3];
     freqSpace = false;

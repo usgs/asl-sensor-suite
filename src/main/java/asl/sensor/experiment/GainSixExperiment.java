@@ -24,7 +24,7 @@ public class GainSixExperiment extends Experiment {
   private final int[] indices;
   private double north2Angle, east2Angle;
 
-  GainSixExperiment() {
+  public GainSixExperiment() {
     super();
 
     componentBackends = new GainExperiment[DIMENSIONS];

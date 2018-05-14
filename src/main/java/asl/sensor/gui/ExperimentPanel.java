@@ -1,7 +1,7 @@
 package asl.sensor.gui;
 
 import asl.sensor.experiment.Experiment;
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
@@ -155,7 +155,7 @@ public abstract class ExperimentPanel
 
   private final JFileChooser fileChooser; // save image when image save button clicked
 
-  final ExperimentEnum expType;
+  final ExperimentFactory expType;
   // used to define experiment of each plot object (i.e., chart name)
 
   Experiment expResult;
@@ -186,7 +186,7 @@ public abstract class ExperimentPanel
    * @param experiment Experiment enum with corresponding backend for factory
    * instantiation
    */
-  public ExperimentPanel(ExperimentEnum experiment) {
+  public ExperimentPanel(ExperimentFactory experiment) {
     set = false;
 
     channelType = new String[DataStore.FILE_COUNT];

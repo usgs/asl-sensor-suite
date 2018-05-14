@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 
 /**
  * Simple factory method for creating an experiment panel
@@ -17,29 +17,29 @@ public class ExperimentPanelFactory {
    * @return A concrete implementation of the ExperimentPanel abstract class
    */
   public static ExperimentPanel createPanel(
-      ExperimentEnum exp) {
+      ExperimentFactory exp) {
     switch (exp) {
-      case ORTHO:
+      case ORTHOGONALITY:
         return new OrthogonalPanel(exp);
-      case NOIS9:
+      case NOISE9:
         return new NoiseNinePanel(exp);
       case NOISE:
         return new NoisePanel(exp);
-      case RGAIN:
+      case GAIN:
         return new GainPanel(exp);
       case GAIN6:
         return new GainSixPanel(exp);
-      case STCAL:
+      case STEPCAL:
         return new StepPanel(exp);
-      case AZMTH:
+      case AZIMUTH:
         return new AzimuthPanel(exp);
-      case RANDM:
+      case RANDOMCAL:
         return new RandomizedPanel(exp);
-      case RESPN:
+      case RESPONSE:
         return new ResponsePanel(exp);
-      case SINCL:
+      case SINECAL:
         return new SinePanel(exp);
-      case SPECT:
+      case SPECTRUM:
         return new SpectrumPanel(exp);
       default:
         // this shouldn't happen unless someone added to the enum

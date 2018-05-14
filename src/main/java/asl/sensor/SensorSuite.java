@@ -29,7 +29,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.JFreeChart;
-import asl.sensor.experiment.ExperimentEnum;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.ExperimentPanelFactory;
 import asl.sensor.gui.InputPanel;
@@ -212,7 +211,7 @@ public class SensorSuite extends JPanel
     // set up experiment panes in a tabbed pane
     tabbedPane = new JTabbedPane();
 
-    for (ExperimentEnum exp : ExperimentEnum.values()) {
+    for (ExperimentFactory exp : ExperimentFactory.values()) {
       JPanel tab = ExperimentPanelFactory.createPanel(exp);
       tabbedPane.addTab(exp.getName(), tab);
     }

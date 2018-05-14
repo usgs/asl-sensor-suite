@@ -2,6 +2,8 @@ package asl.sensor.experiment;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.ExperimentFactory;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
@@ -75,7 +77,7 @@ public class NoiseNineTest {
 
     for (int i = 0; i < xysc.size(); ++i) {
       jfcl[i] = ChartFactory.createXYLineChart(
-          ExperimentEnum.RANDM.getName() + orientations[i],
+          ExperimentFactory.RANDOMCAL.getName() + orientations[i],
           xAxisTitle,
           yAxisTitle,
           xysc.get(i),
@@ -190,7 +192,7 @@ public class NoiseNineTest {
       }
 
       jfcl[i] = ChartFactory.createXYLineChart(
-          ExperimentEnum.RANDM.getName() + orientations[i],
+          ExperimentFactory.RANDOMCAL.getName() + orientations[i],
           xAxisTitle,
           yAxisTitle,
           coll,

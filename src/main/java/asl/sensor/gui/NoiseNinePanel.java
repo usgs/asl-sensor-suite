@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.NoiseNineExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -58,7 +58,7 @@ public class NoiseNinePanel extends NoisePanel {
    *
    * @param experiment Enum to get relevant experiment backend from factory (NoiseNineExperiment)
    */
-  NoiseNinePanel(ExperimentEnum experiment) {
+  NoiseNinePanel(ExperimentFactory experiment) {
     super(experiment);
 
     expResult = experiment.createExperiment();

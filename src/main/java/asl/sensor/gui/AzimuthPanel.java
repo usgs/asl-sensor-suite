@@ -29,7 +29,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleAnchor;
 import asl.sensor.experiment.AzimuthExperiment;
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.input.DataStore;
 
 /**
@@ -50,7 +50,7 @@ public class AzimuthPanel extends ExperimentPanel {
 
   private final JComboBox<String> chartSelector;
 
-  AzimuthPanel(ExperimentEnum experiment) {
+  AzimuthPanel(ExperimentFactory experiment) {
     super(experiment);
 
     SpinnerModel spinModel = new SpinnerNumberModel(0, -360, 360, 0.1);

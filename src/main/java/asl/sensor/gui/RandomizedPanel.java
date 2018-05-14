@@ -36,7 +36,7 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.VerticalAlignment;
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
@@ -327,7 +327,7 @@ public class RandomizedPanel extends ExperimentPanel {
   private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
   private JSpinner nyquistMultiplier;
 
-  public RandomizedPanel(ExperimentEnum experiment) {
+  public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
 
     SpinnerModel spinModel = new SpinnerNumberModel(80., 30., 80., 1.);

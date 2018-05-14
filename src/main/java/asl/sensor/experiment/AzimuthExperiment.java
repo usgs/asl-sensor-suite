@@ -55,7 +55,7 @@ public class AzimuthExperiment extends Experiment {
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
 
-  AzimuthExperiment() {
+  public AzimuthExperiment() {
     super();
     simpleCalc = false;
   }

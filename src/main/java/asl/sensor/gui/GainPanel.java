@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.BasicStroke;
@@ -113,7 +113,7 @@ public class GainPanel extends ExperimentPanel
   /**
    * Instantiate the panel, including sliders and stat calc button
    */
-  GainPanel(ExperimentEnum experiment) {
+  GainPanel(ExperimentFactory experiment) {
     // instantiate common components
     super(experiment);
 

@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -92,7 +92,7 @@ public class StepPanel extends ExperimentPanel {
   private final ValueAxis magAxis;
   private final ValueAxis phaseAxis;
 
-  StepPanel(ExperimentEnum experiment) {
+  StepPanel(ExperimentFactory experiment) {
     super(experiment);
 
     channelType[0] = "Calibration input";

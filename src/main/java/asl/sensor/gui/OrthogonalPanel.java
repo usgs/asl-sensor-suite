@@ -9,7 +9,7 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.input.DataStore;
 
@@ -35,7 +35,7 @@ public class OrthogonalPanel extends ExperimentPanel {
         + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])+"]";
   }
 
-  OrthogonalPanel(ExperimentEnum experiment) {
+  OrthogonalPanel(ExperimentFactory experiment) {
     super(experiment);
 
     channelType[0] = "North reference sensor";
