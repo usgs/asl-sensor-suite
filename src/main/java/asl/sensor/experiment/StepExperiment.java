@@ -108,13 +108,13 @@ public class StepExperiment extends Experiment {
   }
 
   @Override
-  protected void backend(final DataStore ds) {
+  protected void backend(final DataStore dataStore) {
 
     dataNames = new ArrayList<String>();
 
     // assume that the first block is the raw step calibration
     // the raw calibration is defined as not having an associated response
-    DataBlock stepCalRaw = ds.getXthLoadedBlock(1);
+    DataBlock stepCalRaw = dataStore.getXthLoadedBlock(1);
     dataNames.add(stepCalRaw.getName());
 
     stepCalSeries = new double[stepCalRaw.size()];
@@ -142,21 +142,21 @@ public class StepExperiment extends Experiment {
     stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
 
     // but we want the response and the data of the cal result
-    sensorOutIdx = ds.getXthFullyLoadedIndex(1);
+    sensorOutIdx = dataStore.getXthFullyLoadedIndex(1);
 
     // if first data has response loaded erroneously, load in next data set
     // (otherwise first data is first fully loaded index)
     if (sensorOutIdx == 0) {
-      sensorOutIdx = ds.getXthFullyLoadedIndex(2);
+      sensorOutIdx = dataStore.getXthFullyLoadedIndex(2);
     }
 
     fireStateChange("Getting initial inverted step solution...");
     // get data of the result of the step calibration
-    DataBlock sensorOutput = ds.getBlock(sensorOutIdx);
+    DataBlock sensorOutput = dataStore.getBlock(sensorOutIdx);
     dataNames.add(sensorOutput.getName());
 
     // long interval = sensorOutput.getInterval();
-    InstrumentResponse ir = ds.getResponse(sensorOutIdx);
+    InstrumentResponse ir = dataStore.getResponse(sensorOutIdx);
     dataNames.add(ir.getName());
     Complex pole = ir.getPoles().get(0);
 
@@ -443,8 +443,8 @@ public class StepExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
-    return (ds.blockIsSet(0) && ds.bothComponentsSet(1));
+  public boolean hasEnoughData(DataStore dataStore) {
+    return (dataStore.blockIsSet(0) && dataStore.bothComponentsSet(1));
   }
 
   /**

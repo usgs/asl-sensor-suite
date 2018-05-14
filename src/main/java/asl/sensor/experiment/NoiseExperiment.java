@@ -49,7 +49,7 @@ public class NoiseExperiment extends Experiment {
    * remaining terms for the formula for the self-noise results.
    */
   @Override
-  protected void backend(final DataStore ds) {
+  protected void backend(final DataStore dataStore) {
 
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.setAutoWidth(true);
@@ -61,18 +61,18 @@ public class NoiseExperiment extends Experiment {
     // it is probably better to keep the program flexible against valid input
     for (int i = 0; i < respIndices.length; ++i) {
       // xth fully loaded function begins at 1
-      int idx = ds.getXthFullyLoadedIndex(i + 1);
+      int idx = dataStore.getXthFullyLoadedIndex(i + 1);
       respIndices[i] = idx;
-      dataNames.add(ds.getBlock(idx).getName());
-      dataNames.add(ds.getResponse(idx).getName());
+      dataNames.add(dataStore.getBlock(idx).getName());
+      dataNames.add(dataStore.getResponse(idx).getName());
     }
 
     DataBlock[] dataIn = new DataBlock[respIndices.length];
     InstrumentResponse[] responses = new InstrumentResponse[respIndices.length];
 
     for (int i = 0; i < respIndices.length; ++i) {
-      dataIn[i] = ds.getBlock(respIndices[i]);
-      responses[i] = ds.getResponse(respIndices[i]);
+      dataIn[i] = dataStore.getBlock(respIndices[i]);
+      responses[i] = dataStore.getResponse(respIndices[i]);
     }
 
     Complex[][] spectra = new Complex[3][];
@@ -82,9 +82,9 @@ public class NoiseExperiment extends Experiment {
     for (int i = 0; i < respIndices.length; ++i) {
       int idx = respIndices[i];
       fireStateChange("Getting PSDs of data " + (idx + 1) + "...");
-      String name = "PSD " + ds.getBlock(idx).getName() + " [" + idx + "]";
+      String name = "PSD " + dataStore.getBlock(idx).getName() + " [" + idx + "]";
       XYSeries powerSeries = new XYSeries(name);
-      FFTResult psdCalc = ds.getPSD(idx);
+      FFTResult psdCalc = dataStore.getPSD(idx);
       Complex[] fft = psdCalc.getFFT();
       spectra[i] = fft;
       freqs = psdCalc.getFreqs();
@@ -191,9 +191,9 @@ public class NoiseExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if (!ds.bothComponentsSet(i)) {
+      if (!dataStore.bothComponentsSet(i)) {
         return false;
       }
     }

@@ -5,7 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.input.DataStore;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
@@ -18,7 +18,7 @@ public class ExperimentPanelTest {
 
   @Before
   public void setUp() {
-    this.panel = new MockPanel(ExperimentEnum.AZMTH);
+    this.panel = new MockPanel(ExperimentFactory.AZIMUTH);
   }
 
   @Test
@@ -81,7 +81,7 @@ public class ExperimentPanelTest {
 
   class MockPanel extends ExperimentPanel {
 
-    MockPanel(ExperimentEnum exp) {
+    MockPanel(ExperimentFactory exp) {
       super(exp);
       xAxis = new NumberAxis("x Axis");
       yAxis = new NumberAxis("y Axis");

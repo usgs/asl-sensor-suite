@@ -24,7 +24,7 @@ public class GainSixExperiment extends Experiment {
   private final int[] indices;
   private double north2Angle, east2Angle;
 
-  GainSixExperiment() {
+  public GainSixExperiment() {
     super();
 
     componentBackends = new GainExperiment[DIMENSIONS];
@@ -198,10 +198,10 @@ public class GainSixExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     int needed = blocksNeeded();
     for (int i = 0; i < needed; ++i) {
-      if (!ds.bothComponentsSet(i)) {
+      if (!dataStore.bothComponentsSet(i)) {
         return false;
       }
     }

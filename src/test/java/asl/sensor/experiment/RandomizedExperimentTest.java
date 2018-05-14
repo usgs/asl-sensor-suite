@@ -7,6 +7,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.ExperimentFactory;
+import asl.sensor.input.DataStoreUtils;
+import asl.sensor.test.TestUtils;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
@@ -308,7 +312,7 @@ public class RandomizedExperimentTest {
       System.out.println("NYQUIST RATE: " + nyq);
 
       RandomizedExperiment rCal = (RandomizedExperiment)
-          ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+          ExperimentFactory.RANDOMCAL.createExperiment();
 
       rCal.setLowFrequencyCalibration(false);
 
@@ -396,7 +400,7 @@ public class RandomizedExperimentTest {
       for (int i = 0; i < jfcl.length; ++i) {
 
         jfcl[i] = ChartFactory.createXYLineChart(
-            ExperimentEnum.RANDM.getName(),
+            ExperimentFactory.RANDOMCAL.getName(),
             xAxisTitle,
             yAxisTitles[i],
             xysc.get(i),
@@ -475,7 +479,7 @@ public class RandomizedExperimentTest {
     ds.trim(start, end);
 
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentFactory.RANDOMCAL.createExperiment();
 
     rCal.setLowFrequencyCalibration(false);
 
@@ -506,7 +510,7 @@ public class RandomizedExperimentTest {
 
     DataStore ds = DataStoreUtils.createFromNames(respName, null, sensOutName);
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentFactory.RANDOMCAL.createExperiment();
     assertFalse( rCal.hasEnoughData(ds) );
   }
 
@@ -518,7 +522,7 @@ public class RandomizedExperimentTest {
 
     DataStore ds = DataStoreUtils.createFromNames(respName, calName, null);
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentFactory.RANDOMCAL.createExperiment();
     assertFalse( rCal.hasEnoughData(ds) );
   }
 
@@ -528,7 +532,7 @@ public class RandomizedExperimentTest {
 
     DataStore ds = DataStoreUtils.createFromNames(respName, null, null);
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentFactory.RANDOMCAL.createExperiment();
     assertFalse( rCal.hasEnoughData(ds) );
   }
 
@@ -541,7 +545,7 @@ public class RandomizedExperimentTest {
 
     DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentFactory.RANDOMCAL.createExperiment();
     assertTrue( rCal.hasEnoughData(ds) );
   }
 }
