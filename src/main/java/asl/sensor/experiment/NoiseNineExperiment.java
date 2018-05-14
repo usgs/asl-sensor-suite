@@ -23,7 +23,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  */
 public class NoiseNineExperiment extends NoiseExperiment {
 
-  private static final int DIMS = 3;
+  private static final int DIMENSIONS = 3;
   private double[] northAngles, eastAngles;
 
   public NoiseNineExperiment() {
@@ -45,22 +45,22 @@ public class NoiseNineExperiment extends NoiseExperiment {
       dataNames.add(dataStore.getResponse(i).getName());
     }
 
-    DataStore[] stores = new DataStore[DIMS];
+    DataStore[] stores = new DataStore[DIMENSIONS];
 
-    for (int i = 0; i < DIMS; ++i) {
+    for (int i = 0; i < DIMENSIONS; ++i) {
       stores[i] = new DataStore();
       for (int j = 0; j < 3; ++j) {
-        stores[i].setBlock(j, dataStore.getBlock(i + (j * DIMS)));
-        stores[i].setResponse(j, dataStore.getResponse(i + (j * DIMS)));
+        stores[i].setBlock(j, dataStore.getBlock(i + (j * DIMENSIONS)));
+        stores[i].setResponse(j, dataStore.getResponse(i + (j * DIMENSIONS)));
       }
     }
 
     // get the components
-    // why unroll the datastore's contents like this?
+    // why unroll the DataStores contents like this?
     // since we need to do the azimuth calculations with subsets of the data
-    // and then rotate some of those sensors to get new datablocks
+    // and then rotate some of those sensors to get new DataBlocks
     // we can only compact the code so hard, and this is an easier arrangement
-    // than, say, trying to index into a series of arraylists
+    // than, say, trying to index into a series of ArrayLists
     double[] north1Sensor = dataStore.getBlock(0).getData();
     double[] east1Sensor = dataStore.getBlock(1).getData();
     // index 2 is a vertical sensor
@@ -75,14 +75,14 @@ public class NoiseNineExperiment extends NoiseExperiment {
     long end = dataStore.getBlock(0).getEndTime();
 
     StringBuilder sb = new StringBuilder();
-    sb.append("Beginning rotations (offset angle esimates)\n");
+    sb.append("Beginning rotations (offset angle estimates)\n");
     sb.append("for second and third sets of horizontal (N, E) data...");
     fireStateChange(sb.toString());
 
     // angle is set negative because we are finding angle of reference input
     // which is what north2Sensor is here
     fireStateChange("Getting second north sensor orientation...");
-    northAngles[0] = -getAzimuth(north1Sensor, east1Sensor,
+    northAngles[0] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         north2Sensor, interval, start, end);
 
     fireStateChange("Getting second east sensor orientation...");
@@ -92,7 +92,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     // azimuth of east sensor
     // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other
     // rotation direction
-    eastAngles[0] = -getAzimuth(north1Sensor, east1Sensor,
+    eastAngles[0] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         east2Sensor, interval, start, end) + (3 * Math.PI / 2);
 
     // now to rotate the data according to these angles
@@ -106,10 +106,10 @@ public class NoiseNineExperiment extends NoiseExperiment {
 
     // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting third north sensor orientation...");
-    northAngles[1] = -getAzimuth(north1Sensor, east1Sensor,
+    northAngles[1] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         north3Sensor, interval, start, end);
     fireStateChange("Getting third east sensor orientation...");
-    eastAngles[1] = -getAzimuth(north1Sensor, east1Sensor,
+    eastAngles[1] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
         east3Sensor, interval, start, end) + (3 * Math.PI / 2);
 
     // now to rotate the data according to these angles
@@ -128,7 +128,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     NoiseExperiment noiseExp = new NoiseExperiment();
     noiseExp.setFreqSpace(freqSpace);
     String[] directions = new String[]{"north", "east", "vertical"};
-    for (int i = 0; i < DIMS; ++i) {
+    for (int i = 0; i < DIMENSIONS; ++i) {
       sb = new StringBuilder("Calculating ");
       sb.append(directions[i]);
       sb.append(" noise components...");
@@ -142,30 +142,6 @@ public class NoiseNineExperiment extends NoiseExperiment {
   @Override
   public int blocksNeeded() {
     return 9;
-  }
-
-  /**
-   * Private function used to get the orientation of inputted data
-   * (Specifically, aligns the second and third horiz. inputs with the first)
-   * Uses a simpler solver for the Azimuth data. May produce an angle that
-   * is 180 degrees off from expected due to use of coherence measurement
-   * and limited checking of antipolar alignment
-   *
-   * @param n Timeseries data from north-facing reference sensor
-   * @param e Timeseries data from east-facing reference sensor
-   * @param r Timeseries data from test sensor (either north or east)
-   * @param interval Sampling interval of the data
-   * @param start Start time of data
-   * @param end End time of data
-   * @return double representing radian-unit rotation angle of data
-   */
-  private double getAzimuth(double[] n, double[] e, double[] r,
-      long interval, long start, long end) {
-    // TODO: MAKE SURE THIS WORKS
-    AzimuthExperiment azi = new AzimuthExperiment();
-    azi.setSimple(false); // don't do the faster angle calculation
-    azi.alternateEntryPoint(n, e, r, interval, start, end);
-    return azi.getFitAngleRad();
   }
 
   /**

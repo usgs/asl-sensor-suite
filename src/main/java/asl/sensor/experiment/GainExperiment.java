@@ -1,12 +1,12 @@
 package asl.sensor.experiment;
 
-import org.apache.commons.math3.complex.Complex;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.NumericUtils;
+import org.apache.commons.math3.complex.Complex;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * Gain experiment does tests to determine a relative gain value of a sensor's
@@ -16,53 +16,15 @@ import asl.sensor.utils.NumericUtils;
  * result of the calculated gain is given as gain2/ratio where gain2 is the
  * gain of the sensor we want to calculate (that is, not the reference sensor).
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class GainExperiment extends Experiment {
 
   private static final int NUMBER_TO_LOAD = 2;
 
-  /**
-   * Gets the indices denoting the inclusive range of a frequency bound on
-   * a list of input frequencies
-   *
-   * @param freqs Frequency series resulting from FFT calculation
-   * (must be pre-sorted)
-   * @param freqBoundaries Array of size 2 denoting frequency
-   * upper and lower bounds (in Hz), lower bound first
-   * @return Array of size 2 denoting the lower and upper indices of the
-   * sub-range of frequencies including the given boundaries
-   */
-  private static int[] getRange(double[] freqs, double[] freqBoundaries) {
-
-    double lowFrq = freqBoundaries[0];
-    double highFrq = freqBoundaries[1];
-
-    int[] indices = new int[2];
-
-    for (int i = 1; i < freqs.length; ++i) {
-      if (freqs[i] == lowFrq ||
-          (freqs[i - 1] < lowFrq && freqs[i] > lowFrq)) {
-        indices[0] = i;
-      }
-    }
-
-    indices[1] = freqs.length - 1;
-
-    for (int i = indices[0]; i < freqs.length - 1; ++i) {
-      if (freqs[i] == highFrq ||
-          (freqs[i] < highFrq && freqs[i + 1] > highFrq)) {
-        indices[1] = i + 1;
-      }
-    }
-
-    return indices;
-  }
-
   private double[] gainStage1;
   private FFTResult[] fftResults;
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
-  private double ratio, sigma;
 
   /**
    * Constructor for the gain experiment; effectively the same as that of the
@@ -130,7 +92,6 @@ public class GainExperiment extends Experiment {
     xysc.addSeries(FFTResult.getLowNoiseModel(false));
 
     xySeriesData.add(xysc);
-
   }
 
   @Override
@@ -141,14 +102,14 @@ public class GainExperiment extends Experiment {
   /**
    * Gets the octave centered around the frequency at the plotted PSD peak
    *
-   * @param idx Index of inputted data to get the peak of
+   * @param index Index of inputted data to get the peak of
    * @return Array containing 2 elements, the values of the low and high
    * frequencies bounding the octave
    */
-  public double[] getOctaveCenteredAtPeak(int idx) {
+  private double[] getOctaveCenteredAtPeak(int index) {
 
-    int center = getPeakIndex(idx);
-    double[] freqs = fftResults[idx].getFreqs();
+    int center = getPeakIndex(index);
+    double[] freqs = fftResults[index].getFreqs();
     int max = freqs.length - 1;
     double peakFreq = freqs[center];
 
@@ -161,18 +122,18 @@ public class GainExperiment extends Experiment {
   /**
    * Finds the maximum value of PSD plot curve, by its index in the array
    *
-   * @param idx Index of array to be loaded in from result set to be plotted
+   * @param fftIndex Index of array to be loaded in from result set to be plotted
    * @return The index of the peak location
    */
-  private int getPeakIndex(int idx) {
+  private int getPeakIndex(int fftIndex) {
 
-    FFTResult fft = fftResults[idx];
+    FFTResult fft = fftResults[fftIndex];
 
     Complex[] timeSeries = fft.getFFT();
     double[] freqs = fft.getFreqs();
 
     double max = Double.NEGATIVE_INFINITY;
-    int index = 0;
+    int peakIndex = 0;
     for (int i = 0; i < timeSeries.length; ++i) {
       if (freqs[i] < 0.001) {
         continue;
@@ -181,65 +142,66 @@ public class GainExperiment extends Experiment {
       double result = 10 * Math.log10(timeSeries[i].abs());
       if (result < Double.POSITIVE_INFINITY && result > max) {
         max = result;
-        index = i;
+        peakIndex = i;
       }
     }
-    return index;
+    return peakIndex;
   }
 
   /**
    * Given indices to specific PSD data sets and frequency boundaries, gets
    * the mean and standard deviation ratios
    *
-   * @param refIdx Index of first curve to be plotted (numerator PSD)
+   * @param refIndex Index of first curve to be plotted (numerator PSD)
    * @param lowerBound Lower-bound of frequency window of PSD
    * @param upperBound Upper-bound of frequency window of PSD
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-  public double[] getStatsFromFreqs(int refIdx, double lowerBound, double upperBound) {
-    FFTResult plot0 = fftResults[refIdx];
+  public double[] getStatsFromFreqs(int refIndex, double lowerBound, double upperBound) {
+    FFTResult plot0 = fftResults[refIndex];
 
-    int lowIndex = FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.min(lowerBound, upperBound));
-    int highIndex = FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.max(lowerBound, upperBound));
+    int lowIndex =
+        FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.min(lowerBound, upperBound));
+    int highIndex =
+        FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.max(lowerBound, upperBound));
 
-    return getStatsFromIndices(refIdx, lowIndex, highIndex);
+    return getStatsFromIndices(refIndex, lowIndex, highIndex);
   }
 
   /**
    * Given indices to specific PSD data sets and indices to the corresponding
    * frequency boundaries, gets the mean and standard deviation ratios
    *
-   * @param refIdx Index of first curve to be plotted (numerator PSD)
-   * @param lowBnd Lower-bound index of PSDs' frequency array
-   * @param higBnd Upper-bound index of PSDs' frequency array
+   * @param refIndex Index of first curve to be plotted (numerator PSD)
+   * @param lowerBound Lower-bound index of PSDs' frequency array
+   * @param upperBound Upper-bound index of PSDs' frequency array
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-  private double[] getStatsFromIndices(int refIdx, int lowBnd, int higBnd) {
+  private double[] getStatsFromIndices(int refIndex, int lowerBound, int upperBound) {
 
-    int idx0 = refIdx;
-    int idx1 = (refIdx + 1) % NUMBER_TO_LOAD;
+    int refIndexPlusOne = (refIndex + 1) % NUMBER_TO_LOAD;
 
     // make sure lowInd really is the lower index
-    int temp = Math.min(lowBnd, higBnd);
-    higBnd = Math.max(lowBnd, higBnd);
-    lowBnd = temp;
+    int temp = Math.min(lowerBound, upperBound);
+    upperBound = Math.max(lowerBound, upperBound);
+    lowerBound = temp;
 
-    FFTResult plot0 = fftResults[idx0];
-    FFTResult plot1 = fftResults[idx1];
+    FFTResult plot0 = fftResults[refIndex];
+    FFTResult plot1 = fftResults[refIndexPlusOne];
 
-    double mean0 = NumericUtils.getFFTMean(plot0, lowBnd, higBnd);
-    // since both datasets must have matching interval, PSDs have same freqs
-    double mean1 = NumericUtils.getFFTMean(plot1, lowBnd, higBnd);
+    double mean0 = NumericUtils.getFFTMean(plot0, lowerBound, upperBound);
+    // since both datasets must have matching interval, PSDs have same frequencies
+    double mean1 = NumericUtils.getFFTMean(plot1, lowerBound, upperBound);
 
     // double MIN_VALUE field is effectively java's machine epsilon
     // calculate ratio and sigma over the range
-    ratio = (mean0 + Double.MIN_VALUE) / (mean1 + Double.MIN_VALUE);
+    double ratio = (mean0 + Double.MIN_VALUE) / (mean1 + Double.MIN_VALUE);
     // added terms exist to prevent division by 0
 
-    sigma = NumericUtils.getFFTSDev(plot0, plot1, ratio, lowBnd, higBnd);
+    double sigma = NumericUtils.getFFTSDev(plot0, plot1, ratio, lowerBound, upperBound);
 
-    double refGain = gainStage1[idx0];
-    double calcGain = gainStage1[idx1] / Math.sqrt(ratio);
+    double refGain = gainStage1[refIndex];
+    double calcGain = gainStage1[refIndexPlusOne] / Math.sqrt(ratio);
 
     return new double[]{Math.sqrt(ratio), sigma, refGain, calcGain};
   }
@@ -248,14 +210,12 @@ public class GainExperiment extends Experiment {
    * Find the peak frequency of the reference series and use it to get the
    * gain statistics
    *
-   * @param refIdx Index of the reference sensor's FFT data
+   * @param refIndex Index of the reference sensor's FFT data
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-  public double[] getStatsFromPeak(int refIdx) {
-    double[] freqBounds = getOctaveCenteredAtPeak(refIdx);
-    double freq1 = freqBounds[0];
-    double freq2 = freqBounds[1];
-    return getStatsFromFreqs(refIdx, freq1, freq2);
+  public double[] getStatsFromPeak(int refIndex) {
+    double[] freqBounds = getOctaveCenteredAtPeak(refIndex);
+    return getStatsFromFreqs(refIndex, freqBounds[0], freqBounds[1]);
   }
 
   @Override

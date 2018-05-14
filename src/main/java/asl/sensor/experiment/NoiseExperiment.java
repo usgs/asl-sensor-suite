@@ -17,14 +17,21 @@ import asl.sensor.utils.FFTResult;
  * See also Ringler, Hutt: 'Self-Noise Models of Seismic Instruments', Seismological Research
  * Letters (2010).
  *
- * @author akearns, jholland
+ * @author akearns - KBRWyle
+ * @author jholland - USGS
  */
 public class NoiseExperiment extends Experiment {
 
 
-  protected boolean freqSpace; // controls plotting in Hz vs. time interval between samples
+  /**
+   * Controls plotting in Hz vs. time interval between samples
+   */
+  boolean freqSpace;
 
-  protected int[] respIndices; // to keep track of the response data used in this experiment
+  /**
+   * To keep track of the response data used in this experiment
+   */
+  int[] respIndices;
 
   /**
    * Instantiates a noise experiment -- axis titles and scales
@@ -117,15 +124,11 @@ public class NoiseExperiment extends Experiment {
           new XYSeries("Noise " + dataIn[j].getName() + " [" + j + "]");
     }
 
-    fireStateChange("Doing noise esimation calculations...");
+    fireStateChange("Doing noise estimation calculations...");
     for (int i = 1; i < freqs.length; ++i) {
       if (1 / freqs[i] > MAX_PLOT_PERIOD) {
         continue;
       }
-
-      // Complex f1 = freqRespd[0][i];
-      // Complex f2 = freqRespd[1][i];
-      // Complex f3 = freqRespd[2][i];
 
       Complex p11 = spectra[0][i];
       Complex p22 = spectra[1][i];
@@ -200,10 +203,12 @@ public class NoiseExperiment extends Experiment {
     return true;
   }
 
+  /**
+   * NOTE: not used by corresponding panel, overrides with active indices of components in the combo-box
+   * @return response indices
+   */
   @Override
   public int[] listActiveResponseIndices() {
-    // NOTE: not used by corresponding panel, overrides with active indices
-    // of components in the combo-box
     return respIndices;
   }
 

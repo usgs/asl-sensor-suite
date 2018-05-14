@@ -1,12 +1,15 @@
 package asl.sensor.experiment;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import asl.sensor.ExperimentFactory;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.gui.NoiseNinePanel;
+import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.Font;
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
@@ -19,22 +22,15 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.NoiseNinePanel;
-import asl.sensor.input.DataStore;
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.ReportingUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
-public class NoiseNineTest {
+public class NoiseNineExperimentTest {
 
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  String currentDir = System.getProperty("user.dir");
+  private String currentDir = System.getProperty("user.dir");
 
   @Test
-  public void canRunAndPlotTest1() {
+  public void canRunAndPlotTest1() throws Exception{
 
     String testFolder = folder + "noisenine/";
     String[] types = new String[]{"00","10","60"};
@@ -51,15 +47,12 @@ public class NoiseNineTest {
     Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
     cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
     cCal.set(Calendar.HOUR, 7);
-    System.out.println( "start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 8);
     cCal.set(Calendar.MINUTE, 0);
-    System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end);
-    //ds.matchIntervals();
 
     NoiseNineExperiment nne = new NoiseNineExperiment();
     assertTrue( nne.hasEnoughData(ds) );
@@ -87,9 +80,6 @@ public class NoiseNineTest {
           false);
 
       XYPlot xyp = jfcl[i].getXYPlot();
-
-      //xyp.clearAnnotations();
-      //xyp.addAnnotation(xyt);
 
       xyp.setDomainAxis( xAxis );
     }
@@ -123,20 +113,12 @@ public class NoiseNineTest {
     }
 
     String testResult = testResultFolder + "Nine-Noise-Test.pdf";
-    try {
-      pdf.save( new File(testResult) );
-      pdf.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
-
-    System.out.println("Output result has been written");
-
+    pdf.save( new File(testResult) );
+    pdf.close();
   }
 
   @Test
-  public void canRunAndPlotTest2() {
+  public void canRunAndPlotTest2() throws Exception {
     String testFolder = folder + "noisenine2/";
     String[] types = new String[]{"00","10","30"};
     String freqName = "_BH";
@@ -202,17 +184,11 @@ public class NoiseNineTest {
           false);
 
       XYPlot xyp = jfcl[i].getXYPlot();
-
-      //xyp.clearAnnotations();
-      //xyp.addAnnotation(xyt);
-
       xyp.setDomainAxis( xAxis );
     }
 
     String insets = NoiseNinePanel.getInsetString(nne);
     StringBuilder sb = new StringBuilder();
-    // sb.append( NoiseNinePanel.getInsetString(nne) );
-    // sb.append('\n');
     sb.append( NoiseNinePanel.getTimeStampString(nne) );
     sb.append('\n');
     sb.append("INPUTTED FILES:");
@@ -224,7 +200,6 @@ public class NoiseNineTest {
       sb.append( name );
       sb.append('\n');
     }
-
 
     int width = 1280; int height = 960;
 
@@ -239,20 +214,12 @@ public class NoiseNineTest {
     }
 
     String testResult = testResultFolder + "Nine-Noise-Test-2.pdf";
-    try {
-      pdf.save( new File(testResult) );
-      pdf.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
-
-    System.out.println("Output result has been written");
-
+    pdf.save( new File(testResult) );
+    pdf.close();
   }
 
-  public DataStore setUpTest(String folder, String[] types, String freqName,
-      String[] components, String ending, String respName, boolean isEmbed) {
+  private DataStore setUpTest(String folder, String[] types, String freqName,
+      String[] components, String ending, String respName, boolean isEmbed) throws Exception {
 
     DataStore ds = new DataStore();
 
@@ -261,31 +228,14 @@ public class NoiseNineTest {
         int indexInStore = i * types.length + j;
 
         String fName = folder + types[i] + freqName + components[j] + ending;
-
-        System.out.println(fName);
-
-        try {
-          ds.setBlock(indexInStore, fName);
-        } catch (IOException | SeedFormatException | CodecException e) {
-          e.printStackTrace();
-          fail();
-        }
+        ds.setBlock(indexInStore, fName);
         if (isEmbed) {
           ds.setEmbedResponse(indexInStore, respName);
         } else {
-          try {
             ds.setResponse(indexInStore, respName);
-          } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
-          }
         }
       }
     }
-
     return ds;
-
   }
-
 }
