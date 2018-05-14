@@ -16,7 +16,7 @@ import asl.sensor.utils.NumericUtils;
  * result of the calculated gain is given as gain2/ratio where gain2 is the
  * gain of the sensor we want to calculate (that is, not the reference sensor).
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class GainExperiment extends Experiment {
 
@@ -41,8 +41,7 @@ public class GainExperiment extends Experiment {
     int[] indices = new int[2];
 
     for (int i = 1; i < freqs.length; ++i) {
-      if (freqs[i] == lowFrq ||
-          (freqs[i - 1] < lowFrq && freqs[i] > lowFrq)) {
+      if (freqs[i] == lowFrq || (freqs[i - 1] < lowFrq && freqs[i] > lowFrq)) {
         indices[0] = i;
       }
     }
@@ -50,8 +49,7 @@ public class GainExperiment extends Experiment {
     indices[1] = freqs.length - 1;
 
     for (int i = indices[0]; i < freqs.length - 1; ++i) {
-      if (freqs[i] == highFrq ||
-          (freqs[i] < highFrq && freqs[i + 1] > highFrq)) {
+      if (freqs[i] == highFrq || (freqs[i] < highFrq && freqs[i + 1] > highFrq)) {
         indices[1] = i + 1;
       }
     }
@@ -62,7 +60,6 @@ public class GainExperiment extends Experiment {
   private double[] gainStage1;
   private FFTResult[] fftResults;
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
-  private double ratio, sigma;
 
   /**
    * Constructor for the gain experiment; effectively the same as that of the
@@ -145,7 +142,7 @@ public class GainExperiment extends Experiment {
    * @return Array containing 2 elements, the values of the low and high
    * frequencies bounding the octave
    */
-  public double[] getOctaveCenteredAtPeak(int idx) {
+  private double[] getOctaveCenteredAtPeak(int idx) {
 
     int center = getPeakIndex(idx);
     double[] freqs = fftResults[idx].getFreqs();
@@ -209,37 +206,36 @@ public class GainExperiment extends Experiment {
    * Given indices to specific PSD data sets and indices to the corresponding
    * frequency boundaries, gets the mean and standard deviation ratios
    *
-   * @param refIdx Index of first curve to be plotted (numerator PSD)
-   * @param lowBnd Lower-bound index of PSDs' frequency array
-   * @param higBnd Upper-bound index of PSDs' frequency array
+   * @param refIndex Index of first curve to be plotted (numerator PSD)
+   * @param lowerBound Lower-bound index of PSDs' frequency array
+   * @param upperBound Upper-bound index of PSDs' frequency array
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-  private double[] getStatsFromIndices(int refIdx, int lowBnd, int higBnd) {
+  private double[] getStatsFromIndices(int refIndex, int lowerBound, int upperBound) {
 
-    int idx0 = refIdx;
-    int idx1 = (refIdx + 1) % NUMBER_TO_LOAD;
+    int refIndexPlusOne = (refIndex + 1) % NUMBER_TO_LOAD;
 
     // make sure lowInd really is the lower index
-    int temp = Math.min(lowBnd, higBnd);
-    higBnd = Math.max(lowBnd, higBnd);
-    lowBnd = temp;
+    int temp = Math.min(lowerBound, upperBound);
+    upperBound = Math.max(lowerBound, upperBound);
+    lowerBound = temp;
 
-    FFTResult plot0 = fftResults[idx0];
-    FFTResult plot1 = fftResults[idx1];
+    FFTResult plot0 = fftResults[refIndex];
+    FFTResult plot1 = fftResults[refIndexPlusOne];
 
-    double mean0 = NumericUtils.getFFTMean(plot0, lowBnd, higBnd);
-    // since both datasets must have matching interval, PSDs have same freqs
-    double mean1 = NumericUtils.getFFTMean(plot1, lowBnd, higBnd);
+    double mean0 = NumericUtils.getFFTMean(plot0, lowerBound, upperBound);
+    // since both datasets must have matching interval, PSDs have same frequencies
+    double mean1 = NumericUtils.getFFTMean(plot1, lowerBound, upperBound);
 
     // double MIN_VALUE field is effectively java's machine epsilon
     // calculate ratio and sigma over the range
-    ratio = (mean0 + Double.MIN_VALUE) / (mean1 + Double.MIN_VALUE);
+    double ratio = (mean0 + Double.MIN_VALUE) / (mean1 + Double.MIN_VALUE);
     // added terms exist to prevent division by 0
 
-    sigma = NumericUtils.getFFTSDev(plot0, plot1, ratio, lowBnd, higBnd);
+    double sigma = NumericUtils.getFFTSDev(plot0, plot1, ratio, lowerBound, upperBound);
 
-    double refGain = gainStage1[idx0];
-    double calcGain = gainStage1[idx1] / Math.sqrt(ratio);
+    double refGain = gainStage1[refIndex];
+    double calcGain = gainStage1[refIndexPlusOne] / Math.sqrt(ratio);
 
     return new double[]{Math.sqrt(ratio), sigma, refGain, calcGain};
   }
