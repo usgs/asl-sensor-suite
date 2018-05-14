@@ -251,7 +251,7 @@ public class RandomizedExperimentTest {
       System.out.println("NYQUIST RATE: " + nyq);
 
       RandomizedExperiment rCal = (RandomizedExperiment)
-          ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+          ExperimentEnum.RANDM.createExperiment();
 
       rCal.setLowFrequencyCalibration(false);
 
@@ -418,7 +418,7 @@ public class RandomizedExperimentTest {
     ds.trim(start, end);
 
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentEnum.RANDM.createExperiment();
 
     rCal.setLowFrequencyCalibration(false);
 
@@ -449,7 +449,7 @@ public class RandomizedExperimentTest {
 
     DataStore ds = DataStoreUtils.createFromNames(respName, null, sensOutName);
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentEnum.RANDM.createExperiment();
     assertFalse( rCal.hasEnoughData(ds) );
   }
 
@@ -461,7 +461,7 @@ public class RandomizedExperimentTest {
 
     DataStore ds = DataStoreUtils.createFromNames(respName, calName, null);
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentEnum.RANDM.createExperiment();
     assertFalse( rCal.hasEnoughData(ds) );
   }
 
@@ -471,7 +471,7 @@ public class RandomizedExperimentTest {
 
     DataStore ds = DataStoreUtils.createFromNames(respName, null, null);
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentEnum.RANDM.createExperiment();
     assertFalse( rCal.hasEnoughData(ds) );
   }
 
@@ -484,7 +484,7 @@ public class RandomizedExperimentTest {
 
     DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
     RandomizedExperiment rCal = (RandomizedExperiment)
-        ExperimentFactory.createExperiment(ExperimentEnum.RANDM);
+        ExperimentEnum.RANDM.createExperiment();
     assertTrue( rCal.hasEnoughData(ds) );
   }
 }

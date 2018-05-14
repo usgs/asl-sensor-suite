@@ -1,7 +1,6 @@
 package asl.sensor.gui;
 
 import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.experiment.NoiseNineExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -62,7 +61,7 @@ public class NoiseNinePanel extends NoisePanel {
   NoiseNinePanel(ExperimentEnum experiment) {
     super(experiment);
 
-    expResult = ExperimentFactory.createExperiment(experiment);
+    expResult = experiment.createExperiment();
 
     set = false;
 

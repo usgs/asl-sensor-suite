@@ -2,7 +2,6 @@ package asl.sensor.gui;
 
 import asl.sensor.experiment.Experiment;
 import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.ExperimentFactory;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
@@ -202,7 +201,7 @@ public abstract class ExperimentPanel
     plotTheseInBold = new String[]{};
 
     expType = experiment;
-    expResult = ExperimentFactory.createExperiment(experiment);
+    expResult = experiment.createExperiment();
     expResult.addChangeListener(this);
 
     chart = ChartFactory.createXYLineChart(expType.getName(),

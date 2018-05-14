@@ -11,8 +11,7 @@ public class ExperimentPanelFactory {
 
   /**
    * Instantiate an ExperimentPanel based on the enumerated type passed in
-   * This enumerated type is then used to instantiate a backend using
-   * the ExperimentFactory class.
+   * This enumerated type is then used to instantiate a backend.
    *
    * @param exp Type of experiment (see the enum for details on kinds)
    * @return A concrete implementation of the ExperimentPanel abstract class
@@ -38,8 +37,6 @@ public class ExperimentPanelFactory {
         return new RandomizedPanel(exp);
       case RESPN:
         return new ResponsePanel(exp);
-      // case RNDBG:
-      //   return new RandDebugPanel(exp);
       case SINCL:
         return new SinePanel(exp);
       case SPECT:
