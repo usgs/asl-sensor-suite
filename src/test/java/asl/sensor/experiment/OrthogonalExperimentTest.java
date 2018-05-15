@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import org.junit.Test;
 
-public class OrthogonalityTest {
+public class OrthogonalExperimentTest {
 
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
