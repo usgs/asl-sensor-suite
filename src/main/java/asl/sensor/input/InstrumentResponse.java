@@ -682,12 +682,12 @@ public class InstrumentResponse {
    * Read in each line of a response and parse and store relevant lines
    * according to the hex value at the start of the line
    *
-   * @param br reader of a given file to be parse
+   * @param reader reader of a given file to be parse
    * @throws IOException if the reader cannot read the given file
    */
-  private void parserDriver(BufferedReader br, Instant epoch) throws IOException {
+  private void parserDriver(BufferedReader reader, Instant epoch) throws IOException {
 
-    String line = br.readLine();
+    String line = reader.readLine();
 
     // read in lines until the epoch is found
     if (epoch != null) {
@@ -695,7 +695,7 @@ public class InstrumentResponse {
       while (!epochFound) {
         if (line.length() == 0) {
           // empty line? need to skip it
-          line = br.readLine();
+          line = reader.readLine();
           continue;
         }
 
@@ -714,7 +714,7 @@ public class InstrumentResponse {
               }
           }
         } // end of if statement
-        line = br.readLine();
+        line = reader.readLine();
       }
     }
 
@@ -733,7 +733,7 @@ public class InstrumentResponse {
 
       if (line.length() == 0) {
         // empty line? need to skip it
-        line = br.readLine();
+        line = reader.readLine();
         continue;
       }
 
@@ -767,36 +767,13 @@ public class InstrumentResponse {
           case "B053F03":
             // transfer function type specified
             // first character of third component of words
-            switch (words[2].charAt(0)) {
-              case 'A':
-                transferType = TransferFunction.LAPLACIAN;
-                break;
-              case 'B':
-                transferType = TransferFunction.LINEAR;
-                break;
-              default:
-                // defaulting to LAPLACIAN if type is different from a or b
-                // which is likely to be more correct
-                transferType = TransferFunction.LAPLACIAN;
-            }
+            transferType = parseTransferType(words[2]);
             break;
           case "B053F05":
             // parse the units of the transfer function (usually velocity)
             // first *word* of the third component of words
             String[] unitString = words[2].split("\\s");
-            String unit = unitString[0];
-            switch (unit.toLowerCase()) {
-              case "m/s":
-                unitType = Unit.VELOCITY;
-                break;
-              case "m/s**2":
-                unitType = Unit.ACCELERATION;
-                break;
-              default:
-                String e = "Unit type was given as " + unit + ".\n";
-                e += "Nonstandard unit, or not a velocity or acceleration";
-                throw new IOException(e);
-            }
+            unitType = parseUnitType(unitString[0]);
             break;
           case "B053F07":
             // this is the normalization factor A0
@@ -849,7 +826,7 @@ public class InstrumentResponse {
 
       } // end if line not comment
 
-      line = br.readLine(); // whether or not comment, get the next line
+      line = reader.readLine(); // whether or not comment, get the next line
 
     } // end of file-read loop (EOF reached, line is null)
 
@@ -860,6 +837,32 @@ public class InstrumentResponse {
     // turn pole/zero arrays into maps from pole values to # times repeated
     setZerosFromComplex(zerosArr);
     setPoles(polesArr);
+  }
+
+  static TransferFunction parseTransferType(String word) {
+    switch (word.charAt(0)) {
+      case 'A':
+        return TransferFunction.LAPLACIAN;
+      case 'B':
+        return TransferFunction.LINEAR;
+      default:
+        // defaulting to LAPLACIAN if type is different from a or b
+        // which is likely to be more correct
+        return TransferFunction.LAPLACIAN;
+    }
+  }
+
+  static Unit parseUnitType(String unit) throws IOException {
+    switch (unit.toLowerCase()) {
+      case "m/s":
+        return Unit.VELOCITY;
+      case "m/s**2":
+        return Unit.ACCELERATION;
+      default:
+        String e = "Unit type was given as " + unit + ".\n";
+        e += "Nonstandard unit, or not a velocity or acceleration";
+        throw new IOException(e);
+    }
   }
 
   /**
