@@ -1,14 +1,14 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 import java.util.Arrays;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * Finds the interior angle between two sensors of unknown orientation using
@@ -78,8 +78,6 @@ public class OrthogonalExperiment extends Experiment {
     testLH1 = TimeSeriesUtils.demean(testLH1);
     testLH2 = TimeSeriesUtils.demean(testLH2);
 
-    System.out.println(refLH1[0] + "," + testLH1[0]);
-
     refLH1 = TimeSeriesUtils.detrend(refLH1);
     refLH2 = TimeSeriesUtils.detrend(refLH2);
     testLH1 = TimeSeriesUtils.detrend(testLH1);
@@ -94,8 +92,6 @@ public class OrthogonalExperiment extends Experiment {
     testLH2 = TimeSeriesUtils.decimate(testLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
 
     interval = Math.max(interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-
-    System.out.println(refLH1[0] + "," + testLH1[0]);
 
     int len = refLH1.length;
     double[] refYArr = Arrays.copyOfRange(refLH1, 0, len);
@@ -139,8 +135,6 @@ public class OrthogonalExperiment extends Experiment {
 
     RealVector diffLH1 = testY.subtract(refY);
     RealVector diffComponents = testY.subtract(rotateSignal(refX, refY, angleY));
-
-    System.out.println(refY.getEntry(0) + "," + testY.getEntry(0));
 
     for (int i = 0; i < len; ++i) {
       diffSrs.add(timeAtPoint, diffLH1.getEntry(i));
