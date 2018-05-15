@@ -30,7 +30,7 @@ public class OrthogonalExperiment extends Experiment {
    * @return signal rotated in the direction of the given angle
    */
   public
-  static RealVector value(RealVector refX, RealVector refY, double point) {
+  static RealVector rotateSignal(RealVector refX, RealVector refY, double point) {
     double theta = point % NumericUtils.TAU;
 
     if (theta < 0) {
@@ -145,7 +145,7 @@ public class OrthogonalExperiment extends Experiment {
     XYSeries diffRotSrs = new XYSeries("Diff(" + testName + ", Rotated Ref.)");
 
     RealVector diffLH1 = testY.subtract(refY);
-    RealVector diffComponents = testY.subtract(value(refX, refY, angleY));
+    RealVector diffComponents = testY.subtract(rotateSignal(refX, refY, angleY));
 
     System.out.println(refY.getEntry(0) + "," + testY.getEntry(0));
 

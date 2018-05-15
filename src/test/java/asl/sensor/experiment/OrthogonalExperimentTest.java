@@ -241,4 +241,20 @@ public class OrthogonalExperimentTest {
 
   }
 
+  @Test
+  public void rotateSignal_thetaLessThanZero(){
+    fail();
+  }
+
+  @Test
+  public void rotateSignal_thetaGreaterThanZero(){
+    fail();
+  }
+
+  @Test
+  public void rotateSignal_thetaIsZero(){
+    fail();
+  }
+
+
 }
