@@ -5,6 +5,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 public class MockExperiment extends Experiment {
+
   boolean backendCalled = false;
   boolean hasEnoughDataCalled = false;
   boolean blocksNeededCalled = false;
@@ -40,6 +41,7 @@ public class MockExperiment extends Experiment {
   }
 
   private class changeCountingListener implements ChangeListener {
+
     public void stateChanged(ChangeEvent event) {
       numberOfChangesFired++;
     }

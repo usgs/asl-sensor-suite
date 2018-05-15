@@ -2,14 +2,13 @@ package asl.sensor.experiment;
 
 import static org.junit.Assert.assertEquals;
 
+import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
-import asl.sensor.experiment.SineExperiment;
-import asl.sensor.input.DataStore;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class SineTest {
 

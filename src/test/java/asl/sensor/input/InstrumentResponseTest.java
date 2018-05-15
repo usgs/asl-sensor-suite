@@ -3,6 +3,9 @@ package asl.sensor.input;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.ReportingUtils;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
@@ -17,8 +20,6 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
 
@@ -32,13 +33,13 @@ public class InstrumentResponseTest {
     try {
       InstrumentResponse ir = new InstrumentResponse(filename);
 
-      assertEquals(TransferFunction.LAPLACIAN, ir.getTransferFunction() );
+      assertEquals(TransferFunction.LAPLACIAN, ir.getTransferFunction());
 
       double nml = Double.parseDouble("3.948580E+03");
-      assertEquals( nml, ir.getNormalization(), 0.0001 );
+      assertEquals(nml, ir.getNormalization(), 0.0001);
 
       double nmf = Double.parseDouble("3.000000E-01");
-      assertEquals( nmf, ir.getNormalizationFrequency(), 0.0001 );
+      assertEquals(nmf, ir.getNormalizationFrequency(), 0.0001);
 
       double[] gn = {2.400000e+03, 2.400000e+03, 1.000000e+00};
       int maxStage = ir.getNumStages();
@@ -48,19 +49,19 @@ public class InstrumentResponseTest {
       }
       //assertTrue( gnL.equals(ir.getGain() ) );
 
-      assertEquals( Unit.VELOCITY, ir.getUnits() );
+      assertEquals(Unit.VELOCITY, ir.getUnits());
 
       List<Complex> zrs = new ArrayList<>();
-      zrs.add( new Complex(0.000000e+00, 0.000000e+00) );
-      zrs.add( new Complex(0.000000e+00, 0.000000e+00) );
-      assertEquals( zrs, ir.getZeros() );
+      zrs.add(new Complex(0.000000e+00, 0.000000e+00));
+      zrs.add(new Complex(0.000000e+00, 0.000000e+00));
+      assertEquals(zrs, ir.getZeros());
 
       List<Complex> pls = new ArrayList<>();
-      pls.add( new Complex(-2.221000e-01,  2.221000e-01) );
-      pls.add( new Complex(-2.221000e-01, -2.221000e-01) );
-      pls.add( new Complex(-3.918000e+01,  4.912000e+01) );
-      pls.add( new Complex(-3.918000e+01, -4.912000e+01) );
-      assertEquals( pls, ir.getPoles() );
+      pls.add(new Complex(-2.221000e-01, 2.221000e-01));
+      pls.add(new Complex(-2.221000e-01, -2.221000e-01));
+      pls.add(new Complex(-3.918000e+01, 4.912000e+01));
+      pls.add(new Complex(-3.918000e+01, -4.912000e+01));
+      assertEquals(pls, ir.getPoles());
 
     } catch (IOException e) {
       fail("Unexpected error trying to read response file");
@@ -74,7 +75,7 @@ public class InstrumentResponseTest {
     String filename = folder + "resp-parse/multiepoch.txt";
     try {
       List<Pair<Instant, Instant>> eps = InstrumentResponse.getRespFileEpochs(filename);
-      assertTrue( eps.size() > 1 );
+      assertTrue(eps.size() > 1);
     } catch (IOException e) {
       fail();
       e.printStackTrace();
@@ -96,7 +97,7 @@ public class InstrumentResponseTest {
     compareTo.add(new Pair<>(insts[1], insts[2]));
 
     String filename = folder + "resp-parse/multiepoch.txt";
-    try{
+    try {
       List<Pair<Instant, Instant>> eps = InstrumentResponse.getRespFileEpochs(filename);
       for (int i = 0; i < eps.size(); ++i) {
         Pair<Instant, Instant> inst = eps.get(i);
@@ -122,17 +123,17 @@ public class InstrumentResponseTest {
 
       PDDocument pdf = new PDDocument();
 
-      ReportingUtils.textToPDFPage( ir.toString(), pdf );
+      ReportingUtils.textToPDFPage(ir.toString(), pdf);
 
       String currentDir = System.getProperty("user.dir");
       String testResultFolder = currentDir + "/testResultImages/";
       File dir = new File(testResultFolder);
-      if ( !dir.exists() ) {
+      if (!dir.exists()) {
         dir.mkdir();
       }
 
       String testResult = testResultFolder + "response-report.pdf";
-      pdf.save( new File(testResult) );
+      pdf.save(new File(testResult));
       pdf.close();
 
     } catch (IOException e) {
@@ -161,15 +162,16 @@ public class InstrumentResponseTest {
     initPoles.set(3, c);
     // build new vector, is it the same?
     List<Complex> endPoles =
-        ir.buildResponseFromFitVector( rv.toArray(), false, 0 ).getPoles();
+        ir.buildResponseFromFitVector(rv.toArray(), false, 0).getPoles();
 
-    assertTrue( initPoles.size() == endPoles.size() );
+    assertTrue(initPoles.size() == endPoles.size());
 
   }
 
   @Test
   public void parseTermAsDate_date_standard_input_field22() {
-    Instant actual = InstrumentResponse.parseTermAsDate("B052F22     Start date:  2001,001,00:00:00");
+    Instant actual = InstrumentResponse
+        .parseTermAsDate("B052F22     Start date:  2001,001,00:00:00");
     Instant expected = LocalDate.parse("2001-01-01").atStartOfDay().toInstant(ZoneOffset.UTC);
     assertEquals(expected, actual);
   }
