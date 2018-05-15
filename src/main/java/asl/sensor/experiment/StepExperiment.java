@@ -14,7 +14,6 @@ import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
@@ -121,8 +120,6 @@ public class StepExperiment extends Experiment {
     DataBlock stepCalRaw = dataStore.getXthLoadedBlock(1);
     dataNames.add(stepCalRaw.getName());
 
-    double[] stepCalSeries = new double[stepCalRaw.size()];
-
     // get the sample rate and interval (interval used to define time between points in chart)
     long interval = stepCalRaw.getInterval();
     double sps = stepCalRaw.getSampleRate();
@@ -130,9 +127,6 @@ public class StepExperiment extends Experiment {
     fireStateChange("Initial filtering of the raw step signal...");
     double[] stepCalData = stepCalRaw.getData().clone();
     stepCalData = FFTResult.lowPassFilter(stepCalData, sps, 0.1);
-    // demean and normalize before trimming
-    stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
 
     // trim 10s from each side of the input data
     cutAmount = (int) sps * 10;
@@ -140,7 +134,7 @@ public class StepExperiment extends Experiment {
     trimmedLength = highBound - cutAmount; // length - 2 * cutAmount
 
     // actually trim the data and demean, normalize
-    stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
+    double[] stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.detrendEnds(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
@@ -210,18 +204,10 @@ public class StepExperiment extends Experiment {
     RealVector startVector = MatrixUtils.createRealVector(params);
     RealVector observedComponents = MatrixUtils.createRealVector(stepCalSeries);
 
-    // used to fit parameters
-    MultivariateJacobianFunction jbn = new MultivariateJacobianFunction() {
-      @Override
-      public Pair<RealVector, RealMatrix> value(RealVector point) {
-        return jacobian(point);
-      }
-    };
-
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(startVector).
         target(observedComponents).
-        model(jbn).
+        model(this::jacobian).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).

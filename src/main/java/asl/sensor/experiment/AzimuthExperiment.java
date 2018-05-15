@@ -484,7 +484,7 @@ public class AzimuthExperiment extends Experiment {
    *
    * @return angle result in radians
    */
-  public double getFitAngleRad() {
+  private double getFitAngleRad() {
     return angle;
   }
 
