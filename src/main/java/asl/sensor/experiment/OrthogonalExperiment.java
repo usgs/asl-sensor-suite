@@ -29,7 +29,6 @@ public class OrthogonalExperiment extends Experiment {
    * @param point angle (radians) to get as rotated signal
    * @return signal rotated in the direction of the given angle
    */
-  public
   static RealVector rotateSignal(RealVector refX, RealVector refY, double point) {
     double theta = point % NumericUtils.TAU;
 
@@ -40,10 +39,7 @@ public class OrthogonalExperiment extends Experiment {
     double sinTheta = Math.sin(theta);
     double cosTheta = Math.cos(theta);
 
-    RealVector curValue =
-        refX.mapMultiply(sinTheta).add(refY.mapMultiply(cosTheta));
-
-    return curValue;
+    return refX.mapMultiply(sinTheta).add(refY.mapMultiply(cosTheta));
   }
 
   private double[] diffs;
@@ -52,13 +48,10 @@ public class OrthogonalExperiment extends Experiment {
 
   public OrthogonalExperiment() {
     super();
-
   }
 
   @Override
   protected void backend(final DataStore dataStore) {
-
-    // TODO: refactor using faster access point for azimuth?
     long interval = dataStore.getXthLoadedBlock(1).getInterval();
 
     // assume the first two are the test and the second two are the reference?
