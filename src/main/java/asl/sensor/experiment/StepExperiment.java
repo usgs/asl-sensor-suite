@@ -14,7 +14,6 @@ import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
@@ -43,25 +42,29 @@ import org.jfree.data.xy.XYSeriesCollection;
  * also able to return the values for the corner frequency and damping that
  * produce them, as well as their corresponding residual values.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class StepExperiment extends Experiment {
   private double f, h; //corner and damping of output (uncorrected)
   private double fCorr, hCorr; // fit parameters to turn output into cal input
   private double initResid, fitResid; // residual values
 
-  private double sps; // samples per second
   private int trimmedLength, cutAmount;
   private double[] freqs; // frequency (i.e., x-axis values) of step cal FFT series
   private Complex[] sensorFFTSeries; // FFT of step cal from sensor
 
-  private double[] stepCalSeries; // time series of raw step cal function
-
   private int sensorOutIdx; // used to keep track of response location for report generation
-  final double STEP_FACTOR = 1E-10;
-  final double F_TOLER = 1E-15;
+  private final double STEP_FACTOR = 1E-10;
 
-  final double X_TOLER = 1E-15;
+  /**
+   * Used in the least squared solver
+   */
+  private final double F_TOLER = 1E-15;
+
+  /**
+   * Used in the least squared solver
+   */
+  private final double X_TOLER = 1E-15;
 
   public StepExperiment() {
     super();
@@ -110,25 +113,20 @@ public class StepExperiment extends Experiment {
   @Override
   protected void backend(final DataStore dataStore) {
 
-    dataNames = new ArrayList<String>();
+    dataNames = new ArrayList<>();
 
     // assume that the first block is the raw step calibration
     // the raw calibration is defined as not having an associated response
     DataBlock stepCalRaw = dataStore.getXthLoadedBlock(1);
     dataNames.add(stepCalRaw.getName());
 
-    stepCalSeries = new double[stepCalRaw.size()];
-
     // get the sample rate and interval (interval used to define time between points in chart)
     long interval = stepCalRaw.getInterval();
-    sps = stepCalRaw.getSampleRate();
+    double sps = stepCalRaw.getSampleRate();
 
     fireStateChange("Initial filtering of the raw step signal...");
     double[] stepCalData = stepCalRaw.getData().clone();
     stepCalData = FFTResult.lowPassFilter(stepCalData, sps, 0.1);
-    // demean and normalize before trimming
-    stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
 
     // trim 10s from each side of the input data
     cutAmount = (int) sps * 10;
@@ -136,7 +134,7 @@ public class StepExperiment extends Experiment {
     trimmedLength = highBound - cutAmount; // length - 2 * cutAmount
 
     // actually trim the data and demean, normalize
-    stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
+    double[] stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
     stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.detrendEnds(stepCalSeries);
     stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
@@ -206,20 +204,10 @@ public class StepExperiment extends Experiment {
     RealVector startVector = MatrixUtils.createRealVector(params);
     RealVector observedComponents = MatrixUtils.createRealVector(stepCalSeries);
 
-    // used to fit parameters
-    MultivariateJacobianFunction jbn = new MultivariateJacobianFunction() {
-
-      @Override
-      public Pair<RealVector, RealMatrix> value(RealVector point) {
-        return jacobian(point);
-      }
-
-    };
-
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(startVector).
         target(observedComponents).
-        model(jbn).
+        model(this::jacobian).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
@@ -345,7 +333,7 @@ public class StepExperiment extends Experiment {
    * @return The timeseries resulting from deconvolution of the calculated
    * response from the sensor-input timeseries (done in frequency space)
    */
-  public double[] calculate(double[] params) {
+  private double[] calculate(double[] params) {
 
     // the original length of the timeseries data we've gotten the FFT of
     int inverseTrim = trimmedLength + 2 * cutAmount;
@@ -457,7 +445,6 @@ public class StepExperiment extends Experiment {
    * of these points, as a vector and matrix respectively
    */
   private Pair<RealVector, RealMatrix> jacobian(RealVector variables) {
-
     // approximate through forward differences
     double[][] jacobian = new double[trimmedLength][2];
 
@@ -478,13 +465,16 @@ public class StepExperiment extends Experiment {
     RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
     RealVector fnc = MatrixUtils.createRealVector(fInit);
 
-    return new Pair<RealVector, RealMatrix>(fnc, jMat);
+    return new Pair<>(fnc, jMat);
   }
 
+  /**
+   * NOTE: not used by corresponding panel, overrides with active indices
+   * of components in the combo-box
+   * @return list of active response indices
+   */
   @Override
   public int[] listActiveResponseIndices() {
-    // NOTE: not used by corresponding panel, overrides with active indices
-    // of components in the combo-box
     return new int[]{sensorOutIdx};
   }
 
