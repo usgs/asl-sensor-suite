@@ -1,8 +1,7 @@
 package asl.sensor;
 
-import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.instanceOf;
-
+import static org.junit.Assert.assertThat;
 
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.experiment.GainExperiment;
@@ -85,7 +84,8 @@ public class ExperimentFactoryTest {
 
   @Test
   public void randomCal_createExperiment() {
-    assertThat(ExperimentFactory.RANDOMCAL.createExperiment(), instanceOf(RandomizedExperiment.class));
+    assertThat(ExperimentFactory.RANDOMCAL.createExperiment(),
+        instanceOf(RandomizedExperiment.class));
   }
 
   @Test
@@ -115,7 +115,8 @@ public class ExperimentFactoryTest {
 
   @Test
   public void orthogonality_createExperiment() {
-    assertThat(ExperimentFactory.ORTHOGONALITY.createExperiment(), instanceOf(OrthogonalExperiment.class));
+    assertThat(ExperimentFactory.ORTHOGONALITY.createExperiment(),
+        instanceOf(OrthogonalExperiment.class));
   }
 
   @Test

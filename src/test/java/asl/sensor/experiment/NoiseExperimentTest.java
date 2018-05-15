@@ -2,6 +2,12 @@ package asl.sensor.experiment;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -9,11 +15,6 @@ import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-import asl.sensor.input.DataStore;
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class NoiseExperimentTest {
 
@@ -72,7 +73,7 @@ public class NoiseExperimentTest {
       }
     }
     OffsetDateTime startCal =
-        OffsetDateTime.ofInstant( ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);
+        OffsetDateTime.ofInstant(ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);
     startCal = startCal.withHour(0);
     startCal = startCal.withMinute(59);
     startCal = startCal.withSecond(59);
@@ -81,7 +82,7 @@ public class NoiseExperimentTest {
     endCal = endCal.withMinute(0);
     endCal = endCal.withSecond(0);
     endCal = endCal.withNano(25 * TimeSeriesUtils.TO_MILLI_FACTOR);
-    ds.trim( startCal.toInstant(), endCal.toInstant() );
+    ds.trim(startCal.toInstant(), endCal.toInstant());
 
     NoiseExperiment ne = new NoiseExperiment();
     ne.setFreqSpace(false); // use period units (s)

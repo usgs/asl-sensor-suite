@@ -30,12 +30,12 @@ public class NoiseNineExperimentTest {
   private String currentDir = System.getProperty("user.dir");
 
   @Test
-  public void canRunAndPlotTest1() throws Exception{
+  public void canRunAndPlotTest1() throws Exception {
 
     String testFolder = folder + "noisenine/";
-    String[] types = new String[]{"00","10","60"};
+    String[] types = new String[]{"00", "10", "60"};
     String freqName = "_BH";
-    String[] components = new String[]{"1","2","Z"};
+    String[] components = new String[]{"1", "2", "Z"};
     String ending = ".512.seed";
     String respName = TestUtils.RESP_LOCATION + "STS-1_Q330HR_BH_20";
 
@@ -44,8 +44,8 @@ public class NoiseNineExperimentTest {
 
     SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
 
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
+    Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getStartTime());
     cCal.set(Calendar.HOUR, 7);
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 8);
@@ -55,7 +55,7 @@ public class NoiseNineExperimentTest {
     ds.trim(start, end);
 
     NoiseNineExperiment nne = new NoiseNineExperiment();
-    assertTrue( nne.hasEnoughData(ds) );
+    assertTrue(nne.hasEnoughData(ds));
     nne.runExperimentOnData(ds);
 
     List<XYSeriesCollection> xysc = nne.getData();
@@ -81,13 +81,13 @@ public class NoiseNineExperimentTest {
 
       XYPlot xyp = jfcl[i].getXYPlot();
 
-      xyp.setDomainAxis( xAxis );
+      xyp.setDomainAxis(xAxis);
     }
 
     StringBuilder sb = new StringBuilder();
     String insets = NoiseNinePanel.getInsetString(nne);
     sb.append('\n');
-    sb.append( NoiseNinePanel.getTimeStampString(nne) );
+    sb.append(NoiseNinePanel.getTimeStampString(nne));
     sb.append('\n');
     sb.append("INPUTTED FILES:");
     sb.append('\n');
@@ -95,34 +95,34 @@ public class NoiseNineExperimentTest {
     List<String> names = nne.getInputNames();
 
     for (String name : names) {
-      sb.append( name );
+      sb.append(name);
       sb.append('\n');
     }
 
-
-    int width = 1280; int height = 960;
+    int width = 1280;
+    int height = 960;
 
     PDDocument pdf = new PDDocument();
     ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-    ReportingUtils.textListToPDFPages( pdf, insets, sb.toString() );
+    ReportingUtils.textListToPDFPages(pdf, insets, sb.toString());
 
     String testResultFolder = currentDir + "/testResultImages/";
     File dir = new File(testResultFolder);
-    if ( !dir.exists() ) {
+    if (!dir.exists()) {
       dir.mkdir();
     }
 
     String testResult = testResultFolder + "Nine-Noise-Test.pdf";
-    pdf.save( new File(testResult) );
+    pdf.save(new File(testResult));
     pdf.close();
   }
 
   @Test
   public void canRunAndPlotTest2() throws Exception {
     String testFolder = folder + "noisenine2/";
-    String[] types = new String[]{"00","10","30"};
+    String[] types = new String[]{"00", "10", "30"};
     String freqName = "_BH";
-    String[] components = new String[]{"1","2","Z"};
+    String[] components = new String[]{"1", "2", "Z"};
     String ending = ".512.seed";
     String respName = folder + "noisenine2/RESP.XX.MOFO.00.BHZ";
 
@@ -131,23 +131,23 @@ public class NoiseNineExperimentTest {
 
     SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
 
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
+    Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getStartTime());
     cCal.set(Calendar.HOUR_OF_DAY, 12);
     cCal.set(Calendar.MINUTE, 0);
     cCal.set(Calendar.SECOND, 0);
-    System.out.println( "start: " + sdf.format( cCal.getTime() ) );
+    System.out.println("start: " + sdf.format(cCal.getTime()));
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR_OF_DAY, 13);
     cCal.set(Calendar.MINUTE, 0);
     cCal.set(Calendar.SECOND, 0);
-    System.out.println( "end: " + sdf.format( cCal.getTime() ) );
+    System.out.println("end: " + sdf.format(cCal.getTime()));
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end, DataStore.FILE_COUNT);
 
     NoiseNineExperiment nne = new NoiseNineExperiment();
-    assertTrue( nne.hasEnoughData(ds) );
+    assertTrue(nne.hasEnoughData(ds));
     nne.runExperimentOnData(ds);
 
     List<XYSeriesCollection> xysc = nne.getData();
@@ -184,12 +184,12 @@ public class NoiseNineExperimentTest {
           false);
 
       XYPlot xyp = jfcl[i].getXYPlot();
-      xyp.setDomainAxis( xAxis );
+      xyp.setDomainAxis(xAxis);
     }
 
     String insets = NoiseNinePanel.getInsetString(nne);
     StringBuilder sb = new StringBuilder();
-    sb.append( NoiseNinePanel.getTimeStampString(nne) );
+    sb.append(NoiseNinePanel.getTimeStampString(nne));
     sb.append('\n');
     sb.append("INPUTTED FILES:");
     sb.append('\n');
@@ -197,24 +197,25 @@ public class NoiseNineExperimentTest {
     List<String> names = nne.getInputNames();
 
     for (String name : names) {
-      sb.append( name );
+      sb.append(name);
       sb.append('\n');
     }
 
-    int width = 1280; int height = 960;
+    int width = 1280;
+    int height = 960;
 
     PDDocument pdf = new PDDocument();
     ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-    ReportingUtils.textListToPDFPages( pdf, insets, sb.toString() );
+    ReportingUtils.textListToPDFPages(pdf, insets, sb.toString());
 
     String testResultFolder = currentDir + "/testResultImages/";
     File dir = new File(testResultFolder);
-    if ( !dir.exists() ) {
+    if (!dir.exists()) {
       dir.mkdir();
     }
 
     String testResult = testResultFolder + "Nine-Noise-Test-2.pdf";
-    pdf.save( new File(testResult) );
+    pdf.save(new File(testResult));
     pdf.close();
   }
 
@@ -232,7 +233,7 @@ public class NoiseNineExperimentTest {
         if (isEmbed) {
           ds.setEmbedResponse(indexInStore, respName);
         } else {
-            ds.setResponse(indexInStore, respName);
+          ds.setResponse(indexInStore, respName);
         }
       }
     }

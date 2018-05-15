@@ -163,7 +163,7 @@ public class DataStoreTest {
   public void bothComponentsSet_dataSet_respMissing_False() {
 
     String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
-    String calName =  dataFolderName + "CB_BC0.512.seed";
+    String calName = dataFolderName + "CB_BC0.512.seed";
     DataStore dataStore = DataStoreUtils.createFromNames(null, calName, null);
 
     assertFalse(dataStore.bothComponentsSet(0));

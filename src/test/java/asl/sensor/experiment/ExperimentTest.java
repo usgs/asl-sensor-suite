@@ -6,13 +6,12 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
 
 import asl.sensor.input.DataStore;
-import java.util.ArrayList;
 import org.junit.Test;
 
 public class ExperimentTest {
 
   @Test
-  public void experiment_constructorInitializes(){
+  public void experiment_constructorInitializes() {
     Experiment experiment = new MockExperiment();
     assertEquals(0, experiment.getStart());
     assertEquals(0, experiment.getEnd());
@@ -22,7 +21,7 @@ public class ExperimentTest {
   }
 
   @Test
-  public void fireStateChange_updatesStatus(){
+  public void fireStateChange_updatesStatus() {
     MockExperiment experiment = new MockExperiment();
     experiment.fireStateChange("Fired Status Change");
     assertEquals("Fired Status Change", experiment.getStatus());
@@ -31,7 +30,7 @@ public class ExperimentTest {
   }
 
   @Test
-  public void listActiveResponseIndices_defaultImplementation(){
+  public void listActiveResponseIndices_defaultImplementation() {
     Experiment experiment = new MockExperiment();
     assertArrayEquals(new int[]{}, experiment.listActiveResponseIndices());
   }
