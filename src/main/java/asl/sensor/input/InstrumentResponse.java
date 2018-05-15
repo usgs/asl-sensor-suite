@@ -683,40 +683,17 @@ public class InstrumentResponse {
    * according to the hex value at the start of the line
    *
    * @param reader reader of a given file to be parse
+   * @param epoch starting Instant of epoch that is needed
    * @throws IOException if the reader cannot read the given file
    */
   private void parserDriver(BufferedReader reader, Instant epoch) throws IOException {
-
-    String line = reader.readLine();
-
     // read in lines until the epoch is found
     if (epoch != null) {
-      boolean epochFound = false;
-      while (!epochFound) {
-        if (line.length() == 0) {
-          // empty line? need to skip it
-          line = reader.readLine();
-          continue;
-        }
-
-        if (line.charAt(0) != '#') {
-          // the components of each line, assuming split by 2 or more spaces
-          String[] words = line.split("\\s\\s+");
-          String hexIdentifier = words[0];
-
-          switch (hexIdentifier) {
-            case "B052F22":
-              Instant start = parseTermAsDate(line);
-              if (start.equals(epoch)) {
-                epochStart = start;
-                epochFound = true;
-                break;
-              }
-          }
-        } // end of if statement
-        line = reader.readLine();
-      }
+      skipToSelectedEpoch(reader, epoch);
+      epochStart = epoch;
     }
+
+    String line = reader.readLine();
 
     numStages = 0;
     double[] gains = new double[MAX_GAIN_STAGES];
@@ -837,6 +814,26 @@ public class InstrumentResponse {
     // turn pole/zero arrays into maps from pole values to # times repeated
     setZerosFromComplex(zerosArr);
     setPoles(polesArr);
+  }
+
+  /**
+   * Skip to the desired epoch start Instant.
+   * If it does not exist, the parser will throw an exception later.
+   * @param reader the shared BufferedReader with RESP file
+   * @param epoch the desired epoch's start Instant.
+   * @throws IOException on file read errors.
+   */
+  static void skipToSelectedEpoch(BufferedReader reader, Instant epoch) throws IOException {
+    String line = reader.readLine();
+    while (line != null) {
+      if (line.startsWith("B052F22")) {
+        Instant start = parseTermAsDate(line);
+        if (epoch.equals(start)) {
+          break;
+        }
+      }
+      line = reader.readLine();
+    }
   }
 
   static TransferFunction parseTransferType(String word) {

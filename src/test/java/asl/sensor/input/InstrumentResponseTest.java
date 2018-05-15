@@ -1,13 +1,16 @@
 package asl.sensor.input;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import asl.sensor.test.TestUtils;
 import asl.sensor.utils.ReportingUtils;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -186,8 +189,7 @@ public class InstrumentResponseTest {
   @Test
   public void parseTermAsDate_noEndingTime_input_field23() {
     Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:    No Ending Time");
-    Instant expected = null;
-    assertEquals(expected, actual);
+    assertEquals(null, actual);
   }
 
   @Test
@@ -247,4 +249,41 @@ public class InstrumentResponseTest {
   public void parseUnitType_defaultThrowsException() throws Exception{
     InstrumentResponse.parseUnitType("Amperage");
   }
+
+  @Test
+  public void skipToSelectedEpoch_methodReturnsEvenIfEpochMissing() throws Exception {
+    BufferedReader reader = new BufferedReader(new InputStreamReader(InstrumentResponseTest.class.getResourceAsStream("/seismic-test-data/RESPs/RESP_with_empty_lines")));
+    InstrumentResponse.skipToSelectedEpoch(reader, Instant.MAX);
+    //Should be empty since it was fully read
+    assertFalse(reader.ready());
+  }
+
+  @Test
+  public void skipToSelectedEpoch_doesItStopOnCorrectEpochAfterSkippingOverEpoch_doesItSkipEmptyLines() throws Exception {
+    LocalDate date = LocalDate.parse("2012-01-01");
+    Instant epoch = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+
+    BufferedReader reader = new BufferedReader(new InputStreamReader(InstrumentResponseTest.class.getResourceAsStream("/seismic-test-data/RESPs/RESP_with_empty_lines")));
+    InstrumentResponse.skipToSelectedEpoch(reader, epoch);
+    assertTrue(reader.ready());
+
+    //Verify that we are in the correct place
+    assertEquals("B052F23     End date:    No Ending Time", reader.readLine());
+  }
+
+  @Test
+  public void skipToSelectedEpoch_doesItStopOnFirstEpoch() throws Exception {
+    LocalDate date = LocalDate.parse("2006-01-01");
+    Instant epoch = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+
+    BufferedReader reader = new BufferedReader(new InputStreamReader(InstrumentResponseTest.class.getResourceAsStream("/seismic-test-data/RESPs/RESP_with_empty_lines")));
+    InstrumentResponse.skipToSelectedEpoch(reader, epoch);
+    assertTrue(reader.ready());
+
+    //Verify that we are in the correct place
+    assertEquals("B052F23     End date:    2012,001,00:00:00.0000", reader.readLine());
+  }
+
+
+
 }
