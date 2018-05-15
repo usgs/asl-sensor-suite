@@ -157,7 +157,6 @@ public class GainExperiment extends Experiment {
    * @param upperBound Upper-bound of frequency window of PSD
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
    */
-<<<<<<< HEAD
   public double[] getStatsFromFreqs(int refIndex, double lowerBound, double upperBound) {
     FFTResult plot0 = fftResults[refIndex];
 
@@ -165,7 +164,6 @@ public class GainExperiment extends Experiment {
         FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.min(lowerBound, upperBound));
     int highIndex =
         FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.max(lowerBound, upperBound));
-
     return getStatsFromIndices(refIndex, lowIndex, highIndex);
   }
 
