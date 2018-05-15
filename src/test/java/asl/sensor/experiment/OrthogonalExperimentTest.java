@@ -3,18 +3,18 @@ package asl.sensor.experiment;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.util.Calendar;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealVector;
+import org.junit.Test;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Calendar;
-import org.junit.Test;
 
 public class OrthogonalExperimentTest {
 
@@ -243,17 +243,35 @@ public class OrthogonalExperimentTest {
 
   @Test
   public void rotateSignal_thetaLessThanZero(){
-    fail();
+    double[] x = {0.};
+    RealVector xVector = MatrixUtils.createRealVector(x);
+    double[] y = {1.};
+    RealVector yVector = MatrixUtils.createRealVector(y);
+    double theta = -3 * Math.PI / 4;
+    RealVector rotY = OrthogonalExperiment.rotateSignal(xVector, yVector, theta);
+    assertEquals(-0.7071067812, rotY.getEntry(0), 1E-9);
   }
 
   @Test
   public void rotateSignal_thetaGreaterThanZero(){
-    fail();
+    double[] x = {0.};
+    RealVector xVector = MatrixUtils.createRealVector(x);
+    double[] y = {1.};
+    RealVector yVector = MatrixUtils.createRealVector(y);
+    double theta = Math.PI / 4;
+    RealVector rotY = OrthogonalExperiment.rotateSignal(xVector, yVector, theta);
+    assertEquals(0.7071067812, rotY.getEntry(0), 1E-9);
   }
 
   @Test
   public void rotateSignal_thetaIsZero(){
-    fail();
+    double[] x = {0.};
+    RealVector xVector = MatrixUtils.createRealVector(x);
+    double[] y = {1.};
+    RealVector yVector = MatrixUtils.createRealVector(y);
+    double theta = 0;
+    RealVector rotY = OrthogonalExperiment.rotateSignal(xVector, yVector, theta);
+    assertEquals(yVector.getEntry(0), rotY.getEntry(0), 1E-10);
   }
 
 
