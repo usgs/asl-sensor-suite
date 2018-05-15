@@ -73,7 +73,6 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   private double nyquistMultiplier; // region up to nyquist to take for data
 
   private static final double ZERO_TARGET = 0.02; // location of value to set to 0 in curves for scaling
-  private int numZeros; // how many entries in parameter vector define zeros
   private int numIterations; // how much the solver ran
 
   public RandomizedExperiment() {
@@ -294,7 +293,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
     initialPoleGuess = fitResponse.polesToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
     initialZeroGuess = fitResponse.zerosToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
-    numZeros = initialZeroGuess.getDimension();
+    int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
 
     // now, solve for the response that gets us the best-fit response curve

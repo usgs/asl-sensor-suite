@@ -484,7 +484,7 @@ public class AzimuthExperiment extends Experiment {
    *
    * @return angle result in radians
    */
-  public double getFitAngleRad() {
+  private double getFitAngleRad() {
     return angle;
   }
 
@@ -640,7 +640,6 @@ public class AzimuthExperiment extends Experiment {
     double[][] jacobianArray = new double[][]{{change}};
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
     return new Pair<>(valueVec, jacobian);
-
   }
 
   /**

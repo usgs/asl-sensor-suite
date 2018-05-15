@@ -17,7 +17,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  * using the (full, damped-windowed) azimuth calculation as an intermediate step.
  * (See AzimuthExperiment for details on how the best-fit angles are found)
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class OrthogonalExperiment extends Experiment {
 
@@ -26,12 +26,11 @@ public class OrthogonalExperiment extends Experiment {
    *
    * @param refX reference signal along the x-axis
    * @param refY reference signal along the y-axis
-   * @param point angle (radians) to get as rotated signal
+   * @param angle angle (radians) to get as rotated signal
    * @return signal rotated in the direction of the given angle
    */
-  public
-  static RealVector value(RealVector refX, RealVector refY, double point) {
-    double theta = point % NumericUtils.TAU;
+  static RealVector rotateSignal(RealVector refX, RealVector refY, double angle) {
+    double theta = angle % NumericUtils.TAU;
 
     if (theta < 0) {
       theta += NumericUtils.TAU;
@@ -40,10 +39,7 @@ public class OrthogonalExperiment extends Experiment {
     double sinTheta = Math.sin(theta);
     double cosTheta = Math.cos(theta);
 
-    RealVector curValue =
-        refX.mapMultiply(sinTheta).add(refY.mapMultiply(cosTheta));
-
-    return curValue;
+    return refX.mapMultiply(sinTheta).add(refY.mapMultiply(cosTheta));
   }
 
   private double[] diffs;
@@ -52,13 +48,10 @@ public class OrthogonalExperiment extends Experiment {
 
   public OrthogonalExperiment() {
     super();
-
   }
 
   @Override
   protected void backend(final DataStore dataStore) {
-
-    // TODO: refactor using faster access point for azimuth?
     long interval = dataStore.getXthLoadedBlock(1).getInterval();
 
     // assume the first two are the test and the second two are the reference?
@@ -145,7 +138,7 @@ public class OrthogonalExperiment extends Experiment {
     XYSeries diffRotSrs = new XYSeries("Diff(" + testName + ", Rotated Ref.)");
 
     RealVector diffLH1 = testY.subtract(refY);
-    RealVector diffComponents = testY.subtract(value(refX, refY, angleY));
+    RealVector diffComponents = testY.subtract(rotateSignal(refX, refY, angleY));
 
     System.out.println(refY.getEntry(0) + "," + testY.getEntry(0));
 

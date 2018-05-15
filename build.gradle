@@ -73,6 +73,7 @@ test {
     maxParallelForks = 4
     testLogging {
         events "skipped", "failed"
+        exceptionFormat "full"
         afterSuite { desc, result ->
             if (!desc.parent) {
                 println "Result: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"

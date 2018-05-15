@@ -36,7 +36,7 @@ public class ResponseExperiment extends Experiment {
   @Override
   protected void backend(DataStore dataStore) {
 
-    responses = new HashSet<InstrumentResponse>();
+    responses = new HashSet<>();
 
     double lowFreq = .0001;
     double highFreq = 200;
@@ -52,33 +52,32 @@ public class ResponseExperiment extends Experiment {
     double currentFreq = lowFreq;
     for (int i = 0; i < freqArray.length; ++i) {
       freqArray[i] = currentFreq;
-      // System.out.println(currentFreq);
       currentFreq = a * Math.pow(10, b * (i * linearChange));
     }
 
     // used to prevent issues with duplicate response plotting / XYSeries names
-    Set<String> respNames = new HashSet<String>();
+    Set<String> respNames = new HashSet<>();
 
     XYSeriesCollection args = new XYSeriesCollection();
     XYSeriesCollection mags = new XYSeriesCollection();
 
-    for (int r = 0; r < 3; ++r) {
-      if (!dataStore.responseIsSet(r)) {
+    for (int responseIndex = 0; responseIndex < 3; ++responseIndex) {
+      if (!dataStore.responseIsSet(responseIndex)) {
         continue;
       }
 
-      InstrumentResponse ir = dataStore.getResponse(r);
+      InstrumentResponse instrumentResponse = dataStore.getResponse(responseIndex);
 
-      if (respNames.contains(ir.getName())) {
+      if (respNames.contains(instrumentResponse.getName())) {
         continue;
       } else {
-        respNames.add(ir.getName());
-        responses.add(ir);
+        respNames.add(instrumentResponse.getName());
+        responses.add(instrumentResponse);
       }
 
-      Complex[] result = ir.applyResponseToInput(freqArray);
+      Complex[] result = instrumentResponse.applyResponseToInput(freqArray);
 
-      String name = ir.getName();
+      String name = instrumentResponse.getName();
 
       double phiPrev = 0; // use with unwrapping
       XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
@@ -106,7 +105,7 @@ public class ResponseExperiment extends Experiment {
     xySeriesData.add(mags);
     xySeriesData.add(args);
 
-    dataNames = new ArrayList<String>(respNames);
+    dataNames = new ArrayList<>(respNames);
 
   }
 

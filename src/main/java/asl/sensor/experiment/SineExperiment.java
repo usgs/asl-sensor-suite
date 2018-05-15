@@ -80,7 +80,7 @@ public class SineExperiment extends Experiment {
     }
     xysc.addSeries(cal);
     xysc.addSeries(out);
-    xySeriesData = new ArrayList<XYSeriesCollection>();
+    xySeriesData = new ArrayList<>();
     xySeriesData.add(xysc);
     // produce linearity plots
     xysc = new XYSeriesCollection();
