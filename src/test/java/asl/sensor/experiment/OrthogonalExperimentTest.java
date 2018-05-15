@@ -20,16 +20,16 @@ public class OrthogonalExperimentTest {
 
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  public String getCleanData() {
+  private String getCleanData() {
     return "ANMO.10";
   }
 
-  public String getNoisyData() {
+  private String getNoisyData() {
     return "FUNA.00";
   }
 
   @Test
-  public void getsCorrectAngle() {
+  public void getsCorrectAngle() throws Exception {
 
     DataStore ds = new DataStore();
     String testFolder = folder + "orthog-94/";
@@ -42,12 +42,7 @@ public class OrthogonalExperimentTest {
 
     for (int i = 0; i < prefixes.length; ++i) {
       String fName = testFolder + prefixes[i] + extension;
-      try {
-        ds.setBlock(i, fName);
-      } catch (IOException | SeedFormatException | CodecException e) {
-        e.printStackTrace();
-        fail();
-      }
+      ds.setBlock(i, fName);
     }
 
     OrthogonalExperiment orth = new OrthogonalExperiment();
@@ -59,19 +54,15 @@ public class OrthogonalExperimentTest {
     Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
     cCal.setTimeInMillis(ds.getBlock(0).getStartTime());
     cCal.set(Calendar.HOUR, 7);
-    System.out.println("start: " + sdf.format(cCal.getTime()));
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 13);
     cCal.set(Calendar.MINUTE, 0);
-    System.out.println("end: " + sdf.format(cCal.getTime()));
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end);
 
     orth.runExperimentOnData(ds);
 
-    System.out.println(orth.getFitAngle());
-    System.out.println(Arrays.toString(orth.getSolutionParams()));
     assertEquals(94., orth.getFitAngle(), 1.);
 
   }
@@ -196,7 +187,7 @@ public class OrthogonalExperimentTest {
     testsFromSprockets(270, getNoisyData());
   }
 
-  public void testsFromSprockets(int angle, String staCha) {
+  private void testsFromSprockets(int angle, String staCha) {
     StringBuilder sb = new StringBuilder();
     sb.append(angle);
     // format for filenames is 002, 010, 358, etc.; prepend 0s if needed
@@ -232,23 +223,20 @@ public class OrthogonalExperimentTest {
 
       ds.trim(start, end);
 
-      // ds.trimToCommonTime();
       OrthogonalExperiment oe = new OrthogonalExperiment();
       oe.runExperimentOnData(ds);
       double fitAngle = oe.getFitAngle();
-      System.out.println(Arrays.toString(oe.getSolutionParams()));
 
       double expectedAngle = angle;
       if (expectedAngle > 180) {
         expectedAngle = 360 - expectedAngle;
       }
-      System.out.println(expectedAngle + " | " + fitAngle + " [" + sb.toString() + "]");
 
       assertEquals(expectedAngle, fitAngle, 1.0);
 
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
-      fail();
+      fail(e.getMessage());
     }
 
   }
