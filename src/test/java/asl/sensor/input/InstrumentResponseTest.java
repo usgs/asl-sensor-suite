@@ -197,4 +197,54 @@ public class InstrumentResponseTest {
     assertEquals(expected, actual);
   }
 
+  @Test
+  public void parseTermAsComplex_basicTest() {
+    fail();
+  }
+
+  @Test
+  public void parseTransferType_A_laplacianTransfer(){
+    assertEquals(TransferFunction.LAPLACIAN, InstrumentResponse.parseTransferType("A"));
+  }
+
+  @Test
+  public void parseTransferType_B_linearTransfer(){
+    assertEquals(TransferFunction.LINEAR, InstrumentResponse.parseTransferType("B"));
+  }
+
+  /**
+   * Test Composite Transfer from SEED specifications
+   */
+  @Test
+  public void parseTransferType_C_defaultsToLaplacian(){
+    assertEquals(TransferFunction.LAPLACIAN, InstrumentResponse.parseTransferType("C"));
+  }
+
+  /**
+   * Test Digital (Z) Transfer from SEED specifications
+   */
+  @Test
+  public void parseTransferType_D_defaultsToLaplacian(){
+    assertEquals(TransferFunction.LAPLACIAN, InstrumentResponse.parseTransferType("D"));
+  }
+
+  @Test
+  public void parseUnitType_velocity_checkCaseSensitivity() throws Exception{
+    assertEquals(Unit.VELOCITY, InstrumentResponse.parseUnitType("M/s"));
+  }
+
+  @Test
+  public void parseUnitType_velocity() throws Exception{
+    assertEquals(Unit.VELOCITY, InstrumentResponse.parseUnitType("m/s"));
+  }
+
+  @Test
+  public void parseUnitType_acceleration() throws Exception{
+    assertEquals(Unit.ACCELERATION, InstrumentResponse.parseUnitType("m/s**2"));
+  }
+
+  @Test (expected = IOException.class)
+  public void parseUnitType_defaultThrowsException() throws Exception{
+    InstrumentResponse.parseUnitType("Amperage");
+  }
 }
