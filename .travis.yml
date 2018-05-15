@@ -18,6 +18,3 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
-
-after_failure:
-  - cat /home/travis/build/usgs/asl-sensor-suite/build/reports/tests/test/index.html
