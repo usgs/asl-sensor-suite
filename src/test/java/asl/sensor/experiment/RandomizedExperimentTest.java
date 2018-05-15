@@ -492,8 +492,8 @@ public class RandomizedExperimentTest {
         new Complex(-101.27715855875556, 387.9300826976112)
     };
     for (int i = 0; i < fitPoles.size(); i++) {
-      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
-      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
+      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-4);
+      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-4);
     }
 
     assertEquals(50.11489080838925, rCal.getFitResidual(), 1E-7);
