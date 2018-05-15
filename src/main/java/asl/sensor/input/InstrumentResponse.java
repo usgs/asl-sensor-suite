@@ -548,7 +548,7 @@ public class InstrumentResponse {
 
     // create a copy of this instrument response and set the new values
     InstrumentResponse out = new InstrumentResponse(this);
-    out.setZerosList(builtZeros);
+    out.setZerosPairs(builtZeros);
     out.setPolesList(builtPoles);
     return out;
 
@@ -859,7 +859,7 @@ public class InstrumentResponse {
     ++numStages; // offset by 1 to represent size of stored gain stages
 
     // turn pole/zero arrays into maps from pole values to # times repeated
-    setZeros(zerosArr);
+    setZerosFromComplex(zerosArr);
     setPoles(polesArr);
   }
 
@@ -1012,19 +1012,8 @@ public class InstrumentResponse {
    * @param zeroList Array of zeros to replace the current response poles with (repeated zeros
    * listed every time they appear)
    */
-  public void setZeros(Complex[] zeroList) {
+  public void setZerosFromComplex(Complex[] zeroList) {
     zeros = setComponentValues(zeroList);
-  }
-
-  /**
-   * Set the list of zeros to a new list, such as after fitting from random cal
-   *
-   * @param zeroList List of zeros to replace the current response poles with (repeated zeros listed
-   * every time they appear)
-   */
-  public void setZeros(List<Complex> zeroList) {
-    Complex[] zeroArr = zeroList.toArray(new Complex[]{});
-    setZeros(zeroArr);
   }
 
   /**
@@ -1033,7 +1022,7 @@ public class InstrumentResponse {
    * @param newZeros List of paired values; first entry is a unique zero in response, and
    * second is the number of times it appears
    */
-  private void setZerosList(List<Pair<Complex, Integer>> newZeros) {
+  private void setZerosPairs(List<Pair<Complex, Integer>> newZeros) {
     zeros = newZeros;
   }
 
