@@ -107,14 +107,14 @@ public class InstrumentResponse {
    * @throws FileNotFoundException If the file does not actually exist
    */
   public static List<Pair<Instant, Instant>> getRespFileEpochs(String filename)
-      throws IOException, FileNotFoundException {
-
-    BufferedReader br;
-    List<Pair<Instant, Instant>> epochList = new ArrayList<Pair<Instant, Instant>>();
-    br = new BufferedReader(new FileReader(filename));
-    epochList = getRespFileEpochs(br);
-    br.close();
-    return epochList;
+      throws IOException {
+    BufferedReader br = null;
+    try {
+      br = new BufferedReader(new FileReader(filename));
+      return getRespFileEpochs(br);
+    }finally {
+      if (br != null) br.close();
+    }
   }
 
   /**
@@ -125,7 +125,7 @@ public class InstrumentResponse {
    * @return List of epochs (pair of start and end instances)
    * @throws IOException If there is a failure to read the resp file
    */
-  public static List<Pair<Instant, Instant>> getRespFileEpochs(BufferedReader br)
+  private static List<Pair<Instant, Instant>> getRespFileEpochs(BufferedReader br)
       throws IOException {
     List<Pair<Instant, Instant>> epochList = new ArrayList<Pair<Instant, Instant>>();
     String line = br.readLine();
@@ -289,7 +289,7 @@ public class InstrumentResponse {
    * @param br Handle to a buffered reader of a given RESP file
    * @param name Name of RESP file to be used internally
    */
-  public InstrumentResponse(BufferedReader br, String name) throws IOException {
+  private InstrumentResponse(BufferedReader br, String name) throws IOException {
 
     this.name = name;
 
@@ -620,7 +620,7 @@ public class InstrumentResponse {
     return out;
   }
 
-  public List<Pair<Complex, Integer>> getPolesList() {
+  private List<Pair<Complex, Integer>> getPolesList() {
     return poles;
   }
 
@@ -662,7 +662,7 @@ public class InstrumentResponse {
     return out;
   }
 
-  public List<Pair<Complex, Integer>> getZerosList() {
+  private List<Pair<Complex, Integer>> getZerosList() {
     return zeros;
   }
 
@@ -981,7 +981,7 @@ public class InstrumentResponse {
    * @param poleList Array of poles to replace the current response poles with (repeated poles
    * listed by the number of times they appear)
    */
-  public void setPoles(Complex[] poleList) {
+  private void setPoles(Complex[] poleList) {
     poles = setComponentValues(poleList);
   }
 
@@ -1012,7 +1012,7 @@ public class InstrumentResponse {
    * @param zeroList Array of zeros to replace the current response poles with (repeated zeros
    * listed every time they appear)
    */
-  public void setZerosFromComplex(Complex[] zeroList) {
+  private void setZerosFromComplex(Complex[] zeroList) {
     zeros = setComponentValues(zeroList);
   }
 
@@ -1111,7 +1111,7 @@ public class InstrumentResponse {
    * Get the start time of the epoch of this response data
    * @return Epoch expressed as an instant
    */
-  public Instant getEpochStart() {
+  private Instant getEpochStart() {
     return epochStart;
   }
 
@@ -1119,7 +1119,7 @@ public class InstrumentResponse {
    * Get the end time of the epoch of this response data
    * @return Epoch expressed as an instant (can be null)
    */
-  public Instant getEpochEnd() {
+  private Instant getEpochEnd() {
     return epochEnd;
   }
 
