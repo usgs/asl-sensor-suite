@@ -14,7 +14,7 @@ import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.junit.Test;
 
-public class StepTest {
+public class StepExperimentTest {
 
   public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
