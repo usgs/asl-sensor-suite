@@ -68,7 +68,7 @@ public class InstrumentResponse {
    */
   public static Set<String> parseInstrumentList() {
 
-    Set<String> respFilenames = new HashSet<String>();
+    Set<String> respFilenames = new HashSet<>();
     ClassLoader cl = InstrumentResponse.class.getClassLoader();
 
     // there's no elegant way to extract responses other than to
@@ -127,7 +127,7 @@ public class InstrumentResponse {
    */
   private static List<Pair<Instant, Instant>> getRespFileEpochs(BufferedReader br)
       throws IOException {
-    List<Pair<Instant, Instant>> epochList = new ArrayList<Pair<Instant, Instant>>();
+    List<Pair<Instant, Instant>> epochList = new ArrayList<>();
     String line = br.readLine();
 
     while (line != null) {
@@ -156,7 +156,7 @@ public class InstrumentResponse {
             } else {
               end = null;
             }
-            epochList.add(new Pair<Instant, Instant>(start, end));
+            epochList.add(new Pair<>(start, end));
             break;
         }
         line = br.readLine();
@@ -233,7 +233,7 @@ public class InstrumentResponse {
 
   private static List<Pair<Complex, Integer>> setComponentValues(Complex[] pzArr) {
     // first, sort matching P/Z values into bins, count up the number of each
-    Map<Complex, Integer> values = new HashMap<Complex, Integer>();
+    Map<Complex, Integer> values = new HashMap<>();
     for (Complex c : pzArr) {
       if (values.keySet().contains(c)) {
         int count = values.get(c) + 1;
@@ -243,14 +243,14 @@ public class InstrumentResponse {
       }
     }
     // initialize list here
-    List<Pair<Complex, Integer>> valueList = new ArrayList<Pair<Complex, Integer>>();
+    List<Pair<Complex, Integer>> valueList = new ArrayList<>();
     // since second value in pair keeps track of item count in array, use set to prevent duplicates
     // (note that we don't want to store in a set because order matters for this data)
-    Set<Complex> inList = new HashSet<Complex>();
+    Set<Complex> inList = new HashSet<>();
     // iterate from the array; it should have the values in the correct order
     for (Complex c : pzArr) {
       if (!inList.contains(c)) {
-        Pair<Complex, Integer> toAdd = new Pair<Complex, Integer>(c, values.get(c));
+        Pair<Complex, Integer> toAdd = new Pair<>(c, values.get(c));
         valueList.add(toAdd);
         inList.add(c);
       }
@@ -307,13 +307,13 @@ public class InstrumentResponse {
     gain = responseIn.getGain();
     numStages = responseIn.getNumStages();
 
-    zeros = new ArrayList<Pair<Complex, Integer>>(responseIn.getZerosList());
-    poles = new ArrayList<Pair<Complex, Integer>>(responseIn.getPolesList());
+    zeros = new ArrayList<>(responseIn.getZerosList());
+    poles = new ArrayList<>(responseIn.getPolesList());
 
     unitType = responseIn.getUnits();
 
-    normalization = Double.valueOf(responseIn.getNormalization());
-    normalFreq = Double.valueOf(responseIn.getNormalizationFrequency());
+    normalization = responseIn.getNormalization();
+    normalFreq = responseIn.getNormalizationFrequency();
 
     name = responseIn.getName();
     epochStart = responseIn.getEpochStart();
@@ -441,20 +441,20 @@ public class InstrumentResponse {
     // List<Complex> pList = getDistinctPoles();
 
     // first covert poles and zeros back to complex values to make this easier
-    List<Complex> zerosAsComplex = new ArrayList<Complex>();
+    List<Complex> zerosAsComplex = new ArrayList<>();
     for (int i = 0; i < numZeros; i += 2) {
       Complex c = new Complex(params[i], params[i + 1]);
       zerosAsComplex.add(c);
     }
 
-    List<Complex> polesAsComplex = new ArrayList<Complex>();
+    List<Complex> polesAsComplex = new ArrayList<>();
     for (int i = numZeros; i < params.length; i += 2) {
       Complex c = new Complex(params[i], params[i + 1]);
       polesAsComplex.add(c);
     }
 
     // fit the zeros
-    List<Pair<Complex, Integer>> builtZeros = new ArrayList<Pair<Complex, Integer>>();
+    List<Pair<Complex, Integer>> builtZeros = new ArrayList<>();
 
     // first, add the literally zero values; these are never fit
     // (NOTE: we expect count to never be more than 2)
@@ -493,11 +493,11 @@ public class InstrumentResponse {
       // get the number of times the original value appeared
       int count = zeros.get(i + offset).getSecond();
       Complex zero = zerosAsComplex.get(i);
-      builtZeros.add(new Pair<Complex, Integer>(zero, count));
+      builtZeros.add(new Pair<>(zero, count));
 
       // add conjugate if it has one
       if (zero.getImaginary() != 0.) {
-        builtZeros.add(new Pair<Complex, Integer>(zero.conjugate(), count));
+        builtZeros.add(new Pair<>(zero.conjugate(), count));
         ++offset; // skipping over the original conjugate pair
       }
     }
@@ -508,13 +508,12 @@ public class InstrumentResponse {
     }
 
     // now do the same thing as the zeros but for the poles
-    List<Pair<Complex, Integer>> builtPoles = new ArrayList<Pair<Complex, Integer>>();
+    List<Pair<Complex, Integer>> builtPoles = new ArrayList<>();
 
     // low frequency poles not being fit added first (keeps list sorted)
     if (!lowFreq) {
       // first add low-frequency poles not getting fit by high-freq cal
-      for (int i = 0; i < poles.size(); ++i) {
-        Pair<Complex, Integer> valueAndCount = poles.get(i);
+      for (Pair<Complex, Integer> valueAndCount : poles) {
         Complex pole = valueAndCount.getFirst();
         if (pole.abs() / NumericUtils.TAU > 1.) {
           break;
@@ -532,11 +531,11 @@ public class InstrumentResponse {
     for (int i = 0; i < polesAsComplex.size(); ++i) {
       int count = poles.get(i + offset).getSecond();
       Complex pole = polesAsComplex.get(i);
-      builtPoles.add(new Pair<Complex, Integer>(pole, count));
+      builtPoles.add(new Pair<>(pole, count));
 
       // add conjugate if it has one
       if (pole.getImaginary() != 0.) {
-        builtPoles.add(new Pair<Complex, Integer>(pole.conjugate(), count));
+        builtPoles.add(new Pair<>(pole.conjugate(), count));
         ++offset;
       }
     }
@@ -608,7 +607,7 @@ public class InstrumentResponse {
    * @return List of complex numbers; index y is the yth pole in response list
    */
   public List<Complex> getPoles() {
-    List<Complex> out = new ArrayList<Complex>();
+    List<Complex> out = new ArrayList<>();
     for (Pair<Complex, Integer> valueAndCount : poles) {
       Complex value = valueAndCount.getFirst();
       Integer count = valueAndCount.getSecond();
@@ -650,7 +649,7 @@ public class InstrumentResponse {
    * @return List of complex numbers; index y is the yth zero in response list
    */
   public List<Complex> getZeros() {
-    List<Complex> out = new ArrayList<Complex>();
+    List<Complex> out = new ArrayList<>();
     for (Pair<Complex, Integer> valueAndCount : zeros) {
       Complex value = valueAndCount.getFirst();
       Integer count = valueAndCount.getSecond();
@@ -918,7 +917,7 @@ public class InstrumentResponse {
 
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
-    List<Double> componentList = new ArrayList<Double>();
+    List<Double> componentList = new ArrayList<>();
 
     // starting index for poles, shift up one if lowest-freq pole is TOO low
     int start = 0;
@@ -1075,12 +1074,16 @@ public class InstrumentResponse {
     sb.append('\n');
 
     sb.append("Response input units: ");
-    if (unitType == Unit.DISPLACEMENT) {
-      sb.append("displacement (m)");
-    } else if (unitType == Unit.VELOCITY) {
-      sb.append("velocity (m/s)");
-    } else if (unitType == Unit.ACCELERATION) {
-      sb.append("acceleration (m/s^2)");
+    switch (unitType) {
+      case DISPLACEMENT:
+        sb.append("displacement (m)");
+        break;
+      case VELOCITY:
+        sb.append("velocity (m/s)");
+        break;
+      case ACCELERATION:
+        sb.append("acceleration (m/s^2)");
+        break;
     }
     sb.append('\n');
 
@@ -1142,7 +1145,7 @@ public class InstrumentResponse {
 
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
-    List<Double> componentList = new ArrayList<Double>();
+    List<Double> componentList = new ArrayList<>();
 
     for (int i = 0; i < zeros.size(); ++i) {
 
