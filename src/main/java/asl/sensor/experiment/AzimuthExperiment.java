@@ -640,7 +640,6 @@ public class AzimuthExperiment extends Experiment {
     double[][] jacobianArray = new double[][]{{change}};
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
     return new Pair<>(valueVec, jacobian);
-
   }
 
   /**
