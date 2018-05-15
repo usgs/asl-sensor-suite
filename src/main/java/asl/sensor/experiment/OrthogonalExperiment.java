@@ -17,7 +17,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  * using the (full, damped-windowed) azimuth calculation as an intermediate step.
  * (See AzimuthExperiment for details on how the best-fit angles are found)
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class OrthogonalExperiment extends Experiment {
 
@@ -26,11 +26,11 @@ public class OrthogonalExperiment extends Experiment {
    *
    * @param refX reference signal along the x-axis
    * @param refY reference signal along the y-axis
-   * @param point angle (radians) to get as rotated signal
+   * @param angle angle (radians) to get as rotated signal
    * @return signal rotated in the direction of the given angle
    */
-  static RealVector rotateSignal(RealVector refX, RealVector refY, double point) {
-    double theta = point % NumericUtils.TAU;
+  static RealVector rotateSignal(RealVector refX, RealVector refY, double angle) {
+    double theta = angle % NumericUtils.TAU;
 
     if (theta < 0) {
       theta += NumericUtils.TAU;
