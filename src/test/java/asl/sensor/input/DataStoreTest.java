@@ -68,7 +68,7 @@ public class DataStoreTest {
   }
 
   @Test
-  public void commonTimeTrimMatchesLength() {
+  public void trimToCommonTime_commonTimeTrimMatchesLength() {
     String channel = "BH0";
     String location = "00";
     String station = "TST5";
@@ -180,6 +180,16 @@ public class DataStoreTest {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     DataStore dataStore = DataStoreUtils.createFromNames(respName, null, null);
     assertFalse(dataStore.bothComponentsSet(0));
+  }
+
+  @Test
+  public void removeData_removesSpecificIndex() {
+    fail();
+  }
+
+  @Test
+  public void removeBlock_removesSpecificIndex() {
+    fail();
   }
 
 }
