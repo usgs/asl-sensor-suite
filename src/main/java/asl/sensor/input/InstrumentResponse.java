@@ -675,7 +675,7 @@ public class InstrumentResponse {
    * @param epoch starting Instant of epoch that is needed
    * @throws IOException if the reader cannot read the given file
    */
-  void parserDriver(BufferedReader reader, Instant epoch) throws IOException {
+  private void parserDriver(BufferedReader reader, Instant epoch) throws IOException {
     // read in lines until the epoch is found
     if (epoch != null) {
       skipToSelectedEpoch(reader, epoch);
