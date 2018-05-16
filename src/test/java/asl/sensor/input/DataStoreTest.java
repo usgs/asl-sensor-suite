@@ -21,11 +21,6 @@ public class DataStoreTest {
 
   private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  private final String station = "TST5";
-  private final String location = "00";
-  private final String channel = "BH0";
-  private final String fileID = station + "_" + location + "_" + channel + ".512.seed";
-
   @Test
   public void trim_BCIPData_timeAndLengthMatch_firstValuesMatch() {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
@@ -74,6 +69,10 @@ public class DataStoreTest {
 
   @Test
   public void commonTimeTrimMatchesLength() {
+    String channel = "BH0";
+    String location = "00";
+    String station = "TST5";
+    String fileID = station + "_" + location + "_" + channel + ".512.seed";
     String filename = folder + "blocktrim/" + fileID;
     DataStore ds = new DataStore();
     DataBlock db;
