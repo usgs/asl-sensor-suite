@@ -123,18 +123,15 @@ public class InstrumentResponse {
     String line = br.readLine();
 
     while (line != null) {
-
       if (line.length() == 0) {
         // empty line? need to skip it
         line = br.readLine();
         continue;
       }
 
-      if (line.charAt(0) == '#') {
-        // comment -- skip
-        line = br.readLine();
-      } else {
-        // the components of each line, assuming split by 2 or more spaces
+      if (line.charAt(0) != '#') {
+        // not a comment - don't skip
+        // words array is the components of each line, assuming split by 2 or more spaces
         String[] words = line.split("\\s\\s+");
         String hexIdentifier = words[0];
         switch (hexIdentifier) {
@@ -151,8 +148,8 @@ public class InstrumentResponse {
             epochList.add(new Pair<>(start, end));
             break;
         }
-        line = br.readLine();
       }
+      line = br.readLine();
 
     }
 
@@ -683,6 +680,7 @@ public class InstrumentResponse {
     if (epoch != null) {
       skipToSelectedEpoch(reader, epoch);
       epochStart = epoch;
+      System.out.println(epoch);
     }
 
     numStages = 0;
