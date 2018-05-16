@@ -207,7 +207,12 @@ public class InstrumentResponseTest {
   }
 
   @Test
-  public void parseTermAsComplex_basicTest() {
+  public void parseTermAsComplex_checkThatComplexArrayWasOrderedCorrectly() {
+    fail();
+  }
+
+  @Test
+  public void parseTermAsComplex_checkThatComplexParsedCorrectly() {
     fail();
   }
 
