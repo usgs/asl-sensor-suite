@@ -90,7 +90,7 @@ public class NumericUtils {
    * value, and then by their imaginary value.
    */
   public static void complexRealsFirstSorter(List<Complex> complexes) {
-    Collections.sort(complexes, CpxRealComparator.instance);
+    complexes.sort(CpxRealComparator.instance);
   }
 
   /**

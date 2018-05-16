@@ -195,11 +195,10 @@ public class FFTResult {
    */
   public static XYSeries getHighNoiseModel(boolean freqSpace) {
     XYSeries xys = new XYSeries("NHNM");
-    try {
-      ClassLoader cl = FFTResult.class.getClassLoader();
-      InputStream is = cl.getResourceAsStream("NHNM.txt");
+    ClassLoader cl = FFTResult.class.getClassLoader();
+    InputStream is = cl.getResourceAsStream("NHNM.txt");
 
-      BufferedReader fr = new BufferedReader(new InputStreamReader(is));
+    try (BufferedReader fr = new BufferedReader(new InputStreamReader(is))) {
       String str = fr.readLine();
       while (str != null) {
         String[] values = str.split("\\s+");
@@ -214,8 +213,6 @@ public class FFTResult {
         str = fr.readLine();
       }
       fr.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
     }
