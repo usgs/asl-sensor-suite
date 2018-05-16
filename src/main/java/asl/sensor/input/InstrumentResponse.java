@@ -68,7 +68,7 @@ public class InstrumentResponse {
    */
   public static Set<String> parseInstrumentList() {
 
-    Set<String> respFilenames = new HashSet<String>();
+    Set<String> respFilenames = new HashSet<>();
     ClassLoader cl = InstrumentResponse.class.getClassLoader();
 
     // there's no elegant way to extract responses other than to
@@ -79,19 +79,15 @@ public class InstrumentResponse {
     // tend not to work the same way between IDE and launching a jar
 
     InputStream respRead = cl.getResourceAsStream("responses.txt");
-    BufferedReader respBuff =
-        new BufferedReader(new InputStreamReader(respRead));
 
-    try {
-      String name;
-      name = respBuff.readLine();
+    try (BufferedReader respBuff = new BufferedReader(new InputStreamReader(respRead))) {
+      String name = respBuff.readLine();
       while (name != null) {
         respFilenames.add(name);
         name = respBuff.readLine();
       }
-      respBuff.close();
-    } catch (IOException e2) {
-      e2.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
     }
 
     return respFilenames;
@@ -107,14 +103,10 @@ public class InstrumentResponse {
    * @throws FileNotFoundException If the file does not actually exist
    */
   public static List<Pair<Instant, Instant>> getRespFileEpochs(String filename)
-      throws IOException, FileNotFoundException {
-
-    BufferedReader br;
-    List<Pair<Instant, Instant>> epochList = new ArrayList<Pair<Instant, Instant>>();
-    br = new BufferedReader(new FileReader(filename));
-    epochList = getRespFileEpochs(br);
-    br.close();
-    return epochList;
+      throws IOException {
+    try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+      return getRespFileEpochs(br);
+    }
   }
 
   /**
@@ -125,9 +117,9 @@ public class InstrumentResponse {
    * @return List of epochs (pair of start and end instances)
    * @throws IOException If there is a failure to read the resp file
    */
-  public static List<Pair<Instant, Instant>> getRespFileEpochs(BufferedReader br)
+  private static List<Pair<Instant, Instant>> getRespFileEpochs(BufferedReader br)
       throws IOException {
-    List<Pair<Instant, Instant>> epochList = new ArrayList<Pair<Instant, Instant>>();
+    List<Pair<Instant, Instant>> epochList = new ArrayList<>();
     String line = br.readLine();
 
     while (line != null) {
@@ -156,7 +148,7 @@ public class InstrumentResponse {
             } else {
               end = null;
             }
-            epochList.add(new Pair<Instant, Instant>(start, end));
+            epochList.add(new Pair<>(start, end));
             break;
         }
         line = br.readLine();
@@ -233,7 +225,7 @@ public class InstrumentResponse {
 
   private static List<Pair<Complex, Integer>> setComponentValues(Complex[] pzArr) {
     // first, sort matching P/Z values into bins, count up the number of each
-    Map<Complex, Integer> values = new HashMap<Complex, Integer>();
+    Map<Complex, Integer> values = new HashMap<>();
     for (Complex c : pzArr) {
       if (values.keySet().contains(c)) {
         int count = values.get(c) + 1;
@@ -243,14 +235,14 @@ public class InstrumentResponse {
       }
     }
     // initialize list here
-    List<Pair<Complex, Integer>> valueList = new ArrayList<Pair<Complex, Integer>>();
+    List<Pair<Complex, Integer>> valueList = new ArrayList<>();
     // since second value in pair keeps track of item count in array, use set to prevent duplicates
     // (note that we don't want to store in a set because order matters for this data)
-    Set<Complex> inList = new HashSet<Complex>();
+    Set<Complex> inList = new HashSet<>();
     // iterate from the array; it should have the values in the correct order
     for (Complex c : pzArr) {
       if (!inList.contains(c)) {
-        Pair<Complex, Integer> toAdd = new Pair<Complex, Integer>(c, values.get(c));
+        Pair<Complex, Integer> toAdd = new Pair<>(c, values.get(c));
         valueList.add(toAdd);
         inList.add(c);
       }
@@ -289,7 +281,7 @@ public class InstrumentResponse {
    * @param br Handle to a buffered reader of a given RESP file
    * @param name Name of RESP file to be used internally
    */
-  public InstrumentResponse(BufferedReader br, String name) throws IOException {
+  private InstrumentResponse(BufferedReader br, String name) throws IOException {
 
     this.name = name;
 
@@ -307,13 +299,13 @@ public class InstrumentResponse {
     gain = responseIn.getGain();
     numStages = responseIn.getNumStages();
 
-    zeros = new ArrayList<Pair<Complex, Integer>>(responseIn.getZerosList());
-    poles = new ArrayList<Pair<Complex, Integer>>(responseIn.getPolesList());
+    zeros = new ArrayList<>(responseIn.getZerosList());
+    poles = new ArrayList<>(responseIn.getPolesList());
 
     unitType = responseIn.getUnits();
 
-    normalization = Double.valueOf(responseIn.getNormalization());
-    normalFreq = Double.valueOf(responseIn.getNormalizationFrequency());
+    normalization = responseIn.getNormalization();
+    normalFreq = responseIn.getNormalizationFrequency();
 
     name = responseIn.getName();
     epochStart = responseIn.getEpochStart();
@@ -441,20 +433,20 @@ public class InstrumentResponse {
     // List<Complex> pList = getDistinctPoles();
 
     // first covert poles and zeros back to complex values to make this easier
-    List<Complex> zerosAsComplex = new ArrayList<Complex>();
+    List<Complex> zerosAsComplex = new ArrayList<>();
     for (int i = 0; i < numZeros; i += 2) {
       Complex c = new Complex(params[i], params[i + 1]);
       zerosAsComplex.add(c);
     }
 
-    List<Complex> polesAsComplex = new ArrayList<Complex>();
+    List<Complex> polesAsComplex = new ArrayList<>();
     for (int i = numZeros; i < params.length; i += 2) {
       Complex c = new Complex(params[i], params[i + 1]);
       polesAsComplex.add(c);
     }
 
     // fit the zeros
-    List<Pair<Complex, Integer>> builtZeros = new ArrayList<Pair<Complex, Integer>>();
+    List<Pair<Complex, Integer>> builtZeros = new ArrayList<>();
 
     // first, add the literally zero values; these are never fit
     // (NOTE: we expect count to never be more than 2)
@@ -493,11 +485,11 @@ public class InstrumentResponse {
       // get the number of times the original value appeared
       int count = zeros.get(i + offset).getSecond();
       Complex zero = zerosAsComplex.get(i);
-      builtZeros.add(new Pair<Complex, Integer>(zero, count));
+      builtZeros.add(new Pair<>(zero, count));
 
       // add conjugate if it has one
       if (zero.getImaginary() != 0.) {
-        builtZeros.add(new Pair<Complex, Integer>(zero.conjugate(), count));
+        builtZeros.add(new Pair<>(zero.conjugate(), count));
         ++offset; // skipping over the original conjugate pair
       }
     }
@@ -508,13 +500,12 @@ public class InstrumentResponse {
     }
 
     // now do the same thing as the zeros but for the poles
-    List<Pair<Complex, Integer>> builtPoles = new ArrayList<Pair<Complex, Integer>>();
+    List<Pair<Complex, Integer>> builtPoles = new ArrayList<>();
 
     // low frequency poles not being fit added first (keeps list sorted)
     if (!lowFreq) {
       // first add low-frequency poles not getting fit by high-freq cal
-      for (int i = 0; i < poles.size(); ++i) {
-        Pair<Complex, Integer> valueAndCount = poles.get(i);
+      for (Pair<Complex, Integer> valueAndCount : poles) {
         Complex pole = valueAndCount.getFirst();
         if (pole.abs() / NumericUtils.TAU > 1.) {
           break;
@@ -532,11 +523,11 @@ public class InstrumentResponse {
     for (int i = 0; i < polesAsComplex.size(); ++i) {
       int count = poles.get(i + offset).getSecond();
       Complex pole = polesAsComplex.get(i);
-      builtPoles.add(new Pair<Complex, Integer>(pole, count));
+      builtPoles.add(new Pair<>(pole, count));
 
       // add conjugate if it has one
       if (pole.getImaginary() != 0.) {
-        builtPoles.add(new Pair<Complex, Integer>(pole.conjugate(), count));
+        builtPoles.add(new Pair<>(pole.conjugate(), count));
         ++offset;
       }
     }
@@ -608,7 +599,7 @@ public class InstrumentResponse {
    * @return List of complex numbers; index y is the yth pole in response list
    */
   public List<Complex> getPoles() {
-    List<Complex> out = new ArrayList<Complex>();
+    List<Complex> out = new ArrayList<>();
     for (Pair<Complex, Integer> valueAndCount : poles) {
       Complex value = valueAndCount.getFirst();
       Integer count = valueAndCount.getSecond();
@@ -620,7 +611,7 @@ public class InstrumentResponse {
     return out;
   }
 
-  public List<Pair<Complex, Integer>> getPolesList() {
+  private List<Pair<Complex, Integer>> getPolesList() {
     return poles;
   }
 
@@ -650,7 +641,7 @@ public class InstrumentResponse {
    * @return List of complex numbers; index y is the yth zero in response list
    */
   public List<Complex> getZeros() {
-    List<Complex> out = new ArrayList<Complex>();
+    List<Complex> out = new ArrayList<>();
     for (Pair<Complex, Integer> valueAndCount : zeros) {
       Complex value = valueAndCount.getFirst();
       Integer count = valueAndCount.getSecond();
@@ -662,7 +653,7 @@ public class InstrumentResponse {
     return out;
   }
 
-  public List<Pair<Complex, Integer>> getZerosList() {
+  private List<Pair<Complex, Integer>> getZerosList() {
     return zeros;
   }
 
@@ -683,40 +674,15 @@ public class InstrumentResponse {
    * Read in each line of a response and parse and store relevant lines
    * according to the hex value at the start of the line
    *
-   * @param br reader of a given file to be parse
+   * @param reader reader of a given file to be parse
+   * @param epoch starting Instant of epoch that is needed
    * @throws IOException if the reader cannot read the given file
    */
-  private void parserDriver(BufferedReader br, Instant epoch) throws IOException {
-
-    String line = br.readLine();
-
+  void parserDriver(BufferedReader reader, Instant epoch) throws IOException {
     // read in lines until the epoch is found
     if (epoch != null) {
-      boolean epochFound = false;
-      while (!epochFound) {
-        if (line.length() == 0) {
-          // empty line? need to skip it
-          line = br.readLine();
-          continue;
-        }
-
-        if (line.charAt(0) != '#') {
-          // the components of each line, assuming split by 2 or more spaces
-          String[] words = line.split("\\s\\s+");
-          String hexIdentifier = words[0];
-
-          switch (hexIdentifier) {
-            case "B052F22":
-              Instant start = parseTermAsDate(line);
-              if (start.equals(epoch)) {
-                epochStart = start;
-                epochFound = true;
-                break;
-              }
-          }
-        } // end of if statement
-        line = br.readLine();
-      }
+      skipToSelectedEpoch(reader, epoch);
+      epochStart = epoch;
     }
 
     numStages = 0;
@@ -730,15 +696,11 @@ public class InstrumentResponse {
     Complex[] polesArr = null;
     Complex[] zerosArr = null;
 
+    String line = reader.readLine();
+
+    epochLoop:
     while (line != null) {
-
-      if (line.length() == 0) {
-        // empty line? need to skip it
-        line = br.readLine();
-        continue;
-      }
-
-      if (line.charAt(0) != '#') {
+      if (line.length() != 0 && line.charAt(0) != '#') {
         // the components of each line, assuming split by 2 or more spaces
         String[] words = line.split("\\s\\s+");
         String hexIdentifier = words[0];
@@ -748,7 +710,7 @@ public class InstrumentResponse {
             if (epoch != null) {
               // we already read to the desired epoch, so we can just return here
               // otherwise, go for the last epoch and reset out the data from prev. epochs
-              break;
+              break epochLoop;
             }
             epochStart = parseTermAsDate(line);
             numStages = 0;
@@ -768,36 +730,13 @@ public class InstrumentResponse {
           case "B053F03":
             // transfer function type specified
             // first character of third component of words
-            switch (words[2].charAt(0)) {
-              case 'A':
-                transferType = TransferFunction.LAPLACIAN;
-                break;
-              case 'B':
-                transferType = TransferFunction.LINEAR;
-                break;
-              default:
-                // defaulting to LAPLACIAN if type is different from a or b
-                // which is likely to be more correct
-                transferType = TransferFunction.LAPLACIAN;
-            }
+            transferType = parseTransferType(words[2]);
             break;
           case "B053F05":
             // parse the units of the transfer function (usually velocity)
             // first *word* of the third component of words
             String[] unitString = words[2].split("\\s");
-            String unit = unitString[0];
-            switch (unit.toLowerCase()) {
-              case "m/s":
-                unitType = Unit.VELOCITY;
-                break;
-              case "m/s**2":
-                unitType = Unit.ACCELERATION;
-                break;
-              default:
-                String e = "Unit type was given as " + unit + ".\n";
-                e += "Nonstandard unit, or not a velocity or acceleration";
-                throw new IOException(e);
-            }
+            unitType = parseUnitType(unitString[0]);
             break;
           case "B053F07":
             // this is the normalization factor A0
@@ -847,12 +786,9 @@ public class InstrumentResponse {
             gainStage = -1;
             break;
         }
-
-      } // end if line not comment
-
-      line = br.readLine(); // whether or not comment, get the next line
-
-    } // end of file-read loop (EOF reached, line is null)
+      }
+      line = reader.readLine();
+    }
 
     // turn map of gain stages into list
     gain = gains;
@@ -861,6 +797,52 @@ public class InstrumentResponse {
     // turn pole/zero arrays into maps from pole values to # times repeated
     setZerosFromComplex(zerosArr);
     setPoles(polesArr);
+  }
+
+  /**
+   * Skip to the desired epoch start Instant.
+   * If it does not exist, the parser will throw an exception later.
+   * @param reader the shared BufferedReader with RESP file
+   * @param epoch the desired epoch's start Instant.
+   * @throws IOException on file read errors.
+   */
+  static void skipToSelectedEpoch(BufferedReader reader, Instant epoch) throws IOException {
+    String line = reader.readLine();
+    while (line != null) {
+      if (line.startsWith("B052F22")) {
+        Instant start = parseTermAsDate(line);
+        if (epoch.equals(start)) {
+          break;
+        }
+      }
+      line = reader.readLine();
+    }
+  }
+
+  static TransferFunction parseTransferType(String word) {
+    switch (word.charAt(0)) {
+      case 'A':
+        return TransferFunction.LAPLACIAN;
+      case 'B':
+        return TransferFunction.LINEAR;
+      default:
+        // defaulting to LAPLACIAN if type is different from a or b
+        // which is likely to be more correct
+        return TransferFunction.LAPLACIAN;
+    }
+  }
+
+  static Unit parseUnitType(String unit) throws IOException {
+    switch (unit.toLowerCase()) {
+      case "m/s":
+        return Unit.VELOCITY;
+      case "m/s**2":
+        return Unit.ACCELERATION;
+      default:
+        String e = "Unit type was given as " + unit + ".\n";
+        e += "Nonstandard unit, or not a velocity or acceleration";
+        throw new IOException(e);
+    }
   }
 
   /**
@@ -886,15 +868,9 @@ public class InstrumentResponse {
     // there is one exception, the actual pole/zero fields, which have 5
     // components after the hex identifier
 
-    BufferedReader br;
-    try {
-      br = new BufferedReader(new FileReader(filename));
+    try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
       parserDriver(br, epoch);
-      br.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
     }
-
   }
 
   /**
@@ -918,7 +894,7 @@ public class InstrumentResponse {
 
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
-    List<Double> componentList = new ArrayList<Double>();
+    List<Double> componentList = new ArrayList<>();
 
     // starting index for poles, shift up one if lowest-freq pole is TOO low
     int start = 0;
@@ -981,7 +957,7 @@ public class InstrumentResponse {
    * @param poleList Array of poles to replace the current response poles with (repeated poles
    * listed by the number of times they appear)
    */
-  public void setPoles(Complex[] poleList) {
+  private void setPoles(Complex[] poleList) {
     poles = setComponentValues(poleList);
   }
 
@@ -1012,7 +988,7 @@ public class InstrumentResponse {
    * @param zeroList Array of zeros to replace the current response poles with (repeated zeros
    * listed every time they appear)
    */
-  public void setZerosFromComplex(Complex[] zeroList) {
+  private void setZerosFromComplex(Complex[] zeroList) {
     zeros = setComponentValues(zeroList);
   }
 
@@ -1075,12 +1051,16 @@ public class InstrumentResponse {
     sb.append('\n');
 
     sb.append("Response input units: ");
-    if (unitType == Unit.DISPLACEMENT) {
-      sb.append("displacement (m)");
-    } else if (unitType == Unit.VELOCITY) {
-      sb.append("velocity (m/s)");
-    } else if (unitType == Unit.ACCELERATION) {
-      sb.append("acceleration (m/s^2)");
+    switch (unitType) {
+      case DISPLACEMENT:
+        sb.append("displacement (m)");
+        break;
+      case VELOCITY:
+        sb.append("velocity (m/s)");
+        break;
+      case ACCELERATION:
+        sb.append("acceleration (m/s^2)");
+        break;
     }
     sb.append('\n');
 
@@ -1111,7 +1091,7 @@ public class InstrumentResponse {
    * Get the start time of the epoch of this response data
    * @return Epoch expressed as an instant
    */
-  public Instant getEpochStart() {
+  Instant getEpochStart() {
     return epochStart;
   }
 
@@ -1119,7 +1099,7 @@ public class InstrumentResponse {
    * Get the end time of the epoch of this response data
    * @return Epoch expressed as an instant (can be null)
    */
-  public Instant getEpochEnd() {
+  Instant getEpochEnd() {
     return epochEnd;
   }
 
@@ -1142,7 +1122,7 @@ public class InstrumentResponse {
 
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
-    List<Double> componentList = new ArrayList<Double>();
+    List<Double> componentList = new ArrayList<>();
 
     for (int i = 0; i < zeros.size(); ++i) {
 

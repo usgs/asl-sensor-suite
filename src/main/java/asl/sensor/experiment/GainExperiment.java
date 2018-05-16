@@ -164,7 +164,6 @@ public class GainExperiment extends Experiment {
         FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.min(lowerBound, upperBound));
     int highIndex =
         FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.max(lowerBound, upperBound));
-
     return getStatsFromIndices(refIndex, lowIndex, highIndex);
   }
 
