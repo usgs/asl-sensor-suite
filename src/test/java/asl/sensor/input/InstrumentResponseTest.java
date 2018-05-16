@@ -1,7 +1,10 @@
 package asl.sensor.input;
 
+import static junit.framework.TestCase.assertNotNull;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -11,6 +14,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,6 +24,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
@@ -284,6 +291,131 @@ public class InstrumentResponseTest {
     assertEquals("B052F23     End date:    2012,001,00:00:00.0000", reader.readLine());
   }
 
+  /**
+   * Verify that responses.txt parses without error.
+   * Verify that each file in responses.txt can be loaded.
+   */
+  @Test
+  public void parseInstrumentList() throws IOException{
+    Set<String> respFiles = InstrumentResponse.parseInstrumentList();
+    assertEquals(12, respFiles.size());
+    for (String respFile: respFiles) {
+      InstrumentResponse response = InstrumentResponse.loadEmbeddedResponse(respFile);
+      assertNotNull(response);
+    }
+  }
 
+  /**
+   * This test tests that each field was parsed correctly and the correct epoch was parsed.
+   */
+  @Test
+  public void parserDriver_notNullEpochParsesCorrectEpoch_firstEpoch() throws Exception {
+    LocalDate date = LocalDate.parse("2006-01-01");
+    Instant epochStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+    URL file = InstrumentResponseTest.class.getResource("/seismic-test-data/RESPs/RESP_with_empty_lines");
+
+    InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString(), epochStart);
+
+
+    assertEquals(epochStart, response.getEpochStart());
+
+    LocalDate endDate = LocalDate.parse("2012-01-01");
+    Instant epochEnd = endDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+    assertEquals(epochEnd, response.getEpochEnd());
+
+    assertEquals(TransferFunction.LAPLACIAN, response.getTransferFunction());
+    assertEquals(Unit.VELOCITY, response.getUnits());
+    assertEquals(3.948580E3, response.getNormalization(), 1E-6);
+    assertEquals(2E-2, response.getNormalizationFrequency(), 1E-6);
+    assertEquals(3, response.getNumStages());
+
+    double[] gain = {4.026530e+09, 2.400000e+03, 1.677721e+06, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    assertArrayEquals(gain, response.getGain(), 1E-6);
+
+    List<Complex> zeros = new ArrayList<>();
+    zeros.add(new Complex(0.000000e+00, 0));
+    zeros.add(new Complex(0.000000e+00, 0));
+    assertEquals(zeros, response.getZeros());
+
+    List<Complex> poles = new ArrayList<>();
+    poles.add(new Complex(-11.234000e-02, 15.234000e-02));
+    poles.add(new Complex(-11.234000e-02, -12.234000e-02));
+    poles.add(new Complex(-31.918000e+01, 5.912000e+01));
+    poles.add(new Complex(-31.918000e+01, -5.912000e+01));
+    assertEquals(poles, response.getPoles());
+
+  }
+
+  /**
+   * This test tests that each field was parsed correctly and the correct epoch was parsed.
+   */
+  @Test
+  public void parserDriver_notNullEpochParsesCorrectEpoch_lastEpoch() throws Exception{
+    LocalDate date = LocalDate.parse("2012-01-01");
+    Instant epochStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+    URL file = InstrumentResponseTest.class.getResource("/seismic-test-data/RESPs/RESP_with_empty_lines");
+
+    InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString(), epochStart);
+
+
+    assertEquals(epochStart, response.getEpochStart());
+
+    assertNull(response.getEpochEnd());
+
+    assertEquals(TransferFunction.LINEAR, response.getTransferFunction());
+    assertEquals(Unit.ACCELERATION, response.getUnits());
+    assertEquals(2.948580E3, response.getNormalization(), 1E-6);
+    assertEquals(1E-2, response.getNormalizationFrequency(), 1E-6);
+    assertEquals(6, response.getNumStages());
+
+    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09, 1.0, 1.0, 1.0, 1.0};
+    assertArrayEquals(gain, response.getGain(), 1E-6);
+
+    List<Complex> zeros = new ArrayList<>();
+    zeros.add(new Complex(3.000000e+00, 0));
+    assertEquals(zeros, response.getZeros());
+
+    List<Complex> poles = new ArrayList<>();
+    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
+    poles.add(new Complex(-2.234000e-02, -1.234000e-02));
+    poles.add(new Complex(-1.918000e+01, 4.912000e+01));
+    assertEquals(poles, response.getPoles());
+  }
+
+  /**
+   * This test tests that each field was parsed correctly and the correct epoch was parsed.
+   */
+  @Test
+  public void parserDriver_nullEpochParsesLastEpoch() throws Exception{
+    LocalDate date = LocalDate.parse("2012-01-01");
+    Instant epochStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+    URL file = InstrumentResponseTest.class.getResource("/seismic-test-data/RESPs/RESP_with_empty_lines");
+
+    InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString());
+
+
+    assertEquals(epochStart, response.getEpochStart());
+
+    assertNull(response.getEpochEnd());
+
+    assertEquals(TransferFunction.LINEAR, response.getTransferFunction());
+    assertEquals(Unit.ACCELERATION, response.getUnits());
+    assertEquals(2.948580E3, response.getNormalization(), 1E-6);
+    assertEquals(1E-2, response.getNormalizationFrequency(), 1E-6);
+    assertEquals(6, response.getNumStages());
+
+    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09, 1.0, 1.0, 1.0, 1.0};
+    assertArrayEquals(gain, response.getGain(), 1E-6);
+
+    List<Complex> zeros = new ArrayList<>();
+    zeros.add(new Complex(3.000000e+00, 0));
+    assertEquals(zeros, response.getZeros());
+
+    List<Complex> poles = new ArrayList<>();
+    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
+    poles.add(new Complex(-2.234000e-02, -1.234000e-02));
+    poles.add(new Complex(-1.918000e+01, 4.912000e+01));
+    assertEquals(poles, response.getPoles());
+  }
 
 }

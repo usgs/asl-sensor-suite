@@ -79,19 +79,15 @@ public class InstrumentResponse {
     // tend not to work the same way between IDE and launching a jar
 
     InputStream respRead = cl.getResourceAsStream("responses.txt");
-    BufferedReader respBuff =
-        new BufferedReader(new InputStreamReader(respRead));
 
-    try {
-      String name;
-      name = respBuff.readLine();
+    try (BufferedReader respBuff = new BufferedReader(new InputStreamReader(respRead))) {
+      String name = respBuff.readLine();
       while (name != null) {
         respFilenames.add(name);
         name = respBuff.readLine();
       }
-      respBuff.close();
-    } catch (IOException e2) {
-      e2.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
     }
 
     return respFilenames;
@@ -108,12 +104,8 @@ public class InstrumentResponse {
    */
   public static List<Pair<Instant, Instant>> getRespFileEpochs(String filename)
       throws IOException {
-    BufferedReader br = null;
-    try {
-      br = new BufferedReader(new FileReader(filename));
+    try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
       return getRespFileEpochs(br);
-    }finally {
-      if (br != null) br.close();
     }
   }
 
@@ -686,14 +678,12 @@ public class InstrumentResponse {
    * @param epoch starting Instant of epoch that is needed
    * @throws IOException if the reader cannot read the given file
    */
-  private void parserDriver(BufferedReader reader, Instant epoch) throws IOException {
+  void parserDriver(BufferedReader reader, Instant epoch) throws IOException {
     // read in lines until the epoch is found
     if (epoch != null) {
       skipToSelectedEpoch(reader, epoch);
       epochStart = epoch;
     }
-
-    String line = reader.readLine();
 
     numStages = 0;
     double[] gains = new double[MAX_GAIN_STAGES];
@@ -706,15 +696,11 @@ public class InstrumentResponse {
     Complex[] polesArr = null;
     Complex[] zerosArr = null;
 
+    String line = reader.readLine();
+
+    epochLoop:
     while (line != null) {
-
-      if (line.length() == 0) {
-        // empty line? need to skip it
-        line = reader.readLine();
-        continue;
-      }
-
-      if (line.charAt(0) != '#') {
+      if (line.length() != 0 && line.charAt(0) != '#') {
         // the components of each line, assuming split by 2 or more spaces
         String[] words = line.split("\\s\\s+");
         String hexIdentifier = words[0];
@@ -724,7 +710,7 @@ public class InstrumentResponse {
             if (epoch != null) {
               // we already read to the desired epoch, so we can just return here
               // otherwise, go for the last epoch and reset out the data from prev. epochs
-              break;
+              break epochLoop;
             }
             epochStart = parseTermAsDate(line);
             numStages = 0;
@@ -800,12 +786,9 @@ public class InstrumentResponse {
             gainStage = -1;
             break;
         }
-
-      } // end if line not comment
-
-      line = reader.readLine(); // whether or not comment, get the next line
-
-    } // end of file-read loop (EOF reached, line is null)
+      }
+      line = reader.readLine();
+    }
 
     // turn map of gain stages into list
     gain = gains;
@@ -885,15 +868,9 @@ public class InstrumentResponse {
     // there is one exception, the actual pole/zero fields, which have 5
     // components after the hex identifier
 
-    BufferedReader br;
-    try {
-      br = new BufferedReader(new FileReader(filename));
+    try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
       parserDriver(br, epoch);
-      br.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
     }
-
   }
 
   /**
@@ -1114,7 +1091,7 @@ public class InstrumentResponse {
    * Get the start time of the epoch of this response data
    * @return Epoch expressed as an instant
    */
-  private Instant getEpochStart() {
+  Instant getEpochStart() {
     return epochStart;
   }
 
@@ -1122,7 +1099,7 @@ public class InstrumentResponse {
    * Get the end time of the epoch of this response data
    * @return Epoch expressed as an instant (can be null)
    */
-  private Instant getEpochEnd() {
+  Instant getEpochEnd() {
     return epochEnd;
   }
 
