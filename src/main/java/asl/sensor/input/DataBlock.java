@@ -73,7 +73,7 @@ public class DataBlock {
     endTime = in.getInitialEndTime();
     trimmedEnd = in.getEndTime();
 
-    cachedTimeSeries = in.getData();
+    cachedTimeSeries = in.getData().clone();
     //Set to false, as it was just rebuilt in getData()
     rebuildList = false;
 
