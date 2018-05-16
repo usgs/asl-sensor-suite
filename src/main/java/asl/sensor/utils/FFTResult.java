@@ -5,9 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
@@ -62,36 +60,6 @@ public class FFTResult {
     }
 
     return filtered;
-
-  }
-
-  /**
-   * Wrapper to do band filter on a list of data rather than an array.
-   * For more details see other definition of bandFilter
-   *
-   * @param toFilt timeseries data to be filtered
-   * @param sps samples per second of input data
-   * @param low low corner frequency for trim
-   * @param high higher corner frequency for trim
-   * @return timeseries data (list) that has gone through band-pass filter
-   */
-  public static List<Number>
-  bandFilter(List<Number> toFilt, double sps, double low, double high) {
-
-    double[] toFFT = new double[toFilt.size()];
-
-    for (int i = 0; i < toFFT.length; ++i) {
-      toFFT[i] = toFilt.get(i).doubleValue();
-    }
-
-    toFFT = bandFilter(toFFT, sps, low, high);
-
-    List<Number> out = new ArrayList<Number>();
-    for (double value : toFFT) {
-      out.add(value);
-    }
-
-    return out;
 
   }
 
@@ -388,22 +356,6 @@ public class FFTResult {
     return frqDomn;
   }
 
-
-  /**
-   * Calculates the FFT of the timeseries data in a DataBlock
-   * and returns the positive frequencies resulting from the FFT calculation
-   *
-   * @param db DataBlock to get the timeseries data from
-   * @param mustFlip True if signal from sensor is inverted (for step cal)
-   * @return Complex array of FFT values and double array of corresponding
-   * frequencies
-   */
-  public static FFTResult singleSidedFFT(DataBlock db, boolean mustFlip) {
-
-    double[] data = db.getData().clone();
-    double sps = db.getSampleRate();
-    return singleSidedFFT(data, sps, mustFlip);
-  }
 
   /**
    * Calculates the FFT of some timeseries data (double array)
