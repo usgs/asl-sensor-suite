@@ -30,18 +30,6 @@ import org.jfree.chart.JFreeChart;
 public class ReportingUtils {
 
   /**
-   * Merge a series of buffered images and write them to a single PDF page
-   *
-   * @param pdf PDF document to append the page onto
-   * @param bis Series of buffered images to merge onto a single page
-   */
-  public static void
-  bufferedImagesToPDFPage(PDDocument pdf, BufferedImage... bis) {
-    BufferedImage toPDF = mergeBufferedImages(bis);
-    bufferedImageToPDFPage(toPDF, pdf);
-  }
-
-  /**
    * Add a buffered image to a PDDocument page
    *
    * @param bi BufferedImage to be added to PDF
@@ -196,25 +184,6 @@ public class ReportingUtils {
     g.fillRect(0, 0, out.getWidth(), out.getHeight());
     g.dispose();
     return out;
-  }
-
-  /**
-   * Writes multiple pages of charts to a PDF file, with the number of charts
-   * to display per page set according to a parameter
-   *
-   * @param perPage Number of charts to put in a page at a time
-   * @param width Width of each chart to write to file
-   * @param height Height of each chart to write to file
-   * @param pdf Document to append pages of chart plots to
-   * @param charts Charts whose plots will be written to PDF
-   */
-  public static void
-  groupChartsToPDFPages(int perPage, int width, int height,
-      PDDocument pdf, JFreeChart... charts) {
-
-    imageListToPDFPages(pdf,
-        chartsToImageList(perPage, width, height, charts));
-
   }
 
   /**

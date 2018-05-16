@@ -20,7 +20,7 @@ public enum Unit {
    */
   DISPLACEMENT(0);
 
-  int secondsExponent;
+  final int secondsExponent;
 
   Unit(int secondExponent) {
     this.secondsExponent = secondExponent;

@@ -285,7 +285,6 @@ public class TimeSeriesUtils {
     String station = dh.getStationIdentifier();
     // remove all whitespace from station name
     station = station.replaceAll("\\s+", "");
-    ;
     fileID.append(dh.getNetworkCode()).append("_");
     fileID.append(station).append("_");
     fileID.append(dh.getLocationIdentifier()).append("_");
