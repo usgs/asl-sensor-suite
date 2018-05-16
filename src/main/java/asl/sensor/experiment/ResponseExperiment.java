@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -68,8 +69,9 @@ public class ResponseExperiment extends Experiment {
       }
 
       InstrumentResponse instrumentResponse = dataStore.getResponse(responseIndex);
-      String name = instrumentResponse.getName() + '[' +
-          DateTimeFormatter.ofPattern("uuuu-DDD").format(instrumentResponse.getEpochStart()) + ']';
+      String name = instrumentResponse.getName() + " [" +
+          DateTimeFormatter.ofPattern("uuuu.DDD").withZone(ZoneOffset.UTC)
+          .format(instrumentResponse.getEpochStart()) + ']';
       if (respNames.contains(name)) {
         continue;
       } else {
