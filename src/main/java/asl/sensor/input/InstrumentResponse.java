@@ -207,7 +207,7 @@ public class InstrumentResponse {
    * @param line the line the zero or pole is found on in the file
    * @param array the array of zeros and poles the term will be added to
    */
-  private static void parseTermAsComplex(String line, Complex[] array) {
+  static void parseTermAsComplex(String line, Complex[] array) {
     // reparse the line. why are we doing this? well,
     // if a number is negative, only one space between it and prev. number
     // and the previous split operation assumed > 2 spaces between numbers
@@ -1091,7 +1091,7 @@ public class InstrumentResponse {
    * Get the start time of the epoch of this response data
    * @return Epoch expressed as an instant
    */
-  Instant getEpochStart() {
+  public Instant getEpochStart() {
     return epochStart;
   }
 

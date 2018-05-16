@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -67,17 +68,16 @@ public class ResponseExperiment extends Experiment {
       }
 
       InstrumentResponse instrumentResponse = dataStore.getResponse(responseIndex);
-
-      if (respNames.contains(instrumentResponse.getName())) {
+      String name = instrumentResponse.getName() + '[' +
+          DateTimeFormatter.ofPattern("uuuu-DDD").format(instrumentResponse.getEpochStart()) + ']';
+      if (respNames.contains(name)) {
         continue;
       } else {
-        respNames.add(instrumentResponse.getName());
+        respNames.add(name);
         responses.add(instrumentResponse);
       }
 
       Complex[] result = instrumentResponse.applyResponseToInput(freqArray);
-
-      String name = instrumentResponse.getName();
 
       double phiPrev = 0; // use with unwrapping
       XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);

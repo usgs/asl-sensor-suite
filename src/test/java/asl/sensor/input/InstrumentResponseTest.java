@@ -7,14 +7,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.ReportingUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -30,6 +26,8 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
 
@@ -208,12 +206,34 @@ public class InstrumentResponseTest {
 
   @Test
   public void parseTermAsComplex_checkThatComplexArrayWasOrderedCorrectly() {
-    fail();
+    Complex[] arr = new Complex[5];
+    String[] lines = {"B053F15-18    0 -5.943130E+01  0.000000E+00  0.000000E+00  0.000000E+00",
+                      "B053F15-18    1 -2.271210E+01  2.710650E+01  0.000000E+00  0.000000E+00",
+                      "B053F15-18    2 -2.271210E+01 -2.710650E+01  0.000000E+00  0.000000E+00",
+                      "B053F15-18    3 -4.800400E-03  0.000000E+00  0.000000E+00  0.000000E+00",
+                      "B053F15-18    4 -7.394060E-02  0.000000E+00  7.594130E-04  0.000000E+00"};
+    Complex[] testAgainst = {
+        new Complex(-5.943130E1),
+        new Complex(-2.271210E1, 2.710650E1),
+        new Complex(-2.271210E1, -2.710650E1),
+        new Complex(-4.800400E-3),
+        new Complex(-7.394060E-2)
+    };
+    for (String line : lines) {
+      InstrumentResponse.parseTermAsComplex(line, arr);
+    }
+    for (int i = 0; i < testAgainst.length; ++i) {
+      assertTrue(Complex.equals(testAgainst[i], arr[i], 1E-10));
+    }
   }
 
   @Test
   public void parseTermAsComplex_checkThatComplexParsedCorrectly() {
-    fail();
+    Complex[] arr = new Complex[5];
+    String line = "B053F15-18    2 -2.271210E+01 -2.710650E+01  0.000000E+00  0.000000E+00";
+    InstrumentResponse.parseTermAsComplex(line, arr);
+    Complex c = new Complex(-2.271210E1, -2.710650E1);
+    assertTrue(Complex.equals(c, arr[2], 1E-10));
   }
 
   @Test
