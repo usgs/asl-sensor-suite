@@ -15,7 +15,6 @@ import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 /**
@@ -52,8 +51,9 @@ public class DataBlock {
 
   private static final int MAX_POINTS = 100000;
 
-  private long interval, targetInterval;
-  private String name;
+  private final long interval;
+  private long targetInterval;
+  private final String name;
   private long startTime, endTime;
   private Map<Long, double[]> dataMap;
   private long trimmedStart, trimmedEnd;
@@ -118,7 +118,7 @@ public class DataBlock {
     interval = intervalIn;
     targetInterval = intervalIn;
     startTime = start;
-    dataMap = new HashMap<Long, double[]>();
+    dataMap = new HashMap<>();
     dataMap.put(startTime, dataIn);
 
     trimmedStart = startTime;
@@ -167,7 +167,7 @@ public class DataBlock {
       return cachedTimeSeries;
     }
 
-    List<Long> times = new ArrayList<Long>(dataMap.keySet());
+    List<Long> times = new ArrayList<>(dataMap.keySet());
     Collections.sort(times);
 
     long timeCursor = trimmedStart;
@@ -270,7 +270,7 @@ public class DataBlock {
    * @return copy of this datablock's underlying contiguous block map
    */
   public Map<Long, double[]> getDataMap() {
-    return new HashMap<Long, double[]>(dataMap);
+    return new HashMap<>(dataMap);
   }
 
   /**
@@ -293,9 +293,9 @@ public class DataBlock {
    */
   public List<Pair<Long, Long>> getGapBoundaries() {
 
-    List<Pair<Long, Long>> gapList = new ArrayList<Pair<Long, Long>>();
+    List<Pair<Long, Long>> gapList = new ArrayList<>();
 
-    List<Long> times = new ArrayList<Long>(dataMap.keySet());
+    List<Long> times = new ArrayList<>(dataMap.keySet());
     Collections.sort(times);
     // contiguous blocks must have been merged for this to work correctly!
     for (int i = 0; i < times.size(); ++i) {
@@ -309,9 +309,9 @@ public class DataBlock {
         if (hasNext && times.get(i + 1) > trimmedStart) {
           // does the next data point start before our region of interest ends?
           long gapEnd = Math.min(times.get(i + 1), trimmedEnd);
-          gapList.add(new Pair<Long, Long>(trimmedStart, gapEnd));
+          gapList.add(new Pair<>(trimmedStart, gapEnd));
         } else if (!hasNext) {
-          gapList.add(new Pair<Long, Long>(trimmedStart, trimmedEnd));
+          gapList.add(new Pair<>(trimmedStart, trimmedEnd));
         }
         continue;
       }
@@ -324,7 +324,7 @@ public class DataBlock {
         // is there a discrepancy, and is it big enough to be a gap?
         if (timeNext - blockEnd > (3 * interval) / 2) {
           long gapEnd = Math.min(timeNext, trimmedEnd);
-          gapList.add(new Pair<Long, Long>(blockEnd, gapEnd));
+          gapList.add(new Pair<>(blockEnd, gapEnd));
         }
       }
     }
@@ -454,15 +454,15 @@ public class DataBlock {
   private void mergeContiguousTimes() {
 
     // for blocks that start and end at the same point
-    List<Long> startTimes = new ArrayList<Long>(dataMap.keySet());
+    List<Long> startTimes = new ArrayList<>(dataMap.keySet());
     Collections.sort(startTimes);
 
-    Map<Long, double[]> mergedMap = new HashMap<Long, double[]>();
+    Map<Long, double[]> mergedMap = new HashMap<>();
 
     int startingPoint = 0;
     int cursor;
     while (startingPoint < startTimes.size()) {
-      List<double[]> toMerge = new ArrayList<double[]>();
+      List<double[]> toMerge = new ArrayList<>();
       long currentTime = startTimes.get(startingPoint);
 
       double[] currentSeries = dataMap.get(currentTime);
@@ -596,7 +596,7 @@ public class DataBlock {
    * @param data New timeseries, a contiguous block represented by an array.
    * @param start Start time of given data (ms from epoch)
    */
-  public void setData(double[] data, long start) {
+  private void setData(double[] data, long start) {
     setData(data, start, interval);
   }
 
@@ -614,11 +614,11 @@ public class DataBlock {
    * @param start Start time of given data (ms from epoch)
    * @param interval Sampling interval of new timeseries, given in ms
    */
-  public void setData(double[] data, long start, long interval) {
+  private void setData(double[] data, long start, long interval) {
     targetInterval = interval;
     startTime = start;
     trimmedStart = start;
-    dataMap = new HashMap<Long, double[]>();
+    dataMap = new HashMap<>();
     dataMap.put(startTime, data);
     endTime = startTime + (interval * data.length);
     trimmedEnd = endTime;
@@ -733,7 +733,7 @@ public class DataBlock {
   }
 
   private void recalculateTimes() {
-    List<Long> times = new ArrayList<Long>(dataMap.keySet());
+    List<Long> times = new ArrayList<>(dataMap.keySet());
     Collections.sort(times);
     startTime = times.get(0);
     trimmedStart = startTime;
@@ -745,7 +745,7 @@ public class DataBlock {
   }
 
   public void appendTimeSeries(String filepath)
-      throws FileNotFoundException, SeedFormatException, UnsupportedCompressionType, CodecException {
+      throws FileNotFoundException, SeedFormatException, CodecException {
     Map<Long, double[]> toAppend =
         TimeSeriesUtils.getTimeSeriesMap(filepath, name).getSecond();
     dataMap.putAll(toAppend);
