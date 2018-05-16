@@ -40,7 +40,7 @@ public class NoiseNineExperimentTest {
     String respName = TestUtils.RESP_LOCATION + "STS-1_Q330HR_BH_20";
 
     DataStore ds =
-        setUpTest(testFolder, types, freqName, components, ending, respName, false);
+        setUpTest(testFolder, types, freqName, components, ending, respName);
 
     SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
 
@@ -127,7 +127,7 @@ public class NoiseNineExperimentTest {
     String respName = folder + "noisenine2/RESP.XX.MOFO.00.BHZ";
 
     DataStore ds =
-        setUpTest(testFolder, types, freqName, components, ending, respName, false);
+        setUpTest(testFolder, types, freqName, components, ending, respName);
 
     SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
 
@@ -220,7 +220,7 @@ public class NoiseNineExperimentTest {
   }
 
   private DataStore setUpTest(String folder, String[] types, String freqName,
-      String[] components, String ending, String respName, boolean isEmbed) throws Exception {
+      String[] components, String ending, String respName) throws Exception {
 
     DataStore ds = new DataStore();
 
@@ -230,11 +230,7 @@ public class NoiseNineExperimentTest {
 
         String fName = folder + types[i] + freqName + components[j] + ending;
         ds.setBlock(indexInStore, fName);
-        if (isEmbed) {
-          ds.setEmbedResponse(indexInStore, respName);
-        } else {
-          ds.setResponse(indexInStore, respName);
-        }
+        ds.setResponse(indexInStore, respName);
       }
     }
     return ds;

@@ -300,7 +300,6 @@ public class DataStore {
     }
 
     trimToCommonTime();
-
   }
 
   /**
@@ -324,9 +323,8 @@ public class DataStore {
    * data generated from them
    */
   public void removeData(int idx) {
-    dataBlockArray[idx] = null;
+    removeBlock(idx);
     responses[idx] = null;
-    thisBlockIsSet[idx] = false;
     thisResponseIsSet[idx] = false;
   }
 
@@ -462,29 +460,12 @@ public class DataStore {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
               }
-
             }
           }
         }
       }
     }
 
-  }
-
-  /**
-   * Set response of a sensor's dataseries by index, using an NRL response
-   *
-   * @param idx Index of plot for which response file matches
-   * @param embedName Name of NRL response
-   */
-  public void setEmbedResponse(int idx, String embedName) {
-    try {
-      responses[idx] = InstrumentResponse.loadEmbeddedResponse(embedName);
-      thisResponseIsSet[idx] = true;
-    } catch (IOException e) {
-      // Auto-generated catch block
-      e.printStackTrace();
-    }
   }
 
   /**
