@@ -2,15 +2,12 @@ package asl.sensor.input;
 
 import java.io.FileNotFoundException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import asl.sensor.utils.TimeSeriesUtils;
@@ -77,31 +74,9 @@ public class DataBlock {
     trimmedEnd = in.getEndTime();
 
     cachedTimeSeries = in.getData();
+    //Set to false, as it was just rebuilt in getData()
     rebuildList = false;
 
-  }
-
-  /**
-   * Creates a trimmed copy of a given DataBlock, with same metadata
-   *
-   * @param in The datablock to be copied
-   * @param start Start time to trim data to
-   * @param end End time to trim data to
-   */
-  public DataBlock(DataBlock in, long start, long end) {
-    interval = in.getInitialInterval();
-    targetInterval = in.getInterval();
-
-    startTime = in.getInitialStartTime();
-    trimmedStart = Math.max(startTime, start);
-    endTime = in.getInitialEndTime();
-    trimmedEnd = Math.min(endTime, end);
-
-    dataMap = in.getDataMap();
-    name = in.getName();
-
-    cachedTimeSeries = in.getData();
-    rebuildList = false;
   }
 
   /**
@@ -395,18 +370,6 @@ public class DataBlock {
   }
 
   /**
-   * Get start time of data series as a Java calendar object
-   *
-   * @return Calendar object representing start time (UTC time zone)
-   */
-  @Deprecated
-  public Calendar getStartCalendar() {
-    Calendar cCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    cCal.setTimeInMillis(startTime);
-    return cCal;
-  }
-
-  /**
    * Get (untrimmed) start time of the data
    *
    * @return DateTime object representing start time in UTC time zone
@@ -424,27 +387,6 @@ public class DataBlock {
    */
   public long getStartTime() {
     return trimmedStart;
-  }
-
-  /**
-   * Get the trimmed start time of the data
-   *
-   * @return Calendar object representing start time (UTC time zone)
-   */
-  @Deprecated
-  public Calendar getTrimmedStartCalendar() {
-    Calendar cCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    cCal.setTimeInMillis(trimmedStart);
-    return cCal;
-  }
-
-  /**
-   * Get trimmed start time of the data
-   *
-   * @return DateTime object representing start time in UTC time zone
-   */
-  public Instant getTrimmedStartInstant() {
-    return Instant.ofEpochMilli(trimmedStart);
   }
 
   /**
@@ -540,9 +482,7 @@ public class DataBlock {
       startingPoint = cursor;
 
     }
-
     dataMap = mergedMap;
-
   }
 
   /**
@@ -552,9 +492,7 @@ public class DataBlock {
    * @return True if initial step response is negative
    */
   public boolean needsSignFlip() {
-    double[] temp = getData();
-    return TimeSeriesUtils.needsSignFlip(temp);
-
+    return TimeSeriesUtils.needsSignFlip(getData());
   }
 
   /**
@@ -568,74 +506,6 @@ public class DataBlock {
   public void resample(long newInterval) {
     targetInterval = Math.max(interval, newInterval);
     rebuildList = rebuildList || (targetInterval != interval);
-  }
-
-  /**
-   * Change the current timeseries data with new data using the same start
-   * time and sampling interval of the original data. This can be useful if,
-   * for example, the data needs to be modified by rotation, which maintains
-   * the start time and sampling interval (and data length) while producing a
-   * new timeseries. This will replace the current timeseries map with a map
-   * with a single entry from the current (trimmed) start time to the
-   * inputted array.
-   *
-   * @param data New timeseries, a contiguous block represented by an array.
-   */
-  public void setData(double[] data) {
-    setData(data, trimmedStart);
-    // interval = targetInterval;
-  }
-
-  /**
-   * Set data as a new list. Because the array, unlike a map, does not specify
-   * a start time, this function takes in a new start time parameter used to
-   * identify the beginning time of the replacement data. The array given as
-   * input replaces the old map with a single-entry map starting at the given
-   * start time.
-   *
-   * @param data New timeseries, a contiguous block represented by an array.
-   * @param start Start time of given data (ms from epoch)
-   */
-  private void setData(double[] data, long start) {
-    setData(data, start, interval);
-  }
-
-  /**
-   * Set data as a new list. Because the array, unlike a map, does not specify
-   * a start time, this function takes in a new start time parameter used to
-   * identify the beginning time of the replacement data. The array given as
-   * input replaces the old map with a single-entry map starting at the given
-   * start time. Because the other interval modification calls only change the
-   * sampling rate of the output time series, not the internal data
-   * representation, this function also allows for specifying a new sampling
-   * rate for the replacement data.
-   *
-   * @param data New timeseries, a contiguous block represented by an array.
-   * @param start Start time of given data (ms from epoch)
-   * @param interval Sampling interval of new timeseries, given in ms
-   */
-  private void setData(double[] data, long start, long interval) {
-    targetInterval = interval;
-    startTime = start;
-    trimmedStart = start;
-    dataMap = new HashMap<>();
-    dataMap.put(startTime, data);
-    endTime = startTime + (interval * data.length);
-    trimmedEnd = endTime;
-    cachedTimeSeries = data;
-    rebuildList = false;
-  }
-
-  /**
-   * Replace the current datamap object with a different one.
-   *
-   * @param dataMap New datamap to put in this object, a map of start times
-   * to contiguous blocks of data.
-   */
-  public void setDataMap(Map<Long, double[]> dataMap) {
-    this.dataMap = dataMap;
-    mergeContiguousTimes();
-    rebuildList = true;
   }
 
   /**
@@ -680,18 +550,6 @@ public class DataBlock {
   /**
    * Adjust the window of data to collect samples from when getting the data
    *
-   * @param start Start time to trim window to, as Calendar object
-   * @param end End time to trim window to, as Calendar object
-   */
-  @Deprecated
-  public void trim(Calendar start, Calendar end) {
-    trim(start.getTimeInMillis(),
-        end.getTimeInMillis());
-  }
-
-  /**
-   * Adjust the window of data to collect samples from when getting the data
-   *
    * @param start Start time to trim window to in milliseconds from epoch
    * @param end End time to trim window to in milliseconds from epoch
    */
@@ -706,19 +564,6 @@ public class DataBlock {
     rebuildList = rebuildList ||
         (startTime != trimmedStart) || (endTime != trimmedEnd);
 
-  }
-
-  /**
-   * Adjust the window of data to collect samples from when getting the data
-   * (i.e., used to determine region of analysis for the various experiments)
-   *
-   * @param start Start time to trim window to, as DateTime object
-   * @param end End time to trim window to, as DateTime object
-   */
-  public void trim(OffsetDateTime start, OffsetDateTime end) {
-    long startMillis = start.toInstant().toEpochMilli();
-    long endMillis = end.toInstant().toEpochMilli();
-    trim(startMillis, endMillis);
   }
 
   /**
