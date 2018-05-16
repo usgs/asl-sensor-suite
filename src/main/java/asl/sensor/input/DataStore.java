@@ -46,12 +46,12 @@ public class DataStore {
    * Defines the maximum number of plots to be shown
    */
   public final static int FILE_COUNT = 9;
-  private DataBlock[] dataBlockArray;
-  private InstrumentResponse[] responses;
+  private final DataBlock[] dataBlockArray;
+  private final InstrumentResponse[] responses;
 
   // these are used to check to make sure data has been loaded
-  private boolean[] thisBlockIsSet;
-  private boolean[] thisResponseIsSet;
+  private final boolean[] thisBlockIsSet;
+  private final boolean[] thisResponseIsSet;
 
   /**
    * Instantiate the collections, including empty datasets to be sent to
@@ -141,7 +141,7 @@ public class DataStore {
    * @return Array of booleans where an entry is true if data is loaded at
    * the corresponding index
    */
-  public boolean[] dataIsSet() {
+  private boolean[] dataIsSet() {
     return thisBlockIsSet;
   }
 
@@ -157,7 +157,7 @@ public class DataStore {
 
   public Pair<Long, Long> getCommonTime() {
     if (numberOfBlocksSet() < 1) {
-      return new Pair<Long, Long>(Long.MIN_VALUE, Long.MAX_VALUE);
+      return new Pair<>(Long.MIN_VALUE, Long.MAX_VALUE);
     } else {
       long lastStartTime = Long.MIN_VALUE;
       long firstEndTime = Long.MAX_VALUE;
@@ -177,7 +177,7 @@ public class DataStore {
           firstEndTime = end;
         }
       }
-      return new Pair<Long, Long>(lastStartTime, firstEndTime);
+      return new Pair<>(lastStartTime, firstEndTime);
     }
   }
 
@@ -262,7 +262,7 @@ public class DataStore {
       }
     }
 
-    return new Pair<Long, Long>(startTime, endTime);
+    return new Pair<>(startTime, endTime);
   }
 
   /**
@@ -445,7 +445,7 @@ public class DataStore {
    * @param newSampleRate new sample rate (Hz)
    * @param limit upper bound on plots to resample
    */
-  public void resample(double newSampleRate, int limit) {
+  private void resample(double newSampleRate, int limit) {
     long newInterval = (long) (TimeSeriesUtils.ONE_HZ_INTERVAL / newSampleRate);
     // make sure all data over range gets set to the same interval (and don't upsample)
     for (int i = 0; i < limit; ++i) {
@@ -478,7 +478,7 @@ public class DataStore {
    * @return Array of booleans where an entry is true if a response is loaded
    * at the corresponding index
    */
-  public boolean[] responsesAreSet() {
+  private boolean[] responsesAreSet() {
     return thisResponseIsSet;
   }
 
@@ -501,7 +501,7 @@ public class DataStore {
    * @param filepath Full address of file to be loaded in
    */
   public void setBlock(int idx, String filepath)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      throws SeedFormatException, CodecException,
       IOException {
     setBlock(idx, filepath, FILE_COUNT);
   }
@@ -514,8 +514,8 @@ public class DataStore {
    * @param filepath Full address of file to be loaded in
    * @param activePlots Max index of active panel to check as active
    */
-  public void setBlock(int idx, String filepath, int activePlots)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+  private void setBlock(int idx, String filepath, int activePlots)
+      throws SeedFormatException, CodecException,
       IOException {
     String nameFilter = TimeSeriesUtils.getMplexNameList(filepath).get(0);
     setBlock(idx, filepath, nameFilter, activePlots);
@@ -530,7 +530,7 @@ public class DataStore {
    * @param nameFilter Station ID (SNCL) to load in from multiplexed file
    */
   public void setBlock(int idx, String filepath, String nameFilter)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      throws SeedFormatException, CodecException,
       FileNotFoundException {
     setBlock(idx, filepath, nameFilter, FILE_COUNT);
   }
@@ -545,7 +545,7 @@ public class DataStore {
    * @param activePlots Max index of active panel to check as active
    */
   public void setBlock(int idx, String filepath, String nameFilter, int activePlots)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      throws SeedFormatException, CodecException,
       FileNotFoundException {
 
     DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
@@ -676,7 +676,7 @@ public class DataStore {
    * @param start Start time to trim data to
    * @param end End time to trim data to
    */
-  public void trim(Instant start, Instant end, int limit) {
+  private void trim(Instant start, Instant end, int limit) {
     long startTime = start.toEpochMilli();
     long endTime = end.toEpochMilli();
     trim(startTime, endTime, limit);
@@ -829,7 +829,7 @@ public class DataStore {
 
 
   public void appendBlock(int idx, String filepath, String nameFilter, int activePlots)
-      throws SeedFormatException, UnsupportedCompressionType, CodecException,
+      throws SeedFormatException, CodecException,
       FileNotFoundException {
 
     if (!thisBlockIsSet[idx]) {

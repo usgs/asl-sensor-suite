@@ -19,12 +19,12 @@ import org.junit.Test;
 
 public class DataStoreTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  public String station = "TST5";
-  public String location = "00";
-  public String channel = "BH0";
-  public String fileID = station + "_" + location + "_" + channel + ".512.seed";
+  private final String station = "TST5";
+  private final String location = "00";
+  private final String channel = "BH0";
+  private final String fileID = station + "_" + location + "_" + channel + ".512.seed";
 
   @Test
   public void trim_BCIPData_timeAndLengthMatch_firstValuesMatch() {
