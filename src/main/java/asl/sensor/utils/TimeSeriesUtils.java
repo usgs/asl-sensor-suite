@@ -2,7 +2,6 @@ package asl.sensor.utils;
 
 import asl.sensor.input.DataBlock;
 import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.DecompressedData;
 import edu.sc.seis.seisFile.mseed.Blockette;
 import edu.sc.seis.seisFile.mseed.Blockette1000;
 import edu.sc.seis.seisFile.mseed.Btime;
@@ -299,15 +298,9 @@ public class TimeSeriesUtils {
    * @return number of bytes of a record (i.e., 512, 40096)
    * @throws FileNotFoundException If file does not exist
    */
-  private static int getByteSize(String filename) throws FileNotFoundException {
-
-    DataInputStream dis; // used to read in input to get b1000
-    int byteSize;
-    dis = new DataInputStream(new FileInputStream(filename));
-
-    while (true) {
-
-      try {
+  private static int getByteSize(String filename) throws IOException, SeedFormatException {
+    try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
+      while (true) {
         SeedRecord sr = SeedRecord.read(dis, 4096);
 
         Blockette[] blockettes = sr.getBlockettes();
@@ -315,13 +308,9 @@ public class TimeSeriesUtils {
         for (Blockette blockette : blockettes) {
           if (blockette.getType() == 1000) {
             Blockette1000 b1000 = (Blockette1000) blockette;
-            byteSize = b1000.getDataRecordLength(); // expect either 9 or 12
-            return byteSize;
+            return b1000.getDataRecordLength();
           }
         }
-
-      } catch (SeedFormatException | IOException e) {
-        e.printStackTrace();
       }
     }
   }
@@ -446,7 +435,7 @@ public class TimeSeriesUtils {
    * @throws FileNotFoundException If file cannot be read in
    */
   public static DataBlock getTimeSeries(String filename, String filter)
-      throws FileNotFoundException, SeedFormatException, CodecException {
+      throws IOException, SeedFormatException, CodecException {
     Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
         getTimeSeriesMap(filename, filter);
     return mapToTimeSeries(intervalSeriesMapPair, filter);
@@ -470,7 +459,7 @@ public class TimeSeriesUtils {
    * @throws FileNotFoundException If file cannot be read in
    */
   private static DataBlock getTimeSeries(String[] filenames, String filter)
-      throws FileNotFoundException, SeedFormatException, CodecException {
+      throws IOException, SeedFormatException, CodecException {
 
     Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
         getTimeSeriesMap(filenames, filter);
@@ -492,7 +481,7 @@ public class TimeSeriesUtils {
    */
   public static Pair<Long, Map<Long, double[]>>
   getTimeSeriesMap(String filename, String filter)
-      throws FileNotFoundException, SeedFormatException, CodecException {
+      throws IOException, SeedFormatException, CodecException {
     return getTimeSeriesMap(new String[]{filename}, filter);
   }
 
@@ -511,21 +500,17 @@ public class TimeSeriesUtils {
    */
   private static Pair<Long, Map<Long, double[]>>
   getTimeSeriesMap(String[] filenames, String filter)
-      throws FileNotFoundException, SeedFormatException,
+      throws IOException, SeedFormatException,
       CodecException {
     long interval = 0L;
-    DataInputStream dis;
 
     Map<Long, double[]> timeListMap = new HashMap<>();
 
     for (String filename : filenames) {
       int byteSize = getByteSize(filename);
 
-      try {
-        dis = new DataInputStream(new FileInputStream(filename));
-
+      try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
         while (true) {
-
           try {
             SeedRecord sr = SeedRecord.read(dis, byteSize);
             if (sr instanceof DataRecord) {
@@ -534,7 +519,6 @@ public class TimeSeriesUtils {
               String seriesID = extractName(dh);
 
               if (!seriesID.equals(filter)) {
-                // System.out.println(seriesID);
                 continue; // skip to next seedRecord
               }
 
@@ -568,19 +552,12 @@ public class TimeSeriesUtils {
                 interval = ONE_HZ_INTERVAL * fact * mult;
               }
 
-              DecompressedData decomp = dr.decompress();
-
-              double[] values = decomp.getAsDouble();
-
-              timeListMap.put(start, values);
-
+              timeListMap.put(start, dr.decompress().getAsDouble());
             }
           } catch (EOFException e) {
             break;
           }
-
         } // end infinite while loop (read until EOF)
-
       } catch (IOException e) {
         e.printStackTrace();
       }

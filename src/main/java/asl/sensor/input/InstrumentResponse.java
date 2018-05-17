@@ -87,6 +87,7 @@ public class InstrumentResponse {
         name = respBuff.readLine();
       }
     } catch (IOException e) {
+      // This should never happen as responses.txt is parsed in a test case.
       e.printStackTrace();
     }
 

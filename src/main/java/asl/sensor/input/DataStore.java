@@ -417,7 +417,7 @@ public class DataStore {
    */
   public void setBlock(int idx, String filepath, String nameFilter)
       throws SeedFormatException, CodecException,
-      FileNotFoundException {
+      IOException {
     setBlock(idx, filepath, nameFilter, FILE_COUNT);
   }
 
@@ -432,7 +432,7 @@ public class DataStore {
    */
   public void setBlock(int idx, String filepath, String nameFilter, int activePlots)
       throws SeedFormatException, CodecException,
-      FileNotFoundException {
+      IOException {
 
     DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
     thisBlockIsSet[idx] = true;
@@ -619,18 +619,14 @@ public class DataStore {
 
   public void appendBlock(int idx, String filepath, String nameFilter, int activePlots)
       throws SeedFormatException, CodecException,
-      FileNotFoundException {
+      IOException {
 
     if (!thisBlockIsSet[idx]) {
       setBlock(idx, filepath, nameFilter, activePlots);
       return;
     }
 
-    try {
-      dataBlockArray[idx].appendTimeSeries(filepath);
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
+    dataBlockArray[idx].appendTimeSeries(filepath);
 
     synchronized (this) {
       if (numberOfBlocksSet() > 1) {
