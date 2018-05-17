@@ -1,7 +1,6 @@
 package asl.sensor.utils;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -212,7 +211,6 @@ public class FFTResult {
 
         str = fr.readLine();
       }
-      fr.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -231,13 +229,11 @@ public class FFTResult {
    */
   public static XYSeries getLowNoiseModel(boolean freqSpace) {
     XYSeries xys = new XYSeries("NLNM");
-    try {
+    ClassLoader cl = FFTResult.class.getClassLoader();
 
-      ClassLoader cl = FFTResult.class.getClassLoader();
+    InputStream is = cl.getResourceAsStream("NLNM.txt");
 
-      InputStream is = cl.getResourceAsStream("NLNM.txt");
-
-      BufferedReader fr = new BufferedReader(new InputStreamReader(is));
+    try (BufferedReader fr = new BufferedReader(new InputStreamReader(is))) {
       String str = fr.readLine();
       while (str != null) {
         String[] values = str.split("\\s+");
@@ -254,9 +250,6 @@ public class FFTResult {
 
         str = fr.readLine();
       }
-      fr.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -303,7 +296,7 @@ public class FFTResult {
     Complex[] frqDomn1 = fft.transform(toFFT, TransformType.FORWARD);
     int singleSide = padding / 2 + 1;
     // use arraycopy now (as it's fast) to get the first half of the fft
-    return new Pair<Complex[], Double>(Arrays.copyOfRange(frqDomn1, 0, singleSide), wss);
+    return new Pair<>(Arrays.copyOfRange(frqDomn1, 0, singleSide), wss);
   }
 
   /**
@@ -336,7 +329,7 @@ public class FFTResult {
    * @return Complex array representing forward FFT values, including
    * symmetric component (second half of the function)
    */
-  public static Complex[] simpleFFT(double[] dataIn) {
+  private static Complex[] simpleFFT(double[] dataIn) {
 
     int padding = 2;
     while (padding < dataIn.length) {
@@ -348,9 +341,7 @@ public class FFTResult {
     FastFourierTransformer fft =
         new FastFourierTransformer(DftNormalization.STANDARD);
 
-    Complex[] frqDomn = fft.transform(toFFT, TransformType.FORWARD);
-
-    return frqDomn;
+    return fft.transform(toFFT, TransformType.FORWARD);
   }
 
 
@@ -631,7 +622,7 @@ public class FFTResult {
    * @param inPSD Precalculated FFT result for some timeseries
    * @param inFreq Frequencies matched up to each FFT value
    */
-  public FFTResult(Complex[] inPSD, double[] inFreq) {
+  private FFTResult(Complex[] inPSD, double[] inFreq) {
     transform = inPSD;
     freqs = inFreq;
   }
