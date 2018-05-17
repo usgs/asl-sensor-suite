@@ -108,7 +108,7 @@ public class ReportingUtils {
    * each image
    */
   public static BufferedImage[]
-  chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
+      chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
 
     List<BufferedImage> imageList = new ArrayList<>();
     int totalNumber = charts.length;
@@ -127,23 +127,23 @@ public class ReportingUtils {
     int lastPageChartCount = totalNumber % perImg;
     // how many chart-size blank spaces to keep plots on last page same size
     int spacerCount = perImg - lastPageChartCount;
-    // Note that the above variable is not used if lastPageChartCount is zero
 
     // handle all the pages with complete data here
-    for (int i = 0; i < numFilledPages; ++i) {
+    for (int i = 0; i < numFilledPages-1; ++i) {
       int start = perImg * i;
       JFreeChart[] onOnePage = Arrays.copyOfRange(charts, start, start + perImg);
       imageList.add(chartsToImage(width, height, onOnePage));
     }
 
-    // special case for a non-evenly dividing plot series
-    if (lastPageChartCount != 0) {
-      int lastIndex = numFilledPages * perImg;
-      JFreeChart[] lastPage = Arrays.copyOfRange(charts, lastIndex, lastPageChartCount);
-      BufferedImage lastPageImage = chartsToImage(width, height, lastPage);
+    int lastIndex = numFilledPages * perImg;
+    JFreeChart[] lastPage = Arrays.copyOfRange(charts, lastIndex, charts.length);
+    BufferedImage lastPageImage = chartsToImage(width, height, lastPage);
+    // special case for a non-evenly dividing plot series (append blank space to last page)
+    if (spacerCount > 0) {
       BufferedImage space = createWhitespace(width, height * spacerCount);
-      imageList.add(mergeBufferedImages(lastPageImage, space));
+      lastPageImage = mergeBufferedImages(lastPageImage, space);
     }
+    imageList.add(lastPageImage);
 
     return imageList.toArray(new BufferedImage[]{});
   }
