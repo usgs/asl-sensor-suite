@@ -300,7 +300,7 @@ public class TimeSeriesUtils {
    * @return number of bytes of a record (i.e., 512, 40096)
    * @throws FileNotFoundException If file does not exist
    */
-  public static int getByteSize(String filename) throws FileNotFoundException {
+  private static int getByteSize(String filename) throws FileNotFoundException {
 
     DataInputStream dis; // used to read in input to get b1000
     int byteSize;
@@ -472,7 +472,7 @@ public class TimeSeriesUtils {
    * @return A structure containing the time series and metadata for the file
    * @throws FileNotFoundException If file cannot be read in
    */
-  public static DataBlock getTimeSeries(String[] filenames, String filter)
+  private static DataBlock getTimeSeries(String[] filenames, String filter)
       throws FileNotFoundException, SeedFormatException, CodecException {
 
     Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
@@ -512,7 +512,7 @@ public class TimeSeriesUtils {
    * given as a long and second of which is a map from sample times to data
    * points from each given time value in the miniseed records
    */
-  public static Pair<Long, Map<Long, double[]>>
+  private static Pair<Long, Map<Long, double[]>>
   getTimeSeriesMap(String[] filenames, String filter)
       throws FileNotFoundException, SeedFormatException,
       CodecException {
@@ -602,7 +602,7 @@ public class TimeSeriesUtils {
    * @param filter String with SNCL (station, network, channel, location) data
    * @return DataBlock with the given timeseries and metadata
    */
-  public static DataBlock
+  private static DataBlock
   mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter) {
 
     long interval = data.getFirst();
@@ -760,7 +760,7 @@ public class TimeSeriesUtils {
    * @return New timeseries data rotated data along the
    * given angle, facing east.
    */
-  public static double[]
+  private static double[]
   rotateX(double[] northData, double[] eastData, double ang) {
     double[] rotatedData = new double[northData.length];
 
@@ -785,7 +785,7 @@ public class TimeSeriesUtils {
    * @param factor The factor to increase the size by
    * @return The upsampled series
    */
-  public static double[] upsample(double[] data, int factor) {
+  private static double[] upsample(double[] data, int factor) {
 
     int newLength = data.length * factor;
 

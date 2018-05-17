@@ -2,7 +2,6 @@ package asl.sensor.utils;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
@@ -23,9 +22,9 @@ public class NumericUtils {
    *
    * @author akearns
    */
-  public static class CpxRealComparator implements Comparator<Complex> {
+  static class CpxRealComparator implements Comparator<Complex> {
 
-    public static final CpxRealComparator instance = new CpxRealComparator();
+    static final CpxRealComparator instance = new CpxRealComparator();
 
     private CpxRealComparator() {
 

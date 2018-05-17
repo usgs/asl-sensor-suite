@@ -35,7 +35,7 @@ public class ReportingUtils {
    * @param bi BufferedImage to be added to PDF
    * @param pdf PDF to have BufferedImage appended to
    */
-  public static void
+  private static void
   bufferedImageToPDFPage(BufferedImage bi, PDDocument pdf) {
 
     PDRectangle rec =
@@ -59,9 +59,6 @@ public class ReportingUtils {
     } catch (IOException e) {
       e.printStackTrace();
     }
-
-    return;
-
   }
 
   /**
@@ -89,7 +86,6 @@ public class ReportingUtils {
           cp.getHeight(),
           BufferedImage.TYPE_INT_ARGB);
       Graphics2D g = temp.createGraphics();
-      g = temp.createGraphics();
       cp.printAll(g);
       g.dispose();
       bis[i] = temp;
@@ -113,7 +109,7 @@ public class ReportingUtils {
   public static BufferedImage[]
   chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
 
-    List<BufferedImage> imageList = new ArrayList<BufferedImage>();
+    List<BufferedImage> imageList = new ArrayList<>();
     int totalNumber = charts.length;
 
     if (totalNumber < perImg) {
@@ -171,11 +167,9 @@ public class ReportingUtils {
 
     BufferedImage bi = chartsToImage(width, height, jfcs);
     bufferedImageToPDFPage(bi, pdf);
-    return;
-
   }
 
-  public static BufferedImage createWhitespace(int width, int height) {
+  private static BufferedImage createWhitespace(int width, int height) {
     BufferedImage out = new BufferedImage(width, height,
         BufferedImage.TYPE_INT_RGB);
     Graphics2D g = out.createGraphics();
@@ -208,7 +202,7 @@ public class ReportingUtils {
    * @param bis Buffered images to send in
    * @return Single concatenated buffered image
    */
-  public static BufferedImage mergeBufferedImages(BufferedImage... bis) {
+  private static BufferedImage mergeBufferedImages(BufferedImage... bis) {
 
     int maxWidth = 0;
     int totalHeight = 0;
@@ -279,7 +273,7 @@ public class ReportingUtils {
     float startX = mediabox.getLowerLeftX() + margin;
     float startY = mediabox.getUpperRightY() - margin;
 
-    List<String> lines = new ArrayList<String>();
+    List<String> lines = new ArrayList<>();
 
     for (String text : toWrite.split("\n")) {
 
@@ -332,8 +326,5 @@ public class ReportingUtils {
     } catch (IOException e) {
       e.printStackTrace();
     }
-
-    return;
   }
-
 }
