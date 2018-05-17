@@ -182,7 +182,6 @@ public class DataStoreTest {
     DataStore ds = new DataStore();
     DataBlock db;
     db = TimeSeriesUtils.getFirstTimeSeries(filename);
-    String filter = db.getName();
     ds.setBlock(0, db);
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     ds.setResponse(0, respName);
@@ -203,7 +202,6 @@ public class DataStoreTest {
     DataStore ds = new DataStore();
     DataBlock db;
     db = TimeSeriesUtils.getFirstTimeSeries(filename);
-    String filter = db.getName();
     ds.setBlock(0, db);
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     ds.setResponse(0, respName);
