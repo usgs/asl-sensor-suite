@@ -110,19 +110,19 @@ public class ReportingUtils {
   public static BufferedImage[]
       chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
 
-    List<BufferedImage> imageList = new ArrayList<>();
+
     int totalNumber = charts.length;
 
     if (totalNumber < perImg) {
       // if we can fit them all on a single page, then we'll do so
-      imageList.add(chartsToImage(width, height, charts));
-      return imageList.toArray(new BufferedImage[]{});
+      return new BufferedImage[] {chartsToImage(width, height, charts)};
     }
 
     // want to keep all charts the same size;
     // if we can't fit them all on a single page, how many pages will have
     // complete charts?
     int numFilledPages = totalNumber / perImg;
+    BufferedImage[] imageList = new BufferedImage[numFilledPages];
     // if we can't fill the last page with plots, how many will it have
     int lastPageChartCount = totalNumber % perImg;
     // how many chart-size blank spaces to keep plots on last page same size
@@ -132,7 +132,7 @@ public class ReportingUtils {
     for (int i = 0; i < numFilledPages-1; ++i) {
       int start = perImg * i;
       JFreeChart[] onOnePage = Arrays.copyOfRange(charts, start, start + perImg);
-      imageList.add(chartsToImage(width, height, onOnePage));
+      imageList[i] = chartsToImage(width, height, onOnePage);
     }
 
     int lastIndex = numFilledPages * perImg;
@@ -143,9 +143,9 @@ public class ReportingUtils {
       BufferedImage space = createWhitespace(width, height * spacerCount);
       lastPageImage = mergeBufferedImages(lastPageImage, space);
     }
-    imageList.add(lastPageImage);
+    imageList[numFilledPages - 1] = lastPageImage;
 
-    return imageList.toArray(new BufferedImage[]{});
+    return imageList;
   }
 
   /**
