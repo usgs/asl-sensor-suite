@@ -549,7 +549,7 @@ public class FFTResult {
     double deltaFreq = 1. / (padding * period);
 
     Complex[] powSpectDens = new Complex[singleSide];
-    double wss = 0;
+    double wss;
 
     int segsProcessed = 0;
     int rangeStart = 0;

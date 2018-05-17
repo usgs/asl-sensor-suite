@@ -135,9 +135,8 @@ public class TimeSeriesUtils {
 
     double[] upped = upsample(data, upf);
     double[] lpfed = FFTResult.lowPassFilter(upped, higherFreq, lowerFreq);
-    double[] down = downsample(lpfed, dnf);
 
-    return down;
+    return downsample(lpfed, dnf);
 
   }
 
@@ -686,9 +685,7 @@ public class TimeSeriesUtils {
     double[] northData = north.getData();
     double[] eastData = east.getData();
 
-    DataBlock rotated =
-        new DataBlock(rotate(northData, eastData, ang), interval, name, start);
-    return rotated;
+    return new DataBlock(rotate(northData, eastData, ang), interval, name, start);
   }
 
   /**
@@ -741,9 +738,7 @@ public class TimeSeriesUtils {
     double[] northData = north.getData();
     double[] eastData = east.getData();
 
-    DataBlock rotated =
-        new DataBlock(rotateX(northData, eastData, ang), interval, name, start);
-    return rotated;
+    return new DataBlock(rotateX(northData, eastData, ang), interval, name, start);
   }
 
   /**
