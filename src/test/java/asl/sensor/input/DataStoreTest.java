@@ -6,16 +6,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import java.time.OffsetDateTime;
+import org.junit.Test;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.test.TestUtils;
 import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import org.junit.Test;
 
 public class DataStoreTest {
 
@@ -68,7 +63,7 @@ public class DataStoreTest {
   }
 
   @Test
-  public void trimToCommonTime_commonTimeTrimMatchesLength() {
+  public void trimToCommonTime_commonTimeTrimMatchesLength() throws Exception {
     String channel = "BH0";
     String location = "00";
     String station = "TST5";
@@ -76,36 +71,31 @@ public class DataStoreTest {
     String filename = folder + "blocktrim/" + fileID;
     DataStore ds = new DataStore();
     DataBlock db;
-    try {
-      db = TimeSeriesUtils.getFirstTimeSeries(filename);
-      String filter = db.getName();
-      ds.setBlock(0, db);
+    db = TimeSeriesUtils.getFirstTimeSeries(filename);
+    String filter = db.getName();
+    ds.setBlock(0, db);
 
-      int left = 250;
-      int right = 750;
+    int left = 250;
+    int right = 750;
 
-      int oldSize = db.size();
+    int oldSize = db.size();
 
-      // tested in DataPanelTest
-      long loc1 = InputPanel.getMarkerLocation(db, left);
-      long loc2 = InputPanel.getMarkerLocation(db, right);
-      //  tested in DataBlockTest
-      db.trim(loc1, loc2);
+    // tested in DataPanelTest
+    long loc1 = InputPanel.getMarkerLocation(db, left);
+    long loc2 = InputPanel.getMarkerLocation(db, right);
+    //  tested in DataBlockTest
+    db.trim(loc1, loc2);
 
-      ds.setBlock(1, filename, filter);
-      ds.setBlock(2, filename, filter);
+    ds.setBlock(1, filename, filter);
+    ds.setBlock(2, filename, filter);
 
-      // function under test
-      ds.trimToCommonTime();
+    // function under test
+    ds.trimToCommonTime();
 
-      assertEquals(ds.getBlock(1).getStartTime(), loc1);
-      assertEquals(ds.getBlock(1).getEndTime(), loc2);
-      assertEquals(db.size(), ds.getBlock(1).size());
-      assertNotEquals(db.size(), oldSize);
-    } catch (IOException | SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
+    assertEquals(ds.getBlock(1).getStartTime(), loc1);
+    assertEquals(ds.getBlock(1).getEndTime(), loc2);
+    assertEquals(db.size(), ds.getBlock(1).size());
+    assertNotEquals(db.size(), oldSize);
   }
 
   @Test
@@ -183,13 +173,45 @@ public class DataStoreTest {
   }
 
   @Test
-  public void removeData_removesSpecificIndex() {
-    fail();
+  public void removeData_removesSpecificIndex() throws Exception {
+    String channel = "BH0";
+    String location = "00";
+    String station = "TST5";
+    String fileID = station + "_" + location + "_" + channel + ".512.seed";
+    String filename = folder + "blocktrim/" + fileID;
+    DataStore ds = new DataStore();
+    DataBlock db;
+    db = TimeSeriesUtils.getFirstTimeSeries(filename);
+    String filter = db.getName();
+    ds.setBlock(0, db);
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    ds.setResponse(0, respName);
+    assertTrue(ds.bothComponentsSet(0));
+    ds.removeData(0);
+    assertFalse(ds.responseIsSet(0));
+    assertFalse(ds.blockIsSet(0));
+    assertFalse(ds.bothComponentsSet(0));
   }
 
   @Test
-  public void removeBlock_removesSpecificIndex() {
-    fail();
+  public void removeBlock_removesSpecificIndex() throws Exception {
+    String channel = "BH0";
+    String location = "00";
+    String station = "TST5";
+    String fileID = station + "_" + location + "_" + channel + ".512.seed";
+    String filename = folder + "blocktrim/" + fileID;
+    DataStore ds = new DataStore();
+    DataBlock db;
+    db = TimeSeriesUtils.getFirstTimeSeries(filename);
+    String filter = db.getName();
+    ds.setBlock(0, db);
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    ds.setResponse(0, respName);
+    assertTrue(ds.bothComponentsSet(0));
+    ds.removeBlock(0);
+    assertTrue(ds.responseIsSet(0));
+    assertFalse(ds.blockIsSet(0));
+    assertFalse(ds.bothComponentsSet(0));
   }
 
 }
