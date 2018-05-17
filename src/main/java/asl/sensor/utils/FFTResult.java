@@ -1,7 +1,6 @@
 package asl.sensor.utils;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -23,7 +22,7 @@ import uk.me.berndporr.iirj.Butterworth;
  * such as raw PSD calculation, inverse and forward trimmed FFTs,
  * and band-pass filtering.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class FFTResult {
 
@@ -32,31 +31,31 @@ public class FFTResult {
    * can be used for a low-pass filter if low frequency is set to 0
    * and high-pass if higher frequency is set to sample rate
    *
-   * @param toFilt series of data to do a band-pass filter on
+   * @param toFilter series of data to do a band-pass filter on
    * @param sps sample rate of the current data (samples / sec)
-   * @param low low corner frequency of band-pass filter
-   * @param high high corner frequency of band-pass filter
+   * @param lowCorner low corner frequency of band-pass filter
+   * @param highCorner high corner frequency of band-pass filter
    * @return timeseries with band-pass filter applied
    */
   public static double[]
-  bandFilter(double[] toFilt, double sps, double low, double high) {
+  bandFilter(double[] toFilter, double sps, double lowCorner, double highCorner) {
 
     // make sure the low value is actually the lower of the two
-    double temp = Math.min(low, high);
-    high = Math.max(low, high);
-    low = temp;
+    double temp = Math.min(lowCorner, highCorner);
+    highCorner = Math.max(lowCorner, highCorner);
+    lowCorner = temp;
 
     Butterworth casc = new Butterworth();
     // center = low-corner location plus half the distance between the corners
     // width is exactly the distance between them
-    double width = high - low;
-    double center = low + (width) / 2.;
+    double width = highCorner - lowCorner;
+    double center = lowCorner + (width) / 2.;
     // filter library defines bandpass with center frequency and notch width
     casc.bandPass(2, sps, center, width);
 
-    double[] filtered = new double[toFilt.length];
-    for (int i = 0; i < toFilt.length; ++i) {
-      filtered[i] = casc.filter(toFilt[i]);
+    double[] filtered = new double[toFilter.length];
+    for (int i = 0; i < toFilter.length; ++i) {
+      filtered[i] = casc.filter(toFilter[i]);
     }
 
     return filtered;
@@ -212,7 +211,6 @@ public class FFTResult {
 
         str = fr.readLine();
       }
-      fr.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -231,13 +229,11 @@ public class FFTResult {
    */
   public static XYSeries getLowNoiseModel(boolean freqSpace) {
     XYSeries xys = new XYSeries("NLNM");
-    try {
+    ClassLoader cl = FFTResult.class.getClassLoader();
 
-      ClassLoader cl = FFTResult.class.getClassLoader();
+    InputStream is = cl.getResourceAsStream("NLNM.txt");
 
-      InputStream is = cl.getResourceAsStream("NLNM.txt");
-
-      BufferedReader fr = new BufferedReader(new InputStreamReader(is));
+    try (BufferedReader fr = new BufferedReader(new InputStreamReader(is))) {
       String str = fr.readLine();
       while (str != null) {
         String[] values = str.split("\\s+");
@@ -254,9 +250,6 @@ public class FFTResult {
 
         str = fr.readLine();
       }
-      fr.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -303,7 +296,7 @@ public class FFTResult {
     Complex[] frqDomn1 = fft.transform(toFFT, TransformType.FORWARD);
     int singleSide = padding / 2 + 1;
     // use arraycopy now (as it's fast) to get the first half of the fft
-    return new Pair<Complex[], Double>(Arrays.copyOfRange(frqDomn1, 0, singleSide), wss);
+    return new Pair<>(Arrays.copyOfRange(frqDomn1, 0, singleSide), wss);
   }
 
   /**
@@ -336,7 +329,7 @@ public class FFTResult {
    * @return Complex array representing forward FFT values, including
    * symmetric component (second half of the function)
    */
-  public static Complex[] simpleFFT(double[] dataIn) {
+  private static Complex[] simpleFFT(double[] dataIn) {
 
     int padding = 2;
     while (padding < dataIn.length) {
@@ -348,9 +341,7 @@ public class FFTResult {
     FastFourierTransformer fft =
         new FastFourierTransformer(DftNormalization.STANDARD);
 
-    Complex[] frqDomn = fft.transform(toFFT, TransformType.FORWARD);
-
-    return frqDomn;
+    return fft.transform(toFFT, TransformType.FORWARD);
   }
 
 
@@ -558,7 +549,7 @@ public class FFTResult {
     double deltaFreq = 1. / (padding * period);
 
     Complex[] powSpectDens = new Complex[singleSide];
-    double wss = 0;
+    double wss;
 
     int segsProcessed = 0;
     int rangeStart = 0;
@@ -631,7 +622,7 @@ public class FFTResult {
    * @param inPSD Precalculated FFT result for some timeseries
    * @param inFreq Frequencies matched up to each FFT value
    */
-  public FFTResult(Complex[] inPSD, double[] inFreq) {
+  private FFTResult(Complex[] inPSD, double[] inFreq) {
     transform = inPSD;
     freqs = inFreq;
   }

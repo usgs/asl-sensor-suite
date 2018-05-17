@@ -1,6 +1,7 @@
 package asl.sensor.input;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -590,7 +591,7 @@ public class DataBlock {
   }
 
   public void appendTimeSeries(String filepath)
-      throws FileNotFoundException, SeedFormatException, CodecException {
+      throws IOException, SeedFormatException, CodecException {
     Map<Long, double[]> toAppend =
         TimeSeriesUtils.getTimeSeriesMap(filepath, name).getSecond();
     dataMap.putAll(toAppend);

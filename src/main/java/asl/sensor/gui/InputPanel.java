@@ -760,7 +760,7 @@ public class InputPanel
           try {
             seed.loadInData(dataStore, index, filePath, immutableFilter, activePlots);
           } catch (RuntimeException | SeedFormatException | CodecException |
-              FileNotFoundException e) {
+              IOException e) {
             returnedErrMsg = e.toString();
             caughtException = true;
             e.printStackTrace();
@@ -1412,7 +1412,7 @@ public class InputPanel
     protected abstract void loadInData(DataStore dataStore, int index,
         String filePath, String fileFilter, int activePlots)
         throws SeedFormatException, CodecException,
-        FileNotFoundException, RuntimeException;
+        IOException, RuntimeException;
   }
 
   private class LoadingJButton extends FileOperationJButton {
@@ -1433,7 +1433,7 @@ public class InputPanel
     public void loadInData(DataStore dataStore, int index, String filePath,
         String fileFilter, int activePlots) throws SeedFormatException,
         CodecException,
-        FileNotFoundException,
+        IOException,
         RuntimeException {
       dataStore.setBlock(index, filePath, fileFilter, activePlots);
     }
@@ -1462,7 +1462,7 @@ public class InputPanel
     @Override
     public void loadInData(DataStore dataStore, int index, String filePath,
         String fileFilter, int activePlots)
-        throws SeedFormatException, CodecException, FileNotFoundException, RuntimeException {
+        throws SeedFormatException, CodecException, IOException, RuntimeException {
       dataStore.appendBlock(index, filePath, fileFilter, activePlots);
     }
   }

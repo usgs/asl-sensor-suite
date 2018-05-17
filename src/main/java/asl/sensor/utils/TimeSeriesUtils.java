@@ -2,7 +2,6 @@ package asl.sensor.utils;
 
 import asl.sensor.input.DataBlock;
 import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.DecompressedData;
 import edu.sc.seis.seisFile.mseed.Blockette;
 import edu.sc.seis.seisFile.mseed.Blockette1000;
 import edu.sc.seis.seisFile.mseed.Btime;
@@ -48,27 +47,27 @@ public class TimeSeriesUtils {
   /**
    * Merge arrays from multiple timeseries into a single object
    *
-   * @param arrs Series of arrays
+   * @param arrays Series of arrays
    * @return All inputted arrays concatenated into a single array (can be specified as a 2D array)
    */
-  public static double[] concatAll(double[]... arrs) {
+  public static double[] concatAll(double[]... arrays) {
 
-    if (arrs.length == 0) {
+    if (arrays.length == 0) {
       return new double[]{};
     }
 
-    if (arrs.length == 1) {
-      return arrs[0];
+    if (arrays.length == 1) {
+      return arrays[0];
     }
 
     int len = 0;
-    for (double[] arr : arrs) {
+    for (double[] arr : arrays) {
       len += arr.length;
     }
 
     double[] result = new double[len];
     int start = 0;
-    for (double[] arr : arrs) {
+    for (double[] arr : arrays) {
       if (arr.length == 0) {
         continue;
       }
@@ -102,30 +101,30 @@ public class TimeSeriesUtils {
    * frequency of a 1Hz interval.
    *
    * @param data The timeseries to be decimated
-   * @param src The source frequency as interval between samples (microseconds)
+   * @param source The source frequency as interval between samples (microseconds)
    * @return A timeseries decimated to the correct frequency
    */
-  public static double[] decimate(double[] data, long src, long tgt) {
+  public static double[] decimate(double[] data, long source, long target) {
 
     // a sample lower than 1Hz frq has longer time between samples
     // since it's an inverse relationship and all
-    if (src >= tgt) {
+    if (source >= target) {
       // if data is too low-frequency to decimate, do nothing
       return data;
     }
 
     // find what the change in size is going to be
-    long gcd = euclidGCD(src, tgt);
+    long gcd = euclidGCD(source, target);
     // conversion up- and down-factors
     // (upsample by target, downsample by source)
     // cast is valid because any discrete interval
     // from 1Hz and up is already expressable
     // as an int
-    int upf = (int) (src / gcd);
-    int dnf = (int) (tgt / gcd);
+    int upf = (int) (source / gcd);
+    int dnf = (int) (target / gcd);
 
-    double higherFreq = (1. / src) * upf * ONE_HZ_INTERVAL;
-    double lowerFreq = (1. / tgt) * ONE_HZ_INTERVAL / 2;
+    double higherFreq = (1. / source) * upf * ONE_HZ_INTERVAL;
+    double lowerFreq = (1. / target) * ONE_HZ_INTERVAL / 2;
     // nyquist rate of downsampled data
 
     // one valid sample rate for data is 2.5Hz
@@ -135,9 +134,8 @@ public class TimeSeriesUtils {
 
     double[] upped = upsample(data, upf);
     double[] lpfed = FFTResult.lowPassFilter(upped, higherFreq, lowerFreq);
-    double[] down = downsample(lpfed, dnf);
 
-    return down;
+    return downsample(lpfed, dnf);
 
   }
 
@@ -258,37 +256,37 @@ public class TimeSeriesUtils {
    * and downsample rates by dividing the timeseries intervals
    * by this value
    *
-   * @param src Initially, one of two frequencies to calculate
-   * @param tgt Initially, one of two frequencies to calculate
+   * @param source Initially, one of two frequencies to calculate
+   * @param target Initially, one of two frequencies to calculate
    * @return The GCD of the two frequencies
    */
-  public static long euclidGCD(long src, long tgt) {
+  public static long euclidGCD(long source, long target) {
 
     // take remainders until we hit 0
     // which means the divisor is the gcd
-    long rem = src % tgt;
+    long rem = source % target;
     if (rem == 0) {
-      return tgt;
+      return target;
     }
 
-    return euclidGCD(tgt, rem);
+    return euclidGCD(target, rem);
   }
 
   /**
    * Extract SNCL data from a SEED data header
    *
-   * @param dh found in a seed file
+   * @param dataHeader found in a seed file
    * @return String containing the SNCL identifier of the data
    */
-  private static String extractName(DataHeader dh) {
+  private static String extractName(DataHeader dataHeader) {
     StringBuilder fileID = new StringBuilder();
-    String station = dh.getStationIdentifier();
+    String station = dataHeader.getStationIdentifier();
     // remove all whitespace from station name
     station = station.replaceAll("\\s+", "");
-    fileID.append(dh.getNetworkCode()).append("_");
+    fileID.append(dataHeader.getNetworkCode()).append("_");
     fileID.append(station).append("_");
-    fileID.append(dh.getLocationIdentifier()).append("_");
-    fileID.append(dh.getChannelIdentifier());
+    fileID.append(dataHeader.getLocationIdentifier()).append("_");
+    fileID.append(dataHeader.getChannelIdentifier());
     return fileID.toString();
   }
 
@@ -300,15 +298,9 @@ public class TimeSeriesUtils {
    * @return number of bytes of a record (i.e., 512, 40096)
    * @throws FileNotFoundException If file does not exist
    */
-  public static int getByteSize(String filename) throws FileNotFoundException {
-
-    DataInputStream dis; // used to read in input to get b1000
-    int byteSize;
-    dis = new DataInputStream(new FileInputStream(filename));
-
-    while (true) {
-
-      try {
+  private static int getByteSize(String filename) throws IOException, SeedFormatException {
+    try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
+      while (true) {
         SeedRecord sr = SeedRecord.read(dis, 4096);
 
         Blockette[] blockettes = sr.getBlockettes();
@@ -316,17 +308,11 @@ public class TimeSeriesUtils {
         for (Blockette blockette : blockettes) {
           if (blockette.getType() == 1000) {
             Blockette1000 b1000 = (Blockette1000) blockette;
-            byteSize = b1000.getDataRecordLength(); // expect either 9 or 12
-            return byteSize;
+            return b1000.getDataRecordLength();
           }
-        } // end of loop over blockettes
-
-      } catch (SeedFormatException | IOException e) {
-        e.printStackTrace();
-      }  // end of try-catch blocks for parsing an individual record
-
-    } // end of while loop for gotByteSize
-
+        }
+      }
+    }
   }
 
   /**
@@ -449,7 +435,7 @@ public class TimeSeriesUtils {
    * @throws FileNotFoundException If file cannot be read in
    */
   public static DataBlock getTimeSeries(String filename, String filter)
-      throws FileNotFoundException, SeedFormatException, CodecException {
+      throws IOException, SeedFormatException, CodecException {
     Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
         getTimeSeriesMap(filename, filter);
     return mapToTimeSeries(intervalSeriesMapPair, filter);
@@ -472,8 +458,8 @@ public class TimeSeriesUtils {
    * @return A structure containing the time series and metadata for the file
    * @throws FileNotFoundException If file cannot be read in
    */
-  public static DataBlock getTimeSeries(String[] filenames, String filter)
-      throws FileNotFoundException, SeedFormatException, CodecException {
+  private static DataBlock getTimeSeries(String[] filenames, String filter)
+      throws IOException, SeedFormatException, CodecException {
 
     Pair<Long, Map<Long, double[]>> intervalSeriesMapPair =
         getTimeSeriesMap(filenames, filter);
@@ -495,7 +481,7 @@ public class TimeSeriesUtils {
    */
   public static Pair<Long, Map<Long, double[]>>
   getTimeSeriesMap(String filename, String filter)
-      throws FileNotFoundException, SeedFormatException, CodecException {
+      throws IOException, SeedFormatException, CodecException {
     return getTimeSeriesMap(new String[]{filename}, filter);
   }
 
@@ -512,23 +498,19 @@ public class TimeSeriesUtils {
    * given as a long and second of which is a map from sample times to data
    * points from each given time value in the miniseed records
    */
-  public static Pair<Long, Map<Long, double[]>>
+  private static Pair<Long, Map<Long, double[]>>
   getTimeSeriesMap(String[] filenames, String filter)
-      throws FileNotFoundException, SeedFormatException,
+      throws IOException, SeedFormatException,
       CodecException {
     long interval = 0L;
-    DataInputStream dis;
 
     Map<Long, double[]> timeListMap = new HashMap<>();
 
     for (String filename : filenames) {
       int byteSize = getByteSize(filename);
 
-      try {
-        dis = new DataInputStream(new FileInputStream(filename));
-
+      try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
         while (true) {
-
           try {
             SeedRecord sr = SeedRecord.read(dis, byteSize);
             if (sr instanceof DataRecord) {
@@ -537,7 +519,6 @@ public class TimeSeriesUtils {
               String seriesID = extractName(dh);
 
               if (!seriesID.equals(filter)) {
-                // System.out.println(seriesID);
                 continue; // skip to next seedRecord
               }
 
@@ -571,19 +552,12 @@ public class TimeSeriesUtils {
                 interval = ONE_HZ_INTERVAL * fact * mult;
               }
 
-              DecompressedData decomp = dr.decompress();
-
-              double[] values = decomp.getAsDouble();
-
-              timeListMap.put(start, values);
-
+              timeListMap.put(start, dr.decompress().getAsDouble());
             }
           } catch (EOFException e) {
             break;
           }
-
         } // end infinite while loop (read until EOF)
-
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -602,7 +576,7 @@ public class TimeSeriesUtils {
    * @param filter String with SNCL (station, network, channel, location) data
    * @return DataBlock with the given timeseries and metadata
    */
-  public static DataBlock
+  private static DataBlock
   mapToTimeSeries(Pair<Long, Map<Long, double[]>> data, String filter) {
 
     long interval = data.getFirst();
@@ -674,11 +648,11 @@ public class TimeSeriesUtils {
    *
    * @param north Sensor assumed to point north
    * @param east Sensor assumed to point east, orthogonal to north sensor
-   * @param ang Angle to rotate the data along
+   * @param angle Angle to rotate the data along
    * @return New DataBlock whose time series is the rotated data along the
    * given angle, facing north
    */
-  public static DataBlock rotate(DataBlock north, DataBlock east, double ang) {
+  public static DataBlock rotate(DataBlock north, DataBlock east, double angle) {
     long start = north.getStartTime();
     long interval = north.getInterval();
     String name = north.getName();
@@ -686,9 +660,7 @@ public class TimeSeriesUtils {
     double[] northData = north.getData();
     double[] eastData = east.getData();
 
-    DataBlock rotated =
-        new DataBlock(rotate(northData, eastData, ang), interval, name, start);
-    return rotated;
+    return new DataBlock(rotate(northData, eastData, angle), interval, name, start);
   }
 
   /**
@@ -701,17 +673,16 @@ public class TimeSeriesUtils {
    * @param northData Timeseries data expected to point north
    * @param eastData Timeseries assumed to point east,
    * orthogonal to north sensor
-   * @param ang Angle to rotate the data along
+   * @param angle Angle to rotate the data along
    * @return New timeseries data rotated data along the
    * given angle, facing north
    */
-  public static double[]
-  rotate(double[] northData, double[] eastData, double ang) {
+  public static double[] rotate(double[] northData, double[] eastData, double angle) {
     double[] rotatedData = new double[northData.length];
 
     // clockwise rotation matrix!! That's why things are so screwy
-    double sinTheta = Math.sin(ang);
-    double cosTheta = Math.cos(ang);
+    double sinTheta = Math.sin(angle);
+    double cosTheta = Math.cos(angle);
 
     for (int i = 0; i < northData.length; ++i) {
       rotatedData[i] =
@@ -729,11 +700,11 @@ public class TimeSeriesUtils {
    *
    * @param north Sensor assumed to point north
    * @param east Sensor assumed to point east, orthogonal to north sensor
-   * @param ang Angle to rotate the data along
+   * @param angle Angle to rotate the data along
    * @return New DataBlock whose time series is the rotated data along the
    * given angle, facing east.
    */
-  public static DataBlock rotateX(DataBlock north, DataBlock east, double ang) {
+  public static DataBlock rotateX(DataBlock north, DataBlock east, double angle) {
     long start = east.getStartTime();
     long interval = east.getInterval();
     String name = east.getName();
@@ -741,9 +712,7 @@ public class TimeSeriesUtils {
     double[] northData = north.getData();
     double[] eastData = east.getData();
 
-    DataBlock rotated =
-        new DataBlock(rotateX(northData, eastData, ang), interval, name, start);
-    return rotated;
+    return new DataBlock(rotateX(northData, eastData, angle), interval, name, start);
   }
 
   /**
@@ -756,16 +725,15 @@ public class TimeSeriesUtils {
    * @param northData Timeseries data expected to point north
    * @param eastData Timeseries assumed to point east,
    * orthogonal to north sensor
-   * @param ang Angle to rotate the data along
+   * @param angle Angle to rotate the data along
    * @return New timeseries data rotated data along the
    * given angle, facing east.
    */
-  public static double[]
-  rotateX(double[] northData, double[] eastData, double ang) {
+  private static double[] rotateX(double[] northData, double[] eastData, double angle) {
     double[] rotatedData = new double[northData.length];
 
-    double sinTheta = Math.sin(ang);
-    double cosTheta = Math.cos(ang);
+    double sinTheta = Math.sin(angle);
+    double cosTheta = Math.cos(angle);
 
     for (int i = 0; i < northData.length; ++i) {
       rotatedData[i] =
@@ -785,7 +753,7 @@ public class TimeSeriesUtils {
    * @param factor The factor to increase the size by
    * @return The upsampled series
    */
-  public static double[] upsample(double[] data, int factor) {
+  private static double[] upsample(double[] data, int factor) {
 
     int newLength = data.length * factor;
 
