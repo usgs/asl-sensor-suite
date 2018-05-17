@@ -501,6 +501,47 @@ public class RandomizedExperimentTest {
   }
 
   @Test
+  public void runExperiment_KIEV_LFCalibration() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String calName = dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
+    cCal = cCal.withHour(18).withMinute(49).withSecond(0).withNano(0);
+    long start = cCal.toInstant().toEpochMilli();
+
+    cCal = cCal.withHour(19).withMinute(4);
+    long end = cCal.toInstant().toEpochMilli();
+
+    ds.trim(start, end);
+
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.RANDOMCAL.createExperiment();
+
+    rCal.setLowFrequencyCalibration(false);
+
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+    rCal.setLowFrequencyCalibration(false);
+    List<Complex> fitPoles = rCal.getFitPoles();
+    Complex[] expectedPoles = {
+        new Complex(-306.7741224387797, 0),
+        new Complex(-3.4804079210157486, 0),
+        new Complex(-101.27715855875556, -387.9300826976112),
+        new Complex(-101.27715855875556, 387.9300826976112)
+    };
+    for (int i = 0; i < fitPoles.size(); i++) {
+      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
+      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
+    }
+
+    assertEquals(50.11489080838925, rCal.getFitResidual(), 1E-7);
+    assertEquals(1082.7313334829698, rCal.getInitResidual(), 1E-7);
+  }
+
+  @Test
   public void hasEnoughData_missingInputData() {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");

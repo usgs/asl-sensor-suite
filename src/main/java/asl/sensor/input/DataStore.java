@@ -4,7 +4,6 @@ import asl.sensor.utils.FFTResult;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
 import org.apache.commons.math3.util.Pair;

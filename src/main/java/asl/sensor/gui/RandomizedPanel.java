@@ -308,16 +308,13 @@ public class RandomizedPanel extends ExperimentPanel {
 
     sbInitZ.append(sbFitZ);
 
-    StringBuilder sbR = new StringBuilder();
-    sbR.append("Residuals:");
-    sbR.append('\n');
-    sbR.append("Initial (nom. resp curve): ");
-    sbR.append(DECIMAL_FORMAT.get().format(initialResidual));
-    sbR.append('\n');
-    sbR.append("Best fit: ");
-    sbR.append(DECIMAL_FORMAT.get().format(fitResidual));
+    String sbR = "Residuals:\n"
+        + "Initial (nom. resp curve): "
+        + DECIMAL_FORMAT.get().format(initialResidual)
+        + "\nBest fit: "
+        + DECIMAL_FORMAT.get().format(fitResidual);
 
-    return new String[]{sbInitialPoles.toString(), sbInitZ.toString(), sbR.toString()};
+    return new String[]{sbInitialPoles.toString(), sbInitZ.toString(), sbR};
   }
 
   private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
@@ -325,7 +322,7 @@ public class RandomizedPanel extends ExperimentPanel {
   private final JComboBox<String> plotSelection;
   private JCheckBox lowFrequencyBox, showParams, frequencySpace;
   private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
-  private JSpinner nyquistMultiplier;
+  private final JSpinner nyquistMultiplier;
 
   public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
