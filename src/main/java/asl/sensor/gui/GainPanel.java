@@ -40,74 +40,17 @@ import org.jfree.ui.RectangleAnchor;
 public class GainPanel extends ExperimentPanel
     implements ChangeListener {
 
+  static final double DEFAULT_UP_BOUND = 9.; // low bound is 9 seconds period
+  static final double DEFAULT_LOW_BOUND = 3.;
   private static final long serialVersionUID = 6697458429989867529L;
-
   /**
    * Max value of slider (ranges from 0 to 1000, converted to log10 scale)
    */
   private static final int SLIDER_MAX = 1000;
-  static final double DEFAULT_UP_BOUND = 9.; // low bound is 9 seconds period
-  static final double DEFAULT_LOW_BOUND = 3.;
-
-  /**
-   * Static helper method for getting the formatted inset string directly
-   * from a GainExperiment
-   *
-   * @param experiment GainExperiment with data to be extracted
-   * @param referenceIndex Index of data to be loaded as reference (i.e., 0)
-   * @param lowPeriod low period boundary to take stats over
-   * @param highPeriod high period boundary to take stats over
-   * @return String with data representation of experiment results (mean, standard deviation)
-   */
-  private static String getInsetString(
-      GainExperiment experiment, int referenceIndex, double lowPeriod, double highPeriod) {
-
-    double[] meanAndStdDev =
-        experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
-
-    double mean = meanAndStdDev[0];
-    double standardDeviation = meanAndStdDev[1];
-    double referenceGain = meanAndStdDev[2];
-    double calculatedGain = meanAndStdDev[3];
-
-    return "ratio: " + DECIMAL_FORMAT.get().format(mean)
-        + "\nsigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
-        + "\nref. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
-        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain);
-  }
-
-  /**
-   * Draws the lines marking the boundaries of the current window
-   *
-   * @param lowPrd lower x-axis value (period, in seconds)
-   * @param highPrd upper x-axis value (period, in seconds)
-   * @param chart Chart to add domain markers to
-   * @return XYPlot XYPlot with new domain markers set
-   */
-  static JFreeChart setDomainMarkers(double lowPrd, double highPrd, JFreeChart chart) {
-
-    // make sure lower value is assigned to left, higher to right
-    double tempLow = Math.min(lowPrd, highPrd);
-    highPrd = Math.max(lowPrd, highPrd);
-    lowPrd = tempLow;
-
-    XYPlot plot = chart.getXYPlot();
-    plot.clearDomainMarkers();
-    Marker startMarker = new ValueMarker(lowPrd);
-    startMarker.setStroke(new BasicStroke((float) 1.5));
-    Marker endMarker = new ValueMarker(highPrd);
-    endMarker.setStroke(new BasicStroke((float) 1.5));
-    plot.addDomainMarker(startMarker);
-    plot.addDomainMarker(endMarker);
-    return chart;
-  }
-
   final JSlider leftSlider;
   final JSlider rightSlider;
   final JComboBox<String> referenceSeries;
-
   final JButton recalcButton;
-
   double lowPeriod, highPeriod;
 
   /**
@@ -199,6 +142,59 @@ public class GainPanel extends ExperimentPanel
     constraints.fill = GridBagConstraints.NONE;
     this.add(save, constraints);
 
+  }
+
+  /**
+   * Static helper method for getting the formatted inset string directly
+   * from a GainExperiment
+   *
+   * @param experiment GainExperiment with data to be extracted
+   * @param referenceIndex Index of data to be loaded as reference (i.e., 0)
+   * @param lowPeriod low period boundary to take stats over
+   * @param highPeriod high period boundary to take stats over
+   * @return String with data representation of experiment results (mean, standard deviation)
+   */
+  private static String getInsetString(
+      GainExperiment experiment, int referenceIndex, double lowPeriod, double highPeriod) {
+
+    double[] meanAndStdDev =
+        experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
+
+    double mean = meanAndStdDev[0];
+    double standardDeviation = meanAndStdDev[1];
+    double referenceGain = meanAndStdDev[2];
+    double calculatedGain = meanAndStdDev[3];
+
+    return "ratio: " + DECIMAL_FORMAT.get().format(mean)
+        + "\nsigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
+        + "\nref. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
+        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain);
+  }
+
+  /**
+   * Draws the lines marking the boundaries of the current window
+   *
+   * @param lowPrd lower x-axis value (period, in seconds)
+   * @param highPrd upper x-axis value (period, in seconds)
+   * @param chart Chart to add domain markers to
+   * @return XYPlot XYPlot with new domain markers set
+   */
+  static JFreeChart setDomainMarkers(double lowPrd, double highPrd, JFreeChart chart) {
+
+    // make sure lower value is assigned to left, higher to right
+    double tempLow = Math.min(lowPrd, highPrd);
+    highPrd = Math.max(lowPrd, highPrd);
+    lowPrd = tempLow;
+
+    XYPlot plot = chart.getXYPlot();
+    plot.clearDomainMarkers();
+    Marker startMarker = new ValueMarker(lowPrd);
+    startMarker.setStroke(new BasicStroke((float) 1.5));
+    Marker endMarker = new ValueMarker(highPrd);
+    endMarker.setStroke(new BasicStroke((float) 1.5));
+    plot.addDomainMarker(startMarker);
+    plot.addDomainMarker(endMarker);
+    return chart;
   }
 
   /**

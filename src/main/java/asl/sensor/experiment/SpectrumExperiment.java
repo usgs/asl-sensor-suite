@@ -111,6 +111,15 @@ public class SpectrumExperiment extends Experiment {
   }
 
   /**
+   * Used for testing.
+   *
+   * @return freqSpace
+   */
+  boolean getFreqSpace() {
+    return freqSpace;
+  }
+
+  /**
    * Used to set the x-axis over which the PSDs / cross-powers are plotted,
    * either frequency (Hz) units or sample-interval (s) units
    *
@@ -118,15 +127,6 @@ public class SpectrumExperiment extends Experiment {
    */
   public void setFreqSpace(boolean freqSpace) {
     this.freqSpace = freqSpace;
-  }
-
-  /**
-   * Used for testing.
-   *
-   * @return freqSpace
-   */
-  boolean getFreqSpace() {
-    return freqSpace;
   }
 
 }

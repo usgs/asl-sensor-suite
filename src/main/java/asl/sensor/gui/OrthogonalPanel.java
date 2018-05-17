@@ -25,17 +25,6 @@ public class OrthogonalPanel extends ExperimentPanel {
 
   private static final long serialVersionUID = -2749224338484110043L;
 
-  private static String getInsetString(OrthogonalExperiment ort) {
-    double[] fit = ort.getSolutionParams();
-    double angle = ort.getFitAngle();
-
-    return "Calculated angle between non-reference sensors:\n"
-        + DECIMAL_FORMAT.get().format(angle)
-        + "\nRough est. orientation angles for (non-ref) LH1, LH2 respectively:\n"
-        + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])
-        + "]";
-  }
-
   public OrthogonalPanel(ExperimentFactory experiment) {
     super(experiment);
 
@@ -70,6 +59,17 @@ public class OrthogonalPanel extends ExperimentPanel {
     constraints.gridy += 1;
     this.add(save, constraints);
 
+  }
+
+  private static String getInsetString(OrthogonalExperiment ort) {
+    double[] fit = ort.getSolutionParams();
+    double angle = ort.getFitAngle();
+
+    return "Calculated angle between non-reference sensors:\n"
+        + DECIMAL_FORMAT.get().format(angle)
+        + "\nRough est. orientation angles for (non-ref) LH1, LH2 respectively:\n"
+        + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])
+        + "]";
   }
 
   @Override

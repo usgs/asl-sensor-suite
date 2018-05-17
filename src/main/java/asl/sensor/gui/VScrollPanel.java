@@ -35,6 +35,15 @@ public class VScrollPanel extends JPanel implements Scrollable {
     return scaleVerticallyNotScroll;
   }
 
+  /**
+   * Sets whether or not to enable scrolling in this panel vs. fitting to size
+   *
+   * @param bool True if the panel should NOT have scrolling set
+   */
+  public void setScrollableTracksViewportHeight(boolean bool) {
+    scaleVerticallyNotScroll = bool;
+  }
+
   @Override
   public boolean getScrollableTracksViewportWidth() {
     // never set this panel to scroll vertically
@@ -45,15 +54,6 @@ public class VScrollPanel extends JPanel implements Scrollable {
   public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation,
       int direction) {
     return 10;
-  }
-
-  /**
-   * Sets whether or not to enable scrolling in this panel vs. fitting to size
-   *
-   * @param bool True if the panel should NOT have scrolling set
-   */
-  public void setScrollableTracksViewportHeight(boolean bool) {
-    scaleVerticallyNotScroll = bool;
   }
 
 }

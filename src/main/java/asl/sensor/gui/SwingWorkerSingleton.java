@@ -18,6 +18,10 @@ public class SwingWorkerSingleton {
   private static SwingWorker<Boolean, Void> worker;
   private static ExperimentPanel epHandle;
 
+  private SwingWorkerSingleton() {
+    // empty constructor; worker is built when experiment is passed into it
+  }
+
   public static SwingWorker<Boolean, Void> getInstance() {
     return worker;
   }
@@ -121,10 +125,6 @@ public class SwingWorkerSingleton {
     };
 
     worker.execute();
-  }
-
-  private SwingWorkerSingleton() {
-    // empty constructor; worker is built when experiment is passed into it
   }
 
 }

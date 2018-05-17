@@ -49,8 +49,8 @@ public class DataBlock {
   private static final int MAX_POINTS = 100000;
 
   private final long interval;
-  private long targetInterval;
   private final String name;
+  private long targetInterval;
   private long startTime, endTime;
   private Map<Long, double[]> dataMap;
   private long trimmedStart, trimmedEnd;

@@ -21,6 +21,13 @@ import org.jfree.data.xy.XYSeriesCollection;
  */
 public class OrthogonalExperiment extends Experiment {
 
+  private double[] diffs;
+  private double angle;
+
+  public OrthogonalExperiment() {
+    super();
+  }
+
   /**
    * Return the rotated signal given an angle and orthogonal components
    *
@@ -40,14 +47,6 @@ public class OrthogonalExperiment extends Experiment {
     double cosTheta = Math.cos(theta);
 
     return refX.mapMultiply(sinTheta).add(refY.mapMultiply(cosTheta));
-  }
-
-  private double[] diffs;
-
-  private double angle;
-
-  public OrthogonalExperiment() {
-    super();
   }
 
   @Override

@@ -44,11 +44,10 @@ public class AzimuthPanel extends ExperimentPanel {
   private static final long serialVersionUID = 4088024342809622854L;
 
   private final JSpinner offsetSpinner; // select how far from north to set reference data
-  private JFreeChart angleChart, estimationChart; // plot angle, plot windowed estimation angle and correlation
+  private final JComboBox<String> chartSelector;
   // note that some overrides are necessary because angle chart is a polar plot, not xy plot
   // so things like progress updates are called in a different manner
-
-  private final JComboBox<String> chartSelector;
+  private JFreeChart angleChart, estimationChart; // plot angle, plot windowed estimation angle and correlation
 
   public AzimuthPanel(ExperimentFactory experiment) {
     super(experiment);

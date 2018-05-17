@@ -82,49 +82,21 @@ public class InputPanel
     extends JPanel
     implements ActionListener, ChangeListener {
 
+  public static final int SLIDER_MAX = 10000;
   private static final long serialVersionUID = -7302813951637543526L;
-
   /**
    * Default height of image produced by the save-as-image function
    * (each chart is 240 pixels tall)
    */
   private static final int IMAGE_HEIGHT = 240;
   private static final int IMAGE_WIDTH = 640;
-
   private static final int MAX_UNSCROLLED = 3;
-
   private static final int PLOTS_PER_PAGE = 3;
-
   private static final int FILE_COUNT = DataStore.FILE_COUNT;
-
   /**
    * Minimum space of the two sliders.
    */
   private static final int MARGIN = 10;
-  public static final int SLIDER_MAX = 10000;
-
-  /**
-   * Gets the value of start or end time from slider value and DataBlock
-   *
-   * @param dataBlock DataBlock corresponding to one of the plots
-   * @param sliderValue Value of starting or ending time slider [0-SLIDER_MAX]
-   * @return Long that represents start or end time matching slider's value
-   */
-  public static long getMarkerLocation(DataBlock dataBlock, int sliderValue) {
-    long start = dataBlock.getStartTime();
-    long len = (dataBlock.getInterval()) * dataBlock.size();
-    return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
-  }
-
-  private static int getSliderValue(DataBlock dataBlock, long timeStamp) {
-    long start = dataBlock.getStartTime();
-    long length = dataBlock.getInterval() * dataBlock.size();
-    return (int) ((SLIDER_MAX * (timeStamp - start)) / length);
-  }
-
-  private int activePlots = FILE_COUNT; // how much data is being displayed
-
-  private DataStore dataStore; // holds data to be plotted in each chartpanel
   private final ChartPanel[] chartPanels; // show the data for a given input
   private final Color[] defaultColor = {
       ChartColor.LIGHT_RED,
@@ -134,31 +106,26 @@ public class InputPanel
   private final JButton zoomIn; // select a given window
   private final JButton zoomOut; // revert to full data region
   private final JButton clearAll; // remove all data
-  private JFileChooser fileChooser;
   private final JSlider leftSlider;
   private final JSlider rightSlider;
   private final JScrollPane inputScrollPane;
-
   private final EditableDateDisplayPanel startDate;
   private final EditableDateDisplayPanel endDate;
-
   private final FileOperationJButton[] seedLoaders;
   private final FileOperationJButton[] seedAppenders;
   private final JTextComponent[] seedFileNames;
   private final JButton[] respLoaders;
   private final JTextComponent[] respFileNames;
   private final JButton[] clearButton;
-
   private final JLabel[] channelType;
-
   private final JPanel[] chartSubpanels;
-
+  private int activePlots = FILE_COUNT; // how much data is being displayed
+  private DataStore dataStore; // holds data to be plotted in each chartpanel
+  private JFileChooser fileChooser;
   // used to store current directory locations
   private String seedDirectory = "data";
   private String respDirectory = "responses";
-
   private int lastRespIndex;
-
   private String saveDirectory = System.getProperty("user.home");
 
   /**
@@ -312,6 +279,25 @@ public class InputPanel
     fileChooser = new JFileChooser();
     lastRespIndex = -1;
 
+  }
+
+  /**
+   * Gets the value of start or end time from slider value and DataBlock
+   *
+   * @param dataBlock DataBlock corresponding to one of the plots
+   * @param sliderValue Value of starting or ending time slider [0-SLIDER_MAX]
+   * @return Long that represents start or end time matching slider's value
+   */
+  public static long getMarkerLocation(DataBlock dataBlock, int sliderValue) {
+    long start = dataBlock.getStartTime();
+    long len = (dataBlock.getInterval()) * dataBlock.size();
+    return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
+  }
+
+  private static int getSliderValue(DataBlock dataBlock, long timeStamp) {
+    long start = dataBlock.getStartTime();
+    long length = dataBlock.getInterval() * dataBlock.size();
+    return (int) ((SLIDER_MAX * (timeStamp - start)) / length);
   }
 
   /**

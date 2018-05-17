@@ -55,6 +55,94 @@ import org.jfree.ui.VerticalAlignment;
 public class RandomizedPanel extends ExperimentPanel {
 
   private static final long serialVersionUID = -1791709117080520178L;
+  private final JComboBox<String> plotSelection;
+  private final JSpinner nyquistMultiplier;
+  private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
+      residualXAxis, residualPeriodAxis;
+  private JCheckBox lowFrequencyBox, showParams, frequencySpace;
+  private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
+  public RandomizedPanel(ExperimentFactory experiment) {
+    super(experiment);
+
+    SpinnerModel spinModel = new SpinnerNumberModel(80., 30., 80., 1.);
+    nyquistMultiplier = new JSpinner(spinModel);
+    JLabel nyquistMultiplierLabel = new JLabel("% bound of nyquist for HF cals");
+    nyquistMultiplierLabel.setLabelFor(nyquistMultiplier);
+    nyquistMultiplierLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
+    nyquistMultiplierLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+    JPanel labelPanel = new JPanel();
+    labelPanel.add(nyquistMultiplierLabel);
+
+    channelType[0] = "Calibration input";
+    channelType[1] = "Calibration output from sensor (RESP required)";
+
+    initAxes();
+
+    applyAxesToChart(); // now that we've got axes defined
+
+    magnitudeChart = buildChart(null, xAxis, yAxis);
+    argumentChart = buildChart(null, xAxis, degreeAxis);
+    residualPhaseChart = buildChart(null, xAxis, residualPhaseAxis);
+    residualAmplitudeChart = buildChart(null, xAxis, residualAmplitudeAxis);
+
+    // set the GUI components
+    this.setLayout(new GridBagLayout());
+    GridBagConstraints constraints = new GridBagConstraints();
+
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.gridwidth = 3;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(chartPanel, constraints);
+
+    // place the other UI elements in a single row below the chart
+    constraints.gridwidth = 1;
+    constraints.gridheight = 2;
+    constraints.weighty = 0.0;
+    constraints.weightx = 0.0;
+    constraints.anchor = GridBagConstraints.WEST;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridy += 1;
+    constraints.gridx = 0;
+    JPanel checkBoxPanel = new JPanel();
+    checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
+    checkBoxPanel.add(lowFrequencyBox);
+    checkBoxPanel.add(showParams);
+    checkBoxPanel.add(frequencySpace);
+    this.add(checkBoxPanel, constraints);
+
+    constraints.gridx += 1;
+    constraints.weightx = 1.0;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.SOUTH;
+    this.add(save, constraints);
+
+    // plot selection combo box
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridheight = 1;
+    constraints.gridy = 1;
+    constraints.gridx += 1;
+    constraints.weightx = 0;
+    constraints.anchor = GridBagConstraints.CENTER;
+    JPanel nyquistLimitPanel = new JPanel();
+    nyquistLimitPanel.setLayout(new BoxLayout(nyquistLimitPanel, BoxLayout.X_AXIS));
+    nyquistLimitPanel.add(nyquistMultiplier);
+    nyquistLimitPanel.add(nyquistMultiplierLabel);
+    this.add(nyquistLimitPanel, constraints);
+
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.gridy += 1;
+    plotSelection = new JComboBox<>();
+    plotSelection.addItem(ResponseExperiment.MAGNITUDE);
+    plotSelection.addItem(ResponseExperiment.ARGUMENT);
+    plotSelection.addItem("Residual amplitude plot");
+    plotSelection.addItem("Residual phase plot");
+    plotSelection.addActionListener(this);
+    this.add(plotSelection, constraints);
+  }
 
   private static String complexListToString(List<Complex> complexList) {
     final int MAX_LINE = 2; // maximum number of entries per line
@@ -254,7 +342,6 @@ public class RandomizedPanel extends ExperimentPanel {
     return new String[]{resultString.toString()};
   }
 
-
   /**
    * Static helper method for getting the formatted inset string directly
    * from a RandomizedExperiment
@@ -315,96 +402,6 @@ public class RandomizedPanel extends ExperimentPanel {
         + DECIMAL_FORMAT.get().format(fitResidual);
 
     return new String[]{sbInitialPoles.toString(), sbInitZ.toString(), sbR};
-  }
-
-  private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
-      residualXAxis, residualPeriodAxis;
-  private final JComboBox<String> plotSelection;
-  private JCheckBox lowFrequencyBox, showParams, frequencySpace;
-  private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
-  private final JSpinner nyquistMultiplier;
-
-  public RandomizedPanel(ExperimentFactory experiment) {
-    super(experiment);
-
-    SpinnerModel spinModel = new SpinnerNumberModel(80., 30., 80., 1.);
-    nyquistMultiplier = new JSpinner(spinModel);
-    JLabel nyquistMultiplierLabel = new JLabel("% bound of nyquist for HF cals");
-    nyquistMultiplierLabel.setLabelFor(nyquistMultiplier);
-    nyquistMultiplierLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
-    nyquistMultiplierLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-    JPanel labelPanel = new JPanel();
-    labelPanel.add(nyquistMultiplierLabel);
-
-    channelType[0] = "Calibration input";
-    channelType[1] = "Calibration output from sensor (RESP required)";
-
-    initAxes();
-
-    applyAxesToChart(); // now that we've got axes defined
-
-    magnitudeChart = buildChart(null, xAxis, yAxis);
-    argumentChart = buildChart(null, xAxis, degreeAxis);
-    residualPhaseChart = buildChart(null, xAxis, residualPhaseAxis);
-    residualAmplitudeChart = buildChart(null, xAxis, residualAmplitudeAxis);
-
-    // set the GUI components
-    this.setLayout(new GridBagLayout());
-    GridBagConstraints constraints = new GridBagConstraints();
-
-    constraints.fill = GridBagConstraints.BOTH;
-    constraints.gridx = 0;
-    constraints.gridy = 0;
-    constraints.weightx = 1.0;
-    constraints.weighty = 1.0;
-    constraints.gridwidth = 3;
-    constraints.anchor = GridBagConstraints.CENTER;
-    this.add(chartPanel, constraints);
-
-    // place the other UI elements in a single row below the chart
-    constraints.gridwidth = 1;
-    constraints.gridheight = 2;
-    constraints.weighty = 0.0;
-    constraints.weightx = 0.0;
-    constraints.anchor = GridBagConstraints.WEST;
-    constraints.fill = GridBagConstraints.NONE;
-    constraints.gridy += 1;
-    constraints.gridx = 0;
-    JPanel checkBoxPanel = new JPanel();
-    checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
-    checkBoxPanel.add(lowFrequencyBox);
-    checkBoxPanel.add(showParams);
-    checkBoxPanel.add(frequencySpace);
-    this.add(checkBoxPanel, constraints);
-
-    constraints.gridx += 1;
-    constraints.weightx = 1.0;
-    constraints.fill = GridBagConstraints.NONE;
-    constraints.anchor = GridBagConstraints.SOUTH;
-    this.add(save, constraints);
-
-    // plot selection combo box
-    constraints.fill = GridBagConstraints.BOTH;
-    constraints.gridheight = 1;
-    constraints.gridy = 1;
-    constraints.gridx += 1;
-    constraints.weightx = 0;
-    constraints.anchor = GridBagConstraints.CENTER;
-    JPanel nyquistLimitPanel = new JPanel();
-    nyquistLimitPanel.setLayout(new BoxLayout(nyquistLimitPanel, BoxLayout.X_AXIS));
-    nyquistLimitPanel.add(nyquistMultiplier);
-    nyquistLimitPanel.add(nyquistMultiplierLabel);
-    this.add(nyquistLimitPanel, constraints);
-
-    constraints.fill = GridBagConstraints.NONE;
-    constraints.gridy += 1;
-    plotSelection = new JComboBox<>();
-    plotSelection.addItem(ResponseExperiment.MAGNITUDE);
-    plotSelection.addItem(ResponseExperiment.ARGUMENT);
-    plotSelection.addItem("Residual amplitude plot");
-    plotSelection.addItem("Residual phase plot");
-    plotSelection.addActionListener(this);
-    this.add(plotSelection, constraints);
   }
 
   @Override

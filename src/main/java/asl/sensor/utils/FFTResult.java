@@ -26,6 +26,23 @@ import uk.me.berndporr.iirj.Butterworth;
  */
 public class FFTResult {
 
+  final private Complex[] transform; // the FFT data
+  final private double[] freqs; // array of frequencies matching the fft data
+
+  /**
+   * Instantiate the structure holding an FFT and its frequency range
+   * (Used to return data from the spectral density calculations)
+   * Holds results of an FFT calculation already performed, usable in return
+   * statements
+   *
+   * @param inPSD Precalculated FFT result for some timeseries
+   * @param inFreq Frequencies matched up to each FFT value
+   */
+  private FFTResult(Complex[] inPSD, double[] inFreq) {
+    transform = inPSD;
+    freqs = inFreq;
+  }
+
   /**
    * Filter out data outside of the range between the low and high frequencies;
    * can be used for a low-pass filter if low frequency is set to 0
@@ -256,7 +273,6 @@ public class FFTResult {
     return xys;
   }
 
-
   /**
    * Produce a multitaper series using a sine function for use in spectral
    * calculations (i.e., specified when calculating PSD values)
@@ -343,7 +359,6 @@ public class FFTResult {
 
     return fft.transform(toFFT, TransformType.FORWARD);
   }
-
 
   /**
    * Calculates the FFT of some timeseries data (double array)
@@ -609,22 +624,24 @@ public class FFTResult {
 
   }
 
-  final private Complex[] transform; // the FFT data
-
-  final private double[] freqs; // array of frequencies matching the fft data
-
   /**
-   * Instantiate the structure holding an FFT and its frequency range
-   * (Used to return data from the spectral density calculations)
-   * Holds results of an FFT calculation already performed, usable in return
-   * statements
+   * Get the index of the value closest to a given target frequency in a list assuming the entries
+   * in the list are equally spaced
    *
-   * @param inPSD Precalculated FFT result for some timeseries
-   * @param inFreq Frequencies matched up to each FFT value
+   * @param frequencies List of frequencies to find the target location
+   * @param targetFrequency Frequency of interest
+   * @return Index of closest frequency value
    */
-  private FFTResult(Complex[] inPSD, double[] inFreq) {
-    transform = inPSD;
-    freqs = inFreq;
+  public static int getIndexOfFrequency(double[] frequencies, double targetFrequency) {
+    if (frequencies.length == 1) {
+      return 0;
+    }
+
+    double deltaFreq = frequencies[1] - frequencies[0];
+    int index = (int) Math.round((targetFrequency - frequencies[0]) / deltaFreq);
+    // in almost all cases the index here should be in the list, but if not, bounds check
+    index = Math.max(index, 0);
+    return Math.min(index, frequencies.length - 1);
   }
 
   /**
@@ -673,26 +690,6 @@ public class FFTResult {
    */
   public int size() {
     return transform.length;
-  }
-
-  /**
-   * Get the index of the value closest to a given target frequency in a list assuming the entries
-   * in the list are equally spaced
-   *
-   * @param frequencies List of frequencies to find the target location
-   * @param targetFrequency Frequency of interest
-   * @return Index of closest frequency value
-   */
-  public static int getIndexOfFrequency(double[] frequencies, double targetFrequency) {
-    if (frequencies.length == 1) {
-      return 0;
-    }
-
-    double deltaFreq = frequencies[1] - frequencies[0];
-    int index = (int) Math.round((targetFrequency - frequencies[0]) / deltaFreq);
-    // in almost all cases the index here should be in the list, but if not, bounds check
-    index = Math.max(index, 0);
-    return Math.min(index, frequencies.length - 1);
   }
 
 }

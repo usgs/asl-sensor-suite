@@ -26,31 +26,7 @@ import org.jfree.ui.RectangleAnchor;
 public class NoiseNinePanel extends NoisePanel {
 
   private static final long serialVersionUID = -8049021432657749975L;
-
-  /**
-   * Get string of data to used when building PDFs in specific circumstances
-   *
-   * @param experiment Experiment to extract data from
-   * @return String representing experiment data (rotation angles)
-   */
-  public static String getInsetString(NoiseNineExperiment experiment) {
-    double[] angles = experiment.getNorthAngles();
-    StringBuilder sb = new StringBuilder();
-    sb.append("Angle of rotation of north sensor 2 (deg): ");
-    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
-    sb.append("\nAngle of rotation of north sensor 3 (deg): ");
-    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
-    sb.append("\n");
-    angles = experiment.getEastAngles();
-    sb.append("Angle of rotation of east sensor 2 (deg): ");
-    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
-    sb.append("\nAngle of rotation of east sensor 3 (deg): ");
-    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
-    return sb.toString();
-  }
-
   private final JComboBox<String> plotSelection;
-
   private JFreeChart northChart, eastChart, verticalChart;
 
   /**
@@ -133,6 +109,28 @@ public class NoiseNinePanel extends NoisePanel {
 
     revalidate();
 
+  }
+
+  /**
+   * Get string of data to used when building PDFs in specific circumstances
+   *
+   * @param experiment Experiment to extract data from
+   * @return String representing experiment data (rotation angles)
+   */
+  public static String getInsetString(NoiseNineExperiment experiment) {
+    double[] angles = experiment.getNorthAngles();
+    StringBuilder sb = new StringBuilder();
+    sb.append("Angle of rotation of north sensor 2 (deg): ");
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
+    sb.append("\nAngle of rotation of north sensor 3 (deg): ");
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
+    sb.append("\n");
+    angles = experiment.getEastAngles();
+    sb.append("Angle of rotation of east sensor 2 (deg): ");
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0])));
+    sb.append("\nAngle of rotation of east sensor 3 (deg): ");
+    sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1])));
+    return sb.toString();
   }
 
   @Override

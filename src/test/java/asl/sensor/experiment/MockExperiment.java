@@ -11,12 +11,12 @@ class MockExperiment extends Experiment {
   boolean blocksNeededCalled = false;
 
   boolean setHasEnoughData = true;
-  private int numberBlocksNeeded = 0;
   /**
    * Counts the total number of times fireStateChange was called.
    * It is used for verifing that methods are still calling when we expect them too.
    */
   int numberOfChangesFired = 0;
+  private int numberBlocksNeeded = 0;
 
   MockExperiment() {
     super();

@@ -38,10 +38,83 @@ import org.apache.commons.math3.util.Pair;
  */
 public class InstrumentResponse {
 
-  private static final int MAX_GAIN_STAGES = 10;
   public static final double PEAK_MULTIPLIER = 0.8;
   public static final DateTimeFormatter RESP_DT_FORMAT =
       DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
+  private static final int MAX_GAIN_STAGES = 10;
+  private TransferFunction transferType;
+  // gain values, indexed by stage
+  private double[] gain;
+  private int numStages;
+  // poles and zeros
+  private List<Pair<Complex, Integer>> zeros;
+  //private Map<Complex, Integer> zeros;
+  private List<Pair<Complex, Integer>> poles;
+  //private Map<Complex, Integer> poles;
+  private String name;
+  private Unit unitType;
+  private double normalization; // A0 normalization factor
+  private double normalFreq; // cuz she's a normalFreq, normalFreq
+  private Instant epochStart, epochEnd;
+  /**
+   * Reads in a response from an already-accessed bufferedreader handle
+   * and assigns it to the name given (used with embedded response files)
+   * Only the last epoch of a multi-epoch response file is used.
+   *
+   * @param br Handle to a buffered reader of a given RESP file
+   * @param name Name of RESP file to be used internally
+   */
+  private InstrumentResponse(BufferedReader br, String name) throws IOException {
+
+    this.name = name;
+
+    parserDriver(br, null);
+  }
+
+  /**
+   * Create a copy of an existing response object
+   *
+   * @param responseIn The response object to be copied
+   */
+  public InstrumentResponse(InstrumentResponse responseIn) {
+    transferType = responseIn.getTransferFunction();
+
+    gain = responseIn.getGain();
+    numStages = responseIn.getNumStages();
+
+    zeros = new ArrayList<>(responseIn.getZerosList());
+    poles = new ArrayList<>(responseIn.getPolesList());
+
+    unitType = responseIn.getUnits();
+
+    normalization = responseIn.getNormalization();
+    normalFreq = responseIn.getNormalizationFrequency();
+
+    name = responseIn.getName();
+    epochStart = responseIn.getEpochStart();
+    epochEnd = responseIn.getEpochEnd();
+  }
+  /**
+   * Reads in an instrument response from a RESP file with the specific epoch
+   * If the RESP file has multiple epochs, only the last one is used.
+   *
+   * @param filename full path of the RESP file
+   */
+  public InstrumentResponse(String filename, Instant epoch) throws IOException {
+    name = new File(filename).getName();
+    parseResponseFile(filename, epoch);
+  }
+
+  /**
+   * Reads in an instrument response from a RESP file and gets the last epoch
+   * If the RESP file has multiple epochs, only the last one is used.
+   *
+   * @param filename full path of the RESP file
+   */
+  public InstrumentResponse(String filename) throws IOException {
+    this(filename, null);
+
+  }
 
   /**
    * Get one of the response files embedded in the program
@@ -93,6 +166,7 @@ public class InstrumentResponse {
 
     return respFilenames;
   }
+  // (the A0 norm. factor's frequency)
 
   /**
    * Take in a string representing the path to a RESP file and outputs the epochs contained in it.
@@ -248,88 +322,51 @@ public class InstrumentResponse {
     return valueList;
   }
 
-  private TransferFunction transferType;
-
-  // gain values, indexed by stage
-  private double[] gain;
-
-  private int numStages;
-  // poles and zeros
-  private List<Pair<Complex, Integer>> zeros;
-
-  //private Map<Complex, Integer> zeros;
-  private List<Pair<Complex, Integer>> poles;
-  //private Map<Complex, Integer> poles;
-  private String name;
-
-  private Unit unitType;
-
-  private double normalization; // A0 normalization factor
-
-  private double normalFreq; // cuz she's a normalFreq, normalFreq
-  // (the A0 norm. factor's frequency)
-
-  private Instant epochStart, epochEnd;
-
   /**
-   * Reads in a response from an already-accessed bufferedreader handle
-   * and assigns it to the name given (used with embedded response files)
-   * Only the last epoch of a multi-epoch response file is used.
+   * Skip to the desired epoch start Instant.
+   * If it does not exist, the parser will throw an exception later.
    *
-   * @param br Handle to a buffered reader of a given RESP file
-   * @param name Name of RESP file to be used internally
+   * @param reader the shared BufferedReader with RESP file
+   * @param epoch the desired epoch's start Instant.
+   * @throws IOException on file read errors.
    */
-  private InstrumentResponse(BufferedReader br, String name) throws IOException {
-
-    this.name = name;
-
-    parserDriver(br, null);
+  static void skipToSelectedEpoch(BufferedReader reader, Instant epoch) throws IOException {
+    String line = reader.readLine();
+    while (line != null) {
+      if (line.startsWith("B052F22")) {
+        Instant start = parseTermAsDate(line);
+        if (epoch.equals(start)) {
+          break;
+        }
+      }
+      line = reader.readLine();
+    }
   }
 
-  /**
-   * Create a copy of an existing response object
-   *
-   * @param responseIn The response object to be copied
-   */
-  public InstrumentResponse(InstrumentResponse responseIn) {
-    transferType = responseIn.getTransferFunction();
-
-    gain = responseIn.getGain();
-    numStages = responseIn.getNumStages();
-
-    zeros = new ArrayList<>(responseIn.getZerosList());
-    poles = new ArrayList<>(responseIn.getPolesList());
-
-    unitType = responseIn.getUnits();
-
-    normalization = responseIn.getNormalization();
-    normalFreq = responseIn.getNormalizationFrequency();
-
-    name = responseIn.getName();
-    epochStart = responseIn.getEpochStart();
-    epochEnd = responseIn.getEpochEnd();
+  static TransferFunction parseTransferType(String word) {
+    switch (word.charAt(0)) {
+      case 'A':
+        return TransferFunction.LAPLACIAN;
+      case 'B':
+        return TransferFunction.LINEAR;
+      default:
+        // defaulting to LAPLACIAN if type is different from a or b
+        // which is likely to be more correct
+        return TransferFunction.LAPLACIAN;
+    }
   }
 
-  /**
-   * Reads in an instrument response from a RESP file with the specific epoch
-   * If the RESP file has multiple epochs, only the last one is used.
-   *
-   * @param filename full path of the RESP file
-   */
-  public InstrumentResponse(String filename, Instant epoch) throws IOException {
-    name = new File(filename).getName();
-    parseResponseFile(filename, epoch);
-  }
-
-  /**
-   * Reads in an instrument response from a RESP file and gets the last epoch
-   * If the RESP file has multiple epochs, only the last one is used.
-   *
-   * @param filename full path of the RESP file
-   */
-  public InstrumentResponse(String filename) throws IOException {
-    this(filename, null);
-
+  static Unit parseUnitType(String unit) throws IOException {
+    switch (unit.toLowerCase()) {
+      case "m/s":
+        return Unit.VELOCITY;
+      case "m/s**2":
+        return Unit.ACCELERATION;
+      default:
+        String e = "Unit type was given as " + unit + ".\n";
+        e += "Nonstandard unit, or not a velocity or acceleration";
+        throw new IOException(e);
+    }
   }
 
   /**
@@ -565,6 +602,15 @@ public class InstrumentResponse {
   }
 
   /**
+   * Set name of response file, used in some plot and report generation
+   *
+   * @param newName New name to give this response
+   */
+  public void setName(String newName) {
+    name = newName;
+  }
+
+  /**
    * Get the normalization of the response
    *
    * @return normalization constant
@@ -609,8 +655,29 @@ public class InstrumentResponse {
     return out;
   }
 
+  /**
+   * Replace the current poles of this response with new ones from a list
+   *
+   * @param poleList List of poles to replace the current response poles with (repeated poles listed
+   * the number of times they appear)
+   */
+  public void setPoles(List<Complex> poleList) {
+    Complex[] poleArr = poleList.toArray(new Complex[]{});
+    setPoles(poleArr);
+  }
+
   private List<Pair<Complex, Integer>> getPolesList() {
     return poles;
+  }
+
+  /**
+   * Apply new poles to this response object
+   *
+   * @param newPoles List of paired values; first entry is a unique pole in response, and
+   * second is the number of times it appears
+   */
+  private void setPolesList(List<Pair<Complex, Integer>> newPoles) {
+    poles = newPoles;
   }
 
   /**
@@ -799,53 +866,6 @@ public class InstrumentResponse {
   }
 
   /**
-   * Skip to the desired epoch start Instant.
-   * If it does not exist, the parser will throw an exception later.
-   *
-   * @param reader the shared BufferedReader with RESP file
-   * @param epoch the desired epoch's start Instant.
-   * @throws IOException on file read errors.
-   */
-  static void skipToSelectedEpoch(BufferedReader reader, Instant epoch) throws IOException {
-    String line = reader.readLine();
-    while (line != null) {
-      if (line.startsWith("B052F22")) {
-        Instant start = parseTermAsDate(line);
-        if (epoch.equals(start)) {
-          break;
-        }
-      }
-      line = reader.readLine();
-    }
-  }
-
-  static TransferFunction parseTransferType(String word) {
-    switch (word.charAt(0)) {
-      case 'A':
-        return TransferFunction.LAPLACIAN;
-      case 'B':
-        return TransferFunction.LINEAR;
-      default:
-        // defaulting to LAPLACIAN if type is different from a or b
-        // which is likely to be more correct
-        return TransferFunction.LAPLACIAN;
-    }
-  }
-
-  static Unit parseUnitType(String unit) throws IOException {
-    switch (unit.toLowerCase()) {
-      case "m/s":
-        return Unit.VELOCITY;
-      case "m/s**2":
-        return Unit.ACCELERATION;
-      default:
-        String e = "Unit type was given as " + unit + ".\n";
-        e += "Nonstandard unit, or not a velocity or acceleration";
-        throw new IOException(e);
-    }
-  }
-
-  /**
    * Parses a response file of the sort found on the Iris Nominal Response
    * Library. These files can be found at http://ds.iris.edu/NRL/
    * This function currently does not parse a full response file, but instead
@@ -943,15 +963,6 @@ public class InstrumentResponse {
   }
 
   /**
-   * Set name of response file, used in some plot and report generation
-   *
-   * @param newName New name to give this response
-   */
-  public void setName(String newName) {
-    name = newName;
-  }
-
-  /**
    * Replace the current poles of this response with new ones from an array
    *
    * @param poleList Array of poles to replace the current response poles with (repeated poles
@@ -959,27 +970,6 @@ public class InstrumentResponse {
    */
   private void setPoles(Complex[] poleList) {
     poles = setComponentValues(poleList);
-  }
-
-  /**
-   * Replace the current poles of this response with new ones from a list
-   *
-   * @param poleList List of poles to replace the current response poles with (repeated poles listed
-   * the number of times they appear)
-   */
-  public void setPoles(List<Complex> poleList) {
-    Complex[] poleArr = poleList.toArray(new Complex[]{});
-    setPoles(poleArr);
-  }
-
-  /**
-   * Apply new poles to this response object
-   *
-   * @param newPoles List of paired values; first entry is a unique pole in response, and
-   * second is the number of times it appears
-   */
-  private void setPolesList(List<Pair<Complex, Integer>> newPoles) {
-    poles = newPoles;
   }
 
   /**
