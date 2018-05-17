@@ -2,14 +2,10 @@ package asl.sensor.experiment;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.test.TestUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
@@ -17,7 +13,7 @@ import org.junit.Test;
 
 public class StepExperimentTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void testKievGoodCorner() throws Exception {
@@ -41,7 +37,7 @@ public class StepExperimentTest {
   }
 
   @Test
-  public void testKonoGoodCorner() throws Exception{
+  public void testKonoGoodCorner() throws Exception {
     DataStore ds = new DataStore();
     String testFolder = folder + "kono-step/";
     String fname1 = "_BC1.512.seed";

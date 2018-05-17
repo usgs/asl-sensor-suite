@@ -12,7 +12,7 @@ import org.junit.Test;
 
 public class SineExperimentTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   private static DataStore dataStore;
 

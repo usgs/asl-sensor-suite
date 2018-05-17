@@ -25,9 +25,9 @@ import org.junit.Test;
 
 public class NoiseNineExperimentTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  private String currentDir = System.getProperty("user.dir");
+  private final String currentDir = System.getProperty("user.dir");
 
   @Test
   public void canRunAndPlotTest1() throws Exception {

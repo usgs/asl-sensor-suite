@@ -44,7 +44,7 @@ import org.junit.Test;
 
 public class RandomizedExperimentTest {
 
-  public static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
   private static final String testRespName =
       folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
 
@@ -275,14 +275,13 @@ public class RandomizedExperimentTest {
 
   }
 
-  public DataStore setUpTest1() throws IOException {
+  private DataStore setUpTest1() {
 
-    String respName = testRespName;
     String dataFolderName = folder + "random-high-32+70i/";
     String calName = dataFolderName + "_EC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
 
-    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    DataStore ds = DataStoreUtils.createFromNames(testRespName, calName, sensOutName);
     OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
 
     cCal = cCal.withMinute(36);
@@ -290,7 +289,6 @@ public class RandomizedExperimentTest {
     long start = cCal.toInstant().toEpochMilli();
 
     cCal = cCal.withMinute(41);
-    // System.out.println( "end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.toInstant().toEpochMilli();
 
     ds.trim(start, end);
@@ -535,7 +533,7 @@ public class RandomizedExperimentTest {
     rCal.setLowFrequencyCalibration(false);
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
-        new Complex(-0.012781625484629284,-0.012442058263140014),
+        new Complex(-0.012781625484629284, -0.012442058263140014),
         new Complex(-0.012781625484629284, 0.012442058263140014)
     };
     for (int i = 0; i < fitPoles.size(); i++) {

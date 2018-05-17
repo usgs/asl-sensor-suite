@@ -37,12 +37,12 @@ import org.junit.Test;
 
 public class TimeSeriesUtilsTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  public String station = "TST5";
-  public String location = "00";
-  public String channel = "BH0";
-  public String fileID = station + "_" + location + "_" + channel + ".512.seed";
+  private final String station = "TST5";
+  private final String location = "00";
+  private final String channel = "BH0";
+  private final String fileID = station + "_" + location + "_" + channel + ".512.seed";
 
   @Test
   public void canGetFile() {
@@ -184,10 +184,10 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public final void euclidGCD_basicTest() {
-    assertEquals(50l, euclidGCD(100, 50));
-    assertEquals(50l, euclidGCD(50, 100));
-    assertEquals(3l, euclidGCD(999, 105));
-    assertEquals(2l, euclidGCD(2147483612, 2137483646));
+    assertEquals(50L, euclidGCD(100, 50));
+    assertEquals(50L, euclidGCD(50, 100));
+    assertEquals(3L, euclidGCD(999, 105));
+    assertEquals(2L, euclidGCD(2147483612, 2137483646));
   }
 
   @Test

@@ -8,14 +8,13 @@ import static org.junit.Assert.assertTrue;
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
 import edu.iris.dmc.seedcodec.CodecException;
-import edu.iris.dmc.seedcodec.UnsupportedCompressionType;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import org.junit.Test;
 
 public class SpectrumExperimentTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void spectrumExperiment_constructorInitializes() {
@@ -29,7 +28,7 @@ public class SpectrumExperimentTest {
   }
 
   @Test
-  public void backend_standardData() throws SeedFormatException, UnsupportedCompressionType,
+  public void backend_standardData() throws SeedFormatException,
       CodecException, IOException {
     //There doesn't appear to be any "good results" to compare against since it primarily plots.
     //We can at least check the below
@@ -66,7 +65,7 @@ public class SpectrumExperimentTest {
   }
 
   @Test
-  public void hasEnoughData_notEnoughData() throws SeedFormatException, UnsupportedCompressionType,
+  public void hasEnoughData_notEnoughData() throws SeedFormatException,
       CodecException, IOException {
     SpectrumExperiment experiment = new SpectrumExperiment();
     DataStore ds = new DataStore();
@@ -83,7 +82,7 @@ public class SpectrumExperimentTest {
 
   @Test
   public void hasEnoughData_allNeededDataPresent() throws SeedFormatException,
-      UnsupportedCompressionType, CodecException, IOException {
+      CodecException, IOException {
     SpectrumExperiment experiment = new SpectrumExperiment();
     DataStore ds = new DataStore();
     String resp = TestUtils.RESP_LOCATION + "T-compact_Q330HR_BH_40";

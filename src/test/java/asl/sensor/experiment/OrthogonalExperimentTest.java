@@ -3,6 +3,12 @@ package asl.sensor.experiment;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
@@ -10,15 +16,10 @@ import java.util.Calendar;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
 import org.junit.Test;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.input.DataStore;
-import asl.sensor.test.TestUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class OrthogonalExperimentTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   private String getCleanData() {
     return "ANMO.10";
@@ -242,7 +243,7 @@ public class OrthogonalExperimentTest {
   }
 
   @Test
-  public void rotateSignal_thetaLessThanZero(){
+  public void rotateSignal_thetaLessThanZero() {
     double[] x = {0.};
     RealVector xVector = MatrixUtils.createRealVector(x);
     double[] y = {1.};
@@ -253,7 +254,7 @@ public class OrthogonalExperimentTest {
   }
 
   @Test
-  public void rotateSignal_thetaGreaterThanZero(){
+  public void rotateSignal_thetaGreaterThanZero() {
     double[] x = {0.};
     RealVector xVector = MatrixUtils.createRealVector(x);
     double[] y = {1.};
@@ -264,7 +265,7 @@ public class OrthogonalExperimentTest {
   }
 
   @Test
-  public void rotateSignal_thetaIsZero(){
+  public void rotateSignal_thetaIsZero() {
     double[] x = {0.};
     RealVector xVector = MatrixUtils.createRealVector(x);
     double[] y = {1.};

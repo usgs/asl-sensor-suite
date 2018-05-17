@@ -4,14 +4,14 @@ import asl.sensor.input.DataStore;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-public class MockExperiment extends Experiment {
+class MockExperiment extends Experiment {
 
   boolean backendCalled = false;
   boolean hasEnoughDataCalled = false;
   boolean blocksNeededCalled = false;
 
   boolean setHasEnoughData = true;
-  int numberBlocksNeeded = 0;
+  private int numberBlocksNeeded = 0;
   /**
    * Counts the total number of times fireStateChange was called.
    * It is used for verifing that methods are still calling when we expect them too.

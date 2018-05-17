@@ -18,7 +18,7 @@ import org.junit.Test;
  */
 public class SolverTest {
 
-  public double calcRosenbrock(double[] vars) {
+  private double calcRosenbrock(double[] vars) {
     double x = vars[0];
     double y = vars[1];
     double a = 1;

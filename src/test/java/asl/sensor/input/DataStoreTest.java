@@ -6,11 +6,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import java.time.OffsetDateTime;
-import org.junit.Test;
+
 import asl.sensor.gui.InputPanel;
 import asl.sensor.test.TestUtils;
 import asl.sensor.utils.TimeSeriesUtils;
+import java.time.OffsetDateTime;
+import org.junit.Test;
 
 public class DataStoreTest {
 
@@ -213,14 +214,14 @@ public class DataStoreTest {
   }
 
   @Test
-  public void isAnythingSet_RESPOnly(){
+  public void isAnythingSet_RESPOnly() {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     DataStore dataStore = DataStoreUtils.createFromNames(respName, null, null);
     assertTrue(dataStore.isAnythingSet());
   }
 
   @Test
-  public void isAnythingSet_RESPAndData(){
+  public void isAnythingSet_RESPAndData() {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
@@ -229,7 +230,7 @@ public class DataStoreTest {
   }
 
   @Test
-  public void isAnythingSet_dataOnly(){
+  public void isAnythingSet_dataOnly() {
     String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
     DataStore dataStore = DataStoreUtils.createFromNames(null, null, sensOutName);
@@ -237,7 +238,7 @@ public class DataStoreTest {
   }
 
   @Test
-  public void isAnythingSet_nothingSet(){
+  public void isAnythingSet_nothingSet() {
     DataStore dataStore = DataStoreUtils.createFromNames(null, null, null);
     assertFalse(dataStore.isAnythingSet());
   }

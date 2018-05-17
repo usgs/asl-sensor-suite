@@ -2,6 +2,9 @@ package asl.sensor.experiment;
 
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static org.junit.Assert.assertEquals;
+
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -9,8 +12,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 
 public class ResponseExperimentTest {
 
