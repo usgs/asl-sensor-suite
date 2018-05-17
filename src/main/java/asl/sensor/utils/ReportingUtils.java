@@ -131,9 +131,7 @@ public class ReportingUtils {
     // handle all the pages with complete data here
     for (int i = 0; i < numFilledPages; ++i) {
       JFreeChart[] onOnePage = new JFreeChart[perImg];
-      for (int j = 0; j < perImg; ++j) {
-        onOnePage[j] = charts[(perImg * i) + j];
-      }
+      System.arraycopy(charts, (perImg * i), onOnePage, 0, perImg);
       imageList.add(chartsToImage(width, height, onOnePage));
     }
 
@@ -141,9 +139,7 @@ public class ReportingUtils {
     if (lastPageChartCount != 0) {
       int lastIndex = numFilledPages * perImg;
       JFreeChart[] lastPage = new JFreeChart[lastPageChartCount];
-      for (int j = 0; j < lastPageChartCount; ++j) {
-        lastPage[j] = charts[lastIndex + j];
-      }
+      System.arraycopy(charts, lastIndex, lastPage, 0, lastPageChartCount);
       BufferedImage lastPageImage = chartsToImage(width, height, lastPage);
       BufferedImage space = createWhitespace(width, height * spacerCount);
       imageList.add(mergeBufferedImages(lastPageImage, space));
