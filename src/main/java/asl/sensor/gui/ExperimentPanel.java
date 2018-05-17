@@ -1,7 +1,7 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.Experiment;
 import asl.sensor.ExperimentFactory;
+import asl.sensor.experiment.Experiment;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;

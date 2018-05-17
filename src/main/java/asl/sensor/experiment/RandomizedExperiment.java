@@ -1,5 +1,11 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -19,12 +25,6 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * This experiment takes in a randomized calibration signal and the
@@ -277,9 +277,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       phs -= phsScale;
       // add to plot (re-wrap phase)
       calcMag.add(xAxis, amp);
-      calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs) );
+      calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs));
     }
-
 
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
 
@@ -291,8 +290,10 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     // variable. (we also need to ignore conjugate values, for constraints)
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
 
-    initialPoleGuess = fitResponse.polesToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
-    initialZeroGuess = fitResponse.zerosToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
+    initialPoleGuess = fitResponse
+        .polesToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
+    initialZeroGuess = fitResponse
+        .zerosToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
 
@@ -359,7 +360,6 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
     fireStateChange("Got initial evaluation; running solver...");
 
-
     RealVector finalResultVector;
 
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
@@ -370,7 +370,6 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     fitResidual = evaluation.getCost();
     double[] fitParams = evaluation.getPoint().toArray();
     // get results from evaluating the function at the two points
-
 
     XYSeries initResidMag = new XYSeries("Percent error of init. amplitude");
     XYSeries initResidPhase = new XYSeries("Diff. with init phase");
@@ -713,6 +712,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * This may be useful when trying to run the solver over a high-frequency calibration where
    * the data is particularly noisy in some of the higher-frequency bounds, causing a bad corner
    * fit to occur. We also enforce this to be over 0.3 as well.
+   *
    * @param newMultiplier New maximum fraction of nyquist rate to fit data over (should be
    * from 0.3 to 0.8).
    */

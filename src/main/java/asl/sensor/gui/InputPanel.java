@@ -1,5 +1,12 @@
 package asl.sensor.gui;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -56,13 +63,6 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 
 /**
@@ -372,7 +372,7 @@ public class InputPanel
         String[] nameArray = new String[names.size()];
         for (int k = 0; k < nameArray.length; ++k) {
           String name = names.get(k);
-          name = name.replace("resps/","");
+          name = name.replace("resps/", "");
           nameArray[k] = name;
         }
 
@@ -1062,7 +1062,7 @@ public class InputPanel
           "Response Epoch Selection",
           JOptionPane.PLAIN_MESSAGE,
           null, epochStrings,
-          epochStrings[epochStrings.length-1]); // default to most recent
+          epochStrings[epochStrings.length - 1]); // default to most recent
       if (result instanceof String) {
         int index = Arrays.binarySearch(epochStrings, result);
         return epochs.get(index).getFirst();

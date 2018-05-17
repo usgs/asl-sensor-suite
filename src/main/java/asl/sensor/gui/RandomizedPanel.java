@@ -1,5 +1,10 @@
 package asl.sensor.gui;
 
+import asl.sensor.ExperimentFactory;
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.ResponseExperiment;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -36,11 +41,6 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.VerticalAlignment;
-import asl.sensor.ExperimentFactory;
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.experiment.ResponseExperiment;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
 
 /**
  * Panel to display results from a randomized calibration experiment.

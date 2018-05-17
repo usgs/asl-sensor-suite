@@ -1,5 +1,8 @@
 package asl.sensor.gui;
 
+import asl.sensor.ExperimentFactory;
+import asl.sensor.experiment.AzimuthExperiment;
+import asl.sensor.input.DataStore;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -28,9 +31,6 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.experiment.AzimuthExperiment;
-import asl.sensor.ExperimentFactory;
-import asl.sensor.input.DataStore;
 
 /**
  * Wrapper class to display result from Azimuth. Overrides some parent

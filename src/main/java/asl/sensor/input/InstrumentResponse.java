@@ -1,5 +1,7 @@
 package asl.sensor.input;
 
+import asl.sensor.gui.InputPanel;
+import asl.sensor.utils.NumericUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,8 +26,6 @@ import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
-import asl.sensor.gui.InputPanel;
-import asl.sensor.utils.NumericUtils;
 
 /**
  * This class is used to read in and store data from instrument response files
@@ -163,7 +163,7 @@ public class InstrumentResponse {
    * @param line Line of a response file that should define an epoch
    * @return Instant parsed from the given line or null if not able to parse
    */
-   static Instant parseTermAsDate(String line) {
+  static Instant parseTermAsDate(String line) {
     // reparse the line
     String[] words = line.split("\\s+");
     // index 0 is the identifier for the field types (used in switch-stmt)
@@ -175,7 +175,7 @@ public class InstrumentResponse {
         DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
     try {
       return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
-    } catch (DateTimeParseException e){
+    } catch (DateTimeParseException e) {
       int indexToTrim = e.getErrorIndex();
       // first, try to parse it in the case the line didn't have seconds defined
       try {
@@ -801,6 +801,7 @@ public class InstrumentResponse {
   /**
    * Skip to the desired epoch start Instant.
    * If it does not exist, the parser will throw an exception later.
+   *
    * @param reader the shared BufferedReader with RESP file
    * @param epoch the desired epoch's start Instant.
    * @throws IOException on file read errors.
@@ -1088,6 +1089,7 @@ public class InstrumentResponse {
 
   /**
    * Get the start time of the epoch of this response data
+   *
    * @return Epoch expressed as an instant
    */
   public Instant getEpochStart() {
@@ -1096,6 +1098,7 @@ public class InstrumentResponse {
 
   /**
    * Get the end time of the epoch of this response data
+   *
    * @return Epoch expressed as an instant (can be null)
    */
   Instant getEpochEnd() {

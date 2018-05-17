@@ -1,5 +1,7 @@
 package asl.sensor.utils;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.InstrumentResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,8 +13,6 @@ import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.InstrumentResponse;
 import uk.me.berndporr.iirj.Butterworth;
 
 /**
@@ -678,6 +678,7 @@ public class FFTResult {
   /**
    * Get the index of the value closest to a given target frequency in a list assuming the entries
    * in the list are equally spaced
+   *
    * @param frequencies List of frequencies to find the target location
    * @param targetFrequency Frequency of interest
    * @return Index of closest frequency value
@@ -686,12 +687,12 @@ public class FFTResult {
     if (frequencies.length == 1) {
       return 0;
     }
-  
+
     double deltaFreq = frequencies[1] - frequencies[0];
     int index = (int) Math.round((targetFrequency - frequencies[0]) / deltaFreq);
     // in almost all cases the index here should be in the list, but if not, bounds check
     index = Math.max(index, 0);
-    return Math.min(index, frequencies.length-1);
+    return Math.min(index, frequencies.length - 1);
   }
 
 }

@@ -45,6 +45,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  * @author akearns - KBRWyle
  */
 public class StepExperiment extends Experiment {
+
   private double f, h; //corner and damping of output (uncorrected)
   private double fCorr, hCorr; // fit parameters to turn output into cal input
   private double initResid, fitResid; // residual values
@@ -471,6 +472,7 @@ public class StepExperiment extends Experiment {
   /**
    * NOTE: not used by corresponding panel, overrides with active indices
    * of components in the combo-box
+   *
    * @return list of active response indices
    */
   @Override

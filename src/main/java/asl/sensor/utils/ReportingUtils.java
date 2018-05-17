@@ -108,14 +108,13 @@ public class ReportingUtils {
    * each image
    */
   public static BufferedImage[]
-      chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
-
+  chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
 
     int totalNumber = charts.length;
 
     if (totalNumber <= perImg) {
       // if we can fit them all on a single page, then we'll do so
-      return new BufferedImage[] {chartsToImage(width, height, charts)};
+      return new BufferedImage[]{chartsToImage(width, height, charts)};
     }
 
     // want to keep all charts the same size;
@@ -134,7 +133,7 @@ public class ReportingUtils {
     int spacerCount = perImg - lastPageChartCount;
 
     // handle all the pages with complete data here
-    for (int i = 0; i < totalPageCount-1; ++i) {
+    for (int i = 0; i < totalPageCount - 1; ++i) {
       int start = perImg * i;
       JFreeChart[] onOnePage = Arrays.copyOfRange(charts, start, start + perImg);
       imageList[i] = chartsToImage(width, height, onOnePage);

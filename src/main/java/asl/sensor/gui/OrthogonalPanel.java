@@ -1,5 +1,8 @@
 package asl.sensor.gui;
 
+import asl.sensor.ExperimentFactory;
+import asl.sensor.experiment.OrthogonalExperiment;
+import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -9,9 +12,6 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.ExperimentFactory;
-import asl.sensor.experiment.OrthogonalExperiment;
-import asl.sensor.input.DataStore;
 
 /**
  * Panel to display results of Orthogonal Experiment.
@@ -32,7 +32,8 @@ public class OrthogonalPanel extends ExperimentPanel {
     return "Calculated angle between non-reference sensors:\n"
         + DECIMAL_FORMAT.get().format(angle)
         + "\nRough est. orientation angles for (non-ref) LH1, LH2 respectively:\n"
-        + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])+"]";
+        + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])
+        + "]";
   }
 
   public OrthogonalPanel(ExperimentFactory experiment) {

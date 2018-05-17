@@ -1,5 +1,17 @@
 package asl.sensor;
 
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.SineExperiment;
+import asl.sensor.experiment.StepExperiment;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.gui.RandomizedPanel;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -28,18 +40,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.experiment.SineExperiment;
-import asl.sensor.experiment.StepExperiment;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.RandomizedPanel;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
@@ -57,6 +57,7 @@ public class CalProcessingServer {
 
   @SuppressWarnings({"WeakerAccess", "unused"})
   public abstract class CalResult {
+
     protected Map<String, double[]> numerMap;
     protected Map<String, byte[]> imageMap;
 
@@ -75,6 +76,7 @@ public class CalProcessingServer {
   }
 
   public class StepData extends CalResult {
+
     // constuctor to be used with step calibrations
     StepData(byte[][] images, double[] initParams, double[] fitParams) {
       super();
@@ -97,6 +99,7 @@ public class CalProcessingServer {
   }
 
   public class SineData extends CalResult {
+
     SineData(byte[][] images, double calAmp, double outAmp, double freq, double ratio) {
       super();
       numerMap.put("Calibration-amplitude", new double[]{calAmp});
@@ -121,7 +124,8 @@ public class CalProcessingServer {
     private Date[][] gapStarts;
     private Date[][] gapEnds;
 
-    RandData(double[] fitPoles, double[] fitZeros, double[] initialPoles, double[] initialZeros, byte[][] images,
+    RandData(double[] fitPoles, double[] fitZeros, double[] initialPoles, double[] initialZeros,
+        byte[][] images,
         String[] gapNames, Date[][] gapStartTimes, Date[][] gapEndTimes) {
       this.fitPoles = fitPoles;
       this.fitZeros = fitZeros;
@@ -364,7 +368,7 @@ public class CalProcessingServer {
 
   public CalResult runStep(String calFileName, String outFileName,
       String respName, boolean useEmbeddedResp, String startDate, String endDate)
-          throws SeedFormatException, CodecException, IOException {
+      throws SeedFormatException, CodecException, IOException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -393,7 +397,7 @@ public class CalProcessingServer {
 
   public CalResult runSine(String calFileName, String outFileName,
       String respName, boolean useEmbeddedResp, String startDate, String endDate)
-          throws SeedFormatException, CodecException, IOException {
+      throws SeedFormatException, CodecException, IOException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -436,22 +440,22 @@ public class CalProcessingServer {
         "Normalized calibration signals (counts)",
         plots.get(0));
 
-   JFreeChart linearityChart = ChartFactory.createXYLineChart(
-       "Sine cal. Linearity",
-       "Value of sampled cal data (counts)",
-       "Value of sampled sensor output (counts)",
-       plots.get(1));
+    JFreeChart linearityChart = ChartFactory.createXYLineChart(
+        "Sine cal. Linearity",
+        "Value of sampled cal data (counts)",
+        "Value of sampled sensor output (counts)",
+        plots.get(1));
 
-   JFreeChart[] charts = {sineChart, linearityChart};
+    JFreeChart[] charts = {sineChart, linearityChart};
 
-   BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
-   byte[][] pngByteArrays = new byte[images.length][];
-   for (int i = 0; i < images.length; ++i) {
-     ByteArrayOutputStream out = new ByteArrayOutputStream();
-     ImageIO.write(images[i], "png", out);
-     pngByteArrays[i] = out.toByteArray();
-   }
-   return new SineData(pngByteArrays, calAmplitude, outAmplitude, estFreq, ratio);
+    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    byte[][] pngByteArrays = new byte[images.length][];
+    for (int i = 0; i < images.length; ++i) {
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      ImageIO.write(images[i], "png", out);
+      pngByteArrays[i] = out.toByteArray();
+    }
+    return new SineData(pngByteArrays, calAmplitude, outAmplitude, estFreq, ratio);
   }
 
   @SuppressWarnings("unused")
@@ -537,7 +541,8 @@ public class CalProcessingServer {
 
   }
 
-  private RandData runExpGetDataRand(DataStore dataStore, boolean isLowFrequency) throws IOException {
+  private RandData runExpGetDataRand(DataStore dataStore, boolean isLowFrequency)
+      throws IOException {
 
     RandomizedExperiment randomExperiment = new RandomizedExperiment();
 

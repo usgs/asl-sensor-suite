@@ -1,11 +1,11 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.TimeSeriesUtils;
 import java.util.ArrayList;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.TimeSeriesUtils;
 
 public class SineExperiment extends Experiment {
 
@@ -42,7 +42,6 @@ public class SineExperiment extends Experiment {
     dataNames.add(dataStore.getBlock(0).getName());
     dataNames.add(dataStore.getBlock(1).getName());
 
-
     // get the sine wave frequency by measuring wavelengths (get distance between peaks)
     int currentPeakDistance = 0;
     int totalPeakDistance = 0;
@@ -73,7 +72,8 @@ public class SineExperiment extends Experiment {
     XYSeriesCollection xysc = new XYSeriesCollection();
     XYSeries cal = new XYSeries(dataStore.getBlock(0).getName() + " [cal]");
     XYSeries out = new XYSeries(dataStore.getBlock(1).getName() + " [out, scaled]");
-    double interval = dataStore.getBlock(0).getInterval() / (double) TimeSeriesUtils.ONE_HZ_INTERVAL;
+    double interval =
+        dataStore.getBlock(0).getInterval() / (double) TimeSeriesUtils.ONE_HZ_INTERVAL;
     for (int i = 0; i < calTimeSeries.length; ++i) {
       cal.add(interval * i, calTimeSeries[i]);
       out.add(interval * i, outTimeSeries[i] * calSDev / outSDev);

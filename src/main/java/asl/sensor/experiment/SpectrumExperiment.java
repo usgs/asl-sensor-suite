@@ -102,6 +102,7 @@ public class SpectrumExperiment extends Experiment {
   /**
    * NOTE: not used by corresponding panel, overrides with active indices
    * of components in the combo-box
+   *
    * @return response indices
    */
   @Override
@@ -121,9 +122,10 @@ public class SpectrumExperiment extends Experiment {
 
   /**
    * Used for testing.
+   *
    * @return freqSpace
    */
-  boolean getFreqSpace(){
+  boolean getFreqSpace() {
     return freqSpace;
   }
 

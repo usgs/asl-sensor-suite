@@ -262,6 +262,7 @@ public class NumericUtils {
 
   /**
    * Wrap a degree to be between -180 and 180
+   *
    * @param angle in degrees
    * @return same angle but between -180 and 180
    */

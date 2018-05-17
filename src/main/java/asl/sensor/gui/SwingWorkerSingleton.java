@@ -46,7 +46,8 @@ public class SwingWorkerSingleton {
       if (!worker.isDone()) {
         try {
           worker.cancel(true); // cancel worker, set it to the new task
-        } catch (CancellationException ignore) {}
+        } catch (CancellationException ignore) {
+        }
       }
     }
 
