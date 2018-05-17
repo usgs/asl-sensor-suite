@@ -113,7 +113,7 @@ public class ReportingUtils {
 
     int totalNumber = charts.length;
 
-    if (totalNumber < perImg) {
+    if (totalNumber <= perImg) {
       // if we can fit them all on a single page, then we'll do so
       return new BufferedImage[] {chartsToImage(width, height, charts)};
     }
@@ -122,20 +122,25 @@ public class ReportingUtils {
     // if we can't fit them all on a single page, how many pages will have
     // complete charts?
     int numFilledPages = totalNumber / perImg;
-    BufferedImage[] imageList = new BufferedImage[numFilledPages];
+    // total number of charts to fill
+    int totalPageCount = numFilledPages;
     // if we can't fill the last page with plots, how many will it have
     int lastPageChartCount = totalNumber % perImg;
+    if (lastPageChartCount > 0) {
+      ++totalPageCount;
+    }
+    BufferedImage[] imageList = new BufferedImage[totalPageCount];
     // how many chart-size blank spaces to keep plots on last page same size
     int spacerCount = perImg - lastPageChartCount;
 
     // handle all the pages with complete data here
-    for (int i = 0; i < numFilledPages-1; ++i) {
+    for (int i = 0; i < totalPageCount-1; ++i) {
       int start = perImg * i;
       JFreeChart[] onOnePage = Arrays.copyOfRange(charts, start, start + perImg);
       imageList[i] = chartsToImage(width, height, onOnePage);
     }
 
-    int lastIndex = numFilledPages * perImg;
+    int lastIndex = (totalPageCount - 1) * perImg;
     JFreeChart[] lastPage = Arrays.copyOfRange(charts, lastIndex, charts.length);
     BufferedImage lastPageImage = chartsToImage(width, height, lastPage);
     // special case for a non-evenly dividing plot series (append blank space to last page)
@@ -143,7 +148,7 @@ public class ReportingUtils {
       BufferedImage space = createWhitespace(width, height * spacerCount);
       lastPageImage = mergeBufferedImages(lastPageImage, space);
     }
-    imageList[numFilledPages - 1] = lastPageImage;
+    imageList[totalPageCount - 1] = lastPageImage;
 
     return imageList;
   }
