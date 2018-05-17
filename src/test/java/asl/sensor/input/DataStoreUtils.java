@@ -11,7 +11,6 @@ public class DataStoreUtils {
   public static DataStore createFromNames(String respName, String calibrationInName,
       String sensorOutputName) {
     try {
-
       DataStore dataStore = new DataStore();
 
       if (calibrationInName != null) {
@@ -38,7 +37,6 @@ public class DataStoreUtils {
   public static DataStore appendFromNames(DataStore dataStore, String calibrationInName,
       String sensorOutputName) {
     try {
-
       if (calibrationInName != null) {
         dataStore.getBlock(0).appendTimeSeries(calibrationInName);
       }
