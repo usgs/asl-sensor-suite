@@ -25,7 +25,7 @@ import org.jfree.chart.JFreeChart;
  * in a utility function with static methods the code inside those classes can
  * be simplified and redundant calls or procedures reduced.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class ReportingUtils {
 
@@ -70,16 +70,16 @@ public class ReportingUtils {
    *
    * @param width width of each chart plot
    * @param height height of each chart plot
-   * @param jfcs series of charts to be plotted in
+   * @param charts series of charts to be plotted in
    * @return buffered image consisting of the concatenation of the given charts
    */
   public static BufferedImage
-  chartsToImage(int width, int height, JFreeChart... jfcs) {
+  chartsToImage(int width, int height, JFreeChart... charts) {
 
-    BufferedImage[] bis = new BufferedImage[jfcs.length];
+    BufferedImage[] bis = new BufferedImage[charts.length];
 
-    for (int i = 0; i < jfcs.length; ++i) {
-      ChartPanel cp = new ChartPanel(jfcs[i]);
+    for (int i = 0; i < charts.length; ++i) {
+      ChartPanel cp = new ChartPanel(charts[i]);
       cp.setSize(new Dimension(width, height));
       BufferedImage temp = new BufferedImage(
           cp.getWidth(),
@@ -156,12 +156,12 @@ public class ReportingUtils {
    * @param width Width of each chart to be added to the PDF
    * @param height Height of each chart to be added to the PDF
    * @param pdf PDF document to have the data appended to
-   * @param jfcs series of charts to place in the PDF
+   * @param charts series of charts to place in the PDF
    */
   public static void
-  chartsToPDFPage(int width, int height, PDDocument pdf, JFreeChart... jfcs) {
+  chartsToPDFPage(int width, int height, PDDocument pdf, JFreeChart... charts) {
 
-    BufferedImage bi = chartsToImage(width, height, jfcs);
+    BufferedImage bi = chartsToImage(width, height, charts);
     bufferedImageToPDFPage(bi, pdf);
   }
 
@@ -180,12 +180,12 @@ public class ReportingUtils {
    * Write a list of images to a pdf document, each image its own page
    *
    * @param pdf PDF document to write to
-   * @param bis List of buffered images to write. Each image is written to its
+   * @param images List of buffered images to write. Each image is written to its
    * own PDF page.
    */
   public static void
-  imageListToPDFPages(PDDocument pdf, BufferedImage... bis) {
-    for (BufferedImage bi : bis) {
+  imageListToPDFPages(PDDocument pdf, BufferedImage... images) {
+    for (BufferedImage bi : images) {
       bufferedImageToPDFPage(bi, pdf);
     }
   }
@@ -195,14 +195,14 @@ public class ReportingUtils {
    * buffered image. Images are concatenated vertically and centered
    * horizontally into an image as wide as the widest passed-in image
    *
-   * @param bis Buffered images to send in
+   * @param images Buffered images to send in
    * @return Single concatenated buffered image
    */
-  private static BufferedImage mergeBufferedImages(BufferedImage... bis) {
+  private static BufferedImage mergeBufferedImages(BufferedImage... images) {
 
     int maxWidth = 0;
     int totalHeight = 0;
-    for (BufferedImage bi : bis) {
+    for (BufferedImage bi : images) {
       if (maxWidth < bi.getWidth()) {
         maxWidth = bi.getWidth();
       }
@@ -214,7 +214,7 @@ public class ReportingUtils {
     Graphics2D g = out.createGraphics();
 
     int heightIndex = 0;
-    for (BufferedImage bi : bis) {
+    for (BufferedImage bi : images) {
       int centeringOffset = 0; // need to center the component?
       if (bi.getWidth() < maxWidth) {
         centeringOffset = (maxWidth - bi.getWidth()) / 2;

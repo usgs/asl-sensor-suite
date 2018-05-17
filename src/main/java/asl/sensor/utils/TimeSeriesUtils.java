@@ -702,8 +702,7 @@ public class TimeSeriesUtils {
    * @return New timeseries data rotated data along the
    * given angle, facing north
    */
-  public static double[]
-  rotate(double[] northData, double[] eastData, double ang) {
+  public static double[] rotate(double[] northData, double[] eastData, double ang) {
     double[] rotatedData = new double[northData.length];
 
     // clockwise rotation matrix!! That's why things are so screwy
@@ -755,8 +754,7 @@ public class TimeSeriesUtils {
    * @return New timeseries data rotated data along the
    * given angle, facing east.
    */
-  private static double[]
-  rotateX(double[] northData, double[] eastData, double ang) {
+  private static double[] rotateX(double[] northData, double[] eastData, double ang) {
     double[] rotatedData = new double[northData.length];
 
     double sinTheta = Math.sin(ang);

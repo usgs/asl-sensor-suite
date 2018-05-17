@@ -22,7 +22,7 @@ import uk.me.berndporr.iirj.Butterworth;
  * such as raw PSD calculation, inverse and forward trimmed FFTs,
  * and band-pass filtering.
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class FFTResult {
 
@@ -31,31 +31,31 @@ public class FFTResult {
    * can be used for a low-pass filter if low frequency is set to 0
    * and high-pass if higher frequency is set to sample rate
    *
-   * @param toFilt series of data to do a band-pass filter on
+   * @param toFilter series of data to do a band-pass filter on
    * @param sps sample rate of the current data (samples / sec)
-   * @param low low corner frequency of band-pass filter
-   * @param high high corner frequency of band-pass filter
+   * @param lowCorner low corner frequency of band-pass filter
+   * @param highCorner high corner frequency of band-pass filter
    * @return timeseries with band-pass filter applied
    */
   public static double[]
-  bandFilter(double[] toFilt, double sps, double low, double high) {
+  bandFilter(double[] toFilter, double sps, double lowCorner, double highCorner) {
 
     // make sure the low value is actually the lower of the two
-    double temp = Math.min(low, high);
-    high = Math.max(low, high);
-    low = temp;
+    double temp = Math.min(lowCorner, highCorner);
+    highCorner = Math.max(lowCorner, highCorner);
+    lowCorner = temp;
 
     Butterworth casc = new Butterworth();
     // center = low-corner location plus half the distance between the corners
     // width is exactly the distance between them
-    double width = high - low;
-    double center = low + (width) / 2.;
+    double width = highCorner - lowCorner;
+    double center = lowCorner + (width) / 2.;
     // filter library defines bandpass with center frequency and notch width
     casc.bandPass(2, sps, center, width);
 
-    double[] filtered = new double[toFilt.length];
-    for (int i = 0; i < toFilt.length; ++i) {
-      filtered[i] = casc.filter(toFilt[i]);
+    double[] filtered = new double[toFilter.length];
+    for (int i = 0; i < toFilter.length; ++i) {
+      filtered[i] = casc.filter(toFilter[i]);
     }
 
     return filtered;
