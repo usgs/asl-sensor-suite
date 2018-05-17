@@ -6,6 +6,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -130,16 +131,15 @@ public class ReportingUtils {
 
     // handle all the pages with complete data here
     for (int i = 0; i < numFilledPages; ++i) {
-      JFreeChart[] onOnePage = new JFreeChart[perImg];
-      System.arraycopy(charts, (perImg * i), onOnePage, 0, perImg);
+      int start = perImg * i;
+      JFreeChart[] onOnePage = Arrays.copyOfRange(charts, start, start + perImg);
       imageList.add(chartsToImage(width, height, onOnePage));
     }
 
     // special case for a non-evenly dividing plot series
     if (lastPageChartCount != 0) {
       int lastIndex = numFilledPages * perImg;
-      JFreeChart[] lastPage = new JFreeChart[lastPageChartCount];
-      System.arraycopy(charts, lastIndex, lastPage, 0, lastPageChartCount);
+      JFreeChart[] lastPage = Arrays.copyOfRange(charts, lastIndex, lastPageChartCount);
       BufferedImage lastPageImage = chartsToImage(width, height, lastPage);
       BufferedImage space = createWhitespace(width, height * spacerCount);
       imageList.add(mergeBufferedImages(lastPageImage, space));
