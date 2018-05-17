@@ -39,7 +39,6 @@ public class GainExperimentTest {
 
     String[] rnames = new String[2];
     rnames[0] = "RESP.IU.ANMO.00.BHZ_gainx100";
-    //rnames[0] = "RESP.IU.ANMO.00.BHZ";
     rnames[1] = "RESP.IU.ANMO.10.BHZ";
 
     for (int i = 0; i < rnames.length; ++i) {
@@ -47,9 +46,7 @@ public class GainExperimentTest {
       try {
         ds.setResponse(i, fName);
       } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-        fail();
+        fail(e.getMessage());
       }
     }
 
@@ -67,6 +64,5 @@ public class GainExperimentTest {
     double gain = stats[3];
     // System.out.println( Arrays.toString(stats) );
     assertEquals(11714., gain, 2.0);
-
   }
 }

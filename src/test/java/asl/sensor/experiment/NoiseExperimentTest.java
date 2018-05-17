@@ -128,11 +128,6 @@ public class NoiseExperimentTest {
     psdResults /= psdPoints;
     noiseResults /= noisePoints;
 
-    System.out.println(psdResults + "," + noiseResults);
-    System.out.println(psdCheck + "," + noiseCheck);
-    System.out.println("PSD DIFF: " + Math.abs(psdResults - psdCheck));
-    System.out.println("NOISE DIFF: " + Math.abs(noiseResults - noiseCheck));
-
     assertEquals(noiseCheck, noiseResults, 1E-2);
     assertEquals(psdCheck, psdResults, 1E-2);
 
