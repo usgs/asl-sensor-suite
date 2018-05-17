@@ -649,7 +649,6 @@ public class DataStore {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
               }
-
             }
           }
         }

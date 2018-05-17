@@ -5,19 +5,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import org.junit.Test;
+
 import asl.sensor.gui.InputPanel;
 import asl.sensor.test.TestUtils;
 import asl.sensor.utils.TimeSeriesUtils;
+import org.junit.Test;
 
 public class DataBlockTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  public String station = "TST5";
-  public String location = "00";
-  public String channel = "BH0";
-  private String fileID = station + "_" + location + "_" + channel + ".512.seed";
+  private final String station = "TST5";
+  private final String location = "00";
+  private final String channel = "BH0";
+  private final String fileID = station + "_" + location + "_" + channel + ".512.seed";
 
   @Test
   public void trimsCorrectly() throws Exception {
@@ -80,7 +81,7 @@ public class DataBlockTest {
     long initialStart = block.getStartTime();
     long initialEnd = block.getEndTime();
     // trim a quarter of the length off either end
-    long quarterTrimDifference = (initialEnd - initialStart)/4;
+    long quarterTrimDifference = (initialEnd - initialStart) / 4;
     long trimmedStart = initialStart + quarterTrimDifference;
     long trimmedEnd = initialEnd - quarterTrimDifference;
     block.trim(trimmedStart, trimmedEnd);
@@ -111,7 +112,7 @@ public class DataBlockTest {
     long initialStart = block.getStartTime();
     long initialEnd = block.getEndTime();
     // trim a quarter of the length off
-    long quarterTrimDifference = (initialEnd - initialStart)/4;
+    long quarterTrimDifference = (initialEnd - initialStart) / 4;
     long trimmedStart = initialStart + quarterTrimDifference;
     block.trim(trimmedStart, initialEnd);
     int trimmedLength = block.getData().length;
@@ -139,7 +140,7 @@ public class DataBlockTest {
     long initialStart = block.getStartTime();
     long initialEnd = block.getEndTime();
     // trim a quarter of the length off
-    long quarterTrimDifference = (initialEnd - initialStart)/4;
+    long quarterTrimDifference = (initialEnd - initialStart) / 4;
     long trimmedEnd = initialEnd - quarterTrimDifference;
     block.trim(initialStart, trimmedEnd);
     int trimmedLength = block.getData().length;
@@ -223,7 +224,7 @@ public class DataBlockTest {
     long initialStart = block.getStartTime();
     long initialEnd = block.getEndTime();
     // trim a quarter of the length off either end
-    long quarterTrimDifference = (initialEnd - initialStart)/4;
+    long quarterTrimDifference = (initialEnd - initialStart) / 4;
     long trimmedStart = initialStart + quarterTrimDifference;
     long trimmedEnd = initialEnd - quarterTrimDifference;
     block.trim(trimmedStart, trimmedEnd);

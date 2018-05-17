@@ -1,12 +1,12 @@
 package asl.sensor.experiment;
 
-import org.apache.commons.math3.complex.Complex;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import org.apache.commons.math3.complex.Complex;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * Produces the data for a self-noise test. Calculates PSD to get cross-power.
@@ -205,6 +205,7 @@ public class NoiseExperiment extends Experiment {
 
   /**
    * NOTE: not used by corresponding panel, overrides with active indices of components in the combo-box
+   *
    * @return response indices
    */
   @Override

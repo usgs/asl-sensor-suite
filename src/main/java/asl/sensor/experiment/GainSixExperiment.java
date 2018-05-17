@@ -18,10 +18,9 @@ import org.jfree.data.xy.XYSeries;
 public class GainSixExperiment extends Experiment {
 
   private static final int DIMENSIONS = 3; // number of known space dimensions
-
+  private final int[] indices;
   // used to store the intermediate result data of each of N,S,V components (in that order)
   private GainExperiment[] componentBackends;
-  private final int[] indices;
   private double north2Angle, east2Angle;
 
   public GainSixExperiment() {

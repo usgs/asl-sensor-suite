@@ -1,5 +1,8 @@
 package asl.sensor.input;
 
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -10,9 +13,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 /**
  * Holds the time series and metadata for a miniSEED file loaded in by the user.
@@ -49,8 +49,8 @@ public class DataBlock {
   private static final int MAX_POINTS = 100000;
 
   private final long interval;
-  private long targetInterval;
   private final String name;
+  private long targetInterval;
   private long startTime, endTime;
   private Map<Long, double[]> dataMap;
   private long trimmedStart, trimmedEnd;

@@ -1,5 +1,12 @@
 package asl.sensor.gui;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -56,13 +63,6 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleAnchor;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 
 /**
@@ -82,49 +82,21 @@ public class InputPanel
     extends JPanel
     implements ActionListener, ChangeListener {
 
+  public static final int SLIDER_MAX = 10000;
   private static final long serialVersionUID = -7302813951637543526L;
-
   /**
    * Default height of image produced by the save-as-image function
    * (each chart is 240 pixels tall)
    */
   private static final int IMAGE_HEIGHT = 240;
   private static final int IMAGE_WIDTH = 640;
-
   private static final int MAX_UNSCROLLED = 3;
-
   private static final int PLOTS_PER_PAGE = 3;
-
   private static final int FILE_COUNT = DataStore.FILE_COUNT;
-
   /**
    * Minimum space of the two sliders.
    */
   private static final int MARGIN = 10;
-  public static final int SLIDER_MAX = 10000;
-
-  /**
-   * Gets the value of start or end time from slider value and DataBlock
-   *
-   * @param dataBlock DataBlock corresponding to one of the plots
-   * @param sliderValue Value of starting or ending time slider [0-SLIDER_MAX]
-   * @return Long that represents start or end time matching slider's value
-   */
-  public static long getMarkerLocation(DataBlock dataBlock, int sliderValue) {
-    long start = dataBlock.getStartTime();
-    long len = (dataBlock.getInterval()) * dataBlock.size();
-    return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
-  }
-
-  private static int getSliderValue(DataBlock dataBlock, long timeStamp) {
-    long start = dataBlock.getStartTime();
-    long length = dataBlock.getInterval() * dataBlock.size();
-    return (int) ((SLIDER_MAX * (timeStamp - start)) / length);
-  }
-
-  private int activePlots = FILE_COUNT; // how much data is being displayed
-
-  private DataStore dataStore; // holds data to be plotted in each chartpanel
   private final ChartPanel[] chartPanels; // show the data for a given input
   private final Color[] defaultColor = {
       ChartColor.LIGHT_RED,
@@ -134,31 +106,26 @@ public class InputPanel
   private final JButton zoomIn; // select a given window
   private final JButton zoomOut; // revert to full data region
   private final JButton clearAll; // remove all data
-  private JFileChooser fileChooser;
   private final JSlider leftSlider;
   private final JSlider rightSlider;
   private final JScrollPane inputScrollPane;
-
   private final EditableDateDisplayPanel startDate;
   private final EditableDateDisplayPanel endDate;
-
   private final FileOperationJButton[] seedLoaders;
   private final FileOperationJButton[] seedAppenders;
   private final JTextComponent[] seedFileNames;
   private final JButton[] respLoaders;
   private final JTextComponent[] respFileNames;
   private final JButton[] clearButton;
-
   private final JLabel[] channelType;
-
   private final JPanel[] chartSubpanels;
-
+  private int activePlots = FILE_COUNT; // how much data is being displayed
+  private DataStore dataStore; // holds data to be plotted in each chartpanel
+  private JFileChooser fileChooser;
   // used to store current directory locations
   private String seedDirectory = "data";
   private String respDirectory = "responses";
-
   private int lastRespIndex;
-
   private String saveDirectory = System.getProperty("user.home");
 
   /**
@@ -315,6 +282,25 @@ public class InputPanel
   }
 
   /**
+   * Gets the value of start or end time from slider value and DataBlock
+   *
+   * @param dataBlock DataBlock corresponding to one of the plots
+   * @param sliderValue Value of starting or ending time slider [0-SLIDER_MAX]
+   * @return Long that represents start or end time matching slider's value
+   */
+  public static long getMarkerLocation(DataBlock dataBlock, int sliderValue) {
+    long start = dataBlock.getStartTime();
+    long len = (dataBlock.getInterval()) * dataBlock.size();
+    return start + (sliderValue * len) / SLIDER_MAX; // start + time offset
+  }
+
+  private static int getSliderValue(DataBlock dataBlock, long timeStamp) {
+    long start = dataBlock.getStartTime();
+    long length = dataBlock.getInterval() * dataBlock.size();
+    return (int) ((SLIDER_MAX * (timeStamp - start)) / length);
+  }
+
+  /**
    * Dispatches commands when interface buttons are clicked.
    * When the save button is clicked, dispatches the command to save plots as
    * an image. When the zoom buttons are clicked, scales the plot to only
@@ -372,7 +358,7 @@ public class InputPanel
         String[] nameArray = new String[names.size()];
         for (int k = 0; k < nameArray.length; ++k) {
           String name = names.get(k);
-          name = name.replace("resps/","");
+          name = name.replace("resps/", "");
           nameArray[k] = name;
         }
 
@@ -1062,7 +1048,7 @@ public class InputPanel
           "Response Epoch Selection",
           JOptionPane.PLAIN_MESSAGE,
           null, epochStrings,
-          epochStrings[epochStrings.length-1]); // default to most recent
+          epochStrings[epochStrings.length - 1]); // default to most recent
       if (result instanceof String) {
         int index = Arrays.binarySearch(epochStrings, result);
         return epochs.get(index).getFirst();

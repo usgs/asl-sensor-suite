@@ -1,5 +1,10 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,11 +23,6 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
@@ -55,6 +55,11 @@ public class AzimuthExperiment extends Experiment {
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
 
+  public AzimuthExperiment() {
+    super();
+    simpleCalc = false;
+  }
+
   /**
    * Function used to get the orientation of inputted data
    * (Specifically, aligns the second and third horiz. inputs with the first)
@@ -78,9 +83,15 @@ public class AzimuthExperiment extends Experiment {
     return azimuthExperiment.getFitAngleRad();
   }
 
-  public AzimuthExperiment() {
-    super();
-    simpleCalc = false;
+  static double[][] matchArrayLengths(double[]... toTrim) {
+    int len = toTrim[0].length;
+    for (double[] timeseries : toTrim) {
+      len = Math.min(len, timeseries.length);
+    }
+    for (int i = 0; i < toTrim.length; ++i) {
+      toTrim[i] = Arrays.copyOfRange(toTrim[i], 0, len);
+    }
+    return toTrim;
   }
 
   /**
@@ -536,6 +547,15 @@ public class AzimuthExperiment extends Experiment {
   }
 
   /**
+   * Set the angle offset for the reference sensor (degrees from north)
+   *
+   * @param newOffset Degrees from north that the reference sensor points
+   */
+  public void setOffset(double newOffset) {
+    offset = newOffset;
+  }
+
+  /**
    * Get the uncertainty of the angle
    *
    * @return Uncertainty estimation of the current angle (from variance)
@@ -643,15 +663,6 @@ public class AzimuthExperiment extends Experiment {
   }
 
   /**
-   * Set the angle offset for the reference sensor (degrees from north)
-   *
-   * @param newOffset Degrees from north that the reference sensor points
-   */
-  public void setOffset(double newOffset) {
-    offset = newOffset;
-  }
-
-  /**
    * Used to set a simple calculation of rotation angle, such as for
    * nine-input self-noise. This is the case where the additional windowing
    * is NOT done, and the initial least-squares guess gives us an answer.
@@ -668,20 +679,10 @@ public class AzimuthExperiment extends Experiment {
 
   /**
    * Used for test case verification.
+   *
    * @return simpleCalc
    */
   boolean getSimpleCalc() {
     return simpleCalc;
-  }
-
-  static double[][] matchArrayLengths(double[]... toTrim) {
-    int len = toTrim[0].length;
-    for (double[] timeseries : toTrim) {
-      len = Math.min(len, timeseries.length);
-    }
-    for (int i = 0; i < toTrim.length; ++i) {
-      toTrim[i] = Arrays.copyOfRange(toTrim[i], 0, len);
-    }
-    return toTrim;
   }
 }

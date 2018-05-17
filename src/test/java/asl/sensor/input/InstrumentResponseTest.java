@@ -7,6 +7,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.ReportingUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -26,13 +29,11 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
-  public static final DateTimeFormatter DATE_TIME_FORMAT = InstrumentResponse.RESP_DT_FORMAT;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final DateTimeFormatter DATE_TIME_FORMAT = InstrumentResponse.RESP_DT_FORMAT;
 
   @Test
   public void testFileParse() {
@@ -208,10 +209,10 @@ public class InstrumentResponseTest {
   public void parseTermAsComplex_checkThatComplexArrayWasOrderedCorrectly() {
     Complex[] arr = new Complex[5];
     String[] lines = {"B053F15-18    0 -5.943130E+01  0.000000E+00  0.000000E+00  0.000000E+00",
-                      "B053F15-18    1 -2.271210E+01  2.710650E+01  0.000000E+00  0.000000E+00",
-                      "B053F15-18    2 -2.271210E+01 -2.710650E+01  0.000000E+00  0.000000E+00",
-                      "B053F15-18    3 -4.800400E-03  0.000000E+00  0.000000E+00  0.000000E+00",
-                      "B053F15-18    4 -7.394060E-02  0.000000E+00  7.594130E-04  0.000000E+00"};
+        "B053F15-18    1 -2.271210E+01  2.710650E+01  0.000000E+00  0.000000E+00",
+        "B053F15-18    2 -2.271210E+01 -2.710650E+01  0.000000E+00  0.000000E+00",
+        "B053F15-18    3 -4.800400E-03  0.000000E+00  0.000000E+00  0.000000E+00",
+        "B053F15-18    4 -7.394060E-02  0.000000E+00  7.594130E-04  0.000000E+00"};
     Complex[] testAgainst = {
         new Complex(-5.943130E1),
         new Complex(-2.271210E1, 2.710650E1),
@@ -237,12 +238,12 @@ public class InstrumentResponseTest {
   }
 
   @Test
-  public void parseTransferType_A_laplacianTransfer(){
+  public void parseTransferType_A_laplacianTransfer() {
     assertEquals(TransferFunction.LAPLACIAN, InstrumentResponse.parseTransferType("A"));
   }
 
   @Test
-  public void parseTransferType_B_linearTransfer(){
+  public void parseTransferType_B_linearTransfer() {
     assertEquals(TransferFunction.LINEAR, InstrumentResponse.parseTransferType("B"));
   }
 
@@ -250,7 +251,7 @@ public class InstrumentResponseTest {
    * Test Composite Transfer from SEED specifications
    */
   @Test
-  public void parseTransferType_C_defaultsToLaplacian(){
+  public void parseTransferType_C_defaultsToLaplacian() {
     assertEquals(TransferFunction.LAPLACIAN, InstrumentResponse.parseTransferType("C"));
   }
 
@@ -258,44 +259,47 @@ public class InstrumentResponseTest {
    * Test Digital (Z) Transfer from SEED specifications
    */
   @Test
-  public void parseTransferType_D_defaultsToLaplacian(){
+  public void parseTransferType_D_defaultsToLaplacian() {
     assertEquals(TransferFunction.LAPLACIAN, InstrumentResponse.parseTransferType("D"));
   }
 
   @Test
-  public void parseUnitType_velocity_checkCaseSensitivity() throws Exception{
+  public void parseUnitType_velocity_checkCaseSensitivity() throws Exception {
     assertEquals(Unit.VELOCITY, InstrumentResponse.parseUnitType("M/s"));
   }
 
   @Test
-  public void parseUnitType_velocity() throws Exception{
+  public void parseUnitType_velocity() throws Exception {
     assertEquals(Unit.VELOCITY, InstrumentResponse.parseUnitType("m/s"));
   }
 
   @Test
-  public void parseUnitType_acceleration() throws Exception{
+  public void parseUnitType_acceleration() throws Exception {
     assertEquals(Unit.ACCELERATION, InstrumentResponse.parseUnitType("m/s**2"));
   }
 
-  @Test (expected = IOException.class)
-  public void parseUnitType_defaultThrowsException() throws Exception{
+  @Test(expected = IOException.class)
+  public void parseUnitType_defaultThrowsException() throws Exception {
     InstrumentResponse.parseUnitType("Amperage");
   }
 
   @Test
   public void skipToSelectedEpoch_methodReturnsEvenIfEpochMissing() throws Exception {
-    BufferedReader reader = new BufferedReader(new InputStreamReader(InstrumentResponseTest.class.getResourceAsStream("/seismic-test-data/RESPs/RESP_with_empty_lines")));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(InstrumentResponseTest.class
+        .getResourceAsStream("/seismic-test-data/RESPs/RESP_with_empty_lines")));
     InstrumentResponse.skipToSelectedEpoch(reader, Instant.MAX);
     //Should be empty since it was fully read
     assertFalse(reader.ready());
   }
 
   @Test
-  public void skipToSelectedEpoch_doesItStopOnCorrectEpochAfterSkippingOverEpoch_doesItSkipEmptyLines() throws Exception {
+  public void skipToSelectedEpoch_doesItStopOnCorrectEpochAfterSkippingOverEpoch_doesItSkipEmptyLines()
+      throws Exception {
     LocalDate date = LocalDate.parse("2012-01-01");
     Instant epoch = date.atStartOfDay(ZoneOffset.UTC).toInstant();
 
-    BufferedReader reader = new BufferedReader(new InputStreamReader(InstrumentResponseTest.class.getResourceAsStream("/seismic-test-data/RESPs/RESP_with_empty_lines")));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(InstrumentResponseTest.class
+        .getResourceAsStream("/seismic-test-data/RESPs/RESP_with_empty_lines")));
     InstrumentResponse.skipToSelectedEpoch(reader, epoch);
     assertTrue(reader.ready());
 
@@ -308,7 +312,8 @@ public class InstrumentResponseTest {
     LocalDate date = LocalDate.parse("2006-01-01");
     Instant epoch = date.atStartOfDay(ZoneOffset.UTC).toInstant();
 
-    BufferedReader reader = new BufferedReader(new InputStreamReader(InstrumentResponseTest.class.getResourceAsStream("/seismic-test-data/RESPs/RESP_with_empty_lines")));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(InstrumentResponseTest.class
+        .getResourceAsStream("/seismic-test-data/RESPs/RESP_with_empty_lines")));
     InstrumentResponse.skipToSelectedEpoch(reader, epoch);
     assertTrue(reader.ready());
 
@@ -321,10 +326,10 @@ public class InstrumentResponseTest {
    * Verify that each file in responses.txt can be loaded.
    */
   @Test
-  public void parseInstrumentList() throws IOException{
+  public void parseInstrumentList() throws IOException {
     Set<String> respFiles = InstrumentResponse.parseInstrumentList();
     assertEquals(12, respFiles.size());
-    for (String respFile: respFiles) {
+    for (String respFile : respFiles) {
       InstrumentResponse response = InstrumentResponse.loadEmbeddedResponse(respFile);
       assertNotNull(response);
     }
@@ -337,10 +342,11 @@ public class InstrumentResponseTest {
   public void parserDriver_notNullEpochParsesCorrectEpoch_firstEpoch() throws Exception {
     LocalDate date = LocalDate.parse("2006-01-01");
     Instant epochStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
-    URL file = InstrumentResponseTest.class.getResource("/seismic-test-data/RESPs/RESP_with_empty_lines");
+    URL file = InstrumentResponseTest.class
+        .getResource("/seismic-test-data/RESPs/RESP_with_empty_lines");
 
-    InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString(), epochStart);
-
+    InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString(),
+        epochStart);
 
     assertEquals(epochStart, response.getEpochStart());
 
@@ -375,13 +381,14 @@ public class InstrumentResponseTest {
    * This test tests that each field was parsed correctly and the correct epoch was parsed.
    */
   @Test
-  public void parserDriver_notNullEpochParsesCorrectEpoch_lastEpoch() throws Exception{
+  public void parserDriver_notNullEpochParsesCorrectEpoch_lastEpoch() throws Exception {
     LocalDate date = LocalDate.parse("2012-01-01");
     Instant epochStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
-    URL file = InstrumentResponseTest.class.getResource("/seismic-test-data/RESPs/RESP_with_empty_lines");
+    URL file = InstrumentResponseTest.class
+        .getResource("/seismic-test-data/RESPs/RESP_with_empty_lines");
 
-    InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString(), epochStart);
-
+    InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString(),
+        epochStart);
 
     assertEquals(epochStart, response.getEpochStart());
 
@@ -411,13 +418,13 @@ public class InstrumentResponseTest {
    * This test tests that each field was parsed correctly and the correct epoch was parsed.
    */
   @Test
-  public void parserDriver_nullEpochParsesLastEpoch() throws Exception{
+  public void parserDriver_nullEpochParsesLastEpoch() throws Exception {
     LocalDate date = LocalDate.parse("2012-01-01");
     Instant epochStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
-    URL file = InstrumentResponseTest.class.getResource("/seismic-test-data/RESPs/RESP_with_empty_lines");
+    URL file = InstrumentResponseTest.class
+        .getResource("/seismic-test-data/RESPs/RESP_with_empty_lines");
 
     InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString());
-
 
     assertEquals(epochStart, response.getEpochStart());
 

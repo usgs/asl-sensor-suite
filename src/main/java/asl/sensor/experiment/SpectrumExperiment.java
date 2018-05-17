@@ -102,11 +102,21 @@ public class SpectrumExperiment extends Experiment {
   /**
    * NOTE: not used by corresponding panel, overrides with active indices
    * of components in the combo-box
+   *
    * @return response indices
    */
   @Override
   public int[] listActiveResponseIndices() {
     return respIndices;
+  }
+
+  /**
+   * Used for testing.
+   *
+   * @return freqSpace
+   */
+  boolean getFreqSpace() {
+    return freqSpace;
   }
 
   /**
@@ -117,14 +127,6 @@ public class SpectrumExperiment extends Experiment {
    */
   public void setFreqSpace(boolean freqSpace) {
     this.freqSpace = freqSpace;
-  }
-
-  /**
-   * Used for testing.
-   * @return freqSpace
-   */
-  boolean getFreqSpace(){
-    return freqSpace;
   }
 
 }

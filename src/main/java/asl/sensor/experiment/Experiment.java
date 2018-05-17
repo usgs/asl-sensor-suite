@@ -51,6 +51,30 @@ public abstract class Experiment {
   // each test returns new (set of) timeseries data from the input data
 
   static final double MAX_PLOT_PERIOD = 1.0E6;
+  private final EventListenerList eventHelper;
+  protected long start;
+  protected long end;
+  protected List<XYSeriesCollection> xySeriesData;
+  /**
+   * list of filenames of seed, resp files
+   * NOTE: if implementing new experiment, best to use consistent ordering with
+   * current set of experiments for this list:
+   * SEED, RESP (if used), SEED, RESP (if used), etc.
+   * That is, place response files after their associated timeseries
+   */
+  protected List<String> dataNames;
+  private String status;
+  private Map<String, List<Pair<Date, Date>>> gapRegions;
+  /**
+   * Initialize all fields common to experiment objects
+   */
+  public Experiment() {
+    start = 0L;
+    end = 0L;
+    dataNames = new ArrayList<>();
+    status = "";
+    eventHelper = new EventListenerList();
+  }
 
   /**
    * Helper function to add data from a DataStore object (the PSD calculation)
@@ -132,34 +156,6 @@ public abstract class Experiment {
     }
 
     xysc.addSeries(powerSeries);
-  }
-
-  protected long start;
-  protected long end;
-  protected List<XYSeriesCollection> xySeriesData;
-  private String status;
-
-  /**
-   * list of filenames of seed, resp files
-   * NOTE: if implementing new experiment, best to use consistent ordering with
-   * current set of experiments for this list:
-   * SEED, RESP (if used), SEED, RESP (if used), etc.
-   * That is, place response files after their associated timeseries
-   */
-  protected List<String> dataNames;
-  private Map<String, List<Pair<Date, Date>>> gapRegions;
-
-  private final EventListenerList eventHelper;
-
-  /**
-   * Initialize all fields common to experiment objects
-   */
-  public Experiment() {
-    start = 0L;
-    end = 0L;
-    dataNames = new ArrayList<>();
-    status = "";
-    eventHelper = new EventListenerList();
   }
 
   /**

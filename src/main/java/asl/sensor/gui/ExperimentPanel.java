@@ -1,7 +1,7 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.Experiment;
 import asl.sensor.ExperimentFactory;
+import asl.sensor.experiment.Experiment;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
@@ -68,26 +68,90 @@ public abstract class ExperimentPanel
     extends JPanel
     implements ActionListener, ChangeListener {
 
-  private static final long serialVersionUID = -5591522915365766604L;
-  static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
-      ThreadLocal.withInitial(() -> {
-        DecimalFormat format = new DecimalFormat("#.###");
-        NumericUtils.setInfinityPrintable(format);
-        return format;
-      });
   public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
       ThreadLocal.withInitial(() -> {
         SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
-
+  static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        DecimalFormat format = new DecimalFormat("#.###");
+        NumericUtils.setInfinityPrintable(format);
+        return format;
+      });
   static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
       ThreadLocal.withInitial(() -> {
         SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
+  private static final long serialVersionUID = -5591522915365766604L;
+  final JButton save; // easy access to saving output as png
+  final ChartPanel chartPanel; // component used to hold the shown chart
+  final ExperimentFactory expType;
+  final String[] channelType;
+  final Set<String> seriesDashedSet;
+  final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
+  // (if an experiment has multiple charts to show, ideally each should be
+  // selectable through some sort of menu with the active menu option used to control
+  // which chart should be displayed in this panel)
+  private final JFileChooser fileChooser; // save image when image save button clicked
+  protected JFreeChart chart; // the chart shown in the panel
+  // used to define experiment of each plot object (i.e., chart name)
+  protected ValueAxis xAxis, yAxis;
+  // experiment actually being run (call its 'setData' method to run backend)
+  // experiments use builder pattern -- set necessary variables like
+  // angle offset or x-axis units before running the experiment
+  // used to give details in input panel about what users needs to load where
+  protected boolean set; // true if the experiment has run
+  // default axes to use with the default chart
+  Experiment expResult;
+  String[] plotTheseInBold; // given in the implementing function
+  // this is a String because bolded names are intended to be fixed
+  // (i.e., NLNM, NHNM, not dependent on user input)
+  Map<String, Color> seriesColorMap;
+  /**
+   * Construct a new panel, using a backend defined by the passed-in enum
+   *
+   * @param experiment Experiment enum with corresponding backend for factory
+   * instantiation
+   */
+  public ExperimentPanel(ExperimentFactory experiment) {
+    set = false;
+
+    channelType = new String[DataStore.FILE_COUNT];
+
+    // default initialization for channel type string
+    for (int i = 0; i < channelType.length; ++i) {
+      channelType[i] = "NOT USED";
+    }
+
+    seriesColorMap = new HashMap<>();
+    seriesDashedSet = new HashSet<>();
+    plotTheseInBold = new String[]{};
+
+    expType = experiment;
+    expResult = experiment.createExperiment();
+    expResult.addChangeListener(this);
+
+    chart = ChartFactory.createXYLineChart(expType.getName(),
+        "", "", null);
+    chartPanel = new ChartPanel(chart);
+
+    fileChooser = new JFileChooser();
+
+    save = new JButton("Save plot (PNG)");
+    save.addActionListener(this);
+
+    // basic layout for components (recommended to override in concrete class)
+    // if specific formatting or additional components are unnecessary, the
+    // implementing class can simply call super(expType) to make a panel
+    this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+    this.add(chartPanel);
+    this.add(save);
+    save.setAlignmentX(Component.CENTER_ALIGNMENT);
+  }
 
   /**
    * Append text to a chart's title (used for distinguishing random cal types).
@@ -99,6 +163,7 @@ public abstract class ExperimentPanel
     String titleText = chart.getTitle().getText();
     chart.getTitle().setText(titleText + appendText);
   }
+  // these are map/set because they are based on the data read in, not fixed
 
   /**
    * Get start and end times of data for experiments that use time series data
@@ -142,84 +207,6 @@ public abstract class ExperimentPanel
       plot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
     }
 
-  }
-
-  final JButton save; // easy access to saving output as png
-
-  protected JFreeChart chart; // the chart shown in the panel
-
-  final ChartPanel chartPanel; // component used to hold the shown chart
-  // (if an experiment has multiple charts to show, ideally each should be
-  // selectable through some sort of menu with the active menu option used to control
-  // which chart should be displayed in this panel)
-
-  private final JFileChooser fileChooser; // save image when image save button clicked
-
-  final ExperimentFactory expType;
-  // used to define experiment of each plot object (i.e., chart name)
-
-  Experiment expResult;
-  // experiment actually being run (call its 'setData' method to run backend)
-  // experiments use builder pattern -- set necessary variables like
-  // angle offset or x-axis units before running the experiment
-
-  protected ValueAxis xAxis, yAxis;
-  // default axes to use with the default chart
-
-  final String[] channelType;
-  // used to give details in input panel about what users needs to load where
-  protected boolean set; // true if the experiment has run
-
-  String[] plotTheseInBold; // given in the implementing function
-  // this is a String because bolded names are intended to be fixed
-  // (i.e., NLNM, NHNM, not dependent on user input)
-  Map<String, Color> seriesColorMap;
-
-  final Set<String> seriesDashedSet;
-  // these are map/set because they are based on the data read in, not fixed
-
-  final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
-
-  /**
-   * Construct a new panel, using a backend defined by the passed-in enum
-   *
-   * @param experiment Experiment enum with corresponding backend for factory
-   * instantiation
-   */
-  public ExperimentPanel(ExperimentFactory experiment) {
-    set = false;
-
-    channelType = new String[DataStore.FILE_COUNT];
-
-    // default initialization for channel type string
-    for (int i = 0; i < channelType.length; ++i) {
-      channelType[i] = "NOT USED";
-    }
-
-    seriesColorMap = new HashMap<>();
-    seriesDashedSet = new HashSet<>();
-    plotTheseInBold = new String[]{};
-
-    expType = experiment;
-    expResult = experiment.createExperiment();
-    expResult.addChangeListener(this);
-
-    chart = ChartFactory.createXYLineChart(expType.getName(),
-        "", "", null);
-    chartPanel = new ChartPanel(chart);
-
-    fileChooser = new JFileChooser();
-
-    save = new JButton("Save plot (PNG)");
-    save.addActionListener(this);
-
-    // basic layout for components (recommended to override in concrete class)
-    // if specific formatting or additional components are unnecessary, the
-    // implementing class can simply call super(expType) to make a panel
-    this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    this.add(chartPanel);
-    this.add(save);
-    save.setAlignmentX(Component.CENTER_ALIGNMENT);
   }
 
   /**

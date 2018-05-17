@@ -14,7 +14,7 @@ import org.junit.Test;
 
 public class ExperimentPanelTest {
 
-  ExperimentPanel panel;
+  private ExperimentPanel panel;
 
   @Before
   public void setUp() {

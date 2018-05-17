@@ -1,5 +1,10 @@
 package asl.sensor;
 
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.gui.InputPanel;
+import asl.sensor.gui.SwingWorkerSingleton;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -29,11 +34,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.JFreeChart;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.InputPanel;
-import asl.sensor.gui.SwingWorkerSingleton;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
 
 /**
  * Main window of the sensor test program and the program's launcher
@@ -47,6 +47,92 @@ public class SensorSuite extends JPanel
     implements ActionListener, ChangeListener, PropertyChangeListener {
 
   private static final long serialVersionUID = 2866426897343097822L;
+  private final JFileChooser fileChooser; // loads in files based on parameter
+  private final InputPanel inputPlots;
+  private final JTabbedPane tabbedPane; // holds set of experiment panels
+  private final JButton generate;
+  private final JButton savePDF; // run all calculations
+  // used to store current directory locations
+  private String saveDirectory = System.getProperty("user.home");
+  /**
+   * Creates the main window of the program when called
+   * (Three main panels: the top panel for displaying the results
+   * of sensor tests; the lower panel for displaying plots of raw data from
+   * miniSEED files; the side panel for most file-IO operations
+   */
+  private SensorSuite() {
+
+    super();
+
+    // set up experiment panes in a tabbed pane
+    tabbedPane = new JTabbedPane();
+
+    for (ExperimentFactory exp : ExperimentFactory.values()) {
+      tabbedPane.addTab(exp.getName(), exp.createPanel());
+    }
+
+    inputPlots = new InputPanel();
+    inputPlots.addChangeListener(this);
+
+    Dimension dimension = tabbedPane.getPreferredSize();
+    inputPlots.setPreferredSize(dimension);
+    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight());
+    tabbedPane.setMinimumSize(dimension);
+    tabbedPane.addChangeListener(this);
+
+    // experiments on left, input on the right; split to allow resizing
+    JSplitPane mainSplit =
+        new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true);
+    // boolean allows redrawing immediately on resize
+    mainSplit.setLeftComponent(tabbedPane);
+    mainSplit.setRightComponent(inputPlots);
+    // set the left-pane to resize more when window is horizontally stretched
+    mainSplit.setResizeWeight(.5);
+    mainSplit.setOneTouchExpandable(true);
+
+    // we want to make sure the split pane fills the window
+    this.setLayout(new GridBagLayout());
+    GridBagConstraints constraints = new GridBagConstraints();
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1;
+    constraints.weighty = 1;
+    constraints.gridwidth = 2;
+    constraints.fill = GridBagConstraints.BOTH;
+
+    this.add(mainSplit, constraints);
+
+    constraints.fill = GridBagConstraints.VERTICAL;
+    constraints.gridx = 0;
+    constraints.gridy = 1;
+    constraints.weightx = 1.0;
+    constraints.weighty = 0.0;
+    constraints.gridwidth = 1;
+
+    // now add the buttons
+    savePDF = new JButton("Generate PDF report from current test");
+    savePDF.setEnabled(false);
+    savePDF.addActionListener(this);
+    constraints.anchor = GridBagConstraints.EAST;
+    this.add(savePDF, constraints);
+    constraints.gridx += 1;
+
+    generate = new JButton("Generate test result");
+    generate.setEnabled(false);
+    generate.addActionListener(this);
+    dimension = generate.getPreferredSize();
+    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
+    generate.setMinimumSize(dimension);
+    constraints.anchor = GridBagConstraints.WEST;
+    this.add(generate, constraints);
+
+    fileChooser = new JFileChooser();
+
+    ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
+    inputPlots.showDataNeeded(experimentPanel.panelsNeeded());
+    inputPlots.setChannelTypes(experimentPanel.getChannelTypes());
+
+  }
 
   /**
    * Loads the main window for the program on launch
@@ -186,96 +272,6 @@ public class SensorSuite extends JPanel
         e.printStackTrace();
       }
     }
-  }
-
-  private final JFileChooser fileChooser; // loads in files based on parameter
-  private final InputPanel inputPlots;
-  private final JTabbedPane tabbedPane; // holds set of experiment panels
-  private final JButton generate;
-  private final JButton savePDF; // run all calculations
-
-  // used to store current directory locations
-  private String saveDirectory = System.getProperty("user.home");
-
-  /**
-   * Creates the main window of the program when called
-   * (Three main panels: the top panel for displaying the results
-   * of sensor tests; the lower panel for displaying plots of raw data from
-   * miniSEED files; the side panel for most file-IO operations
-   */
-  private SensorSuite() {
-
-    super();
-
-    // set up experiment panes in a tabbed pane
-    tabbedPane = new JTabbedPane();
-
-    for (ExperimentFactory exp : ExperimentFactory.values()) {
-      tabbedPane.addTab(exp.getName(), exp.createPanel());
-    }
-
-    inputPlots = new InputPanel();
-    inputPlots.addChangeListener(this);
-
-    Dimension dimension = tabbedPane.getPreferredSize();
-    inputPlots.setPreferredSize(dimension);
-    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight());
-    tabbedPane.setMinimumSize(dimension);
-    tabbedPane.addChangeListener(this);
-
-
-    // experiments on left, input on the right; split to allow resizing
-    JSplitPane mainSplit =
-        new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true);
-    // boolean allows redrawing immediately on resize
-    mainSplit.setLeftComponent(tabbedPane);
-    mainSplit.setRightComponent(inputPlots);
-    // set the left-pane to resize more when window is horizontally stretched
-    mainSplit.setResizeWeight(.5);
-    mainSplit.setOneTouchExpandable(true);
-
-    // we want to make sure the split pane fills the window
-    this.setLayout(new GridBagLayout());
-    GridBagConstraints constraints = new GridBagConstraints();
-    constraints.gridx = 0;
-    constraints.gridy = 0;
-    constraints.weightx = 1;
-    constraints.weighty = 1;
-    constraints.gridwidth = 2;
-    constraints.fill = GridBagConstraints.BOTH;
-
-    this.add(mainSplit, constraints);
-
-    constraints.fill = GridBagConstraints.VERTICAL;
-    constraints.gridx = 0;
-    constraints.gridy = 1;
-    constraints.weightx = 1.0;
-    constraints.weighty = 0.0;
-    constraints.gridwidth = 1;
-
-    // now add the buttons
-    savePDF = new JButton("Generate PDF report from current test");
-    savePDF.setEnabled(false);
-    savePDF.addActionListener(this);
-    constraints.anchor = GridBagConstraints.EAST;
-    this.add(savePDF, constraints);
-    constraints.gridx += 1;
-
-    generate = new JButton("Generate test result");
-    generate.setEnabled(false);
-    generate.addActionListener(this);
-    dimension = generate.getPreferredSize();
-    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
-    generate.setMinimumSize(dimension);
-    constraints.anchor = GridBagConstraints.WEST;
-    this.add(generate, constraints);
-
-    fileChooser = new JFileChooser();
-
-    ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
-    inputPlots.showDataNeeded(experimentPanel.panelsNeeded());
-    inputPlots.setChannelTypes(experimentPanel.getChannelTypes());
-
   }
 
   /**

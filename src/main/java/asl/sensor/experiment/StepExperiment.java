@@ -45,26 +45,23 @@ import org.jfree.data.xy.XYSeriesCollection;
  * @author akearns - KBRWyle
  */
 public class StepExperiment extends Experiment {
-  private double f, h; //corner and damping of output (uncorrected)
-  private double fCorr, hCorr; // fit parameters to turn output into cal input
-  private double initResid, fitResid; // residual values
 
-  private int trimmedLength, cutAmount;
-  private double[] freqs; // frequency (i.e., x-axis values) of step cal FFT series
-  private Complex[] sensorFFTSeries; // FFT of step cal from sensor
-
-  private int sensorOutIdx; // used to keep track of response location for report generation
   private final double STEP_FACTOR = 1E-10;
-
   /**
    * Used in the least squared solver
    */
   private final double F_TOLER = 1E-15;
-
   /**
    * Used in the least squared solver
    */
   private final double X_TOLER = 1E-15;
+  private double f, h; //corner and damping of output (uncorrected)
+  private double fCorr, hCorr; // fit parameters to turn output into cal input
+  private double initResid, fitResid; // residual values
+  private int trimmedLength, cutAmount;
+  private double[] freqs; // frequency (i.e., x-axis values) of step cal FFT series
+  private Complex[] sensorFFTSeries; // FFT of step cal from sensor
+  private int sensorOutIdx; // used to keep track of response location for report generation
 
   public StepExperiment() {
     super();
@@ -471,6 +468,7 @@ public class StepExperiment extends Experiment {
   /**
    * NOTE: not used by corresponding panel, overrides with active indices
    * of components in the combo-box
+   *
    * @return list of active response indices
    */
   @Override

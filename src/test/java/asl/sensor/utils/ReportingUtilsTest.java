@@ -3,7 +3,7 @@ package asl.sensor.utils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;
 
-public class ReportingTest {
+public class ReportingUtilsTest {
 
   @Test
   public void testStringListConversion() {

@@ -10,9 +10,9 @@ import java.time.format.DateTimeFormatter;
 public class TestUtils {
 
   // may need to change this to deal with eventual migration to main usgs github
-  public static String SUBPAGE = "tests/";
-  public static String TEST_DATA_LOCATION = "src/test/resources/seismic-test-data/";
-  public static String RESP_LOCATION = TEST_DATA_LOCATION + "RESPs/";
+  public static final String SUBPAGE = "tests/";
+  public static final String TEST_DATA_LOCATION = "src/test/resources/seismic-test-data/";
+  public static final String RESP_LOCATION = TEST_DATA_LOCATION + "RESPs/";
 
   public static String getSeedFolder(String network, String station, String year,
       String dayOfYear) {

@@ -27,9 +27,8 @@ public class SpectrumPanel extends ExperimentPanel {
   private static final long serialVersionUID = 9018553361096758354L;
 
   private final JCheckBox freqSpaceBox;
-  private int plotCount;
-
   private final NumberAxis freqAxis;
+  private int plotCount;
 
   /**
    * Constructs a new panel and lays out all the components in it

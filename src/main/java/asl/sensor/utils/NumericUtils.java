@@ -16,48 +16,6 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 public class NumericUtils {
 
   /**
-   * Complex comparator ordering by magnitude but listing pure-real values first
-   * And then sorting complex numbers according to real value first, and then
-   * by imaginary value if the real values match.
-   *
-   * @author akearns
-   */
-  static class CpxRealComparator implements Comparator<Complex> {
-
-    static final CpxRealComparator instance = new CpxRealComparator();
-
-    private CpxRealComparator() {
-
-    }
-
-    @Override
-    public int compare(Complex c1, Complex c2) {
-
-      if (null == c1 && null == c2) {
-        return 0;
-      } else if (null == c1) {
-        return -1;
-      } else if (null == c2) {
-        return 1;
-      }
-
-      if (c1.getImaginary() == 0. && c2.getImaginary() == 0.) {
-        return (int) Math.signum(c1.getReal() - c2.getReal());
-      } else if (c1.getImaginary() == 0.) {
-        return -1;
-      } else if (c2.getImaginary() == 0.) {
-        return 1;
-      } else {
-        if (c1.getReal() == c2.getReal()) {
-          return (int) Math.signum(c1.getImaginary() - c2.getImaginary());
-        } else {
-          return (int) Math.signum(c1.getReal() - c2.getReal());
-        }
-      }
-    }
-  }
-
-  /**
    * 2 * Pi, sometimes also referred to as Tau.
    * The number of radians in a full circle.
    */
@@ -179,7 +137,6 @@ public class NumericUtils {
     return out;
   }
 
-
   /**
    * Perform a moving average on real-val. data, using the specified number of points to average at
    * each point in the input
@@ -262,6 +219,7 @@ public class NumericUtils {
 
   /**
    * Wrap a degree to be between -180 and 180
+   *
    * @param angle in degrees
    * @return same angle but between -180 and 180
    */
@@ -273,6 +231,48 @@ public class NumericUtils {
       angle -= 360;
     }
     return angle;
+  }
+
+  /**
+   * Complex comparator ordering by magnitude but listing pure-real values first
+   * And then sorting complex numbers according to real value first, and then
+   * by imaginary value if the real values match.
+   *
+   * @author akearns
+   */
+  static class CpxRealComparator implements Comparator<Complex> {
+
+    static final CpxRealComparator instance = new CpxRealComparator();
+
+    private CpxRealComparator() {
+
+    }
+
+    @Override
+    public int compare(Complex c1, Complex c2) {
+
+      if (null == c1 && null == c2) {
+        return 0;
+      } else if (null == c1) {
+        return -1;
+      } else if (null == c2) {
+        return 1;
+      }
+
+      if (c1.getImaginary() == 0. && c2.getImaginary() == 0.) {
+        return (int) Math.signum(c1.getReal() - c2.getReal());
+      } else if (c1.getImaginary() == 0.) {
+        return -1;
+      } else if (c2.getImaginary() == 0.) {
+        return 1;
+      } else {
+        if (c1.getReal() == c2.getReal()) {
+          return (int) Math.signum(c1.getImaginary() - c2.getImaginary());
+        } else {
+          return (int) Math.signum(c1.getReal() - c2.getReal());
+        }
+      }
+    }
   }
 
 }
