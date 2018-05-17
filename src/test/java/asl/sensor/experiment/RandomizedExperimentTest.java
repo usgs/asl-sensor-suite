@@ -501,6 +501,53 @@ public class RandomizedExperimentTest {
   }
 
   @Test
+  public void runExperiment_KIEV_LFCalibration() {
+    String respName = RESP_LOCATION + "RESP.IU.KIEV.00.BH1";
+    String dataFolderName = getSeedFolder("IU", "KIEV", "2018", "044");
+    String calName = dataFolderName + "_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_BH1.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+
+    dataFolderName = getSeedFolder("IU", "KIEV", "2018", "045");
+    calName = dataFolderName + "_BC0.512.seed";
+    sensOutName = dataFolderName + "00_BH1.512.seed";
+
+    ds = DataStoreUtils.appendFromNames(ds, calName, sensOutName);
+
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
+    cCal = cCal.withHour(23).withMinute(37).withSecond(0).withNano(0);
+    long start = cCal.toInstant().toEpochMilli();
+
+    cCal = TestUtils.getEndCalendar(ds);
+    cCal = cCal.withHour(7).withMinute(37);
+    long end = cCal.toInstant().toEpochMilli();
+
+    ds.trim(start, end);
+
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.RANDOMCAL.createExperiment();
+
+    rCal.setLowFrequencyCalibration(true);
+
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+    rCal.setLowFrequencyCalibration(false);
+    List<Complex> fitPoles = rCal.getFitPoles();
+    Complex[] expectedPoles = {
+        new Complex(-0.012781625484629284,-0.012442058263140014),
+        new Complex(-0.012781625484629284, 0.012442058263140014)
+    };
+    for (int i = 0; i < fitPoles.size(); i++) {
+      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
+      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
+    }
+
+    assertEquals(197.1889105489712, rCal.getFitResidual(), 1E-7);
+    assertEquals(414.3706105547109, rCal.getInitResidual(), 1E-7);
+  }
+
+  @Test
   public void hasEnoughData_missingInputData() {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");

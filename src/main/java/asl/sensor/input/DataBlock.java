@@ -1,6 +1,5 @@
 package asl.sensor.input;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;

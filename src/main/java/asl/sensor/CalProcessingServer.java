@@ -61,8 +61,8 @@ public class CalProcessingServer {
     protected Map<String, byte[]> imageMap;
 
     public CalResult() {
-      numerMap = new HashMap<String, double[]>();
-      imageMap = new HashMap<String, byte[]>();
+      numerMap = new HashMap<>();
+      imageMap = new HashMap<>();
     }
 
     public Map<String, byte[]> getImageMap() {
@@ -134,7 +134,7 @@ public class CalProcessingServer {
     }
 
     public Map<String, byte[]> getImageMap() {
-      Map<String, byte[]> imageMap = new HashMap<String, byte[]>();
+      Map<String, byte[]> imageMap = new HashMap<>();
       imageMap.put("amplitude", images[0]);
       imageMap.put("phase", images[1]);
       imageMap.put("amplitude-error", images[2]);
@@ -143,7 +143,7 @@ public class CalProcessingServer {
     }
 
     public Map<String, double[]> getNumericMap() {
-      Map<String, double[]> numerMap = new HashMap<String, double[]>();
+      Map<String, double[]> numerMap = new HashMap<>();
       numerMap.put("fit-poles", fitPoles);
       numerMap.put("fit-zeros", fitZeros);
       numerMap.put("initial-poles", initialPoles);

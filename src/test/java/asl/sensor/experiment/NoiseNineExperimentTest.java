@@ -136,12 +136,12 @@ public class NoiseNineExperimentTest {
     cCal.set(Calendar.HOUR_OF_DAY, 12);
     cCal.set(Calendar.MINUTE, 0);
     cCal.set(Calendar.SECOND, 0);
-    System.out.println("start: " + sdf.format(cCal.getTime()));
+
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR_OF_DAY, 13);
     cCal.set(Calendar.MINUTE, 0);
     cCal.set(Calendar.SECOND, 0);
-    System.out.println("end: " + sdf.format(cCal.getTime()));
+
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end, DataStore.FILE_COUNT);
