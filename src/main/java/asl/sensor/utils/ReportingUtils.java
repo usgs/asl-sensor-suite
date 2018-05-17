@@ -263,11 +263,11 @@ public class ReportingUtils {
     float fontSize = 12;
     float leading = 1.5f * fontSize;
 
-    PDRectangle mediabox = page.getMediaBox();
+    PDRectangle mediaBox = page.getMediaBox();
     float margin = 72;
-    float width = mediabox.getWidth() - 2 * margin;
-    float startX = mediabox.getLowerLeftX() + margin;
-    float startY = mediabox.getUpperRightY() - margin;
+    float width = mediaBox.getWidth() - 2 * margin;
+    float startX = mediaBox.getLowerLeftX() + margin;
+    float startY = mediaBox.getUpperRightY() - margin;
 
     List<String> lines = new ArrayList<>();
 
