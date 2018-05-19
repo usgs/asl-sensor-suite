@@ -1,17 +1,5 @@
 package asl.sensor;
 
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.experiment.SineExperiment;
-import asl.sensor.experiment.StepExperiment;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.RandomizedPanel;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -22,10 +10,13 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
@@ -40,6 +31,18 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.SineExperiment;
+import asl.sensor.experiment.StepExperiment;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.gui.RandomizedPanel;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
@@ -56,6 +59,24 @@ public class CalProcessingServer {
 
 
   public CalProcessingServer() {
+  }
+
+  /**
+   * Enumerate names of embedded resp files
+   * @return List of names of embedded resps (will match common sensor & digitizer gain setups)
+   */
+  public static String[] getEmbeddedRESPFilenames() {
+    Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
+
+    List<String> names = new ArrayList<>(respFilenames);
+    Collections.sort(names);
+    String[] nameArray = new String[names.size()];
+    for (int k = 0; k < nameArray.length; ++k) {
+      String name = names.get(k);
+      name = name.replace("resps/", "");
+      nameArray[k] = name;
+    }
+    return nameArray;
   }
 
   /**
