@@ -493,7 +493,7 @@ public class RandomizedExperimentTest {
     ComplexFormat cf = new ComplexFormat(new DecimalFormat("#.#####"));
     StringBuilder report = new StringBuilder("The best-fit values from the solver: ");
     for (int i = 0; i < fitPoles.size(); i++) {
-      report.append(cf.format(expectedPoles[i]) + ", ");
+      report.append(cf.format(fitPoles.get(i)) + ", ");
     }
     for (int i = 0; i < fitPoles.size(); i++) {
       assertEquals(report.toString(), expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
