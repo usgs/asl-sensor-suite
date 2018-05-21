@@ -13,8 +13,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -336,7 +336,7 @@ public class InstrumentResponse {
 
   private static List<Pair<Complex, Integer>> setComponentValues(Complex[] pzArr) {
     // first, sort matching P/Z values into bins, count up the number of each
-    Map<Complex, Integer> values = new HashMap<>();
+    Map<Complex, Integer> values = new LinkedHashMap<>();
     for (Complex c : pzArr) {
       if (values.keySet().contains(c)) {
         int count = values.get(c) + 1;
