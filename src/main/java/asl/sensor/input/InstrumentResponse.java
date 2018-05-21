@@ -787,7 +787,6 @@ public class InstrumentResponse {
     if (epoch != null) {
       skipToSelectedEpoch(reader, epoch);
       epochStart = epoch;
-      System.out.println(epoch);
     }
 
     numStages = 0;
