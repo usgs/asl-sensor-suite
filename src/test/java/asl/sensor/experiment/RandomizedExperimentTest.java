@@ -7,27 +7,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import asl.sensor.CalProcessingServer;
-import asl.sensor.CalProcessingServer.RandData;
-import asl.sensor.ExperimentFactory;
-import asl.sensor.gui.RandomizedPanel;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.DataStoreUtils;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.ReportingUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
@@ -41,6 +30,18 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
+import asl.sensor.CalProcessingServer;
+import asl.sensor.CalProcessingServer.RandData;
+import asl.sensor.ExperimentFactory;
+import asl.sensor.gui.RandomizedPanel;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.DataStoreUtils;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.ReportingUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class RandomizedExperimentTest {
 
@@ -489,9 +490,14 @@ public class RandomizedExperimentTest {
         new Complex(-101.27715855875556, -387.9300826976112),
         new Complex(-101.27715855875556, 387.9300826976112)
     };
+    ComplexFormat cf = new ComplexFormat(new DecimalFormat("#.#####"));
+    StringBuilder report = new StringBuilder("The best-fit values from the solver: ");
     for (int i = 0; i < fitPoles.size(); i++) {
-      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
-      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
+      report.append(cf.format(expectedPoles[i]) + ", ");
+    }
+    for (int i = 0; i < fitPoles.size(); i++) {
+      assertEquals(report.toString(), expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
+      assertEquals(report.toString(), expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
     }
 
     assertEquals(50.11489080838925, rCal.getFitResidual(), 1E-7);
