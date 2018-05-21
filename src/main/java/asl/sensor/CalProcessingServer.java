@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -135,7 +136,8 @@ public class CalProcessingServer {
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
     } else {
-      ir = new InstrumentResponse(respName);
+      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
+      ir = new InstrumentResponse(respName, epoch);
     }
 
     ds.setBlock(0, calBlock);
@@ -206,7 +208,8 @@ public class CalProcessingServer {
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
     } else {
-      ir = new InstrumentResponse(respName);
+      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
+      ir = new InstrumentResponse(respName, epoch);
     }
 
     ds.setBlock(0, calBlock);
@@ -234,7 +237,8 @@ public class CalProcessingServer {
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
     } else {
-      ir = new InstrumentResponse(respName);
+      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
+      ir = new InstrumentResponse(respName, epoch);
     }
 
     ds.setBlock(0, calBlock);
@@ -263,7 +267,8 @@ public class CalProcessingServer {
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
     } else {
-      ir = new InstrumentResponse(respName);
+      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
+      ir = new InstrumentResponse(respName, epoch);
     }
 
     ds.setBlock(0, calBlock);

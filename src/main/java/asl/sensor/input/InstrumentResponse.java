@@ -189,30 +189,37 @@ public class InstrumentResponse {
    * Note that this function assumes the given RESP file does not have a gap over the time region
    * of interest, and also assumes that both start and end exist within the same RESP epoch.
    * @param filename Name of RESP file to get epoch data from
-   * @param start Start time of data region under interest
+   * @param start Start time of data region under interest (epoch milliseconds)
    * @param end End time of data region under interest
    * @return Enclosing epoch's start time, or first or last
    * @throws IOException
    */
-  public static Instant getRespFileClosestEpoch(String filename, Instant start, Instant end)
+  public static Instant getRespFileClosestEpoch(String filename, long start, long end)
       throws IOException {
     List<Pair<Instant, Instant>> epochBounds;
     try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
       epochBounds = getRespFileEpochs(br);
 
-      if (epochBounds.size() == 1 || end.compareTo(epochBounds.get(0).getFirst()) <= 0 ) {
-        // in this case, our epochs are earlier than our given data
-        return epochBounds.get(0).getFirst();
+      // get initial best-guess estimate (first point), check if earliest epoch post-dates range
+      Instant closestStart = epochBounds.get(0).getFirst();
+      if (epochBounds.size() == 1 || end < closestStart.toEpochMilli()) {
+        return closestStart;
       }
 
+      long diff = Long.MAX_VALUE; // used to determine closest epoch start to inputted time
       for (Pair<Instant, Instant> oneEpoch : epochBounds) {
         Instant epochStart = oneEpoch.getFirst();
         Instant epochEnd = oneEpoch.getSecond();
-        if (epochStart.compareTo(start) <= 0 && epochEnd.compareTo(end) >= 0) {
+        // if range falls inside resp epoch (expected) then use that one
+        if (epochStart.toEpochMilli() < start && end < epochEnd.toEpochMilli()) {
           return epochStart;
+        } else if (Math.abs(epochStart.toEpochMilli() - start) < diff) {
+          // this is only of concern if the specified range doesn't somehow fall in a resp epoch
+          closestStart = epochStart;
+          diff = Math.abs(epochStart.toEpochMilli() - start);
         }
       }
-      return epochBounds.get(epochBounds.size()-1).getFirst();
+      return closestStart;
     }
   }
 
