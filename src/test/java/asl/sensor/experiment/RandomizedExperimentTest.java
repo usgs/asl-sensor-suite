@@ -484,6 +484,8 @@ public class RandomizedExperimentTest {
     rCal.runExperimentOnData(ds);
     rCal.setLowFrequencyCalibration(false);
     List<Complex> fitPoles = rCal.getFitPoles();
+    List<Complex> fitZeros = rCal.getFitZeros();
+    List<Complex> initialZeros = rCal.getInitialZeros();
     Complex[] expectedPoles = {
         new Complex(-306.7741224387797, 0),
         new Complex(-3.4804079210157486, 0),
@@ -491,10 +493,26 @@ public class RandomizedExperimentTest {
         new Complex(-101.27715855875556, 387.9300826976112)
     };
     ComplexFormat cf = new ComplexFormat(new DecimalFormat("#.#####"));
-    StringBuilder report = new StringBuilder("The best-fit values from the solver: ");
+    StringBuilder report = new StringBuilder("The best-fit values from the solver:/n");
+    report.append("POLES: ");
     for (int i = 0; i < fitPoles.size(); i++) {
-      report.append(cf.format(fitPoles.get(i)) + ", ");
+      report.append(cf.format(fitPoles.get(i)));
+      if (i + 1 < fitPoles.size()) {
+        report.append(", ");
+      }
     }
+    report.append("\nZEROS: ");
+    StringBuilder initialZerosText = new StringBuilder("(EXPECTED ZEROS: ");
+    for (int i = 0; i < fitZeros.size(); i++) {
+      report.append(cf.format(fitZeros.get(i)));
+      initialZerosText.append(cf.format(initialZeros.get(i)));
+      if (i + 1 < fitPoles.size()) {
+        report.append(", ");
+        initialZerosText.append(", ");
+      }
+    }
+    initialZerosText.append(")");
+    report.append("\n" + initialZerosText.toString());
     for (int i = 0; i < fitPoles.size(); i++) {
       assertEquals(report.toString(), expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
       assertEquals(report.toString(), expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
