@@ -1,5 +1,17 @@
 package asl.sensor.utils;
 
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.commons.math3.util.Pair;
 import asl.sensor.input.DataBlock;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.Blockette;
@@ -9,18 +21,6 @@ import edu.sc.seis.seisFile.mseed.DataHeader;
 import edu.sc.seis.seisFile.mseed.DataRecord;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import edu.sc.seis.seisFile.mseed.SeedRecord;
-import java.io.DataInputStream;
-import java.io.EOFException;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.apache.commons.math3.util.Pair;
 
 /**
  * Contains static methods for grabbing data from miniSEED files
@@ -504,7 +504,7 @@ public class TimeSeriesUtils {
       CodecException {
     long interval = 0L;
 
-    Map<Long, double[]> timeListMap = new HashMap<>();
+    Map<Long, double[]> timeListMap = new LinkedHashMap<>();
 
     for (String filename : filenames) {
       int byteSize = getByteSize(filename);

@@ -1,11 +1,8 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.event.ChangeEvent;
@@ -15,6 +12,9 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * This function defines template patterns for each type of sensor experiment
@@ -299,7 +299,7 @@ public abstract class Experiment {
 
     dataNames = new ArrayList<>();
     xySeriesData = new ArrayList<>();
-    gapRegions = new HashMap<>();
+    gapRegions = new LinkedHashMap<>();
 
     if (hasEnoughData(dataStore) && (blocksNeeded() == 0)) {
       // prevent null issue when doing response data, which does not really have times
