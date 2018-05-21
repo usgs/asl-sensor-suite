@@ -1,18 +1,18 @@
 package asl.sensor.input;
 
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
+import asl.sensor.utils.TimeSeriesUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 /**
  * Holds the time series and metadata for a miniSEED file loaded in by the user.
@@ -93,7 +93,7 @@ public class DataBlock {
     interval = intervalIn;
     targetInterval = intervalIn;
     startTime = start;
-    dataMap = new HashMap<>();
+    dataMap = new LinkedHashMap<>();
     dataMap.put(startTime, dataIn);
 
     trimmedStart = startTime;
@@ -245,7 +245,7 @@ public class DataBlock {
    * @return copy of this datablock's underlying contiguous block map
    */
   public Map<Long, double[]> getDataMap() {
-    return new HashMap<>(dataMap);
+    return new LinkedHashMap<>(dataMap);
   }
 
   /**
@@ -399,7 +399,7 @@ public class DataBlock {
     List<Long> startTimes = new ArrayList<>(dataMap.keySet());
     Collections.sort(startTimes);
 
-    Map<Long, double[]> mergedMap = new HashMap<>();
+    Map<Long, double[]> mergedMap = new LinkedHashMap<>();
 
     int startingPoint = 0;
     int cursor;

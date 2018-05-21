@@ -1,14 +1,9 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
@@ -23,6 +18,11 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import asl.sensor.input.DataBlock;
+import asl.sensor.input.DataStore;
+import asl.sensor.utils.FFTResult;
+import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
@@ -244,7 +244,7 @@ public class AzimuthExperiment extends Experiment {
     // first double -- angle estimate over window
     // second double -- correlation from that estimate over the window
     Map<Long, Pair<Double, Double>> angleCorrelationMap =
-        new HashMap<>();
+        new LinkedHashMap<>();
     List<Double> sortedCorrelation = new ArrayList<>();
 
     // want (correlation-1+damping) to be as close to 0 as possible
