@@ -591,15 +591,15 @@ public class CalProcessingServer {
       double initCorner = initParams[0];
       double initDamping = initParams[1];
       double initResid = initParams[2];
-      numerMap.put("Fit-corner", new double[]{fitCorner});
-      numerMap.put("Fit-damping", new double[]{fitDamping});
-      numerMap.put("Fit-residual", new double[]{fitResid});
-      numerMap.put("Initial-corner", new double[]{initCorner});
-      numerMap.put("Initial-damping", new double[]{initDamping});
-      numerMap.put("Initial-residual", new double[]{initResid});
-      imageMap.put("Step-plot", images[0]);
-      imageMap.put("Resp-amplitudes", images[1]);
-      imageMap.put("Resp-phases", images[2]);
+      numerMap.put("Fit_corner", new double[]{fitCorner});
+      numerMap.put("Fit_damping", new double[]{fitDamping});
+      numerMap.put("Fit_residual", new double[]{fitResid});
+      numerMap.put("Initial_corner", new double[]{initCorner});
+      numerMap.put("Initial_damping", new double[]{initDamping});
+      numerMap.put("Initial_residual", new double[]{initResid});
+      imageMap.put("Step_plot", images[0]);
+      imageMap.put("Response_amplitudes", images[1]);
+      imageMap.put("Response_phases", images[2]);
     }
   }
 
@@ -607,24 +607,19 @@ public class CalProcessingServer {
 
     SineData(byte[][] images, double calAmp, double outAmp, double freq, double ratio) {
       super();
-      numerMap.put("Calibration-amplitude", new double[]{calAmp});
-      numerMap.put("Output-signal-amplitude", new double[]{outAmp});
-      numerMap.put("Estimated signal frequency", new double[]{freq});
-      numerMap.put("Calibration-to-output ratio", new double[]{ratio});
-      imageMap.put("Sines-plot", images[0]);
+      numerMap.put("Calibration_amplitude", new double[]{calAmp});
+      numerMap.put("Output_signal_amplitude", new double[]{outAmp});
+      numerMap.put("Estimated_signal_frequency", new double[]{freq});
+      numerMap.put("Calibration-to-output_ratio", new double[]{ratio});
+      imageMap.put("Sine_curves_plot", images[0]);
       imageMap.put("Linearity", images[1]);
     }
   }
 
   //RandData is used externally and requires Public access on getters
   @SuppressWarnings({"WeakerAccess", "unused"})
-  public class RandData {
+  public class RandData extends CalResult {
 
-    private double[] initialPoles;
-    private double[] initialZeros;
-    private double[] fitPoles;
-    private double[] fitZeros;
-    private byte[][] images;
     private String[] gapNameIdentifiers;
     private Date[][] gapStarts;
     private Date[][] gapEnds;
@@ -632,48 +627,34 @@ public class CalProcessingServer {
     RandData(double[] fitPoles, double[] fitZeros, double[] initialPoles, double[] initialZeros,
         byte[][] images,
         String[] gapNames, Date[][] gapStartTimes, Date[][] gapEndTimes) {
-      this.fitPoles = fitPoles;
-      this.fitZeros = fitZeros;
-      this.initialPoles = initialPoles;
-      this.initialZeros = initialZeros;
-      this.images = images;
+      super();
+      numerMap.put("Best_fit_poles", fitPoles);
+      numerMap.put("Best_fit_zeros", fitZeros);
+      numerMap.put("Initial_poles", initialPoles);
+      numerMap.put("Initial_zeros", initialZeros);
+      imageMap.put("Response_amplitudes", images[0]);
+      imageMap.put("Response_phases", images[1]);
+      imageMap.put("Amplitude_error", images[2]);
+      imageMap.put("Phase_error", images[3]);
       gapNameIdentifiers = gapNames;
       gapStarts = gapStartTimes;
       gapEnds = gapEndTimes;
     }
 
-    public Map<String, byte[]> getImageMap() {
-      Map<String, byte[]> imageMap = new HashMap<>();
-      imageMap.put("amplitude", images[0]);
-      imageMap.put("phase", images[1]);
-      imageMap.put("amplitude-error", images[2]);
-      imageMap.put("phase-error", images[3]);
-      return imageMap;
-    }
-
-    public Map<String, double[]> getNumericMap() {
-      Map<String, double[]> numerMap = new HashMap<>();
-      numerMap.put("fit-poles", fitPoles);
-      numerMap.put("fit-zeros", fitZeros);
-      numerMap.put("initial-poles", initialPoles);
-      numerMap.put("initial-zeros", initialZeros);
-      return numerMap;
-    }
-
     public byte[] getAmpErrorImage() {
-      return images[2];
+      return imageMap.get("Amplitude_error");
     }
 
     public byte[] getAmpImage() {
-      return images[0];
+      return imageMap.get("Response_amplitudes");
     }
 
     public double[] getFitPoles() {
-      return fitPoles;
+      return numerMap.get("Best_fit_poles");
     }
 
     public double[] getFitZeros() {
-      return fitZeros;
+      return numerMap.get("Best_fit_zeros");
     }
 
     public Date[][] getGapEndDates() {
@@ -714,19 +695,19 @@ public class CalProcessingServer {
     }
 
     public double[] getInitPoles() {
-      return initialPoles;
+      return numerMap.get("Initial_poles");
     }
 
     public double[] getInitZeros() {
-      return initialZeros;
+      return numerMap.get("Initial_zeros");
     }
 
     public byte[] getPhaseErrorImage() {
-      return images[3];
+      return imageMap.get("Phase_error");
     }
 
     public byte[] getPhaseImage() {
-      return images[1];
+      return imageMap.get("Response_phases");
     }
   }
 
