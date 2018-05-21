@@ -1,10 +1,7 @@
 package asl.sensor.input;
 
-import asl.sensor.gui.InputPanel;
-import asl.sensor.utils.NumericUtils;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +23,8 @@ import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
+import asl.sensor.gui.InputPanel;
+import asl.sensor.utils.NumericUtils;
 
 /**
  * This class is used to read in and store data from instrument response files
@@ -175,12 +174,52 @@ public class InstrumentResponse {
    * @param filename Location of a given RESP file
    * @return List of epochs (pair of start and end instances)
    * @throws IOException If there is a failure to read the resp file
-   * @throws FileNotFoundException If the file does not actually exist
    */
   public static List<Pair<Instant, Instant>> getRespFileEpochs(String filename)
       throws IOException {
     try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
       return getRespFileEpochs(br);
+    }
+  }
+
+  /**
+   * Returns the RESP epoch start time under which data of interest is held. If data does not exist
+   * in an epoch defined in this RESP file it will either return the first or last epoch depending
+   * on if the time region ends before the first epoch or starts after the last.
+   * Note that this function assumes the given RESP file does not have a gap over the time region
+   * of interest, and also assumes that both start and end exist within the same RESP epoch.
+   * @param filename Name of RESP file to get epoch data from
+   * @param start Start time of data region under interest (epoch milliseconds)
+   * @param end End time of data region under interest
+   * @return Enclosing epoch's start time, or first or last
+   * @throws IOException
+   */
+  public static Instant getRespFileClosestEpoch(String filename, long start, long end)
+      throws IOException {
+    List<Pair<Instant, Instant>> epochBounds;
+    try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+      epochBounds = getRespFileEpochs(br);
+
+      // get initial best-guess estimate (first point), check if earliest epoch post-dates range
+      Instant closestStart = epochBounds.get(0).getFirst();
+      if (epochBounds.size() == 1 || end < closestStart.toEpochMilli()) {
+        return closestStart;
+      }
+
+      long diff = Long.MAX_VALUE; // used to determine closest epoch start to inputted time
+      for (Pair<Instant, Instant> oneEpoch : epochBounds) {
+        Instant epochStart = oneEpoch.getFirst();
+        Instant epochEnd = oneEpoch.getSecond();
+        // if range falls inside resp epoch (expected) then use that one
+        if (epochStart.toEpochMilli() < start && end < epochEnd.toEpochMilli()) {
+          return epochStart;
+        } else if (Math.abs(epochStart.toEpochMilli() - start) < diff) {
+          // this is only of concern if the specified range doesn't somehow fall in a resp epoch
+          closestStart = epochStart;
+          diff = Math.abs(epochStart.toEpochMilli() - start);
+        }
+      }
+      return closestStart;
     }
   }
 

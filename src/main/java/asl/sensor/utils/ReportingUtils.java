@@ -108,13 +108,14 @@ public class ReportingUtils {
    * each image
    */
   public static BufferedImage[]
-  chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
+      chartsToImageList(int perImg, int width, int height, JFreeChart... charts) {
+
 
     int totalNumber = charts.length;
 
     if (totalNumber <= perImg) {
       // if we can fit them all on a single page, then we'll do so
-      return new BufferedImage[]{chartsToImage(width, height, charts)};
+      return new BufferedImage[] {chartsToImage(width, height, charts)};
     }
 
     // want to keep all charts the same size;
