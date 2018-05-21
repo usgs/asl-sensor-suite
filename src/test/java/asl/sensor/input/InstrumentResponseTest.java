@@ -7,9 +7,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.ReportingUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -29,11 +26,82 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.Test;
+import asl.sensor.test.TestUtils;
+import asl.sensor.utils.ReportingUtils;
 
 public class InstrumentResponseTest {
 
   private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
   private static final DateTimeFormatter DATE_TIME_FORMAT = InstrumentResponse.RESP_DT_FORMAT;
+
+  @Test
+  public void testGetClosestRespEpoch_beforeFirstEpoch() throws IOException {
+    String filepath = TestUtils.RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    long start = 0;
+    long end = 100;
+
+    Instant expectedClosest =
+        LocalDateTime.parse("2010,041,18:35:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC);
+    Instant returnedClosest = InstrumentResponse.getRespFileClosestEpoch(filepath, start, end);
+    assertEquals(expectedClosest, returnedClosest);
+  }
+
+  @Test
+  public void testGetClosestRespEpoch_afterLastEpoch() throws IOException {
+    String filepath = TestUtils.RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    long start =
+        LocalDateTime.parse("2800,041,18:35:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
+    long end =
+        LocalDateTime.parse("2820,041,18:35:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
+
+    Instant expectedClosest =
+        LocalDateTime.parse("2015,055,00:00:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC);
+    Instant returnedClosest = InstrumentResponse.getRespFileClosestEpoch(filepath, start, end);
+    assertEquals(expectedClosest, returnedClosest);
+  }
+
+  @Test
+  public void testGetClosestRespEpoch_betweenEpochBoundaries() throws IOException {
+    String filepath = TestUtils.RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    long start =
+        LocalDateTime.parse("2015,054,00:00:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
+    long end =
+        LocalDateTime.parse("2015,056,00:00:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
+
+    // though data starts in an earlier epoch, it is closer to the start of this one
+    Instant expectedClosest =
+        LocalDateTime.parse("2015,055,00:00:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC);
+    Instant returnedClosest = InstrumentResponse.getRespFileClosestEpoch(filepath, start, end);
+    assertEquals(expectedClosest, returnedClosest);
+  }
+
+  @Test
+  public void testGetClosestRespEpoch_betweenEpochBoundariesFirstCloser() throws IOException {
+    String filepath = TestUtils.RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    long start =
+        LocalDateTime.parse("2010,050,00:00:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
+    long end =
+        LocalDateTime.parse("2015,056,00:00:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
+
+    Instant expectedClosest =
+        LocalDateTime.parse("2010,041,18:35:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC);
+    Instant returnedClosest = InstrumentResponse.getRespFileClosestEpoch(filepath, start, end);
+    assertEquals(expectedClosest, returnedClosest);
+  }
+
+  @Test
+  public void testGetClosestRespEpoch_insideEpochBoundaries() throws IOException {
+    String filepath = TestUtils.RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    long start =
+        LocalDateTime.parse("2012,050,00:00:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
+    long end =
+        LocalDateTime.parse("2012,052,00:00:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli();
+
+    Instant expectedClosest =
+        LocalDateTime.parse("2010,041,18:35:00", DATE_TIME_FORMAT).toInstant(ZoneOffset.UTC);
+    Instant returnedClosest = InstrumentResponse.getRespFileClosestEpoch(filepath, start, end);
+    assertEquals(expectedClosest, returnedClosest);
+  }
 
   @Test
   public void testFileParse() {
