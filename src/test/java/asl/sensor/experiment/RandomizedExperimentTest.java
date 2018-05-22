@@ -482,7 +482,6 @@ public class RandomizedExperimentTest {
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
-    rCal.setLowFrequencyCalibration(false);
     List<Complex> fitPoles = rCal.getFitPoles();
     List<Complex> fitZeros = rCal.getFitZeros();
     List<Complex> initialZeros = rCal.getInitialZeros();
@@ -554,7 +553,6 @@ public class RandomizedExperimentTest {
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
-    rCal.setLowFrequencyCalibration(false);
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
         new Complex(-0.012781625484629284, -0.012442058263140014),

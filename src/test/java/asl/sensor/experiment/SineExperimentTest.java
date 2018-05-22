@@ -7,6 +7,7 @@ import asl.sensor.test.TestUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,22 +18,22 @@ public class SineExperimentTest {
   private static DataStore dataStore;
 
   @Before
-  public void setUpData() {
+  public void setUpData() throws Exception{
     dataStore = new DataStore();
     String calFname = folder + "sine-test/" + "_BC0.512.seed";
     String outFname = folder + "sine-test/" + "00_BHZ.512.seed";
-    try {
-      dataStore.setBlock(0, calFname);
-      dataStore.setBlock(1, outFname);
-      String startTimeString = "2015-166T20:23:08.5";
-      String endTimeString = "2015-166T21:02:46.7";
-      long start = TestUtils.timeStringToEpochMilli(startTimeString);
-      long end = TestUtils.timeStringToEpochMilli(endTimeString);
-      dataStore.trim(start, end);
-    } catch (SeedFormatException | CodecException | IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+    dataStore.setBlock(0, calFname);
+    dataStore.setBlock(1, outFname);
+    String startTimeString = "2015-166T20:23:08.5";
+    String endTimeString = "2015-166T21:02:46.7";
+    long start = TestUtils.timeStringToEpochMilli(startTimeString);
+    long end = TestUtils.timeStringToEpochMilli(endTimeString);
+    dataStore.trim(start, end);
+  }
+
+  @After
+  public void cleanUpData() {
+    dataStore = null;
   }
 
 
