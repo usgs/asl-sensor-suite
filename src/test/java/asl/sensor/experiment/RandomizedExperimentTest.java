@@ -13,8 +13,6 @@ import asl.sensor.output.CalResult;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -518,7 +516,7 @@ public class RandomizedExperimentTest {
       String msg = "EXPECTED: " + expectedAmp[i] + " FIT: " + fitAmp[i] + " AT FREQ: " + frequencyTest[i];
       assertTrue(msg,fitAmp[i] <= expectedAmp[i] + 0.1);
     }
-    
+
     assertTrue("Value of fit residual: " + rCal.getFitResidual(), rCal.getFitResidual() < 52.);
     assertEquals(1082.7313334829698, rCal.getInitResidual(), 1E-7);
   }
