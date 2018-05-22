@@ -12,8 +12,6 @@ import static org.junit.Assert.fail;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.test.TestUtils;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.B1000Types;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.iris.dmc.seedcodec.DecompressedData;
@@ -39,12 +37,12 @@ import org.junit.Test;
 
 public class TimeSeriesUtilsTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  public String station = "TST5";
-  public String location = "00";
-  public String channel = "BH0";
-  public String fileID = station + "_" + location + "_" + channel + ".512.seed";
+  private final String station = "TST5";
+  private final String location = "00";
+  private final String channel = "BH0";
+  private final String fileID = station + "_" + location + "_" + channel + ".512.seed";
 
   @Test
   public void canGetFile() {
@@ -177,7 +175,7 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public final void downsample_thirdOfFrequency() {
-    double[]  in = {1,2,3,4,5,6,7,8,9,10, 11, 12};
+    double[] in = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     int factor = 3;
     double[] expected = {1, 4, 7, 10};
     double[] out = downsample(in, factor);
@@ -186,10 +184,10 @@ public class TimeSeriesUtilsTest {
 
   @Test
   public final void euclidGCD_basicTest() {
-    assertEquals( 50l, euclidGCD(100, 50));
-    assertEquals( 50l, euclidGCD(50, 100));
-    assertEquals( 3l, euclidGCD(999, 105));
-    assertEquals( 2l, euclidGCD(2147483612,2137483646));
+    assertEquals(50L, euclidGCD(100, 50));
+    assertEquals(50L, euclidGCD(50, 100));
+    assertEquals(3L, euclidGCD(999, 105));
+    assertEquals(2L, euclidGCD(2147483612, 2137483646));
   }
 
   @Test

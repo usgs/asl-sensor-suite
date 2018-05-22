@@ -5,31 +5,32 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.Calendar;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealVector;
 import org.junit.Test;
-import asl.sensor.input.DataStore;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
-public class OrthogonalityTest {
+public class OrthogonalExperimentTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
-  public String getCleanData() {
+  private String getCleanData() {
     return "ANMO.10";
   }
 
-  public String getNoisyData() {
+  private String getNoisyData() {
     return "FUNA.00";
   }
 
   @Test
-  public void getsCorrectAngle() {
+  public void getsCorrectAngle() throws Exception {
 
     DataStore ds = new DataStore();
     String testFolder = folder + "orthog-94/";
@@ -42,37 +43,28 @@ public class OrthogonalityTest {
 
     for (int i = 0; i < prefixes.length; ++i) {
       String fName = testFolder + prefixes[i] + extension;
-      try {
-        ds.setBlock(i, fName);
-      } catch (IOException | SeedFormatException | CodecException e) {
-        e.printStackTrace();
-        fail();
-      }
+      ds.setBlock(i, fName);
     }
 
     OrthogonalExperiment orth = new OrthogonalExperiment();
 
-    assertTrue( orth.hasEnoughData(ds) );
+    assertTrue(orth.hasEnoughData(ds));
 
     SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
 
-    Calendar cCal = Calendar.getInstance( sdf.getTimeZone() );
-    cCal.setTimeInMillis( ds.getBlock(0).getStartTime() );
+    Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getStartTime());
     cCal.set(Calendar.HOUR, 7);
-    System.out.println("start: " + sdf.format( cCal.getTime() ) );
     long start = cCal.getTime().getTime();
     cCal.set(Calendar.HOUR, 13);
     cCal.set(Calendar.MINUTE, 0);
-    System.out.println("end: " + sdf.format( cCal.getTime() ) );
     long end = cCal.getTime().getTime();
 
     ds.trim(start, end);
 
     orth.runExperimentOnData(ds);
 
-    System.out.println( orth.getFitAngle() );
-    System.out.println( Arrays.toString( orth.getSolutionParams() ) );
-    assertEquals( 94., orth.getFitAngle(), 1. );
+    assertEquals(94., orth.getFitAngle(), 1.);
 
   }
 
@@ -196,11 +188,11 @@ public class OrthogonalityTest {
     testsFromSprockets(270, getNoisyData());
   }
 
-  public void testsFromSprockets(int angle, String staCha) {
+  private void testsFromSprockets(int angle, String staCha) {
     StringBuilder sb = new StringBuilder();
     sb.append(angle);
     // format for filenames is 002, 010, 358, etc.; prepend 0s if needed
-    while(sb.length() < 3) {
+    while (sb.length() < 3) {
       sb.insert(0, '0');
     }
     String data1 = "IU." + staCha + ".BH1";
@@ -232,25 +224,56 @@ public class OrthogonalityTest {
 
       ds.trim(start, end);
 
-      // ds.trimToCommonTime();
       OrthogonalExperiment oe = new OrthogonalExperiment();
       oe.runExperimentOnData(ds);
       double fitAngle = oe.getFitAngle();
-      System.out.println( Arrays.toString(oe.getSolutionParams()) );
 
       double expectedAngle = angle;
       if (expectedAngle > 180) {
         expectedAngle = 360 - expectedAngle;
       }
-      System.out.println(expectedAngle + " | " + fitAngle + " [" + sb.toString() + "]");
 
       assertEquals(expectedAngle, fitAngle, 1.0);
 
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
-      fail();
+      fail(e.getMessage());
     }
 
   }
+
+  @Test
+  public void rotateSignal_thetaLessThanZero() {
+    double[] x = {0.};
+    RealVector xVector = MatrixUtils.createRealVector(x);
+    double[] y = {1.};
+    RealVector yVector = MatrixUtils.createRealVector(y);
+    double theta = -3 * Math.PI / 4;
+    RealVector rotY = OrthogonalExperiment.rotateSignal(xVector, yVector, theta);
+    assertEquals(-0.7071067812, rotY.getEntry(0), 1E-9);
+  }
+
+  @Test
+  public void rotateSignal_thetaGreaterThanZero() {
+    double[] x = {0.};
+    RealVector xVector = MatrixUtils.createRealVector(x);
+    double[] y = {1.};
+    RealVector yVector = MatrixUtils.createRealVector(y);
+    double theta = Math.PI / 4;
+    RealVector rotY = OrthogonalExperiment.rotateSignal(xVector, yVector, theta);
+    assertEquals(0.7071067812, rotY.getEntry(0), 1E-9);
+  }
+
+  @Test
+  public void rotateSignal_thetaIsZero() {
+    double[] x = {0.};
+    RealVector xVector = MatrixUtils.createRealVector(x);
+    double[] y = {1.};
+    RealVector yVector = MatrixUtils.createRealVector(y);
+    double theta = 0;
+    RealVector rotY = OrthogonalExperiment.rotateSignal(xVector, yVector, theta);
+    assertEquals(yVector.getEntry(0), rotY.getEntry(0), 1E-10);
+  }
+
 
 }

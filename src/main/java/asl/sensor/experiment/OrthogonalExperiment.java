@@ -17,21 +17,27 @@ import org.jfree.data.xy.XYSeriesCollection;
  * using the (full, damped-windowed) azimuth calculation as an intermediate step.
  * (See AzimuthExperiment for details on how the best-fit angles are found)
  *
- * @author akearns
+ * @author akearns - KBRWyle
  */
 public class OrthogonalExperiment extends Experiment {
+
+  private double[] diffs;
+  private double angle;
+
+  public OrthogonalExperiment() {
+    super();
+  }
 
   /**
    * Return the rotated signal given an angle and orthogonal components
    *
    * @param refX reference signal along the x-axis
    * @param refY reference signal along the y-axis
-   * @param point angle (radians) to get as rotated signal
+   * @param angle angle (radians) to get as rotated signal
    * @return signal rotated in the direction of the given angle
    */
-  public
-  static RealVector value(RealVector refX, RealVector refY, double point) {
-    double theta = point % NumericUtils.TAU;
+  static RealVector rotateSignal(RealVector refX, RealVector refY, double angle) {
+    double theta = angle % NumericUtils.TAU;
 
     if (theta < 0) {
       theta += NumericUtils.TAU;
@@ -40,38 +46,24 @@ public class OrthogonalExperiment extends Experiment {
     double sinTheta = Math.sin(theta);
     double cosTheta = Math.cos(theta);
 
-    RealVector curValue =
-        refX.mapMultiply(sinTheta).add(refY.mapMultiply(cosTheta));
-
-    return curValue;
-  }
-
-  private double[] diffs;
-
-  private double angle;
-
-  public OrthogonalExperiment() {
-    super();
-
+    return refX.mapMultiply(sinTheta).add(refY.mapMultiply(cosTheta));
   }
 
   @Override
-  protected void backend(final DataStore ds) {
-
-    // TODO: refactor using faster access point for azimuth?
-    long interval = ds.getXthLoadedBlock(1).getInterval();
+  protected void backend(final DataStore dataStore) {
+    long interval = dataStore.getXthLoadedBlock(1).getInterval();
 
     // assume the first two are the test and the second two are the reference?
     // we just need four timeseries, don't actually care about response
-    DataBlock refLH1Block = ds.getXthLoadedBlock(1);
+    DataBlock refLH1Block = dataStore.getXthLoadedBlock(1);
     String refName = refLH1Block.getName();
     dataNames.add(refName);
-    DataBlock refLH2Block = ds.getXthLoadedBlock(2);
+    DataBlock refLH2Block = dataStore.getXthLoadedBlock(2);
     dataNames.add(refLH2Block.getName());
-    DataBlock testLH1Block = ds.getXthLoadedBlock(3);
+    DataBlock testLH1Block = dataStore.getXthLoadedBlock(3);
     String testName = testLH1Block.getName();
     dataNames.add(testName);
-    DataBlock testLH2Block = ds.getXthLoadedBlock(4);
+    DataBlock testLH2Block = dataStore.getXthLoadedBlock(4);
     dataNames.add(testLH2Block.getName());
 
     // this code is used to get the plotted difference between ref + test, ref + rotated test
@@ -84,8 +76,6 @@ public class OrthogonalExperiment extends Experiment {
     refLH2 = TimeSeriesUtils.demean(refLH2);
     testLH1 = TimeSeriesUtils.demean(testLH1);
     testLH2 = TimeSeriesUtils.demean(testLH2);
-
-    System.out.println(refLH1[0] + "," + testLH1[0]);
 
     refLH1 = TimeSeriesUtils.detrend(refLH1);
     refLH2 = TimeSeriesUtils.detrend(refLH2);
@@ -101,8 +91,6 @@ public class OrthogonalExperiment extends Experiment {
     testLH2 = TimeSeriesUtils.decimate(testLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
 
     interval = Math.max(interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-
-    System.out.println(refLH1[0] + "," + testLH1[0]);
 
     int len = refLH1.length;
     double[] refYArr = Arrays.copyOfRange(refLH1, 0, len);
@@ -145,9 +133,7 @@ public class OrthogonalExperiment extends Experiment {
     XYSeries diffRotSrs = new XYSeries("Diff(" + testName + ", Rotated Ref.)");
 
     RealVector diffLH1 = testY.subtract(refY);
-    RealVector diffComponents = testY.subtract(value(refX, refY, angleY));
-
-    System.out.println(refY.getEntry(0) + "," + testY.getEntry(0));
+    RealVector diffComponents = testY.subtract(rotateSignal(refX, refY, angleY));
 
     for (int i = 0; i < len; ++i) {
       diffSrs.add(timeAtPoint, diffLH1.getEntry(i));
@@ -191,9 +177,9 @@ public class OrthogonalExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < blocksNeeded(); ++i) {
-      if (!ds.blockIsSet(i)) {
+      if (!dataStore.blockIsSet(i)) {
         return false;
       }
     }

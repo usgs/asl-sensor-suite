@@ -18,7 +18,7 @@ public enum TransferFunction {
    */
   LINEAR(1.0);
 
-  private double function;
+  private final double function;
 
   TransferFunction(double function) {
     this.function = function;

@@ -8,12 +8,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
@@ -55,170 +59,25 @@ import py4j.Py4JNetworkException;
 public class CalProcessingServer {
 
 
-  @SuppressWarnings({"WeakerAccess", "unused"})
-  public abstract class CalResult {
-    protected Map<String, double[]> numerMap;
-    protected Map<String, byte[]> imageMap;
-
-    public CalResult() {
-      numerMap = new HashMap<String, double[]>();
-      imageMap = new HashMap<String, byte[]>();
-    }
-
-    public Map<String, byte[]> getImageMap() {
-      return imageMap;
-    }
-
-    public Map<String, double[]> getNumerMap() {
-      return numerMap;
-    }
+  public CalProcessingServer() {
   }
 
-  public class StepData extends CalResult {
-    // constuctor to be used with step calibrations
-    StepData(byte[][] images, double[] initParams, double[] fitParams) {
-      super();
-      double fitCorner = fitParams[0];
-      double fitDamping = fitParams[1];
-      double fitResid = fitParams[2];
-      double initCorner = initParams[0];
-      double initDamping = initParams[1];
-      double initResid = initParams[2];
-      numerMap.put("Fit-corner", new double[]{fitCorner});
-      numerMap.put("Fit-damping", new double[]{fitDamping});
-      numerMap.put("Fit-residual", new double[]{fitResid});
-      numerMap.put("Initial-corner", new double[]{initCorner});
-      numerMap.put("Initial-damping", new double[]{initDamping});
-      numerMap.put("Initial-residual", new double[]{initResid});
-      imageMap.put("Step-plot", images[0]);
-      imageMap.put("Resp-amplitudes", images[1]);
-      imageMap.put("Resp-phases", images[2]);
+  /**
+   * Enumerate names of embedded resp files
+   * @return List of names of embedded resps (will match common sensor & digitizer gain setups)
+   */
+  public static String[] getEmbeddedRESPFilenames() {
+    Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
+
+    List<String> names = new ArrayList<>(respFilenames);
+    Collections.sort(names);
+    String[] nameArray = new String[names.size()];
+    for (int k = 0; k < nameArray.length; ++k) {
+      String name = names.get(k);
+      name = name.replace("resps/", "");
+      nameArray[k] = name;
     }
-  }
-
-  public class SineData extends CalResult {
-    SineData(byte[][] images, double calAmp, double outAmp, double freq, double ratio) {
-      super();
-      numerMap.put("Calibration-amplitude", new double[]{calAmp});
-      numerMap.put("Output-signal-amplitude", new double[]{outAmp});
-      numerMap.put("Estimated signal frequency", new double[]{freq});
-      numerMap.put("Calibration-to-output ratio", new double[]{ratio});
-      imageMap.put("Sines-plot", images[0]);
-      imageMap.put("Linearity", images[1]);
-    }
-  }
-
-  //RandData is used externally and requires Public access on getters
-  @SuppressWarnings({"WeakerAccess", "unused"})
-  public class RandData {
-
-    private double[] initialPoles;
-    private double[] initialZeros;
-    private double[] fitPoles;
-    private double[] fitZeros;
-    private byte[][] images;
-    private String[] gapNameIdentifiers;
-    private Date[][] gapStarts;
-    private Date[][] gapEnds;
-
-    RandData(double[] fitPoles, double[] fitZeros, double[] initialPoles, double[] initialZeros, byte[][] images,
-        String[] gapNames, Date[][] gapStartTimes, Date[][] gapEndTimes) {
-      this.fitPoles = fitPoles;
-      this.fitZeros = fitZeros;
-      this.initialPoles = initialPoles;
-      this.initialZeros = initialZeros;
-      this.images = images;
-      gapNameIdentifiers = gapNames;
-      gapStarts = gapStartTimes;
-      gapEnds = gapEndTimes;
-    }
-
-    public Map<String, byte[]> getImageMap() {
-      Map<String, byte[]> imageMap = new HashMap<String, byte[]>();
-      imageMap.put("amplitude", images[0]);
-      imageMap.put("phase", images[1]);
-      imageMap.put("amplitude-error", images[2]);
-      imageMap.put("phase-error", images[3]);
-      return imageMap;
-    }
-
-    public Map<String, double[]> getNumericMap() {
-      Map<String, double[]> numerMap = new HashMap<String, double[]>();
-      numerMap.put("fit-poles", fitPoles);
-      numerMap.put("fit-zeros", fitZeros);
-      numerMap.put("initial-poles", initialPoles);
-      numerMap.put("initial-zeros", initialZeros);
-      return numerMap;
-    }
-
-    public byte[] getAmpErrorImage() {
-      return images[2];
-    }
-
-    public byte[] getAmpImage() {
-      return images[0];
-    }
-
-    public double[] getFitPoles() {
-      return fitPoles;
-    }
-
-    public double[] getFitZeros() {
-      return fitZeros;
-    }
-
-    public Date[][] getGapEndDates() {
-      return gapEnds;
-    }
-
-    public String[] getGapIdentifiers() {
-      return gapNameIdentifiers;
-    }
-
-    public String getGapInfoAsString() {
-      SimpleDateFormat sdf = new SimpleDateFormat("DD.HH:m:s");
-      sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-      return getGapInfoAsString(sdf);
-    }
-
-    public String getGapInfoAsString(DateFormat df) {
-      StringBuilder sb = new StringBuilder();
-      for (int j = 0; j < gapNameIdentifiers.length; ++j) {
-        sb.append(gapNameIdentifiers[j]);
-        sb.append(":\n");
-        for (int i = 0; i < gapStarts[j].length; ++i) {
-          sb.append("\t");
-          Date start = gapStarts[j][i];
-          Date end = gapEnds[j][i];
-          sb.append(df.format(start));
-          sb.append("\t");
-          sb.append(df.format(end));
-          sb.append("\n");
-        }
-        sb.append("\n");
-      }
-      return sb.toString();
-    }
-
-    public Date[][] getGapStartDates() {
-      return gapStarts;
-    }
-
-    public double[] getInitPoles() {
-      return initialPoles;
-    }
-
-    public double[] getInitZeros() {
-      return initialZeros;
-    }
-
-    public byte[] getPhaseErrorImage() {
-      return images[3];
-    }
-
-    public byte[] getPhaseImage() {
-      return images[1];
-    }
+    return nameArray;
   }
 
   /**
@@ -245,9 +104,6 @@ public class CalProcessingServer {
       System.exit(0);
     }
     System.out.println("Gateway Server Started");
-  }
-
-  public CalProcessingServer() {
   }
 
   /**
@@ -280,7 +136,8 @@ public class CalProcessingServer {
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
     } else {
-      ir = new InstrumentResponse(respName);
+      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
+      ir = new InstrumentResponse(respName, epoch);
     }
 
     ds.setBlock(0, calBlock);
@@ -351,7 +208,8 @@ public class CalProcessingServer {
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
     } else {
-      ir = new InstrumentResponse(respName);
+      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
+      ir = new InstrumentResponse(respName, epoch);
     }
 
     ds.setBlock(0, calBlock);
@@ -364,7 +222,7 @@ public class CalProcessingServer {
 
   public CalResult runStep(String calFileName, String outFileName,
       String respName, boolean useEmbeddedResp, String startDate, String endDate)
-          throws SeedFormatException, CodecException, IOException {
+      throws SeedFormatException, CodecException, IOException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -379,7 +237,8 @@ public class CalProcessingServer {
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
     } else {
-      ir = new InstrumentResponse(respName);
+      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
+      ir = new InstrumentResponse(respName, epoch);
     }
 
     ds.setBlock(0, calBlock);
@@ -393,7 +252,7 @@ public class CalProcessingServer {
 
   public CalResult runSine(String calFileName, String outFileName,
       String respName, boolean useEmbeddedResp, String startDate, String endDate)
-          throws SeedFormatException, CodecException, IOException {
+      throws SeedFormatException, CodecException, IOException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -408,7 +267,8 @@ public class CalProcessingServer {
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
     } else {
-      ir = new InstrumentResponse(respName);
+      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
+      ir = new InstrumentResponse(respName, epoch);
     }
 
     ds.setBlock(0, calBlock);
@@ -436,22 +296,22 @@ public class CalProcessingServer {
         "Normalized calibration signals (counts)",
         plots.get(0));
 
-   JFreeChart linearityChart = ChartFactory.createXYLineChart(
-       "Sine cal. Linearity",
-       "Value of sampled cal data (counts)",
-       "Value of sampled sensor output (counts)",
-       plots.get(1));
+    JFreeChart linearityChart = ChartFactory.createXYLineChart(
+        "Sine cal. Linearity",
+        "Value of sampled cal data (counts)",
+        "Value of sampled sensor output (counts)",
+        plots.get(1));
 
-   JFreeChart[] charts = {sineChart, linearityChart};
+    JFreeChart[] charts = {sineChart, linearityChart};
 
-   BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
-   byte[][] pngByteArrays = new byte[images.length][];
-   for (int i = 0; i < images.length; ++i) {
-     ByteArrayOutputStream out = new ByteArrayOutputStream();
-     ImageIO.write(images[i], "png", out);
-     pngByteArrays[i] = out.toByteArray();
-   }
-   return new SineData(pngByteArrays, calAmplitude, outAmplitude, estFreq, ratio);
+    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    byte[][] pngByteArrays = new byte[images.length][];
+    for (int i = 0; i < images.length; ++i) {
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      ImageIO.write(images[i], "png", out);
+      pngByteArrays[i] = out.toByteArray();
+    }
+    return new SineData(pngByteArrays, calAmplitude, outAmplitude, estFreq, ratio);
   }
 
   @SuppressWarnings("unused")
@@ -537,7 +397,8 @@ public class CalProcessingServer {
 
   }
 
-  private RandData runExpGetDataRand(DataStore dataStore, boolean isLowFrequency) throws IOException {
+  private RandData runExpGetDataRand(DataStore dataStore, boolean isLowFrequency)
+      throws IOException {
 
     RandomizedExperiment randomExperiment = new RandomizedExperiment();
 
@@ -697,6 +558,157 @@ public class CalProcessingServer {
     return new RandData(fitPoles, fitZeros, initialPoles, initialZeros, pngByteArrays,
         names, gapStarts, gapEnds);
 
+  }
+
+  @SuppressWarnings({"WeakerAccess", "unused"})
+  public abstract class CalResult {
+
+    protected Map<String, double[]> numerMap;
+    protected Map<String, byte[]> imageMap;
+
+    public CalResult() {
+      numerMap = new HashMap<>();
+      imageMap = new HashMap<>();
+    }
+
+    public Map<String, byte[]> getImageMap() {
+      return imageMap;
+    }
+
+    public Map<String, double[]> getNumerMap() {
+      return numerMap;
+    }
+  }
+
+  public class StepData extends CalResult {
+
+    // constuctor to be used with step calibrations
+    StepData(byte[][] images, double[] initParams, double[] fitParams) {
+      super();
+      double fitCorner = fitParams[0];
+      double fitDamping = fitParams[1];
+      double fitResid = fitParams[2];
+      double initCorner = initParams[0];
+      double initDamping = initParams[1];
+      double initResid = initParams[2];
+      numerMap.put("Fit_corner", new double[]{fitCorner});
+      numerMap.put("Fit_damping", new double[]{fitDamping});
+      numerMap.put("Fit_residual", new double[]{fitResid});
+      numerMap.put("Initial_corner", new double[]{initCorner});
+      numerMap.put("Initial_damping", new double[]{initDamping});
+      numerMap.put("Initial_residual", new double[]{initResid});
+      imageMap.put("Step_plot", images[0]);
+      imageMap.put("Response_amplitudes", images[1]);
+      imageMap.put("Response_phases", images[2]);
+    }
+  }
+
+  public class SineData extends CalResult {
+
+    SineData(byte[][] images, double calAmp, double outAmp, double freq, double ratio) {
+      super();
+      numerMap.put("Calibration_amplitude", new double[]{calAmp});
+      numerMap.put("Output_signal_amplitude", new double[]{outAmp});
+      numerMap.put("Estimated_signal_frequency", new double[]{freq});
+      numerMap.put("Calibration_to_output_ratio", new double[]{ratio});
+      imageMap.put("Sine_curves_plot", images[0]);
+      imageMap.put("Linearity", images[1]);
+    }
+  }
+
+  //RandData is used externally and requires Public access on getters
+  @SuppressWarnings({"WeakerAccess", "unused"})
+  public class RandData extends CalResult {
+
+    private String[] gapNameIdentifiers;
+    private Date[][] gapStarts;
+    private Date[][] gapEnds;
+
+    RandData(double[] fitPoles, double[] fitZeros, double[] initialPoles, double[] initialZeros,
+        byte[][] images,
+        String[] gapNames, Date[][] gapStartTimes, Date[][] gapEndTimes) {
+      super();
+      numerMap.put("Best_fit_poles", fitPoles);
+      numerMap.put("Best_fit_zeros", fitZeros);
+      numerMap.put("Initial_poles", initialPoles);
+      numerMap.put("Initial_zeros", initialZeros);
+      imageMap.put("Response_amplitudes", images[0]);
+      imageMap.put("Response_phases", images[1]);
+      imageMap.put("Amplitude_error", images[2]);
+      imageMap.put("Phase_error", images[3]);
+      gapNameIdentifiers = gapNames;
+      gapStarts = gapStartTimes;
+      gapEnds = gapEndTimes;
+    }
+
+    public byte[] getAmpErrorImage() {
+      return imageMap.get("Amplitude_error");
+    }
+
+    public byte[] getAmpImage() {
+      return imageMap.get("Response_amplitudes");
+    }
+
+    public double[] getFitPoles() {
+      return numerMap.get("Best_fit_poles");
+    }
+
+    public double[] getFitZeros() {
+      return numerMap.get("Best_fit_zeros");
+    }
+
+    public Date[][] getGapEndDates() {
+      return gapEnds;
+    }
+
+    public String[] getGapIdentifiers() {
+      return gapNameIdentifiers;
+    }
+
+    public String getGapInfoAsString() {
+      SimpleDateFormat sdf = new SimpleDateFormat("DD.HH:m:s");
+      sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+      return getGapInfoAsString(sdf);
+    }
+
+    public String getGapInfoAsString(DateFormat df) {
+      StringBuilder sb = new StringBuilder();
+      for (int j = 0; j < gapNameIdentifiers.length; ++j) {
+        sb.append(gapNameIdentifiers[j]);
+        sb.append(":\n");
+        for (int i = 0; i < gapStarts[j].length; ++i) {
+          sb.append("\t");
+          Date start = gapStarts[j][i];
+          Date end = gapEnds[j][i];
+          sb.append(df.format(start));
+          sb.append("\t");
+          sb.append(df.format(end));
+          sb.append("\n");
+        }
+        sb.append("\n");
+      }
+      return sb.toString();
+    }
+
+    public Date[][] getGapStartDates() {
+      return gapStarts;
+    }
+
+    public double[] getInitPoles() {
+      return numerMap.get("Initial_poles");
+    }
+
+    public double[] getInitZeros() {
+      return numerMap.get("Initial_zeros");
+    }
+
+    public byte[] getPhaseErrorImage() {
+      return imageMap.get("Phase_error");
+    }
+
+    public byte[] getPhaseImage() {
+      return imageMap.get("Response_phases");
+    }
   }
 
 }

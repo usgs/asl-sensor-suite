@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -35,64 +35,12 @@ public class StepPanel extends ExperimentPanel {
 
   private static final long serialVersionUID = 3693391540945130688L;
   private static final int TITLE_IDX = 0;
-
-  /**
-   * Static helper method for getting the formatted inset string directly
-   * from a StepExperiment
-   *
-   * @param experiment StepExperiment with data to be extracted
-   * @return String format representation of data from the experiment
-   */
-  private static String getInsetString(StepExperiment experiment) {
-    String[] strings = getInsetStringList(experiment);
-    StringBuilder sb = new StringBuilder();
-    for (String str : strings) {
-      sb.append(str);
-      sb.append("\n");
-    }
-    return sb.toString();
-  }
-
-  private static String[] getInsetStringList(StepExperiment experiment) {
-    double[] rolloff = experiment.getInitParams();
-    double[] fit = experiment.getFitParams();
-    double corner = rolloff[0];
-    double damping = rolloff[1];
-    double fitCorner = fit[0];
-    double fitDamping = fit[1];
-
-    double cornerPrd = 1. / corner;
-    double fitCornerPrd = 1. / fitCorner;
-
-    String sb = "RESP parameters"
-        + "\nCorner frequency (Hz): "
-        + DECIMAL_FORMAT.get().format(corner)
-        + " ("
-        + DECIMAL_FORMAT.get().format(cornerPrd)
-        + " secs)"
-        + "\nDamping: "
-        + DECIMAL_FORMAT.get().format(damping)
-        + "\n";
-
-    String sb2 = "Best-fit parameters"
-        + "\nCorner frequency (Hz): "
-        + DECIMAL_FORMAT.get().format(fitCorner)
-        + " ("
-        + DECIMAL_FORMAT.get().format(fitCornerPrd)
-        + " secs)"
-        + "\nDamping: "
-        + DECIMAL_FORMAT.get().format(fitDamping)
-        + "\n";
-    return new String[]{sb, sb2};
-  }
-
   private final JComboBox<String> plotSelection;
-  private JFreeChart stepChart, magChart, phaseChart;
   private final ValueAxis freqAxis;
   private final ValueAxis magAxis;
   private final ValueAxis phaseAxis;
-
-  StepPanel(ExperimentEnum experiment) {
+  private JFreeChart stepChart, magChart, phaseChart;
+  public StepPanel(ExperimentFactory experiment) {
     super(experiment);
 
     channelType[0] = "Calibration input";
@@ -171,6 +119,56 @@ public class StepPanel extends ExperimentPanel {
     plotTheseInBold = new String[]{};
 
 
+  }
+
+  /**
+   * Static helper method for getting the formatted inset string directly
+   * from a StepExperiment
+   *
+   * @param experiment StepExperiment with data to be extracted
+   * @return String format representation of data from the experiment
+   */
+  private static String getInsetString(StepExperiment experiment) {
+    String[] strings = getInsetStringList(experiment);
+    StringBuilder sb = new StringBuilder();
+    for (String str : strings) {
+      sb.append(str);
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+
+  private static String[] getInsetStringList(StepExperiment experiment) {
+    double[] rolloff = experiment.getInitParams();
+    double[] fit = experiment.getFitParams();
+    double corner = rolloff[0];
+    double damping = rolloff[1];
+    double fitCorner = fit[0];
+    double fitDamping = fit[1];
+
+    double cornerPrd = 1. / corner;
+    double fitCornerPrd = 1. / fitCorner;
+
+    String sb = "RESP parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(corner)
+        + " ("
+        + DECIMAL_FORMAT.get().format(cornerPrd)
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(damping)
+        + "\n";
+
+    String sb2 = "Best-fit parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(fitCorner)
+        + " ("
+        + DECIMAL_FORMAT.get().format(fitCornerPrd)
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(fitDamping)
+        + "\n";
+    return new String[]{sb, sb2};
   }
 
   @Override

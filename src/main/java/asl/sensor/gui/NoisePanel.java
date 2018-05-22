@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -35,7 +35,7 @@ public class NoisePanel extends ExperimentPanel {
   /**
    * Constructs a new panel and lays out all the components in it
    */
-  NoisePanel(ExperimentEnum experiment) {
+  public NoisePanel(ExperimentFactory experiment) {
 
     // create chart, chartPanel, save button & file chooser,
     super(experiment);

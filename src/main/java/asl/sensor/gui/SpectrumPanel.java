@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.SpectrumExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -27,14 +27,13 @@ public class SpectrumPanel extends ExperimentPanel {
   private static final long serialVersionUID = 9018553361096758354L;
 
   private final JCheckBox freqSpaceBox;
-  private int plotCount;
-
   private final NumberAxis freqAxis;
+  private int plotCount;
 
   /**
    * Constructs a new panel and lays out all the components in it
    */
-  SpectrumPanel(ExperimentEnum experiment) {
+  public SpectrumPanel(ExperimentFactory experiment) {
     // create chart, chartPanel, save button & file chooser,
     super(experiment);
 

@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.SineExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -21,13 +21,12 @@ import org.jfree.ui.RectangleAnchor;
 public class SinePanel extends ExperimentPanel {
 
   private static final long serialVersionUID = 2453757553804095685L;
-
-  private JFreeChart sinesChart, linearChart;
   private final NumberAxis calAxis;
   private final NumberAxis outAxis;
   private final JComboBox<String> plotSelection;
+  private JFreeChart sinesChart, linearChart;
 
-  SinePanel(ExperimentEnum experiment) {
+  public SinePanel(ExperimentFactory experiment) {
     super(experiment);
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output (no RESP needed)";
@@ -90,6 +89,23 @@ public class SinePanel extends ExperimentPanel {
     constraints.weightx = 0;
     constraints.anchor = GridBagConstraints.WEST;
     this.add(plotSelection, constraints);
+  }
+
+  private static String getInsetString(SineExperiment experiment) {
+    double calAmplitude = experiment.getCalAmplitude();
+    double outAmplitude = experiment.getOutAmplitude();
+    String calAmp = DECIMAL_FORMAT.get().format(calAmplitude);
+    String outAmp = DECIMAL_FORMAT.get().format(outAmplitude);
+    String ratio = DECIMAL_FORMAT.get().format(calAmplitude / outAmplitude);
+    String estimatedFrequency = DECIMAL_FORMAT.get().format(experiment.getEstSineFreq());
+    return "Calculated calibration amplitude: "
+        + calAmp
+        + "\nCalculated output amplitude: "
+        + outAmp
+        + "\nAmplitude ratio: "
+        + ratio
+        + "\nEstimated sine frequency: "
+        + estimatedFrequency;
   }
 
   @Override
@@ -175,22 +191,5 @@ public class SinePanel extends ExperimentPanel {
   @Override
   protected int getIndexOfMainData() {
     return 1;
-  }
-
-  private static String getInsetString(SineExperiment experiment) {
-    double calAmplitude = experiment.getCalAmplitude();
-    double outAmplitude = experiment.getOutAmplitude();
-    String calAmp = DECIMAL_FORMAT.get().format(calAmplitude);
-    String outAmp = DECIMAL_FORMAT.get().format(outAmplitude);
-    String ratio = DECIMAL_FORMAT.get().format(calAmplitude / outAmplitude);
-    String estimatedFrequency = DECIMAL_FORMAT.get().format(experiment.getEstSineFreq());
-    return "Calculated calibration amplitude: "
-        + calAmp
-        + "\nCalculated output amplitude: "
-        + outAmp
-        + "\nAmplitude ratio: "
-        + ratio
-        + "\nEstimated sine frequency: "
-        + estimatedFrequency;
   }
 }

@@ -2,7 +2,7 @@ package asl.sensor.gui;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import asl.sensor.experiment.ExperimentEnum;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
@@ -57,7 +57,7 @@ public class ResponsePanel extends ExperimentPanel {
 
   private JFreeChart magnitudeChart, argumentChart;
 
-  public ResponsePanel(ExperimentEnum experiment) {
+  public ResponsePanel(ExperimentFactory experiment) {
     super(experiment);
 
     for (int i = 0; i < 3; ++i) {

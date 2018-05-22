@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.junit.Test;
@@ -17,7 +16,16 @@ public class NumericUtilsTest {
     double[] averaged = new double[]{1., 1.5, 2.0, 3.0, 4.0};
     double[] init = new double[]{1., 2., 3., 4., 5.};
     double[] test = NumericUtils.multipointMovingAverage(init, 3, true);
-    System.out.println(Arrays.toString(test));
+    for (int i = 0; i < test.length; ++i) {
+      assertEquals(averaged[i], test[i], 1E-25);
+    }
+  }
+
+  @Test
+  public void movingAverageCorrectValues_forwardScanFalse() {
+    double[] averaged = new double[]{2.0, 3.0, 4.0, 4.5, 5.0};
+    double[] init = new double[]{1., 2., 3., 4., 5.};
+    double[] test = NumericUtils.multipointMovingAverage(init, 3, false);
     for (int i = 0; i < test.length; ++i) {
       assertEquals(averaged[i], test[i], 1E-25);
     }

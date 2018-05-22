@@ -3,19 +3,18 @@ package asl.sensor.experiment;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import org.junit.Test;
-import asl.sensor.experiment.GainExperiment;
-import asl.sensor.input.DataStore;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
-public class GainTest {
+public class GainExperimentTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void testGainCalculation() {
@@ -40,7 +39,6 @@ public class GainTest {
 
     String[] rnames = new String[2];
     rnames[0] = "RESP.IU.ANMO.00.BHZ_gainx100";
-    //rnames[0] = "RESP.IU.ANMO.00.BHZ";
     rnames[1] = "RESP.IU.ANMO.10.BHZ";
 
     for (int i = 0; i < rnames.length; ++i) {
@@ -48,9 +46,7 @@ public class GainTest {
       try {
         ds.setResponse(i, fName);
       } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-        fail();
+        fail(e.getMessage());
       }
     }
 
@@ -68,6 +64,5 @@ public class GainTest {
     double gain = stats[3];
     // System.out.println( Arrays.toString(stats) );
     assertEquals(11714., gain, 2.0);
-
   }
 }

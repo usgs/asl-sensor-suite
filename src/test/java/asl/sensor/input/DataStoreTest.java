@@ -3,27 +3,19 @@ package asl.sensor.input;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import asl.sensor.gui.InputPanel;
 import asl.sensor.test.TestUtils;
 import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import org.junit.Test;
 
 public class DataStoreTest {
 
-  public static String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
-
-  public String station = "TST5";
-  public String location = "00";
-  public String channel = "BH0";
-  public String fileID = station + "_" + location + "_" + channel + ".512.seed";
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void trim_BCIPData_timeAndLengthMatch_firstValuesMatch() {
@@ -72,40 +64,39 @@ public class DataStoreTest {
   }
 
   @Test
-  public void commonTimeTrimMatchesLength() {
+  public void trimToCommonTime_commonTimeTrimMatchesLength() throws Exception {
+    String channel = "BH0";
+    String location = "00";
+    String station = "TST5";
+    String fileID = station + "_" + location + "_" + channel + ".512.seed";
     String filename = folder + "blocktrim/" + fileID;
     DataStore ds = new DataStore();
     DataBlock db;
-    try {
-      db = TimeSeriesUtils.getFirstTimeSeries(filename);
-      String filter = db.getName();
-      ds.setBlock(0, db);
+    db = TimeSeriesUtils.getFirstTimeSeries(filename);
+    String filter = db.getName();
+    ds.setBlock(0, db);
 
-      int left = 250;
-      int right = 750;
+    int left = 250;
+    int right = 750;
 
-      int oldSize = db.size();
+    int oldSize = db.size();
 
-      // tested in DataPanelTest
-      long loc1 = InputPanel.getMarkerLocation(db, left);
-      long loc2 = InputPanel.getMarkerLocation(db, right);
-      //  tested in DataBlockTest
-      db.trim(loc1, loc2);
+    // tested in DataPanelTest
+    long loc1 = InputPanel.getMarkerLocation(db, left);
+    long loc2 = InputPanel.getMarkerLocation(db, right);
+    //  tested in DataBlockTest
+    db.trim(loc1, loc2);
 
-      ds.setBlock(1, filename, filter);
-      ds.setBlock(2, filename, filter);
+    ds.setBlock(1, filename, filter);
+    ds.setBlock(2, filename, filter);
 
-      // function under test
-      ds.trimToCommonTime();
+    // function under test
+    ds.trimToCommonTime();
 
-      assertEquals(ds.getBlock(1).getStartTime(), loc1);
-      assertEquals(ds.getBlock(1).getEndTime(), loc2);
-      assertEquals(db.size(), ds.getBlock(1).size());
-      assertNotEquals(db.size(), oldSize);
-    } catch (IOException | SeedFormatException | CodecException e) {
-      e.printStackTrace();
-      fail();
-    }
+    assertEquals(ds.getBlock(1).getStartTime(), loc1);
+    assertEquals(ds.getBlock(1).getEndTime(), loc2);
+    assertEquals(db.size(), ds.getBlock(1).size());
+    assertNotEquals(db.size(), oldSize);
   }
 
   @Test
@@ -146,6 +137,110 @@ public class DataStoreTest {
       }
     }
     assertTrue(notAllZero);
+  }
+
+  @Test
+  public void bothComponentsSet_bothSet_True() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    DataStore dataStore = DataStoreUtils.createFromNames(respName, null, sensOutName);
+
+    assertTrue(dataStore.bothComponentsSet(1));
+  }
+
+  @Test
+  public void bothComponentsSet_dataSet_respMissing_False() {
+
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String calName = dataFolderName + "CB_BC0.512.seed";
+    DataStore dataStore = DataStoreUtils.createFromNames(null, calName, null);
+
+    assertFalse(dataStore.bothComponentsSet(0));
+  }
+
+  @Test
+  public void bothComponentsSet_dataMissing_respSet_False() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    DataStore dataStore = DataStoreUtils.createFromNames(respName, null, null);
+    assertFalse(dataStore.bothComponentsSet(1));
+  }
+
+  @Test
+  public void bothComponentsSet_bothMissing_False() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    DataStore dataStore = DataStoreUtils.createFromNames(respName, null, null);
+    assertFalse(dataStore.bothComponentsSet(0));
+  }
+
+  @Test
+  public void removeData_removesSpecificIndex() throws Exception {
+    String channel = "BH0";
+    String location = "00";
+    String station = "TST5";
+    String fileID = station + "_" + location + "_" + channel + ".512.seed";
+    String filename = folder + "blocktrim/" + fileID;
+    DataStore ds = new DataStore();
+    DataBlock db;
+    db = TimeSeriesUtils.getFirstTimeSeries(filename);
+    ds.setBlock(0, db);
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    ds.setResponse(0, respName);
+    assertTrue(ds.bothComponentsSet(0));
+    ds.removeData(0);
+    assertFalse(ds.responseIsSet(0));
+    assertFalse(ds.blockIsSet(0));
+    assertFalse(ds.bothComponentsSet(0));
+  }
+
+  @Test
+  public void removeBlock_removesSpecificIndex() throws Exception {
+    String channel = "BH0";
+    String location = "00";
+    String station = "TST5";
+    String fileID = station + "_" + location + "_" + channel + ".512.seed";
+    String filename = folder + "blocktrim/" + fileID;
+    DataStore ds = new DataStore();
+    DataBlock db;
+    db = TimeSeriesUtils.getFirstTimeSeries(filename);
+    ds.setBlock(0, db);
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    ds.setResponse(0, respName);
+    assertTrue(ds.bothComponentsSet(0));
+    ds.removeBlock(0);
+    assertTrue(ds.responseIsSet(0));
+    assertFalse(ds.blockIsSet(0));
+    assertFalse(ds.bothComponentsSet(0));
+  }
+
+  @Test
+  public void isAnythingSet_RESPOnly() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    DataStore dataStore = DataStoreUtils.createFromNames(respName, null, null);
+    assertTrue(dataStore.isAnythingSet());
+  }
+
+  @Test
+  public void isAnythingSet_RESPAndData() {
+    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    DataStore dataStore = DataStoreUtils.createFromNames(respName, null, sensOutName);
+    assertTrue(dataStore.isAnythingSet());
+  }
+
+  @Test
+  public void isAnythingSet_dataOnly() {
+    String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    DataStore dataStore = DataStoreUtils.createFromNames(null, null, sensOutName);
+    assertTrue(dataStore.isAnythingSet());
+  }
+
+  @Test
+  public void isAnythingSet_nothingSet() {
+    DataStore dataStore = DataStoreUtils.createFromNames(null, null, null);
+    assertFalse(dataStore.isAnythingSet());
   }
 
 }

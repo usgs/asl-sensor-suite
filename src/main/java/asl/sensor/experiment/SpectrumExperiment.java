@@ -10,14 +10,17 @@ import org.jfree.data.xy.XYSeriesCollection;
  * Based on code in the seedscan timeseries package, see
  * https://github.com/usgs/seedscan/tree/master/src/main/java/asl/timeseries
  *
- * @author akearns, jholland
+ * @author akearns - KBRWyle
+ * @author jholland - USGS
  */
 public class SpectrumExperiment extends Experiment {
 
+  /**
+   * True if plotting using Hz, False if sampleRate
+   */
+  private boolean freqSpace;
 
-  protected boolean freqSpace;
-
-  protected int[] respIndices;
+  private int[] respIndices;
 
   /**
    * Instantiates a noise experiment -- axis titles and scales
@@ -42,14 +45,14 @@ public class SpectrumExperiment extends Experiment {
    * remaining terms for the formula for the self-noise results.
    */
   @Override
-  protected void backend(final DataStore ds) {
+  protected void backend(final DataStore dataStore) {
 
-    XYSeriesCollection xysc = new XYSeriesCollection();
-    xysc.setAutoWidth(true);
+    XYSeriesCollection plotTimeseries = new XYSeriesCollection();
+    plotTimeseries.setAutoWidth(true);
 
     int loadedDataCount = 0;
     for (int i = 0; i < 3; ++i) {
-      if (ds.bothComponentsSet(i)) {
+      if (dataStore.bothComponentsSet(i)) {
         ++loadedDataCount;
       }
     }
@@ -60,25 +63,24 @@ public class SpectrumExperiment extends Experiment {
     // it is probably better to keep the program flexible against valid input
     for (int i = 0; i < respIndices.length; ++i) {
       // xth fully loaded function begins at 1
-      int idx = ds.getXthFullyLoadedIndex(i + 1);
+      int idx = dataStore.getXthFullyLoadedIndex(i + 1);
       respIndices[i] = idx;
-      dataNames.add(ds.getBlock(idx).getName());
-      dataNames.add(ds.getResponse(idx).getName());
+      dataNames.add(dataStore.getBlock(idx).getName());
+      dataNames.add(dataStore.getResponse(idx).getName());
     }
 
     fireStateChange("Getting PSDs of each series...");
 
     // gets the PSDs of each given index for given freqSpace
-    for (int i = 0; i < respIndices.length; ++i) {
-      int idx = respIndices[i];
-      fireStateChange("Getting PSDs of data " + idx + "...");
-      addToPlot(ds, freqSpace, idx, xysc);
+    for (int index : respIndices) {
+      fireStateChange("Getting PSDs of data " + index + "...");
+      addToPlot(dataStore, freqSpace, index, plotTimeseries);
     }
 
-    xysc.addSeries(FFTResult.getLowNoiseModel(freqSpace));
-    xysc.addSeries(FFTResult.getHighNoiseModel(freqSpace));
+    plotTimeseries.addSeries(FFTResult.getLowNoiseModel(freqSpace));
+    plotTimeseries.addSeries(FFTResult.getHighNoiseModel(freqSpace));
 
-    xySeriesData.add(xysc);
+    xySeriesData.add(plotTimeseries);
 
   }
 
@@ -88,20 +90,33 @@ public class SpectrumExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < 3; ++i) {
-      if (ds.bothComponentsSet(i)) {
+      if (dataStore.bothComponentsSet(i)) {
         return true;
       }
     }
     return false;
   }
 
+  /**
+   * NOTE: not used by corresponding panel, overrides with active indices
+   * of components in the combo-box
+   *
+   * @return response indices
+   */
   @Override
   public int[] listActiveResponseIndices() {
-    // NOTE: not used by corresponding panel, overrides with active indices
-    // of components in the combo-box
     return respIndices;
+  }
+
+  /**
+   * Used for testing.
+   *
+   * @return freqSpace
+   */
+  boolean getFreqSpace() {
+    return freqSpace;
   }
 
   /**

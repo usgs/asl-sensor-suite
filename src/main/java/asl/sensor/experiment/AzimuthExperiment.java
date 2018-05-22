@@ -3,7 +3,7 @@ package asl.sensor.experiment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
@@ -51,20 +51,52 @@ public class AzimuthExperiment extends Experiment {
   private double angle, uncertainty;
 
   private double[] correlations; // best-fit correlations used to find windows w/ good estimates
-  private double[] angles;
-  private List<Double> acceptedAngles;
   private double minCorr; // lowest correlation value still used in angle estimation
   private boolean simpleCalc; // used for nine-noise calculation
   private boolean enoughPts; // enough points in range for estimation?
 
-  AzimuthExperiment() {
+  public AzimuthExperiment() {
     super();
     simpleCalc = false;
   }
 
   /**
-   * Entry point for this experiment to guarantee the use of the simple solver
-   * and require less overhead, callable from another experiment
+   * Function used to get the orientation of inputted data
+   * (Specifically, aligns the second and third horiz. inputs with the first)
+   * Uses a simpler solver for the Azimuth data. May produce an angle that
+   * is 180 degrees off from expected due to use of coherence measurement
+   * and limited checking of antipolar alignment
+   *
+   * @param north Timeseries data from north-facing reference sensor
+   * @param east Timeseries data from east-facing reference sensor
+   * @param reference Timeseries data from test sensor (either north or east)
+   * @param interval Sampling interval of the data
+   * @param start Start time of data
+   * @param end End time of data
+   * @return double representing radian-unit rotation angle of data
+   */
+  static double getAzimuth(double[] north, double[] east, double[] reference,
+      long interval, long start, long end) {
+    AzimuthExperiment azimuthExperiment = new AzimuthExperiment();
+    azimuthExperiment.setSimple(false); // don't do the faster angle calculation
+    azimuthExperiment.alternateEntryPoint(north, east, reference, interval, start, end);
+    return azimuthExperiment.getFitAngleRad();
+  }
+
+  static double[][] matchArrayLengths(double[]... toTrim) {
+    int len = toTrim[0].length;
+    for (double[] timeseries : toTrim) {
+      len = Math.min(len, timeseries.length);
+    }
+    for (int i = 0; i < toTrim.length; ++i) {
+      toTrim[i] = Arrays.copyOfRange(toTrim[i], 0, len);
+    }
+    return toTrim;
+  }
+
+  /**
+   * Entry point for this experiment to simplify the execution.
+   * Callable from another experiment.
    *
    * @param testNorth timeseries data from presumed north-facing test sensor
    * @param testEast timeseries data from presumed east-facing test sensor
@@ -76,13 +108,19 @@ public class AzimuthExperiment extends Experiment {
   protected void alternateEntryPoint(
       double[] testNorth, double[] testEast,
       double[] referenceNorth, long interval, long start, long end) {
+
+    /*
+     * Since this is called from other experiments the super.runExperimentOnData()
+     * is never called to initialize these values.
+     */
     dataNames = new ArrayList<>();
     dataNames.add("N");
     dataNames.add("E");
     dataNames.add("R");
-    simpleCalc = true;
 
-    backend(testNorth.clone(), testEast.clone(), referenceNorth.clone(),
+    xySeriesData = new ArrayList<>();
+
+    backendHelper(testNorth.clone(), testEast.clone(), referenceNorth.clone(),
         interval, start, end);
   }
 
@@ -95,7 +133,6 @@ public class AzimuthExperiment extends Experiment {
     DataBlock testEastBlock = dataStore.getXthLoadedBlock(2);
     DataBlock refNorthBlock = dataStore.getXthLoadedBlock(3);
 
-    dataNames = new ArrayList<>();
     dataNames.add(testNorthBlock.getName());
     dataNames.add(testEastBlock.getName());
     dataNames.add(refNorthBlock.getName());
@@ -109,7 +146,7 @@ public class AzimuthExperiment extends Experiment {
     double[] testEast = testEastBlock.getData();
     double[] refNorth = refNorthBlock.getData();
 
-    backend(testNorth, testEast, refNorth, interval, startTime, endTime);
+    backendHelper(testNorth, testEast, refNorth, interval, startTime, endTime);
 
   }
 
@@ -123,7 +160,7 @@ public class AzimuthExperiment extends Experiment {
    * @param startTime Start time of data
    * @param endTime End time of data
    */
-  private void backend(
+  private void backendHelper(
       double[] testNorth, double[] testEast,
       double[] refNorth, long interval, long startTime, long endTime) {
 
@@ -163,7 +200,6 @@ public class AzimuthExperiment extends Experiment {
     initTestNorth = data[0];
     initTestEast = data[1];
     initRefNorth = data[2];
-    data = null;
 
     MultivariateJacobianFunction jacobian =
         getJacobianFunction(initTestNorth, initTestEast, initRefNorth);
@@ -208,7 +244,7 @@ public class AzimuthExperiment extends Experiment {
     // first double -- angle estimate over window
     // second double -- correlation from that estimate over the window
     Map<Long, Pair<Double, Double>> angleCorrelationMap =
-        new HashMap<>();
+        new LinkedHashMap<>();
     List<Double> sortedCorrelation = new ArrayList<>();
 
     // want (correlation-1+damping) to be as close to 0 as possible
@@ -279,7 +315,7 @@ public class AzimuthExperiment extends Experiment {
     }
 
     int minCorrelations = 5;
-    angles = new double[]{};
+    double[] angles = new double[]{};
     correlations = new double[]{};
     if (angleCorrelationMap.size() < minCorrelations) {
       fireStateChange("Window size too small for good angle estimation...");
@@ -299,7 +335,7 @@ public class AzimuthExperiment extends Experiment {
       minCorr = sortedCorrelation.get(sortedCorrelation.size() - 1);
 
       // store good values for use in std dev calculation
-      acceptedAngles = new ArrayList<>();
+      List<Double> acceptedAngles = new ArrayList<>();
 
       // deal with wraparound issue
       correlations = new double[angleCorrelationMap.size()];
@@ -404,23 +440,6 @@ public class AzimuthExperiment extends Experiment {
     return 3;
   }
 
-  public double[] getAcceptedAngles() {
-    double[] acceptedDeg = new double[acceptedAngles.size()];
-    for (int i = 0; i < acceptedDeg.length; ++i) {
-      acceptedDeg[i] = Math.toDegrees(acceptedAngles.get(i));
-    }
-    return acceptedDeg;
-  }
-
-  /**
-   * Get the series of best-fit angles over each of the windowed ranges of data
-   *
-   * @return Array of best-fit angles
-   */
-  public double[] getBestFitAngles() {
-    return angles;
-  }
-
   /**
    * Get the correlation estimate for each best-fit angle over the series of data windows
    *
@@ -476,7 +495,7 @@ public class AzimuthExperiment extends Experiment {
    *
    * @return angle result in radians
    */
-  public double getFitAngleRad() {
+  private double getFitAngleRad() {
     return angle;
   }
 
@@ -493,9 +512,6 @@ public class AzimuthExperiment extends Experiment {
    */
   private MultivariateJacobianFunction
   getJacobianFunction(double[] l1, double[] l2, double[] l3) {
-
-    // make my func the j-func, I want that func-y stuff
-    // make my func the j-func, I want that func-y stuff
     return new MultivariateJacobianFunction() {
 
       final double[] finalTestNorth = l1;
@@ -528,6 +544,15 @@ public class AzimuthExperiment extends Experiment {
    */
   public double getOffset() {
     return ((offset % 360) + 360) % 360;
+  }
+
+  /**
+   * Set the angle offset for the reference sensor (degrees from north)
+   *
+   * @param newOffset Degrees from north that the reference sensor points
+   */
+  public void setOffset(double newOffset) {
+    offset = newOffset;
   }
 
   /**
@@ -616,10 +641,6 @@ public class AzimuthExperiment extends Experiment {
     double theta = (point.getEntry(0));
     double thetaDelta = theta + diff;
 
-    // was the frequency range under examination (in Hz) when doing coherence
-    // double lowFreq = 1./18.;
-    // double highFreq = 1./3.;
-
     // angles of rotation are x, x+dx respectively
     double[] testRotated =
         TimeSeriesUtils.rotate(testNorth, testEast, theta);
@@ -639,16 +660,6 @@ public class AzimuthExperiment extends Experiment {
     double[][] jacobianArray = new double[][]{{change}};
     RealMatrix jacobian = MatrixUtils.createRealMatrix(jacobianArray);
     return new Pair<>(valueVec, jacobian);
-
-  }
-
-  /**
-   * Set the angle offset for the reference sensor (degrees from north)
-   *
-   * @param newOffset Degrees from north that the reference sensor points
-   */
-  public void setOffset(double newOffset) {
-    offset = newOffset;
   }
 
   /**
@@ -662,18 +673,16 @@ public class AzimuthExperiment extends Experiment {
    *
    * @param isSimple True if a simple calculation should be done
    */
-  public void setSimple(boolean isSimple) {
+  void setSimple(boolean isSimple) {
     simpleCalc = isSimple;
   }
 
-  public static double[][] matchArrayLengths(double[]... toTrim) {
-    int len = toTrim[0].length;
-    for (double[] timeseries : toTrim) {
-      len = Math.min(len, timeseries.length);
-    }
-    for (int i = 0; i < toTrim.length; ++i) {
-      toTrim[i] = Arrays.copyOfRange(toTrim[i], 0, len);
-    }
-    return toTrim;
+  /**
+   * Used for test case verification.
+   *
+   * @return simpleCalc
+   */
+  boolean getSimpleCalc() {
+    return simpleCalc;
   }
 }

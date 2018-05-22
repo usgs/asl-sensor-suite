@@ -1,7 +1,6 @@
 package asl.sensor.gui;
 
-import asl.sensor.experiment.ExperimentEnum;
-import asl.sensor.experiment.ExperimentFactory;
+import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
@@ -25,69 +24,18 @@ import org.jfree.ui.RectangleAnchor;
 public class GainSixPanel extends GainPanel {
 
   private static final long serialVersionUID = 6140615094847886109L;
-
-  /**
-   * Static helper method for getting the formatted inset string directly
-   * from a GainExperiment
-   *
-   * @param experiment GainSixExperiment with data to be extracted
-   * @param plotIndex Plot to have this inset applied to
-   * @param referenceIndex Index of data to be loaded as reference (i.e., 0)
-   * @param lowPeriod low period boundary to take stats over
-   * @param highPeriod high period boundary to take stats over
-   * @return String with data representation of experiment results (mean, standard Deviation)
-   */
-  private static String
-  getInsetString(GainSixExperiment experiment, int plotIndex,
-      int referenceIndex, double lowPeriod, double highPeriod) {
-
-    double[][] meanAndStdDevAll =
-        experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
-
-    double[] meanAndStdDev = meanAndStdDevAll[plotIndex];
-
-    double mean = meanAndStdDev[0];
-    double sDev = meanAndStdDev[1];
-    double refGain = meanAndStdDev[2];
-    double calcGain = meanAndStdDev[3];
-
-    StringBuilder sb = new StringBuilder();
-    sb.append("ratio: ");
-    sb.append(mean);
-    sb.append("\n");
-    sb.append("sigma: ");
-    sb.append(sDev);
-    sb.append("\n");
-    sb.append("ref. gain: ");
-    sb.append(refGain);
-    sb.append("\n");
-    sb.append("** CALCULATED GAIN: ");
-    sb.append(calcGain);
-
-    if (plotIndex == 0) {
-      sb.append("\nNorth azimuth (deg): ");
-      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getNorthAzimuth())));
-    } else if (plotIndex == 1) {
-      sb.append("\nEast azimuth (rad): ");
-      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getEastAzimuth())));
-    }
-
-    return sb.toString();
-  }
-
+  private final JComboBox<String> plotSelection; // which chart to display in window?
   private JFreeChart northChart;
   private JFreeChart eastChart;
   private JFreeChart verticalChart; // gain result per dimensional component
-  private final JComboBox<String> plotSelection; // which chart to display in window?
-
   /**
    * Instantiate the panel, including sliders and stat calc button
    */
-  public GainSixPanel(ExperimentEnum experiment) {
+  public GainSixPanel(ExperimentFactory experiment) {
     // instantiate common components
     super(experiment);
     // make sure the experiment is gain-six
-    expResult = ExperimentFactory.createExperiment(experiment);
+    expResult = experiment.createExperiment();
 
     for (int i = 0; i < 2; ++i) {
       int num = i + 1;
@@ -163,6 +111,55 @@ public class GainSixPanel extends GainPanel {
     plotSelection.addActionListener(this);
     add(plotSelection, constraints);
 
+  }
+
+  /**
+   * Static helper method for getting the formatted inset string directly
+   * from a GainExperiment
+   *
+   * @param experiment GainSixExperiment with data to be extracted
+   * @param plotIndex Plot to have this inset applied to
+   * @param referenceIndex Index of data to be loaded as reference (i.e., 0)
+   * @param lowPeriod low period boundary to take stats over
+   * @param highPeriod high period boundary to take stats over
+   * @return String with data representation of experiment results (mean, standard Deviation)
+   */
+  private static String
+  getInsetString(GainSixExperiment experiment, int plotIndex,
+      int referenceIndex, double lowPeriod, double highPeriod) {
+
+    double[][] meanAndStdDevAll =
+        experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
+
+    double[] meanAndStdDev = meanAndStdDevAll[plotIndex];
+
+    double mean = meanAndStdDev[0];
+    double sDev = meanAndStdDev[1];
+    double refGain = meanAndStdDev[2];
+    double calcGain = meanAndStdDev[3];
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("ratio: ");
+    sb.append(mean);
+    sb.append("\n");
+    sb.append("sigma: ");
+    sb.append(sDev);
+    sb.append("\n");
+    sb.append("ref. gain: ");
+    sb.append(refGain);
+    sb.append("\n");
+    sb.append("** CALCULATED GAIN: ");
+    sb.append(calcGain);
+
+    if (plotIndex == 0) {
+      sb.append("\nNorth azimuth (deg): ");
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getNorthAzimuth())));
+    } else if (plotIndex == 1) {
+      sb.append("\nEast azimuth (rad): ");
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getEastAzimuth())));
+    }
+
+    return sb.toString();
   }
 
   /**

@@ -1,14 +1,16 @@
 package asl.sensor.experiment;
 
+import asl.sensor.input.DataStore;
+import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.NumericUtils;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.NumericUtils;
 
 /**
  * Produces plots of response curves' magnitudes (Bode plot) and angle of
@@ -34,9 +36,9 @@ public class ResponseExperiment extends Experiment {
   }
 
   @Override
-  protected void backend(DataStore ds) {
+  protected void backend(DataStore dataStore) {
 
-    responses = new HashSet<InstrumentResponse>();
+    responses = new HashSet<>();
 
     double lowFreq = .0001;
     double highFreq = 200;
@@ -52,33 +54,32 @@ public class ResponseExperiment extends Experiment {
     double currentFreq = lowFreq;
     for (int i = 0; i < freqArray.length; ++i) {
       freqArray[i] = currentFreq;
-      // System.out.println(currentFreq);
       currentFreq = a * Math.pow(10, b * (i * linearChange));
     }
 
     // used to prevent issues with duplicate response plotting / XYSeries names
-    Set<String> respNames = new HashSet<String>();
+    Set<String> respNames = new HashSet<>();
 
     XYSeriesCollection args = new XYSeriesCollection();
     XYSeriesCollection mags = new XYSeriesCollection();
 
-    for (int r = 0; r < 3; ++r) {
-      if (!ds.responseIsSet(r)) {
+    for (int responseIndex = 0; responseIndex < 3; ++responseIndex) {
+      if (!dataStore.responseIsSet(responseIndex)) {
         continue;
       }
 
-      InstrumentResponse ir = ds.getResponse(r);
-
-      if (respNames.contains(ir.getName())) {
+      InstrumentResponse instrumentResponse = dataStore.getResponse(responseIndex);
+      String name = instrumentResponse.getName() + " [" +
+          DateTimeFormatter.ofPattern("uuuu.DDD").withZone(ZoneOffset.UTC)
+              .format(instrumentResponse.getEpochStart()) + ']';
+      if (respNames.contains(name)) {
         continue;
       } else {
-        respNames.add(ir.getName());
-        responses.add(ir);
+        respNames.add(name);
+        responses.add(instrumentResponse);
       }
 
-      Complex[] result = ir.applyResponseToInput(freqArray);
-
-      String name = ir.getName();
+      Complex[] result = instrumentResponse.applyResponseToInput(freqArray);
 
       double phiPrev = 0; // use with unwrapping
       XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
@@ -106,7 +107,7 @@ public class ResponseExperiment extends Experiment {
     xySeriesData.add(mags);
     xySeriesData.add(args);
 
-    dataNames = new ArrayList<String>(respNames);
+    dataNames = new ArrayList<>(respNames);
 
   }
 
@@ -132,9 +133,9 @@ public class ResponseExperiment extends Experiment {
   }
 
   @Override
-  public boolean hasEnoughData(DataStore ds) {
+  public boolean hasEnoughData(DataStore dataStore) {
     for (int i = 0; i < 3; ++i) {
-      if (ds.responseIsSet(i)) {
+      if (dataStore.responseIsSet(i)) {
         return true;
       }
     }

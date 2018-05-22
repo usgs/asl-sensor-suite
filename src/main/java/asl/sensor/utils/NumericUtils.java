@@ -2,10 +2,8 @@ package asl.sensor.utils;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
@@ -16,86 +14,6 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
  * @author akearns
  */
 public class NumericUtils {
-
-  /**
-   * Complex comparator that takes ordering by magnitude of the values
-   * Used to sort response pole values mainly for use in calibrations
-   *
-   * @author akearns
-   */
-  public static class CpxMagComparator implements Comparator<Complex> {
-
-    public static final CpxMagComparator instance = new CpxMagComparator();
-
-    private CpxMagComparator() {
-
-    }
-
-    @Override
-    public int compare(Complex c1, Complex c2) {
-
-      if (null == c1 && null == c2) {
-        return 0;
-      } else if (null == c1) {
-        return -1;
-      } else if (null == c2) {
-        return 1;
-      }
-
-      if (c1.abs() == c2.abs()) {
-        Double r1 = c1.getReal();
-        Double r2 = c2.getReal();
-        if (!Objects.equals(r1, r2)) {
-          return r1.compareTo(r2);
-        } else {
-          return (int) Math.signum(c1.getImaginary() - c2.getImaginary());
-        }
-      }
-      return (int) Math.signum(c1.abs() - c2.abs());
-    }
-  }
-
-  /**
-   * Complex comparator ordering by magnitude but listing pure-real values first
-   * And then sorting complex numbers according to real value first, and then
-   * by imaginary value if the real values match.
-   *
-   * @author akearns
-   */
-  public static class CpxRealComparator implements Comparator<Complex> {
-
-    public static final CpxRealComparator instance = new CpxRealComparator();
-
-    private CpxRealComparator() {
-
-    }
-
-    @Override
-    public int compare(Complex c1, Complex c2) {
-
-      if (null == c1 && null == c2) {
-        return 0;
-      } else if (null == c1) {
-        return -1;
-      } else if (null == c2) {
-        return 1;
-      }
-
-      if (c1.getImaginary() == 0. && c2.getImaginary() == 0.) {
-        return (int) Math.signum(c1.getReal() - c2.getReal());
-      } else if (c1.getImaginary() == 0.) {
-        return -1;
-      } else if (c2.getImaginary() == 0.) {
-        return 1;
-      } else {
-        if (c1.getReal() == c2.getReal()) {
-          return (int) Math.signum(c1.getImaginary() - c2.getImaginary());
-        } else {
-          return (int) Math.signum(c1.getReal() - c2.getReal());
-        }
-      }
-    }
-  }
 
   /**
    * 2 * Pi, sometimes also referred to as Tau.
@@ -124,23 +42,12 @@ public class NumericUtils {
   }
 
   /**
-   * Sort a list of complex values according to their magnitude. Used to
-   * sort poles and zeros according to their period, which is a function of
-   * the magnitude.
-   *
-   * @param complexes List of complex numbers to sort
-   */
-  public static void complexMagnitudeSorter(List<Complex> complexes) {
-    Collections.sort(complexes, CpxMagComparator.instance);
-  }
-
-  /**
    * Sort a list of complex values so that pure real numbers appear first.
    * The real and complex numbers are then each sorted according to their real
    * value, and then by their imaginary value.
    */
   public static void complexRealsFirstSorter(List<Complex> complexes) {
-    Collections.sort(complexes, CpxRealComparator.instance);
+    complexes.sort(CpxRealComparator.instance);
   }
 
   /**
@@ -201,79 +108,6 @@ public class NumericUtils {
   }
 
   /**
-   * Used to find peak value of data in a certain location (based on true maximum, not magnitude)
-   *
-   * @param data Some complex numeric data (i.e., result of an FFT calculation)
-   * @return Location of max value of entire range of data
-   */
-  public static int getLocationOfPeak(Complex[] data) {
-    return getLocationOfPeak(data, 0, data.length);
-  }
-
-  /**
-   * Used to find peak value of data in a certain location (based on true maximum, not magnitude),
-   * within a certain region of interest
-   *
-   * @param data Some complex numeric data (i.e., result of an FFT calculation)
-   * @param lBound Lower index of the region of interest
-   * @param uBound Upper index of the region of interest (will be treated as length of the array if
-   * larger than that value)
-   * @return Location of max value over range of data of interest
-   */
-  public static int getLocationOfPeak(Complex[] data, int lBound, int uBound) {
-    int temp = Math.min(lBound, uBound);
-    uBound = Math.max(lBound, uBound);
-    lBound = temp;
-
-    double max = data[lBound].abs();
-    int idx = lBound;
-    for (int i = lBound + 1; i < uBound; ++i) {
-      if (data[i].abs() > max) {
-        max = data[i].abs();
-        idx = i;
-      }
-    }
-    return idx;
-  }
-
-  /**
-   * Used to find peak value of data in a certain location (based on true maximum, not magnitude)
-   *
-   * @param data Some numeric data (i.e., timeseries)
-   * @return Location of max value of entire range of data
-   */
-  public static int getLocationOfPeak(double[] data) {
-    return getLocationOfPeak(data, 0, data.length);
-  }
-
-  /**
-   * Used to find peak value of data in a certain location (based on true maximum, not magnitude),
-   * within a certain region of interest
-   *
-   * @param data Some numeric data (i.e., timeseries)
-   * @param lBound Lower index of the region of interest
-   * @param uBound Upper index of the region of interest (will be treated as length of the array if
-   * larger than that value)
-   * @return Location of max value over range of data of interest
-   */
-  public static int getLocationOfPeak(double[] data, int lBound, int uBound) {
-    int temp = Math.min(lBound, uBound);
-    uBound = Math.max(lBound, uBound);
-    uBound = Math.min(uBound, data.length);
-    lBound = temp;
-
-    double max = data[lBound];
-    int idx = lBound;
-    for (int i = lBound + 1; i < uBound; ++i) {
-      if (data[i] > max) {
-        max = data[i];
-        idx = i;
-      }
-    }
-    return idx;
-  }
-
-  /**
    * Perform a moving average on complex data, using the specified number of points to average at
    * each point in the input
    *
@@ -302,19 +136,6 @@ public class NumericUtils {
     }
     return out;
   }
-
-  /**
-   * Perform a moving average on complex data, using the specified number of points to average at
-   * each point in the input
-   *
-   * @param nums Complex data to be smoothed by use of moving average
-   * @param points Number of points to include in moving average
-   * @return Smoothed data resulting from performing the moving average on input data.
-   */
-  public static Complex[] multipointMovingAverage(Complex[] nums, int points) {
-    return multipointMovingAverage(nums, points, true);
-  }
-
 
   /**
    * Perform a moving average on real-val. data, using the specified number of points to average at
@@ -398,6 +219,7 @@ public class NumericUtils {
 
   /**
    * Wrap a degree to be between -180 and 180
+   *
    * @param angle in degrees
    * @return same angle but between -180 and 180
    */
@@ -409,6 +231,48 @@ public class NumericUtils {
       angle -= 360;
     }
     return angle;
+  }
+
+  /**
+   * Complex comparator ordering by magnitude but listing pure-real values first
+   * And then sorting complex numbers according to real value first, and then
+   * by imaginary value if the real values match.
+   *
+   * @author akearns
+   */
+  static class CpxRealComparator implements Comparator<Complex> {
+
+    static final CpxRealComparator instance = new CpxRealComparator();
+
+    private CpxRealComparator() {
+
+    }
+
+    @Override
+    public int compare(Complex c1, Complex c2) {
+
+      if (null == c1 && null == c2) {
+        return 0;
+      } else if (null == c1) {
+        return -1;
+      } else if (null == c2) {
+        return 1;
+      }
+
+      if (c1.getImaginary() == 0. && c2.getImaginary() == 0.) {
+        return (int) Math.signum(c1.getReal() - c2.getReal());
+      } else if (c1.getImaginary() == 0.) {
+        return -1;
+      } else if (c2.getImaginary() == 0.) {
+        return 1;
+      } else {
+        if (c1.getReal() == c2.getReal()) {
+          return (int) Math.signum(c1.getImaginary() - c2.getImaginary());
+        } else {
+          return (int) Math.signum(c1.getReal() - c2.getReal());
+        }
+      }
+    }
   }
 
 }
