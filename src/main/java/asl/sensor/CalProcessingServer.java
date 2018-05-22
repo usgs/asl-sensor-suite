@@ -610,7 +610,7 @@ public class CalProcessingServer {
       numerMap.put("Calibration_amplitude", new double[]{calAmp});
       numerMap.put("Output_signal_amplitude", new double[]{outAmp});
       numerMap.put("Estimated_signal_frequency", new double[]{freq});
-      numerMap.put("Calibration-to-output_ratio", new double[]{ratio});
+      numerMap.put("Calibration_to_output_ratio", new double[]{ratio});
       imageMap.put("Sine_curves_plot", images[0]);
       imageMap.put("Linearity", images[1]);
     }
