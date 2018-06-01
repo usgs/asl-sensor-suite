@@ -47,9 +47,7 @@ public class InstrumentResponse {
   private int numStages;
   // poles and zeros
   private List<Pair<Complex, Integer>> zeros;
-  //private Map<Complex, Integer> zeros;
   private List<Pair<Complex, Integer>> poles;
-  //private Map<Complex, Integer> poles;
   private String name;
   private Unit unitType;
   private double normalization; // A0 normalization factor
