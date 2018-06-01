@@ -7,6 +7,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.output.RandData;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +34,6 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 import asl.sensor.CalProcessingServer;
-import asl.sensor.CalProcessingServer.RandData;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataStore;
@@ -450,7 +451,7 @@ public class RandomizedExperimentTest {
     String end = "2018-01-30T11:55:00+00:00";
     try {
       CalProcessingServer cps = new CalProcessingServer();
-      RandData rd = cps.populateDataAndRun(calInFile, sensorOutFile, respFile,
+      RandData rd = (RandData) cps.populateDataAndRun(calInFile, sensorOutFile, respFile,
           false, start, end, true);
       System.out.println(Arrays.toString(rd.getFitPoles()));
       System.out.println(Arrays.toString(rd.getFitZeros()));
