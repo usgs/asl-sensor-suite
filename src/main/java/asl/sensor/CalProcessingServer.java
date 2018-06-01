@@ -250,9 +250,8 @@ public class CalProcessingServer {
 
   }
 
-  public CalResult runSine(String calFileName, String outFileName,
-      String respName, boolean useEmbeddedResp, String startDate, String endDate)
-      throws SeedFormatException, CodecException, IOException {
+  public CalResult runSine(String calFileName, String outFileName, String startDate,
+      String endDate) throws SeedFormatException, CodecException, IOException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -263,17 +262,9 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
     DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
-    InstrumentResponse ir;
-    if (useEmbeddedResp) {
-      ir = InstrumentResponse.loadEmbeddedResponse(respName);
-    } else {
-      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
-      ir = new InstrumentResponse(respName, epoch);
-    }
 
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
-    ds.setResponse(1, ir);
     ds.trim(start, end);
 
     return runExpGetDataSine(ds);
