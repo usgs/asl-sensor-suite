@@ -22,12 +22,14 @@ public class SpectrumExperiment extends Experiment {
 
   private int[] respIndices;
 
+  private static final int MAX_DATA_EXPECTED = 3;
+
   /**
    * Instantiates a noise experiment -- axis titles and scales
    */
   public SpectrumExperiment() {
     super();
-    respIndices = new int[3];
+    respIndices = new int[MAX_DATA_EXPECTED];
     freqSpace = false;
   }
 
@@ -86,12 +88,14 @@ public class SpectrumExperiment extends Experiment {
 
   @Override
   public int blocksNeeded() {
-    return 3;
+    // this refers to the number of input panel components to show, not the amount of data needed
+    // to run the plot -- similar to response experiment, don't need all inputs filled to do calcs
+    return MAX_DATA_EXPECTED;
   }
 
   @Override
   public boolean hasEnoughData(DataStore dataStore) {
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < MAX_DATA_EXPECTED; ++i) {
       if (dataStore.bothComponentsSet(i)) {
         return true;
       }

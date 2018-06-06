@@ -140,13 +140,13 @@ public class GainSixPanel extends GainPanel {
 
     StringBuilder sb = new StringBuilder();
     sb.append("ratio: ");
-    sb.append(mean);
+    sb.append(DECIMAL_FORMAT.get().format(mean));
     sb.append("\n");
     sb.append("sigma: ");
-    sb.append(sDev);
+    sb.append(DECIMAL_FORMAT.get().format(sDev));
     sb.append("\n");
     sb.append("ref. gain: ");
-    sb.append(refGain);
+    sb.append(DECIMAL_FORMAT.get().format(refGain));
     sb.append("\n");
     sb.append("** CALCULATED GAIN: ");
     sb.append(calcGain);
