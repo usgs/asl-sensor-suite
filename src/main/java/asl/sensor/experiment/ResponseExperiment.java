@@ -49,6 +49,7 @@ public class ResponseExperiment extends Experiment {
     double b = Math.log10(lowFreq / highFreq) / (lowFreq - highFreq);
     double a = lowFreq / Math.pow(10, b * lowFreq);
 
+    // hard-code length here because the limits of the calculated range are fixed
     double[] freqArray = new double[pointCount];
 
     double currentFreq = lowFreq;

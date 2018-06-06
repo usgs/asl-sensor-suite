@@ -28,6 +28,8 @@ public class NoiseExperiment extends Experiment {
    */
   boolean freqSpace;
 
+  private static final int DATA_NEEDED = 3;
+
   /**
    * To keep track of the response data used in this experiment
    */
@@ -38,7 +40,7 @@ public class NoiseExperiment extends Experiment {
    */
   public NoiseExperiment() {
     super();
-    respIndices = new int[3];
+    respIndices = new int[DATA_NEEDED];
     freqSpace = false;
   }
 
@@ -61,7 +63,8 @@ public class NoiseExperiment extends Experiment {
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.setAutoWidth(true);
 
-    respIndices = new int[3]; // first 3 fully-loaded data sets
+    // there are 3 inputs required in order to do this calculation correctly
+    respIndices = new int[DATA_NEEDED]; // first 3 fully-loaded data sets
 
     // get the first (index.length) seed/resp pairs. while we expect to
     // have the first three plots be the ones with loaded data, in general
@@ -190,7 +193,7 @@ public class NoiseExperiment extends Experiment {
 
   @Override
   public int blocksNeeded() {
-    return 3;
+    return DATA_NEEDED;
   }
 
   @Override
