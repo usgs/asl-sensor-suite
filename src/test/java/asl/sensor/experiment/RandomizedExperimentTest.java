@@ -8,18 +8,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import asl.sensor.output.RandData;
+import asl.sensor.output.CalResult;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
@@ -40,7 +37,6 @@ import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStoreUtils;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.test.TestUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -451,10 +447,10 @@ public class RandomizedExperimentTest {
     String end = "2018-01-30T11:55:00+00:00";
     try {
       CalProcessingServer cps = new CalProcessingServer();
-      RandData rd = (RandData) cps.populateDataAndRun(calInFile, sensorOutFile, respFile,
+      CalResult rCalResult = cps.runRand(calInFile, sensorOutFile, respFile,
           false, start, end, true);
-      System.out.println(Arrays.toString(rd.getFitPoles()));
-      System.out.println(Arrays.toString(rd.getFitZeros()));
+      System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_poles")));
+      System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_zeros")));
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();

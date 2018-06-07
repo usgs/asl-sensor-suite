@@ -1,28 +1,21 @@
 package asl.sensor;
 
 import asl.sensor.output.CalResult;
-import asl.sensor.output.RandData;
-import asl.sensor.output.SineData;
-import asl.sensor.output.StepData;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
@@ -156,27 +149,6 @@ public class CalProcessingServer {
   }
 
   /**
-   * Acquire data and run calibration over it.
-   * Returns the experiment (all data kept locally to maintain thread safety)
-   *
-   * @param calFileName Filename of calibration signal
-   * @param outFileName Filename of sensor output
-   * @param respName Filename of response to load in
-   * @param useEmbeddedResp True if response is an embedded response in program
-   * @param startDate Long representing ms-since-epoch of data start time
-   * @param endDate Long representing ms-since-epoch of data end time
-   * @param lowFreq True if a low-freq cal should be run
-   * @return Data from running the experiment (plots and fit pole/zero values)
-   * @throws IOException If a string does not refer to a valid accessible file
-   */
-  public CalResult populateDataAndRun(String calFileName, String outFileName,
-      String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq)
-      throws IOException, SeedFormatException, CodecException {
-    return
-        runRand(calFileName, outFileName, respName, useEmbeddedResp, startDate, endDate, lowFreq);
-  }
-
-  /**
    * Acquire data and run calibration over it. Used to handle calibrations that cross day boundaries
    * Returns the experiment (all data kept locally to maintain thread safety)
    *
@@ -285,11 +257,17 @@ public class CalProcessingServer {
     double estFreq = sine.getEstSineFreq();
     double ratio = calAmplitude / outAmplitude;
 
+    NumberAxis timeAxis = new NumberAxis("Time from data start (s)");
+    timeAxis.setAutoRangeIncludesZero(false);
+    Font bold = timeAxis.getLabelFont().deriveFont(Font.BOLD);
+    timeAxis.setLabelFont(bold);
+
     JFreeChart sineChart = ChartFactory.createXYLineChart(
         "Sine Calibration",
         "Time from data start (s)",
         "Normalized calibration signals (counts)",
         plots.get(0));
+    sineChart.getXYPlot().setDomainAxis(timeAxis);
 
     JFreeChart linearityChart = ChartFactory.createXYLineChart(
         "Sine cal. Linearity",
@@ -306,7 +284,7 @@ public class CalProcessingServer {
       ImageIO.write(images[i], "png", out);
       pngByteArrays[i] = out.toByteArray();
     }
-    return new SineData(pngByteArrays, calAmplitude, outAmplitude, estFreq, ratio);
+    return CalResult.buildSineCalData(pngByteArrays, calAmplitude, outAmplitude, estFreq, ratio);
   }
 
   @SuppressWarnings("unused")
@@ -320,6 +298,7 @@ public class CalProcessingServer {
 
     NumberAxis stepAxis = new NumberAxis("Step counts");
     NumberAxis timeAxis = new NumberAxis("Time from data start (s)");
+    timeAxis.setAutoRangeIncludesZero(false);
     NumberAxis ampAxis = new NumberAxis("RESP Amplitude [10 * log10(RESP(f))]");
     NumberAxis phaseAxis = new NumberAxis("RESP Phase (deg.)");
     LogarithmicAxis freqAxis = new LogarithmicAxis("Frequency (f)");
@@ -363,34 +342,7 @@ public class CalProcessingServer {
       pngByteArrays[i] = out.toByteArray();
     }
 
-    return new StepData(pngByteArrays, fitParams, initParams);
-  }
-
-  /**
-   * Acquire data and run calibration over it. Used to handle calibrations that cross day boundaries
-   * Returns the experiment (all data kept locally to maintain thread safety)
-   *
-   * @param calFileNameD1 Filename of calibration signal (day 1)
-   * @param calFileNameD2 Filename of calibration signal (day 2)
-   * @param outFileNameD1 Filename of sensor output (day 1)
-   * @param outFileNameD2 Filename of sensor output (day 2)
-   * @param respName Filename of response to load in
-   * @param useEmbeddedResp True if response is an embedded response in program
-   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
-   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
-   * @param lowFreq True if a low-freq cal should be run
-   * @return Data from running the experiment (plots and fit pole/zero values)
-   * @throws IOException If a string does not refer to a valid accessible file
-   */
-  @SuppressWarnings("unused")
-  public CalResult populateDataAndRun(String calFileNameD1, String calFileNameD2,
-      String outFileNameD1, String outFileNameD2, String respName, boolean useEmbeddedResp,
-      String startDate, String endDate, boolean lowFreq)
-      throws IOException, SeedFormatException, CodecException {
-
-    return runRand(calFileNameD1, calFileNameD2, outFileNameD1, outFileNameD2, respName,
-        useEmbeddedResp, startDate, endDate, lowFreq);
-
+    return CalResult.buildStepCalData(pngByteArrays, fitParams, initParams);
   }
 
   private CalResult runExpGetDataRand(DataStore dataStore, boolean isLowFrequency)
@@ -551,8 +503,8 @@ public class CalProcessingServer {
       gapEnds[j] = ends;
     }
 
-    return new RandData(fitPoles, fitZeros, initialPoles, initialZeros, pngByteArrays,
-        names, gapStarts, gapEnds);
+    return CalResult.buildRandomCalData(fitPoles, fitZeros, initialPoles, initialZeros,
+        pngByteArrays);
 
   }
 
