@@ -112,6 +112,8 @@ task copyServerJar(type: Copy) {
 
 task gitSubmodule(type: Exec) {
     description 'Update git submodules'
+    println 'Downloading the test data submodule may take a long time, potentially hours depending on your connection speed.'
+    println 'Interrupting may corrupt the test data submodule.'
     commandLine 'git', 'submodule', 'update', '--init'
 }
 
