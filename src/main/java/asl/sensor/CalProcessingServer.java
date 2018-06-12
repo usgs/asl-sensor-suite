@@ -77,22 +77,6 @@ public class CalProcessingServer {
     return nameArray;
   }
 
-  /**
-   * Get all metadata from the function in a single file
-   *
-   * @return text representation of data from experiment
-   */
-  @SuppressWarnings("unused")
-  public static String getMetadataFromExp(RandomizedExperiment exp) {
-    String[] data = RandomizedPanel.getInsetString(exp);
-    StringBuilder sb = new StringBuilder();
-    for (String dataPart : data) {
-      sb.append(dataPart);
-      sb.append('\n');
-    }
-    return sb.toString();
-  }
-
   public static void main(String[] args) {
     GatewayServer gatewayServer = new GatewayServer(new CalProcessingServer());
     try {
@@ -104,7 +88,7 @@ public class CalProcessingServer {
   }
 
   /**
-   * Acquire data and run calibration over it.
+   * Acquire data and run randomized calibration solver over it.
    * Returns the experiment (all data kept locally to maintain thread safety)
    *
    * @param calFileName Filename of calibration signal
@@ -149,7 +133,8 @@ public class CalProcessingServer {
   }
 
   /**
-   * Acquire data and run calibration over it. Used to handle calibrations that cross day boundaries
+   * Acquire data and run randomized calibration solver over it.
+   * Used to handle calibrations that cross day boundaries.
    * Returns the experiment (all data kept locally to maintain thread safety)
    *
    * @param calFileNameD1 Filename of calibration signal (day 1)
@@ -196,8 +181,69 @@ public class CalProcessingServer {
     return runExpGetDataRand(ds, lowFreq);
   }
 
-  public CalResult runStep(String calFileName, String outFileName,
-      String respName, boolean useEmbeddedResp, String startDate, String endDate)
+  /**
+   * Acquire data and run step calibration solver over it.
+   * Used to handle calibrations that cross day boundaries.
+   * Returns the experiment (all data kept locally to maintain thread safety)
+   *
+   * @param calFileNameD1 Filename of calibration signal (day 1)
+   * @param calFileNameD2 Filename of calibration signal (day 2)
+   * @param outFileNameD1 Filename of sensor output (day 1)
+   * @param outFileNameD2 Filename of sensor output (day 2)
+   * @param respName Filename of response to load in
+   * @param useEmbeddedResp True if response is an embedded response in program
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @return Data from running the experiment (plots and fit corner/damping values)
+   * @throws IOException If a string does not refer to a valid accessible file
+   */
+  public CalResult runStep(String calFileNameD1, String calFileNameD2, String outFileNameD1,
+      String outFileNameD2, String respName, boolean useEmbeddedResp, String startDate,
+      String endDate) throws SeedFormatException, CodecException, IOException {
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
+
+    DataStore ds = new DataStore();
+    String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
+    String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
+    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
+    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    InstrumentResponse ir;
+    if (useEmbeddedResp) {
+      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+    } else {
+      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
+      ir = new InstrumentResponse(respName, epoch);
+    }
+
+    ds.setBlock(0, calBlock);
+    ds.setBlock(1, outBlock);
+    ds.setResponse(1, ir);
+    ds.trim(start, end);
+
+    return runExpGetDataStep(ds);
+
+  }
+
+  /**
+   * Acquire data and run step calibration solver over it.
+   * Returns the experiment (all data kept locally to maintain thread safety)
+   *
+   * @param calFileName Filename of calibration signal
+   * @param outFileName Filename of sensor output
+   * @param respName Filename of response to load in
+   * @param useEmbeddedResp True if response is an embedded response in program
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @return Data from running the experiment (plots and fit corner/damping values)
+   * @throws IOException If a string does not refer to a valid accessible file
+   */
+  public CalResult runStep(String calFileName, String outFileName, String respName,
+      boolean useEmbeddedResp, String startDate,String endDate)
       throws SeedFormatException, CodecException, IOException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -226,6 +272,17 @@ public class CalProcessingServer {
 
   }
 
+  /**
+   * Acquire data and run sine calibration solver over it.
+   * Returns the experiment (all data kept locally to maintain thread safety)
+   *
+   * @param calFileName Filename of calibration signal
+   * @param outFileName Filename of sensor output
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @return Data from running the experiment (plots and amplitude estimations)
+   * @throws IOException If a string does not refer to a valid accessible file
+   */
   public CalResult runSine(String calFileName, String outFileName, String startDate,
       String endDate) throws SeedFormatException, CodecException, IOException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -244,10 +301,45 @@ public class CalProcessingServer {
     ds.trim(start, end);
 
     return runExpGetDataSine(ds);
-
   }
 
-  @SuppressWarnings("unused")
+  /**
+   * Acquire data and run sine calibration solver over it.
+   * Used to handle calibrations that cross day boundaries.
+   * Returns the experiment (all data kept locally to maintain thread safety)
+   *
+   * @param calFileNameD1 Filename of calibration signal (day 1)
+   * @param calFileNameD2 Filename of calibration signal (day 2)
+   * @param outFileNameD1 Filename of sensor output (day 1)
+   * @param outFileNameD2 Filename of sensor output (day 2)
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @return Data from running the experiment (plots and amplitude estimations)
+   * @throws IOException If a string does not refer to a valid accessible file
+   */
+  public CalResult runSine(String calFileNameD1, String calFileNameD2, String outFileNameD1,
+      String outFileNameD2, String startDate, String endDate)
+      throws SeedFormatException, CodecException, IOException {
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
+
+    DataStore ds = new DataStore();
+    String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
+    String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
+    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
+    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+
+    ds.setBlock(0, calBlock);
+    ds.setBlock(1, outBlock);
+    ds.trim(start, end);
+
+    return runExpGetDataSine(ds);
+  }
+
   private CalResult runExpGetDataSine(DataStore ds) throws IOException {
     SineExperiment sine = new SineExperiment();
     sine.runExperimentOnData(ds);
@@ -287,7 +379,6 @@ public class CalProcessingServer {
     return CalResult.buildSineCalData(pngByteArrays, calAmplitude, outAmplitude, estFreq, ratio);
   }
 
-  @SuppressWarnings("unused")
   private CalResult runExpGetDataStep(DataStore ds) throws IOException {
     StepExperiment step = new StepExperiment();
     step.runExperimentOnData(ds);
