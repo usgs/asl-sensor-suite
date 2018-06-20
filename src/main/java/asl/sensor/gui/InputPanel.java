@@ -383,17 +383,15 @@ public class InputPanel
           return;
         }
 
-        String embeddedPath = "resps/" + resultStr;
-
         // is the loaded string one of the embedded response files?
-        if (respFilenames.contains(embeddedPath)) {
+        if (respFilenames.contains(resultStr)) {
           // what was the index of the selected item?
           // used to make sure we default to that choice next round
-          lastRespIndex = Collections.binarySearch(names, embeddedPath);
+          lastRespIndex = Collections.binarySearch(names, resultStr);
           // final used here in the event of thread weirdness
           try {
             InstrumentResponse instrumentResponse =
-                InstrumentResponse.loadEmbeddedResponse(embeddedPath);
+                InstrumentResponse.loadEmbeddedResponse(resultStr);
             dataStore.setResponse(i, instrumentResponse);
 
             respFileNames[i].setText(instrumentResponse.getName());

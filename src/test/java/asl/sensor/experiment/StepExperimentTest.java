@@ -23,7 +23,7 @@ public class StepExperimentTest {
     String fname2 = "00_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("resps/STS1T5_Q330HR"));
+    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS1T5_Q330HR"));
     String startString = "2018-038T15:25:00.0";
     String endString = "2018-038T16:00:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
@@ -44,7 +44,7 @@ public class StepExperimentTest {
     String fname2 = "10_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("resps/STS2gen3_Q330HR"));
+    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS2gen3_Q330HR"));
     String startString = "2018-037T20:02:00.0";
     String endString = "2018-037T20:17:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
@@ -65,7 +65,7 @@ public class StepExperimentTest {
     String fname2 = "00_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("resps/STS1T5_Q330HR"));
+    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS1T5_Q330HR"));
     String startString = "2017-248T05:00:00.0";
     String endString = "2017-248T05:30:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
@@ -86,7 +86,7 @@ public class StepExperimentTest {
     String fname2 = "00_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("resps/TR360_Q330HR"));
+    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("TR360_Q330HR"));
     String startString = "2018-102T22:22:00.0";
     String endString = "2018-102T23:00:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);

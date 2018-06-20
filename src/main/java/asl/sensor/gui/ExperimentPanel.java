@@ -92,7 +92,9 @@ public abstract class ExperimentPanel
   final ExperimentFactory expType;
   final String[] channelType;
   final Set<String> seriesDashedSet;
-  final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN};
+  // colorblind-friendly red, blue, and green approximates in that order
+  final Color[] COLORS = {new Color(213, 94, 0),
+      Color.BLUE, new Color(0, 158, 115)};
   // (if an experiment has multiple charts to show, ideally each should be
   // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
