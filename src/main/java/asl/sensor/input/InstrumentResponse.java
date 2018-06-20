@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -125,45 +127,29 @@ public class InstrumentResponse {
       throws IOException {
 
     ClassLoader cl = InputPanel.class.getClassLoader();
-    InputStream is = cl.getResourceAsStream(fname);
+    InputStream is = cl.getResourceAsStream("resps/" + fname);
     BufferedReader fr = new BufferedReader(new InputStreamReader(is));
     return new InstrumentResponse(fr, fname);
   }
 
   /**
-   * Get list of all responses embedded into the program, derived from the
-   * responses.txt file in the resources folder
+   * Get list of all responses embedded into the program by iterating over the list of files
    *
    * @return Set of strings representing response filenames
    */
   public static Set<String> parseInstrumentList() {
 
-    Set<String> respFilenames = new HashSet<>();
     ClassLoader cl = InstrumentResponse.class.getClassLoader();
 
-    // there's no elegant way to extract responses other than to
-    // load in their names from a list and then grab them as available
-    // correspondingly, this means adding response files to this program
-    // requires us to add their names to this file
-    // There may be other possibilities but they are more complex and
-    // tend not to work the same way between IDE and launching a jar
-
-    InputStream respRead = cl.getResourceAsStream("responses.txt");
-
-    try (BufferedReader respBuff = new BufferedReader(new InputStreamReader(respRead))) {
-      String name = respBuff.readLine();
-      while (name != null) {
-        respFilenames.add(name);
-        name = respBuff.readLine();
-      }
-    } catch (IOException e) {
-      // This should never happen as responses.txt is parsed in a test case.
-      e.printStackTrace();
+    URL url = cl.getResource("resps/");
+    String path = url.getPath();
+    File[] files = new File(path).listFiles();
+    Set<String> respFilenames = new HashSet<>();
+    for (File file : files) {
+      respFilenames.add(file.getName());
     }
-
     return respFilenames;
   }
-  // (the A0 norm. factor's frequency)
 
   /**
    * Take in a string representing the path to a RESP file and outputs the epochs contained in it.
