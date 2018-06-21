@@ -40,7 +40,13 @@ import org.jfree.ui.RectangleAnchor;
 public class GainPanel extends ExperimentPanel
     implements ChangeListener {
 
-  static final double DEFAULT_UP_BOUND = 9.; // low bound is 9 seconds period
+  /**
+   * Upper bound of initial region to calculate gain estimation over (9 seconds period)
+   */
+  static final double DEFAULT_UP_BOUND = 9.;
+  /**
+   * Lower bound of intiial region to calculate gain estimation over (3 seconds period)
+   */
   static final double DEFAULT_LOW_BOUND = 3.;
   private static final long serialVersionUID = 6697458429989867529L;
   /**

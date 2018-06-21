@@ -48,9 +48,15 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class RandomizedExperiment extends Experiment implements ParameterValidator {
 
+  /**
+   * Defines the resolution of steps in iterative solution process
+   */
   static final double DELTA = 1E-12;
   private static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
-  private static final double ZERO_TARGET = 0.02; // location of value to set to 0 in curves for scaling
+  /**
+   * Sets the default normalization point for curves (0.02 Hz)
+   */
+  private static final double ZERO_TARGET = 0.02;
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
   private List<Complex> fitPoles;

@@ -39,7 +39,7 @@ import asl.sensor.utils.NumericUtils;
  */
 public class InstrumentResponse {
 
-  public static final double PEAK_MULTIPLIER = 0.8;
+  public static final double PEAK_MULTIPLIER = 0.9;
   public static final DateTimeFormatter RESP_DT_FORMAT =
       DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
   private static final int MAX_GAIN_STAGES = 10;
