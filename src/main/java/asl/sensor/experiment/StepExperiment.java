@@ -46,13 +46,16 @@ import org.jfree.data.xy.XYSeriesCollection;
  */
 public class StepExperiment extends Experiment {
 
+  /**
+   * Resolution of step size for iterative solution process
+   */
   private final double STEP_FACTOR = 1E-10;
   /**
-   * Used in the least squared solver
+   * Used in the least squared solver (quit when function output changes by less than this value)
    */
   private final double F_TOLER = 1E-15;
   /**
-   * Used in the least squared solver
+   * Used in the least squared solver (limit in change to apply to corner and damping params)
    */
   private final double X_TOLER = 1E-15;
   private double f, h; //corner and damping of output (uncorrected)
