@@ -157,18 +157,22 @@ public class GainPanel extends ExperimentPanel
   private static String getInsetString(
       GainExperiment experiment, int referenceIndex, double lowPeriod, double highPeriod) {
 
-    double[] meanAndStdDev =
+    double[] varResultArray =
         experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
 
-    double mean = meanAndStdDev[0];
-    double standardDeviation = meanAndStdDev[1];
-    double referenceGain = meanAndStdDev[2];
-    double calculatedGain = meanAndStdDev[3];
+    double mean = varResultArray[0];
+    double standardDeviation = varResultArray[1];
+    double referenceGain = varResultArray[2];
+    double calculatedGain = varResultArray[3];
+    double referenceFrequency = varResultArray[4];
+    double calculatedFrequency = varResultArray[5];
 
     return "ratio: " + DECIMAL_FORMAT.get().format(mean)
         + "\nsigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
         + "\nref. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
-        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain);
+        + " [w/ A0 " + DECIMAL_FORMAT.get().format(referenceFrequency) + "Hz]"
+        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain)
+        + " [w/ A0 " + DECIMAL_FORMAT.get().format(calculatedFrequency) + "Hz]";
   }
 
   /**
