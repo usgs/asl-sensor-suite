@@ -478,6 +478,7 @@ public class RandomizedExperimentTest {
         ExperimentFactory.RANDOMCAL.createExperiment();
 
     rCal.setLowFrequencyCalibration(false);
+    rCal.setNyquistMultiplier(.8);
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
