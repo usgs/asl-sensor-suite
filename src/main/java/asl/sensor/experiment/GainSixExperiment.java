@@ -161,7 +161,8 @@ public class GainSixExperiment extends Experiment {
    * @param index Index of north component's data to use as reference
    * @param lowerBound Low frequency bound of range to get stats over
    * @param upperBound High frequency bound of range to get stats over
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq,
+   * calc. A0 freq}
    */
   public double[][] getStatsFromFreqs(int index, double lowerBound, double upperBound) {
     double[][] result = new double[DIMENSIONS][];
