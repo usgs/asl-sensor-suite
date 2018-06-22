@@ -14,6 +14,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -39,10 +40,20 @@ import asl.sensor.utils.NumericUtils;
  */
 public class InstrumentResponse {
 
+  /**
+   * Maximum proportion of nyquist rate of a signal response to fit (as in RandomizedExperiment)
+   */
   public static final double PEAK_MULTIPLIER = 0.9;
+  /**
+   * Julian date parser for expected format of response files
+   */
   public static final DateTimeFormatter RESP_DT_FORMAT =
       DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
-  private static final int MAX_GAIN_STAGES = 10;
+  /**
+   * Initial value for size of array of gain stages; actual number of gain stages can be more or
+   * less than the value given here
+   */
+  private static final int INIT_GAIN_SIZE = 10;
   private TransferFunction transferType;
   // gain values, indexed by stage
   private double[] gain;
@@ -774,7 +785,7 @@ public class InstrumentResponse {
     }
 
     numStages = 0;
-    double[] gains = new double[MAX_GAIN_STAGES];
+    double[] gains = new double[INIT_GAIN_SIZE];
     for (int i = 0; i < gains.length; ++i) {
       gains[i] = 1;
     }
@@ -802,7 +813,7 @@ public class InstrumentResponse {
             }
             epochStart = parseTermAsDate(line);
             numStages = 0;
-            gains = new double[MAX_GAIN_STAGES];
+            gains = new double[INIT_GAIN_SIZE];
             for (int i = 0; i < gains.length; ++i) {
               gains[i] = 1;
             }
@@ -868,6 +879,17 @@ public class InstrumentResponse {
             // map allows us to read in the stages in whatever order
             // in the event they're not sorted in the response file
             // and allows us to have basically arbitrarily many stages
+            if (gainStage > gains.length) {
+              double[] temp = new double[gains.length * 2];
+              for (int i = 0; i < temp.length; ++i) {
+                if (i < gains.length) {
+                  temp[i] = gains[i];
+                } else {
+                  temp[i] = 1;
+                }
+              }
+              gains = temp;
+            }
             gains[gainStage] = Double.parseDouble(words[2]);
 
             // reset the stage to prevent data being overwritten
@@ -878,9 +900,9 @@ public class InstrumentResponse {
       line = reader.readLine();
     }
 
-    // turn map of gain stages into list
-    gain = gains;
+
     ++numStages; // offset by 1 to represent size of stored gain stages
+    gain = Arrays.copyOfRange(gains, 0, numStages);
 
     // turn pole/zero arrays into maps from pole values to # times repeated
     setZerosFromComplex(zerosArr);
