@@ -6,7 +6,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -15,7 +14,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -149,17 +147,25 @@ public class InstrumentResponse {
    * @return Set of strings representing response filenames
    */
   public static Set<String> parseInstrumentList() {
-
+    Set<String> respFilenames = new HashSet<>();
     ClassLoader cl = InstrumentResponse.class.getClassLoader();
 
-    URL url = cl.getResource("resps/");
-    String path = url.getPath();
-    File[] files = new File(path).listFiles();
-    Set<String> respFilenames = new HashSet<>();
-    for (File file : files) {
-      respFilenames.add(file.getName());
+    InputStream respRead = cl.getResourceAsStream("responses.txt");
+    BufferedReader respBuff =
+        new BufferedReader( new InputStreamReader(respRead) );
+
+    try {
+      String name;
+      name = respBuff.readLine();
+      while (name != null) {
+        respFilenames.add(name);
+        name = respBuff.readLine();
+      }
+      respBuff.close();
+    } catch (IOException e2) {
+      e2.printStackTrace();
     }
-    return respFilenames;
+    return respFilenames
   }
 
   /**
