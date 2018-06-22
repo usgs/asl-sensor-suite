@@ -165,7 +165,7 @@ public class InstrumentResponse {
     } catch (IOException e2) {
       e2.printStackTrace();
     }
-    return respFilenames
+    return respFilenames;
   }
 
   /**
