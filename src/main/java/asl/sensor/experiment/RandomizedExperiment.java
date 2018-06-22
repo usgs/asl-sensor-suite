@@ -52,6 +52,10 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * Defines the resolution of steps in iterative solution process
    */
   static final double DELTA = 1E-12;
+  /**
+   * Maximum possible frequency value as a multiple of nyquist (0.9).
+   * The solver will still default to 0.8 as results above that are very unstable for noisy cals
+   */
   private static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
   /**
    * Sets the default normalization point for curves (0.02 Hz)
@@ -79,7 +83,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     isLowFrequencyCalibration = false;
     numIterations = 0;
     plotUsingHz = true;
-    nyquistMultiplier = PEAK_MULTIPLIER;
+    nyquistMultiplier = 0.8; // defaults to 0.8
   }
 
   /**
