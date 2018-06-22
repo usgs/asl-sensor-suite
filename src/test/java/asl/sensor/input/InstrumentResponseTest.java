@@ -428,7 +428,7 @@ public class InstrumentResponseTest {
     assertEquals(2E-2, response.getNormalizationFrequency(), 1E-6);
     assertEquals(3, response.getNumStages());
 
-    double[] gain = {4.026530e+09, 2.400000e+03, 1.677721e+06, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    double[] gain = {4.026530e+09, 2.400000e+03, 1.677721e+06};
     assertArrayEquals(gain, response.getGain(), 1E-6);
 
     List<Complex> zeros = new ArrayList<>();
@@ -468,7 +468,7 @@ public class InstrumentResponseTest {
     assertEquals(1E-2, response.getNormalizationFrequency(), 1E-6);
     assertEquals(6, response.getNumStages());
 
-    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09, 1.0, 1.0, 1.0, 1.0};
+    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09};
     assertArrayEquals(gain, response.getGain(), 1E-6);
 
     List<Complex> zeros = new ArrayList<>();
@@ -504,7 +504,7 @@ public class InstrumentResponseTest {
     assertEquals(1E-2, response.getNormalizationFrequency(), 1E-6);
     assertEquals(6, response.getNumStages());
 
-    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09, 1.0, 1.0, 1.0, 1.0};
+    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09};
     assertArrayEquals(gain, response.getGain(), 1E-6);
 
     List<Complex> zeros = new ArrayList<>();
