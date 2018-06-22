@@ -48,6 +48,14 @@ task jarMain(type: Jar) {
     with jar
 }
 
+task listResps() {
+    def files =  fileTree("$projectDir/src/main/resources/resps").filter { it.isFile() }.files.name
+    File respListFile = new File("$projectDir/src/main/resources/respsonses.txt")
+    respListFile.withWriter{ out ->
+        files.each {out.println it}
+    }
+}
+
 task jarServer(type: Jar) {
     baseName = 'CalServer'
     manifest {
@@ -117,5 +125,6 @@ task gitSubmodule(type: Exec) {
     commandLine 'git', 'submodule', 'update', '--init'
 }
 
+compileJava.dependsOn listResps
 build.dependsOn copyJar, copyServerJar
 processTestResources.dependsOn gitSubmodule
