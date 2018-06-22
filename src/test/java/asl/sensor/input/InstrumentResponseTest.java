@@ -518,4 +518,22 @@ public class InstrumentResponseTest {
     assertEquals(poles, response.getPoles());
   }
 
+  /**
+   * This test tests that a resp with 10 gain stages (11 including stage 0) is parsed correctly.
+   */
+  @Test
+  public void parserDriver_manyGainStages() throws Exception {
+    LocalDate date = LocalDate.parse("2012-01-01");
+    Instant epochStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+    URL file = InstrumentResponseTest.class
+        .getResource("/seismic-test-data/RESPs/BN.EKG.HHZ.resp");
+
+    InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString());
+
+    assertEquals(11, response.getNumStages());
+
+    double[] gain = {1.246063e+09, 3.987400e+03, 3.125000e+05, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    assertArrayEquals(gain, response.getGain(), 1E-6);
+  }
+
 }
