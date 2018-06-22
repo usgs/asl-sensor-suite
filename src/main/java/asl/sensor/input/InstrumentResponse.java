@@ -879,7 +879,7 @@ public class InstrumentResponse {
             // map allows us to read in the stages in whatever order
             // in the event they're not sorted in the response file
             // and allows us to have basically arbitrarily many stages
-            if (gainStage > gains.length) {
+            if (gainStage >= gains.length) {
               double[] temp = new double[gains.length * 2];
               for (int i = 0; i < temp.length; ++i) {
                 if (i < gains.length) {
