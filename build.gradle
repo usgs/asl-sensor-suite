@@ -50,7 +50,7 @@ task jarMain(type: Jar) {
 
 task listResps() {
     def files =  fileTree("$projectDir/src/main/resources/resps").filter { it.isFile() }.files.name
-    File respListFile = new File("$projectDir/src/main/resources/respsonses.txt")
+    File respListFile = new File("$projectDir/src/main/resources/responses.txt")
     respListFile.withWriter{ out ->
         files.each {out.println it}
     }
@@ -125,6 +125,7 @@ task gitSubmodule(type: Exec) {
     commandLine 'git', 'submodule', 'update', '--init'
 }
 
+test.dependsOn listResps
 compileJava.dependsOn listResps
 build.dependsOn copyJar, copyServerJar
 processTestResources.dependsOn gitSubmodule
