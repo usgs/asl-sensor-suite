@@ -561,7 +561,7 @@ public class RandomizedExperimentTest {
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
     }
 
-    assertEquals(197.1889105489712, rCal.getFitResidual(), 1E-7);
+    assertEquals(197.1889107001963, rCal.getFitResidual(), 1E-7);
     assertEquals(414.3706105547109, rCal.getInitResidual(), 1E-7);
   }
 
