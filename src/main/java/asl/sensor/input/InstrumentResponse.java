@@ -954,14 +954,10 @@ public class InstrumentResponse {
    * conjugate included in this vector in order to maintain constraints.
    *
    * @param lowFreq True if the low-frequency poles are to be fit
-   * @param nyquist Nyquist rate of data (upper bound on high-freq poles to fit)
+   * @param peak Peak frequency of zero to add to fit set (upper bound on high-freq poles to fit)
    * @return RealVector with fittable pole values
    */
-  public RealVector polesToVector(boolean lowFreq, double nyquist) {
-    // peak represents max value of poles we will fit; others are above rate of data
-    // and thus cannot be accurately determined from what we are solving for
-    double peak = PEAK_MULTIPLIER * nyquist;
-
+  public RealVector polesToVector(boolean lowFreq, double peak) {
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<>();
@@ -1156,11 +1152,10 @@ public class InstrumentResponse {
    * conjugate included in this vector in order to maintain constraints.
    *
    * @param lowFreq True if the low-frequency zeros are to be fit
-   * @param nyquist Nyquist rate of data (upper bound on high-freq zeros to fit)
+   * @param peak Peak frequency of zero to add to fit set (upper bound on high-freq zeros to fit)
    * @return RealVector with fittable zero values
    */
-  public RealVector zerosToVector(boolean lowFreq, double nyquist) {
-    double peak = PEAK_MULTIPLIER * nyquist;
+  public RealVector zerosToVector(boolean lowFreq, double peak) {
 
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
