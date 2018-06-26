@@ -2,6 +2,7 @@ package asl.sensor.utils;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
@@ -45,9 +46,18 @@ public class NumericUtils {
    * Sort a list of complex values so that pure real numbers appear first.
    * The real and complex numbers are then each sorted according to their real
    * value, and then by their imaginary value.
+   * @param complexes A list of complex numbers to sort
    */
   public static void complexRealsFirstSorter(List<Complex> complexes) {
     complexes.sort(CpxRealComparator.instance);
+  }
+
+  /**
+   * Sort a list of complex values according to magnitude (i.e., period value).
+   * Pole and zero values are iterated through twi
+   */
+  public static void complexMagnitudeSorter(Complex[] complexes) {
+    Arrays.sort(complexes, CpxMagnitudeComparator.instance);
   }
 
   /**
@@ -275,6 +285,38 @@ public class NumericUtils {
     }
   }
 
+  /**
+   * Complex comparator ordering by magnitude.
+   *
+   * @author akearns
+   */
+  static class CpxMagnitudeComparator implements Comparator<Complex> {
+
+    static final CpxMagnitudeComparator instance = new CpxMagnitudeComparator();
+
+    private CpxMagnitudeComparator() {
+
+    }
+
+    @Override
+    public int compare(Complex c1, Complex c2) {
+
+      if (null == c1 && null == c2) {
+        return 0;
+      } else if (null == c1) {
+        return -1;
+      } else if (null == c2) {
+        return 1;
+      }
+
+      // assume
+      if (c1.getReal() == c2.getReal()) {
+        return (int) Math.signum(c1.getImaginary() - c2.getImaginary());
+      }
+
+      return (int) Math.signum(c1.abs() - c2.abs());
+    }
+  }
 }
 
 

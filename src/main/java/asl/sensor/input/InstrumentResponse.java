@@ -336,6 +336,9 @@ public class InstrumentResponse {
   }
 
   private static List<Pair<Complex, Integer>> setComponentValues(Complex[] pzArr) {
+    // other response code assumes all poles/zeros are listed in order of increasing magnitude
+    // (i.e., lower frequency poles/zeros are listed first, and then increasingly higher)
+    NumericUtils.complexMagnitudeSorter(pzArr);
     // first, sort matching P/Z values into bins, count up the number of each
     Map<Complex, Integer> values = new LinkedHashMap<>();
     for (Complex c : pzArr) {

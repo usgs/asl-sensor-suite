@@ -134,10 +134,10 @@ public class InstrumentResponseTest {
       assertEquals(zrs, ir.getZeros());
 
       List<Complex> pls = new ArrayList<>();
-      pls.add(new Complex(-2.221000e-01, 2.221000e-01));
       pls.add(new Complex(-2.221000e-01, -2.221000e-01));
-      pls.add(new Complex(-3.918000e+01, 4.912000e+01));
+      pls.add(new Complex(-2.221000e-01, 2.221000e-01));
       pls.add(new Complex(-3.918000e+01, -4.912000e+01));
+      pls.add(new Complex(-3.918000e+01, 4.912000e+01));
       assertEquals(pls, ir.getPoles());
 
     } catch (IOException e) {
@@ -403,6 +403,31 @@ public class InstrumentResponseTest {
     }
   }
 
+  @Test
+  public void poleZerosMagnitudeIncreasing() throws IOException {
+    InstrumentResponse resp =
+        new InstrumentResponse(TestUtils.RESP_LOCATION + "STS6_Q330HR");
+    Complex[] poles = resp.getPoles().toArray(new Complex[]{});
+    Complex[] expected = {
+        new Complex(-1.23000e-02, -1.23000e-02),
+        new Complex(-1.23000e-02, +1.23000e-02),
+        new Complex(-1.36833e+02),
+        new Complex(-1.36833e+02),
+        new Complex(-1.21500e+02, -6.47000e+02),
+        new Complex(-1.21500e+02, +6.47000e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-1.04409e+10)
+    };
+    for (int i = 0; i < poles.length; ++i) {
+      assertTrue(Complex.equals(expected[i], poles[i], 1E-10));
+    }
+  }
+
   /**
    * This test tests that each field was parsed correctly and the correct epoch was parsed.
    */
@@ -437,10 +462,10 @@ public class InstrumentResponseTest {
     assertEquals(zeros, response.getZeros());
 
     List<Complex> poles = new ArrayList<>();
-    poles.add(new Complex(-11.234000e-02, 15.234000e-02));
     poles.add(new Complex(-11.234000e-02, -12.234000e-02));
-    poles.add(new Complex(-31.918000e+01, 5.912000e+01));
+    poles.add(new Complex(-11.234000e-02, 15.234000e-02));
     poles.add(new Complex(-31.918000e+01, -5.912000e+01));
+    poles.add(new Complex(-31.918000e+01, 5.912000e+01));
     assertEquals(poles, response.getPoles());
 
   }
@@ -476,8 +501,8 @@ public class InstrumentResponseTest {
     assertEquals(zeros, response.getZeros());
 
     List<Complex> poles = new ArrayList<>();
-    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
     poles.add(new Complex(-2.234000e-02, -1.234000e-02));
+    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
     poles.add(new Complex(-1.918000e+01, 4.912000e+01));
     assertEquals(poles, response.getPoles());
   }
@@ -512,8 +537,8 @@ public class InstrumentResponseTest {
     assertEquals(zeros, response.getZeros());
 
     List<Complex> poles = new ArrayList<>();
-    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
     poles.add(new Complex(-2.234000e-02, -1.234000e-02));
+    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
     poles.add(new Complex(-1.918000e+01, 4.912000e+01));
     assertEquals(poles, response.getPoles());
   }
