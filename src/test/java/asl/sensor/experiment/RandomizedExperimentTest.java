@@ -553,16 +553,16 @@ public class RandomizedExperimentTest {
     rCal.runExperimentOnData(ds);
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
-        new Complex(-0.012781625484629284, -0.012442058263140014),
-        new Complex(-0.012781625484629284, 0.012442058263140014)
+        new Complex(-0.012725101823426397, -0.011495336794506263),
+        new Complex(-0.012725101823426397, 0.011495336794506263)
     };
     for (int i = 0; i < fitPoles.size(); i++) {
       assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
     }
 
-    assertEquals(197.1889107001963, rCal.getFitResidual(), 1E-7);
-    assertEquals(414.3706105547109, rCal.getInitResidual(), 1E-7);
+    assertEquals(423.7415521942539, rCal.getFitResidual(), 1E-7);
+    assertEquals(482.45559437599235, rCal.getInitResidual(), 1E-7);
   }
 
   @Test
