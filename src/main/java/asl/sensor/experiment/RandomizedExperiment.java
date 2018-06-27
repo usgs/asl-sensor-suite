@@ -301,19 +301,23 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       untrimmedPhase[i] = NumericUtils.atanc(phaseValue.multiply(scaleFactor));
     }
 
-    fireStateChange("Smoothing calculated resp data...");
-    // smoothingPoints should be an even number to prevent biasing on the half-sample
-    // since the averaging isn't done from the center of a sample but from either the left or right
-    int offset = 3; // how far to shift the data after the smoothing has been done
-    int smoothingPoints = 2 * offset;
-    // now smooth the data
-    // scan starting at the high-frequency range for low-freq data (will be trimmed) & vice-versa
-    untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude,
-        smoothingPoints, !isLowFrequencyCalibration);
-    // phase smoothing also includes an unwrapping step
-    untrimmedPhase = NumericUtils.unwrapArray(untrimmedPhase);
-    untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, smoothingPoints,
-        !isLowFrequencyCalibration);
+    int offset = 0;
+
+    if (!isLowFrequencyCalibration) {
+      fireStateChange("Smoothing calculated resp data...");
+      // smoothingPoints should be an even number to prevent biasing on the half-sample
+      // since the averaging isn't done from the center of a sample but from either the left or right
+      offset = 3; // how far to shift the data after the smoothing has been done
+      int smoothingPoints = 2 * offset;
+      // now smooth the data
+      // scan starting at the high-frequency range for low-freq data (will be trimmed) & vice-versa
+      untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude,
+          smoothingPoints, !isLowFrequencyCalibration);
+      // phase smoothing also includes an unwrapping step
+      untrimmedPhase = NumericUtils.unwrapArray(untrimmedPhase);
+      untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, smoothingPoints,
+          !isLowFrequencyCalibration);
+    }
 
     // experimentation with offsets to deal with the way the moving average shifts the data
     // since the plot is basically logarithmic this only matters due to the limited data
