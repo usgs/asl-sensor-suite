@@ -3,7 +3,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'application'
 
-version = '1.3.3'
+version = '1.4.0'
 
 mainClassName = 'asl.sensor.SensorSuite'
 sourceCompatibility = '1.8'
@@ -46,6 +46,14 @@ task jarMain(type: Jar) {
         }
     }
     with jar
+}
+
+task listResps() {
+    def files =  fileTree("$projectDir/src/main/resources/resps").filter { it.isFile() }.files.name
+    File respListFile = new File("$projectDir/src/main/resources/responses.txt")
+    respListFile.withWriter{ out ->
+        files.each {out.println it}
+    }
 }
 
 task jarServer(type: Jar) {
@@ -112,8 +120,12 @@ task copyServerJar(type: Copy) {
 
 task gitSubmodule(type: Exec) {
     description 'Update git submodules'
+    println 'Downloading the test data submodule may take a long time, potentially hours depending on your connection speed.'
+    println 'Interrupting may corrupt the test data submodule.'
     commandLine 'git', 'submodule', 'update', '--init'
 }
 
+test.dependsOn listResps
+compileJava.dependsOn listResps
 build.dependsOn copyJar, copyServerJar
 processTestResources.dependsOn gitSubmodule

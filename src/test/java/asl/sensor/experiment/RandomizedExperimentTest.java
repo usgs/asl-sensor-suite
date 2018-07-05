@@ -7,16 +7,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import asl.sensor.output.CalResult;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
@@ -31,7 +31,6 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 import asl.sensor.CalProcessingServer;
-import asl.sensor.CalProcessingServer.RandData;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataStore;
@@ -448,10 +447,10 @@ public class RandomizedExperimentTest {
     String end = "2018-01-30T11:55:00+00:00";
     try {
       CalProcessingServer cps = new CalProcessingServer();
-      RandData rd = cps.populateDataAndRun(calInFile, sensorOutFile, respFile,
+      CalResult rCalResult = cps.runRand(calInFile, sensorOutFile, respFile,
           false, start, end, true);
-      System.out.println(Arrays.toString(rd.getFitPoles()));
-      System.out.println(Arrays.toString(rd.getFitZeros()));
+      System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_poles")));
+      System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_zeros")));
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
@@ -459,7 +458,7 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void runExperiment_BCIP_HFCalibration() {
+  public void runExperiment_BCIP_HFCalibration() throws IOException {
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
     String calName = dataFolderName + "CB_BC0.512.seed";
@@ -479,45 +478,44 @@ public class RandomizedExperimentTest {
         ExperimentFactory.RANDOMCAL.createExperiment();
 
     rCal.setLowFrequencyCalibration(false);
+    rCal.setNyquistMultiplier(.8);
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
-    List<Complex> fitPoles = rCal.getFitPoles();
-    List<Complex> fitZeros = rCal.getFitZeros();
-    List<Complex> initialZeros = rCal.getInitialZeros();
-    Complex[] expectedPoles = {
-        new Complex(-306.7741224387797, 0),
-        new Complex(-3.4804079210157486, 0),
-        new Complex(-101.27715855875556, -387.9300826976112),
-        new Complex(-101.27715855875556, 387.9300826976112)
-    };
-    ComplexFormat cf = new ComplexFormat(new DecimalFormat("#.#####"));
-    StringBuilder report = new StringBuilder("The best-fit values from the solver:/n");
-    report.append("POLES: ");
-    for (int i = 0; i < fitPoles.size(); i++) {
-      report.append(cf.format(fitPoles.get(i)));
-      if (i + 1 < fitPoles.size()) {
-        report.append(", ");
-      }
+    InstrumentResponse fitResponse = rCal.getFitResponse();
+    // these are expected poles which are good-fit. response fit may differ depending on JDK and
+    // order of operations, etc. so we prefer to compare response curves over raw parameters,
+    // as many different output responses may produce equally good fits for the data under analysis
+    InstrumentResponse expectedResponse = new InstrumentResponse(RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268_EXPECTED");
+
+    double[][] calculatedDataSeries = rCal.getData().get(0).getSeries(1).toArray();
+    double[] frequencyTest = calculatedDataSeries[0];
+    double[] calculatedResponseCurveAmp = calculatedDataSeries[1];
+
+    Complex[] fitResponseCurve = fitResponse.applyResponseToInput(frequencyTest);
+    double[] fitAmpAndPhase = new double[2 * fitResponseCurve.length];
+    Complex[] expectedResponseCurve = expectedResponse.applyResponseToInput(frequencyTest);
+    double[] expectedAmpAndPhase = new double[2 * fitResponseCurve.length];
+    for (int i = 0; i < fitResponseCurve.length; ++i) {
+      int phaseIndex = i + fitResponseCurve.length;
+      fitAmpAndPhase[i] = fitResponseCurve[i].abs();
+      fitAmpAndPhase[phaseIndex] = NumericUtils.atanc(fitResponseCurve[i]);
+      expectedAmpAndPhase[i] = expectedResponseCurve[i].abs();
+      expectedAmpAndPhase[phaseIndex] = NumericUtils.atanc(expectedResponseCurve[i]);
     }
-    report.append("\nZEROS: ");
-    StringBuilder initialZerosText = new StringBuilder("(EXPECTED ZEROS: ");
-    for (int i = 0; i < fitZeros.size(); i++) {
-      report.append(cf.format(fitZeros.get(i)));
-      initialZerosText.append(cf.format(initialZeros.get(i)));
-      if (i + 1 < fitPoles.size()) {
-        report.append(", ");
-        initialZerosText.append(", ");
-      }
-    }
-    initialZerosText.append(")");
-    report.append("\n" + initialZerosText.toString());
-    for (int i = 0; i < fitPoles.size(); i++) {
-      assertEquals(report.toString(), expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
-      assertEquals(report.toString(), expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
+    RandomizedExperiment.scaleValues(fitAmpAndPhase, frequencyTest, false);
+    RandomizedExperiment.scaleValues(expectedAmpAndPhase, frequencyTest, false);
+
+    double[] fitAmp = Arrays.copyOfRange(fitAmpAndPhase, 0, fitResponseCurve.length);
+    double[] expectedAmp = Arrays.copyOfRange(expectedAmpAndPhase, 0, expectedResponseCurve.length);
+    for (int i = 0; i < fitResponseCurve.length; ++i) {
+      fitAmp[i] = Math.abs(fitAmp[i] - calculatedResponseCurveAmp[i]);
+      expectedAmp[i] = Math.abs(expectedAmp[i] - calculatedResponseCurveAmp[i]);
+      String msg = "EXPECTED: " + expectedAmp[i] + " FIT: " + fitAmp[i] + " AT FREQ: " + frequencyTest[i];
+      assertTrue(msg,fitAmp[i] <= expectedAmp[i] + 0.1);
     }
 
-    assertEquals(50.11489080838925, rCal.getFitResidual(), 1E-7);
+    assertTrue(rCal.getFitResidual() < 51.);
     assertEquals(1082.7313334829698, rCal.getInitResidual(), 1E-7);
   }
 
@@ -555,16 +553,16 @@ public class RandomizedExperimentTest {
     rCal.runExperimentOnData(ds);
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
-        new Complex(-0.012781625484629284, -0.012442058263140014),
-        new Complex(-0.012781625484629284, 0.012442058263140014)
+        new Complex(-0.012725101823426397, -0.011495336794506263),
+        new Complex(-0.012725101823426397, 0.011495336794506263)
     };
     for (int i = 0; i < fitPoles.size(); i++) {
       assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
     }
 
-    assertEquals(197.1889105489712, rCal.getFitResidual(), 1E-7);
-    assertEquals(414.3706105547109, rCal.getInitResidual(), 1E-7);
+    assertEquals(423.7415521942539, rCal.getFitResidual(), 1E-7);
+    assertEquals(482.45559437599235, rCal.getInitResidual(), 1E-7);
   }
 
   @Test

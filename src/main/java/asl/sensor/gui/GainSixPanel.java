@@ -131,31 +131,38 @@ public class GainSixPanel extends GainPanel {
     double[][] meanAndStdDevAll =
         experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
 
-    double[] meanAndStdDev = meanAndStdDevAll[plotIndex];
+    double[] varResultArray = meanAndStdDevAll[plotIndex];
 
-    double mean = meanAndStdDev[0];
-    double sDev = meanAndStdDev[1];
-    double refGain = meanAndStdDev[2];
-    double calcGain = meanAndStdDev[3];
+    double mean = varResultArray[0];
+    double sDev = varResultArray[1];
+    double refGain = varResultArray[2];
+    double calcGain = varResultArray[3];
+    double refFreq = varResultArray[4];
+    double calcFreq = varResultArray[5];
 
     StringBuilder sb = new StringBuilder();
     sb.append("ratio: ");
-    sb.append(mean);
+    sb.append(DECIMAL_FORMAT.get().format(mean));
     sb.append("\n");
     sb.append("sigma: ");
-    sb.append(sDev);
+    sb.append(DECIMAL_FORMAT.get().format(sDev));
     sb.append("\n");
     sb.append("ref. gain: ");
-    sb.append(refGain);
-    sb.append("\n");
+    sb.append(DECIMAL_FORMAT.get().format(refGain));
+    sb.append(" [w/ A0 ");
+    sb.append(DECIMAL_FORMAT.get().format(refFreq));
+    sb.append("Hz]\n");
     sb.append("** CALCULATED GAIN: ");
-    sb.append(calcGain);
+    sb.append(DECIMAL_FORMAT.get().format(calcGain));
+    sb.append(" [w/ A0 ");
+    sb.append(DECIMAL_FORMAT.get().format(calcFreq));
+    sb.append("Hz]\n");
 
     if (plotIndex == 0) {
       sb.append("\nNorth azimuth (deg): ");
       sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getNorthAzimuth())));
     } else if (plotIndex == 1) {
-      sb.append("\nEast azimuth (rad): ");
+      sb.append("\nEast azimuth (deg): ");
       sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getEastAzimuth())));
     }
 

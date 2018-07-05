@@ -7,6 +7,22 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+/**
+ * This process compares the behavior for an input and output sine wave for a sensor. Unlike with
+ * sine cals and step cals, a sine wave has a single (fixed) frequency, and thus no response is
+ * used in this calculation. We take the RMS of the signals to get a ratio of their amplitudes,
+ * and also calculate the distance between peaks of the sine wave to get an estimation of its
+ * frequency. This estimation is likely to differ by a few Hz from the expected value in most cases,
+ * and is mainly used as a quick way of checking that the calibration completed without significant
+ * error making its results suspect (i.e., sine cals should have frequency in the sensor passband).
+ * The main purpose of doing this cal is to get a midband sensitivity estimate for a seismometer,
+ * under the assumption that the calibration components (i.e., coil abd drive) have fixed behavior.
+ * For more details on the algorithm, see Ringler, Hutt, et al.,
+ * "Obtaining Changes in Calibration-Coil to Seismometer Output Constants Using Sine Waves",
+ * Bulletin of the Seismological Society of America, Vol 104 (Feb. 2014).
+ *
+ * @author akearns - KBRWyle
+ */
 public class SineExperiment extends Experiment {
 
   private double calSDev, outSDev, peakPeakFreq;

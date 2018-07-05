@@ -13,6 +13,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,19 +38,27 @@ import asl.sensor.utils.NumericUtils;
  */
 public class InstrumentResponse {
 
-  public static final double PEAK_MULTIPLIER = 0.8;
+  /**
+   * Maximum proportion of nyquist rate of a signal response to fit (as in RandomizedExperiment)
+   */
+  public static final double PEAK_MULTIPLIER = 0.9;
+  /**
+   * Julian date parser for expected format of response files
+   */
   public static final DateTimeFormatter RESP_DT_FORMAT =
       DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
-  private static final int MAX_GAIN_STAGES = 10;
+  /**
+   * Initial value for size of array of gain stages; actual number of gain stages can be more or
+   * less than the value given here
+   */
+  private static final int INIT_GAIN_SIZE = 10;
   private TransferFunction transferType;
   // gain values, indexed by stage
   private double[] gain;
   private int numStages;
   // poles and zeros
   private List<Pair<Complex, Integer>> zeros;
-  //private Map<Complex, Integer> zeros;
   private List<Pair<Complex, Integer>> poles;
-  //private Map<Complex, Integer> poles;
   private String name;
   private Unit unitType;
   private double normalization; // A0 normalization factor
@@ -127,45 +136,37 @@ public class InstrumentResponse {
       throws IOException {
 
     ClassLoader cl = InputPanel.class.getClassLoader();
-    InputStream is = cl.getResourceAsStream(fname);
+    InputStream is = cl.getResourceAsStream("resps/" + fname);
     BufferedReader fr = new BufferedReader(new InputStreamReader(is));
     return new InstrumentResponse(fr, fname);
   }
 
   /**
-   * Get list of all responses embedded into the program, derived from the
-   * responses.txt file in the resources folder
+   * Get list of all responses embedded into the program by iterating over the list of files
    *
    * @return Set of strings representing response filenames
    */
   public static Set<String> parseInstrumentList() {
-
     Set<String> respFilenames = new HashSet<>();
     ClassLoader cl = InstrumentResponse.class.getClassLoader();
 
-    // there's no elegant way to extract responses other than to
-    // load in their names from a list and then grab them as available
-    // correspondingly, this means adding response files to this program
-    // requires us to add their names to this file
-    // There may be other possibilities but they are more complex and
-    // tend not to work the same way between IDE and launching a jar
-
     InputStream respRead = cl.getResourceAsStream("responses.txt");
+    BufferedReader respBuff =
+        new BufferedReader( new InputStreamReader(respRead) );
 
-    try (BufferedReader respBuff = new BufferedReader(new InputStreamReader(respRead))) {
-      String name = respBuff.readLine();
+    try {
+      String name;
+      name = respBuff.readLine();
       while (name != null) {
         respFilenames.add(name);
         name = respBuff.readLine();
       }
-    } catch (IOException e) {
-      // This should never happen as responses.txt is parsed in a test case.
-      e.printStackTrace();
+      respBuff.close();
+    } catch (IOException e2) {
+      e2.printStackTrace();
     }
-
     return respFilenames;
   }
-  // (the A0 norm. factor's frequency)
 
   /**
    * Take in a string representing the path to a RESP file and outputs the epochs contained in it.
@@ -335,6 +336,9 @@ public class InstrumentResponse {
   }
 
   private static List<Pair<Complex, Integer>> setComponentValues(Complex[] pzArr) {
+    // other response code assumes all poles/zeros are listed in order of increasing magnitude
+    // (i.e., lower frequency poles/zeros are listed first, and then increasingly higher)
+    NumericUtils.complexMagnitudeSorter(pzArr);
     // first, sort matching P/Z values into bins, count up the number of each
     Map<Complex, Integer> values = new LinkedHashMap<>();
     for (Complex c : pzArr) {
@@ -790,7 +794,7 @@ public class InstrumentResponse {
     }
 
     numStages = 0;
-    double[] gains = new double[MAX_GAIN_STAGES];
+    double[] gains = new double[INIT_GAIN_SIZE];
     for (int i = 0; i < gains.length; ++i) {
       gains[i] = 1;
     }
@@ -818,7 +822,7 @@ public class InstrumentResponse {
             }
             epochStart = parseTermAsDate(line);
             numStages = 0;
-            gains = new double[MAX_GAIN_STAGES];
+            gains = new double[INIT_GAIN_SIZE];
             for (int i = 0; i < gains.length; ++i) {
               gains[i] = 1;
             }
@@ -884,6 +888,17 @@ public class InstrumentResponse {
             // map allows us to read in the stages in whatever order
             // in the event they're not sorted in the response file
             // and allows us to have basically arbitrarily many stages
+            if (gainStage >= gains.length) {
+              double[] temp = new double[gains.length * 2];
+              for (int i = 0; i < temp.length; ++i) {
+                if (i < gains.length) {
+                  temp[i] = gains[i];
+                } else {
+                  temp[i] = 1;
+                }
+              }
+              gains = temp;
+            }
             gains[gainStage] = Double.parseDouble(words[2]);
 
             // reset the stage to prevent data being overwritten
@@ -894,9 +909,9 @@ public class InstrumentResponse {
       line = reader.readLine();
     }
 
-    // turn map of gain stages into list
-    gain = gains;
+
     ++numStages; // offset by 1 to represent size of stored gain stages
+    gain = Arrays.copyOfRange(gains, 0, numStages);
 
     // turn pole/zero arrays into maps from pole values to # times repeated
     setZerosFromComplex(zerosArr);
@@ -942,14 +957,10 @@ public class InstrumentResponse {
    * conjugate included in this vector in order to maintain constraints.
    *
    * @param lowFreq True if the low-frequency poles are to be fit
-   * @param nyquist Nyquist rate of data (upper bound on high-freq poles to fit)
+   * @param peak Peak frequency of zero to add to fit set (upper bound on high-freq poles to fit)
    * @return RealVector with fittable pole values
    */
-  public RealVector polesToVector(boolean lowFreq, double nyquist) {
-    // peak represents max value of poles we will fit; others are above rate of data
-    // and thus cannot be accurately determined from what we are solving for
-    double peak = PEAK_MULTIPLIER * nyquist;
-
+  public RealVector polesToVector(boolean lowFreq, double peak) {
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<>();
@@ -1144,11 +1155,10 @@ public class InstrumentResponse {
    * conjugate included in this vector in order to maintain constraints.
    *
    * @param lowFreq True if the low-frequency zeros are to be fit
-   * @param nyquist Nyquist rate of data (upper bound on high-freq zeros to fit)
+   * @param peak Peak frequency of zero to add to fit set (upper bound on high-freq zeros to fit)
    * @return RealVector with fittable zero values
    */
-  public RealVector zerosToVector(boolean lowFreq, double nyquist) {
-    double peak = PEAK_MULTIPLIER * nyquist;
+  public RealVector zerosToVector(boolean lowFreq, double peak) {
 
     // create a list of doubles that are the non-conjugate elements from list
     // of poles, to convert to array and then vector format

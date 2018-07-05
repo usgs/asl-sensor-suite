@@ -144,7 +144,7 @@ public class ReportingUtils {
     JFreeChart[] lastPage = Arrays.copyOfRange(charts, lastIndex, charts.length);
     BufferedImage lastPageImage = chartsToImage(width, height, lastPage);
     // special case for a non-evenly dividing plot series (append blank space to last page)
-    if (spacerCount > 0) {
+    if (lastPageChartCount > 0 && spacerCount > 0) {
       BufferedImage space = createWhitespace(width, height * spacerCount);
       lastPageImage = mergeBufferedImages(lastPageImage, space);
     }

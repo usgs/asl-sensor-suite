@@ -64,7 +64,7 @@ public class RandomizedPanel extends ExperimentPanel {
   public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
 
-    SpinnerModel spinModel = new SpinnerNumberModel(80., 30., 80., 1.);
+    SpinnerModel spinModel = new SpinnerNumberModel(80., 30., 90., 1.);
     nyquistMultiplier = new JSpinner(spinModel);
     JLabel nyquistMultiplierLabel = new JLabel("% bound of nyquist for HF cals");
     nyquistMultiplierLabel.setLabelFor(nyquistMultiplier);
