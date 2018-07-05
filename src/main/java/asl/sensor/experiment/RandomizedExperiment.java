@@ -48,9 +48,19 @@ import asl.sensor.utils.TimeSeriesUtils;
  */
 public class RandomizedExperiment extends Experiment implements ParameterValidator {
 
+  /**
+   * Defines the resolution of steps in iterative solution process
+   */
   static final double DELTA = 1E-12;
+  /**
+   * Maximum possible frequency value as a multiple of nyquist (0.9).
+   * The solver will still default to 0.8 as results above that are very unstable for noisy cals
+   */
   private static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
-  private static final double ZERO_TARGET = 0.02; // location of value to set to 0 in curves for scaling
+  /**
+   * Sets the default normalization point for curves (0.02 Hz)
+   */
+  private static final double ZERO_TARGET = 0.02;
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
   private List<Complex> fitPoles;
@@ -73,7 +83,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     isLowFrequencyCalibration = false;
     numIterations = 0;
     plotUsingHz = true;
-    nyquistMultiplier = PEAK_MULTIPLIER;
+    nyquistMultiplier = 0.8; // defaults to 0.8
   }
 
   /**
@@ -249,7 +259,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
       // get factor of nyquist rate, again due to noise
       maxFreq = nyquistMultiplier * nyquist;
-      maxPlotFreq = InstrumentResponse.PEAK_MULTIPLIER * nyquist; // i.e., 80% of nyquist
+      maxPlotFreq = PEAK_MULTIPLIER * nyquist; // i.e., 80% of nyquist
       // maxFreq = extFreq;
     }
 
@@ -291,19 +301,23 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       untrimmedPhase[i] = NumericUtils.atanc(phaseValue.multiply(scaleFactor));
     }
 
-    fireStateChange("Smoothing calculated resp data...");
-    // smoothingPoints should be an even number to prevent biasing on the half-sample
-    // since the averaging isn't done from the center of a sample but from either the left or right
-    int offset = 3; // how far to shift the data after the smoothing has been done
-    int smoothingPoints = 2 * offset;
-    // now smooth the data
-    // scan starting at the high-frequency range for low-freq data (will be trimmed) & vice-versa
-    untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude,
-        smoothingPoints, !isLowFrequencyCalibration);
-    // phase smoothing also includes an unwrapping step
-    untrimmedPhase = NumericUtils.unwrapArray(untrimmedPhase);
-    untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, smoothingPoints,
-        !isLowFrequencyCalibration);
+    int offset = 0;
+
+    if (!isLowFrequencyCalibration) {
+      fireStateChange("Smoothing calculated resp data...");
+      // smoothingPoints should be an even number to prevent biasing on the half-sample
+      // since the averaging isn't done from the center of a sample but from either the left or right
+      offset = 3; // how far to shift the data after the smoothing has been done
+      int smoothingPoints = 2 * offset;
+      // now smooth the data
+      // scan starting at the high-frequency range for low-freq data (will be trimmed) & vice-versa
+      untrimmedAmplitude = NumericUtils.multipointMovingAverage(untrimmedAmplitude,
+          smoothingPoints, !isLowFrequencyCalibration);
+      // phase smoothing also includes an unwrapping step
+      untrimmedPhase = NumericUtils.unwrapArray(untrimmedPhase);
+      untrimmedPhase = NumericUtils.multipointMovingAverage(untrimmedPhase, smoothingPoints,
+          !isLowFrequencyCalibration);
+    }
 
     // experimentation with offsets to deal with the way the moving average shifts the data
     // since the plot is basically logarithmic this only matters due to the limited data

@@ -134,10 +134,10 @@ public class InstrumentResponseTest {
       assertEquals(zrs, ir.getZeros());
 
       List<Complex> pls = new ArrayList<>();
-      pls.add(new Complex(-2.221000e-01, 2.221000e-01));
       pls.add(new Complex(-2.221000e-01, -2.221000e-01));
-      pls.add(new Complex(-3.918000e+01, 4.912000e+01));
+      pls.add(new Complex(-2.221000e-01, 2.221000e-01));
       pls.add(new Complex(-3.918000e+01, -4.912000e+01));
+      pls.add(new Complex(-3.918000e+01, 4.912000e+01));
       assertEquals(pls, ir.getPoles());
 
     } catch (IOException e) {
@@ -403,6 +403,31 @@ public class InstrumentResponseTest {
     }
   }
 
+  @Test
+  public void poleZerosMagnitudeIncreasing() throws IOException {
+    InstrumentResponse resp =
+        new InstrumentResponse(TestUtils.RESP_LOCATION + "STS6_Q330HR");
+    Complex[] poles = resp.getPoles().toArray(new Complex[]{});
+    Complex[] expected = {
+        new Complex(-1.23000e-02, -1.23000e-02),
+        new Complex(-1.23000e-02, +1.23000e-02),
+        new Complex(-1.36833e+02),
+        new Complex(-1.36833e+02),
+        new Complex(-1.21500e+02, -6.47000e+02),
+        new Complex(-1.21500e+02, +6.47000e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-7.64103e+02),
+        new Complex(-1.04409e+10)
+    };
+    for (int i = 0; i < poles.length; ++i) {
+      assertTrue(Complex.equals(expected[i], poles[i], 1E-10));
+    }
+  }
+
   /**
    * This test tests that each field was parsed correctly and the correct epoch was parsed.
    */
@@ -428,7 +453,7 @@ public class InstrumentResponseTest {
     assertEquals(2E-2, response.getNormalizationFrequency(), 1E-6);
     assertEquals(3, response.getNumStages());
 
-    double[] gain = {4.026530e+09, 2.400000e+03, 1.677721e+06, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    double[] gain = {4.026530e+09, 2.400000e+03, 1.677721e+06};
     assertArrayEquals(gain, response.getGain(), 1E-6);
 
     List<Complex> zeros = new ArrayList<>();
@@ -437,10 +462,10 @@ public class InstrumentResponseTest {
     assertEquals(zeros, response.getZeros());
 
     List<Complex> poles = new ArrayList<>();
-    poles.add(new Complex(-11.234000e-02, 15.234000e-02));
     poles.add(new Complex(-11.234000e-02, -12.234000e-02));
-    poles.add(new Complex(-31.918000e+01, 5.912000e+01));
+    poles.add(new Complex(-11.234000e-02, 15.234000e-02));
     poles.add(new Complex(-31.918000e+01, -5.912000e+01));
+    poles.add(new Complex(-31.918000e+01, 5.912000e+01));
     assertEquals(poles, response.getPoles());
 
   }
@@ -468,7 +493,7 @@ public class InstrumentResponseTest {
     assertEquals(1E-2, response.getNormalizationFrequency(), 1E-6);
     assertEquals(6, response.getNumStages());
 
-    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09, 1.0, 1.0, 1.0, 1.0};
+    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09};
     assertArrayEquals(gain, response.getGain(), 1E-6);
 
     List<Complex> zeros = new ArrayList<>();
@@ -476,8 +501,8 @@ public class InstrumentResponseTest {
     assertEquals(zeros, response.getZeros());
 
     List<Complex> poles = new ArrayList<>();
-    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
     poles.add(new Complex(-2.234000e-02, -1.234000e-02));
+    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
     poles.add(new Complex(-1.918000e+01, 4.912000e+01));
     assertEquals(poles, response.getPoles());
   }
@@ -504,7 +529,7 @@ public class InstrumentResponseTest {
     assertEquals(1E-2, response.getNormalizationFrequency(), 1E-6);
     assertEquals(6, response.getNumStages());
 
-    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09, 1.0, 1.0, 1.0, 1.0};
+    double[] gain = {1.0, 1.400000e+02, 1.677721e+06, 1.0, 1.0, 1.026530e+09};
     assertArrayEquals(gain, response.getGain(), 1E-6);
 
     List<Complex> zeros = new ArrayList<>();
@@ -512,10 +537,28 @@ public class InstrumentResponseTest {
     assertEquals(zeros, response.getZeros());
 
     List<Complex> poles = new ArrayList<>();
-    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
     poles.add(new Complex(-2.234000e-02, -1.234000e-02));
+    poles.add(new Complex(-2.234000e-02, 1.234000e-02));
     poles.add(new Complex(-1.918000e+01, 4.912000e+01));
     assertEquals(poles, response.getPoles());
+  }
+
+  /**
+   * This test tests that a resp with 10 gain stages (11 including stage 0) is parsed correctly.
+   */
+  @Test
+  public void parserDriver_manyGainStages() throws Exception {
+    LocalDate date = LocalDate.parse("2012-01-01");
+    Instant epochStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+    URL file = InstrumentResponseTest.class
+        .getResource("/seismic-test-data/RESPs/BN.EKG.HHZ.resp");
+
+    InstrumentResponse response = new InstrumentResponse(Paths.get(file.toURI()).toString());
+
+    assertEquals(11, response.getNumStages());
+
+    double[] gain = {1.246063e+09, 3.987400e+03, 3.125000e+05, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    assertArrayEquals(gain, response.getGain(), 1E-6);
   }
 
 }

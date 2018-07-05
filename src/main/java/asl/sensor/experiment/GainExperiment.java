@@ -22,7 +22,7 @@ public class GainExperiment extends Experiment {
 
   private static final int NUMBER_TO_LOAD = 2;
 
-  private double[] gainStage1;
+  private double[] gainStage1, A0Freqs;
   private FFTResult[] fftResults;
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
 
@@ -63,6 +63,7 @@ public class GainExperiment extends Experiment {
     }
 
     gainStage1 = new double[NUMBER_TO_LOAD];
+    A0Freqs = new double[NUMBER_TO_LOAD];
 
     fireStateChange("Accumulating gain values...");
     // InstrumentResponse[] resps = ds.getResponses();
@@ -70,6 +71,7 @@ public class GainExperiment extends Experiment {
       InstrumentResponse ir = dataStore.getResponse(indices[i]);
       double[] gains = ir.getGain();
       gainStage1[i] = gains[1];
+      A0Freqs[i] = ir.getNormalizationFrequency();
     }
 
     fftResults = new FFTResult[NUMBER_TO_LOAD];
@@ -155,7 +157,8 @@ public class GainExperiment extends Experiment {
    * @param refIndex Index of first curve to be plotted (numerator PSD)
    * @param lowerBound Lower-bound of frequency window of PSD
    * @param upperBound Upper-bound of frequency window of PSD
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq.,
+   * calc. A0 freq.}
    */
   public double[] getStatsFromFreqs(int refIndex, double lowerBound, double upperBound) {
     FFTResult plot0 = fftResults[refIndex];
@@ -169,12 +172,14 @@ public class GainExperiment extends Experiment {
 
   /**
    * Given indices to specific PSD data sets and indices to the corresponding
-   * frequency boundaries, gets the mean and standard deviation ratios
+   * frequency boundaries, gets the mean and standard deviation ratios as well as the frequencies
+   * the normalizations are taken from
    *
    * @param refIndex Index of first curve to be plotted (numerator PSD)
    * @param lowerBound Lower-bound index of PSDs' frequency array
    * @param upperBound Upper-bound index of PSDs' frequency array
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq.,
+   * calc. A0 freq.}
    */
   private double[] getStatsFromIndices(int refIndex, int lowerBound, int upperBound) {
 
@@ -202,7 +207,10 @@ public class GainExperiment extends Experiment {
     double refGain = gainStage1[refIndex];
     double calcGain = gainStage1[refIndexPlusOne] / Math.sqrt(ratio);
 
-    return new double[]{Math.sqrt(ratio), sigma, refGain, calcGain};
+    double normalFreqRef = A0Freqs[refIndex];
+    double normalFreqCalc = A0Freqs[refIndexPlusOne];
+
+    return new double[]{Math.sqrt(ratio), sigma, refGain, calcGain, normalFreqRef, normalFreqCalc};
   }
 
   /**
@@ -210,7 +218,8 @@ public class GainExperiment extends Experiment {
    * gain statistics
    *
    * @param refIndex Index of the reference sensor's FFT data
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq,
+   * calc. A0 freq}
    */
   public double[] getStatsFromPeak(int refIndex) {
     double[] freqBounds = getOctaveCenteredAtPeak(refIndex);

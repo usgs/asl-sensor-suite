@@ -40,7 +40,13 @@ import org.jfree.ui.RectangleAnchor;
 public class GainPanel extends ExperimentPanel
     implements ChangeListener {
 
-  static final double DEFAULT_UP_BOUND = 9.; // low bound is 9 seconds period
+  /**
+   * Upper bound of initial region to calculate gain estimation over (9 seconds period)
+   */
+  static final double DEFAULT_UP_BOUND = 9.;
+  /**
+   * Lower bound of intiial region to calculate gain estimation over (3 seconds period)
+   */
   static final double DEFAULT_LOW_BOUND = 3.;
   private static final long serialVersionUID = 6697458429989867529L;
   /**
@@ -157,18 +163,22 @@ public class GainPanel extends ExperimentPanel
   private static String getInsetString(
       GainExperiment experiment, int referenceIndex, double lowPeriod, double highPeriod) {
 
-    double[] meanAndStdDev =
+    double[] varResultArray =
         experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
 
-    double mean = meanAndStdDev[0];
-    double standardDeviation = meanAndStdDev[1];
-    double referenceGain = meanAndStdDev[2];
-    double calculatedGain = meanAndStdDev[3];
+    double mean = varResultArray[0];
+    double standardDeviation = varResultArray[1];
+    double referenceGain = varResultArray[2];
+    double calculatedGain = varResultArray[3];
+    double referenceFrequency = varResultArray[4];
+    double calculatedFrequency = varResultArray[5];
 
     return "ratio: " + DECIMAL_FORMAT.get().format(mean)
         + "\nsigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
         + "\nref. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
-        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain);
+        + " [w/ A0 " + DECIMAL_FORMAT.get().format(referenceFrequency) + "Hz]"
+        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain)
+        + " [w/ A0 " + DECIMAL_FORMAT.get().format(calculatedFrequency) + "Hz]";
   }
 
   /**

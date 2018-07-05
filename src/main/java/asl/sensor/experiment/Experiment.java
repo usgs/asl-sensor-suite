@@ -50,6 +50,9 @@ public abstract class Experiment {
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
 
+  /**
+   * Frequency plots should be limited by this value as max resolution of period (1E6 seconds)
+   */
   static final double MAX_PLOT_PERIOD = 1.0E6;
   private final EventListenerList eventHelper;
   protected long start;
