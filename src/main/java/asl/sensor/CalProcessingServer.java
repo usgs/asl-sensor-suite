@@ -21,6 +21,7 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
@@ -349,14 +350,14 @@ public class CalProcessingServer {
     double estFreq = sine.getEstSineFreq();
     double ratio = calAmplitude / outAmplitude;
 
-    NumberAxis timeAxis = new NumberAxis("Time from data start (s)");
-    timeAxis.setAutoRangeIncludesZero(false);
+    DateAxis timeAxis = new DateAxis();
+    timeAxis.setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
     Font bold = timeAxis.getLabelFont().deriveFont(Font.BOLD);
     timeAxis.setLabelFont(bold);
 
     JFreeChart sineChart = ChartFactory.createXYLineChart(
         "Sine Calibration",
-        "Time from data start (s)",
+        "Time of sample (Julian date)",
         "Normalized calibration signals (counts)",
         plots.get(0));
     sineChart.getXYPlot().setDomainAxis(timeAxis);
@@ -388,8 +389,8 @@ public class CalProcessingServer {
     // order of plots -- step function, resp amplitudes, resp phases
 
     NumberAxis stepAxis = new NumberAxis("Step counts");
-    NumberAxis timeAxis = new NumberAxis("Time from data start (s)");
-    timeAxis.setAutoRangeIncludesZero(false);
+    DateAxis timeAxis = new DateAxis("Time of sample (Julian date)");
+    timeAxis.setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
     NumberAxis ampAxis = new NumberAxis("RESP Amplitude [10 * log10(RESP(f))]");
     NumberAxis phaseAxis = new NumberAxis("RESP Phase (deg.)");
     LogarithmicAxis freqAxis = new LogarithmicAxis("Frequency (f)");
