@@ -515,7 +515,7 @@ public class RandomizedExperimentTest {
       assertTrue(msg,fitAmp[i] <= expectedAmp[i] + 0.1);
     }
 
-    assertTrue(rCal.getFitResidual() < 51.);
+    assertTrue("Value of fit residual: " + rCal.getFitResidual(), rCal.getFitResidual() < 51.);
     assertEquals(1082.7313334829698, rCal.getInitResidual(), 1E-7);
   }
 
