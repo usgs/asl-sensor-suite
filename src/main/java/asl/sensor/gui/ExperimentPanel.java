@@ -74,7 +74,7 @@ public abstract class ExperimentPanel
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
-  static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+  public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
       ThreadLocal.withInitial(() -> {
         DecimalFormat format = new DecimalFormat("#.###");
         NumericUtils.setInfinityPrintable(format);
@@ -172,31 +172,6 @@ public abstract class ExperimentPanel
     chart.getTitle().setText(titleText + appendText);
   }
   // these are map/set because they are based on the data read in, not fixed
-
-  /**
-   * Get start and end times of data for experiments that use time series data
-   *
-   * @param experiment experiment with data already added
-   * @return string representing the start and end of the experiment's data range
-   */
-  public static String getTimeStampString(Experiment experiment) {
-    StringBuilder sb = new StringBuilder();
-
-    sb.append("Time of report generation:\n");
-    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.now())));
-    sb.append('\n');
-
-    long startTime = experiment.getStart();
-    long endTime = experiment.getEnd();
-    if (startTime != 0L && endTime != 0L) {
-      sb.append("Data start time:\n");
-      sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(startTime))));
-      sb.append("\nData end time:\n");
-      sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(endTime))));
-      sb.append('\n');
-    }
-    return sb.toString();
-  }
 
   /**
    * Reverses an xyplot rendering order, allowing curves that would otherwise be
@@ -442,7 +417,7 @@ public abstract class ExperimentPanel
    * an experiment
    */
   public String getAllTextData() {
-    StringBuilder sb = new StringBuilder(getInsetStrings());
+    StringBuilder sb = new StringBuilder(expResult.getReportString());
     if (sb.length() > 0) {
       sb.append("\n\n");
     }
@@ -451,7 +426,7 @@ public abstract class ExperimentPanel
       sb.append(metadata);
       sb.append("\n\n");
     }
-    sb.append(getTimeStampString(expResult));
+    sb.append(expResult.getFormattedDateRange());
     sb.append("\n\n");
     String[] extraText = getAdditionalReportPages();
     for (String text : extraText) {
@@ -493,16 +468,6 @@ public abstract class ExperimentPanel
    */
   int getIndexOfMainData() {
     return 0;
-  }
-
-  /**
-   * Used to return any title insets as text format for saving in PDF,
-   * to be overridden by any panel that uses an inset
-   *
-   * @return String with any relevant parameters in it
-   */
-  String getInsetStrings() {
-    return "";
   }
 
   /**
@@ -653,7 +618,7 @@ public abstract class ExperimentPanel
    */
   private void saveInsetDataText(PDDocument pdf) {
 
-    StringBuilder sb = new StringBuilder(getInsetStrings());
+    StringBuilder sb = new StringBuilder(expResult.getReportString());
     if (sb.length() > 0) {
       sb.append("\n \n");
     }
@@ -662,7 +627,7 @@ public abstract class ExperimentPanel
       sb.append(metadata);
       sb.append("\n \n");
     }
-    sb.append(getTimeStampString(expResult));
+    sb.append(expResult.getFormattedDateRange());
     ReportingUtils.textToPDFPage(sb.toString(), pdf);
     ReportingUtils.textListToPDFPages(pdf, getAdditionalReportPages());
   }

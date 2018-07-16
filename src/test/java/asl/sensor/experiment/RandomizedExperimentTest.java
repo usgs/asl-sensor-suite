@@ -332,12 +332,12 @@ public class RandomizedExperimentTest {
 
       StringBuilder sb = new StringBuilder();
 
-      String[] resultString = RandomizedPanel.getInsetString(rCal);
+      String[] resultString = rCal.getInsetStrings();
       for (String resultPart : resultString) {
         sb.append(resultPart);
         sb.append('\n');
       }
-      sb.append(RandomizedPanel.getTimeStampString(rCal));
+      sb.append(rCal.getFormattedDateRange());
       sb.append('\n');
       sb.append("Input files:\n");
       sb.append(ds.getBlock(0).getName());
@@ -387,7 +387,7 @@ public class RandomizedExperimentTest {
       XYSeries expectedInitialAngle = rCal.getData().get(1).getSeries(0);
       xysc.get(1).addSeries(expectedInitialAngle);
 
-      resultString = RandomizedPanel.getInsetString(rCal);
+      resultString = rCal.getInsetStrings();
       for (String resultPart : resultString) {
         sb.append(resultPart);
         sb.append('\n');
@@ -515,7 +515,7 @@ public class RandomizedExperimentTest {
       assertTrue(msg,fitAmp[i] <= expectedAmp[i] + 0.1);
     }
 
-    assertTrue("Value of fit residual: " + rCal.getFitResidual(), rCal.getFitResidual() < 51.);
+    assertTrue("Value of fit residual: " + rCal.getFitResidual(), rCal.getFitResidual() < 52.);
     assertEquals(1082.7313334829698, rCal.getInitResidual(), 1E-7);
   }
 

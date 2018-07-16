@@ -32,6 +32,51 @@ public class NoiseNineExperiment extends NoiseExperiment {
     respIndices = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
   }
 
+  /**
+   * Get text representation of angles used to rotate data
+   *
+   * @return String displaying angles of rotation for the 2nd, 3rd north sensors
+   */
+  private String getNorthChartString() {
+    double[] angles = getNorthAngles();
+    return "Angle of rotation of north sensor 2 (deg): "
+        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
+        + "\nAngle of rotation of north sensor 3 (deg): "
+        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
+  }
+
+  /**
+   * Get text representation of angles used to rotate data
+   *
+   * @return String displaying angles of rotation for the 2nd, 3rd east sensors
+   */
+  private String getEastChartString() {
+    double[] angles = getEastAngles();
+    return "Angle of rotation of east sensor 2 (deg): "
+        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
+        + "\nAngle of rotation of east sensor 3 (deg): "
+        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
+  }
+
+  @Override
+  public String[] getDataStrings() {
+    return new String[]{getNorthChartString(), getEastChartString()};
+  }
+
+  @Override
+  public String[] getInsetStrings() {
+    String[] result = new String[DIMENSIONS];
+    String[] startingPoint = getDataStrings();
+    for (int i = 0; i < result.length; ++i) {
+      result[i] = "";
+      if (i < startingPoint.length) {
+        result[i] = startingPoint[i];
+      }
+      result[i] = result[i] + '\n' + getFormattedDateRange();
+    }
+    return result;
+  }
+
   @Override
   protected void backend(DataStore dataStore) {
 

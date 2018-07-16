@@ -22,9 +22,21 @@ public class GainExperiment extends Experiment {
 
   private static final int NUMBER_TO_LOAD = 2;
 
+  /**
+   * Upper bound of initial region to calculate gain estimation over (9 seconds period)
+   */
+  public static final double DEFAULT_UP_BOUND = 9.;
+  /**
+   * Lower bound of intiial region to calculate gain estimation over (3 seconds period)
+   */
+  public static final double DEFAULT_LOW_BOUND = 3.;
+
   private double[] gainStage1, A0Freqs;
   private FFTResult[] fftResults;
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
+  private int referenceIndex;
+  private double lowPeriod, highPeriod;
+
 
   /**
    * Constructor for the gain experiment; effectively the same as that of the
@@ -33,6 +45,37 @@ public class GainExperiment extends Experiment {
    */
   public GainExperiment() {
     super();
+    referenceIndex = 0;
+    lowPeriod = 0.;
+    highPeriod = 0.;
+  }
+
+  String getResultString() {
+    double[] varResultArray = getStatsFromFreqs();
+
+    double mean = varResultArray[0];
+    double standardDeviation = varResultArray[1];
+    double referenceGain = varResultArray[2];
+    double calculatedGain = varResultArray[3];
+    double referenceFrequency = varResultArray[4];
+    double calculatedFrequency = varResultArray[5];
+
+    return "ratio: " + DECIMAL_FORMAT.get().format(mean)
+        + "\nsigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
+        + "\nref. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
+        + " [w/ A0 " + DECIMAL_FORMAT.get().format(referenceFrequency) + "Hz]"
+        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain)
+        + " [w/ A0 " + DECIMAL_FORMAT.get().format(calculatedFrequency) + "Hz]";
+  }
+
+  @Override
+  public String[] getDataStrings() {
+    return new String[]{getResultString()};
+  }
+
+  @Override
+  public String[] getInsetStrings() {
+    return new String[]{getResultString() + '\n' + getFormattedDateRange()};
   }
 
   /**
@@ -49,6 +92,10 @@ public class GainExperiment extends Experiment {
    */
   @Override
   protected void backend(final DataStore dataStore) {
+
+    referenceIndex = 0;
+    lowPeriod = DEFAULT_LOW_BOUND;
+    highPeriod = DEFAULT_UP_BOUND;
 
     indices = new int[NUMBER_TO_LOAD];
     // indices here is a linear array pointing to where
@@ -150,24 +197,40 @@ public class GainExperiment extends Experiment {
     return peakIndex;
   }
 
+
+
   /**
    * Given indices to specific PSD data sets and frequency boundaries, gets
    * the mean and standard deviation ratios
    *
-   * @param refIndex Index of first curve to be plotted (numerator PSD)
-   * @param lowerBound Lower-bound of frequency window of PSD
-   * @param upperBound Upper-bound of frequency window of PSD
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq.,
    * calc. A0 freq.}
    */
-  public double[] getStatsFromFreqs(int refIndex, double lowerBound, double upperBound) {
-    FFTResult plot0 = fftResults[refIndex];
+  double[] getStatsFromFreqs() {
+    FFTResult plot0 = fftResults[referenceIndex];
+    double lowerBound = 1. / highPeriod; // high period = low frequency
+    double upperBound = 1./ lowPeriod; // low period = high frequency
 
     int lowIndex =
-        FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.min(lowerBound, upperBound));
+        FFTResult.getIndexOfFrequency(plot0.getFreqs(), lowerBound);
     int highIndex =
-        FFTResult.getIndexOfFrequency(plot0.getFreqs(), Math.max(lowerBound, upperBound));
-    return getStatsFromIndices(refIndex, lowIndex, highIndex);
+        FFTResult.getIndexOfFrequency(plot0.getFreqs(), upperBound);
+    return getStatsFromIndices(referenceIndex, lowIndex, highIndex);
+  }
+
+  /**
+   * Find the peak frequency of the reference series and use it to get the
+   * gain statistics. Only used as a quick reference call from an automated test.
+   *
+   * @param refIndex Index of the reference sensor's FFT data
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq,
+   * calc. A0 freq}
+   */
+  public double[] getStatsFromPeak(int refIndex) {
+    double[] freqBounds = getOctaveCenteredAtPeak(refIndex);
+    setReferenceIndex(refIndex);
+    setRangeForStatistics(1./freqBounds[0], 1./freqBounds[1]);
+    return getStatsFromFreqs();
   }
 
   /**
@@ -213,19 +276,6 @@ public class GainExperiment extends Experiment {
     return new double[]{Math.sqrt(ratio), sigma, refGain, calcGain, normalFreqRef, normalFreqCalc};
   }
 
-  /**
-   * Find the peak frequency of the reference series and use it to get the
-   * gain statistics
-   *
-   * @param refIndex Index of the reference sensor's FFT data
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq,
-   * calc. A0 freq}
-   */
-  public double[] getStatsFromPeak(int refIndex) {
-    double[] freqBounds = getOctaveCenteredAtPeak(refIndex);
-    return getStatsFromFreqs(refIndex, freqBounds[0], freqBounds[1]);
-  }
-
   @Override
   public boolean hasEnoughData(DataStore dataStore) {
     return (dataStore.bothComponentsSet(0) && dataStore.bothComponentsSet(1));
@@ -234,6 +284,15 @@ public class GainExperiment extends Experiment {
   @Override
   public int[] listActiveResponseIndices() {
     return indices;
+  }
+
+  public void setReferenceIndex(int newIndex) {
+    referenceIndex = newIndex;
+  }
+
+  public void setRangeForStatistics(double lowPeriod, double highPeriod) {
+    this.highPeriod = Math.max(lowPeriod, highPeriod);
+    this.lowPeriod = Math.min(lowPeriod, highPeriod);
   }
 
 }
