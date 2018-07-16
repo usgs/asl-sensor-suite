@@ -66,11 +66,6 @@ public class OrthogonalExperiment extends Experiment {
   }
 
   @Override
-  public String[] getInsetStrings() {
-    return new String[]{getResultData() + getFormattedDateRange()};
-  }
-
-  @Override
   protected void backend(final DataStore dataStore) {
     long interval = dataStore.getXthLoadedBlock(1).getInterval();
 
