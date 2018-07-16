@@ -34,6 +34,28 @@ public class SineExperiment extends Experiment {
     peakPeakFreq = 0.;
   }
 
+  private String getResultData() {
+    double calAmplitude = getCalAmplitude();
+    double outAmplitude = getOutAmplitude();
+    String calAmp = DECIMAL_FORMAT.get().format(calAmplitude);
+    String outAmp = DECIMAL_FORMAT.get().format(outAmplitude);
+    String ratio = DECIMAL_FORMAT.get().format(calAmplitude / outAmplitude);
+    String estimatedFrequency = DECIMAL_FORMAT.get().format(getEstSineFreq());
+    return "Calculated calibration amplitude: "
+        + calAmp
+        + "\nCalculated output amplitude: "
+        + outAmp
+        + "\nAmplitude ratio: "
+        + ratio
+        + "\nEstimated sine frequency: "
+        + estimatedFrequency;
+  }
+
+  @Override
+  public String[] getDataStrings() {
+    return new String[]{getResultData()};
+  }
+
   public double getCalAmplitude() {
     return calSDev;
   }

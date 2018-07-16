@@ -40,14 +40,7 @@ import org.jfree.ui.RectangleAnchor;
 public class GainPanel extends ExperimentPanel
     implements ChangeListener {
 
-  /**
-   * Upper bound of initial region to calculate gain estimation over (9 seconds period)
-   */
-  static final double DEFAULT_UP_BOUND = 9.;
-  /**
-   * Lower bound of intiial region to calculate gain estimation over (3 seconds period)
-   */
-  static final double DEFAULT_LOW_BOUND = 3.;
+
   private static final long serialVersionUID = 6697458429989867529L;
   /**
    * Max value of slider (ranges from 0 to 1000, converted to log10 scale)
@@ -151,37 +144,6 @@ public class GainPanel extends ExperimentPanel
   }
 
   /**
-   * Static helper method for getting the formatted inset string directly
-   * from a GainExperiment
-   *
-   * @param experiment GainExperiment with data to be extracted
-   * @param referenceIndex Index of data to be loaded as reference (i.e., 0)
-   * @param lowPeriod low period boundary to take stats over
-   * @param highPeriod high period boundary to take stats over
-   * @return String with data representation of experiment results (mean, standard deviation)
-   */
-  private static String getInsetString(
-      GainExperiment experiment, int referenceIndex, double lowPeriod, double highPeriod) {
-
-    double[] varResultArray =
-        experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
-
-    double mean = varResultArray[0];
-    double standardDeviation = varResultArray[1];
-    double referenceGain = varResultArray[2];
-    double calculatedGain = varResultArray[3];
-    double referenceFrequency = varResultArray[4];
-    double calculatedFrequency = varResultArray[5];
-
-    return "ratio: " + DECIMAL_FORMAT.get().format(mean)
-        + "\nsigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
-        + "\nref. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
-        + " [w/ A0 " + DECIMAL_FORMAT.get().format(referenceFrequency) + "Hz]"
-        + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain)
-        + " [w/ A0 " + DECIMAL_FORMAT.get().format(calculatedFrequency) + "Hz]";
-  }
-
-  /**
    * Draws the lines marking the boundaries of the current window
    *
    * @param lowPrd lower x-axis value (period, in seconds)
@@ -262,12 +224,15 @@ public class GainPanel extends ExperimentPanel
       xys = timeSeries.getSeries(1);
     }
 
+    GainExperiment gain = (GainExperiment) expResult;
     // since intervals of incoming data match, so too limits of plot
     // this is used in mapping scale of slider to x-axis values
     lowPeriod = Math.log10(xys.getMinX()); // value when slider is 0
     highPeriod = Math.log10(xys.getMaxX()); // value when slider is 1000
-    leftSliderValue = mapPeriodToSlider(DEFAULT_LOW_BOUND);
-    rightSliderValue = mapPeriodToSlider(DEFAULT_UP_BOUND);
+    leftSliderValue = mapPeriodToSlider(GainExperiment.DEFAULT_LOW_BOUND);
+    rightSliderValue = mapPeriodToSlider(GainExperiment.DEFAULT_UP_BOUND);
+    updateReference(referenceIndex);
+    gain.setRangeForStatistics(GainExperiment.DEFAULT_LOW_BOUND, GainExperiment.DEFAULT_UP_BOUND);
 
     setChart(timeSeries);
 
@@ -277,7 +242,8 @@ public class GainPanel extends ExperimentPanel
     setSliderValues(leftSliderValue, rightSliderValue);
 
     // set the domain to match the boundaries of the octave centered at peak
-    chartPanel.setChart(setDomainMarkers(DEFAULT_LOW_BOUND, DEFAULT_UP_BOUND, chart));
+    chartPanel.setChart(setDomainMarkers(GainExperiment.DEFAULT_LOW_BOUND,
+        GainExperiment.DEFAULT_UP_BOUND, chart));
 
     // and now set the sliders to match where that window is
     leftSlider.setEnabled(true);
@@ -286,16 +252,6 @@ public class GainPanel extends ExperimentPanel
     // lastly, display the calculated statistics in a textbox in the corner
     setTitle();
 
-  }
-
-  @Override
-  String getInsetStrings() {
-    double lowPeriod = mapSliderToPeriod(leftSlider.getValue());
-    double highPeriod = mapSliderToPeriod(rightSlider.getValue());
-
-    GainExperiment experiment = (GainExperiment) expResult;
-
-    return getInsetString(experiment, referenceSeries.getSelectedIndex(), lowPeriod, highPeriod);
   }
 
   @Override
@@ -375,7 +331,7 @@ public class GainPanel extends ExperimentPanel
   private void setTitle() {
     XYPlot plot = (XYPlot) chartPanel.getChart().getPlot();
     TextTitle result = new TextTitle();
-    result.setText(getInsetStrings());
+    result.setText(expResult.getInsetStrings()[0]);
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
@@ -425,6 +381,7 @@ public class GainPanel extends ExperimentPanel
 
       // remove old bars and draw the new ones
       chartPanel.setChart(setDomainMarkers(lowPrd, highPrd, chart));
+      updateStatistics(lowPrd, highPrd);
     }
   }
 
@@ -435,6 +392,16 @@ public class GainPanel extends ExperimentPanel
     expResult.runExperimentOnData(dataStore);
     // need to have 2 series for relative gain
     referenceSeries.setEnabled(true);
+  }
+
+  protected void updateStatistics(double lowPrd, double highPrd) {
+    GainExperiment gain = (GainExperiment) expResult;
+    gain.setRangeForStatistics(lowPrd, highPrd);
+  }
+
+  protected void updateReference(int referenceIndex) {
+    GainExperiment gain = (GainExperiment) expResult;
+    gain.setReferenceIndex(referenceIndex);
   }
 
 }

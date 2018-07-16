@@ -1,10 +1,14 @@
 package asl.sensor.experiment;
 
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
@@ -49,6 +53,25 @@ public abstract class Experiment {
 
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
+
+  public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
+      });
+  public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        DecimalFormat format = new DecimalFormat("#.###");
+        NumericUtils.setInfinityPrintable(format);
+        return format;
+      });
+  static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
+      });
 
   /**
    * Frequency plots should be limited by this value as max resolution of period (1E6 seconds)
@@ -102,6 +125,80 @@ public abstract class Experiment {
     double[] freqs = dataStore.getPSD(index).getFreqs();
 
     addToPlot(powerSeries, resultPSD, freqs, freqSpace, xysc);
+  }
+
+  /**
+   * Stub method to be overridden for other methods to produce String data for experiment result.
+   * Includes formatting of numeric data. This may not be used for all experiments.
+   * @return String containing human-readable data
+   */
+  public String[] getDataStrings() {
+    return new String[]{""};
+  }
+
+  /**
+   * Stub method to be overridden for other methods to produce String data for plot data.
+   * Includes formatting of numeric data and is usually designed to include dates of data that
+   * are plotted in frequency space (i.e., Hz or period seconds).
+   * This may not be used for all plots.
+   * @return String containing human-readable data
+   */
+  public String[] getInsetStrings() {
+    return getDataStrings();
+  }
+
+  /**
+   * Stub method to be overridden for other methods to produce String data for reports.
+   * Includes formatting of numeric data. This may not be used for all plots.
+   * @return String containing human-readable data
+   */
+  public String getReportString() {
+    StringBuilder sb = new StringBuilder();
+    String[] strings = getDataStrings();
+    for (int i = 0; i < strings.length; ++i) {
+      String insetString = strings[i];
+      sb.append(insetString);
+      // add space between inset strings
+      if (i + 1 < strings.length) {
+        sb.append('\n');
+      }
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Method to get a formatted string with start and end dates of data, to be used in
+   * producing reports of the given data. This is empty if start and end are set to the same value
+   * (i.e., the experiment does not produce a result on timeseries data, such as RESP plots)
+   * @return String of formatted start and end, if they have been set
+   */
+  public String getFormattedDateRange() {
+    StringBuilder sb = new StringBuilder();
+    if (start != end) {
+      sb.append(getFormattedStartDate());
+      sb.append('\n');
+      sb.append(getFormattedEndDate());
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Return a formatted string with the given data's start time
+   * @return formatted start time (Julian day)
+   */
+  public String getFormattedStartDate() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("Data start time:\n");
+    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(start))));
+    return sb.toString();
+  }
+
+  public String getFormattedEndDate() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("Data end time:\n");
+    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(end))));
+    sb.append('\n');
+    return sb.toString();
   }
 
   /**
