@@ -70,9 +70,9 @@ public class NoiseNineExperiment extends NoiseExperiment {
     for (int i = 0; i < result.length; ++i) {
       result[i] = "";
       if (i < startingPoint.length) {
-        result[i] = startingPoint[i] + '\n';
+        result[i] = startingPoint[i];
       }
-      result[i] = result[i] + getFormattedDateRange();
+      result[i] = result[i] + '\n' + getFormattedDateRange();
     }
     return result;
   }
