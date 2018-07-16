@@ -198,24 +198,6 @@ public class AzimuthPanel extends ExperimentPanel {
   }
 
   @Override
-  String getInsetStrings() {
-    AzimuthExperiment experiment = (AzimuthExperiment) expResult;
-    double value = experiment.getOffset();
-    double angle = experiment.getFitAngle();
-    StringBuilder angleStr = new StringBuilder();
-    angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.get().format(angle));
-    double result = ((value + angle) % 360 + 360) % 360;
-
-    angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(value)).append(" = ");
-    angleStr.append(DECIMAL_FORMAT.get().format(result)).append(" (+/- ");
-    angleStr.append(DECIMAL_FORMAT.get().format(experiment.getUncertainty())).append(")");
-    if (!experiment.hadEnoughPoints()) {
-      angleStr.append(" | WARNING: SMALL RANGE");
-    }
-    return angleStr.toString();
-  }
-
-  @Override
   public int panelsNeeded() {
     return 3;
   }
@@ -243,11 +225,14 @@ public class AzimuthPanel extends ExperimentPanel {
     angleChart = ChartFactory.createPolarChart(expType.getName(),
         polars, true, true, false);
 
-    String angleStr = getInsetStrings();
-
     PolarPlot plot = (PolarPlot) angleChart.getPlot();
     plot.clearCornerTextItems();
-    plot.addCornerTextItem(angleStr);
+    // include result information -- angle estimation, start/end times in plot
+    // each text item becomes a separate line here
+    for (String result : experiment.getInsetStrings()) {
+      plot.addCornerTextItem(result);
+    }
+
 
     XYSeriesCollection angleEstimation = allData.get(1);
     XYSeriesCollection coherenceEstimation = allData.get(2);

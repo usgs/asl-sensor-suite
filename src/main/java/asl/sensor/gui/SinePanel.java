@@ -91,23 +91,6 @@ public class SinePanel extends ExperimentPanel {
     this.add(plotSelection, constraints);
   }
 
-  private static String getInsetString(SineExperiment experiment) {
-    double calAmplitude = experiment.getCalAmplitude();
-    double outAmplitude = experiment.getOutAmplitude();
-    String calAmp = DECIMAL_FORMAT.get().format(calAmplitude);
-    String outAmp = DECIMAL_FORMAT.get().format(outAmplitude);
-    String ratio = DECIMAL_FORMAT.get().format(calAmplitude / outAmplitude);
-    String estimatedFrequency = DECIMAL_FORMAT.get().format(experiment.getEstSineFreq());
-    return "Calculated calibration amplitude: "
-        + calAmp
-        + "\nCalculated output amplitude: "
-        + outAmp
-        + "\nAmplitude ratio: "
-        + ratio
-        + "\nEstimated sine frequency: "
-        + estimatedFrequency;
-  }
-
   @Override
   public void actionPerformed(ActionEvent event) {
     super.actionPerformed(event);
@@ -138,7 +121,7 @@ public class SinePanel extends ExperimentPanel {
     XYPlot plot = (XYPlot) sinesChart.getPlot();
 
     TextTitle result = new TextTitle();
-    result.setText(getInsetStrings());
+    result.setText(expResult.getInsetStrings()[0]);
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
@@ -173,14 +156,6 @@ public class SinePanel extends ExperimentPanel {
   @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{sinesChart, linearChart};
-  }
-
-  /**
-   * Used to get the text that will represent the title text in the PDF result
-   */
-  @Override
-  String getInsetStrings() {
-    return getInsetString((SineExperiment) expResult);
   }
 
   /**

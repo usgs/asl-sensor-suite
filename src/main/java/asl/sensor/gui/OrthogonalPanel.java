@@ -61,24 +61,13 @@ public class OrthogonalPanel extends ExperimentPanel {
 
   }
 
-  private static String getInsetString(OrthogonalExperiment ort) {
-    double[] fit = ort.getSolutionParams();
-    double angle = ort.getFitAngle();
-
-    return "Calculated angle between non-reference sensors:\n"
-        + DECIMAL_FORMAT.get().format(angle)
-        + "\nRough est. orientation angles for (non-ref) LH1, LH2 respectively:\n"
-        + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])
-        + "]";
-  }
-
   @Override
   protected void drawCharts() {
     setChart(expResult.getData().get(0));
     XYPlot plot = (XYPlot) chart.getPlot();
 
     TextTitle result = new TextTitle();
-    result.setText(getInsetStrings());
+    result.setText(expResult.getInsetStrings()[0]);
     result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
@@ -86,12 +75,6 @@ public class OrthogonalPanel extends ExperimentPanel {
     plot.addAnnotation(xyt);
     chartPanel.setChart(chart);
   }
-
-  @Override
-  String getInsetStrings() {
-    return getInsetString((OrthogonalExperiment) expResult);
-  }
-
 
   @Override
   public int panelsNeeded() {
