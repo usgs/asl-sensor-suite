@@ -1,10 +1,15 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.experiment.Experiment.DATE_FORMAT;
+import static asl.sensor.experiment.Experiment.DATE_TIME_FORMAT;
+import static asl.sensor.experiment.Experiment.DECIMAL_FORMAT;
+import static asl.sensor.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
 
+import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import org.junit.Test;
 
@@ -95,6 +100,40 @@ public class ExperimentTest {
       assertTrue(experiment.getGapRegions().isEmpty());
       throw e;
     }
+  }
+
+  @Test
+  public void decimalFormatterTruncatesCorrectly() {
+    double decimal = 0.1239456789;
+    String formattedDecimal = DECIMAL_FORMAT.get().format(decimal);
+    assertEquals(formattedDecimal, "0.124");
+  }
+
+  @Test
+  public void dateFormatterDoesJulianDateCorrectly() {
+    String formattedDate = DATE_FORMAT.get().format(0);
+    assertEquals("1970.001", formattedDate);
+  }
+
+  @Test
+  public void dateTimeFormatterFormatsDateTimeCorrectly() {
+    String formattedDateTime = DATE_TIME_FORMAT.get().format(0);
+    assertEquals("1970.001.00:00:00.000", formattedDateTime);
+  }
+
+  @Test
+  public void testGetFormattedDateRange() {
+    double[] data = {0., 1.};
+    long sampleInterval = ONE_HZ_INTERVAL;
+    DataBlock dataBlock = new DataBlock(data, sampleInterval, "TEST1", 0);
+    DataStore dataStore = new DataStore();
+    dataStore.setBlock(0, dataBlock);
+    Experiment experiment = new MockExperimentThatNeedsBlocks();
+    experiment.runExperimentOnData(dataStore);
+    String formattedDateString = experiment.getFormattedDateRange();
+    String expected = "Data start time:\n1970.001.00:00:00.000\nData end time:\n" +
+        "1970.001.00:00:02.000\n";
+    assertEquals(expected, formattedDateString);
   }
 
 
