@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -55,6 +56,11 @@ public class StepExperimentTest {
     double[] fitParams = se.getFitParams();
     assertEquals(120.00, 1. / fitParams[0], 0.5);
     assertEquals(0.7035, fitParams[1], 0.0005);
+    String expected1 = "RESP parameters\nCorner frequency (Hz): 0.008 (120.078 secs)\n"
+        + "Damping: 0.707\n";
+    String expected2 = "Best-fit parameters\nCorner frequency (Hz): 0.008 (119.602 secs)\n"
+        + "Damping: 0.704\n";
+    assertArrayEquals(new String[] {expected1, expected2}, se.getInsetStrings());
   }
 
   @Test
