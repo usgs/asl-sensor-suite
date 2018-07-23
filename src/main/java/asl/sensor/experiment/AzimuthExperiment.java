@@ -62,6 +62,7 @@ public class AzimuthExperiment extends Experiment {
 
   private String getAzimuthResults() {
     StringBuilder angleStr = new StringBuilder();
+    double angle = getFitAngle(); // angle reported should be in degrees
     angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.get().format(angle));
     double result = ((offset + angle) % 360 + 360) % 360;
 
