@@ -47,18 +47,20 @@ public class GainSixPanel extends GainPanel {
 
     plotTheseInBold = new String[]{"NLNM"};
 
-    String xTitle = getXAxis().getLabel();
-    String yTitle = getYAxis().getLabel();
 
     northChart =
         ChartFactory.createXYLineChart(expType.getName() + " (North)",
-            xTitle, yTitle, null);
+            "", "", null);
     eastChart =
         ChartFactory.createXYLineChart(expType.getName() + " (East)",
-            xTitle, yTitle, null);
+            "", "", null);
     verticalChart =
         ChartFactory.createXYLineChart(expType.getName() + " (Vertical)",
-            xTitle, yTitle, null);
+            "", "", null);
+    for (JFreeChart chart : getCharts()) {
+      chart.getXYPlot().setDomainAxis(getXAxis());
+      chart.getXYPlot().setRangeAxis(getYAxis());
+    }
 
     // create layout
     removeAll();

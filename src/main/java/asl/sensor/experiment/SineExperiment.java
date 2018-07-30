@@ -111,10 +111,11 @@ public class SineExperiment extends Experiment {
     XYSeries cal = new XYSeries(dataStore.getBlock(0).getName() + " [cal]");
     XYSeries out = new XYSeries(dataStore.getBlock(1).getName() + " [out, scaled]");
     double interval =
-        dataStore.getBlock(0).getInterval() / (double) TimeSeriesUtils.ONE_HZ_INTERVAL;
+        dataStore.getBlock(0).getInterval();
+    double start = getStart();
     for (int i = 0; i < calTimeSeries.length; ++i) {
-      cal.add(interval * i, calTimeSeries[i]);
-      out.add(interval * i, outTimeSeries[i] * calSDev / outSDev);
+      cal.add(start + interval * i, calTimeSeries[i]);
+      out.add(start + interval * i, outTimeSeries[i] * calSDev / outSDev);
     }
     xysc.addSeries(cal);
     xysc.addSeries(out);

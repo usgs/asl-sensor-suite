@@ -55,7 +55,8 @@ public class NoisePanel extends ExperimentPanel {
     yAxis = new NumberAxis("Power (rel. 1 (m/s^2)^2/Hz)");
     yAxis.setAutoRange(true);
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     freqAxis.setLabelFont(bold);

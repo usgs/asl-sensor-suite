@@ -39,7 +39,8 @@ public class OrthogonalPanel extends ExperimentPanel {
     xAxis.setAutoRange(true);
 
     yAxis = new NumberAxis(yAxisTitle);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
 

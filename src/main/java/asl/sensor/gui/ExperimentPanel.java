@@ -364,7 +364,9 @@ public abstract class ExperimentPanel
         renderer.setSeriesPaint(seriesIndex, new Color(0, 0, 0));
       }
     }
-
+    Font bold = xAxis.getLabelFont();
+    xAxis.setLabelFont(bold);
+    yAxis.setLabelFont(bold);
     xyPlot.setDomainAxis(xAxis);
     xyPlot.setRangeAxis(yAxis);
 
