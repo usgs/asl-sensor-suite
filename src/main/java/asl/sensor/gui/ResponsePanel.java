@@ -82,7 +82,8 @@ public class ResponsePanel extends ExperimentPanel {
     ((NumberAxis) degreeAxis).setAutoRangeIncludesZero(false);
 
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     frequencyAxis.setLabelFont(bold);

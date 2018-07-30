@@ -71,7 +71,8 @@ public class GainPanel extends ExperimentPanel
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font temp = xAxis.getLabelFont();
+    Font bold = temp.deriveFont(Font.BOLD, temp.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
 

@@ -483,7 +483,8 @@ public class RandomizedPanel extends ExperimentPanel {
     residualAmplitudeAxis = new NumberAxis("Amplitude error (percentage)");
 
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     degreeAxis.setLabelFont(bold);
