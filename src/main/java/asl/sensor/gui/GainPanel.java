@@ -330,9 +330,8 @@ public class GainPanel extends ExperimentPanel
    */
   private void setTitle() {
     XYPlot plot = (XYPlot) chartPanel.getChart().getPlot();
-    TextTitle result = new TextTitle();
+    TextTitle result = getDefaultTextTitle();
     result.setText(expResult.getInsetStrings()[0]);
-    result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
     plot.clearAnnotations();

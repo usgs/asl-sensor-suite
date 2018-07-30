@@ -156,9 +156,8 @@ public class NoisePanel extends ExperimentPanel {
   }
 
   void setTitle(XYPlot plot, String insetString) {
-    TextTitle angle = new TextTitle();
+    TextTitle angle = getDefaultTextTitle();
     angle.setText(insetString);
-    angle.setBackgroundPaint(Color.white);
     XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, angle,
         RectangleAnchor.TOP_RIGHT);
     plot.clearAnnotations();
