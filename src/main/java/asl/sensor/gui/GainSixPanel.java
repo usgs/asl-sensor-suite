@@ -238,9 +238,8 @@ public class GainSixPanel extends GainPanel {
     String[] results = expResult.getInsetStrings();
     for (int i = 0; i < charts.length; ++i) {
       XYPlot plot = charts[i].getXYPlot();
-      TextTitle result = new TextTitle();
+      TextTitle result = getDefaultTextTitle();
       result.setText(results[i]);
-      result.setBackgroundPaint(Color.white);
       XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, result,
           RectangleAnchor.TOP_RIGHT);
       plot.clearAnnotations();

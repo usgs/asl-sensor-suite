@@ -120,9 +120,8 @@ public class SinePanel extends ExperimentPanel {
     sinesChart = buildChart(expResult.getData().get(0));
     XYPlot plot = (XYPlot) sinesChart.getPlot();
 
-    TextTitle result = new TextTitle();
+    TextTitle result = getDefaultTextTitle();
     result.setText(expResult.getInsetStrings()[0]);
-    result.setBackgroundPaint(Color.white);
     XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
     plot.clearAnnotations();

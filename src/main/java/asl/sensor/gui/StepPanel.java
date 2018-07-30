@@ -213,9 +213,8 @@ public class StepPanel extends ExperimentPanel {
     CompositeTitle title = new CompositeTitle(container);
     String[] insets = expResult.getInsetStrings();
     for (String inset : insets) {
-      TextTitle result = new TextTitle();
+      TextTitle result = getDefaultTextTitle();
       result.setText(inset);
-      result.setBackgroundPaint(Color.white);
       container.add(result);
     }
 

@@ -66,9 +66,8 @@ public class OrthogonalPanel extends ExperimentPanel {
     setChart(expResult.getData().get(0));
     XYPlot plot = (XYPlot) chart.getPlot();
 
-    TextTitle result = new TextTitle();
+    TextTitle result = getDefaultTextTitle();
     result.setText(expResult.getInsetStrings()[0]);
-    result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
     plot.clearAnnotations();
