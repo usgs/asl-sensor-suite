@@ -5,8 +5,10 @@ import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Stroke;
 import java.awt.event.ActionEvent;
 import java.util.List;
 import javax.swing.BoxLayout;
@@ -25,9 +27,12 @@ import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PolarPlot;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.DefaultPolarItemRenderer;
+import org.jfree.chart.renderer.PolarItemRenderer;
 import org.jfree.chart.renderer.xy.DefaultXYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleAnchor;
@@ -226,6 +231,20 @@ public class AzimuthPanel extends ExperimentPanel {
         polars, true, true, false);
 
     PolarPlot plot = (PolarPlot) angleChart.getPlot();
+    DefaultPolarItemRenderer polarRenderer = (DefaultPolarItemRenderer) plot.getRenderer();
+    for (int i = 0; i < polars.getSeriesCount(); ++i) {
+      BasicStroke stroke = (BasicStroke) polarRenderer.getSeriesStroke(i);
+      if (stroke == null) {
+        stroke = (BasicStroke) polarRenderer.getBaseStroke();
+      }
+      float width = stroke.getLineWidth() + 4f;
+      int join = stroke.getLineJoin();
+      int cap = stroke.getEndCap();
+
+      stroke = new BasicStroke(width, cap, join, 10f);
+      polarRenderer.setSeriesStroke(i, stroke);
+      polarRenderer.setSeriesPaint(i, COLORS[i%3]);
+    }
     plot.clearCornerTextItems();
     // include result information -- angle estimation, start/end times in plot
     // each text item becomes a separate line here
@@ -244,9 +263,8 @@ public class AzimuthPanel extends ExperimentPanel {
     estimationPlot.setDataset(1, coherenceEstimation);
     estimationPlot.setRenderer(0, new DefaultXYItemRenderer());
 
-    // set color of second dataset to be blue
+    // make colors of correlation plot colorblind friendly; make lines thick enough
     XYItemRenderer renderer = new DefaultXYItemRenderer();
-    renderer.setSeriesPaint(0, Color.BLUE);
     estimationPlot.setRenderer(1, renderer);
 
     NumberAxis angleEstimationAxis = new NumberAxis("Angle est. (deg)");
@@ -259,9 +277,25 @@ public class AzimuthPanel extends ExperimentPanel {
     estimationPlot.mapDatasetToRangeAxis(0, 0);
     estimationPlot.mapDatasetToRangeAxis(1, 1);
 
+    for (int i = 0; i < estimationPlot.getRendererCount(); ++i) {
+      estimationPlot.getRenderer(i).setSeriesPaint(0, COLORS[i%3]);
+      BasicStroke stroke = (BasicStroke) estimationPlot.getRenderer(i).getSeriesStroke(0);
+      if (stroke == null) {
+        stroke = (BasicStroke) renderer.getBaseStroke();
+      }
+      float width = stroke.getLineWidth() + 2f;
+      int join = stroke.getLineJoin();
+      int cap = stroke.getEndCap();
+      stroke = new BasicStroke(width, cap, join, 10f);
+      estimationPlot.getRenderer(i).setSeriesStroke(0, stroke);
+    }
+
     if (!experiment.hadEnoughPoints()) {
       estimationPlot = estimationChart.getXYPlot();
-      TextTitle result = new TextTitle();
+      TextTitle result = getDefaultTextTitle();
+      Font font = result.getFont();
+      font = font.deriveFont(font.getSize() + 2f);
+      result.setFont(font);
       result.setText("WARNING: NOT ENOUGH DATA FOR WINDOWED COHERENCE ESTIMATION");
       result.setBackgroundPaint(Color.red);
       result.setPaint(Color.white);
@@ -269,10 +303,11 @@ public class AzimuthPanel extends ExperimentPanel {
           RectangleAnchor.CENTER);
       estimationPlot.clearAnnotations();
       estimationPlot.addAnnotation(xyt);
+
     } else {
       double cutOff = experiment.getMinCorr();
       Marker highWater = new ValueMarker(cutOff);
-      highWater.setStroke(new BasicStroke((float) 1.5));
+      highWater.setStroke(new BasicStroke((float) 2.5));
       highWater.setPaint(Color.BLACK);
       estimationPlot.addRangeMarker(1, highWater, Layer.BACKGROUND);
     }

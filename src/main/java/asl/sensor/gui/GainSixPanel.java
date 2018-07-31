@@ -47,18 +47,20 @@ public class GainSixPanel extends GainPanel {
 
     plotTheseInBold = new String[]{"NLNM"};
 
-    String xTitle = getXAxis().getLabel();
-    String yTitle = getYAxis().getLabel();
 
     northChart =
         ChartFactory.createXYLineChart(expType.getName() + " (North)",
-            xTitle, yTitle, null);
+            "", "", null);
     eastChart =
         ChartFactory.createXYLineChart(expType.getName() + " (East)",
-            xTitle, yTitle, null);
+            "", "", null);
     verticalChart =
         ChartFactory.createXYLineChart(expType.getName() + " (Vertical)",
-            xTitle, yTitle, null);
+            "", "", null);
+    for (JFreeChart chart : getCharts()) {
+      chart.getXYPlot().setDomainAxis(getXAxis());
+      chart.getXYPlot().setRangeAxis(getYAxis());
+    }
 
     // create layout
     removeAll();
@@ -238,9 +240,8 @@ public class GainSixPanel extends GainPanel {
     String[] results = expResult.getInsetStrings();
     for (int i = 0; i < charts.length; ++i) {
       XYPlot plot = charts[i].getXYPlot();
-      TextTitle result = new TextTitle();
+      TextTitle result = getDefaultTextTitle();
       result.setText(results[i]);
-      result.setBackgroundPaint(Color.white);
       XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, result,
           RectangleAnchor.TOP_RIGHT);
       plot.clearAnnotations();

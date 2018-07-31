@@ -71,7 +71,8 @@ public class GainPanel extends ExperimentPanel
     yAxis = new NumberAxis(yAxisTitle);
     yAxis.setAutoRange(true);
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font temp = xAxis.getLabelFont();
+    Font bold = temp.deriveFont(Font.BOLD, temp.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
 
@@ -330,9 +331,8 @@ public class GainPanel extends ExperimentPanel
    */
   private void setTitle() {
     XYPlot plot = (XYPlot) chartPanel.getChart().getPlot();
-    TextTitle result = new TextTitle();
+    TextTitle result = getDefaultTextTitle();
     result.setText(expResult.getInsetStrings()[0]);
-    result.setBackgroundPaint(Color.white);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
     plot.clearAnnotations();

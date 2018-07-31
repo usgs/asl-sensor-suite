@@ -483,7 +483,8 @@ public class RandomizedPanel extends ExperimentPanel {
     residualAmplitudeAxis = new NumberAxis("Amplitude error (percentage)");
 
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     degreeAxis.setLabelFont(bold);
@@ -511,17 +512,15 @@ public class RandomizedPanel extends ExperimentPanel {
     CompositeTitle ct = new CompositeTitle(bc);
     String[] insets = expResult.getInsetStrings();
     for (String inset : insets) {
-      TextTitle result = new TextTitle();
+      TextTitle result = getDefaultTextTitle();
       result.setText(inset);
-      result.setBackgroundPaint(Color.white);
       bc.add(result);
     }
 
-    TextTitle result = new TextTitle();
+    TextTitle result = getDefaultTextTitle();
     RandomizedExperiment re = (RandomizedExperiment) expResult;
     int numIters = re.getIterations();
     result.setText("NUMBER OF ITERATIONS: " + numIters);
-    result.setBackgroundPaint(Color.white);
 
     ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
     ct.setPosition(RectangleEdge.BOTTOM);

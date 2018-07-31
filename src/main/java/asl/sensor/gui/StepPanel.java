@@ -46,11 +46,12 @@ public class StepPanel extends ExperimentPanel {
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
 
-    String xAxisTitle = "Time";
+    String xAxisTitle = "Time (UTC)";
     String yAxisTitle = "Normalized counts";
     xAxis = new DateAxis(xAxisTitle);
     ((DateAxis) xAxis).setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     // xAxis.setAutoRange(true);
 
@@ -213,9 +214,8 @@ public class StepPanel extends ExperimentPanel {
     CompositeTitle title = new CompositeTitle(container);
     String[] insets = expResult.getInsetStrings();
     for (String inset : insets) {
-      TextTitle result = new TextTitle();
+      TextTitle result = getDefaultTextTitle();
       result.setText(inset);
-      result.setBackgroundPaint(Color.white);
       container.add(result);
     }
 

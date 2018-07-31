@@ -8,6 +8,7 @@ import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -173,6 +174,15 @@ public abstract class ExperimentPanel
   }
   // these are map/set because they are based on the data read in, not fixed
 
+  static TextTitle getDefaultTextTitle() {
+    TextTitle result = new TextTitle();
+    Font font = result.getFont();
+    font = font.deriveFont(font.getSize() + 2f);
+    result.setFont(font);
+    result.setBackgroundPaint(Color.WHITE);
+    return result;
+  }
+
   /**
    * Reverses an xyplot rendering order, allowing curves that would otherwise be
    * at the background are inverted and placed in the foreground instead.
@@ -280,17 +290,37 @@ public abstract class ExperimentPanel
 
     if (seriesColorMap.size() == 0) {
       int modulus = COLORS.length;
-      for (int seriesIdx = 0; seriesIdx < xyDataset.getSeriesCount(); ++seriesIdx) {
-        renderer.setSeriesPaint(seriesIdx, COLORS[seriesIdx % modulus]);
+      for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
+        renderer.setSeriesPaint(seriesIndex, COLORS[seriesIndex % modulus]);
       }
     }
 
-    // force certain colors and whether or not a line should be dashed
+    // now, make everything thicker!
+    for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
+      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
+      if (stroke == null) {
+        stroke = (BasicStroke) renderer.getBaseStroke();
+      }
+      float width = stroke.getLineWidth() + 2f;
+      int join = stroke.getLineJoin();
+      int cap = stroke.getEndCap();
 
+      stroke = new BasicStroke(width, cap, join, 10f);
+      renderer.setSeriesStroke(seriesIndex, stroke);
+    }
+
+    // force certain colors and whether or not a line should be dashed
     for (String series : seriesColorMap.keySet()) {
       int seriesIndex = xyDataset.getSeriesIndex(series);
       if (seriesIndex >= 0) {
         renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series));
+        BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
+        float width = stroke.getLineWidth();
+        int join = stroke.getLineJoin();
+        int cap = stroke.getEndCap();
+
+        stroke = new BasicStroke(width, cap, join, 10f);
+        renderer.setSeriesStroke(seriesIndex, stroke);
       } else {
         continue;
       }
@@ -299,9 +329,6 @@ public abstract class ExperimentPanel
         renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series).darker());
 
         BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
-        if (stroke == null) {
-          stroke = (BasicStroke) renderer.getBaseStroke();
-        }
         float width = stroke.getLineWidth();
         int join = stroke.getLineJoin();
         int cap = stroke.getEndCap();
@@ -313,23 +340,26 @@ public abstract class ExperimentPanel
       }
     }
 
+    // EXTRA THICK
     if (!(plotTheseInBold.length == 0)) {
       for (String series : plotTheseInBold) {
-        int seriesIdx = xyDataset.getSeriesIndex(series);
-        if (seriesIdx < 0) {
+        int seriesIndex = xyDataset.getSeriesIndex(series);
+        if (seriesIndex < 0) {
           continue;
         }
 
-        BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIdx);
+        BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
         if (stroke == null) {
           stroke = (BasicStroke) renderer.getBaseStroke();
         }
         stroke = new BasicStroke(stroke.getLineWidth() * 2);
-        renderer.setSeriesStroke(seriesIdx, stroke);
-        renderer.setSeriesPaint(seriesIdx, new Color(0, 0, 0));
+        renderer.setSeriesStroke(seriesIndex, stroke);
+        renderer.setSeriesPaint(seriesIndex, new Color(0, 0, 0));
       }
     }
-
+    Font bold = xAxis.getLabelFont();
+    xAxis.setLabelFont(bold);
+    yAxis.setLabelFont(bold);
     xyPlot.setDomainAxis(xAxis);
     xyPlot.setRangeAxis(yAxis);
 

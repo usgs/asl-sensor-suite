@@ -53,7 +53,8 @@ public class SpectrumPanel extends ExperimentPanel {
     yAxis = new NumberAxis("Power (rel. 1 (m/s^2)^2/Hz)");
     yAxis.setAutoRange(true);
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     freqAxis.setLabelFont(bold);
@@ -165,9 +166,8 @@ public class SpectrumPanel extends ExperimentPanel {
   }
 
   private void setTitle(XYPlot plot, String insetString) {
-    TextTitle angle = new TextTitle();
+    TextTitle angle = getDefaultTextTitle();
     angle.setText(insetString);
-    angle.setBackgroundPaint(Color.white);
     XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, angle,
         RectangleAnchor.TOP_RIGHT);
     plot.clearAnnotations();
