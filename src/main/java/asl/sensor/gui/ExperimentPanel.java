@@ -295,16 +295,26 @@ public abstract class ExperimentPanel
       }
     }
 
-    // force certain colors and whether or not a line should be dashed
+    // now, make everything thicker!
+    for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
+      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
+      if (stroke == null) {
+        stroke = (BasicStroke) renderer.getBaseStroke();
+      }
+      float width = stroke.getLineWidth() + 2f;
+      int join = stroke.getLineJoin();
+      int cap = stroke.getEndCap();
 
+      stroke = new BasicStroke(width, cap, join, 10f);
+      renderer.setSeriesStroke(seriesIndex, stroke);
+    }
+
+    // force certain colors and whether or not a line should be dashed
     for (String series : seriesColorMap.keySet()) {
       int seriesIndex = xyDataset.getSeriesIndex(series);
       if (seriesIndex >= 0) {
         renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series));
         BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
-        if (stroke == null) {
-          stroke = (BasicStroke) renderer.getBaseStroke();
-        }
         float width = stroke.getLineWidth();
         int join = stroke.getLineJoin();
         int cap = stroke.getEndCap();
@@ -319,9 +329,6 @@ public abstract class ExperimentPanel
         renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series).darker());
 
         BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
-        if (stroke == null) {
-          stroke = (BasicStroke) renderer.getBaseStroke();
-        }
         float width = stroke.getLineWidth();
         int join = stroke.getLineJoin();
         int cap = stroke.getEndCap();
@@ -331,20 +338,6 @@ public abstract class ExperimentPanel
         stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
         renderer.setSeriesStroke(seriesIndex, stroke);
       }
-    }
-
-    // now, make everything thicker!
-    for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
-      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
-      if (stroke == null) {
-        stroke = (BasicStroke) renderer.getBaseStroke();
-      }
-      float width = stroke.getLineWidth() + 2f;
-      int join = stroke.getLineJoin();
-      int cap = stroke.getEndCap();
-
-      stroke = new BasicStroke(width, cap, join, 10f);
-      renderer.setSeriesStroke(seriesIndex, stroke);
     }
 
     // EXTRA THICK
