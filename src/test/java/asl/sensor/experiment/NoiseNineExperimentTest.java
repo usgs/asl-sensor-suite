@@ -87,7 +87,7 @@ public class NoiseNineExperimentTest {
     StringBuilder sb = new StringBuilder();
     String insets = NoiseNinePanel.getInsetString(nne);
     sb.append('\n');
-    sb.append(NoiseNinePanel.getTimeStampString(nne));
+    sb.append(nne.getFormattedDateRange());
     sb.append('\n');
     sb.append("INPUTTED FILES:");
     sb.append('\n');
@@ -189,7 +189,7 @@ public class NoiseNineExperimentTest {
 
     String insets = NoiseNinePanel.getInsetString(nne);
     StringBuilder sb = new StringBuilder();
-    sb.append(NoiseNinePanel.getTimeStampString(nne));
+    sb.append(nne.getFormattedDateRange());
     sb.append('\n');
     sb.append("INPUTTED FILES:");
     sb.append('\n');

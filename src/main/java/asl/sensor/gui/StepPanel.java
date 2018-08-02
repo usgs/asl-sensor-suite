@@ -46,11 +46,12 @@ public class StepPanel extends ExperimentPanel {
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
 
-    String xAxisTitle = "Time";
+    String xAxisTitle = "Time (UTC)";
     String yAxisTitle = "Normalized counts";
     xAxis = new DateAxis(xAxisTitle);
     ((DateAxis) xAxis).setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     // xAxis.setAutoRange(true);
 
@@ -121,56 +122,6 @@ public class StepPanel extends ExperimentPanel {
 
   }
 
-  /**
-   * Static helper method for getting the formatted inset string directly
-   * from a StepExperiment
-   *
-   * @param experiment StepExperiment with data to be extracted
-   * @return String format representation of data from the experiment
-   */
-  private static String getInsetString(StepExperiment experiment) {
-    String[] strings = getInsetStringList(experiment);
-    StringBuilder sb = new StringBuilder();
-    for (String str : strings) {
-      sb.append(str);
-      sb.append("\n");
-    }
-    return sb.toString();
-  }
-
-  private static String[] getInsetStringList(StepExperiment experiment) {
-    double[] rolloff = experiment.getInitParams();
-    double[] fit = experiment.getFitParams();
-    double corner = rolloff[0];
-    double damping = rolloff[1];
-    double fitCorner = fit[0];
-    double fitDamping = fit[1];
-
-    double cornerPrd = 1. / corner;
-    double fitCornerPrd = 1. / fitCorner;
-
-    String sb = "RESP parameters"
-        + "\nCorner frequency (Hz): "
-        + DECIMAL_FORMAT.get().format(corner)
-        + " ("
-        + DECIMAL_FORMAT.get().format(cornerPrd)
-        + " secs)"
-        + "\nDamping: "
-        + DECIMAL_FORMAT.get().format(damping)
-        + "\n";
-
-    String sb2 = "Best-fit parameters"
-        + "\nCorner frequency (Hz): "
-        + DECIMAL_FORMAT.get().format(fitCorner)
-        + " ("
-        + DECIMAL_FORMAT.get().format(fitCornerPrd)
-        + " secs)"
-        + "\nDamping: "
-        + DECIMAL_FORMAT.get().format(fitDamping)
-        + "\n";
-    return new String[]{sb, sb2};
-  }
-
   @Override
   public void actionPerformed(ActionEvent event) {
 
@@ -218,18 +169,6 @@ public class StepPanel extends ExperimentPanel {
     return 1;
   }
 
-  /**
-   * Used to get the text that will populate the inset box for the plots
-   *
-   * @return String to place in TextTitle
-   */
-  @Override
-  public String getInsetStrings() {
-
-    return getInsetString((StepExperiment) expResult);
-
-  }
-
   @Override
   public String getMetadataString() {
     StepExperiment experiment = (StepExperiment) expResult;
@@ -273,11 +212,10 @@ public class StepPanel extends ExperimentPanel {
   private void setSubtitles() {
     BlockContainer container = new BlockContainer(new FlowArrangement());
     CompositeTitle title = new CompositeTitle(container);
-    String[] insets = getInsetStringList((StepExperiment) expResult);
+    String[] insets = expResult.getInsetStrings();
     for (String inset : insets) {
-      TextTitle result = new TextTitle();
+      TextTitle result = getDefaultTextTitle();
       result.setText(inset);
-      result.setBackgroundPaint(Color.white);
       container.add(result);
     }
 

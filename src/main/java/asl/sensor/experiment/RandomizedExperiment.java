@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
@@ -84,6 +85,90 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     numIterations = 0;
     plotUsingHz = true;
     nyquistMultiplier = 0.8; // defaults to 0.8
+  }
+
+  private static String complexListToString(List<Complex> complexList) {
+    final int MAX_LINE = 2; // maximum number of entries per line
+
+    ComplexFormat complexFormat = new ComplexFormat(DECIMAL_FORMAT.get());
+    StringBuilder stringBuilder = new StringBuilder();
+    int numInLine = 0;
+
+    for (Complex number : complexList) {
+
+      double initPrd = NumericUtils.TAU / number.abs();
+
+      stringBuilder.append(complexFormat.format(number));
+      stringBuilder.append(" (");
+      stringBuilder.append(DECIMAL_FORMAT.get().format(initPrd));
+      stringBuilder.append(")");
+      ++numInLine;
+      // want to fit two to a line for paired values
+      if (numInLine >= MAX_LINE) {
+        stringBuilder.append("\n");
+        numInLine = 0;
+      } else {
+        stringBuilder.append(", ");
+      }
+    }
+
+    return stringBuilder.toString();
+  }
+
+  @Override
+  public String[] getDataStrings() {
+
+    List<Complex> fitPoles = getFitPoles();
+    List<Complex> initialPoles = getInitialPoles();
+    List<Complex> fitZeros = getFitZeros();
+    List<Complex> initialZeros = getInitialZeros();
+
+    if (fitPoles == null) {
+      return new String[]{""};
+    }
+
+    double initialResidual = getInitResidual();
+    double fitResidual = getFitResidual();
+
+    StringBuilder sbInitialPoles = new StringBuilder();
+    StringBuilder sbFitPoles = new StringBuilder();
+    // add poles, initial then fit (single loop, append the two builders)
+    sbInitialPoles.append("Initial poles: \n");
+    sbFitPoles.append("Fit poles: \n");
+
+    sbInitialPoles.append(complexListToString(initialPoles));
+    sbFitPoles.append(complexListToString(fitPoles));
+
+    sbInitialPoles.append("\n");
+    sbFitPoles.append("\n");
+
+    StringBuilder sbInitZ = new StringBuilder();
+    StringBuilder sbFitZ = new StringBuilder();
+
+    if (fitZeros.size() > 0) {
+      sbInitZ.append("Initial zeros: \n");
+      sbFitZ.append("Fit zeros: \n");
+    }
+
+    sbInitZ.append(complexListToString(initialZeros));
+    sbFitZ.append(complexListToString(fitZeros));
+
+    sbFitPoles.append("\n");
+    sbInitialPoles.append("\n");
+    sbInitZ.append("\n");
+    sbFitZ.append("\n");
+
+    sbInitialPoles.append(sbFitPoles);
+
+    sbInitZ.append(sbFitZ);
+
+    String sbR = "Residuals:\n"
+        + "Initial (nom. resp curve): "
+        + DECIMAL_FORMAT.get().format(initialResidual)
+        + "\nBest fit: "
+        + DECIMAL_FORMAT.get().format(fitResidual);
+
+    return new String[]{sbInitialPoles.toString(), sbInitZ.toString(), sbR};
   }
 
   /**
@@ -207,7 +292,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   /*
    * (non-Javadoc)
    * BACKEND FUNCTION BEGINS HERE
-   * @see asl.sensor.experiment.Experiment#backend(asl.sensor.input.DataStore)
+   * @see asl.sensor.Experiment#backend(asl.sensor.input.DataStore)
    */
   @Override
   protected void backend(DataStore dataStore) {

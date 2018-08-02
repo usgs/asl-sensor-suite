@@ -60,6 +60,33 @@ public class AzimuthExperiment extends Experiment {
     simpleCalc = false;
   }
 
+  private String getAzimuthResults() {
+    StringBuilder angleStr = new StringBuilder();
+    double angle = getFitAngle(); // angle reported should be in degrees
+    angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.get().format(angle));
+    double result = ((offset + angle) % 360 + 360) % 360;
+
+    angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(offset)).append(" = ");
+    angleStr.append(DECIMAL_FORMAT.get().format(result)).append(" (+/- ");
+    angleStr.append(DECIMAL_FORMAT.get().format(uncertainty)).append(")");
+    if (!enoughPts) {
+      angleStr.append(" | WARNING: SMALL RANGE");
+    }
+    return angleStr.toString();
+  }
+
+  @Override
+  public String[] getDataStrings() {
+    // get azimuth (with offset) and uncertainty
+    return new String[]{getAzimuthResults()};
+  }
+
+  @Override
+  public String[] getInsetStrings() {
+    // set the start and end strings separately for compatibility with polar plot interface
+    return new String[]{getAzimuthResults(), getFormattedStartDate(), getFormattedEndDate()};
+  }
+
   /**
    * Function used to get the orientation of inputted data
    * (Specifically, aligns the second and third horiz. inputs with the first)

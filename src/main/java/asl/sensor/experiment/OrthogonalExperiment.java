@@ -49,6 +49,22 @@ public class OrthogonalExperiment extends Experiment {
     return refX.mapMultiply(sinTheta).add(refY.mapMultiply(cosTheta));
   }
 
+  private String getResultData() {
+    double[] fit = getSolutionParams();
+    double angle = getFitAngle();
+
+    return "Calculated angle between non-reference sensors:\n"
+        + DECIMAL_FORMAT.get().format(angle)
+        + "\nRough est. orientation angles for (non-ref) LH1, LH2 respectively:\n"
+        + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])
+        + "]";
+  }
+
+  @Override
+  public String[] getDataStrings() {
+    return new String[]{getResultData()};
+  }
+
   @Override
   protected void backend(final DataStore dataStore) {
     long interval = dataStore.getXthLoadedBlock(1).getInterval();

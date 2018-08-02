@@ -12,6 +12,7 @@ import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
+import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
@@ -31,11 +32,13 @@ public class SinePanel extends ExperimentPanel {
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output (no RESP needed)";
 
-    xAxis = new NumberAxis("Time (s)");
+    xAxis = new DateAxis("Time (UTC)");
     xAxis.setAutoRange(true);
+    ((DateAxis) xAxis).setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
     yAxis = new NumberAxis("Normalized sine wave signal");
     yAxis.setAutoRange(true);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     applyAxesToChart();
@@ -91,23 +94,6 @@ public class SinePanel extends ExperimentPanel {
     this.add(plotSelection, constraints);
   }
 
-  private static String getInsetString(SineExperiment experiment) {
-    double calAmplitude = experiment.getCalAmplitude();
-    double outAmplitude = experiment.getOutAmplitude();
-    String calAmp = DECIMAL_FORMAT.get().format(calAmplitude);
-    String outAmp = DECIMAL_FORMAT.get().format(outAmplitude);
-    String ratio = DECIMAL_FORMAT.get().format(calAmplitude / outAmplitude);
-    String estimatedFrequency = DECIMAL_FORMAT.get().format(experiment.getEstSineFreq());
-    return "Calculated calibration amplitude: "
-        + calAmp
-        + "\nCalculated output amplitude: "
-        + outAmp
-        + "\nAmplitude ratio: "
-        + ratio
-        + "\nEstimated sine frequency: "
-        + estimatedFrequency;
-  }
-
   @Override
   public void actionPerformed(ActionEvent event) {
     super.actionPerformed(event);
@@ -137,9 +123,8 @@ public class SinePanel extends ExperimentPanel {
     sinesChart = buildChart(expResult.getData().get(0));
     XYPlot plot = (XYPlot) sinesChart.getPlot();
 
-    TextTitle result = new TextTitle();
-    result.setText(getInsetStrings());
-    result.setBackgroundPaint(Color.white);
+    TextTitle result = getDefaultTextTitle();
+    result.setText(expResult.getInsetStrings()[0]);
     XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
     plot.clearAnnotations();
@@ -173,14 +158,6 @@ public class SinePanel extends ExperimentPanel {
   @Override
   public JFreeChart[] getCharts() {
     return new JFreeChart[]{sinesChart, linearChart};
-  }
-
-  /**
-   * Used to get the text that will represent the title text in the PDF result
-   */
-  @Override
-  String getInsetStrings() {
-    return getInsetString((SineExperiment) expResult);
   }
 
   /**

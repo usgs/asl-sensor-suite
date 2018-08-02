@@ -9,10 +9,14 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
+import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.RectangleAnchor;
 
 /**
  * Panel for displaying the results of the self-noise experiment (3-input).
@@ -51,7 +55,8 @@ public class NoisePanel extends ExperimentPanel {
     yAxis = new NumberAxis("Power (rel. 1 (m/s^2)^2/Hz)");
     yAxis.setAutoRange(true);
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     freqAxis.setLabelFont(bold);
@@ -103,7 +108,7 @@ public class NoisePanel extends ExperimentPanel {
   @Override
   protected void drawCharts() {
     setChart(expResult.getData().get(0));
-
+    setTitle(chart.getXYPlot(), expResult.getInsetStrings()[0]);
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
   }
@@ -150,4 +155,14 @@ public class NoisePanel extends ExperimentPanel {
       }
     }
   }
+
+  void setTitle(XYPlot plot, String insetString) {
+    TextTitle angle = getDefaultTextTitle();
+    angle.setText(insetString);
+    XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, angle,
+        RectangleAnchor.TOP_RIGHT);
+    plot.clearAnnotations();
+    plot.addAnnotation(title);
+  }
+
 }

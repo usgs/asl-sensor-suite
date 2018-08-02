@@ -2,6 +2,7 @@ package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.GainSixExperiment;
+import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -46,18 +47,20 @@ public class GainSixPanel extends GainPanel {
 
     plotTheseInBold = new String[]{"NLNM"};
 
-    String xTitle = getXAxis().getLabel();
-    String yTitle = getYAxis().getLabel();
 
     northChart =
         ChartFactory.createXYLineChart(expType.getName() + " (North)",
-            xTitle, yTitle, null);
+            "", "", null);
     eastChart =
         ChartFactory.createXYLineChart(expType.getName() + " (East)",
-            xTitle, yTitle, null);
+            "", "", null);
     verticalChart =
         ChartFactory.createXYLineChart(expType.getName() + " (Vertical)",
-            xTitle, yTitle, null);
+            "", "", null);
+    for (JFreeChart chart : getCharts()) {
+      chart.getXYPlot().setDomainAxis(getXAxis());
+      chart.getXYPlot().setRangeAxis(getYAxis());
+    }
 
     // create layout
     removeAll();
@@ -114,69 +117,12 @@ public class GainSixPanel extends GainPanel {
   }
 
   /**
-   * Static helper method for getting the formatted inset string directly
-   * from a GainExperiment
-   *
-   * @param experiment GainSixExperiment with data to be extracted
-   * @param plotIndex Plot to have this inset applied to
-   * @param referenceIndex Index of data to be loaded as reference (i.e., 0)
-   * @param lowPeriod low period boundary to take stats over
-   * @param highPeriod high period boundary to take stats over
-   * @return String with data representation of experiment results (mean, standard Deviation)
-   */
-  private static String
-  getInsetString(GainSixExperiment experiment, int plotIndex,
-      int referenceIndex, double lowPeriod, double highPeriod) {
-
-    double[][] meanAndStdDevAll =
-        experiment.getStatsFromFreqs(referenceIndex, 1 / lowPeriod, 1 / highPeriod);
-
-    double[] varResultArray = meanAndStdDevAll[plotIndex];
-
-    double mean = varResultArray[0];
-    double sDev = varResultArray[1];
-    double refGain = varResultArray[2];
-    double calcGain = varResultArray[3];
-    double refFreq = varResultArray[4];
-    double calcFreq = varResultArray[5];
-
-    StringBuilder sb = new StringBuilder();
-    sb.append("ratio: ");
-    sb.append(DECIMAL_FORMAT.get().format(mean));
-    sb.append("\n");
-    sb.append("sigma: ");
-    sb.append(DECIMAL_FORMAT.get().format(sDev));
-    sb.append("\n");
-    sb.append("ref. gain: ");
-    sb.append(DECIMAL_FORMAT.get().format(refGain));
-    sb.append(" [w/ A0 ");
-    sb.append(DECIMAL_FORMAT.get().format(refFreq));
-    sb.append("Hz]\n");
-    sb.append("** CALCULATED GAIN: ");
-    sb.append(DECIMAL_FORMAT.get().format(calcGain));
-    sb.append(" [w/ A0 ");
-    sb.append(DECIMAL_FORMAT.get().format(calcFreq));
-    sb.append("Hz]\n");
-
-    if (plotIndex == 0) {
-      sb.append("\nNorth azimuth (deg): ");
-      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getNorthAzimuth())));
-    } else if (plotIndex == 1) {
-      sb.append("\nEast azimuth (deg): ");
-      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(experiment.getEastAzimuth())));
-    }
-
-    return sb.toString();
-  }
-
-  /**
    * Calls functions to do replotting and stat recalculations when different
    * timeseries are selected or the recalculate button is hit
    */
   @Override
   public void actionPerformed(ActionEvent event) {
     if (event.getSource() == recalcButton) {
-      // TODO: set title for each chart;
       setTitle();
       recalcButton.setEnabled(false);
       return;
@@ -205,18 +151,20 @@ public class GainSixPanel extends GainPanel {
   @Override
   protected void drawCharts() {
 
+    GainSixExperiment gainBackend = (GainSixExperiment) expResult;
     final int referenceIndex = referenceSeries.getSelectedIndex();
     final int index1 = (referenceIndex + 1) % 2;
     int leftSliderValue, rightSliderValue;
 
-    double[] minMax = ((GainSixExperiment) expResult).getMinMaxFrequencies();
+    double[] minMax = gainBackend.getMinMaxFrequencies();
+    updateReference(referenceIndex);
 
     // since intervals of incoming data match, so too limits of plot
     // this is used in mapping scale of slider to x-axis values
     lowPeriod = Math.log10(minMax[0]); // value when slider is 0
     highPeriod = Math.log10(minMax[1]); // value when slider is 1000
-    leftSliderValue = mapPeriodToSlider(DEFAULT_LOW_BOUND);
-    rightSliderValue = mapPeriodToSlider(DEFAULT_UP_BOUND);
+    leftSliderValue = mapPeriodToSlider(GainExperiment.DEFAULT_LOW_BOUND);
+    rightSliderValue = mapPeriodToSlider(GainExperiment.DEFAULT_UP_BOUND);
 
     // plot has 3 components: source, destination, NLNM line plot
     JFreeChart[] charts = getCharts();
@@ -233,7 +181,8 @@ public class GainSixPanel extends GainPanel {
       setSliderValues(leftSliderValue, rightSliderValue);
 
       // set the domain to match the boundaries of the octave centered at peak
-      charts[i] = setDomainMarkers(DEFAULT_LOW_BOUND, DEFAULT_UP_BOUND, charts[i]);
+      charts[i] = setDomainMarkers(GainExperiment.DEFAULT_LOW_BOUND,
+          GainExperiment.DEFAULT_UP_BOUND, charts[i]);
 
       // and now set the sliders to match where that window is
       leftSlider.setEnabled(true);
@@ -262,42 +211,6 @@ public class GainSixPanel extends GainPanel {
     return new JFreeChart[]{northChart, eastChart, verticalChart};
   }
 
-
-  /**
-   * Since each chart has a unique inset, this method ensures each one has
-   * its own unique inset; all inset strings are compiled in the getInsetString
-   * method.
-   *
-   * @param index Index of experiment sub-index to get data from
-   * @return String of results returned by that experiment
-   */
-  private String getInsetStringPerChart(int index) {
-    double lowPeriod = mapSliderToPeriod(leftSlider.getValue());
-    double highPeriod = mapSliderToPeriod(rightSlider.getValue());
-
-    return getInsetString(
-        (GainSixExperiment) expResult,
-        index,
-        referenceSeries.getSelectedIndex(),
-        lowPeriod,
-        highPeriod);
-  }
-
-  @Override
-  public String getInsetStrings() {
-    // displays all inset strings as according to report
-    StringBuilder sb = new StringBuilder();
-    String[] labels = new String[]{"North data:", "East data:", "Vert. data"};
-    for (int i = 0; i < 3; ++i) {
-      sb.append(labels[i]);
-      sb.append('\n');
-      sb.append(getInsetStringPerChart(i));
-      sb.append('\n');
-    }
-
-    return sb.toString();
-  }
-
   @Override
   public int panelsNeeded() {
     return 6;
@@ -324,11 +237,11 @@ public class GainSixPanel extends GainPanel {
    */
   private void setTitle() {
     JFreeChart[] charts = getCharts();
+    String[] results = expResult.getInsetStrings();
     for (int i = 0; i < charts.length; ++i) {
       XYPlot plot = charts[i].getXYPlot();
-      TextTitle result = new TextTitle();
-      result.setText(getInsetStringPerChart(i));
-      result.setBackgroundPaint(Color.white);
+      TextTitle result = getDefaultTextTitle();
+      result.setText(results[i]);
       XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, result,
           RectangleAnchor.TOP_RIGHT);
       plot.clearAnnotations();
@@ -349,6 +262,18 @@ public class GainSixPanel extends GainPanel {
     // need to have 2 series for relative gain
     referenceSeries.setEnabled(true);
 
+  }
+
+  @Override
+  protected void updateStatistics(double lowPrd, double highPrd) {
+    GainSixExperiment gain = (GainSixExperiment) expResult;
+    gain.setRangeForStatistics(lowPrd, highPrd);
+  }
+
+  @Override
+  protected void updateReference(int referenceIndex) {
+    GainSixExperiment gain = (GainSixExperiment) expResult;
+    gain.setReferenceIndex(referenceIndex);
   }
 
 }

@@ -39,7 +39,8 @@ public class OrthogonalPanel extends ExperimentPanel {
     xAxis.setAutoRange(true);
 
     yAxis = new NumberAxis(yAxisTitle);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
 
@@ -61,37 +62,19 @@ public class OrthogonalPanel extends ExperimentPanel {
 
   }
 
-  private static String getInsetString(OrthogonalExperiment ort) {
-    double[] fit = ort.getSolutionParams();
-    double angle = ort.getFitAngle();
-
-    return "Calculated angle between non-reference sensors:\n"
-        + DECIMAL_FORMAT.get().format(angle)
-        + "\nRough est. orientation angles for (non-ref) LH1, LH2 respectively:\n"
-        + "[ " + DECIMAL_FORMAT.get().format(fit[0]) + ", " + DECIMAL_FORMAT.get().format(fit[1])
-        + "]";
-  }
-
   @Override
   protected void drawCharts() {
     setChart(expResult.getData().get(0));
     XYPlot plot = (XYPlot) chart.getPlot();
 
-    TextTitle result = new TextTitle();
-    result.setText(getInsetStrings());
-    result.setBackgroundPaint(Color.white);
+    TextTitle result = getDefaultTextTitle();
+    result.setText(expResult.getInsetStrings()[0]);
     XYTitleAnnotation xyt = new XYTitleAnnotation(0.98, 0.98, result,
         RectangleAnchor.TOP_RIGHT);
     plot.clearAnnotations();
     plot.addAnnotation(xyt);
     chartPanel.setChart(chart);
   }
-
-  @Override
-  String getInsetStrings() {
-    return getInsetString((OrthogonalExperiment) expResult);
-  }
-
 
   @Override
   public int panelsNeeded() {
