@@ -1124,8 +1124,8 @@ public class InputPanel
       double max = timeSeries.getDomainUpperBound(false);
 
       for (Pair<Long, Long> gapLocation : gaps) {
-        Double gapStart = gapLocation.getFirst().doubleValue();
-        Double gapEnd = gapLocation.getSecond().doubleValue();
+        double gapStart = gapLocation.getFirst().doubleValue();
+        double gapEnd = gapLocation.getSecond().doubleValue();
         if (gapEnd > min || gapStart < max) {
           double start = Math.max(gapStart, min);
           double end = Math.min(gapEnd, max);

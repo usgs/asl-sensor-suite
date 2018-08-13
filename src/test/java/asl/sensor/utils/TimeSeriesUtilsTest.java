@@ -459,7 +459,7 @@ public class TimeSeriesUtilsTest {
 
     x = TimeSeriesUtils.detrend(x);
     for (double aX : x) {
-      assertEquals(new Double(Math.round(aX)), new Double(0));
+      assertEquals(Math.round(aX), 0, 1E-7);
     }
   }
 
