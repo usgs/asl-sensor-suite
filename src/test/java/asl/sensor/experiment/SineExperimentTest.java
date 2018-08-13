@@ -4,9 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

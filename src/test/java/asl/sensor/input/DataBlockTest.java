@@ -2,8 +2,9 @@ package asl.sensor.input;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import asl.sensor.gui.InputPanel;
@@ -98,7 +99,7 @@ public class DataBlockTest {
     assertEquals(initialEnd, untrimmedEnd);
     assertEquals(initialLength, untrimmedLength);
     assertArrayEquals(initialData, untrimmedData, 1E-6);
-    assertFalse(initialData == untrimmedData);
+    assertNotSame(initialData, untrimmedData);
     assertTrue(trimmedLength < untrimmedLength);
   }
 
@@ -126,7 +127,7 @@ public class DataBlockTest {
     assertEquals(initialStart, untrimmedStart);
     assertEquals(initialLength, untrimmedLength);
     assertArrayEquals(initialData, untrimmedData, 1E-6);
-    assertFalse(initialData == untrimmedData);
+    assertNotSame(initialData, untrimmedData);
     assertTrue(trimmedLength < untrimmedLength);
   }
 
@@ -179,7 +180,7 @@ public class DataBlockTest {
     assertEquals(initialStart, untrimmedStart);
     assertEquals(initialEnd, untrimmedEnd);
     assertEquals(initialLength, untrimmedLength);
-    assertTrue(initialData == untrimmedData);
+    assertSame(initialData, untrimmedData);
     assertEquals(initialData, untrimmedData);
   }
 
@@ -192,7 +193,7 @@ public class DataBlockTest {
     block.resample(block.getInitialInterval() / 2);
     assertEquals(initialInterval, block.getInterval());
     assertArrayEquals(initialData, block.getData(), 1E-10);
-    assertTrue(initialData == block.getData());
+    assertSame(initialData, block.getData());
   }
 
   @Test
@@ -237,7 +238,7 @@ public class DataBlockTest {
 
     assertEquals(initialLength, untrimmedLength);
     assertArrayEquals(initialData, untrimmedData, 1E-6);
-    assertFalse(initialData == untrimmedData);
+    assertNotSame(initialData, untrimmedData);
     assertTrue(trimmedLength < untrimmedLength);
   }
 
@@ -247,8 +248,8 @@ public class DataBlockTest {
     DataBlock block = TimeSeriesUtils.getFirstTimeSeries(filename);
     DataBlock clonedBlock = new DataBlock(block);
     assertEquals(block.getName(), clonedBlock.getName());
-    assertFalse(block.getDataMap() == clonedBlock.getDataMap());
-    assertFalse(block.getData() == clonedBlock.getData());
+    assertNotSame(block.getDataMap(), clonedBlock.getDataMap());
+    assertNotSame(block.getData(), clonedBlock.getData());
     assertArrayEquals(block.getData(), clonedBlock.getData(), 1E-10);
     assertEquals(block.getStartTime(), clonedBlock.getStartTime());
     assertEquals(block.getEndTime(), clonedBlock.getEndTime());

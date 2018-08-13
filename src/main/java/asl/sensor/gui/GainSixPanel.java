@@ -4,7 +4,6 @@ import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
-import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;

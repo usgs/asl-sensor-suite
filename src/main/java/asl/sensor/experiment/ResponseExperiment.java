@@ -123,7 +123,7 @@ public class ResponseExperiment extends Experiment {
   }
 
   public InstrumentResponse[] getResponses() {
-    return responses.toArray(new InstrumentResponse[responses.size()]);
+    return responses.toArray(new InstrumentResponse[0]);
   }
 
   @Override

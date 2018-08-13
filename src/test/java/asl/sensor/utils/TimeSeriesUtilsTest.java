@@ -363,12 +363,12 @@ public class TimeSeriesUtilsTest {
             DataRecord dr = (DataRecord) sr;
 
             String loc = dr.getHeader().getLocationIdentifier();
-            assertTrue(loc.equals(location));
+            assertEquals(loc, location);
             String stat = dr.getHeader().getStationIdentifier().trim();
-            assertTrue(stat.equals(station));
+            assertEquals(stat, station);
 
             String chan = dr.getHeader().getChannelIdentifier();
-            assertTrue(chan.equals(channel));
+            assertEquals(chan, channel);
           }
         }
       } catch (EOFException e) {
@@ -399,7 +399,7 @@ public class TimeSeriesUtilsTest {
           int mult = dr.getHeader().getSampleRateMultiplier();
 
           double rate = dr.getSampleRate();
-          assertTrue((double) fact / mult == rate);
+          assertEquals((double) fact / mult, rate, 0.0);
 
           // checking the correct values for the intervals
           double multOf1Hz = rate / TimeSeriesUtils.ONE_HZ;

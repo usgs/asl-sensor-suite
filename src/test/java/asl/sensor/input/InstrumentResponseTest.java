@@ -241,7 +241,7 @@ public class InstrumentResponseTest {
     List<Complex> endPoles =
         ir.buildResponseFromFitVector(rv.toArray(), false, 0).getPoles();
 
-    assertTrue(initPoles.size() == endPoles.size());
+    assertEquals(initPoles.size(), endPoles.size());
 
   }
 
@@ -263,7 +263,7 @@ public class InstrumentResponseTest {
   @Test
   public void parseTermAsDate_noEndingTime_input_field23() {
     Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:    No Ending Time");
-    assertEquals(null, actual);
+    assertNull(actual);
   }
 
   @Test
@@ -549,7 +549,6 @@ public class InstrumentResponseTest {
   @Test
   public void parserDriver_manyGainStages() throws Exception {
     LocalDate date = LocalDate.parse("2012-01-01");
-    Instant epochStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
     URL file = InstrumentResponseTest.class
         .getResource("/seismic-test-data/RESPs/BN.EKG.HHZ.resp");
 

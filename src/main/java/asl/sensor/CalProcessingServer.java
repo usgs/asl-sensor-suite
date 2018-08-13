@@ -34,7 +34,6 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.SineExperiment;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;

@@ -1,9 +1,7 @@
 package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
-import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.input.DataStore;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
