@@ -10,11 +10,8 @@ import java.awt.event.ActionEvent;
 import javax.swing.JComboBox;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Panel for 9-input self noise. Similar to 3-input self noise (NoisePanel)

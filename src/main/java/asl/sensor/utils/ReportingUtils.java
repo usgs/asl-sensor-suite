@@ -121,9 +121,8 @@ public class ReportingUtils {
     // want to keep all charts the same size;
     // if we can't fit them all on a single page, how many pages will have
     // complete charts?
-    int numFilledPages = totalNumber / perImg;
     // total number of charts to fill
-    int totalPageCount = numFilledPages;
+    int totalPageCount = totalNumber / perImg;
     // if we can't fill the last page with plots, how many will it have
     int lastPageChartCount = totalNumber % perImg;
     if (lastPageChartCount > 0) {

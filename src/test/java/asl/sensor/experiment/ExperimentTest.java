@@ -124,8 +124,7 @@ public class ExperimentTest {
   @Test
   public void testGetFormattedDateRange() {
     double[] data = {0., 1.};
-    long sampleInterval = ONE_HZ_INTERVAL;
-    DataBlock dataBlock = new DataBlock(data, sampleInterval, "TEST1", 0);
+    DataBlock dataBlock = new DataBlock(data, ONE_HZ_INTERVAL, "TEST1", 0);
     DataStore dataStore = new DataStore();
     dataStore.setBlock(0, dataBlock);
     Experiment experiment = new MockExperimentThatNeedsBlocks();

@@ -187,18 +187,14 @@ public abstract class Experiment {
    * @return formatted start time (Julian day)
    */
   public String getFormattedStartDate() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("Data start time:\n");
-    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(start))));
-    return sb.toString();
+    return "Data start time:\n" +
+            DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(start)));
   }
 
   public String getFormattedEndDate() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("Data end time:\n");
-    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(end))));
-    sb.append('\n');
-    return sb.toString();
+    return "Data end time:\n" +
+            DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(end))) +
+            '\n';
   }
 
   /**

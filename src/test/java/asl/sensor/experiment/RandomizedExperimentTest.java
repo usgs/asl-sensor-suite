@@ -5,6 +5,7 @@ import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -210,19 +211,19 @@ public class RandomizedExperimentTest {
       int offsetIdx = 0;
       for (int i = 0; i < poles.size(); ++i) {
         if (i < start) {
-          assertTrue(poles.get(i).equals(testList.get(i)));
+          assertEquals(poles.get(i), testList.get(i));
         } else {
           Complex c = replacements.get(offsetIdx);
-          assertTrue(testList.get(i).equals(c));
+          assertEquals(testList.get(i), c);
           if (poles.get(i).getImaginary() != 0) {
             Complex c1 = new Complex(1, 1);
-            assertTrue(poles.get(i).equals(c.add(c1)));
+            assertEquals(poles.get(i), c.add(c1));
             ++i;
             Complex c2 = new Complex(1, -1);
-            assertTrue(testList.get(i).equals(c.conjugate()));
-            assertTrue(poles.get(i).equals(c.conjugate().add(c2)));
+            assertEquals(testList.get(i), c.conjugate());
+            assertEquals(poles.get(i), c.conjugate().add(c2));
           } else {
-            assertTrue(poles.get(i).equals(c.add(1)));
+            assertEquals(poles.get(i), c.add(1));
           }
           ++offsetIdx;
         }
@@ -262,8 +263,8 @@ public class RandomizedExperimentTest {
 
       for (int i = 0; i < poles.size(); ++i) {
         if (i < 2) {
-          assertFalse(poles.get(i).equals(poles2.get(i)));
-          assertTrue(poles2.get(i).equals(testList.get(i)));
+          assertNotEquals(poles.get(i), poles2.get(i));
+          assertEquals(poles2.get(i), testList.get(i));
         }
       }
 
