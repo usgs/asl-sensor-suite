@@ -4,7 +4,6 @@ import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -284,7 +283,7 @@ public class GainPanel extends ExperimentPanel
    * @param position value of slider
    * @return x-axis value corresponding to that position
    */
-  double mapSliderToPeriod(int position) {
+  private double mapSliderToPeriod(int position) {
     double scale = (highPeriod - lowPeriod) / SLIDER_MAX; // slider range is 0 to 1000
     return Math.pow(10, lowPeriod + (scale * position));
   }
@@ -394,12 +393,12 @@ public class GainPanel extends ExperimentPanel
     referenceSeries.setEnabled(true);
   }
 
-  protected void updateStatistics(double lowPrd, double highPrd) {
+  void updateStatistics(double lowPrd, double highPrd) {
     GainExperiment gain = (GainExperiment) expResult;
     gain.setRangeForStatistics(lowPrd, highPrd);
   }
 
-  protected void updateReference(int referenceIndex) {
+  void updateReference(int referenceIndex) {
     GainExperiment gain = (GainExperiment) expResult;
     gain.setReferenceIndex(referenceIndex);
   }

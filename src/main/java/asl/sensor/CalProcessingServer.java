@@ -12,13 +12,10 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
@@ -34,7 +31,6 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.SineExperiment;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
@@ -482,9 +478,9 @@ public class CalProcessingServer {
 
     ValueAxis xAxis = new LogarithmicAxis(xAxisTitle);
     ValueAxis residualXAxis = new LogarithmicAxis(xAxisTitle);
-    ValueAxis amplitudeAxis = new NumberAxis(amplitudeAxisTitle);
+    NumberAxis amplitudeAxis = new NumberAxis(amplitudeAxisTitle);
     amplitudeAxis.setAutoRange(true);
-    ((NumberAxis) amplitudeAxis).setAutoRangeIncludesZero(false);
+    amplitudeAxis.setAutoRangeIncludesZero(false);
     ValueAxis phaseAxis = new NumberAxis(phaseAxisTitle);
     phaseAxis.setAutoRange(true);
     ValueAxis residualPhaseAxis = new NumberAxis("Phase error (degrees)");
@@ -576,23 +572,6 @@ public class CalProcessingServer {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       ImageIO.write(images[i], "png", out);
       pngByteArrays[i] = out.toByteArray();
-    }
-
-    Map<String, List<Pair<Date, Date>>> gaps = randomExperiment.getGapRegions();
-    String[] names = gaps.keySet().toArray(new String[]{});
-    Date[][] gapStarts = new Date[names.length][];
-    Date[][] gapEnds = new Date[names.length][];
-    for (int j = 0; j < names.length; ++j) {
-      String name = names[j];
-      List<Pair<Date, Date>> dates = gaps.get(name);
-      Date[] starts = new Date[dates.size()];
-      Date[] ends = new Date[dates.size()];
-      for (int i = 0; i < dates.size(); ++i) {
-        starts[i] = dates.get(i).getFirst();
-        ends[i] = dates.get(i).getSecond();
-      }
-      gapStarts[j] = starts;
-      gapEnds[j] = ends;
     }
 
     return CalResult.buildRandomCalData(fitPoles, fitZeros, initialPoles, initialZeros,

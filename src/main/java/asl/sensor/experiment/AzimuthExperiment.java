@@ -46,14 +46,37 @@ public class AzimuthExperiment extends Experiment {
 
   private double offset = 0.;
 
-  private double latestCorrelation = 0.; // cache correlation estimates during windowing
+  /**
+   * Cache correlation estimates during windowing
+   */
+  private double latestCorrelation = 0.;
 
-  private double angle, uncertainty;
+  /**
+   * Angle offset radians
+   */
+  private double angle;
 
-  private double[] correlations; // best-fit correlations used to find windows w/ good estimates
-  private double minCorr; // lowest correlation value still used in angle estimation
-  private boolean simpleCalc; // used for nine-noise calculation
-  private boolean enoughPts; // enough points in range for estimation?
+  /**
+   * Uncertainty of result in percent confidence.
+   */
+  private double uncertainty;
+
+  /**
+   * Best-fit correlations used to find windows w/ good estimates
+   */
+  private double[] correlations;
+  /**
+   * Lowest correlation value still used in angle estimation
+   */
+  private double minCorr;
+  /**
+   * Used for nine-noise calculation. Short circuits the calculation to run more quickly.
+   */
+  private boolean simpleCalc;
+  /**
+   * True if there is enough points in range for estimation.
+   */
+  private boolean enoughPts;
 
   public AzimuthExperiment() {
     super();
@@ -132,7 +155,7 @@ public class AzimuthExperiment extends Experiment {
    * @param start start time of data
    * @param end end time of data
    */
-  protected void alternateEntryPoint(
+  void alternateEntryPoint(
       double[] testNorth, double[] testEast,
       double[] referenceNorth, long interval, long start, long end) {
 
@@ -214,7 +237,7 @@ public class AzimuthExperiment extends Experiment {
     // should there be a normalization step here?
 
     // data will be downsampled to 1 if > 1Hz rate, else will keep sample rate from input
-    double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / interval);
+    double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / (double)interval);
     double low = 1. / 8; // filter from 8 seconds interval
     double high = 1. / 3; // up to 3 seconds interval
 

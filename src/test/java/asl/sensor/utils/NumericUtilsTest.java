@@ -2,7 +2,6 @@ package asl.sensor.utils;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +50,7 @@ public class NumericUtilsTest {
     csl[5] = new Complex(-1, -1);
     csl[6] = new Complex(1, -1);
     for (int i = 0; i < csl.length; ++i) {
-      assertTrue(cs.get(i).equals(csl[i]));
+      assertEquals(cs.get(i), csl[i]);
     }
   }
 

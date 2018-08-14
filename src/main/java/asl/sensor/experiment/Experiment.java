@@ -78,9 +78,9 @@ public abstract class Experiment {
    */
   static final double MAX_PLOT_PERIOD = 1.0E6;
   private final EventListenerList eventHelper;
-  protected long start;
-  protected long end;
-  protected List<XYSeriesCollection> xySeriesData;
+  long start;
+  long end;
+  List<XYSeriesCollection> xySeriesData;
   /**
    * list of filenames of seed, resp files
    * NOTE: if implementing new experiment, best to use consistent ordering with
@@ -88,13 +88,13 @@ public abstract class Experiment {
    * SEED, RESP (if used), SEED, RESP (if used), etc.
    * That is, place response files after their associated timeseries
    */
-  protected List<String> dataNames;
+  List<String> dataNames;
   private String status;
   private Map<String, List<Pair<Date, Date>>> gapRegions;
   /**
    * Initialize all fields common to experiment objects
    */
-  public Experiment() {
+  Experiment() {
     start = 0L;
     end = 0L;
     dataNames = new ArrayList<>();
@@ -132,7 +132,7 @@ public abstract class Experiment {
    * Includes formatting of numeric data. This may not be used for all experiments.
    * @return String containing human-readable data
    */
-  public String[] getDataStrings() {
+  String[] getDataStrings() {
     return new String[]{""};
   }
 
@@ -186,19 +186,15 @@ public abstract class Experiment {
    * Return a formatted string with the given data's start time
    * @return formatted start time (Julian day)
    */
-  public String getFormattedStartDate() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("Data start time:\n");
-    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(start))));
-    return sb.toString();
+  String getFormattedStartDate() {
+    return "Data start time:\n" +
+            DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(start)));
   }
 
-  public String getFormattedEndDate() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("Data end time:\n");
-    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(end))));
-    sb.append('\n');
-    return sb.toString();
+  String getFormattedEndDate() {
+    return "Data end time:\n" +
+            DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(end))) +
+            '\n';
   }
 
   /**
@@ -290,7 +286,7 @@ public abstract class Experiment {
    *
    * @param newStatus Status change message to notify listeners of
    */
-  protected void fireStateChange(String newStatus) {
+  void fireStateChange(String newStatus) {
     status = newStatus;
     ChangeListener[] listeners = eventHelper.getListeners(ChangeListener.class);
     if (listeners != null && listeners.length > 0) {

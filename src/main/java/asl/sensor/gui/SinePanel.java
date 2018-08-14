@@ -1,7 +1,6 @@
 package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
-import asl.sensor.experiment.SineExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.Font;

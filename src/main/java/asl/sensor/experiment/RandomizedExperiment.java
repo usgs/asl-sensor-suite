@@ -328,7 +328,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
 
     // store nyquist rate of data because freqs will be trimmed down later
-    double nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / sensorOut.getInterval();
+    double nyquist = TimeSeriesUtils.ONE_HZ_INTERVAL / (double) sensorOut.getInterval();
     nyquist = nyquist / 2.;
 
     // trim frequency window in order to restrict range of response fits
