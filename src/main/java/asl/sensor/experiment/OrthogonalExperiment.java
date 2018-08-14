@@ -141,7 +141,7 @@ public class OrthogonalExperiment extends Experiment {
     diffs[1] = ((diffs[1] % 360) + 360) % 360;
 
     double timeAtPoint = 0.;
-    double tick = interval / TimeSeriesUtils.ONE_HZ_INTERVAL;
+    double tick = interval / (double)TimeSeriesUtils.ONE_HZ_INTERVAL;
 
     fireStateChange("Getting plottable data...");
 

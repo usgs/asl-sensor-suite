@@ -237,7 +237,7 @@ public class AzimuthExperiment extends Experiment {
     // should there be a normalization step here?
 
     // data will be downsampled to 1 if > 1Hz rate, else will keep sample rate from input
-    double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / interval);
+    double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / (double)interval);
     double low = 1. / 8; // filter from 8 seconds interval
     double high = 1. / 3; // up to 3 seconds interval
 
