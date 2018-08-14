@@ -59,7 +59,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   @Override
-  public String[] getDataStrings() {
+  String[] getDataStrings() {
     return new String[]{getNorthChartString(), getEastChartString()};
   }
 

@@ -206,7 +206,7 @@ public class GainExperiment extends Experiment {
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq.,
    * calc. A0 freq.}
    */
-  double[] getStatsFromFreqs() {
+  private double[] getStatsFromFreqs() {
     FFTResult plot0 = fftResults[referenceIndex];
     double lowerBound = 1. / highPeriod; // high period = low frequency
     double upperBound = 1./ lowPeriod; // low period = high frequency

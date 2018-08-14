@@ -270,7 +270,7 @@ public class GainSixPanel extends GainPanel {
   }
 
   @Override
-  protected void updateReference(int referenceIndex) {
+  void updateReference(int referenceIndex) {
     GainSixExperiment gain = (GainSixExperiment) expResult;
     gain.setReferenceIndex(referenceIndex);
   }

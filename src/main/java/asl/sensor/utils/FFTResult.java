@@ -422,7 +422,7 @@ public class FFTResult {
 
     long interval = db.getInterval();
 
-    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / interval;
+    double sps = TimeSeriesUtils.ONE_HZ_INTERVAL / (double)interval;
     data = lowPassFilter(data, sps, 0.1);
     data = TimeSeriesUtils.demean(data);
     cosineTaper(data, 0.05);
