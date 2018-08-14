@@ -188,7 +188,7 @@ public class OrthogonalExperiment extends Experiment {
    * @return Array of doubles (size 2), with the north and east azimuth
    * respectively
    */
-  public double[] getSolutionParams() {
+  private double[] getSolutionParams() {
     return diffs;
   }
 

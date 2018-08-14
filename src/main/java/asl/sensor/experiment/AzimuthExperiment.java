@@ -155,7 +155,7 @@ public class AzimuthExperiment extends Experiment {
    * @param start start time of data
    * @param end end time of data
    */
-  protected void alternateEntryPoint(
+  void alternateEntryPoint(
       double[] testNorth, double[] testEast,
       double[] referenceNorth, long interval, long start, long end) {
 

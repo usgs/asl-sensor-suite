@@ -73,7 +73,7 @@ public abstract class ExperimentPanel
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
-  public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+  static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
       ThreadLocal.withInitial(() -> {
         DecimalFormat format = new DecimalFormat("#.###");
         NumericUtils.setInfinityPrintable(format);
@@ -104,14 +104,15 @@ public abstract class ExperimentPanel
   // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
   private final JFileChooser fileChooser; // save image when image save button clicked
-  protected JFreeChart chart; // the chart shown in the panel
+  JFreeChart chart; // the chart shown in the panel
   // used to define experiment of each plot object (i.e., chart name)
-  protected ValueAxis xAxis, yAxis;
+  ValueAxis xAxis;
+  ValueAxis yAxis;
   // experiment actually being run (call its 'setData' method to run backend)
   // experiments use builder pattern -- set necessary variables like
   // angle offset or x-axis units before running the experiment
   // used to give details in input panel about what users needs to load where
-  protected boolean set; // true if the experiment has run
+  boolean set; // true if the experiment has run
   // default axes to use with the default chart
   Experiment expResult;
   String[] plotTheseInBold; // given in the implementing function
@@ -124,7 +125,7 @@ public abstract class ExperimentPanel
    * @param experiment Experiment enum with corresponding backend for factory
    * instantiation
    */
-  public ExperimentPanel(ExperimentFactory experiment) {
+  ExperimentPanel(ExperimentFactory experiment) {
     set = false;
 
     channelType = new String[DataStore.FILE_COUNT];
@@ -688,7 +689,7 @@ public abstract class ExperimentPanel
    *
    * @param xyDataset collection of XYSeries to plot
    */
-  protected void setChart(XYSeriesCollection xyDataset) {
+  void setChart(XYSeriesCollection xyDataset) {
     chart = buildChart(xyDataset);
   }
 
