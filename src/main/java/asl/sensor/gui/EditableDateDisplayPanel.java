@@ -23,7 +23,7 @@ import javax.swing.event.EventListenerList;
  *
  * @author akearns - KBRWyle
  */
-public class EditableDateDisplayPanel extends JPanel implements ChangeListener {
+class EditableDateDisplayPanel extends JPanel implements ChangeListener {
 
   private static final long serialVersionUID = -1649983797482938586L;
 

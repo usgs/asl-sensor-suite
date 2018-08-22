@@ -13,7 +13,7 @@ import javax.swing.Scrollable;
  *
  * @author akearns - KBRWyle
  */
-public class VScrollPanel extends JPanel implements Scrollable {
+class VScrollPanel extends JPanel implements Scrollable {
 
   private static final long serialVersionUID = -4358405572297138013L;
 

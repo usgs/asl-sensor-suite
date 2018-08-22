@@ -24,7 +24,6 @@ import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.complex.ComplexFormat;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -142,34 +141,6 @@ public class RandomizedPanel extends ExperimentPanel {
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
     this.add(plotSelection, constraints);
-  }
-
-  private static String complexListToString(List<Complex> complexList) {
-    final int MAX_LINE = 2; // maximum number of entries per line
-
-    ComplexFormat complexFormat = new ComplexFormat(DECIMAL_FORMAT.get());
-    StringBuilder stringBuilder = new StringBuilder();
-    int numInLine = 0;
-
-    for (Complex number : complexList) {
-
-      double initPrd = NumericUtils.TAU / number.abs();
-
-      stringBuilder.append(complexFormat.format(number));
-      stringBuilder.append(" (");
-      stringBuilder.append(DECIMAL_FORMAT.get().format(initPrd));
-      stringBuilder.append(")");
-      ++numInLine;
-      // want to fit two to a line for paired values
-      if (numInLine >= MAX_LINE) {
-        stringBuilder.append("\n");
-        numInLine = 0;
-      } else {
-        stringBuilder.append(", ");
-      }
-    }
-
-    return stringBuilder.toString();
   }
 
   /**
@@ -342,68 +313,6 @@ public class RandomizedPanel extends ExperimentPanel {
     return new String[]{resultString.toString()};
   }
 
-  /**
-   * Static helper method for getting the formatted inset string directly
-   * from a RandomizedExperiment
-   *
-   * @param experiment RandomizedExperiment with data to be extracted
-   * @return String format representation of data from the experiment
-   */
-  public static String[] getInsetString(RandomizedExperiment experiment) {
-
-    List<Complex> fitPoles = experiment.getFitPoles();
-    List<Complex> initialPoles = experiment.getInitialPoles();
-    List<Complex> fitZeros = experiment.getFitZeros();
-    List<Complex> initialZeros = experiment.getInitialZeros();
-
-    if (fitPoles == null) {
-      return new String[]{""};
-    }
-
-    double initialResidual = experiment.getInitResidual();
-    double fitResidual = experiment.getFitResidual();
-
-    StringBuilder sbInitialPoles = new StringBuilder();
-    StringBuilder sbFitPoles = new StringBuilder();
-    // add poles, initial then fit (single loop, append the two builders)
-    sbInitialPoles.append("Initial poles: \n");
-    sbFitPoles.append("Fit poles: \n");
-
-    sbInitialPoles.append(complexListToString(initialPoles));
-    sbFitPoles.append(complexListToString(fitPoles));
-
-    sbInitialPoles.append("\n");
-    sbFitPoles.append("\n");
-
-    StringBuilder sbInitZ = new StringBuilder();
-    StringBuilder sbFitZ = new StringBuilder();
-
-    if (fitZeros.size() > 0) {
-      sbInitZ.append("Initial zeros: \n");
-      sbFitZ.append("Fit zeros: \n");
-    }
-
-    sbInitZ.append(complexListToString(initialZeros));
-    sbFitZ.append(complexListToString(fitZeros));
-
-    sbFitPoles.append("\n");
-    sbInitialPoles.append("\n");
-    sbInitZ.append("\n");
-    sbFitZ.append("\n");
-
-    sbInitialPoles.append(sbFitPoles);
-
-    sbInitZ.append(sbFitZ);
-
-    String sbR = "Residuals:\n"
-        + "Initial (nom. resp curve): "
-        + DECIMAL_FORMAT.get().format(initialResidual)
-        + "\nBest fit: "
-        + DECIMAL_FORMAT.get().format(fitResidual);
-
-    return new String[]{sbInitialPoles.toString(), sbInitZ.toString(), sbR};
-  }
-
   @Override
   public void actionPerformed(ActionEvent event) {
     super.actionPerformed(event);
@@ -477,28 +386,6 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   protected int getIndexOfMainData() {
     return 1;
-  }
-
-  /**
-   * Used to get the text that will represent the title text in the PDF result
-   */
-  @Override
-  String getInsetStrings() {
-    StringBuilder sb = new StringBuilder();
-    for (String str : getInsetStringsAsList()) {
-      sb.append(str);
-      sb.append("\n");
-    }
-    return sb.toString();
-  }
-
-  /**
-   * Produce arrays of pole, zero, and residual data for text titles
-   *
-   * @return Array of strings
-   */
-  private String[] getInsetStringsAsList() {
-    return getInsetString((RandomizedExperiment) expResult);
   }
 
   @Override
@@ -595,7 +482,8 @@ public class RandomizedPanel extends ExperimentPanel {
     residualAmplitudeAxis = new NumberAxis("Amplitude error (percentage)");
 
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
-    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
     xAxis.setLabelFont(bold);
     yAxis.setLabelFont(bold);
     degreeAxis.setLabelFont(bold);
@@ -621,19 +509,17 @@ public class RandomizedPanel extends ExperimentPanel {
   private void setSubtitles() {
     BlockContainer bc = new BlockContainer(new FlowArrangement());
     CompositeTitle ct = new CompositeTitle(bc);
-    String[] insets = getInsetStringsAsList();
+    String[] insets = expResult.getInsetStrings();
     for (String inset : insets) {
-      TextTitle result = new TextTitle();
+      TextTitle result = getDefaultTextTitle();
       result.setText(inset);
-      result.setBackgroundPaint(Color.white);
       bc.add(result);
     }
 
-    TextTitle result = new TextTitle();
+    TextTitle result = getDefaultTextTitle();
     RandomizedExperiment re = (RandomizedExperiment) expResult;
     int numIters = re.getIterations();
     result.setText("NUMBER OF ITERATIONS: " + numIters);
-    result.setBackgroundPaint(Color.white);
 
     ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
     ct.setPosition(RectangleEdge.BOTTOM);
@@ -703,11 +589,6 @@ public class RandomizedPanel extends ExperimentPanel {
       magnitudeChart.getXYPlot().addDomainMarker(maxFitMarker);
       argumentChart.getXYPlot().addDomainMarker(maxFitMarker);
     }
-
-    String inset = getInsetStrings();
-    TextTitle result = new TextTitle();
-    result.setText(inset);
-    result.setBackgroundPaint(Color.white);
 
     appendChartTitle(argumentChart, appendFreqTitle);
     appendChartTitle(magnitudeChart, appendFreqTitle);

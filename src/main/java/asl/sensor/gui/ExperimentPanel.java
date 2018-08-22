@@ -8,15 +8,14 @@ import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -105,14 +104,15 @@ public abstract class ExperimentPanel
   // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
   private final JFileChooser fileChooser; // save image when image save button clicked
-  protected JFreeChart chart; // the chart shown in the panel
+  JFreeChart chart; // the chart shown in the panel
   // used to define experiment of each plot object (i.e., chart name)
-  protected ValueAxis xAxis, yAxis;
+  ValueAxis xAxis;
+  ValueAxis yAxis;
   // experiment actually being run (call its 'setData' method to run backend)
   // experiments use builder pattern -- set necessary variables like
   // angle offset or x-axis units before running the experiment
   // used to give details in input panel about what users needs to load where
-  protected boolean set; // true if the experiment has run
+  boolean set; // true if the experiment has run
   // default axes to use with the default chart
   Experiment expResult;
   String[] plotTheseInBold; // given in the implementing function
@@ -125,7 +125,7 @@ public abstract class ExperimentPanel
    * @param experiment Experiment enum with corresponding backend for factory
    * instantiation
    */
-  public ExperimentPanel(ExperimentFactory experiment) {
+  ExperimentPanel(ExperimentFactory experiment) {
     set = false;
 
     channelType = new String[DataStore.FILE_COUNT];
@@ -173,29 +173,13 @@ public abstract class ExperimentPanel
   }
   // these are map/set because they are based on the data read in, not fixed
 
-  /**
-   * Get start and end times of data for experiments that use time series data
-   *
-   * @param experiment experiment with data already added
-   * @return string representing the start and end of the experiment's data range
-   */
-  public static String getTimeStampString(Experiment experiment) {
-    StringBuilder sb = new StringBuilder();
-
-    sb.append("Time of report generation:\n");
-    sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.now())));
-    sb.append('\n');
-
-    long startTime = experiment.getStart();
-    long endTime = experiment.getEnd();
-    if (startTime != 0L && endTime != 0L) {
-      sb.append("Data start time:\n");
-      sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(startTime))));
-      sb.append("\nData end time:\n");
-      sb.append(DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(endTime))));
-      sb.append('\n');
-    }
-    return sb.toString();
+  static TextTitle getDefaultTextTitle() {
+    TextTitle result = new TextTitle();
+    Font font = result.getFont();
+    font = font.deriveFont(font.getSize() + 2f);
+    result.setFont(font);
+    result.setBackgroundPaint(Color.WHITE);
+    return result;
   }
 
   /**
@@ -305,17 +289,37 @@ public abstract class ExperimentPanel
 
     if (seriesColorMap.size() == 0) {
       int modulus = COLORS.length;
-      for (int seriesIdx = 0; seriesIdx < xyDataset.getSeriesCount(); ++seriesIdx) {
-        renderer.setSeriesPaint(seriesIdx, COLORS[seriesIdx % modulus]);
+      for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
+        renderer.setSeriesPaint(seriesIndex, COLORS[seriesIndex % modulus]);
       }
     }
 
-    // force certain colors and whether or not a line should be dashed
+    // now, make everything thicker!
+    for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
+      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
+      if (stroke == null) {
+        stroke = (BasicStroke) renderer.getBaseStroke();
+      }
+      float width = stroke.getLineWidth() + 2f;
+      int join = stroke.getLineJoin();
+      int cap = stroke.getEndCap();
 
+      stroke = new BasicStroke(width, cap, join, 10f);
+      renderer.setSeriesStroke(seriesIndex, stroke);
+    }
+
+    // force certain colors and whether or not a line should be dashed
     for (String series : seriesColorMap.keySet()) {
       int seriesIndex = xyDataset.getSeriesIndex(series);
       if (seriesIndex >= 0) {
         renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series));
+        BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
+        float width = stroke.getLineWidth();
+        int join = stroke.getLineJoin();
+        int cap = stroke.getEndCap();
+
+        stroke = new BasicStroke(width, cap, join, 10f);
+        renderer.setSeriesStroke(seriesIndex, stroke);
       } else {
         continue;
       }
@@ -324,9 +328,6 @@ public abstract class ExperimentPanel
         renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series).darker());
 
         BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
-        if (stroke == null) {
-          stroke = (BasicStroke) renderer.getBaseStroke();
-        }
         float width = stroke.getLineWidth();
         int join = stroke.getLineJoin();
         int cap = stroke.getEndCap();
@@ -338,23 +339,26 @@ public abstract class ExperimentPanel
       }
     }
 
+    // EXTRA THICK
     if (!(plotTheseInBold.length == 0)) {
       for (String series : plotTheseInBold) {
-        int seriesIdx = xyDataset.getSeriesIndex(series);
-        if (seriesIdx < 0) {
+        int seriesIndex = xyDataset.getSeriesIndex(series);
+        if (seriesIndex < 0) {
           continue;
         }
 
-        BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIdx);
+        BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
         if (stroke == null) {
           stroke = (BasicStroke) renderer.getBaseStroke();
         }
         stroke = new BasicStroke(stroke.getLineWidth() * 2);
-        renderer.setSeriesStroke(seriesIdx, stroke);
-        renderer.setSeriesPaint(seriesIdx, new Color(0, 0, 0));
+        renderer.setSeriesStroke(seriesIndex, stroke);
+        renderer.setSeriesPaint(seriesIndex, new Color(0, 0, 0));
       }
     }
-
+    Font bold = xAxis.getLabelFont();
+    xAxis.setLabelFont(bold);
+    yAxis.setLabelFont(bold);
     xyPlot.setDomainAxis(xAxis);
     xyPlot.setRangeAxis(yAxis);
 
@@ -442,7 +446,7 @@ public abstract class ExperimentPanel
    * an experiment
    */
   public String getAllTextData() {
-    StringBuilder sb = new StringBuilder(getInsetStrings());
+    StringBuilder sb = new StringBuilder(expResult.getReportString());
     if (sb.length() > 0) {
       sb.append("\n\n");
     }
@@ -451,7 +455,7 @@ public abstract class ExperimentPanel
       sb.append(metadata);
       sb.append("\n\n");
     }
-    sb.append(getTimeStampString(expResult));
+    sb.append(expResult.getFormattedDateRange());
     sb.append("\n\n");
     String[] extraText = getAdditionalReportPages();
     for (String text : extraText) {
@@ -493,16 +497,6 @@ public abstract class ExperimentPanel
    */
   int getIndexOfMainData() {
     return 0;
-  }
-
-  /**
-   * Used to return any title insets as text format for saving in PDF,
-   * to be overridden by any panel that uses an inset
-   *
-   * @return String with any relevant parameters in it
-   */
-  String getInsetStrings() {
-    return "";
   }
 
   /**
@@ -653,7 +647,7 @@ public abstract class ExperimentPanel
    */
   private void saveInsetDataText(PDDocument pdf) {
 
-    StringBuilder sb = new StringBuilder(getInsetStrings());
+    StringBuilder sb = new StringBuilder(expResult.getReportString());
     if (sb.length() > 0) {
       sb.append("\n \n");
     }
@@ -662,7 +656,7 @@ public abstract class ExperimentPanel
       sb.append(metadata);
       sb.append("\n \n");
     }
-    sb.append(getTimeStampString(expResult));
+    sb.append(expResult.getFormattedDateRange());
     ReportingUtils.textToPDFPage(sb.toString(), pdf);
     ReportingUtils.textListToPDFPages(pdf, getAdditionalReportPages());
   }
@@ -695,7 +689,7 @@ public abstract class ExperimentPanel
    *
    * @param xyDataset collection of XYSeries to plot
    */
-  protected void setChart(XYSeriesCollection xyDataset) {
+  void setChart(XYSeriesCollection xyDataset) {
     chart = buildChart(xyDataset);
   }
 

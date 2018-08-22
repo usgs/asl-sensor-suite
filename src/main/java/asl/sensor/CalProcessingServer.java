@@ -12,15 +12,13 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
@@ -33,7 +31,6 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.SineExperiment;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
@@ -349,14 +346,14 @@ public class CalProcessingServer {
     double estFreq = sine.getEstSineFreq();
     double ratio = calAmplitude / outAmplitude;
 
-    NumberAxis timeAxis = new NumberAxis("Time from data start (s)");
-    timeAxis.setAutoRangeIncludesZero(false);
+    DateAxis timeAxis = new DateAxis();
+    timeAxis.setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
     Font bold = timeAxis.getLabelFont().deriveFont(Font.BOLD);
     timeAxis.setLabelFont(bold);
 
     JFreeChart sineChart = ChartFactory.createXYLineChart(
         "Sine Calibration",
-        "Time from data start (s)",
+        "Time of sample (Julian date)",
         "Normalized calibration signals (counts)",
         plots.get(0));
     sineChart.getXYPlot().setDomainAxis(timeAxis);
@@ -388,8 +385,8 @@ public class CalProcessingServer {
     // order of plots -- step function, resp amplitudes, resp phases
 
     NumberAxis stepAxis = new NumberAxis("Step counts");
-    NumberAxis timeAxis = new NumberAxis("Time from data start (s)");
-    timeAxis.setAutoRangeIncludesZero(false);
+    DateAxis timeAxis = new DateAxis("Time of sample (Julian date)");
+    timeAxis.setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
     NumberAxis ampAxis = new NumberAxis("RESP Amplitude [10 * log10(RESP(f))]");
     NumberAxis phaseAxis = new NumberAxis("RESP Phase (deg.)");
     LogarithmicAxis freqAxis = new LogarithmicAxis("Frequency (f)");
@@ -481,9 +478,9 @@ public class CalProcessingServer {
 
     ValueAxis xAxis = new LogarithmicAxis(xAxisTitle);
     ValueAxis residualXAxis = new LogarithmicAxis(xAxisTitle);
-    ValueAxis amplitudeAxis = new NumberAxis(amplitudeAxisTitle);
+    NumberAxis amplitudeAxis = new NumberAxis(amplitudeAxisTitle);
     amplitudeAxis.setAutoRange(true);
-    ((NumberAxis) amplitudeAxis).setAutoRangeIncludesZero(false);
+    amplitudeAxis.setAutoRangeIncludesZero(false);
     ValueAxis phaseAxis = new NumberAxis(phaseAxisTitle);
     phaseAxis.setAutoRange(true);
     ValueAxis residualPhaseAxis = new NumberAxis("Phase error (degrees)");
@@ -575,23 +572,6 @@ public class CalProcessingServer {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       ImageIO.write(images[i], "png", out);
       pngByteArrays[i] = out.toByteArray();
-    }
-
-    Map<String, List<Pair<Date, Date>>> gaps = randomExperiment.getGapRegions();
-    String[] names = gaps.keySet().toArray(new String[]{});
-    Date[][] gapStarts = new Date[names.length][];
-    Date[][] gapEnds = new Date[names.length][];
-    for (int j = 0; j < names.length; ++j) {
-      String name = names[j];
-      List<Pair<Date, Date>> dates = gaps.get(name);
-      Date[] starts = new Date[dates.size()];
-      Date[] ends = new Date[dates.size()];
-      for (int i = 0; i < dates.size(); ++i) {
-        starts[i] = dates.get(i).getFirst();
-        ends[i] = dates.get(i).getSecond();
-      }
-      gapStarts[j] = starts;
-      gapEnds[j] = ends;
     }
 
     return CalResult.buildRandomCalData(fitPoles, fitZeros, initialPoles, initialZeros,

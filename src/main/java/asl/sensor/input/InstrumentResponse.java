@@ -193,7 +193,7 @@ public class InstrumentResponse {
    * @param start Start time of data region under interest (epoch milliseconds)
    * @param end End time of data region under interest
    * @return Enclosing epoch's start time, or first or last
-   * @throws IOException
+   * @throws IOException if the file is unable to be read
    */
   public static Instant getRespFileClosestEpoch(String filename, long start, long end)
       throws IOException {

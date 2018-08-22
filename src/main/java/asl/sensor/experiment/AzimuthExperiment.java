@@ -46,18 +46,68 @@ public class AzimuthExperiment extends Experiment {
 
   private double offset = 0.;
 
-  private double latestCorrelation = 0.; // cache correlation estimates during windowing
+  /**
+   * Cache correlation estimates during windowing
+   */
+  private double latestCorrelation = 0.;
 
-  private double angle, uncertainty;
+  /**
+   * Angle offset radians
+   */
+  private double angle;
 
-  private double[] correlations; // best-fit correlations used to find windows w/ good estimates
-  private double minCorr; // lowest correlation value still used in angle estimation
-  private boolean simpleCalc; // used for nine-noise calculation
-  private boolean enoughPts; // enough points in range for estimation?
+  /**
+   * Uncertainty of result in percent confidence.
+   */
+  private double uncertainty;
+
+  /**
+   * Best-fit correlations used to find windows w/ good estimates
+   */
+  private double[] correlations;
+  /**
+   * Lowest correlation value still used in angle estimation
+   */
+  private double minCorr;
+  /**
+   * Used for nine-noise calculation. Short circuits the calculation to run more quickly.
+   */
+  private boolean simpleCalc;
+  /**
+   * True if there is enough points in range for estimation.
+   */
+  private boolean enoughPts;
 
   public AzimuthExperiment() {
     super();
     simpleCalc = false;
+  }
+
+  private String getAzimuthResults() {
+    StringBuilder angleStr = new StringBuilder();
+    double angle = getFitAngle(); // angle reported should be in degrees
+    angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.get().format(angle));
+    double result = ((offset + angle) % 360 + 360) % 360;
+
+    angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(offset)).append(" = ");
+    angleStr.append(DECIMAL_FORMAT.get().format(result)).append(" (+/- ");
+    angleStr.append(DECIMAL_FORMAT.get().format(uncertainty)).append(")");
+    if (!enoughPts) {
+      angleStr.append(" | WARNING: SMALL RANGE");
+    }
+    return angleStr.toString();
+  }
+
+  @Override
+  public String[] getDataStrings() {
+    // get azimuth (with offset) and uncertainty
+    return new String[]{getAzimuthResults()};
+  }
+
+  @Override
+  public String[] getInsetStrings() {
+    // set the start and end strings separately for compatibility with polar plot interface
+    return new String[]{getAzimuthResults(), getFormattedStartDate(), getFormattedEndDate()};
   }
 
   /**
@@ -105,7 +155,7 @@ public class AzimuthExperiment extends Experiment {
    * @param start start time of data
    * @param end end time of data
    */
-  protected void alternateEntryPoint(
+  void alternateEntryPoint(
       double[] testNorth, double[] testEast,
       double[] referenceNorth, long interval, long start, long end) {
 
@@ -187,7 +237,7 @@ public class AzimuthExperiment extends Experiment {
     // should there be a normalization step here?
 
     // data will be downsampled to 1 if > 1Hz rate, else will keep sample rate from input
-    double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / interval);
+    double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / (double)interval);
     double low = 1. / 8; // filter from 8 seconds interval
     double high = 1. / 3; // up to 3 seconds interval
 

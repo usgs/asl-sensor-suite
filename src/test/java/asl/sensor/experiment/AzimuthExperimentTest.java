@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -336,6 +337,52 @@ public class AzimuthExperimentTest {
     }
     assertEquals(0., ang, 2.);
 
+  }
+
+  @Test
+  public void solvesNoRotationOutputsValidStrings() {
+    DataStore ds = new DataStore();
+
+    String dataFolder = folder + "azi-at0/";
+    String[] prefixes = new String[3];
+    prefixes[0] = "00_LH1";
+    prefixes[1] = "00_LH2";
+    prefixes[2] = "10_LH1";
+    String extension = ".512.seed";
+
+    for (int i = 0; i < prefixes.length; ++i) {
+      String fName = dataFolder + prefixes[i] + extension;
+      try {
+        ds.setBlock(i, fName);
+      } catch (SeedFormatException | CodecException | IOException e) {
+        e.printStackTrace();
+        fail();
+      }
+    }
+
+    AzimuthExperiment azi = new AzimuthExperiment();
+
+    assertTrue(azi.hasEnoughData(ds));
+
+    Calendar cCal = Calendar.getInstance(ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getStartTime());
+    cCal.set(Calendar.HOUR_OF_DAY, 12);
+    cCal.set(Calendar.MINUTE, 0);
+    long start = cCal.getTime().getTime();
+    cCal.set(Calendar.HOUR_OF_DAY, 14);
+    cCal.set(Calendar.MINUTE, 0);
+    long end = cCal.getTime().getTime();
+
+    ds.trim(start, end);
+
+    azi.runExperimentOnData(ds);
+
+    String angle = Experiment.DECIMAL_FORMAT.get().format(azi.getFitAngle());
+    String expected1 = "FIT ANGLE: " + angle + " + 0 = " + angle + " (+/- 0.004)";
+    String expected2 = "Data start time:\n2017.177.12:00:00.069";
+    String expected3 = "Data end time:\n2017.177.14:00:00.069\n";
+    assertArrayEquals(new String[]{expected1}, azi.getDataStrings());
+    assertArrayEquals(new String[]{expected1, expected2, expected3}, azi.getInsetStrings());
   }
 
   @Test

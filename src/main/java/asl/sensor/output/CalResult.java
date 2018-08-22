@@ -1,6 +1,5 @@
 package asl.sensor.output;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 

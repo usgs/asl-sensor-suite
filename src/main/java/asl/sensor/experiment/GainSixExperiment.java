@@ -37,6 +37,35 @@ public class GainSixExperiment extends Experiment {
     }
   }
 
+  private String getResultString(int componentIndex) {
+    return componentBackends[componentIndex].getResultString();
+  }
+
+  @Override
+  public String[] getDataStrings() {
+    String[] dataStrings = new String[DIMENSIONS];
+    dataStrings[0] = getResultString(0) +
+        "\n" + "Estimated azimuth (deg): " +
+        DECIMAL_FORMAT.get().format(Math.toDegrees(north2Angle));
+    dataStrings[1] = getResultString(1) +
+        "\n" + "Estimated azimuth (deg): " +
+        DECIMAL_FORMAT.get().format(Math.toDegrees(east2Angle));
+    dataStrings[2] = getResultString(2);
+    return dataStrings;
+  }
+
+  @Override
+  public String[] getInsetStrings() {
+    String[] dataStrings = new String[DIMENSIONS];
+    // each dimensional component (n, s, v) has an inset string with formatted date info
+    // it is the only entry in its inset strings array, so we can just get that and add to
+    // the array we are returning, one for each plot
+    for (int i = 0; i < dataStrings.length; ++i) {
+      dataStrings[i] = componentBackends[i].getInsetStrings()[0];
+    }
+    return dataStrings;
+  }
+
   @Override
   protected void backend(DataStore dataStore) {
 
@@ -154,26 +183,6 @@ public class GainSixExperiment extends Experiment {
     return north2Angle;
   }
 
-  /**
-   * Get the gain mean and deviation values from a specified peak
-   * frequency range.
-   *
-   * @param index Index of north component's data to use as reference
-   * @param lowerBound Low frequency bound of range to get stats over
-   * @param upperBound High frequency bound of range to get stats over
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq,
-   * calc. A0 freq}
-   */
-  public double[][] getStatsFromFreqs(int index, double lowerBound, double upperBound) {
-    double[][] result = new double[DIMENSIONS][];
-    // vertical component requires no rotation
-
-    for (int i = 0; i < DIMENSIONS; ++i) {
-      result[i] = componentBackends[i].getStatsFromFreqs(index, lowerBound, upperBound);
-    }
-    return result;
-  }
-
   @Override
   public boolean hasEnoughData(DataStore dataStore) {
     int needed = blocksNeeded();
@@ -189,4 +198,17 @@ public class GainSixExperiment extends Experiment {
   public int[] listActiveResponseIndices() {
     return indices;
   }
+
+  public void setRangeForStatistics(double lowPeriod, double highPeriod) {
+    for (GainExperiment component : componentBackends) {
+      component.setRangeForStatistics(lowPeriod, highPeriod);
+    }
+  }
+
+  public void setReferenceIndex(int newIndex) {
+    for (GainExperiment component : componentBackends) {
+      component.setReferenceIndex(newIndex);
+    }
+  }
+
 }

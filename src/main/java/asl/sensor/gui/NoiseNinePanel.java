@@ -10,11 +10,8 @@ import java.awt.event.ActionEvent;
 import javax.swing.JComboBox;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Panel for 9-input self noise. Similar to 3-input self noise (NoisePanel)
@@ -51,18 +48,19 @@ public class NoiseNinePanel extends NoisePanel {
     this.setLayout(new GridBagLayout());
     GridBagConstraints constraints = new GridBagConstraints();
 
-    String xTitle = getXAxis().getLabel();
-    String yTitle = getYAxis().getLabel();
-
     northChart =
         ChartFactory.createXYLineChart(expType.getName() + " (North)",
-            xTitle, yTitle, null);
+            "", "", null);
     eastChart =
         ChartFactory.createXYLineChart(expType.getName() + " (East)",
-            xTitle, yTitle, null);
+            "", "", null);
     verticalChart =
         ChartFactory.createXYLineChart(expType.getName() + " (Vertical)",
-            xTitle, yTitle, null);
+            "", "", null);
+    for (JFreeChart chart : getCharts()) {
+      chart.getXYPlot().setDomainAxis(getXAxis());
+      chart.getXYPlot().setRangeAxis(getYAxis());
+    }
 
     chart = northChart;
     chartPanel.setChart(chart);
@@ -186,39 +184,7 @@ public class NoiseNinePanel extends NoisePanel {
     return new JFreeChart[]{northChart, eastChart, verticalChart};
   }
 
-  /**
-   * Get text representation of angles used to rotate data
-   *
-   * @return String displaying angles of rotation for the 2nd, 3rd east sensors
-   */
-  private String getEastChartString() {
-    NoiseNineExperiment experiment = (NoiseNineExperiment) expResult;
-    double[] angles = experiment.getEastAngles();
-    return "Angle of rotation of east sensor 2 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
-        + "\nAngle of rotation of east sensor 3 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
-  }
 
-  @Override
-  public String getInsetStrings() {
-    return getNorthChartString() + "\n"
-        + getEastChartString() + "\n";
-  }
-
-  /**
-   * Get text representation of angles used to rotate data
-   *
-   * @return String displaying angles of rotation for the 2nd, 3rd north sensors
-   */
-  private String getNorthChartString() {
-    NoiseNineExperiment nne = (NoiseNineExperiment) expResult;
-    double[] angles = nne.getNorthAngles();
-    return "Angle of rotation of north sensor 2 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
-        + "\nAngle of rotation of north sensor 3 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
-  }
 
   @Override
   public int panelsNeeded() {
@@ -256,30 +222,24 @@ public class NoiseNinePanel extends NoisePanel {
 
     set = true;
 
+    NoiseNineExperiment nineExperiment = (NoiseNineExperiment) expResult;
+    String[] insetStrings = nineExperiment.getInsetStrings();
+    XYPlot plot;
+
     northChart = buildChart(expResult.getData().get(0));
     northChart.setTitle("Self-noise (NORTH)");
-    XYPlot plot = northChart.getXYPlot();
-    TextTitle angle = new TextTitle();
-
-    angle.setText(getNorthChartString());
-    angle.setBackgroundPaint(Color.white);
-    XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, angle,
-        RectangleAnchor.TOP_RIGHT);
-    plot.clearAnnotations();
-    plot.addAnnotation(title);
+    plot = northChart.getXYPlot();
+    setTitle(plot, insetStrings[0]);
 
     eastChart = buildChart(expResult.getData().get(1));
     eastChart.setTitle("Self-noise (EAST)");
     plot = eastChart.getXYPlot();
-    angle = new TextTitle();
-    angle.setText(getEastChartString());
-    angle.setBackgroundPaint(Color.white);
-    title = new XYTitleAnnotation(0.98, 0.98, angle, RectangleAnchor.TOP_RIGHT);
-    plot.clearAnnotations();
-    plot.addAnnotation(title);
+    setTitle(plot, insetStrings[1]);
 
     verticalChart = buildChart(expResult.getData().get(2));
     verticalChart.setTitle("Self-noise (VERTICAL)");
+    plot = verticalChart.getXYPlot();
+    setTitle(plot, insetStrings[2]);
 
   }
 

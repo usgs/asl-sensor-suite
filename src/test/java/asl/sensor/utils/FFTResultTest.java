@@ -195,7 +195,7 @@ public class FFTResultTest {
     FFTResult fftr = FFTResult.spectralCalc(data, data, interval);
     Complex[] values = fftr.getFFT();
     for (Complex c : values) {
-      assertTrue(c.equals(Complex.ZERO));
+      assertEquals(c, Complex.ZERO);
     }
   }
 

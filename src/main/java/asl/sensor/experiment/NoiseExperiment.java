@@ -44,6 +44,11 @@ public class NoiseExperiment extends Experiment {
     freqSpace = false;
   }
 
+  @Override
+  public String[] getInsetStrings() {
+    return new String[]{getFormattedDateRange()};
+  }
+
   /**
    * Generates power spectral density of each inputted file, and calculates
    * self-noise based on that result.

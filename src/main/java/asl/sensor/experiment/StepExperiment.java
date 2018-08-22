@@ -70,6 +70,40 @@ public class StepExperiment extends Experiment {
     super();
   }
 
+  @Override
+  public String[] getDataStrings(){
+    double[] rolloff = getInitParams();
+    double[] fit = getFitParams();
+    double corner = rolloff[0];
+    double damping = rolloff[1];
+    double fitCorner = fit[0];
+    double fitDamping = fit[1];
+
+    double cornerPrd = 1. / corner;
+    double fitCornerPrd = 1. / fitCorner;
+
+    String sb = "RESP parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(corner)
+        + " ("
+        + DECIMAL_FORMAT.get().format(cornerPrd)
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(damping)
+        + "\n";
+
+    String sb2 = "Best-fit parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(fitCorner)
+        + " ("
+        + DECIMAL_FORMAT.get().format(fitCornerPrd)
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(fitDamping)
+        + "\n";
+    return new String[]{sb, sb2};
+  }
+
   /**
    * Applies a "water level" to the FFT data to prevent division by zero during deconvolutions,
    * including inverting the FFT (mult. by -1) to make the deconvolution an act of multiplication.
