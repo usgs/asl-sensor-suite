@@ -1,23 +1,23 @@
 [
   {
-    "name": "asl_sensor_suite",
+    "name": "asl-sensor-suite",
     "organization": "U.S. Geological Survey",
     "description": "A graphical suite for seismic sensor testing",
-    "version": "1.3.2",
+    "version": "1.4.2",
     "status": "Development",
     "permissions": {
       "usageType": "openSource",
       "licenses": [
         {
           "name": "GPL v3.0 or Later",
-          "URL": "https://github.com/usgs/asl_sensor_suite/blob/master/LICENSE.md"
+          "URL": "https://github.com/usgs/asl-sensor-suite/blob/master/LICENSE.md"
         }
       ]
     },
-    "homepageURL": "https://usgs.github.io/asl_sensor_suite/",
-    "downloadURL": "https://github.com/usgs/asl_sensor_suite/archive/master.zip",
-    "disclaimerURL": "https://github.com/usgs/asl_sensor_suite/blob/master/LICENSE.md",
-    "repositoryURL": "https://github.com/usgs/asl_sensor_suite.git",
+    "homepageURL": "https://usgs.github.io/asl-sensor-suite/",
+    "downloadURL": "https://github.com/usgs/asl-sensor-suite/archive/master.zip",
+    "disclaimerURL": "https://github.com/usgs/asl-sensor-suite/blob/master/LICENSE.md",
+    "repositoryURL": "https://github.com/usgs/asl-sensor-suite.git",
     "vcs": "git",
     "tags": [
       "Seismic-Hazards",
@@ -33,7 +33,7 @@
       "email": "akearns@usgs.gov"
     },
     "date": {
-      "metadataLastUpdated": "2018-05-08"
+      "metadataLastUpdated": "2018-08-23"
     }
   }
 ]
