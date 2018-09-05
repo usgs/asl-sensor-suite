@@ -485,6 +485,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       double phs = plottedPhs[i];
       amp -= ampScale;
       phs -= phsScale;
+      phs = Math.toDegrees(phs);
       // add to plot (re-wrap phase)
       calcMag.add(xAxis, amp);
       calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs));
