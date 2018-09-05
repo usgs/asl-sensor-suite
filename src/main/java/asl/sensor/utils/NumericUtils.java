@@ -32,8 +32,12 @@ public class NumericUtils {
    * @return atan, between -pi and pi
    */
   public static double atanc(Complex c) {
-
-    final double CUTOFF = 1. / 1000.;
+      
+    // Setting this to a very small number to avoid jumps in phase response (e.g. RandomizedExperiment)
+    // when the complex number is small. 
+    // However, atan2 is discontinuous at 0, so we do not want that to be a possible input
+  
+    final double CUTOFF = 1e-16;  
 
     if (c.abs() < CUTOFF) {
       return 0.;
