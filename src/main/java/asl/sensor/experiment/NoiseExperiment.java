@@ -91,7 +91,7 @@ public class NoiseExperiment extends Experiment {
     }
 
     Complex[][] spectra = new Complex[3][];
-    double[] freqs = new double[1]; // initialize to prevent later errors
+    double[] freqs = new double[]{}; // initialize to prevent later errors
 
     // gets the PSDs of each given index for given freqSpace
     for (int i = 0; i < respIndices.length; ++i) {
