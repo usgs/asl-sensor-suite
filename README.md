@@ -75,6 +75,10 @@ Note that for the graphical output, the red curve represents the normalized step
 
 This function solves for poles to attempt to fit the response curve calculated from deconvolving the given calibration input from the sensor output. Low-frequency (the two lowest poles) and high-frequency (all other poles) are fitted to minimize the difference between the estimated response, based on the response specified for the sensor. The inputs follow the same structure as step calculation, though what response parameters are solved for is dependent on whether a high or low frequency calculation is chosen. Both the magnitude and argument (angle of the response curve along the real axis) of the response curve are displayed in plots, and saving the plot to an image will include both such plots.
 
+High-frequency calibrations have a tendency to become quite noisy close to the nyquist range. To ameliorate this issue, the program defaults to a max range of 80% of the nyquist rate for HF cal fits. This value can be changed from anywhere between 30% and 90%, but fits below 50% of Nyquist are not recommended and may produce errors in computation.
+
+The program can calculate solutions to both resistive and capacitive calibrations according to the appropriate checkbox. This defaults to resistive calibrations.
+
 When using embedded response files, it is strongly recommended to use an appropriate response file with "nocoil" in the name, as these remove the calibration coil's response from the file and thus generate more accurate results of calculations.
 
 Note that plots have been scaled in order to produce more representative fits of response curves. This point occurs at 0.2 Hz for high-frequency cals (which is also the lowest-frequency point being fit to) and at 0.02 Hz for low-frequency cals.
