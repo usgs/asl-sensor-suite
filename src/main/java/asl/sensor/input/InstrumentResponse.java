@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.NumberFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -285,32 +286,49 @@ public class InstrumentResponse {
     // index 2 is the word 'End'
     // index 3 is comma-delimited date string (should be last thing in list)
     String time = words[words.length - 1];
+    // response epoch definition MUST have year and julian day
+    StringBuilder format = new StringBuilder("uuuu,DDD");
+    // length of time string too short -- much not have year and julian day
+    if (time.length() < format.length()) {
+      return null;
+    }
+
+    // now check to make sure at least year and julian day are formatted correctly
     DateTimeFormatter respDTFormat =
-        DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
+        DateTimeFormatter.ofPattern(format.toString()).withZone(ZoneOffset.UTC);
+    String timeTest = time.substring(0, format.length());
+    Instant bestParsedDate;
     try {
-      return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
-    } catch (DateTimeParseException e) {
-      int indexToTrim = e.getErrorIndex();
-      // first, try to parse it in the case the line didn't have seconds defined
+      bestParsedDate = LocalDate.parse(timeTest, respDTFormat).atStartOfDay().toInstant(ZoneOffset.UTC);
+    } catch (DateTimeParseException malformed) {
+      // this is expected to happen if this epoch has an open end time
+      return null;
+    }
+
+    // can parse past this level -- does epoch define hours, minutes, seconds?
+    // do it in a loop because all of these components are optional but, say,
+    // minutes can't exist if hours doesn't, etc.
+    String[] parseLevels = new String[]{",HH",":mm",":ss"};
+    for (String nextLevel : parseLevels) {
+      format.append(nextLevel);
+      if (time.length() < format.length()) {
+        break; // return result from previous stage in loop
+      }
+      // keep trimming -- also handles case where time string has milliseconds defined
+      timeTest = time.substring(0, format.length());
+      // datetimeformatter is the same, but the string defining the format has changed
+      respDTFormat =
+          DateTimeFormatter.ofPattern(format.toString()).withZone(ZoneOffset.UTC);
       try {
-        DateTimeFormatter noSecondsFormat =
-            DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm").withZone(ZoneOffset.UTC);
-        return LocalDateTime.parse(time, noSecondsFormat).toInstant(ZoneOffset.UTC);
-      } catch (DateTimeParseException e1) {
-        // used to handle weird case where sub-second fields are specified
-        // i.e., looks like "uuuu,DDD,HH:mm:ss.[milliseconds]"
-        // in which case we trim out the last part (which isn't parsable by the pattern) and retry
-        // if we still can't parse, then we just return null, because this probably isn't a date
-        time = time.substring(0, indexToTrim);
-        try {
-          return LocalDateTime.parse(time, respDTFormat).toInstant(ZoneOffset.UTC);
-        } catch (DateTimeParseException e2) {
-          // Unable to parse the datetime even after trim, this is expected if an epoch does not end.
-          return null;
-        }
+        Instant temp = LocalDateTime.parse(timeTest, respDTFormat).toInstant(ZoneOffset.UTC);
+        bestParsedDate = temp;
+      } catch (DateTimeParseException invalidSublevel) {
+        // also return best result from previous loop if the new stage has an error
+        break;
       }
     }
 
+    return bestParsedDate;
   }
 
   /**
