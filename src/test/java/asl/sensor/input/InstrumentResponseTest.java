@@ -287,6 +287,13 @@ public class InstrumentResponseTest {
     assertEquals(expected, actual);
   }
 
+  @Test
+  public void parseTermAsDate_starttime_with_milliseconds() {
+    Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:  2007,337,10:15:00.12345");
+    Instant expected = LocalDateTime.parse("2007-12-03T10:15:00").toInstant(ZoneOffset.UTC);
+    assertEquals(expected, actual);
+  }
+
 
   @Test
   public void parseTermAsComplex_checkThatComplexArrayWasOrderedCorrectly() {
