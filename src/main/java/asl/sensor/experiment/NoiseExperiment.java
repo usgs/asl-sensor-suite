@@ -4,6 +4,7 @@ import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.FFTResult;
+import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -16,7 +17,8 @@ import org.jfree.data.xy.XYSeriesCollection;
  * https://github.com/usgs/seedscan/tree/master/src/main/java/asl/timeseries
  * See also Ringler, Hutt: 'Self-Noise Models of Seismic Instruments', Seismological Research
  * Letters (2010).
- *
+ * The self-noise formula is derived from Sleeman, Wettum, Trampert: 'Three-Channel Correlation
+ * Anlysis: A New Technique to Measure Instrumental Noise of Digitizers and Seismic Sensors' (2006).
  * @author akearns - KBRWyle
  * @author jholland - USGS
  */
@@ -90,7 +92,7 @@ public class NoiseExperiment extends Experiment {
       responses[i] = dataStore.getResponse(respIndices[i]);
     }
 
-    Complex[][] spectra = new Complex[3][];
+    Complex[][] spectra = new Complex[DATA_NEEDED][];
     double[] freqs = new double[]{}; // initialize to prevent later errors
 
     // gets the PSDs of each given index for given freqSpace
@@ -125,14 +127,21 @@ public class NoiseExperiment extends Experiment {
     Complex[] c23 = fft.getFFT();
 
     // WIP: use PSD results to get noise at each point see spectra
-    XYSeries[] noiseSeriesArr = new XYSeries[dataIn.length];
-    for (int j = 0; j < dataIn.length; ++j) {
+    XYSeries[] noiseSeriesArr = new XYSeries[DATA_NEEDED];
+    for (int j = 0; j < DATA_NEEDED; ++j) {
       // initialize each xySeries with proper name for the data
       noiseSeriesArr[j] =
           new XYSeries("Noise " + dataIn[j].getName() + " [" + j + "]");
     }
 
     fireStateChange("Doing noise estimation calculations...");
+
+    Complex[][] noise = new Complex[DATA_NEEDED][];
+    for (int i = 0; i < noise.length; ++i) {
+      noise[i] = new Complex[spectra[0].length];
+      noise[i][0] = Complex.ZERO;
+    }
+
     for (int i = 1; i < freqs.length; ++i) {
       if (1 / freqs[i] > MAX_PLOT_PERIOD) {
         continue;
@@ -146,18 +155,22 @@ public class NoiseExperiment extends Experiment {
       Complex p21 = c21[i];
       Complex p23 = c23[i];
 
-      // nii = pii - pij*hij
-      Complex n11 =
-          p11.subtract(p21.multiply(p13).divide(p23));
+      // n_ii = p_ii - p_ji * h_ij
+      // where h_ij = p_ik / p_jk
+      // and p_ik is the complex conjugate of p_ki
+      noise[0][i] =
+          p11.subtract(p21.multiply(p13).divide(p23)); // n_11
 
-      Complex n22 =
+      noise[1][i] =
           p22.subtract(
-              (p23.conjugate()).multiply(p21).divide(p13.conjugate()));
+              (p23.conjugate()).multiply(p21).divide(p13.conjugate())); // n_22
 
-      Complex n33 =
+      noise[2][i] =
           p33.subtract(
-              p23.multiply(p13.conjugate()).divide(p21));
+              p23.multiply(p13.conjugate()).divide(p21)); //n_33
 
+      // double-check that value isn't being set to 0
+      /*
       // now get magnitude and convert to dB
       double plot1 = 10 * Math.log10(n11.abs());
       double plot2 = 10 * Math.log10(n22.abs());
@@ -183,10 +196,15 @@ public class NoiseExperiment extends Experiment {
           noiseSeriesArr[2].add(1 / freqs[i], plot3);
         }
       }
+      */
     }
 
-    for (XYSeries noiseSeries : noiseSeriesArr) {
-      xysc.addSeries(noiseSeries);
+    // now that we've calculated the noise, add it to the plot w/ smoothing applied
+    double[] noiseRange = Arrays.copyOfRange(freqs, 1, freqs.length);
+    for (int i = 0; i < noiseSeriesArr.length; ++i) {
+      Complex[] noiseData = noise[i];
+      XYSeries noiseSeries = noiseSeriesArr[i];
+      addToPlot(noiseSeries, noiseData, noiseRange, freqSpace, xysc);
     }
 
     xysc.addSeries(FFTResult.getLowNoiseModel(freqSpace));
