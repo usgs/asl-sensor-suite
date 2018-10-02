@@ -7,7 +7,13 @@ import asl.sensor.input.DataStore;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextArea;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
@@ -28,6 +34,8 @@ public class GainSixPanel extends GainPanel {
   private JFreeChart northChart;
   private JFreeChart eastChart;
   private JFreeChart verticalChart; // gain result per dimensional component
+  private JRadioButton firstRadioButton, secondRadioButton;
+
   /**
    * Instantiate the panel, including sliders and stat calc button
    */
@@ -43,6 +51,24 @@ public class GainSixPanel extends GainPanel {
       channelType[(3 * i) + 1] = "East sensor " + num + " (RESP required)";
       channelType[(3 * i) + 2] = "Vertical sensor " + num + " (RESP required)";
     }
+
+    firstRadioButton = new JRadioButton("first ");
+    firstRadioButton.setSelected(true);
+    secondRadioButton = new JRadioButton("second ");
+
+
+    ButtonGroup group = new ButtonGroup();
+    group.add(firstRadioButton);
+    group.add(secondRadioButton);
+
+    JPanel angleRefSelection = new JPanel();
+    angleRefSelection.setLayout(new BoxLayout(angleRefSelection, BoxLayout.X_AXIS));
+    angleRefSelection.add(new JLabel("Use the "));
+    angleRefSelection.add(firstRadioButton);
+    angleRefSelection.add(secondRadioButton);
+    angleRefSelection.add(new JLabel("input set as reference (requires regen)"));
+    angleRefSelection.setMaximumSize(angleRefSelection.getMinimumSize());
+    angleRefSelection.setPreferredSize(angleRefSelection.getMinimumSize());
 
     plotTheseInBold = new String[]{"NLNM"};
 
@@ -75,9 +101,14 @@ public class GainSixPanel extends GainPanel {
     constraints.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, constraints);
 
-    constraints.gridx = 0;
     constraints.gridy += 1;
     constraints.weighty = 0;
+    constraints.fill = GridBagConstraints.NONE;
+    this.add(angleRefSelection, constraints);
+
+    constraints.fill = GridBagConstraints.BOTH;
+    constraints.gridx = 0;
+    constraints.gridy += 1;
     constraints.gridwidth = 1;
     constraints.anchor = GridBagConstraints.EAST;
     this.add(leftSlider, constraints);
@@ -255,6 +286,13 @@ public class GainSixPanel extends GainPanel {
     set = true;
 
     setDataNames();
+    GainSixExperiment six = (GainSixExperiment) expResult;
+
+    if (firstRadioButton.isSelected())  {
+      six.setFirstDataAsAngleReference();
+    } else {
+      six.setSecondDataAsAngleReference();
+    }
 
     expResult.runExperimentOnData(dataStore);
 
