@@ -34,7 +34,7 @@ public class GainSixPanel extends GainPanel {
   private JFreeChart northChart;
   private JFreeChart eastChart;
   private JFreeChart verticalChart; // gain result per dimensional component
-  private JRadioButton firstRadioButton, secondRadioButton;
+  private JRadioButton firstRadioButton;
 
   /**
    * Instantiate the panel, including sliders and stat calc button
@@ -54,7 +54,8 @@ public class GainSixPanel extends GainPanel {
 
     firstRadioButton = new JRadioButton("first ");
     firstRadioButton.setSelected(true);
-    secondRadioButton = new JRadioButton("second ");
+    // we don't keep secondRadioButton as a global var since it's only selected if first isn't
+    JRadioButton secondRadioButton = new JRadioButton("second ");
 
 
     ButtonGroup group = new ButtonGroup();
@@ -66,7 +67,7 @@ public class GainSixPanel extends GainPanel {
     angleRefSelection.add(new JLabel("Use the "));
     angleRefSelection.add(firstRadioButton);
     angleRefSelection.add(secondRadioButton);
-    angleRefSelection.add(new JLabel("input set as reference (requires regen)"));
+    angleRefSelection.add(new JLabel("input set for angle reference (requires regen)"));
     angleRefSelection.setMaximumSize(angleRefSelection.getMinimumSize());
     angleRefSelection.setPreferredSize(angleRefSelection.getMinimumSize());
 
