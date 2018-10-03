@@ -7,7 +7,12 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.XYPlot;
@@ -25,6 +30,7 @@ public class NoiseNinePanel extends NoisePanel {
   private static final long serialVersionUID = -8049021432657749975L;
   private final JComboBox<String> plotSelection;
   private JFreeChart northChart, eastChart, verticalChart;
+  private JRadioButton firstRadioButton, secondRadioButton;
 
   /**
    * Construct panel and lay out its components
@@ -44,6 +50,28 @@ public class NoiseNinePanel extends NoisePanel {
       channelType[(3 * i) + 1] = "East sensor " + num + " (RESP required)";
       channelType[(3 * i) + 2] = "Vertical sensor " + num + " (RESP required)";
     }
+
+    firstRadioButton = new JRadioButton("first ");
+    firstRadioButton.setSelected(true);
+    secondRadioButton = new JRadioButton("second ");
+    // we don't keep thisRadioButton as a global var since it's only selected if others aren't
+    JRadioButton thirdRadioButton = new JRadioButton("third ");
+
+
+    ButtonGroup group = new ButtonGroup();
+    group.add(firstRadioButton);
+    group.add(secondRadioButton);
+    group.add(thirdRadioButton);
+
+    JPanel angleRefSelection = new JPanel();
+    angleRefSelection.setLayout(new BoxLayout(angleRefSelection, BoxLayout.X_AXIS));
+    angleRefSelection.add(new JLabel("Use the "));
+    angleRefSelection.add(firstRadioButton);
+    angleRefSelection.add(secondRadioButton);
+    angleRefSelection.add(thirdRadioButton);
+    angleRefSelection.add(new JLabel("input set for angle reference (requires regen)"));
+    angleRefSelection.setMaximumSize(angleRefSelection.getMinimumSize());
+    angleRefSelection.setPreferredSize(angleRefSelection.getMinimumSize());
 
     this.setLayout(new GridBagLayout());
     GridBagConstraints constraints = new GridBagConstraints();
@@ -76,6 +104,11 @@ public class NoiseNinePanel extends NoisePanel {
     constraints.gridwidth = 3;
     constraints.anchor = GridBagConstraints.CENTER;
     add(chartPanel, constraints);
+
+    constraints.gridy += 1;
+    constraints.weighty = 0;
+    constraints.fill = GridBagConstraints.NONE;
+    this.add(angleRefSelection, constraints);
 
     // place the other UI elements in a single row below the chart
     constraints.gridwidth = 1;
@@ -200,6 +233,14 @@ public class NoiseNinePanel extends NoisePanel {
 
     NoiseNineExperiment noiseExperiment = (NoiseNineExperiment) expResult;
     noiseExperiment.setFreqSpace(freqSpaceImmutable);
+
+    if (firstRadioButton.isSelected())  {
+      noiseExperiment.setFirstDataAsAngleReference();
+    } else if (secondRadioButton.isSelected()) {
+      noiseExperiment.setSecondDataAsAngleReference();
+    } else {
+      noiseExperiment.setThirdDataAsAngleReference();
+    }
 
     expResult.runExperimentOnData(dataStore);
 
