@@ -148,10 +148,16 @@ public class GainSixExperiment extends Experiment {
 
   }
 
+  /**
+   * Use the first set of inputs as north and east reference angles (default)
+   */
   public void setFirstDataAsAngleReference() {
     indexOfAngleRefData = 0;
   }
 
+  /**
+   * Use the second set of inputs as north and east reference angles
+   */
   public void setSecondDataAsAngleReference() {
     indexOfAngleRefData = 1;
   }
