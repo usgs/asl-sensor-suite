@@ -149,23 +149,13 @@ public class NoiseNinePanel extends NoisePanel {
    * @return String representing experiment data (rotation angles)
    */
   public static String getInsetString(NoiseNineExperiment experiment) {
-    double[] northAngles = experiment.getNorthAngles();
-    double[] eastAngles = experiment.getEastAngles();
-    StringBuilder sbNorth = new StringBuilder();
-    StringBuilder sbEast = new StringBuilder();
-    for (int i = 0; i < northAngles.length; ++i) {
-      if (northAngles[i] == 0 && eastAngles[i] == 0) {
-        continue;
-      }
-      sbNorth.append("Angle of rotation of north sensor ").append(i + 1).append(" (deg): ");
-      sbNorth.append(DECIMAL_FORMAT.get().format(Math.toDegrees(northAngles[0])));
-      sbNorth.append("\n");
-      sbEast.append("Angle of rotation of east sensor ").append(i + 1).append(" (deg): ");
-      sbEast.append(DECIMAL_FORMAT.get().format(Math.toDegrees(eastAngles[0])));
-      sbEast.append("\n");
-    }
 
-    return sbNorth.toString() + sbEast.toString();
+    String[] output = experiment.getInsetStrings();
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < output.length; ++i) {
+      sb.append(output).append('\n');
+    }
+    return sb.toString();
   }
 
   @Override

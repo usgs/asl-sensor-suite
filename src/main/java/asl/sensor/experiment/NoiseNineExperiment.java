@@ -41,10 +41,20 @@ public class NoiseNineExperiment extends NoiseExperiment {
    */
   private String getNorthChartString() {
     double[] angles = getNorthAngles();
-    return "Angle of rotation of north sensor 2 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
-        + "\nAngle of rotation of north sensor 3 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < angles.length; ++i) {
+      if (i == indexOfAngleRefData) {
+        continue;
+      }
+      sb.append("Angle of rotation of north sensor ").append(i + 1).append(" (deg): ");
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[i])));
+      if (i + 1 < angles.length) {
+        sb.append("\n");
+
+      }
+    }
+    return sb.toString();
   }
 
   /**
@@ -54,10 +64,20 @@ public class NoiseNineExperiment extends NoiseExperiment {
    */
   private String getEastChartString() {
     double[] angles = getEastAngles();
-    return "Angle of rotation of east sensor 2 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
-        + "\nAngle of rotation of east sensor 3 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < angles.length; ++i) {
+      if (i == indexOfAngleRefData) {
+        continue;
+      }
+      sb.append("Angle of rotation of east sensor ").append(i + 1).append(" (deg): ");
+      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[i])));
+      if (i + 1 < angles.length) {
+        sb.append("\n");
+
+      }
+    }
+    return sb.toString();
   }
 
   @Override
