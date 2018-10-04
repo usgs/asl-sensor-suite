@@ -51,10 +51,10 @@ public class GainSixExperiment extends Experiment {
     String[] dataStrings = new String[DIMENSIONS];
     dataStrings[0] = getResultString(0) +
         "\n" + "Estimated azimuth (deg): " +
-        DECIMAL_FORMAT.get().format(Math.toDegrees(northAngle));
+        DECIMAL_FORMAT.get().format(getNorthAzimuthDegrees());
     dataStrings[1] = getResultString(1) +
         "\n" + "Estimated azimuth (deg): " +
-        DECIMAL_FORMAT.get().format(Math.toDegrees(eastAngle));
+        DECIMAL_FORMAT.get().format(getEastAzimuthDegrees());
     dataStrings[2] = getResultString(2);
     return dataStrings;
   }
@@ -97,7 +97,7 @@ public class GainSixExperiment extends Experiment {
 
     // each dimension has 2 inputs, the rotation reference and to-rotate data
     // if ref is 0, this will be 1; if ref is 1, this will be 0
-    int indexOfRotatingData = indexOfAngleRefData + 1 % 2;
+    int indexOfRotatingData = (indexOfAngleRefData + 1) % 2;
     DataBlock northRotate = stores[0].getBlock(indexOfRotatingData);
     DataBlock eastRotate = stores[1].getBlock(indexOfRotatingData);
     double[] northRotateSensor = northRotate.getData();
@@ -176,8 +176,15 @@ public class GainSixExperiment extends Experiment {
    * to the rotation function
    * @see TimeSeriesUtils#rotateX
    */
-  public double getEastAzimuth() {
-    return eastAngle;
+  public double getEastAzimuthDegrees() {
+    double eastDegrees = Math.toDegrees(eastAngle);
+    while (eastDegrees <= -180) {
+      eastDegrees += 360;
+    }
+    while (eastDegrees > 180) {
+      eastDegrees -= 360;
+    }
+    return eastDegrees;
   }
 
 
@@ -199,8 +206,15 @@ public class GainSixExperiment extends Experiment {
    *
    * @return Angle of second north sensor (radians)
    */
-  public double getNorthAzimuth() {
-    return northAngle;
+  public double getNorthAzimuthDegrees() {
+    double northDegrees = Math.toDegrees(northAngle);
+    while (northDegrees <= -180) {
+      northDegrees += 360;
+    }
+    while (northDegrees > 180) {
+      northDegrees -= 360;
+    }
+    return northDegrees;
   }
 
   @Override
