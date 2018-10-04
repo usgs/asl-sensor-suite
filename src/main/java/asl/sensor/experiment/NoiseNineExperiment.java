@@ -82,8 +82,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
   @Override
   protected void backend(DataStore dataStore) {
 
-    northAngles = new double[2];
-    eastAngles = new double[2];
+    northAngles = new double[DIMENSIONS];
+    eastAngles = new double[DIMENSIONS];
 
     // NOTE: this may need to change in the event of a test using > 9 inputs
     for (int i = 0; i < 9; ++i) {
@@ -115,26 +115,30 @@ public class NoiseNineExperiment extends NoiseExperiment {
 
 
     // bound here is the number of unknown angles -- one is assumed to be fixed at N & E
-    for (int i = 0; i < (DIMENSIONS - 1); ++i) {
+    for (int i = 0; i < DIMENSIONS; ++i) {
 
-      // 3 here is the number of components used in an orientation's [i.e., N E or Z] noise tests
-      int indexOfDataToRotate = (indexOfAngleRefData + i) % 3;
+      if (i == indexOfAngleRefData) {
+        // unable to rotate the reference -- fix it at 0
+        northAngles[i] = 0;
+        eastAngles[i] = 0;
+        continue;
+      }
 
       fireStateChange("Getting orientation of data set "
-          + (indexOfDataToRotate + 1) + "...");
-      DataBlock northRotate = stores[0].getBlock(indexOfDataToRotate);
-      DataBlock eastRotate = stores[1].getBlock(indexOfDataToRotate);
+          + (i + 1) + "...");
+      DataBlock northRotate = stores[0].getBlock(i);
+      DataBlock eastRotate = stores[1].getBlock(i);
       double[] northRotateData = northRotate.getData();
       double[] eastRotateData = eastRotate.getData();
 
       // angle is set negative because we are finding angle of reference input
       // which is what northRotateData is here
-      fireStateChange("Getting north sensor " + (indexOfDataToRotate + 1)
+      fireStateChange("Getting north sensor " + (i + 1)
           + " orientation...");
       northAngles[i] = -AzimuthExperiment.getAzimuth(northReference, eastReference,
           northRotateData, interval, start, end);
 
-      fireStateChange("Getting east sensor " + (indexOfDataToRotate + 1)
+      fireStateChange("Getting east sensor " + (i + 1)
           + " orientation...");
       // direction north angle should be if north and east truly orthogonal
       // then east component is x component of rotation in that direction
@@ -145,13 +149,13 @@ public class NoiseNineExperiment extends NoiseExperiment {
       eastAngles[i] = -AzimuthExperiment.getAzimuth(northReference, eastReference,
           eastRotateData, interval, start, end) + (3 * Math.PI / 2);
 
-      fireStateChange("Rotating data " + (indexOfDataToRotate + 1) + "...");
+      fireStateChange("Rotating data " + (i + 1) + "...");
       DataBlock northUnknownRotate =
-          TimeSeriesUtils.rotate(northRotate, eastRotate, northAngles[0]);
-      stores[0].setBlock(indexOfDataToRotate, northUnknownRotate);
+          TimeSeriesUtils.rotate(northRotate, eastRotate, northAngles[i]);
+      stores[0].setBlock(i, northUnknownRotate);
       DataBlock eastUnknownRotate =
-          TimeSeriesUtils.rotateX(northRotate, eastRotate, eastAngles[0]);
-      stores[1].setBlock(indexOfDataToRotate, eastUnknownRotate);
+          TimeSeriesUtils.rotateX(northRotate, eastRotate, eastAngles[i]);
+      stores[1].setBlock(i, eastUnknownRotate);
     }
 
     // set components into N,E,Z directional subcomponents
