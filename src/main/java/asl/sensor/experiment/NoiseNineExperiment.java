@@ -42,16 +42,31 @@ public class NoiseNineExperiment extends NoiseExperiment {
   private String getNorthChartString() {
     double[] angles = getNorthAngles();
 
+    return anglesToText(angles, "north");
+  }
+
+  /**
+   * Driver for converting angles to human-readable text, used in plots and reports
+   * @param angles Array of angles (north or south)
+   * @return
+   */
+  private String anglesToText(double[] angles, String direction) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < angles.length; ++i) {
       if (i == indexOfAngleRefData) {
         continue;
       }
-      sb.append("Angle of rotation of north sensor ").append(i + 1).append(" (deg): ");
-      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[i])));
+      sb.append("Angle of rotation of " + direction + " sensor ").append(i + 1).append(" (deg): ");
+      double angle = Math.toDegrees(angles[i]);
+      while (angle <= -180) {
+        angle += 360;
+      }
+      while (angle > 180) {
+        angle -= 360;
+      }
+      sb.append(DECIMAL_FORMAT.get().format(angle));
       if (i + 1 < angles.length) {
         sb.append("\n");
-
       }
     }
     return sb.toString();
@@ -65,19 +80,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   private String getEastChartString() {
     double[] angles = getEastAngles();
 
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < angles.length; ++i) {
-      if (i == indexOfAngleRefData) {
-        continue;
-      }
-      sb.append("Angle of rotation of east sensor ").append(i + 1).append(" (deg): ");
-      sb.append(DECIMAL_FORMAT.get().format(Math.toDegrees(angles[i])));
-      if (i + 1 < angles.length) {
-        sb.append("\n");
-
-      }
-    }
-    return sb.toString();
+    return anglesToText(angles, "east");
   }
 
   @Override
@@ -223,7 +226,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   /**
-   * Return array of angles (degree-valued) which east components have been
+   * Return array of angles (radian-valued) which east components have been
    * rotated by, starting with the second component (1st east component is
    * assumed to have zero rotation)
    *
@@ -234,7 +237,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   /**
-   * Return array of angles (degree-valued) which north components have been
+   * Return array of angles (radian-valued) which north components have been
    * rotated by, starting with the second component (1st north component is
    * assumed to have zero rotation)
    *

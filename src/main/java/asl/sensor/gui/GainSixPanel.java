@@ -256,8 +256,8 @@ public class GainSixPanel extends GainPanel {
 
     referenceSeries.removeAllItems();
 
-    referenceSeries.addItem("Data from sensor set 1");
-    referenceSeries.addItem("Data from sensor set 2");
+    referenceSeries.addItem("GAIN REFERENCE: Sensor set 1");
+    referenceSeries.addItem("GAIN REFERENCE: Sensor set 2");
 
     referenceSeries.setSelectedIndex(0);
   }
