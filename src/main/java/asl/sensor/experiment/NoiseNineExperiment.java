@@ -226,7 +226,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   /**
-   * Return array of angles (degree-valued) which east components have been
+   * Return array of angles (radian-valued) which east components have been
    * rotated by, starting with the second component (1st east component is
    * assumed to have zero rotation)
    *
@@ -237,7 +237,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   /**
-   * Return array of angles (degree-valued) which north components have been
+   * Return array of angles (radian-valued) which north components have been
    * rotated by, starting with the second component (1st north component is
    * assumed to have zero rotation)
    *
