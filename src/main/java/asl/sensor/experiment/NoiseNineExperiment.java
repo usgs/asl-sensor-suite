@@ -48,7 +48,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   /**
    * Driver for converting angles to human-readable text, used in plots and reports
    * @param angles Array of angles (north or south)
-   * @return
+   * @return Text output of angles with identification of sensor that was rotated
    */
   private String anglesToText(double[] angles, String direction) {
     StringBuilder sb = new StringBuilder();
@@ -56,7 +56,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
       if (i == indexOfAngleRefData) {
         continue;
       }
-      sb.append("Angle of rotation of " + direction + " sensor ").append(i + 1).append(" (deg): ");
+      sb.append("Angle of rotation of ")
+          .append(direction).append(" sensor ").append(i + 1).append(" (deg): ");
       double angle = Math.toDegrees(angles[i]);
       while (angle <= -180) {
         angle += 360;
