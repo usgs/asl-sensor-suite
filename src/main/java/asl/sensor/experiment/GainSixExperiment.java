@@ -11,20 +11,28 @@ import org.jfree.data.xy.XYSeries;
  * rotate north and east components into aligned orientation with
  * the first sensor specified in the data store.
  * This experiment uses the azimuth code to do alignment in these dimensions
- * and then calls a gain backend on the data in each dimension
+ * and then calls a {@link GainExperiment GainExperiment} backend on the data in each dimension.
  *
  * @author akearns - KBRWyle
  */
 public class GainSixExperiment extends Experiment {
 
-  private static final int DIMENSIONS = 3; // number of known space dimensions
+  /**
+   * Number of known space dimensions (as in "3-dimensional")
+   */
+  static final int DIMENSIONS = 3; // number of known space dimensions
   private final int[] indices;
   // used to store the intermediate result data of each of N,S,V components (in that order)
   private GainExperiment[] componentBackends;
-  private double north2Angle, east2Angle;
+  private double northAngle, eastAngle;
+  private int indexOfAngleRefData;
+  // indexOfAngleRefData represents which set of data to use as fixed angle reference
+  // this can be either 0 (first NEZ set) or 1 (second)
 
   public GainSixExperiment() {
     super();
+
+    indexOfAngleRefData = 0; // default to first set of data
 
     componentBackends = new GainExperiment[DIMENSIONS];
     for (int i = 0; i < componentBackends.length; i++) {
@@ -46,24 +54,17 @@ public class GainSixExperiment extends Experiment {
     String[] dataStrings = new String[DIMENSIONS];
     dataStrings[0] = getResultString(0) +
         "\n" + "Estimated azimuth (deg): " +
-        DECIMAL_FORMAT.get().format(Math.toDegrees(north2Angle));
+        DECIMAL_FORMAT.get().format(getNorthAzimuthDegrees());
     dataStrings[1] = getResultString(1) +
         "\n" + "Estimated azimuth (deg): " +
-        DECIMAL_FORMAT.get().format(Math.toDegrees(east2Angle));
+        DECIMAL_FORMAT.get().format(getEastAzimuthDegrees());
     dataStrings[2] = getResultString(2);
     return dataStrings;
   }
 
   @Override
   public String[] getInsetStrings() {
-    String[] dataStrings = new String[DIMENSIONS];
-    // each dimensional component (n, s, v) has an inset string with formatted date info
-    // it is the only entry in its inset strings array, so we can just get that and add to
-    // the array we are returning, one for each plot
-    for (int i = 0; i < dataStrings.length; ++i) {
-      dataStrings[i] = componentBackends[i].getInsetStrings()[0];
-    }
-    return dataStrings;
+    return getDataStrings();
   }
 
   @Override
@@ -89,17 +90,26 @@ public class GainSixExperiment extends Experiment {
       }
     }
 
-    //first get the first set of data (NSV), then second
-    double[] north1Sensor = dataStore.getBlock(0).getData();
-    double[] east1Sensor = dataStore.getBlock(1).getData();
+    // get the data to perform pre-process rotation step
+    // note that data store index identifies dimension [N, E, Z]
+    // and block index identifies either first or second group of data
+    DataBlock northRef = stores[0].getBlock(indexOfAngleRefData);
+    DataBlock eastRef = stores[1].getBlock(indexOfAngleRefData);
+    double[] northRefSensor = northRef.getData();
+    double[] eastRefSensor = eastRef.getData();
 
-    double[] north2Sensor = dataStore.getBlock(3).getData();
-    double[] east2Sensor = dataStore.getBlock(4).getData();
+    // each dimension has 2 inputs, the rotation reference and to-rotate data
+    // if ref is 0, this will be 1; if ref is 1, this will be 0
+    int indexOfRotatingData = (indexOfAngleRefData + 1) % 2;
+    DataBlock northRotate = stores[0].getBlock(indexOfRotatingData);
+    DataBlock eastRotate = stores[1].getBlock(indexOfRotatingData);
+    double[] northRotateSensor = northRotate.getData();
+    double[] east2Sensor = eastRotate.getData();
 
     // see also the rotation used in the 9-input self noise backend
     fireStateChange("Getting second north sensor orientation...");
-    north2Angle = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
-        north2Sensor, interval, start, end);
+    northAngle = -AzimuthExperiment.getAzimuth(northRefSensor, eastRefSensor,
+        northRotateSensor, interval, start, end);
 
     fireStateChange("Getting second east sensor orientation...");
     // direction north angle should be if north and east truly orthogonal
@@ -108,17 +118,17 @@ public class GainSixExperiment extends Experiment {
     // azimuth of east sensor
     // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other
     // rotation direction
-    east2Angle = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
+    eastAngle = -AzimuthExperiment.getAzimuth(northRefSensor, eastRefSensor,
         east2Sensor, interval, start, end) + (3 * Math.PI / 2);
 
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
     DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(dataStore.getBlock(3), dataStore.getBlock(4), north2Angle);
-    stores[0].setBlock(1, north2Rotated);
+        TimeSeriesUtils.rotate(northRotate, eastRotate, northAngle);
+    stores[0].setBlock(indexOfRotatingData, north2Rotated);
     DataBlock east2Rotated =
-        TimeSeriesUtils.rotateX(dataStore.getBlock(3), dataStore.getBlock(4), east2Angle);
-    stores[1].setBlock(1, east2Rotated);
+        TimeSeriesUtils.rotateX(northRotate, eastRotate, eastAngle);
+    stores[1].setBlock(indexOfRotatingData, east2Rotated);
 
     // now get the datasets to plug into the datastore
     String[] direction = new String[]{"north", "east", "vertical"};
@@ -139,7 +149,20 @@ public class GainSixExperiment extends Experiment {
       dataNames.addAll(componentBackend.getInputNames());
     }
 
+  }
 
+  /**
+   * Use the first set of inputs as north and east reference angles (default).
+   */
+  public void setFirstDataAsAngleReference() {
+    indexOfAngleRefData = 0;
+  }
+
+  /**
+   * Use the second set of inputs as north and east reference angles.
+   */
+  public void setSecondDataAsAngleReference() {
+    indexOfAngleRefData = 1;
   }
 
   @Override
@@ -148,21 +171,28 @@ public class GainSixExperiment extends Experiment {
   }
 
   /**
-   * Get the rotation angle used to rotate the second input set's east sensor
-   * Ideally this should be close to the value used for the north azimuth
+   * Get the rotation angle used to rotate the second input set's east sensor.
+   * Ideally this should be close to the value used for the north azimuth.
    *
    * @return Angle of second east sensor (radians) minus 90-degree offset
    * representing angle between north and east sensors; this is the angle sent
    * to the rotation function
    * @see TimeSeriesUtils#rotateX
    */
-  public double getEastAzimuth() {
-    return east2Angle;
+  public double getEastAzimuthDegrees() {
+    double eastDegrees = Math.toDegrees(eastAngle);
+    while (eastDegrees <= -180) {
+      eastDegrees += 360;
+    }
+    while (eastDegrees > 180) {
+      eastDegrees -= 360;
+    }
+    return eastDegrees;
   }
 
 
   /**
-   * Get the frequency bounds of the data to be given to charts
+   * Get the frequency bounds of the data to be given to charts.
    *
    * @return Array of form {low freq bound, high freq bound}
    */
@@ -175,12 +205,19 @@ public class GainSixExperiment extends Experiment {
   }
 
   /**
-   * Get the rotation angle used to rotate the second input set's north sensor
+   * Get the rotation angle used to rotate the second input set's north sensor.
    *
    * @return Angle of second north sensor (radians)
    */
-  public double getNorthAzimuth() {
-    return north2Angle;
+  public double getNorthAzimuthDegrees() {
+    double northDegrees = Math.toDegrees(northAngle);
+    while (northDegrees <= -180) {
+      northDegrees += 360;
+    }
+    while (northDegrees > 180) {
+      northDegrees -= 360;
+    }
+    return northDegrees;
   }
 
   @Override
@@ -199,16 +236,51 @@ public class GainSixExperiment extends Experiment {
     return indices;
   }
 
+  /**
+   * Select the range of data to be used as the range over which gain statistics are calculated.
+   * This is by default the range from 3 to 9 seconds period.
+   * This value will be used by each dimension's gain calculations, as in
+   * {@link GainExperiment#setRangeForStatistics(double, double) setRangeForStatistics} in the
+   * gain subcomponent.
+   * @param lowPeriod New low period to get range over
+   * @param highPeriod New high period to get range over
+   */
   public void setRangeForStatistics(double lowPeriod, double highPeriod) {
     for (GainExperiment component : componentBackends) {
       component.setRangeForStatistics(lowPeriod, highPeriod);
     }
   }
 
+  /**
+   * Select which set of data should be used as reference for gain statistics.
+   * This is either the first (0) or second(1) set, and will be used as reference for each
+   * dimension's gain calculations, as given by
+   * {@link asl.sensor.experiment.GainExperiment#setReferenceIndex(int) setReferenceIndex}
+   * in the gain subcomponent.
+   * @param newIndex Value of dataset to be chosen as reference for all gain estimations
+   */
   public void setReferenceIndex(int newIndex) {
     for (GainExperiment component : componentBackends) {
       component.setReferenceIndex(newIndex);
     }
+  }
+
+  /**
+   * Returns the set of statistics results of each dimension's experiment using the pre-set
+   * frequency values.
+   * This produces a 2D array. The first index selects which one of the dimensions to examine data
+   * from; the second produces the statistics produced by the gain experiment in that dimension,
+   * equivalent to calling {@link asl.sensor.experiment.GainExperiment#getStatsFromFreqs()
+   * getStatsFromFreqs}
+   * in one of the sub-components of the backend.
+   * @return Array holding each dimension's statistical results
+   */
+  double[][] getStatistics() {
+    double[][] outer = new double[componentBackends.length][];
+    for (int i = 0; i < outer.length; ++i) {
+      outer[i] = componentBackends[i].getStatsFromFreqs();
+    }
+    return outer;
   }
 
 }

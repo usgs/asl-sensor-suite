@@ -274,6 +274,28 @@ public class InstrumentResponseTest {
   }
 
   @Test
+  public void parseTermAsDate_starttime_no_minutes() {
+    Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:  2007,337,01");
+    Instant expected = LocalDateTime.parse("2007-12-03T01:00:00").toInstant(ZoneOffset.UTC);
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void parseTermAsDate_starttime_no_hours() {
+    Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:  2007,337");
+    Instant expected = LocalDateTime.parse("2007-12-03T00:00:00").toInstant(ZoneOffset.UTC);
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void parseTermAsDate_starttime_with_milliseconds() {
+    Instant actual = InstrumentResponse.parseTermAsDate("B052F23     End date:  2007,337,10:15:00.12345");
+    Instant expected = LocalDateTime.parse("2007-12-03T10:15:00").toInstant(ZoneOffset.UTC);
+    assertEquals(expected, actual);
+  }
+
+
+  @Test
   public void parseTermAsComplex_checkThatComplexArrayWasOrderedCorrectly() {
     Complex[] arr = new Complex[5];
     String[] lines = {"B053F15-18    0 -5.943130E+01  0.000000E+00  0.000000E+00  0.000000E+00",

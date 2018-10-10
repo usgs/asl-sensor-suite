@@ -309,7 +309,7 @@ public class GainPanel extends ExperimentPanel
         name += "_";
       }
       preventDuplicates.add(name);
-      referenceSeries.addItem(name);
+      referenceSeries.addItem("GAIN REFERENCE: " + name);
     }
     referenceSeries.setSelectedIndex(0);
   }

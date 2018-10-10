@@ -72,6 +72,11 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * This affects which poles are fitted, either low or high frequencies.
    */
   private boolean isLowFrequencyCalibration;
+  /**
+   * Used to ensure that scaling is done correctly on calibrations
+   * that use a capacitive setting. Default value will be false.
+   */
+  private boolean isCapacitive;
   private InstrumentResponse fitResponse;
   private double[] freqs;
   private boolean plotUsingHz;
@@ -81,6 +86,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
   public RandomizedExperiment() {
     super();
+    isCapacitive = false;
     isLowFrequencyCalibration = false;
     numIterations = 0;
     plotUsingHz = true;
@@ -378,7 +384,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       double denom = denominatorPSDVals[i].abs(); // phase is 0
       // the actual complex value which we'll immediately convert to doubles for use in plots/fits
       Complex ampValue = ampNumer.divide(denom);
-      Complex scaleFactor = new Complex(0., NumericUtils.TAU * freqsUntrimmed[i]);
+      Complex scaleFactor = getSignalScalingFactor(freqsUntrimmed[i]);
       // convert from displacement to velocity
       ampValue = ampValue.multiply(scaleFactor.pow(2));
       untrimmedAmplitude[i] = 10 * Math.log10(ampValue.abs());
@@ -684,6 +690,19 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   }
 
   /**
+   * Calculates the scaling/rotation factor to be done on the calibration
+   * signal. If the calibration is capacitive this value is always 1.
+   * @param freq Given frequency to apply the calculation to
+   * @return Either 1 or 2*pi*i*freq depending on calibration type
+   */
+  private Complex getSignalScalingFactor(double freq) {
+    if (isCapacitive) {
+      return new Complex(1.);
+    }
+    return new Complex(0., NumericUtils.TAU * freq);
+  }
+
+  /**
    * Get the poles that the solver has found to best-fit the est. response
    *
    * @return new poles that should improve fit over inputted response, as a list
@@ -816,6 +835,15 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     // NOTE: not used by corresponding panel, overrides with active indices
     // of components in the combo-box
     return new int[]{1};
+  }
+
+  /**
+   * Used to control the scaling of the calibration signals based on whether or
+   * not a given calibration is capacitive. The default value is false (resistive).
+   * @param isCapacitive True if the calibration to be calculated is capacitive
+   */
+  public void setCapactiveCalibration(boolean isCapacitive) {
+    this.isCapacitive = isCapacitive;
   }
 
   /**

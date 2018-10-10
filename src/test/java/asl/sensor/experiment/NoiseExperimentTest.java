@@ -137,7 +137,7 @@ public class NoiseExperimentTest {
   public void testResultsData1PSD2() {
     int idx = 1;
     double psdCheck = -161.00;
-    double noiseCheck = -162.41;
+    double noiseCheck = -163.14;
     // everything below here same for every test
     XYSeriesCollection xysc = setUpTest1();
     // first 3 data, PSDs of each input
@@ -179,7 +179,7 @@ public class NoiseExperimentTest {
   public void testResultsData1PSD3() {
     int idx = 2;
     double psdCheck = -157.70;
-    double noiseCheck = -158.66;
+    double noiseCheck = -158.80;
     // everything below here same for every test
     XYSeriesCollection xysc = setUpTest1();
     // first 3 data, PSDs of each input
@@ -220,7 +220,7 @@ public class NoiseExperimentTest {
   public void testResultsData2PSD1() {
     int idx = 0;
     double psdCheck = -159.61;
-    double noiseCheck = -161.16;
+    double noiseCheck = -161.22;
     // everything below here same for every test
     XYSeriesCollection xysc = setUpTest2();
     // first 3 data, PSDs of each input

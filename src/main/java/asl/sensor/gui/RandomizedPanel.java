@@ -58,8 +58,9 @@ public class RandomizedPanel extends ExperimentPanel {
   private final JSpinner nyquistMultiplier;
   private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
       residualXAxis, residualPeriodAxis;
-  private JCheckBox lowFrequencyBox, showParams, frequencySpace;
+  private JCheckBox lowFrequency, showParams, frequencySpace, capacitiveCal;
   private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
+
   public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
 
@@ -108,9 +109,10 @@ public class RandomizedPanel extends ExperimentPanel {
     constraints.gridx = 0;
     JPanel checkBoxPanel = new JPanel();
     checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
-    checkBoxPanel.add(lowFrequencyBox);
+    checkBoxPanel.add(lowFrequency);
     checkBoxPanel.add(showParams);
     checkBoxPanel.add(frequencySpace);
+    checkBoxPanel.add(capacitiveCal);
     this.add(checkBoxPanel, constraints);
 
     constraints.gridx += 1;
@@ -420,7 +422,7 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   @Override
   public String getPDFFilename() {
-    if (lowFrequencyBox.isSelected()) {
+    if (lowFrequency.isSelected()) {
       return "Low_Frq_" + super.getPDFFilename();
     } else {
       return "High_Frq_" + super.getPDFFilename();
@@ -490,8 +492,8 @@ public class RandomizedPanel extends ExperimentPanel {
     residualPhaseAxis.setLabelFont(bold);
     residualAmplitudeAxis.setLabelFont(bold);
 
-    lowFrequencyBox = new JCheckBox("Low frequency calibration");
-    lowFrequencyBox.setSelected(true);
+    lowFrequency = new JCheckBox("Low frequency calibration");
+    lowFrequency.setSelected(true);
 
     showParams = new JCheckBox("Show params");
     showParams.setEnabled(false);
@@ -499,6 +501,9 @@ public class RandomizedPanel extends ExperimentPanel {
 
     frequencySpace = new JCheckBox("Use Hz units (req. regen)");
     frequencySpace.setSelected(true);
+
+    capacitiveCal = new JCheckBox("Capacitive calibration");
+    capacitiveCal.setSelected(false);
   }
 
   @Override
@@ -536,7 +541,7 @@ public class RandomizedPanel extends ExperimentPanel {
     set = true;
     showParams.setSelected(false);
 
-    final boolean isLowFreq = lowFrequencyBox.isSelected();
+    final boolean isLowFreq = lowFrequency.isSelected();
     seriesColorMap = new HashMap<>();
 
     // we display as % but backend expects this to be used
@@ -546,6 +551,7 @@ public class RandomizedPanel extends ExperimentPanel {
     rndExp.setLowFrequencyCalibration(isLowFreq);
     rndExp.setPlotUsingHz(frequencySpace.isSelected());
     rndExp.setNyquistMultiplier(multiplier);
+    rndExp.setCapactiveCalibration(capacitiveCal.isSelected());
     expResult.runExperimentOnData(dataStore);
 
     String appendFreqTitle;

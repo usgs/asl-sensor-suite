@@ -25,11 +25,13 @@ public class NoiseNineExperiment extends NoiseExperiment {
 
   private static final int DIMENSIONS = 3;
   private double[] northAngles, eastAngles;
+  private int indexOfAngleRefData;
 
   public NoiseNineExperiment() {
     super();
     // indices are fixed since we need all 9 data points here
     respIndices = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
+    indexOfAngleRefData = 0;
   }
 
   /**
@@ -39,10 +41,36 @@ public class NoiseNineExperiment extends NoiseExperiment {
    */
   private String getNorthChartString() {
     double[] angles = getNorthAngles();
-    return "Angle of rotation of north sensor 2 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
-        + "\nAngle of rotation of north sensor 3 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
+
+    return anglesToText(angles, "north");
+  }
+
+  /**
+   * Driver for converting angles to human-readable text, used in plots and reports
+   * @param angles Array of angles (north or south)
+   * @return Text output of angles with identification of sensor that was rotated
+   */
+  private String anglesToText(double[] angles, String direction) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < angles.length; ++i) {
+      if (i == indexOfAngleRefData) {
+        continue;
+      }
+      sb.append("Angle of rotation of ")
+          .append(direction).append(" sensor ").append(i + 1).append(" (deg): ");
+      double angle = Math.toDegrees(angles[i]);
+      while (angle <= -180) {
+        angle += 360;
+      }
+      while (angle > 180) {
+        angle -= 360;
+      }
+      sb.append(DECIMAL_FORMAT.get().format(angle));
+      if (i + 1 < angles.length) {
+        sb.append("\n");
+      }
+    }
+    return sb.toString();
   }
 
   /**
@@ -52,10 +80,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
    */
   private String getEastChartString() {
     double[] angles = getEastAngles();
-    return "Angle of rotation of east sensor 2 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[0]))
-        + "\nAngle of rotation of east sensor 3 (deg): "
-        + DECIMAL_FORMAT.get().format(Math.toDegrees(angles[1]));
+
+    return anglesToText(angles, "east");
   }
 
   @Override
@@ -80,8 +106,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
   @Override
   protected void backend(DataStore dataStore) {
 
-    northAngles = new double[2];
-    eastAngles = new double[2];
+    northAngles = new double[DIMENSIONS];
+    eastAngles = new double[DIMENSIONS];
 
     // NOTE: this may need to change in the event of a test using > 9 inputs
     for (int i = 0; i < 9; ++i) {
@@ -100,72 +126,61 @@ public class NoiseNineExperiment extends NoiseExperiment {
       }
     }
 
-    // get the components
-    // why unroll the DataStores contents like this?
-    // since we need to do the azimuth calculations with subsets of the data
-    // and then rotate some of those sensors to get new DataBlocks
-    // we can only compact the code so hard, and this is an easier arrangement
-    // than, say, trying to index into a series of ArrayLists
-    double[] north1Sensor = dataStore.getBlock(0).getData();
-    double[] east1Sensor = dataStore.getBlock(1).getData();
-    // index 2 is a vertical sensor
-    double[] north2Sensor = dataStore.getBlock(3).getData();
-    double[] east2Sensor = dataStore.getBlock(4).getData();
-    // index 5 is a vertical sensor
-    double[] north3Sensor = dataStore.getBlock(6).getData();
-    double[] east3Sensor = dataStore.getBlock(7).getData();
-
     long interval = dataStore.getBlock(0).getInterval();
     long start = dataStore.getBlock(0).getStartTime();
     long end = dataStore.getBlock(0).getEndTime();
 
-    StringBuilder sb = new StringBuilder();
-    sb.append("Beginning rotations (offset angle estimates)\n");
-    sb.append("for second and third sets of horizontal (N, E) data...");
-    fireStateChange(sb.toString());
+    fireStateChange("Getting data from rotation reference data...");
+    DataBlock northRef = stores[0].getBlock(indexOfAngleRefData);
+    DataBlock eastRef = stores[1].getBlock(indexOfAngleRefData);
+    double[] northReference = northRef.getData();
+    double[] eastReference = eastRef.getData();
 
-    // angle is set negative because we are finding angle of reference input
-    // which is what north2Sensor is here
-    fireStateChange("Getting second north sensor orientation...");
-    northAngles[0] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
-        north2Sensor, interval, start, end);
 
-    fireStateChange("Getting second east sensor orientation...");
-    // direction north angle should be if north and east truly orthogonal
-    // then east component is x component of rotation in that direction
-    // i.e., need to correct by 90 degrees to get rotation angle rather than
-    // azimuth of east sensor
-    // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other
-    // rotation direction
-    eastAngles[0] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
-        east2Sensor, interval, start, end) + (3 * Math.PI / 2);
 
-    // now to rotate the data according to these angles
-    fireStateChange("Rotating data...");
-    DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(dataStore.getBlock(3), dataStore.getBlock(4), northAngles[0]);
-    stores[0].setBlock(1, north2Rotated);
-    DataBlock east2Rotated =
-        TimeSeriesUtils.rotateX(dataStore.getBlock(3), dataStore.getBlock(4), eastAngles[0]);
-    stores[1].setBlock(1, east2Rotated);
+    // bound here is the number of unknown angles -- one is assumed to be fixed at N & E
+    for (int i = 0; i < DIMENSIONS; ++i) {
 
-    // see also the rotation used in the 9-input self noise backend
-    fireStateChange("Getting third north sensor orientation...");
-    northAngles[1] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
-        north3Sensor, interval, start, end);
-    fireStateChange("Getting third east sensor orientation...");
-    eastAngles[1] = -AzimuthExperiment.getAzimuth(north1Sensor, east1Sensor,
-        east3Sensor, interval, start, end) + (3 * Math.PI / 2);
+      if (i == indexOfAngleRefData) {
+        // unable to rotate the reference -- fix it at 0
+        northAngles[i] = 0;
+        eastAngles[i] = 0;
+        continue;
+      }
 
-    // now to rotate the data according to these angles
-    fireStateChange("Rotating data...");
-    DataBlock north3Rotated =
-        TimeSeriesUtils.rotate(dataStore.getBlock(6), dataStore.getBlock(7), northAngles[1]);
-    stores[0].setBlock(2, north3Rotated);
-    DataBlock east3Rotated =
-        TimeSeriesUtils.rotateX(dataStore.getBlock(6), dataStore.getBlock(7), eastAngles[1]);
-    stores[1].setBlock(2, east3Rotated);
-    fireStateChange("All offset horizontal data rotated!");
+      fireStateChange("Getting orientation of data set "
+          + (i + 1) + "...");
+      DataBlock northRotate = stores[0].getBlock(i);
+      DataBlock eastRotate = stores[1].getBlock(i);
+      double[] northRotateData = northRotate.getData();
+      double[] eastRotateData = eastRotate.getData();
+
+      // angle is set negative because we are finding angle of reference input
+      // which is what northRotateData is here
+      fireStateChange("Getting north sensor " + (i + 1)
+          + " orientation...");
+      northAngles[i] = -AzimuthExperiment.getAzimuth(northReference, eastReference,
+          northRotateData, interval, start, end);
+
+      fireStateChange("Getting east sensor " + (i + 1)
+          + " orientation...");
+      // direction north angle should be if north and east truly orthogonal
+      // then east component is x component of rotation in that direction
+      // i.e., need to correct by 90 degrees to get rotation angle rather than
+      // azimuth of east sensor
+      // offset by 3Pi/2 is the same as offset Pi/2 (90 degrees) in other
+      // rotation direction
+      eastAngles[i] = -AzimuthExperiment.getAzimuth(northReference, eastReference,
+          eastRotateData, interval, start, end) + (3 * Math.PI / 2);
+
+      fireStateChange("Rotating data " + (i + 1) + "...");
+      DataBlock northUnknownRotate =
+          TimeSeriesUtils.rotate(northRotate, eastRotate, northAngles[i]);
+      stores[0].setBlock(i, northUnknownRotate);
+      DataBlock eastUnknownRotate =
+          TimeSeriesUtils.rotateX(northRotate, eastRotate, eastAngles[i]);
+      stores[1].setBlock(i, eastUnknownRotate);
+    }
 
     // set components into N,E,Z directional subcomponents
 
@@ -174,7 +189,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
     noiseExp.setFreqSpace(freqSpace);
     String[] directions = new String[]{"north", "east", "vertical"};
     for (int i = 0; i < DIMENSIONS; ++i) {
-      sb = new StringBuilder("Calculating ");
+      StringBuilder sb = new StringBuilder("Calculating ");
       sb.append(directions[i]);
       sb.append(" noise components...");
       noiseExp.runExperimentOnData(stores[i]);
@@ -184,13 +199,35 @@ public class NoiseNineExperiment extends NoiseExperiment {
 
   }
 
+  /**
+   * Use the first set of inputs as north and east reference angles (default)
+   */
+  public void setFirstDataAsAngleReference() {
+    indexOfAngleRefData = 0;
+  }
+
+  /**
+   * Use the second set of inputs as north and east reference angles
+   */
+  public void setSecondDataAsAngleReference() {
+    indexOfAngleRefData = 1;
+  }
+
+  /**
+   * Use the third set of inputs as north and east reference angles
+   */
+  public void setThirdDataAsAngleReference() {
+    indexOfAngleRefData = 2;
+  }
+
+
   @Override
   public int blocksNeeded() {
     return 9;
   }
 
   /**
-   * Return array of angles (degree-valued) which east components have been
+   * Return array of angles (radian-valued) which east components have been
    * rotated by, starting with the second component (1st east component is
    * assumed to have zero rotation)
    *
@@ -201,7 +238,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   /**
-   * Return array of angles (degree-valued) which north components have been
+   * Return array of angles (radian-valued) which north components have been
    * rotated by, starting with the second component (1st north component is
    * assumed to have zero rotation)
    *
