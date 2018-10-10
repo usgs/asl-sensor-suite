@@ -27,7 +27,7 @@ public class GainExperiment extends Experiment {
    */
   public static final double DEFAULT_UP_BOUND = 9.;
   /**
-   * Lower bound of intiial region to calculate gain estimation over (3 seconds period)
+   * Lower bound of initial region to calculate gain estimation over (3 seconds period)
    */
   public static final double DEFAULT_LOW_BOUND = 3.;
 
@@ -46,8 +46,8 @@ public class GainExperiment extends Experiment {
   public GainExperiment() {
     super();
     referenceIndex = 0;
-    lowPeriod = 0.;
-    highPeriod = 0.;
+    lowPeriod = DEFAULT_LOW_BOUND;
+    highPeriod = DEFAULT_UP_BOUND;
   }
 
   String getResultString() {
@@ -206,7 +206,7 @@ public class GainExperiment extends Experiment {
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq.,
    * calc. A0 freq.}
    */
-  private double[] getStatsFromFreqs() {
+  protected double[] getStatsFromFreqs() {
     FFTResult plot0 = fftResults[referenceIndex];
     double lowerBound = 1. / highPeriod; // high period = low frequency
     double upperBound = 1./ lowPeriod; // low period = high frequency
@@ -286,10 +286,23 @@ public class GainExperiment extends Experiment {
     return indices;
   }
 
+  /**
+   * Choose what index of data to hold as reference for gain estimation, either the first input
+   * (0) or second (1). If a number other than this is chosen, the correct value mod
+   * {@link #NUMBER_TO_LOAD NUMBER_TO_LOAD} will be chosen.
+   * @param newIndex Index of data to be used as reference
+   */
   public void setReferenceIndex(int newIndex) {
-    referenceIndex = newIndex;
+    // reference index must be positive
+    referenceIndex = ((newIndex % NUMBER_TO_LOAD) + NUMBER_TO_LOAD) % NUMBER_TO_LOAD;
   }
 
+  /**
+   * Select the range of data to be used as the range over which gain statistics are calculated.
+   * This is by default the range from 3 to 9 seconds period.
+   * @param lowPeriod New low period to get range over
+   * @param highPeriod New high period to get range over
+   */
   public void setRangeForStatistics(double lowPeriod, double highPeriod) {
     this.highPeriod = Math.max(lowPeriod, highPeriod);
     this.lowPeriod = Math.min(lowPeriod, highPeriod);
