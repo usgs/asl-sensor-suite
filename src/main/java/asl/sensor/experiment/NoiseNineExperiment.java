@@ -40,7 +40,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
    * @return String displaying angles of rotation for the 2nd, 3rd north sensors
    */
   private String getNorthChartString() {
-    double[] angles = getNorthAngles();
+    double[] angles = getNorthAnglesDegrees();
 
     return anglesToText(angles, "north");
   }
@@ -48,7 +48,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
   /**
    * Driver for converting angles to human-readable text, used in plots and reports
    * @param angles Array of angles (north or south)
-   * @return
+   * @return Text output of angles with identification of sensor that was rotated
    */
   private String anglesToText(double[] angles, String direction) {
     StringBuilder sb = new StringBuilder();
@@ -56,7 +56,33 @@ public class NoiseNineExperiment extends NoiseExperiment {
       if (i == indexOfAngleRefData) {
         continue;
       }
-      sb.append("Angle of rotation of " + direction + " sensor ").append(i + 1).append(" (deg): ");
+      sb.append("Angle of rotation of ")
+          .append(direction).append(" sensor ").append(i + 1).append(" (deg): ");
+      sb.append(DECIMAL_FORMAT.get().format(angles[i]));
+      sb.append('\n');
+    }
+    sb.deleteCharAt(sb.length()-1);
+    return sb.toString();
+  }
+
+  /**
+   * Return the rotation of angles of the north-facing data in degrees, range (-180, 180]
+   * @return Array of doubles representing degree rotation
+   */
+  public double[] getNorthAnglesDegrees() {
+    return convertAnglesToDegrees(getNorthAngles());
+  }
+
+  /**
+   * Return the rotation of angles of the east-facing data in degrees, range (-180, 180]
+   * @return Array of doubles representing degree rotation
+   */
+  public double[] getEastAnglesDegrees() {
+    return convertAnglesToDegrees(getEastAngles());
+  }
+
+  private double[] convertAnglesToDegrees(double[] angles) {
+    for (int i = 0; i < angles.length; ++i) {
       double angle = Math.toDegrees(angles[i]);
       while (angle <= -180) {
         angle += 360;
@@ -64,12 +90,10 @@ public class NoiseNineExperiment extends NoiseExperiment {
       while (angle > 180) {
         angle -= 360;
       }
-      sb.append(DECIMAL_FORMAT.get().format(angle));
-      if (i + 1 < angles.length) {
-        sb.append("\n");
-      }
+      angles[i] = angle;
     }
-    return sb.toString();
+
+    return angles;
   }
 
   /**
@@ -78,7 +102,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
    * @return String displaying angles of rotation for the 2nd, 3rd east sensors
    */
   private String getEastChartString() {
-    double[] angles = getEastAngles();
+    double[] angles = getEastAnglesDegrees();
 
     return anglesToText(angles, "east");
   }
@@ -135,10 +159,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
     double[] northReference = northRef.getData();
     double[] eastReference = eastRef.getData();
 
-
-
     // bound here is the number of unknown angles -- one is assumed to be fixed at N & E
-    for (int i = 0; i < DIMENSIONS; ++i) {
+    for (int i = 0; i < DATA_NEEDED; ++i) {
 
       if (i == indexOfAngleRefData) {
         // unable to rotate the reference -- fix it at 0

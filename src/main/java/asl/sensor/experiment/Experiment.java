@@ -265,8 +265,9 @@ public abstract class Experiment {
   }
 
   /**
-   * Abstract function that runs the calculations specific to a given procedure
-   * (Overwritten by concrete experiments with specific operations)
+   * Abstract function that runs the calculations specific to a given procedure,
+   * overwritten by concrete experiments with specific operations.
+   * Information on what an experiment's implementation does is in its documentation intro section.
    *
    * @param dataStore Object containing the raw timeseries data to process
    */

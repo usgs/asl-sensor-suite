@@ -11,13 +11,16 @@ import org.jfree.data.xy.XYSeries;
  * rotate north and east components into aligned orientation with
  * the first sensor specified in the data store.
  * This experiment uses the azimuth code to do alignment in these dimensions
- * and then calls a gain backend on the data in each dimension
+ * and then calls a {@link GainExperiment GainExperiment} backend on the data in each dimension.
  *
  * @author akearns - KBRWyle
  */
 public class GainSixExperiment extends Experiment {
 
-  private static final int DIMENSIONS = 3; // number of known space dimensions
+  /**
+   * Number of known space dimensions (as in "3-dimensional")
+   */
+  static final int DIMENSIONS = 3; // number of known space dimensions
   private final int[] indices;
   // used to store the intermediate result data of each of N,S,V components (in that order)
   private GainExperiment[] componentBackends;
@@ -149,14 +152,14 @@ public class GainSixExperiment extends Experiment {
   }
 
   /**
-   * Use the first set of inputs as north and east reference angles (default)
+   * Use the first set of inputs as north and east reference angles (default).
    */
   public void setFirstDataAsAngleReference() {
     indexOfAngleRefData = 0;
   }
 
   /**
-   * Use the second set of inputs as north and east reference angles
+   * Use the second set of inputs as north and east reference angles.
    */
   public void setSecondDataAsAngleReference() {
     indexOfAngleRefData = 1;
@@ -168,8 +171,8 @@ public class GainSixExperiment extends Experiment {
   }
 
   /**
-   * Get the rotation angle used to rotate the second input set's east sensor
-   * Ideally this should be close to the value used for the north azimuth
+   * Get the rotation angle used to rotate the second input set's east sensor.
+   * Ideally this should be close to the value used for the north azimuth.
    *
    * @return Angle of second east sensor (radians) minus 90-degree offset
    * representing angle between north and east sensors; this is the angle sent
@@ -189,7 +192,7 @@ public class GainSixExperiment extends Experiment {
 
 
   /**
-   * Get the frequency bounds of the data to be given to charts
+   * Get the frequency bounds of the data to be given to charts.
    *
    * @return Array of form {low freq bound, high freq bound}
    */
@@ -202,7 +205,7 @@ public class GainSixExperiment extends Experiment {
   }
 
   /**
-   * Get the rotation angle used to rotate the second input set's north sensor
+   * Get the rotation angle used to rotate the second input set's north sensor.
    *
    * @return Angle of second north sensor (radians)
    */
@@ -233,16 +236,51 @@ public class GainSixExperiment extends Experiment {
     return indices;
   }
 
+  /**
+   * Select the range of data to be used as the range over which gain statistics are calculated.
+   * This is by default the range from 3 to 9 seconds period.
+   * This value will be used by each dimension's gain calculations, as in
+   * {@link GainExperiment#setRangeForStatistics(double, double) setRangeForStatistics} in the
+   * gain subcomponent.
+   * @param lowPeriod New low period to get range over
+   * @param highPeriod New high period to get range over
+   */
   public void setRangeForStatistics(double lowPeriod, double highPeriod) {
     for (GainExperiment component : componentBackends) {
       component.setRangeForStatistics(lowPeriod, highPeriod);
     }
   }
 
+  /**
+   * Select which set of data should be used as reference for gain statistics.
+   * This is either the first (0) or second(1) set, and will be used as reference for each
+   * dimension's gain calculations, as given by
+   * {@link asl.sensor.experiment.GainExperiment#setReferenceIndex(int) setReferenceIndex}
+   * in the gain subcomponent.
+   * @param newIndex Value of dataset to be chosen as reference for all gain estimations
+   */
   public void setReferenceIndex(int newIndex) {
     for (GainExperiment component : componentBackends) {
       component.setReferenceIndex(newIndex);
     }
+  }
+
+  /**
+   * Returns the set of statistics results of each dimension's experiment using the pre-set
+   * frequency values.
+   * This produces a 2D array. The first index selects which one of the dimensions to examine data
+   * from; the second produces the statistics produced by the gain experiment in that dimension,
+   * equivalent to calling {@link asl.sensor.experiment.GainExperiment#getStatsFromFreqs()
+   * getStatsFromFreqs}
+   * in one of the sub-components of the backend.
+   * @return Array holding each dimension's statistical results
+   */
+  double[][] getStatistics() {
+    double[][] outer = new double[componentBackends.length][];
+    for (int i = 0; i < outer.length; ++i) {
+      outer[i] = componentBackends[i].getStatsFromFreqs();
+    }
+    return outer;
   }
 
 }
