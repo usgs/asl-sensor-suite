@@ -30,7 +30,7 @@ public class NoiseExperiment extends Experiment {
    */
   boolean freqSpace;
 
-  private static final int DATA_NEEDED = 3;
+  protected static final int DATA_NEEDED = 3;
 
   /**
    * To keep track of the response data used in this experiment
@@ -169,34 +169,6 @@ public class NoiseExperiment extends Experiment {
           p33.subtract(
               p23.multiply(p13.conjugate()).divide(p21)); //n_33
 
-      // double-check that value isn't being set to 0
-      /*
-      // now get magnitude and convert to dB
-      double plot1 = 10 * Math.log10(n11.abs());
-      double plot2 = 10 * Math.log10(n22.abs());
-      double plot3 = 10 * Math.log10(n33.abs());
-      if (Math.abs(plot1) != Double.POSITIVE_INFINITY) {
-        if (freqSpace) {
-          noiseSeriesArr[0].add(freqs[i], plot1);
-        } else {
-          noiseSeriesArr[0].add(1 / freqs[i], plot1);
-        }
-      }
-      if (Math.abs(plot2) != Double.POSITIVE_INFINITY) {
-        if (freqSpace) {
-          noiseSeriesArr[1].add(freqs[i], plot2);
-        } else {
-          noiseSeriesArr[1].add(1 / freqs[i], plot2);
-        }
-      }
-      if (Math.abs(plot3) != Double.POSITIVE_INFINITY) {
-        if (freqSpace) {
-          noiseSeriesArr[2].add(freqs[i], plot3);
-        } else {
-          noiseSeriesArr[2].add(1 / freqs[i], plot3);
-        }
-      }
-      */
     }
 
     // now that we've calculated the noise, add it to the plot w/ smoothing applied
