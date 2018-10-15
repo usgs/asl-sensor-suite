@@ -325,15 +325,16 @@ public abstract class ExperimentPanel
       }
 
       if (seriesDashedSet.contains(series)) {
+        // applying darkening twice makes it easier to distinguish from other lines in plot
         Color darkerColor = seriesColorMap.get(series).darker().darker();
-        renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series).darker().darker());
+        renderer.setSeriesPaint(seriesIndex, darkerColor);
 
         BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
         float width = stroke.getLineWidth();
         int join = stroke.getLineJoin();
         int cap = stroke.getEndCap();
 
-        float[] dashing = new float[]{1, 4};
+        float[] dashing = new float[]{1, 2};
 
         stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
         renderer.setSeriesStroke(seriesIndex, stroke);
