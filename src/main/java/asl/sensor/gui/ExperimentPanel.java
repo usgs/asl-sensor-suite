@@ -325,7 +325,8 @@ public abstract class ExperimentPanel
       }
 
       if (seriesDashedSet.contains(series)) {
-        renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series).darker());
+        Color darkerColor = seriesColorMap.get(series).darker().darker();
+        renderer.setSeriesPaint(seriesIndex, seriesColorMap.get(series).darker().darker());
 
         BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
         float width = stroke.getLineWidth();

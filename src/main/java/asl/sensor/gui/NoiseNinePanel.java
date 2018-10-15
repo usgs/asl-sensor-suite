@@ -243,12 +243,9 @@ public class NoiseNinePanel extends NoisePanel {
 
       for (int i = 0; i < NOISE_PLOT_COUNT; ++i) {
         String name = (String) timeseries.getSeriesKey(i);
-        System.out.println(name);
         Color plotColor = COLORS[i % 3];
         seriesColorMap.put(name, plotColor);
-        System.out.println(name + "," + plotColor);
         if (i >= 3) {
-          System.out.println(name + "," + i);
           seriesDashedSet.add(name);
         }
 
