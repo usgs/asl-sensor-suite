@@ -92,29 +92,32 @@ public class CalProcessingServer {
    * independently using the command line parameters. Each RESP file can be set as embedded
    * individually.
    *
-   * @param north1FileName File name of data
-   * @param east1FileName
-   * @param vert1FileName
-   * @param north2FileName
-   * @param east2FileName
-   * @param vert2FileName
-   * @param north1RespName
-   * @param east1RespName
-   * @param vert1RespName
-   * @param north2RespName
-   * @param east2RespName
-   * @param vert2RespName
-   * @param north1RespEmbedded
-   * @param east1RespEmbedded
-   * @param vert1RespEmbedded
-   * @param north2RespEmbedded
-   * @param east2RespEmbedded
-   * @param vert2RespEmbedded
-   * @param startDate
-   * @param endDate
-   * @param useFirstDataAsAngleRef
-   * @param useFirstDataAsGainRef
-   * @return
+   * @param north1FileName File name of data to be used as first north input (N1)
+   * @param east1FileName File name of data to be used as first east input (E1)
+   * @param vert1FileName File name of data to be used as first vertical input (Z1)
+   * @param north2FileName File name of data to be used as second north input (N2)
+   * @param east2FileName File name of data to be used as second east input (E2)
+   * @param vert2FileName File name of data to be used as second vertical input (Z2)
+   * @param north1RespName Name of data to be used as first north response (N1)
+   * @param east1RespName Name of data to be used as first east response (E1)
+   * @param vert1RespName Name of data to be used as first vertical response (Z1)
+   * @param north2RespName Name of data to be used as second north response (N2)
+   * @param east2RespName Name of data to be used as second east response (E2)
+   * @param vert2RespName Name of data to be used as second vertical response (Z2)
+   * @param north1RespEmbedded True if N1 resp is an embedded resp file
+   * @param east1RespEmbedded True if E1 resp is an embedded resp file
+   * @param vert1RespEmbedded True if Z1 resp is an embedded resp file
+   * @param north2RespEmbedded True if N2 resp is an embedded resp file
+   * @param east2RespEmbedded True if E2 resp is an embedded resp file
+   * @param vert2RespEmbedded True if Z2 resp is an embedded resp file
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @param useFirstDataAsAngleRef True if N-E1 data will be used for rotation reference
+   * @param useFirstDataAsGainRef True if N-E-Z1 data will be used for rotation reference
+   * @return Data from running the experiment (plots and gain statistics)
+   * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runGain(String north1FileName, String east1FileName, String vert1FileName,
       String north2FileName, String east2FileName, String vert2FileName, String north1RespName,
@@ -250,6 +253,8 @@ public class CalProcessingServer {
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runRand(String calFileName, String outFileName,
       String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq)
@@ -298,6 +303,8 @@ public class CalProcessingServer {
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runRand(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean useEmbeddedResp,
@@ -346,6 +353,8 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @return Data from running the experiment (plots and fit corner/damping values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runStep(String calFileNameD1, String calFileNameD2, String outFileNameD1,
       String outFileNameD2, String respName, boolean useEmbeddedResp, String startDate,
@@ -391,6 +400,8 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @return Data from running the experiment (plots and fit corner/damping values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runStep(String calFileName, String outFileName, String respName,
       boolean useEmbeddedResp, String startDate,String endDate)
@@ -432,6 +443,8 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @return Data from running the experiment (plots and amplitude estimations)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runSine(String calFileName, String outFileName, String startDate,
       String endDate) throws SeedFormatException, CodecException, IOException {
@@ -466,6 +479,8 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @return Data from running the experiment (plots and amplitude estimations)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runSine(String calFileNameD1, String calFileNameD2, String outFileNameD1,
       String outFileNameD2, String startDate, String endDate)
