@@ -113,6 +113,10 @@ public class SensorSuite extends JPanel
     savePDF = new JButton("Generate PDF report from current test");
     savePDF.setEnabled(false);
     savePDF.addActionListener(this);
+    dimension = savePDF.getPreferredSize();
+    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
+    savePDF.setMinimumSize(dimension);
+    savePDF.setPreferredSize(dimension);
     constraints.anchor = GridBagConstraints.EAST;
     this.add(savePDF, constraints);
     constraints.gridx += 1;
@@ -123,6 +127,7 @@ public class SensorSuite extends JPanel
     dimension = generate.getPreferredSize();
     dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
     generate.setMinimumSize(dimension);
+    generate.setPreferredSize(dimension);
     constraints.anchor = GridBagConstraints.WEST;
     this.add(generate, constraints);
 
@@ -144,7 +149,7 @@ public class SensorSuite extends JPanel
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
     frame.add(new SensorSuite());
-    frame.setPreferredSize(new Dimension(1280, 800));
+    frame.setPreferredSize(new Dimension(1600, 900));
     frame.pack();
     frame.setVisible(true);
   }
