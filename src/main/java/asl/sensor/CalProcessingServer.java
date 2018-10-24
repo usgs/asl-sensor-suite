@@ -1,5 +1,7 @@
 package asl.sensor;
 
+import asl.sensor.experiment.GainExperiment;
+import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.output.CalResult;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -26,6 +28,7 @@ import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.SineExperiment;
@@ -85,6 +88,159 @@ public class CalProcessingServer {
   }
 
   /**
+   * Acquire data and run a gain experiment over it. Angle and gain references can be set
+   * independently using the command line parameters. Each RESP file can be set as embedded
+   * individually.
+   *
+   * @param north1FileName File name of data to be used as first north input (N1)
+   * @param east1FileName File name of data to be used as first east input (E1)
+   * @param vert1FileName File name of data to be used as first vertical input (Z1)
+   * @param north2FileName File name of data to be used as second north input (N2)
+   * @param east2FileName File name of data to be used as second east input (E2)
+   * @param vert2FileName File name of data to be used as second vertical input (Z2)
+   * @param north1RespName Name of data to be used as first north response (N1)
+   * @param east1RespName Name of data to be used as first east response (E1)
+   * @param vert1RespName Name of data to be used as first vertical response (Z1)
+   * @param north2RespName Name of data to be used as second north response (N2)
+   * @param east2RespName Name of data to be used as second east response (E2)
+   * @param vert2RespName Name of data to be used as second vertical response (Z2)
+   * @param north1RespEmbedded True if N1 resp is an embedded resp file
+   * @param east1RespEmbedded True if E1 resp is an embedded resp file
+   * @param vert1RespEmbedded True if Z1 resp is an embedded resp file
+   * @param north2RespEmbedded True if N2 resp is an embedded resp file
+   * @param east2RespEmbedded True if E2 resp is an embedded resp file
+   * @param vert2RespEmbedded True if Z2 resp is an embedded resp file
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @param useFirstDataAsAngleRef True if N-E1 data will be used for rotation reference
+   * @param useFirstDataAsGainRef True if N-E-Z1 data will be used for rotation reference
+   * @return Data from running the experiment (plots and gain statistics)
+   * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
+   */
+  public CalResult runGain(String north1FileName, String east1FileName, String vert1FileName,
+      String north2FileName, String east2FileName, String vert2FileName, String north1RespName,
+      String east1RespName, String vert1RespName, String north2RespName, String east2RespName,
+      String vert2RespName, boolean north1RespEmbedded, boolean east1RespEmbedded,
+      boolean vert1RespEmbedded, boolean north2RespEmbedded, boolean east2RespEmbedded,
+      boolean vert2RespEmbedded, String startDate, String endDate, boolean useFirstDataAsAngleRef,
+      boolean useFirstDataAsGainRef) throws IOException, CodecException, SeedFormatException {
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
+
+    String[] seedFileNames = new String[]{
+        north1FileName, east1FileName, vert1FileName, north2FileName, east2FileName, vert2FileName};
+    String[] respFileNames = new String[]{
+        north1RespName, east1RespName, vert1RespName, north2RespName, east2RespName, vert2RespName};
+    boolean[] embedResps = new boolean[]{
+        north1RespEmbedded, east1RespEmbedded, vert1RespEmbedded,
+        north2RespEmbedded, east2RespEmbedded, vert2RespEmbedded};
+
+    DataStore ds = new DataStore();
+    for (int i = 0; i < seedFileNames.length; ++i) {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(seedFileNames[i]);
+      ds.setBlock(i, db);
+      InstrumentResponse ir;
+      if(embedResps[i]) {
+        ir = InstrumentResponse.loadEmbeddedResponse(respFileNames[i]);
+      } else {
+        ir = new InstrumentResponse(respFileNames[i]);
+      }
+      ds.setResponse(i, ir);
+    }
+    ds.trim(start, end);
+
+    return runExpGetDataGain(ds, useFirstDataAsAngleRef, useFirstDataAsGainRef);
+  }
+
+  private CalResult runExpGetDataGain(DataStore ds, boolean firstAngleRef, boolean firstGainRef)
+      throws IOException {
+
+    // input is sorted such that the gain reference is always plotted first;
+    // so if this is false, this means second set of data in plot set is reference angle
+    boolean refDataMatches = (firstAngleRef == firstGainRef);
+
+    GainSixExperiment gainSix = new GainSixExperiment();
+
+    if (firstAngleRef) {
+      gainSix.setFirstDataAsAngleReference();
+    } else {
+      gainSix.setSecondDataAsAngleReference();
+    }
+
+    int gainRef = firstGainRef ? 0 : 1;
+    gainSix.setReferenceIndex(gainRef);
+
+    gainSix.setRangeForStatistics(GainExperiment.DEFAULT_LOW_BOUND,
+        GainExperiment.DEFAULT_UP_BOUND);
+
+    gainSix.runExperimentOnData(ds);
+
+    List<XYSeriesCollection> results = gainSix.getData();
+
+    // plot has 3 components: source, destination, NLNM line plot
+    String[] orientation = new String[]{"North", "East", "Vertical"};
+    JFreeChart[] charts = new JFreeChart[3];
+    for (int i = 0; i < charts.length; ++i) {
+      XYSeriesCollection timeseriesIn = results.get(i);
+      XYSeriesCollection timeseries = new XYSeriesCollection();
+      timeseries.addSeries(timeseriesIn.getSeries(gainRef));
+      timeseries.addSeries(timeseriesIn.getSeries((gainRef + 1) % 2));
+      timeseries.addSeries(timeseriesIn.getSeries("NLNM"));
+
+      charts[i] = ChartFactory.createXYLineChart(
+          "Gain Experiment -- " + orientation[i],
+          "Period (s)",
+          "Power (rel. 1 (m/s^2)^2/Hz)",
+          timeseries,
+          PlotOrientation.VERTICAL,
+          true, // include legend
+          false,
+          false);
+
+      // add vertical lines to plot over rage of data for statistics (3 to 9s by default)
+      XYPlot plot = charts[i].getXYPlot();
+      Marker startMarker = new ValueMarker(GainExperiment.DEFAULT_LOW_BOUND);
+      startMarker.setStroke(new BasicStroke((float) 1.5));
+      Marker endMarker = new ValueMarker(GainExperiment.DEFAULT_UP_BOUND);
+      endMarker.setStroke(new BasicStroke((float) 1.5));
+      plot.addDomainMarker(startMarker);
+      plot.addDomainMarker(endMarker);
+
+      // ensure that NLNM lines are bolder, colored black
+      XYItemRenderer renderer = plot.getRenderer();
+      // series index 0 - ref data; series index 1 - other data; series index 2 - NLNM plot
+      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(2);
+      if (stroke == null) {
+        stroke = (BasicStroke) renderer.getBaseStroke();
+      }
+      stroke = new BasicStroke(stroke.getLineWidth() * 2);
+      renderer.setSeriesStroke(2, stroke);
+      renderer.setSeriesPaint(2, new Color(0, 0, 0));
+    }
+
+    double northAzimuth = gainSix.getNorthAzimuthDegrees();
+    double eastAzimuth = gainSix.getEastAzimuthDegrees();
+    double[][] statistics = gainSix.getStatistics();
+
+    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    byte[][] pngByteArrays = new byte[images.length][];
+    for (int i = 0; i < images.length; ++i) {
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      ImageIO.write(images[i], "png", out);
+      pngByteArrays[i] = out.toByteArray();
+    }
+
+    return CalResult.buildSixGainData(refDataMatches, northAzimuth, eastAzimuth,
+        statistics, pngByteArrays);
+
+  }
+
+  /**
    * Acquire data and run randomized calibration solver over it.
    * Returns the experiment (all data kept locally to maintain thread safety)
    *
@@ -92,11 +248,13 @@ public class CalProcessingServer {
    * @param outFileName Filename of sensor output
    * @param respName Filename of response to load in
    * @param useEmbeddedResp True if response is an embedded response in program
-   * @param startDate Long representing ms-since-epoch of data start time
-   * @param endDate Long representing ms-since-epoch of data end time
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runRand(String calFileName, String outFileName,
       String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq)
@@ -145,6 +303,8 @@ public class CalProcessingServer {
    * @param lowFreq True if a low-freq cal should be run
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runRand(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean useEmbeddedResp,
@@ -193,6 +353,8 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @return Data from running the experiment (plots and fit corner/damping values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runStep(String calFileNameD1, String calFileNameD2, String outFileNameD1,
       String outFileNameD2, String respName, boolean useEmbeddedResp, String startDate,
@@ -238,6 +400,8 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @return Data from running the experiment (plots and fit corner/damping values)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runStep(String calFileName, String outFileName, String respName,
       boolean useEmbeddedResp, String startDate,String endDate)
@@ -279,6 +443,8 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @return Data from running the experiment (plots and amplitude estimations)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runSine(String calFileName, String outFileName, String startDate,
       String endDate) throws SeedFormatException, CodecException, IOException {
@@ -313,6 +479,8 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @return Data from running the experiment (plots and amplitude estimations)
    * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runSine(String calFileNameD1, String calFileNameD2, String outFileNameD1,
       String outFileNameD2, String startDate, String endDate)

@@ -275,7 +275,7 @@ public class GainSixExperiment extends Experiment {
    * in one of the sub-components of the backend.
    * @return Array holding each dimension's statistical results
    */
-  double[][] getStatistics() {
+  public double[][] getStatistics() {
     double[][] outer = new double[componentBackends.length][];
     for (int i = 0; i < outer.length; ++i) {
       outer[i] = componentBackends[i].getStatsFromFreqs();

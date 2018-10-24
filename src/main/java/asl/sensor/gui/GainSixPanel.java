@@ -167,7 +167,6 @@ public class GainSixPanel extends GainPanel {
       JFreeChart[] charts = getCharts();
       chart = charts[index];
       chartPanel.setChart(chart);
-      chartPanel.setMouseZoomable(true);
     }
   }
 
@@ -233,7 +232,6 @@ public class GainSixPanel extends GainPanel {
 
     // obviously, set the chart
     chartPanel.setChart(chart);
-    chartPanel.setMouseZoomable(false);
 
   }
 

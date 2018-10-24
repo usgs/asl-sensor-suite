@@ -1,15 +1,21 @@
 package asl.sensor.gui;
 
 import asl.sensor.utils.TimeSeriesUtils;
+import java.awt.Component;
+import java.awt.ComponentOrientation;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
@@ -54,7 +60,6 @@ class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     JSpinner.NumberEditor editor = new JSpinner.NumberEditor(year, "#");
     year.setEditor(editor);
     year.addChangeListener(this);
-    JLabel yLabel = new JLabel("(Y)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -62,7 +67,6 @@ class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(366);
     day = new JSpinner(model);
     day.addChangeListener(this);
-    JLabel dLabel = new JLabel("(D)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -70,7 +74,6 @@ class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(23);
     hour = new JSpinner(model);
     hour.addChangeListener(this);
-    JLabel hLabel = new JLabel("(H-24)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -78,7 +81,6 @@ class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(59);
     minute = new JSpinner(model);
     minute.addChangeListener(this);
-    JLabel mLabel = new JLabel("(M)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -86,7 +88,6 @@ class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(59);
     second = new JSpinner(model);
     second.addChangeListener(this);
-    JLabel sLabel = new JLabel("(S)");
 
     model = new SpinnerNumberModel();
     model.setStepSize(1);
@@ -94,55 +95,71 @@ class EditableDateDisplayPanel extends JPanel implements ChangeListener {
     model.setMaximum(999);
     millisecond = new JSpinner(model);
     millisecond.addChangeListener(this);
-    JLabel msLabel = new JLabel("(ms)");
+
+    JPanel yearPanel = setPanelAndEnforceSize(year, "(Y)");
+    JPanel dayPanel = setPanelAndEnforceSize(day, "(DOY)");
+    JPanel hourPanel = setPanelAndEnforceSize(hour, "(H24)");
+    JPanel minutePanel = setPanelAndEnforceSize(minute, "(min)");
+    JPanel secondPanel = setPanelAndEnforceSize(second, "(s)");
+    JPanel msPanel = setPanelAndEnforceSize(millisecond, "(ms)");
 
     // build panel
     GridBagConstraints constraints = new GridBagConstraints();
     this.setLayout(new GridBagLayout());
 
     constraints.weightx = 1.0;
-    constraints.gridx = 0;
-    constraints.gridy = 0;
-    this.add(year, constraints);
-    constraints.weightx = 0.;
-    constraints.gridy = 1;
-    this.add(yLabel, constraints);
-    constraints.weightx = 1.0;
-    constraints.gridy = 0;
-    constraints.gridx += 1;
-    this.add(day, constraints);
-    constraints.weightx = 0.;
-    constraints.gridy = 1;
-    this.add(dLabel, constraints);
-    constraints.weightx = 1.0;
-    constraints.gridy = 0;
-    constraints.gridx += 1;
-    this.add(hour, constraints);
-    constraints.weightx = 0.;
-    constraints.gridy = 1;
-    this.add(hLabel, constraints);
-    constraints.weightx = 1.0;
-    constraints.gridy = 0;
-    constraints.gridx += 1;
-    this.add(minute, constraints);
-    constraints.weightx = 0.;
-    constraints.gridy = 1;
-    this.add(mLabel, constraints);
-    constraints.weightx = 1.0;
-    constraints.gridy = 0;
-    constraints.gridx += 1;
-    this.add(second, constraints);
-    constraints.weightx = 0.;
-    constraints.gridy = 1;
-    this.add(sLabel, constraints);
-    constraints.weightx = 1.0;
-    constraints.gridy = 0;
-    constraints.gridx += 1;
-    this.add(millisecond, constraints);
-    constraints.weightx = 0.;
-    constraints.gridy = 1;
-    this.add(msLabel, constraints);
+    constraints.fill = GridBagConstraints.BOTH;
 
+    constraints.gridx = 0;
+    this.add(yearPanel, constraints);
+
+    constraints.gridx += 1;
+    this.add(dayPanel, constraints);
+
+    constraints.gridx += 1;
+    this.add(hourPanel, constraints);
+
+    constraints.gridx += 1;
+    this.add(minutePanel, constraints);
+
+    constraints.gridx += 1;
+    this.add(secondPanel, constraints);
+
+    constraints.gridx += 1;
+    this.add(msPanel, constraints);
+
+    this.setPreferredSize(this.getSize());
+
+    setValues(currentTime.toInstant().toEpochMilli());
+
+  }
+
+  private JPanel setPanelAndEnforceSize(JSpinner spinner, String labelText) {
+    JLabel label = new JLabel(labelText);
+    label.setHorizontalAlignment(SwingConstants.CENTER);
+    JPanel holdingPanel = new JPanel(new GridBagLayout());
+    GridBagConstraints constraints = new GridBagConstraints();
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.gridy = 0;
+    holdingPanel.add(spinner, constraints);
+    constraints.gridy += 1;
+    holdingPanel.add(label, constraints);
+    double spinnerHorizontalSize = spinner.getMaximumSize().getWidth();
+    double labelHorizontalSize = label.getMaximumSize().getWidth();
+    double spinnerVerticalSize = spinner.getPreferredSize().getHeight();
+    double labelVerticalSize = label.getPreferredSize().getHeight();
+    double horizontal = Math.max(spinnerHorizontalSize, labelHorizontalSize);
+    double vertical = holdingPanel.getPreferredSize().getHeight();
+    spinner.setSize(new Dimension((int) horizontal, (int) spinnerVerticalSize));
+    spinner.setPreferredSize(spinner.getSize());
+    label.setSize(new Dimension((int) horizontal, (int) labelVerticalSize));
+    label.setPreferredSize(label.getSize());
+    holdingPanel.setSize(new Dimension((int) horizontal, (int) vertical));
+    holdingPanel.setPreferredSize(holdingPanel.getSize());
+    return holdingPanel;
   }
 
   /**

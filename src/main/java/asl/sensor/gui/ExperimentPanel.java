@@ -334,7 +334,7 @@ public abstract class ExperimentPanel
         int join = stroke.getLineJoin();
         int cap = stroke.getEndCap();
 
-        float[] dashing = new float[]{1, 2};
+        float[] dashing = new float[]{1, 6};
 
         stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
         renderer.setSeriesStroke(seriesIndex, stroke);

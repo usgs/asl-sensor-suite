@@ -12,6 +12,7 @@ import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.experiment.SineExperiment;
 import asl.sensor.experiment.SpectrumExperiment;
 import asl.sensor.experiment.StepExperiment;
+import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.gui.AzimuthPanel;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.GainPanel;
@@ -24,6 +25,8 @@ import asl.sensor.gui.ResponsePanel;
 import asl.sensor.gui.SinePanel;
 import asl.sensor.gui.SpectrumPanel;
 import asl.sensor.gui.StepPanel;
+import asl.sensor.gui.VoltagePanel;
+import org.apache.commons.math3.analysis.function.Exp;
 
 /**
  * Enumerated type defining each kind of test, done so GUI has list of all experiments available
@@ -116,6 +119,14 @@ public enum ExperimentFactory {
       return new SinePanel(this);
     }
   },
+  VOLTAGE("10-Volt calibration") {
+    @Override
+    public Experiment createExperiment() { return new VoltageExperiment(); };
+
+    @Override
+    public ExperimentPanel createPanel() { return new VoltagePanel(this); }
+
+  },
   AZIMUTH("Azimuth") {
     @Override
     public Experiment createExperiment() {
@@ -160,6 +171,7 @@ public enum ExperimentFactory {
       return new ResponsePanel(this);
     }
   };
+
   private final String name;
 
   ExperimentFactory(String name) {
