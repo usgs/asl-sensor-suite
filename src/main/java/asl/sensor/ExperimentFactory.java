@@ -26,7 +26,6 @@ import asl.sensor.gui.SinePanel;
 import asl.sensor.gui.SpectrumPanel;
 import asl.sensor.gui.StepPanel;
 import asl.sensor.gui.VoltagePanel;
-import org.apache.commons.math3.analysis.function.Exp;
 
 /**
  * Enumerated type defining each kind of test, done so GUI has list of all experiments available
@@ -121,7 +120,7 @@ public enum ExperimentFactory {
   },
   VOLTAGE("10-Volt calibration") {
     @Override
-    public Experiment createExperiment() { return new VoltageExperiment(); };
+    public Experiment createExperiment() { return new VoltageExperiment(); }
 
     @Override
     public ExperimentPanel createPanel() { return new VoltagePanel(this); }

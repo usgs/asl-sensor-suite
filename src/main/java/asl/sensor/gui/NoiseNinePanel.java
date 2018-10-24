@@ -152,8 +152,8 @@ public class NoiseNinePanel extends NoisePanel {
 
     String[] output = experiment.getInsetStrings();
     StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < output.length; ++i) {
-      sb.append(output).append('\n');
+    for (String s : output) {
+      sb.append(s).append('\n');
     }
     return sb.toString();
   }

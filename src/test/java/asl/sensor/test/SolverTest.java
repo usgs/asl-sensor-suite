@@ -171,7 +171,7 @@ public class SolverTest {
 
     optimum = optimizer.optimize(lsp);
 
-    double secondOptimum[] = optimum.getPoint().toArray();
+    double[] secondOptimum = optimum.getPoint().toArray();
 
     // System.out.println( Arrays.toString( optimum.getPoint().toArray() ) );
 

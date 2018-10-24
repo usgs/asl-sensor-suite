@@ -1,11 +1,9 @@
 package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
-import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.Font;
-import java.util.List;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;

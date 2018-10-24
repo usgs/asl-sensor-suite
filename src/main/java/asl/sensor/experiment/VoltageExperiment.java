@@ -3,8 +3,6 @@ package asl.sensor.experiment;
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import java.util.ArrayList;
-import java.util.List;
-import org.apache.commons.math3.analysis.function.Exp;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 

@@ -10,7 +10,6 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import org.junit.Test;
 
 public class GainSixExperimentTest {
