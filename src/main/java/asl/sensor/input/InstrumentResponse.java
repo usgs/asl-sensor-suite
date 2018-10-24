@@ -320,8 +320,7 @@ public class InstrumentResponse {
       respDTFormat =
           DateTimeFormatter.ofPattern(format.toString()).withZone(ZoneOffset.UTC);
       try {
-        Instant temp = LocalDateTime.parse(timeTest, respDTFormat).toInstant(ZoneOffset.UTC);
-        bestParsedDate = temp;
+        bestParsedDate = LocalDateTime.parse(timeTest, respDTFormat).toInstant(ZoneOffset.UTC);
       } catch (DateTimeParseException invalidSublevel) {
         // also return best result from previous loop if the new stage has an error
         break;

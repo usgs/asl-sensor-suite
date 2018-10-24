@@ -570,7 +570,6 @@ public class InstrumentResponseTest {
    */
   @Test
   public void parserDriver_manyGainStages() throws Exception {
-    LocalDate date = LocalDate.parse("2012-01-01");
     URL file = InstrumentResponseTest.class
         .getResource("/seismic-test-data/RESPs/BN.EKG.HHZ.resp");
 
