@@ -174,22 +174,28 @@ public class ResponsePanel extends ExperimentPanel {
           "RESP File Selection",
           JOptionPane.PLAIN_MESSAGE,
           null, names.toArray(),
-          names.get(names.size() - 1));
+          0);
+
+      // did user cancel operation?
+      if (result == null) {
+        return; // nothing left to do here, so let's close this out
+      }
 
       String resultStr = (String) result;
 
       try {
         // copy response file out of embedded set and into responses folder
-
         File respDir = new File("responses/");
         if (!respDir.exists()) {
           //noinspection ResultOfMethodCallIgnored
           respDir.mkdir();
         }
 
-        InputStream respStream = ResponsePanel.class.getResourceAsStream("/" + resultStr);
-        Path path = Paths.get(respDir.getCanonicalPath(), resultStr);
-        Files.copy(respStream, path, REPLACE_EXISTING);
+        ClassLoader cl = ResponsePanel.class.getClassLoader();
+        InputStream respStream =
+            cl.getResourceAsStream(InstrumentResponse.RESP_DIRECTORY + resultStr);
+        Path destinationPath = Paths.get(respDir.getCanonicalPath(), resultStr);
+        Files.copy(respStream, destinationPath, REPLACE_EXISTING);
 
       } catch (IOException e) {
         e.printStackTrace();
@@ -199,12 +205,10 @@ public class ResponsePanel extends ExperimentPanel {
 
   @Override
   protected void drawCharts() {
-
     plotSelection.setSelectedIndex(0);
     chart = magnitudeChart;
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
-
   }
 
   @Override
