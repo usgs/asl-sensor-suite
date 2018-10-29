@@ -355,12 +355,7 @@ public class InputPanel
         List<String> names = new ArrayList<>(respFilenames);
         Collections.sort(names);
         names.add("Load custom response...");
-        String[] nameArray = new String[names.size()];
-        for (int k = 0; k < nameArray.length; ++k) {
-          String name = names.get(k);
-          name = name.replace("resps/", "");
-          nameArray[k] = name;
-        }
+        String[] nameArray = names.toArray(new String[]{});
 
         int index = lastRespIndex;
         if (lastRespIndex < 0) {

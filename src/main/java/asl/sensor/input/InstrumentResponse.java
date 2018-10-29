@@ -39,6 +39,8 @@ import asl.sensor.utils.NumericUtils;
  */
 public class InstrumentResponse {
 
+  public static final String RESP_DIRECTORY = "resps/";
+
   /**
    * Maximum proportion of nyquist rate of a signal response to fit (as in RandomizedExperiment)
    */
@@ -137,7 +139,7 @@ public class InstrumentResponse {
       throws IOException {
 
     ClassLoader cl = InputPanel.class.getClassLoader();
-    InputStream is = cl.getResourceAsStream("resps/" + fname);
+    InputStream is = cl.getResourceAsStream(RESP_DIRECTORY + fname);
     BufferedReader fr = new BufferedReader(new InputStreamReader(is));
     return new InstrumentResponse(fr, fname);
   }
@@ -150,7 +152,7 @@ public class InstrumentResponse {
   public static Set<String> parseInstrumentList() {
     Set<String> respFilenames = new HashSet<>();
     ClassLoader cl = InstrumentResponse.class.getClassLoader();
-
+    // this requires the operation "gradle listResps" to be run first
     InputStream respRead = cl.getResourceAsStream("responses.txt");
     BufferedReader respBuff =
         new BufferedReader( new InputStreamReader(respRead) );
