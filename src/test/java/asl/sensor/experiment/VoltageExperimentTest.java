@@ -31,7 +31,7 @@ public class VoltageExperimentTest {
     identifier[2] = "Z";
     String extension = ".512.seed";
 
-    InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS2gen3_Q330HR");
+    InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS2SGgen3_Q330HR");
 
     for (int i = 0; i < identifier.length; ++i) {
       String fName = dataFolder + prefix + identifier[i] + extension;
