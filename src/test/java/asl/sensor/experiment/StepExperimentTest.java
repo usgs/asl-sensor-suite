@@ -45,7 +45,7 @@ public class StepExperimentTest {
     String fname2 = "10_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS2SGgen3_Q330HR"));
+    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS2gen3_Q330HR"));
     String startString = "2018-037T20:02:00.0";
     String endString = "2018-037T20:17:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
