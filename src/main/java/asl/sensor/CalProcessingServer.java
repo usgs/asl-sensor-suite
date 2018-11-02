@@ -194,7 +194,7 @@ public class CalProcessingServer {
 
       charts[i] = ChartFactory.createXYLineChart(
           "Gain Experiment -- " + orientation[i],
-          "Period (s)",
+          "", // this gets populated by the period axis below
           "Power (rel. 1 (m/s^2)^2/Hz)",
           timeseries,
           PlotOrientation.VERTICAL,
@@ -204,6 +204,10 @@ public class CalProcessingServer {
 
       // add vertical lines to plot over rage of data for statistics (3 to 9s by default)
       XYPlot plot = charts[i].getXYPlot();
+      LogarithmicAxis periodAxis = new LogarithmicAxis("Period (s)");
+      Font bold = periodAxis.getLabelFont().deriveFont(Font.BOLD);
+      periodAxis.setLabelFont(bold);
+      plot.setDomainAxis(periodAxis);
       Marker startMarker = new ValueMarker(GainExperiment.DEFAULT_LOW_BOUND);
       startMarker.setStroke(new BasicStroke((float) 1.5));
       Marker endMarker = new ValueMarker(GainExperiment.DEFAULT_UP_BOUND);
