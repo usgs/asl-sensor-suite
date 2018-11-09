@@ -28,17 +28,15 @@ public class VoltageExperiment extends Experiment {
 
   @Override
   public String[] getDataStrings() {
-    StringBuilder returnValue = new StringBuilder();
+    String[] returnValue = new String[loadedAmount];
     for (int i = 0; i < loadedAmount; ++i) {
-      returnValue.append(dataNames[i]).append(":")
-          .append("\nRESP. Stage 2 gain: ").append(DECIMAL_FORMAT.get().format(gain[i]))
-          .append("\nEstimated sensitivity: ").append(DECIMAL_FORMAT.get().format(sensitivity[i]))
-          .append("\nPercent difference: ")
-          .append(DECIMAL_FORMAT.get().format(getPercentDifference(i))).append("\n\n");
+      returnValue[i] = dataNames[i]
+          + ":\nRESP. Stage 2 gain: " + DECIMAL_FORMAT.get().format(gain[i])
+          + "\nEstimated sensitivity: " + DECIMAL_FORMAT.get().format(sensitivity[i])
+          + "\nPercent difference: "
+          + DECIMAL_FORMAT.get().format(getPercentDifference(i));
     }
-    // remove the last newline character
-    returnValue.delete(returnValue.length() - 2, returnValue.length() - 1);
-    return new String[]{returnValue.toString()};
+    return returnValue;
   }
 
   @Override
@@ -100,15 +98,15 @@ public class VoltageExperiment extends Experiment {
       // to reduce sucsceptibility to noise, get a few samples over
       double avgMin = 0.;
       double avgMax = 0.;
+      int plotXPoint = 0;
       XYSeries xys = new XYSeries(dataNames[i]);
       // get the 5 points centered around the max/min value
       for (int j = -2; j < 3; ++j) {
         int currentMinLookup = minIndex + j;
         int currentMaxLookup = maxIndex + j;
-        long minTime = startTime + (long) sampleRate * currentMinLookup;
-        long maxTime = startTime + (long) sampleRate * currentMaxLookup;
-        xys.add(minTime, data[currentMinLookup]);
-        xys.add(maxTime, data[currentMaxLookup]);
+        //
+        xys.add(plotXPoint++, Math.abs(data[currentMinLookup]));
+        xys.add(plotXPoint++, Math.abs(data[currentMaxLookup]));
         avgMin += data[currentMinLookup];
         avgMax += data[maxIndex + i];
       }
@@ -118,7 +116,8 @@ public class VoltageExperiment extends Experiment {
       avgMin /= 5.;
       avgMax /= 5.;
 
-      // take mean, divide by 10 (volts) -- average is the sensitivity (counts/volt)
+      // take mean (div by 2), divide by 10 (volts) -- average is the sensitivity (counts/volt)
+      // we can divide by 2 to get mean because we took equal range of data from either side
       sensitivity[i] = (Math.abs(avgMin) + Math.abs(avgMax)) / 20.;
     }
 
