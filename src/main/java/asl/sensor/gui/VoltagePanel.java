@@ -59,10 +59,8 @@ public class VoltagePanel extends ExperimentPanel {
     xyPlot.setRangeAxis(yAxis);
     xyPlot.setDomainAxis(xAxis);
 
-    double[] meanValues = voltage.getAllSensitivities();
-    // convert meanValues from sensitivity to mean value (multiply by 10)
+    double[] meanValues = voltage.getMeanLines();
     for (int i = 0; i < plotCount; ++i) {
-      meanValues[i] *= 10.;
       Color lineColor = COLORS[i % 3].darker().darker();
       Marker meanMarker = new ValueMarker(meanValues[i]);
       meanMarker.setLabel("MEAN VALUE " + (String) series.getSeriesKey(i));
@@ -88,18 +86,6 @@ public class VoltagePanel extends ExperimentPanel {
    * in an inset box on the chart, also used as text in report generation
    */
   private void setTitle() {
-    // chart = chartPanel.getChart();
-    /*
-    String results = expResult.getInsetStrings()[0];
-    XYPlot plot = chart.getXYPlot();
-    TextTitle result = getDefaultTextTitle();
-    result.setText(results);
-    XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, result,
-        RectangleAnchor.TOP_RIGHT);
-    plot.clearAnnotations();
-    plot.addAnnotation(title);
-    */
-
     BlockContainer bc = new BlockContainer(new FlowArrangement());
     for (int i = 0; i < plotCount; ++i) {
       String insetString = expResult.getInsetStrings()[i];
@@ -111,7 +97,6 @@ public class VoltagePanel extends ExperimentPanel {
     ct.setVerticalAlignment(VerticalAlignment.BOTTOM);
     ct.setPosition(RectangleEdge.BOTTOM);
     chart.addSubtitle(ct);
-
   }
 
   @Override

@@ -103,7 +103,7 @@ public class VoltageExperiment extends Experiment {
         int currentMinLookup = minIndex + j;
         int currentMaxLookup = maxIndex + j;
         // x-value is just the given point in the set
-        xys.add(plotXPoint++, Math.abs(data[currentMinLookup]));
+        xys.add(++plotXPoint, Math.abs(data[currentMinLookup]));
         xys.add(plotXPoint + 5, Math.abs(data[currentMaxLookup]));
         avgMin += data[currentMinLookup];
         avgMax += data[maxIndex + i];
@@ -118,6 +118,19 @@ public class VoltageExperiment extends Experiment {
 
     xySeriesData.add(xysc);
 
+  }
+
+  /**
+   * Get an array representing the mean values of each trace's min and max values, for plotting for
+   * each data loaded in.
+   * @return array of values representing means of each set of inputs read in.
+   */
+  public double[] getMeanLines() {
+    double[] meanLineValues = sensitivity.clone();
+    for (int i = 0; i < meanLineValues.length; ++i) {
+      meanLineValues[i] *= 10;
+    }
+    return meanLineValues;
   }
 
   /**
