@@ -74,8 +74,6 @@ public class VoltageExperiment extends Experiment {
       gain[i] = dataStore.getResponse(indexUnderAnalysis).getGain()[2];
 
       double[] data = currentBlock.getData();
-      double sampleRate = currentBlock.getSampleRate();
-      long startTime = currentBlock.getStartTime();
       double min = data[0];
       double max = data[0];
       int minIndex = 0; // track value indices to get ~1s range on each side
@@ -104,25 +102,35 @@ public class VoltageExperiment extends Experiment {
       for (int j = -2; j < 3; ++j) {
         int currentMinLookup = minIndex + j;
         int currentMaxLookup = maxIndex + j;
-        //
-        xys.add(plotXPoint++, Math.abs(data[currentMinLookup]));
-        xys.add(plotXPoint++, Math.abs(data[currentMaxLookup]));
+        // x-value is just the given point in the set
+        xys.add(++plotXPoint, Math.abs(data[currentMinLookup]));
+        xys.add(plotXPoint + 5, Math.abs(data[currentMaxLookup]));
         avgMin += data[currentMinLookup];
         avgMax += data[maxIndex + i];
       }
 
       xysc.addSeries(xys);
 
-      avgMin /= 5.;
-      avgMax /= 5.;
-
-      // take mean (div by 2), divide by 10 (volts) -- average is the sensitivity (counts/volt)
+      // take mean (div by 10 points), divide by 10 (volts) -- average is sensitivity (counts/volt)
       // we can divide by 2 to get mean because we took equal range of data from either side
-      sensitivity[i] = (Math.abs(avgMin) + Math.abs(avgMax)) / 20.;
+      sensitivity[i] = (Math.abs(avgMin) + Math.abs(avgMax)) / (100.);
     }
 
     xySeriesData.add(xysc);
 
+  }
+
+  /**
+   * Get an array representing the mean values of each trace's min and max values, for plotting for
+   * each data loaded in.
+   * @return array of values representing means of each set of inputs read in.
+   */
+  public double[] getMeanLines() {
+    double[] meanLineValues = sensitivity.clone();
+    for (int i = 0; i < meanLineValues.length; ++i) {
+      meanLineValues[i] *= 10;
+    }
+    return meanLineValues;
   }
 
   /**

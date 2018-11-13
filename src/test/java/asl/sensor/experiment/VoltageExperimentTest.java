@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -46,7 +47,6 @@ public class VoltageExperimentTest {
 
     Calendar cCal = Calendar.getInstance(ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone());
     cCal.setTimeInMillis(ds.getBlock(0).getEndTime());
-    System.out.println(cCal.get(Calendar.HOUR_OF_DAY));
     cCal.set(Calendar.HOUR_OF_DAY, 1);
     cCal.set(Calendar.MINUTE, 17);
     cCal.set(Calendar.SECOND, 30);
@@ -71,8 +71,58 @@ public class VoltageExperimentTest {
     assertArrayEquals(expectedGains, gainValues,1E-15);
     assertArrayEquals(expectedSensitivities, sensitivities, 1E-2);
     for (double percentDifference : percentDifferences) {
-      assertTrue(percentDifference < 0.05);
+      assertTrue(Math.abs(percentDifference) < 0.05);
     }
+  }
+
+  @Test
+  public void getsCorrectMeanLineValues() throws IOException {
+    DataStore ds = new DataStore();
+
+    String dataFolder = folder + "voltage-passes-AZI0/";
+    String prefix = "AZI0_00_BH";
+    String[] identifier = new String[3];
+    identifier[0] = "1";
+    identifier[1] = "2";
+    identifier[2] = "Z";
+    String extension = ".512.seed";
+
+    InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS2gen3_Q330HR");
+
+    for (int i = 0; i < identifier.length; ++i) {
+      String fName = dataFolder + prefix + identifier[i] + extension;
+      try {
+        ds.setBlock(i, fName);
+        ds.setResponse(i, ir);
+      } catch (SeedFormatException | CodecException | IOException e) {
+        e.printStackTrace();
+        fail();
+      }
+    }
+
+    Calendar cCal = Calendar.getInstance(ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getEndTime());
+    cCal.set(Calendar.HOUR_OF_DAY, 1);
+    cCal.set(Calendar.MINUTE, 17);
+    cCal.set(Calendar.SECOND, 30);
+    long start = cCal.getTime().getTime();
+    cCal.set(Calendar.MINUTE, 18);
+    cCal.set(Calendar.SECOND, 33);
+    long end = cCal.getTime().getTime();
+
+    ds.trim(start, end);
+
+    VoltageExperiment ve = new VoltageExperiment();
+    assertTrue(ve.hasEnoughData(ds));
+    ve.runExperimentOnData(ds);
+
+    double[] meanValues = ve.getMeanLines();
+    double[] sensitivities = ve.getAllSensitivities();
+
+    for(int i = 0; i < meanValues.length; ++i) {
+      assertEquals(sensitivities[i] * 10., meanValues[i], 1E-2);
+    }
+
   }
 
 }
