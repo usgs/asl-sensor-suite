@@ -37,8 +37,8 @@ public class VoltagePanel extends ExperimentPanel {
 
     }
 
-    String xAxisTitle = "Time (UTC)";
-    String yAxisTitle = "Digital counts";
+    String xAxisTitle = "Sample number";
+    String yAxisTitle = "Digital counts (abs. val.)";
     xAxis = new NumberAxis(xAxisTitle);
     Font bold = xAxis.getLabelFont();
     bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
