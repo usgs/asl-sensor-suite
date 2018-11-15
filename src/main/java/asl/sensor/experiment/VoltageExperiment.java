@@ -13,7 +13,6 @@ public class VoltageExperiment extends Experiment {
 
   private static final int PANELS_MAX = 3; // allow up to 3 inputs of data
 
-  //private double sensitivity, gain;
   private double[] sensitivity;
   private double[] gain;
   private String[] dataNames;
