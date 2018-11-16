@@ -6,6 +6,7 @@ import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -298,7 +299,7 @@ public class ResponsePanel extends ExperimentPanel {
     XYSeriesCollection argSeries = timeSeries.get(1);
 
     for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
-      Color toColor = COLORS[i % COLORS.length];
+      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
       String magName = (String) magSeries.getSeriesKey(i);
       String argName = (String) argSeries.getSeriesKey(i);
       seriesColorMap.put(magName, toColor);

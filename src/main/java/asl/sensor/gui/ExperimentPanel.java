@@ -3,7 +3,6 @@ package asl.sensor.gui;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.Experiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
 import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -13,7 +12,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -73,12 +71,6 @@ public abstract class ExperimentPanel
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
-  static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
-      ThreadLocal.withInitial(() -> {
-        DecimalFormat format = new DecimalFormat("#.###");
-        NumericUtils.setInfinityPrintable(format);
-        return format;
-      });
   static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
       ThreadLocal.withInitial(() -> {
         SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
@@ -92,14 +84,6 @@ public abstract class ExperimentPanel
   final String[] channelType;
   final Set<String> seriesDashedSet;
   // colorblind-friendly red, blue, and green approximates in that order
-  /**
-   * Colors used for generating plots. These are intended to be colorblind-friendly.
-   * Reddish color is (as 256-value R, G, B) (213, 94, 0), like vermillion.
-   * Blue is default Java Color.BLUE
-   * Green is (0, 158, 115), like turquoise.
-   */
-  final Color[] COLORS = {new Color(213, 94, 0),
-      Color.BLUE, new Color(0, 158, 115)};
   // (if an experiment has multiple charts to show, ideally each should be
   // selectable through some sort of menu with the active menu option used to control
   // which chart should be displayed in this panel)
@@ -288,9 +272,9 @@ public abstract class ExperimentPanel
     XYItemRenderer renderer = xyPlot.getRenderer();
 
     if (seriesColorMap.size() == 0) {
-      int modulus = COLORS.length;
+      int modulus = ReportingUtils.COLORS.length;
       for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
-        renderer.setSeriesPaint(seriesIndex, COLORS[seriesIndex % modulus]);
+        renderer.setSeriesPaint(seriesIndex, ReportingUtils.COLORS[seriesIndex % modulus]);
       }
     }
 

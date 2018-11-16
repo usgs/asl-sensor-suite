@@ -2,6 +2,7 @@ package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -147,7 +148,7 @@ public class SinePanel extends ExperimentPanel {
 
     XYSeriesCollection timeseries = expResult.getData().get(0);
     for (int i = 0; i < timeseries.getSeriesCount(); ++i) {
-      Color toColor = COLORS[i % COLORS.length];
+      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
       String curve = (String) timeseries.getSeriesKey(i);
       seriesColorMap.put(curve, toColor);
     }

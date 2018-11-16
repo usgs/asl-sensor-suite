@@ -3,13 +3,12 @@ package asl.sensor.gui;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.annotations.XYTitleAnnotation;
-import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.block.BlockContainer;
 import org.jfree.chart.block.FlowArrangement;
@@ -61,9 +60,9 @@ public class VoltagePanel extends ExperimentPanel {
 
     double[] meanValues = voltage.getMeanLines();
     for (int i = 0; i < plotCount; ++i) {
-      Color lineColor = COLORS[i % 3].darker().darker();
+      Color lineColor = ReportingUtils.COLORS[i % 3].darker().darker();
       Marker meanMarker = new ValueMarker(meanValues[i]);
-      meanMarker.setLabel("MEAN VALUE " + (String) series.getSeriesKey(i));
+      meanMarker.setLabel("MEAN VALUE " + series.getSeriesKey(i));
       meanMarker.setLabelAnchor(RectangleAnchor.TOP);
       meanMarker.setStroke(new BasicStroke((float) 2.0));
       meanMarker.setPaint(lineColor);
@@ -119,16 +118,10 @@ public class VoltagePanel extends ExperimentPanel {
       if (null == name) {
         continue;
       }
-      Color plotColor = COLORS[i % 3];
+      Color plotColor = ReportingUtils.COLORS[i % 3];
       seriesColorMap.put(name, plotColor);
     }
 
     set = true;
-    /*
-    List<XYSeriesCollection> xyscList = expResult.getData();
-    chart = ChartFactory.createXYLineChart(expType.getName(),
-        "Data timing (ms)", "Digital counts", xyscList.get(0));
-    setTitle();
-    */
   }
 }

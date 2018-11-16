@@ -2,6 +2,7 @@ package asl.sensor;
 
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
+import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.output.CalResult;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -20,6 +21,7 @@ import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -29,6 +31,7 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeriesCollection;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.SineExperiment;
@@ -41,14 +44,15 @@ import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
+import org.jfree.ui.RectangleAnchor;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
 /**
  * CalProcessingServer allows for processing calibrations in a python environment using Py4J.
  *
- * It uses the Py4J default port: 25333
- * If a process is already using that port it silently terminates.
+ * It uses the Py4J default port: 25333 If a process is already using that port it silently
+ * terminates.
  *
  * @author akearns - KBRWyle
  * @author jholland - USGS
@@ -56,11 +60,14 @@ import py4j.Py4JNetworkException;
 public class CalProcessingServer {
 
 
+  private Color[] COLORS = ReportingUtils.COLORS;
+
   public CalProcessingServer() {
   }
 
   /**
    * Enumerate names of embedded resp files
+   *
    * @return List of names of embedded resps (will match common sensor & digitizer gain setups)
    */
   public static String[] getEmbeddedRESPFilenames() {
@@ -145,7 +152,7 @@ public class CalProcessingServer {
       DataBlock db = TimeSeriesUtils.getFirstTimeSeries(seedFileNames[i]);
       ds.setBlock(i, db);
       InstrumentResponse ir;
-      if(embedResps[i]) {
+      if (embedResps[i]) {
         ir = InstrumentResponse.loadEmbeddedResponse(respFileNames[i]);
       } else {
         ir = new InstrumentResponse(respFileNames[i]);
@@ -157,96 +164,9 @@ public class CalProcessingServer {
     return runExpGetDataGain(ds, useFirstDataAsAngleRef, useFirstDataAsGainRef);
   }
 
-  private CalResult runExpGetDataGain(DataStore ds, boolean firstAngleRef, boolean firstGainRef)
-      throws IOException {
-
-    // input is sorted such that the gain reference is always plotted first;
-    // so if this is false, this means second set of data in plot set is reference angle
-    boolean refDataMatches = (firstAngleRef == firstGainRef);
-
-    GainSixExperiment gainSix = new GainSixExperiment();
-
-    if (firstAngleRef) {
-      gainSix.setFirstDataAsAngleReference();
-    } else {
-      gainSix.setSecondDataAsAngleReference();
-    }
-
-    int gainRef = firstGainRef ? 0 : 1;
-    gainSix.setReferenceIndex(gainRef);
-
-    gainSix.setRangeForStatistics(GainExperiment.DEFAULT_LOW_BOUND,
-        GainExperiment.DEFAULT_UP_BOUND);
-
-    gainSix.runExperimentOnData(ds);
-
-    List<XYSeriesCollection> results = gainSix.getData();
-
-    // plot has 3 components: source, destination, NLNM line plot
-    String[] orientation = new String[]{"North", "East", "Vertical"};
-    JFreeChart[] charts = new JFreeChart[3];
-    for (int i = 0; i < charts.length; ++i) {
-      XYSeriesCollection timeseriesIn = results.get(i);
-      XYSeriesCollection timeseries = new XYSeriesCollection();
-      timeseries.addSeries(timeseriesIn.getSeries(gainRef));
-      timeseries.addSeries(timeseriesIn.getSeries((gainRef + 1) % 2));
-      timeseries.addSeries(timeseriesIn.getSeries("NLNM"));
-
-      charts[i] = ChartFactory.createXYLineChart(
-          "Gain Experiment -- " + orientation[i],
-          "", // this gets populated by the period axis below
-          "Power (rel. 1 (m/s^2)^2/Hz)",
-          timeseries,
-          PlotOrientation.VERTICAL,
-          true, // include legend
-          false,
-          false);
-
-      // add vertical lines to plot over rage of data for statistics (3 to 9s by default)
-      XYPlot plot = charts[i].getXYPlot();
-      LogarithmicAxis periodAxis = new LogarithmicAxis("Period (s)");
-      Font bold = periodAxis.getLabelFont().deriveFont(Font.BOLD);
-      periodAxis.setLabelFont(bold);
-      plot.setDomainAxis(periodAxis);
-      Marker startMarker = new ValueMarker(GainExperiment.DEFAULT_LOW_BOUND);
-      startMarker.setStroke(new BasicStroke((float) 1.5));
-      Marker endMarker = new ValueMarker(GainExperiment.DEFAULT_UP_BOUND);
-      endMarker.setStroke(new BasicStroke((float) 1.5));
-      plot.addDomainMarker(startMarker);
-      plot.addDomainMarker(endMarker);
-
-      // ensure that NLNM lines are bolder, colored black
-      XYItemRenderer renderer = plot.getRenderer();
-      // series index 0 - ref data; series index 1 - other data; series index 2 - NLNM plot
-      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(2);
-      if (stroke == null) {
-        stroke = (BasicStroke) renderer.getBaseStroke();
-      }
-      stroke = new BasicStroke(stroke.getLineWidth() * 2);
-      renderer.setSeriesStroke(2, stroke);
-      renderer.setSeriesPaint(2, new Color(0, 0, 0));
-    }
-
-    double northAzimuth = gainSix.getNorthAzimuthDegrees();
-    double eastAzimuth = gainSix.getEastAzimuthDegrees();
-    double[][] statistics = gainSix.getStatistics();
-
-    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
-    byte[][] pngByteArrays = new byte[images.length][];
-    for (int i = 0; i < images.length; ++i) {
-      ByteArrayOutputStream out = new ByteArrayOutputStream();
-      ImageIO.write(images[i], "png", out);
-      pngByteArrays[i] = out.toByteArray();
-    }
-
-    return CalResult.buildSixGainData(refDataMatches, northAzimuth, eastAzimuth,
-        statistics, pngByteArrays);
-
-  }
-
   /**
-   * Acquire data and run randomized calibration solver over it.
-   * Returns the experiment (all data kept locally to maintain thread safety)
+   * Acquire data and run randomized calibration solver over it. Returns the experiment (all data
+   * kept locally to maintain thread safety)
    *
    * @param calFileName Filename of calibration signal
    * @param outFileName Filename of sensor output
@@ -292,9 +212,8 @@ public class CalProcessingServer {
   }
 
   /**
-   * Acquire data and run randomized calibration solver over it.
-   * Used to handle calibrations that cross day boundaries.
-   * Returns the experiment (all data kept locally to maintain thread safety)
+   * Acquire data and run randomized calibration solver over it. Used to handle calibrations that
+   * cross day boundaries. Returns the experiment (all data kept locally to maintain thread safety)
    *
    * @param calFileNameD1 Filename of calibration signal (day 1)
    * @param calFileNameD2 Filename of calibration signal (day 2)
@@ -343,9 +262,8 @@ public class CalProcessingServer {
   }
 
   /**
-   * Acquire data and run step calibration solver over it.
-   * Used to handle calibrations that cross day boundaries.
-   * Returns the experiment (all data kept locally to maintain thread safety)
+   * Acquire data and run step calibration solver over it. Used to handle calibrations that cross
+   * day boundaries. Returns the experiment (all data kept locally to maintain thread safety)
    *
    * @param calFileNameD1 Filename of calibration signal (day 1)
    * @param calFileNameD2 Filename of calibration signal (day 2)
@@ -393,8 +311,8 @@ public class CalProcessingServer {
   }
 
   /**
-   * Acquire data and run step calibration solver over it.
-   * Returns the experiment (all data kept locally to maintain thread safety)
+   * Acquire data and run step calibration solver over it. Returns the experiment (all data kept
+   * locally to maintain thread safety)
    *
    * @param calFileName Filename of calibration signal
    * @param outFileName Filename of sensor output
@@ -408,7 +326,7 @@ public class CalProcessingServer {
    * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runStep(String calFileName, String outFileName, String respName,
-      boolean useEmbeddedResp, String startDate,String endDate)
+      boolean useEmbeddedResp, String startDate, String endDate)
       throws SeedFormatException, CodecException, IOException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -438,8 +356,8 @@ public class CalProcessingServer {
   }
 
   /**
-   * Acquire data and run sine calibration solver over it.
-   * Returns the experiment (all data kept locally to maintain thread safety)
+   * Acquire data and run sine calibration solver over it. Returns the experiment (all data kept
+   * locally to maintain thread safety)
    *
    * @param calFileName Filename of calibration signal
    * @param outFileName Filename of sensor output
@@ -471,9 +389,8 @@ public class CalProcessingServer {
   }
 
   /**
-   * Acquire data and run sine calibration solver over it.
-   * Used to handle calibrations that cross day boundaries.
-   * Returns the experiment (all data kept locally to maintain thread safety)
+   * Acquire data and run sine calibration solver over it. Used to handle calibrations that cross
+   * day boundaries. Returns the experiment (all data kept locally to maintain thread safety)
    *
    * @param calFileNameD1 Filename of calibration signal (day 1)
    * @param calFileNameD2 Filename of calibration signal (day 2)
@@ -509,6 +426,181 @@ public class CalProcessingServer {
     return runExpGetDataSine(ds);
   }
 
+  /**
+   * Run 10-volt test on given data.
+   *
+   * @param seedName1 Filename of first seed input
+   * @param seedName2 Filename of second seed input (can be blank)
+   * @param seedName3 Filename of third seed input (can be blank)
+   * @param respName1 Filename of first input's response
+   * @param respName2 Filename of second input's response (can be blank)
+   * @param respName3 Filename of third input's response (can be blank)
+   * @param useEmbedded1 True if first response points to an embedded file
+   * @param useEmbedded2 True if second response points to an embedded file
+   * @param useEmbedded3 True if third response points to an embedded file
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @return Data from running the experiment (plots and gain statistics)
+   * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
+   */
+  public CalResult runVoltage(String seedName1, String seedName2, String seedName3,
+      String respName1, String respName2, String respName3,
+      boolean useEmbedded1, boolean useEmbedded2, boolean useEmbedded3,
+      String startDate, String endDate) throws IOException, CodecException, SeedFormatException {
+
+    DataStore ds = new DataStore();
+    String[] seeds = {seedName1, seedName2, seedName3};
+    String[] resps = {respName1, respName2, respName3};
+    boolean[] embeds = {useEmbedded1, useEmbedded2, useEmbedded3};
+
+    int loadIndex = 0; // used to point to next empty
+    for (int i = 0; i < seeds.length; ++i) {
+      if (seeds[i].length() == 0 || resps[i].length() == 0) {
+        continue;
+      }
+
+      ds.setBlock(loadIndex, seeds[i]);
+      if (embeds[i]) {
+        ds.setResponse(loadIndex, InstrumentResponse.loadEmbeddedResponse(resps[i]));
+      } else {
+        ds.setResponse(loadIndex, resps[i]);
+      }
+      ++loadIndex;
+    }
+
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
+    ds.trim(start, end);
+
+    return runExpGetDataVolt(ds);
+  }
+
+  private CalResult runExpGetDataGain(DataStore ds, boolean firstAngleRef, boolean firstGainRef)
+      throws IOException {
+
+    // input is sorted such that the gain reference is always plotted first;
+    // so if this is false, this means second set of data in plot set is reference angle
+    boolean refDataMatches = (firstAngleRef == firstGainRef);
+
+    GainSixExperiment gainSix = new GainSixExperiment();
+
+    if (firstAngleRef) {
+      gainSix.setFirstDataAsAngleReference();
+    } else {
+      gainSix.setSecondDataAsAngleReference();
+    }
+
+    int gainRef = firstGainRef ? 0 : 1;
+    gainSix.setReferenceIndex(gainRef);
+
+    gainSix.setRangeForStatistics(GainExperiment.DEFAULT_LOW_BOUND,
+        GainExperiment.DEFAULT_UP_BOUND);
+
+    gainSix.runExperimentOnData(ds);
+
+    String[] dataStrings = gainSix.getDataStrings();
+
+    List<XYSeriesCollection> results = gainSix.getData();
+
+    // plot has 3 components: source, destination, NLNM line plot
+    String[] orientation = new String[]{"North", "East", "Vertical"};
+    JFreeChart[] charts = new JFreeChart[3];
+    for (int i = 0; i < charts.length; ++i) {
+      XYSeriesCollection timeseriesIn = results.get(i);
+      XYSeriesCollection timeseries = new XYSeriesCollection();
+      timeseries.addSeries(timeseriesIn.getSeries(gainRef));
+      timeseries.addSeries(timeseriesIn.getSeries((gainRef + 1) % 2));
+      timeseries.addSeries(timeseriesIn.getSeries("NLNM"));
+
+      charts[i] = ChartFactory.createXYLineChart(
+          "Gain Experiment -- " + orientation[i],
+          "", // this gets populated by the period axis below
+          "",
+          timeseries,
+          PlotOrientation.VERTICAL,
+          true, // include legend
+          false,
+          false);
+
+      // add vertical lines to plot over rage of data for statistics (3 to 9s by default)
+      XYPlot plot = charts[i].getXYPlot();
+      Marker startMarker = new ValueMarker(GainExperiment.DEFAULT_LOW_BOUND);
+      startMarker.setStroke(new BasicStroke((float) 1.5));
+      Marker endMarker = new ValueMarker(GainExperiment.DEFAULT_UP_BOUND);
+      endMarker.setStroke(new BasicStroke((float) 1.5));
+      plot.addDomainMarker(startMarker);
+      plot.addDomainMarker(endMarker);
+
+      // by request, include results of calculations in chart inset
+      TextTitle result = new TextTitle();
+      Font font = result.getFont();
+      font = font.deriveFont(font.getSize() + 2f);
+      result.setFont(font);
+      result.setBackgroundPaint(Color.WHITE);
+      result.setText(dataStrings[i]);
+      XYTitleAnnotation title = new XYTitleAnnotation(0.98, 0.98, result,
+          RectangleAnchor.TOP_RIGHT);
+      plot.addAnnotation(title);
+
+      // now, make everything thicker!
+      for (int seriesIndex = 0; seriesIndex < timeseriesIn.getSeriesCount(); ++seriesIndex) {
+        BasicStroke stroke = (BasicStroke) plot.getRenderer().getSeriesStroke(seriesIndex);
+        if (stroke == null) {
+          stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
+        }
+        float width = stroke.getLineWidth() + 2f;
+        int join = stroke.getLineJoin();
+        int cap = stroke.getEndCap();
+
+        stroke = new BasicStroke(width, cap, join, 10f);
+        plot.getRenderer().setSeriesStroke(seriesIndex, stroke);
+        plot.getRenderer().setSeriesPaint(seriesIndex, COLORS[i % 3]);
+      }
+
+      LogarithmicAxis periodAxis = new LogarithmicAxis("Period (s)");
+      Font bold = periodAxis.getLabelFont().deriveFont(Font.BOLD);
+      periodAxis.setLabelFont(bold);
+      plot.setDomainAxis(periodAxis);
+      periodAxis.setAutoRangeIncludesZero(false);
+      NumberAxis rangeAxis = new NumberAxis("Power (rel. 1 (m/s^2)^2/Hz)");
+      rangeAxis.setAutoRangeIncludesZero(false);
+      rangeAxis.setLabelFont(bold);
+      plot.setRangeAxis(rangeAxis);
+
+      // ensure that NLNM lines are bolder, colored black
+      XYItemRenderer renderer = plot.getRenderer();
+      // series index 0 - ref data; series index 1 - other data; series index 2 - NLNM plot
+      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(2);
+      if (stroke == null) {
+        stroke = (BasicStroke) renderer.getBaseStroke();
+      }
+      stroke = new BasicStroke(stroke.getLineWidth() * 2);
+      renderer.setSeriesStroke(2, stroke);
+      renderer.setSeriesPaint(2, new Color(0, 0, 0));
+    }
+
+    double northAzimuth = gainSix.getNorthAzimuthDegrees();
+    double eastAzimuth = gainSix.getEastAzimuthDegrees();
+    double[][] statistics = gainSix.getStatistics();
+
+    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    byte[][] pngByteArrays = new byte[images.length][];
+    for (int i = 0; i < images.length; ++i) {
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      ImageIO.write(images[i], "png", out);
+      pngByteArrays[i] = out.toByteArray();
+    }
+
+    return CalResult.buildSixGainData(refDataMatches, northAzimuth, eastAzimuth,
+        statistics, pngByteArrays);
+
+  }
+
   private CalResult runExpGetDataSine(DataStore ds) throws IOException {
     SineExperiment sine = new SineExperiment();
     sine.runExperimentOnData(ds);
@@ -537,6 +629,13 @@ public class CalProcessingServer {
         plots.get(1));
 
     JFreeChart[] charts = {sineChart, linearityChart};
+
+    for (JFreeChart chart : charts) {
+      XYItemRenderer renderer = chart.getXYPlot().getRenderer();
+      for (int i = 0; i < chart.getXYPlot().getSeriesCount(); ++i) {
+        renderer.setSeriesPaint(i, COLORS[i % 3]);
+      }
+    }
 
     BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
@@ -593,6 +692,13 @@ public class CalProcessingServer {
     respPhaseChart.getXYPlot().setDomainAxis(freqAxis);
     respPhaseChart.getXYPlot().setRangeAxis(phaseAxis);
     JFreeChart[] charts = {stepChart, respAmpChart, respPhaseChart};
+
+    for (JFreeChart chart : charts) {
+      XYItemRenderer renderer = chart.getXYPlot().getRenderer();
+      for (int i = 0; i < chart.getXYPlot().getSeriesCount(); ++i) {
+        renderer.setSeriesPaint(i, COLORS[i % 3]);
+      }
+    }
 
     BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
@@ -685,6 +791,9 @@ public class CalProcessingServer {
     xyPlot = charts[0].getXYPlot();
     xyPlot.setDomainAxis(xAxis);
     xyPlot.setRangeAxis(amplitudeAxis);
+    for (int i = 0; i < xyPlot.getSeriesCount(); ++i) {
+      xyPlot.getRenderer().setSeriesPaint(i, COLORS[i]);
+    }
     ExperimentPanel.invertSeriesRenderingOrder(charts[0]);
 
     charts[1] = ChartFactory.createXYLineChart(
@@ -699,6 +808,9 @@ public class CalProcessingServer {
     xyPlot = charts[1].getXYPlot();
     xyPlot.setDomainAxis(xAxis);
     xyPlot.setRangeAxis(phaseAxis);
+    for (int i = 0; i < xyPlot.getSeriesCount(); ++i) {
+      xyPlot.getRenderer().setSeriesPaint(i, COLORS[i]);
+    }
     ExperimentPanel.invertSeriesRenderingOrder(charts[1]);
 
     charts[2] = ChartFactory.createXYLineChart(
@@ -713,7 +825,8 @@ public class CalProcessingServer {
     xyPlot = charts[2].getXYPlot();
     xyPlot.setDomainAxis(residualXAxis);
     xyPlot.setRangeAxis(residualAmplitudeAxis);
-    xyPlot.getRenderer().setSeriesPaint(1, Color.GREEN);
+    xyPlot.getRenderer().setSeriesPaint(0, COLORS[0]);
+    xyPlot.getRenderer().setSeriesPaint(1, COLORS[2]);
     ExperimentPanel.invertSeriesRenderingOrder(charts[2]);
 
     charts[3] = ChartFactory.createXYLineChart(
@@ -728,7 +841,8 @@ public class CalProcessingServer {
     xyPlot = charts[3].getXYPlot();
     xyPlot.setDomainAxis(residualXAxis);
     xyPlot.setRangeAxis(residualPhaseAxis);
-    xyPlot.getRenderer().setSeriesPaint(1, Color.GREEN);
+    xyPlot.getRenderer().setSeriesPaint(0, COLORS[0]);
+    xyPlot.getRenderer().setSeriesPaint(1, COLORS[2]);
     ExperimentPanel.invertSeriesRenderingOrder(charts[3]);
 
     if (!isLowFrequency) {
@@ -749,6 +863,51 @@ public class CalProcessingServer {
     return CalResult.buildRandomCalData(fitPoles, fitZeros, initialPoles, initialZeros,
         pngByteArrays);
 
+  }
+
+  private CalResult runExpGetDataVolt(DataStore ds) throws IOException {
+    VoltageExperiment voltage = new VoltageExperiment();
+    voltage.runExperimentOnData(ds);
+
+    XYSeriesCollection seriesCollection = voltage.getData().get(0);
+    JFreeChart chart = ChartFactory.createXYLineChart("Voltage Experiment",
+        "", "", seriesCollection);
+    String xAxisTitle = "Sample number";
+    String yAxisTitle = "Digital counts (abs. val.)";
+    NumberAxis xAxis = new NumberAxis(xAxisTitle);
+    Font bold = xAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD, bold.getSize() + 2);
+    xAxis.setLabelFont(bold);
+    NumberAxis yAxis = new NumberAxis(yAxisTitle);
+    yAxis.setAutoRangeIncludesZero(false);
+    yAxis.setLabelFont(bold);
+    XYPlot xyPlot = chart.getXYPlot();
+    xyPlot.setRangeAxis(yAxis);
+    xyPlot.setDomainAxis(xAxis);
+
+    double[] meanValues = voltage.getMeanLines();
+
+    for (int i = 0; i < xyPlot.getSeriesCount(); ++i) {
+      xyPlot.getRenderer().setSeriesPaint(i, COLORS[i % 3]);
+      Color lineColor = COLORS[i % 3].darker().darker();
+      Marker meanMarker = new ValueMarker(meanValues[i]);
+      meanMarker.setLabel("MEAN VALUE " + seriesCollection.getSeriesKey(i));
+      meanMarker.setLabelAnchor(RectangleAnchor.TOP);
+      meanMarker.setStroke(new BasicStroke((float) 2.0));
+      meanMarker.setPaint(lineColor);
+      xyPlot.addRangeMarker(meanMarker);
+    }
+
+    double[] gains = voltage.getAllGainValues();
+    double[] sensitivities = voltage.getAllSensitivities();
+    double[] differences = voltage.getPercentDifferences();
+
+    BufferedImage image = ReportingUtils.chartsToImageList(1, 1280, 960, chart)[0];
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    ImageIO.write(image, "png", out);
+    byte[] pngByteArray = out.toByteArray();
+
+    return CalResult.buildVoltageData(pngByteArray, gains, sensitivities, differences);
   }
 
 }

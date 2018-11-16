@@ -3,6 +3,7 @@ package asl.sensor.gui;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.SpectrumExperiment;
 import asl.sensor.input.DataStore;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -160,7 +161,7 @@ public class SpectrumPanel extends ExperimentPanel {
       if (null == name) {
         continue;
       }
-      Color plotColor = COLORS[i % 3];
+      Color plotColor = ReportingUtils.COLORS[i % 3];
       seriesColorMap.put(name, plotColor);
     }
   }

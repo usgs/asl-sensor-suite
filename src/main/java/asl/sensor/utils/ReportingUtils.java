@@ -31,6 +31,15 @@ import org.jfree.chart.JFreeChart;
 public class ReportingUtils {
 
   /**
+   * Colors used for generating plots. These are intended to be colorblind-friendly.
+   * Reddish color is (as 256-value R, G, B) (213, 94, 0), like vermillion.
+   * Blue is default Java Color.BLUE
+   * Green is (0, 158, 115), like turquoise.
+   */
+  public static final Color[] COLORS = {new Color(213, 94, 0),
+      Color.BLUE, new Color(0, 158, 115)};
+
+  /**
    * Add a buffered image to a PDDocument page
    *
    * @param bi BufferedImage to be added to PDF
