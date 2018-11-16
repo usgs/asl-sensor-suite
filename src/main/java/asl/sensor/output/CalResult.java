@@ -143,6 +143,24 @@ public class CalResult {
   }
 
   /**
+   * Get 10-volt test data
+   * @param chart Chart including plotted sample data used to get estimations
+   * @param gains Gain values from inputted data responses
+   * @param sensitivities Estimated sensitivities as given by plotted data
+   * @param differences Percent error of each pair of inputted gain and estimated sensitivity
+   * @return object holding these values in easily-accessed maps with variable descriptions
+   */
+  public static CalResult buildVoltageData(byte[] chart, double[] gains, double[] sensitivities, double[] differences) {
+    CalResult out = new CalResult();
+    out.imageMap.put("Plot", chart);
+    out.numerMap.put("Gain_values", gains);
+    out.numerMap.put("Sensitivity_values", sensitivities);
+    out.numerMap.put("Percent_differences", differences);
+
+    return out;
+  }
+
+  /**
    * Return the map of images
    * @return map of byte arrays representing images, keyed by strings with image descriptions
    */
