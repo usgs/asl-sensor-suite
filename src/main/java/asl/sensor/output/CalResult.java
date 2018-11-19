@@ -109,7 +109,7 @@ public class CalResult {
       rotatedSeries = "two";
     }
     out.numerMap.put("North_azimuth_of_series_" + rotatedSeries, new double[]{northAzimuth});
-    out.numerMap.put("East_azimuth_of_series" + rotatedSeries, new double[]{eastAzimuth});
+    out.numerMap.put("East_azimuth_of_series_" + rotatedSeries, new double[]{eastAzimuth});
     String[] orientations = {"North", "East", "Vertical"};
     // quick refresher: here is the order of fields from getStats
     // format: {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq., calc. A0 freq.}
