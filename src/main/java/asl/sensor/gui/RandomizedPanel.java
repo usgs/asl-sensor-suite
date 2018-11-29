@@ -5,6 +5,7 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
 import asl.sensor.utils.NumericUtils;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -569,7 +570,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
     for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
 
-      Color toColor = COLORS[i % COLORS.length];
+      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
       String magName = (String) magSeries.getSeriesKey(i);
       seriesColorMap.put(magName, toColor);
 
@@ -603,10 +604,10 @@ public class RandomizedPanel extends ExperimentPanel {
     XYItemRenderer renderer; // use this to set series paints to set the last color to use 3rd color
     residualAmplitudeChart = buildChart(xysc.get(2), getResidAxis(), residualAmplitudeAxis);
     renderer = residualAmplitudeChart.getXYPlot().getRenderer();
-    renderer.setSeriesPaint(1, COLORS[2]);
+    renderer.setSeriesPaint(1, ReportingUtils.COLORS[2]);
     residualPhaseChart = buildChart(xysc.get(3), getResidAxis(), residualPhaseAxis);
     renderer = residualPhaseChart.getXYPlot().getRenderer();
-    renderer.setSeriesPaint(1, COLORS[2]);
+    renderer.setSeriesPaint(1, ReportingUtils.COLORS[2]);
 
   }
 

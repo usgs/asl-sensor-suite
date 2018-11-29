@@ -13,7 +13,6 @@ import asl.sensor.utils.ReportingUtils;
 import java.awt.Font;
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import org.apache.pdfbox.pdmodel.PDDocument;

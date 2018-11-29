@@ -46,7 +46,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
  */
 public class DataBlock {
 
-  private static final int MAX_POINTS = 100000;
+  private static final int MAX_POINTS = 5000;
 
   private final long interval;
   private final String name;

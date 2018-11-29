@@ -418,7 +418,7 @@ public class InstrumentResponseTest {
   @Test
   public void parseInstrumentList() throws IOException {
     Set<String> respFiles = InstrumentResponse.parseInstrumentList();
-    assertEquals(12, respFiles.size());
+    assertEquals(14, respFiles.size());
     for (String respFile : respFiles) {
       InstrumentResponse response = InstrumentResponse.loadEmbeddedResponse(respFile);
       assertNotNull(response);
@@ -570,7 +570,6 @@ public class InstrumentResponseTest {
    */
   @Test
   public void parserDriver_manyGainStages() throws Exception {
-    LocalDate date = LocalDate.parse("2012-01-01");
     URL file = InstrumentResponseTest.class
         .getResource("/seismic-test-data/RESPs/BN.EKG.HHZ.resp");
 

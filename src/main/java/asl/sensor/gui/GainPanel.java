@@ -237,7 +237,6 @@ public class GainPanel extends ExperimentPanel
     setChart(timeSeries);
 
     chartPanel.setChart(chart);
-    chartPanel.setMouseZoomable(false);
 
     setSliderValues(leftSliderValue, rightSliderValue);
 

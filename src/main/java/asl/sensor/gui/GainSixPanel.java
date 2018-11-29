@@ -13,7 +13,6 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.JTextArea;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
@@ -167,7 +166,6 @@ public class GainSixPanel extends GainPanel {
       JFreeChart[] charts = getCharts();
       chart = charts[index];
       chartPanel.setChart(chart);
-      chartPanel.setMouseZoomable(true);
     }
   }
 
@@ -233,7 +231,6 @@ public class GainSixPanel extends GainPanel {
 
     // obviously, set the chart
     chartPanel.setChart(chart);
-    chartPanel.setMouseZoomable(false);
 
   }
 

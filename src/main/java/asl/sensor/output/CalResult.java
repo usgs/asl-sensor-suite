@@ -91,12 +91,73 @@ public class CalResult {
     return out;
   }
 
+  /**
+   * Get data from a six-input gain result
+   * @param firstAngleRef boolean that is true if first series being plotted is also angle ref
+   * @param northAzimuth Angle over which north-facing data was rotated
+   * @param eastAzimuth Angle over which east-facing data was rotated
+   * @param statistics Result taken from six-input gain's
+   * {@link asl.sensor.experiment.GainSixExperiment#getStatistics() getStatistics} function
+   * @param images Plots of PSDs in each orientation
+   * @return object holding these values in easily-accessed maps with variable descriptions
+   */
+  public static CalResult buildSixGainData(boolean firstAngleRef, double northAzimuth,
+      double eastAzimuth, double[][] statistics, byte[][] images) {
+    CalResult out = new CalResult();
+    String rotatedSeries = "one";
+    if (firstAngleRef) {
+      rotatedSeries = "two";
+    }
+    out.numerMap.put("North_azimuth_of_series_" + rotatedSeries, new double[]{northAzimuth});
+    out.numerMap.put("East_azimuth_of_series_" + rotatedSeries, new double[]{eastAzimuth});
+    String[] orientations = {"North", "East", "Vertical"};
+    // quick refresher: here is the order of fields from getStats
+    // format: {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq., calc. A0 freq.}
+    for (int i = 0; i < orientations.length; ++i) {
+      double[] orientationStats = statistics[i];
+      double mean = orientationStats[0];
+      out.numerMap.put(orientations[i] + "_mean_value", new double[]{mean});
+      double standardDeviation = orientationStats[1];
+      out.numerMap.put(orientations[i] + "_standard_deviation", new double[]{standardDeviation});
+      double refGain = orientationStats[2];
+      out.numerMap.put(orientations[i] + "_reference_gain", new double[]{refGain});
+      double calcGain = orientationStats[3];
+      out.numerMap.put(orientations[i] + "_calculated_gain", new double[]{calcGain});
+      double refA0 = orientationStats[4];
+      out.numerMap.put(orientations[i] + "_reference_a0_frequency", new double[]{refA0});
+      double calcA0 = orientationStats[5];
+      out.numerMap.put(orientations[i] + "_calculated_a0_frequency", new double[]{calcA0});
+    }
+    out.imageMap.put("North_plot", images[0]);
+    out.imageMap.put("East_plot", images[1]);
+    out.imageMap.put("Vertical_plot", images[2]);
+    return out;
+  }
+
   Map<String, double[]> numerMap;
   Map<String, byte[]> imageMap;
 
   private CalResult() {
     numerMap = new HashMap<>();
     imageMap = new HashMap<>();
+  }
+
+  /**
+   * Get 10-volt test data
+   * @param chart Chart including plotted sample data used to get estimations
+   * @param gains Gain values from inputted data responses
+   * @param sensitivities Estimated sensitivities as given by plotted data
+   * @param differences Percent error of each pair of inputted gain and estimated sensitivity
+   * @return object holding these values in easily-accessed maps with variable descriptions
+   */
+  public static CalResult buildVoltageData(byte[] chart, double[] gains, double[] sensitivities, double[] differences) {
+    CalResult out = new CalResult();
+    out.imageMap.put("Plot", chart);
+    out.numerMap.put("Gain_values", gains);
+    out.numerMap.put("Sensitivity_values", sensitivities);
+    out.numerMap.put("Percent_differences", differences);
+
+    return out;
   }
 
   /**

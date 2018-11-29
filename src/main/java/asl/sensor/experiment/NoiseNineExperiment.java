@@ -210,9 +210,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
     noiseExp.setFreqSpace(freqSpace);
     String[] directions = new String[]{"north", "east", "vertical"};
     for (int i = 0; i < DIMENSIONS; ++i) {
-      StringBuilder sb = new StringBuilder("Calculating ");
-      sb.append(directions[i]);
-      sb.append(" noise components...");
+      String sb = "Calculating " + directions[i] + " noise components...";
+      fireStateChange(sb);
       noiseExp.runExperimentOnData(stores[i]);
       XYSeriesCollection xys = noiseExp.getData().get(0);
       xySeriesData.add(xys);

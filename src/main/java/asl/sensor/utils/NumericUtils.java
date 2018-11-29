@@ -22,6 +22,13 @@ public class NumericUtils {
    */
   public final static double TAU = Math.PI * 2; // radians in full circle
 
+  public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        DecimalFormat format = new DecimalFormat("#.###");
+        setInfinityPrintable(format);
+        return format;
+      });
+
   /**
    * Get the two-component arctan of a complex number. A simpler way of calling
    * arctan2 using the real and imaginary components of a complex number

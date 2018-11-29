@@ -3,7 +3,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'application'
 
-version = '1.4.3'
+version = '1.6.0'
 
 mainClassName = 'asl.sensor.SensorSuite'
 sourceCompatibility = '1.8'

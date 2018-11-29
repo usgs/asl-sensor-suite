@@ -6,6 +6,7 @@ import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.InstrumentResponse;
+import asl.sensor.utils.ReportingUtils;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -174,22 +175,28 @@ public class ResponsePanel extends ExperimentPanel {
           "RESP File Selection",
           JOptionPane.PLAIN_MESSAGE,
           null, names.toArray(),
-          names.get(names.size() - 1));
+          0);
+
+      // did user cancel operation?
+      if (result == null) {
+        return; // nothing left to do here, so let's close this out
+      }
 
       String resultStr = (String) result;
 
       try {
         // copy response file out of embedded set and into responses folder
-
         File respDir = new File("responses/");
         if (!respDir.exists()) {
           //noinspection ResultOfMethodCallIgnored
           respDir.mkdir();
         }
 
-        InputStream respStream = ResponsePanel.class.getResourceAsStream("/" + resultStr);
-        Path path = Paths.get(respDir.getCanonicalPath(), resultStr);
-        Files.copy(respStream, path, REPLACE_EXISTING);
+        ClassLoader cl = ResponsePanel.class.getClassLoader();
+        InputStream respStream =
+            cl.getResourceAsStream(InstrumentResponse.RESP_DIRECTORY + resultStr);
+        Path destinationPath = Paths.get(respDir.getCanonicalPath(), resultStr);
+        Files.copy(respStream, destinationPath, REPLACE_EXISTING);
 
       } catch (IOException e) {
         e.printStackTrace();
@@ -199,12 +206,10 @@ public class ResponsePanel extends ExperimentPanel {
 
   @Override
   protected void drawCharts() {
-
     plotSelection.setSelectedIndex(0);
     chart = magnitudeChart;
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);
-
   }
 
   @Override
@@ -294,7 +299,7 @@ public class ResponsePanel extends ExperimentPanel {
     XYSeriesCollection argSeries = timeSeries.get(1);
 
     for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
-      Color toColor = COLORS[i % COLORS.length];
+      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
       String magName = (String) magSeries.getSeriesKey(i);
       String argName = (String) argSeries.getSeriesKey(i);
       seriesColorMap.put(magName, toColor);
