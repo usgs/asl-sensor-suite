@@ -559,7 +559,7 @@ public class CalProcessingServer {
 
         stroke = new BasicStroke(width, cap, join, 10f);
         plot.getRenderer().setSeriesStroke(seriesIndex, stroke);
-        plot.getRenderer().setSeriesPaint(seriesIndex, COLORS[i % 3]);
+        plot.getRenderer().setSeriesPaint(seriesIndex, COLORS[seriesIndex % 3]);
       }
 
       LogarithmicAxis periodAxis = new LogarithmicAxis("Period (s)");
