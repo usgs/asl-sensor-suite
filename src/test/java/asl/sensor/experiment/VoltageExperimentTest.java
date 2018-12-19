@@ -13,6 +13,8 @@ import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.util.Calendar;
+import org.jfree.data.xy.XYSeries;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class VoltageExperimentTest {
@@ -123,6 +125,57 @@ public class VoltageExperimentTest {
       assertEquals(sensitivities[i] * 10., meanValues[i], 1E-2);
     }
 
+  }
+
+  @Test
+  public void looksAtFlatPortionCorrectly() throws IOException {
+
+    DataStore ds = new DataStore();
+
+    String dataFolder = folder + "voltage-passes-AZI0/";
+    String prefix = "AZI0_00_BH";
+    String[] identifier = new String[3];
+    identifier[0] = "1";
+    identifier[1] = "2";
+    identifier[2] = "Z";
+    String extension = ".512.seed";
+
+    InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse("STS2gen3_Q330HR");
+
+    for (int i = 0; i < identifier.length; ++i) {
+      String fName = dataFolder + prefix + identifier[i] + extension;
+      try {
+        ds.setBlock(i, fName);
+        ds.setResponse(i, ir);
+      } catch (SeedFormatException | CodecException | IOException e) {
+        e.printStackTrace();
+        fail();
+      }
+    }
+
+    Calendar cCal = Calendar.getInstance(ExperimentPanel.DATE_TIME_FORMAT.get().getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getEndTime());
+    cCal.set(Calendar.HOUR_OF_DAY, 1);
+    cCal.set(Calendar.MINUTE, 17);
+    cCal.set(Calendar.SECOND, 30);
+    long start = cCal.getTime().getTime();
+    cCal.set(Calendar.MINUTE, 18);
+    cCal.set(Calendar.SECOND, 33);
+    long end = cCal.getTime().getTime();
+
+    ds.trim(start, end);
+
+    VoltageExperiment ve = new VoltageExperiment();
+    assertTrue(ve.hasEnoughData(ds));
+    ve.runExperimentOnData(ds);
+
+    XYSeries data = ve.getData().get(0).getSeries(0);
+    double[] points = data.toArray()[1];
+    assertEquals(10, points.length);
+    for (int i = 1; i < 5; ++i) {
+      double difference = Math.abs(points[i-1] - points[i]);
+      assertEquals("Difference too large at index " + i +": " + difference, 0., difference, 100);
+    }
   }
 
 }
