@@ -85,11 +85,11 @@ public class VoltageExperiment extends Experiment {
         // make sure the extremes are in a roughly flat part of the signal
         // i.e., both min and max values should be in the flat part of a pulse
         double diff = Math.abs(data[j-offset] - data[j]);
-        if (data[j] < min && diff < 300) {
+        if (data[j] < min && diff < 100) {
           min = data[j];
           minIndex = j;
         }
-        if (data[j] > max && diff < 300) {
+        if (data[j] > max && diff < 100) {
           max = data[j];
           maxIndex = j;
         }
