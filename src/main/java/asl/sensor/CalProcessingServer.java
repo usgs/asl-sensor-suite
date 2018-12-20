@@ -504,6 +504,9 @@ public class CalProcessingServer {
     gainSix.runExperimentOnData(ds);
 
     String[] dataStrings = gainSix.getDataStrings();
+    double northAzimuth = gainSix.getNorthAzimuthDegrees();
+    double eastAzimuth = gainSix.getEastAzimuthDegrees();
+    double[][] statistics = gainSix.getStatistics();
 
     List<XYSeriesCollection> results = gainSix.getData();
 
@@ -547,9 +550,11 @@ public class CalProcessingServer {
           RectangleAnchor.TOP_RIGHT);
       plot.addAnnotation(title);
 
+      BasicStroke stroke;
+
       // now, make everything thicker!
       for (int seriesIndex = 0; seriesIndex < timeseriesIn.getSeriesCount(); ++seriesIndex) {
-        BasicStroke stroke = (BasicStroke) plot.getRenderer().getSeriesStroke(seriesIndex);
+        stroke = (BasicStroke) plot.getRenderer().getSeriesStroke(seriesIndex);
         if (stroke == null) {
           stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
         }
@@ -575,18 +580,11 @@ public class CalProcessingServer {
       // ensure that NLNM lines are bolder, colored black
       XYItemRenderer renderer = plot.getRenderer();
       // series index 0 - ref data; series index 1 - other data; series index 2 - NLNM plot
-      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(2);
-      if (stroke == null) {
-        stroke = (BasicStroke) renderer.getBaseStroke();
-      }
+      stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
       stroke = new BasicStroke(stroke.getLineWidth() * 2);
       renderer.setSeriesStroke(2, stroke);
       renderer.setSeriesPaint(2, new Color(0, 0, 0));
     }
-
-    double northAzimuth = gainSix.getNorthAzimuthDegrees();
-    double eastAzimuth = gainSix.getEastAzimuthDegrees();
-    double[][] statistics = gainSix.getStatistics();
 
     BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
