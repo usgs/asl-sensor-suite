@@ -76,7 +76,6 @@ public class GainSixExperiment extends Experiment {
     for (int i = 0; i < componentBackends.length; i++) {
       componentBackends[i] = new GainExperiment();
     }
-    assignReferenceIndex(); // make sure the expected reference is used
 
     long interval = dataStore.getBlock(0).getInterval();
     long start = dataStore.getBlock(0).getStartTime();
@@ -140,6 +139,12 @@ public class GainSixExperiment extends Experiment {
       fireStateChange("Running calculations on " + direction[i] + " components...");
       componentBackends[i].runExperimentOnData(stores[i]);
     }
+
+    // running the gain backend forces the ref index to 0 again, so we need to go to set reference
+    // this is necessary for the code to work on the side of the cal server
+    // TODO: more extensive refactoring so that GUI controls how reference index is set on recalc
+    assignReferenceIndex(); // make sure the expected reference is used
+
 
     for (Experiment exp : componentBackends) {
       // each backend only has one plot's worth of data
