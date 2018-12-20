@@ -72,11 +72,9 @@ public class GainSixExperiment extends Experiment {
   @Override
   protected void backend(DataStore dataStore) {
 
-    componentBackends = new GainExperiment[DIMENSIONS];
-    for (int i = 0; i < componentBackends.length; i++) {
-      componentBackends[i] = new GainExperiment();
-    }
     assignReferenceIndex(); // make sure the expected reference is used
+    // while GUI will start with reference index as 0, the server-side code needs to set this
+    // before the backend is run
 
     long interval = dataStore.getBlock(0).getInterval();
     long start = dataStore.getBlock(0).getStartTime();

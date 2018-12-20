@@ -93,7 +93,6 @@ public class GainExperiment extends Experiment {
   @Override
   protected void backend(final DataStore dataStore) {
 
-    referenceIndex = 0;
     lowPeriod = DEFAULT_LOW_BOUND;
     highPeriod = DEFAULT_UP_BOUND;
 
