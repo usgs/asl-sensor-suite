@@ -150,6 +150,10 @@ public class DataStore {
   }
 
   public Pair<Long, Long> getCommonTime() {
+    return getCommonTime(FILE_COUNT);
+  }
+
+  public Pair<Long, Long> getCommonTime(int limit) {
     if (numberOfBlocksSet() < 1) {
       return new Pair<>(Long.MIN_VALUE, Long.MAX_VALUE);
     } else {
@@ -157,16 +161,16 @@ public class DataStore {
       long firstEndTime = Long.MAX_VALUE;
 
       // first pass to get the limits of the time data
-      for (int i = 0; i < FILE_COUNT; ++i) {
+      for (int i = 0; i < limit; ++i) {
         DataBlock data = dataBlockArray[i];
         if (!thisBlockIsSet[i]) {
           continue;
         }
-        long start = data.getStartTime();
+        long start = data.getInitialStartTime();
         if (start > lastStartTime) {
           lastStartTime = start;
         }
-        long end = data.getEndTime();
+        long end = data.getInitialEndTime();
         if (end < firstEndTime) {
           firstEndTime = end;
         }

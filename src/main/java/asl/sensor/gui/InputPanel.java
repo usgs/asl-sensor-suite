@@ -1151,25 +1151,24 @@ public class InputPanel
 
     activePlots = panelsNeeded;
 
-    // get current time range of zoom data for resetting, if any data is loaded
-    long start, end;
-    if (dataStore.areAnyBlocksSet()) {
-      DataBlock dataBlock = dataStore.getXthLoadedBlock(1);
-      start = dataBlock.getStartTime();
-      end = dataBlock.getEndTime();
+    Pair<Long, Long> timeRange = dataStore.getCommonTime(activePlots);
+    // get max valid time range of zoom data for resetting, if any data is loaded
+    long start = timeRange.getFirst();
+    long end = timeRange.getSecond();
 
-      dataStore.trimToCommonTime(activePlots);
-      // try to trim to current active time range if possible, otherwise fit
-      // as much data as possible
-      dataBlock = dataStore.getXthLoadedBlock(1);
-      // was the data zoomed in more than it is now?
-      if (start > dataBlock.getStartTime() || end < dataBlock.getEndTime()) {
+    if (dataStore.areAnyBlocksSet()) {
+      // now to get the actual range of time that the plotted data is trimmed to
+      // (this will be true for all the data currently being plotted, at least one existing)
+      DataBlock dataBlock = dataStore.getXthLoadedBlock(1);
+      // is the data zoomed in at all? i.e., can we zoom out to a larger common time range?
+      if (start < dataBlock.getStartTime() || end > dataBlock.getEndTime()) {
         try {
           // zooms won't be modified if an exception is thrown
           dataStore.trim(start, end, activePlots);
           zoomOut.setEnabled(true);
         } catch (IndexOutOfBoundsException e) {
           // new time range not valid for all current data, show max range
+          dataStore.trimToCommonTime(activePlots);
           zoomOut.setEnabled(false);
         }
       } else {
