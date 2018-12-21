@@ -314,7 +314,7 @@ public class DataBlock {
    *
    * @return Time after the last sample of the latest contiguous block in ms
    */
-  private long getInitialEndTime() {
+  public long getInitialEndTime() {
     return endTime;
   }
 
@@ -335,7 +335,7 @@ public class DataBlock {
    *
    * @return When the miniSEED data logging started in milliseconds
    */
-  private long getInitialStartTime() {
+  public long getInitialStartTime() {
     return startTime;
   }
 
