@@ -153,18 +153,69 @@ public class FFTResult {
    */
   public static FFTResult crossPower(DataBlock data1, DataBlock data2,
       InstrumentResponse ir1, InstrumentResponse ir2) {
+    return crossPower(data1, data2, ir1, ir2, data1.size());
+  }
 
-    FFTResult selfPSD = spectralCalc(data1, data2);
+  /**
+   * Root funtion for calculating crosspower. Gets spectral calculation of data
+   * from inputted data series by calling the spectralCalc function, and then
+   * applies the provided responses to that result. This is the Power Spectral
+   * Density of the inputted data if both sets are the same.
+   *
+   * This function is meant to handle data that may have different lengths due to quantization.
+   *
+   * @param data1 First data series
+   * @param data2 Second data series
+   * @param ir1 Response of instrument producing first series
+   * @param ir2 Response of instrument producing second series
+   * @param maxLength Maximum number of values to compute FFT over
+   * @return Data structure containing the crosspower result of the two data
+   * sets as a complex array and the frequencies matched to them in a double
+   * array.
+   */
+  public static FFTResult crossPower(DataBlock data1, DataBlock data2,
+      InstrumentResponse ir1, InstrumentResponse ir2, int maxLength) {
+
+    FFTResult selfPSD = spectralCalc(data1, data2, maxLength);
     Complex[] results = selfPSD.getFFT();
     double[] freqs = selfPSD.getFreqs();
     Complex[] freqRespd1 = ir1.applyResponseToInput(freqs);
     Complex[] freqRespd2 = ir2.applyResponseToInput(freqs);
 
     return crossPower(results, freqs, freqRespd1, freqRespd2);
+
   }
 
+
+
+  /**
+   * Root funtion for calculating crosspower. Gets spectral calculation of data
+   * from inputted data series by calling the spectralCalc function, and then
+   * applies the provided responses to that result. This is the Power Spectral
+   * Density of the inputted data if both sets are the same.
+   *
+   * This function is intended to handle cases where input lengths may be mismatched due to
+   * small differences in sample quantization
+   *
+   * @param data1 First data series
+   * @param data2 Second data series
+   * @param ir1 Response of instrument producing first series
+   * @param ir2 Response of instrument producing second series
+   * @param maxLength Maximum length to trim data to
+   * @param interval Sampling interval of data
+   * @return Data structure containing the crosspower result of the two data
+   * sets as a complex array and the frequencies matched to them in a double
+   * array.
+   */
   public static FFTResult crossPower(double[] data1, double[] data2,
-      InstrumentResponse ir1, InstrumentResponse ir2, long interval) {
+      InstrumentResponse ir1, InstrumentResponse ir2, int maxLength, long interval) {
+    if (maxLength < data1.length) {
+      data1 = Arrays.copyOfRange(data1, 0, maxLength);
+
+    }
+    if (maxLength < data2.length){
+      data2 = Arrays.copyOfRange(data2, 0, maxLength);
+    }
     FFTResult selfPSD = spectralCalc(data1, data2, interval);
     Complex[] results = selfPSD.getFFT();
     double[] freqs = selfPSD.getFreqs();
@@ -282,7 +333,7 @@ public class FFTResult {
    * @return 2D array with first dimension being the timeseries length and
    * the second dimension being the taper count
    */
-  public static double[][] getMultitaperSeries(int winLen, int numTapers) {
+  static double[][] getMultitaperSeries(int winLen, int numTapers) {
     double[][] taperMat = new double[numTapers][winLen];
 
     double denom = winLen - 1;
@@ -299,7 +350,7 @@ public class FFTResult {
     return taperMat;
   }
 
-  public static Pair<Complex[], Double> getSpectralWindow(double[] toFFT, int padding) {
+  static Pair<Complex[], Double> getSpectralWindow(double[] toFFT, int padding) {
     // demean and detrend work in-place on the list
     TimeSeriesUtils.demeanInPlace(toFFT);
     Double wss = cosineTaper(toFFT, 0.05);
@@ -369,7 +420,7 @@ public class FFTResult {
    * @param mustFlip True if signal is inverted (for step cal)
    * @return Complex array of FFT values, and double array of matching frequencies
    */
-  public static FFTResult singleSidedFFT(double[] data, double sps, boolean mustFlip) {
+  static FFTResult singleSidedFFT(double[] data, double sps, boolean mustFlip) {
     for (int i = 0; i < data.length; ++i) {
       if (mustFlip) {
         data[i] *= -1;
@@ -497,6 +548,31 @@ public class FFTResult {
    */
   public static FFTResult spectralCalc(DataBlock data1, DataBlock data2) {
 
+    return spectralCalc(data1, data2, data1.size());
+
+  }
+
+  /**
+   *
+   * Helper function to calculate power spectral density / crosspower.
+   * This function is used to ensure data is of equivalent length for inputs that may
+   * have slight differences in timing and sample rate.
+   * Takes in two time series data and produces the windowed FFT over each.
+   * The first is multiplied by the complex conjugate of the second.
+   * If the two series are the same, this is the PSD of that series. If they
+   * are different, this result is the crosspower.
+   * The result is smoothed but does not have the frequency response applied,
+   * and so does not give a full result -- this is merely a helper function
+   * for the crossPower function.
+   *
+   * @param data1 DataBlock with relevant time series data
+   * @param data2 DataBlock with relevant time series data
+   * @param maxLength Maximum size to trim inputs
+   * @return A structure with two arrays: an array of Complex numbers
+   * representing the PSD result, and an array of doubles representing the
+   * frequencies of the PSD.
+   */
+  public static FFTResult spectralCalc(DataBlock data1, DataBlock data2, int maxLength) {
     // this is ugly logic here, but this saves us issues with looping
     // and calculating the same data twice
     boolean sameData = data1.getName().equals(data2.getName());
@@ -505,6 +581,13 @@ public class FFTResult {
     double[] list2 = list1;
     if (!sameData) {
       list2 = data2.getData();
+    }
+
+    if (maxLength < list1.length) {
+      list1 = Arrays.copyOfRange(list1, 0, maxLength);
+    }
+    if (maxLength < list2.length) {
+      list2 = Arrays.copyOfRange(list2, 0, maxLength);
     }
 
     long interval = data1.getInterval();
@@ -537,7 +620,7 @@ public class FFTResult {
    * @return FFTResult (FFT values and frequencies as a pair of arrays)
    * representing the power-spectral density / crosspower of the input data.
    */
-  public static FFTResult
+  static FFTResult
   spectralCalc(double[] list1, double[] list2, long interval) {
 
     //Only the same data if the arrays are actually the same objects.
