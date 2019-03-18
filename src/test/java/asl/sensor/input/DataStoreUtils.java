@@ -34,6 +34,32 @@ public class DataStoreUtils {
     return new DataStore();
   }
 
+  public static DataStore createFromNamesEmbedResp(String respName, String calibrationInName,
+      String sensorOutputName) {
+    try {
+      DataStore dataStore = new DataStore();
+
+      if (calibrationInName != null) {
+        dataStore.setBlock(0, calibrationInName);
+      }
+      if (sensorOutputName != null) {
+        dataStore.setBlock(1, sensorOutputName);
+      }
+
+      if (respName != null) {
+        InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse(respName);
+        dataStore.setResponse(1, ir);
+      }
+
+      return dataStore;
+    } catch (IOException | SeedFormatException | CodecException e) {
+      e.printStackTrace();
+      fail(e.getMessage());
+    }
+    //If it gets here, it has already failed.
+    return new DataStore();
+  }
+
   public static DataStore appendFromNames(DataStore dataStore, String calibrationInName,
       String sensorOutputName) {
     try {

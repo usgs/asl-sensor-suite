@@ -100,9 +100,15 @@ public class VoltageExperiment extends Experiment {
       double avgMin = 0.;
       double avgMax = 0.;
       int plotXPoint = 0;
+
+      int startingPoint = -2; // start from 2 behind the minimum value of the data if possible
+      while(minIndex + startingPoint < 0) {
+        ++startingPoint;
+      }
+
       XYSeries xys = new XYSeries(dataNames[i]);
       // get the 5 points centered around the max/min value
-      for (int j = -2; j < 3; ++j) {
+      for (int j = startingPoint; j < (startingPoint + 5); ++j) {
         int currentMinLookup = minIndex + j;
         int currentMaxLookup = maxIndex + j;
         // x-value is just the given point in the set

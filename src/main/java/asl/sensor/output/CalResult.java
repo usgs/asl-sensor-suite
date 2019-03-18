@@ -45,12 +45,12 @@ public class CalResult {
   /**
    * Get data from a step cal result
    * @param images plots converted to png-format images as byte arrays
-   * @param initParams all initial parameters (corner, damping, residual)
    * @param fitParams all fit parameters
+   * @param initParams all initial parameters (corner, damping, residual)
    * @return object holding these values in easily-accessed maps with variable descriptions
    */
-  public static CalResult buildStepCalData(byte[][] images, double[] initParams,
-      double[] fitParams) {
+  public static CalResult buildStepCalData(byte[][] images, double[] fitParams,
+      double[] initParams) {
     double fitCorner = fitParams[0];
     double fitDamping = fitParams[1];
     double fitResid = fitParams[2];

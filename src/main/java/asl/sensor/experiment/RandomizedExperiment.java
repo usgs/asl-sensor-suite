@@ -538,11 +538,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     double paramTolerance = 1.0E-10;
     // probably acceptable tolerance for clean low-frequency cals BUT
     // high frequency cals are noisy and slow to converge
-    // so this branch is to enable using higher tolerance to deal with that
-    if (!isLowFrequencyCalibration) {
-      costTolerance = 1.0E-15;
-      paramTolerance = 1.0E-10;
-    }
+    // that said using these parameters in high-freq cases still seems to work
 
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(costTolerance).
