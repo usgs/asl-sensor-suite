@@ -508,7 +508,7 @@ public class FFTResult {
     }
 
     long interval = data1.getInterval();
-
+    System.out.println(list1.length +"," + list2.length);
     return spectralCalc(list1, list2, interval);
 
   }

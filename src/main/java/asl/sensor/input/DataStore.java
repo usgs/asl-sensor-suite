@@ -292,12 +292,12 @@ public class DataStore {
     // first loop to get lowest-frequency data
     for (int i = 0; i < limit; ++i) {
       if (thisBlockIsSet[i]) {
-        interval = Math.max(interval, getBlock(i).getInitialInterval());
+        interval = Math.max(interval, getBlock(i).getInterval());
       }
     }
     // second loop to downsample
     for (int i = 0; i < limit; ++i) {
-      if (thisBlockIsSet[i] && getBlock(i).getInitialInterval() != interval) {
+      if (thisBlockIsSet[i] && getBlock(i).getInterval() != interval) {
         getBlock(i).resample(interval);
       }
     }

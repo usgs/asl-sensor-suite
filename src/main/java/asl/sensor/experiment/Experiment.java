@@ -406,8 +406,6 @@ public abstract class Experiment {
       return;
     }
 
-    // TODO: may want to do a check that enough data exists and throw exception as necessary
-
     final DataBlock db = dataStore.getXthLoadedBlock(1);
 
     start = db.getStartTime();
