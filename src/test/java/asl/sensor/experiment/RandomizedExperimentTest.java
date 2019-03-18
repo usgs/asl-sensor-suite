@@ -63,7 +63,7 @@ public class RandomizedExperimentTest {
     String calName = dataFolderName + "_BC0.512.seed";
     String sensOutName = dataFolderName + "00_BHZ.512.seed";
 
-    DataStore ds = DataStoreUtils.createFromNames(testRespName, calName, sensOutName);
+    DataStore ds = DataStoreUtils.createFromNamesEmbedResp(respName, calName, sensOutName);
 
     String startTime = "2019,073,18:51";
     DateTimeFormatter dateTimeFormatter =
