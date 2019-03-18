@@ -40,17 +40,17 @@ public class CalServerTest {
     CalResult result = server.runRand(calName, calName2, sensOutName, sensOutName2, respName, false,
         startDateTime, endDateTime, true);
 
-    double[] initPolesDoubles = result.getNumerMap().get("Init_poles");
-    double[] fitPolesDoubles = result.getNumerMap().get("Fit_poles");
+    double[] initPolesDoubles = result.getNumerMap().get("Initial_poles");
+    double[] fitPolesDoubles = result.getNumerMap().get("Best_fit_poles");
 
     Complex[] initPoles = new Complex[initPolesDoubles.length/2];
     Complex[] fitPoles = new Complex[initPoles.length];
     for (int i = 0; i < fitPoles.length; ++i) {
       int polesRawIndex = i * 2;
       double initRealPart = initPolesDoubles[polesRawIndex];
-      double initImagPart = initPolesDoubles[polesRawIndex];
+      double initImagPart = initPolesDoubles[polesRawIndex + 1];
       double fitRealPart = fitPolesDoubles[polesRawIndex];
-      double fitImagPart = fitPolesDoubles[polesRawIndex];
+      double fitImagPart = fitPolesDoubles[polesRawIndex + 1];
       initPoles[i] = new Complex(initRealPart, initImagPart);
       fitPoles[i] = new Complex(fitRealPart, fitImagPart);
     }
@@ -60,16 +60,25 @@ public class CalServerTest {
 
     Complex[] expectedFitPoles = {
         new Complex(-0.012725101823426397, -0.011495336794506263),
-        new Complex(-0.012725101823426397, 0.011495336794506263)
+        new Complex(-0.012725101823426397, 0.011495336794506263),
+        expectedInitPoles[2],
+        expectedInitPoles[3],
     };
 
+    for (int i = 0; i < fitPoles.length; i++) {
+      System.out.println(fitPoles[i] + ", " + expectedFitPoles[i]);
+    }
+
+
+    assertEquals(expectedInitPoles.length, initPoles.length);
+    assertEquals(expectedFitPoles.length, fitPoles.length);
 
     for (int i = 0; i < fitPoles.length; i++) {
-      assertEquals(expectedInitPoles[i].getReal(), fitPoles[i].getReal(), 1E-5);
-      assertEquals(expectedInitPoles[i].getImaginary(), fitPoles[i].getImaginary(), 1E-5);
+      assertEquals(expectedInitPoles[i].getReal(), initPoles[i].getReal(), 1E-4);
+      assertEquals(expectedInitPoles[i].getImaginary(), initPoles[i].getImaginary(), 1E-4);
 
-      assertEquals(expectedFitPoles[i].getReal(), fitPoles[i].getReal(), 1E-5);
-      assertEquals(expectedFitPoles[i].getImaginary(), fitPoles[i].getImaginary(), 1E-5);
+      assertEquals(expectedFitPoles[i].getReal(), fitPoles[i].getReal(), 1E-4);
+      assertEquals(expectedFitPoles[i].getImaginary(), fitPoles[i].getImaginary(), 1E-4);
     }
 
   }
