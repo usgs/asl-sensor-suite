@@ -13,10 +13,16 @@ import asl.sensor.output.CalResult;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Random;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
@@ -49,6 +55,33 @@ public class RandomizedExperimentTest {
   private static final String testRespName =
       folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
 
+
+  @Test
+  public void testSampleRateMismatchError() {
+    String respName = "STS2gen3_Q330HR";
+    String dataFolderName = getSeedFolder("IU", "FUNA", "2019", "073");
+    String calName = dataFolderName + "_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_BHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(testRespName, calName, sensOutName);
+
+    String startTime = "2019,073,18:51";
+    DateTimeFormatter dateTimeFormatter =
+        DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm").withZone(ZoneOffset.UTC);
+    long startCal = ZonedDateTime.parse(startTime, dateTimeFormatter).toInstant().toEpochMilli();
+    String endTime = "2019,073,22:51";
+    long endCal = ZonedDateTime.parse(endTime, dateTimeFormatter).toInstant().toEpochMilli();
+
+    ds.trim(startCal, endCal);
+
+    RandomizedExperiment randomExp = new RandomizedExperiment();
+    randomExp.setLowFrequencyCalibration(true);
+    randomExp.setCapactiveCalibration(false);
+    randomExp.runExperimentOnData(ds);
+
+    // now, do we get a null pointer exception?
+
+  }
 
   @Test
   public void testEvaluationOfJacobian() throws IOException {
