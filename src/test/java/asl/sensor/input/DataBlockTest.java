@@ -1,5 +1,6 @@
 package asl.sensor.input;
 
+import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -20,6 +21,25 @@ public class DataBlockTest {
   private final String location = "00";
   private final String channel = "BH0";
   private final String fileID = station + "_" + location + "_" + channel + ".512.seed";
+
+  @Test
+  public void samplingMatchesData() {
+    String respName = "STS2gen3_Q330HR";
+    String dataFolderName = getSeedFolder("IU", "FUNA", "2019", "073");
+    String calName = dataFolderName + "_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_BHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNamesEmbedResp(respName, calName, sensOutName);
+    ds.trimToCommonTime();
+    ds.trim(1552589460000L, 1552603860000L);
+    ds.resample(10.);
+
+    assertEquals(288000, ds.getBlock(0).sizeNativeSampleRate());
+    assertEquals(576000, ds.getBlock(1).sizeNativeSampleRate());
+    assertEquals(144000, ds.getBlock(1).size());
+    assertEquals(ds.getBlock(1).getData().length, ds.getBlock(1).size());
+    assertEquals(ds.getBlock(0).size(), ds.getBlock(1).size());
+  }
 
   @Test
   public void trimsCorrectly() throws Exception {
