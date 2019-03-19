@@ -5,12 +5,16 @@ import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import org.apache.commons.math3.util.Pair;
 import asl.sensor.input.DataBlock;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -43,6 +47,17 @@ public class TimeSeriesUtils {
 
   // divide by this to go from nanoseconds to milliseconds
   public static final int TO_MILLI_FACTOR = 1000000;
+
+  public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format;
+      });
+
+  public static String formatEpochMillis(long millis) {
+    return DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(millis)));
+  }
 
   /**
    * Merge arrays from multiple timeseries into a single object
