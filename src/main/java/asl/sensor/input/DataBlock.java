@@ -147,9 +147,7 @@ public class DataBlock {
 
     long timeCursor = trimmedStart;
 
-    int numPoints =
-        (int) Math.ceil((trimmedEnd - trimmedStart) / ((double) interval));
-
+    int numPoints = sizeNativeSampleRate();
     cachedTimeSeries = new double[numPoints];
     int lastFilledIndex = 0;
 
@@ -518,6 +516,18 @@ public class DataBlock {
     long timeDiff = trimmedEnd - trimmedStart;
     return (int) (timeDiff / targetInterval);
   }
+
+  /**
+   * Return the number of points in the given data range assuming the data does not require
+   * any level of decimation in order to be read in
+   *
+   * @return length of the data region to be returned, including filled-in gaps
+   */
+  int sizeNativeSampleRate() {
+    long timeDiff = trimmedEnd - trimmedStart;
+    return (int) (timeDiff / interval);
+  }
+
 
   /**
    * Converts this object's time series data into a form plottable by a chart.

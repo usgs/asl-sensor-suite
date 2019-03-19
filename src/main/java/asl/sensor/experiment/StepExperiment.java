@@ -203,7 +203,8 @@ public class StepExperiment extends Experiment {
     // single sided FFT includes lowpass filter and demean in preprocessing
     // additional processing is done when inverting the FFT in the calculate method
     FFTResult sensorsFFT =
-        FFTResult.singleSidedFilteredFFT(sensorOutput, needsFlip);
+        FFTResult.
+            singleSidedFilteredFFT(sensorOutput, needsFlip);
     // these values used in calculating the response deconvolution
     sensorFFTSeries = sensorsFFT.getFFT();
     freqs = sensorsFFT.getFreqs();

@@ -192,7 +192,29 @@ public class DataStore {
     double[] data = dataBlockArray[idx].getData();
     long interval = dataBlockArray[idx].getInterval();
     InstrumentResponse ir = responses[idx];
-    return FFTResult.crossPower(data, data, ir, ir, interval);
+    return FFTResult.crossPower(data, data, ir, ir, data.length, interval);
+  }
+
+  /**
+   * Gets the power-spectral density of an index in this object.
+   * If a PSD has already been calculated, this will return that. If not,
+   * it will calculate the result, store it, and then return that data.
+   *
+   * This version of the function is meant to be used in cases where exact length
+   * of the PSD must be specified in advance, such as when working with data that
+   * may have timing differences due to quantization that mean trimming makes
+   * some data be of different lengths from what is expected.
+   *
+   * @param idx Index of data to get the PSD of
+   * @param maxLength Maximum number of points to calculate PSD over -- range 0 to maxLength
+   * @return Complex array of frequency values and a
+   * double array of the frequencies
+   */
+  public FFTResult getPSD(int idx, int maxLength) {
+    double[] data = dataBlockArray[idx].getData();
+    long interval = dataBlockArray[idx].getInterval();
+    InstrumentResponse ir = responses[idx];
+    return FFTResult.crossPower(data, data, ir, ir, maxLength, interval);
   }
 
   /**
@@ -292,12 +314,12 @@ public class DataStore {
     // first loop to get lowest-frequency data
     for (int i = 0; i < limit; ++i) {
       if (thisBlockIsSet[i]) {
-        interval = Math.max(interval, getBlock(i).getInitialInterval());
+        interval = Math.max(interval, getBlock(i).getInterval());
       }
     }
     // second loop to downsample
     for (int i = 0; i < limit; ++i) {
-      if (thisBlockIsSet[i] && getBlock(i).getInitialInterval() != interval) {
+      if (thisBlockIsSet[i] && getBlock(i).getInterval() != interval) {
         getBlock(i).resample(interval);
       }
     }

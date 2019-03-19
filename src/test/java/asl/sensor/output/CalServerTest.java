@@ -23,6 +23,21 @@ public class CalServerTest {
   private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
+  public void testRandomNoOOBException() throws SeedFormatException, CodecException, IOException {
+    String respName = "STS2gen3_Q330HR";
+    String dataFolderName = getSeedFolder("IU", "FUNA", "2019", "073");
+    String calName = dataFolderName + "_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_BHZ.512.seed";
+    String startTime = "2019-03-14T18:51:00Z";
+    String endTime = "2019-03-14T22:51:00Z";
+
+    CalProcessingServer server = new CalProcessingServer();
+    server.runRand(calName, sensOutName, respName, true, startTime, endTime, true);
+
+    // now, do we get a null pointer exception?
+  }
+
+  @Test
   public void testRandomResults() throws SeedFormatException, CodecException, IOException {
     String respName = RESP_LOCATION + "RESP.IU.KIEV.00.BH1";
     String dataFolderName = getSeedFolder("IU", "KIEV", "2018", "044");
@@ -64,11 +79,6 @@ public class CalServerTest {
         expectedInitPoles[2],
         expectedInitPoles[3],
     };
-
-    for (int i = 0; i < fitPoles.length; i++) {
-      System.out.println(fitPoles[i] + ", " + expectedFitPoles[i]);
-    }
-
 
     assertEquals(expectedInitPoles.length, initPoles.length);
     assertEquals(expectedFitPoles.length, fitPoles.length);

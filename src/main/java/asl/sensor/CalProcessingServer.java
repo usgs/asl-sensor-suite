@@ -203,10 +203,11 @@ public class CalProcessingServer {
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
     ds.setResponse(1, ir);
-    ds.trim(start, end);
     if (lowFreq) {
       ds.resample(10.); // more than 5 Hz should be unnecessary for low-frequency curve fitting
     }
+    ds.trimToCommonTime();
+    ds.trim(start, end);
 
     return runExpGetDataRand(ds, lowFreq);
   }
