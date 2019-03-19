@@ -7,6 +7,7 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.Instant;
 import org.apache.commons.math3.util.Pair;
+import org.jfree.data.time.TimeSeries;
 
 /**
  * Holds the inputted data from miniSEED files both as a simple struct
@@ -556,7 +557,18 @@ public class DataStore {
       DataBlock db = getBlock(i);
 
       if (end < db.getStartTime() || start > db.getEndTime()) {
-        throw new IndexOutOfBoundsException("Time range invalid for some data");
+
+        String trimStartFormatted = TimeSeriesUtils.formatEpochMillis(start);
+        String trimEndFormatted = TimeSeriesUtils.formatEpochMillis(end);
+        String blockStartFormatted = TimeSeriesUtils.formatEpochMillis(db.getStartTime());
+        String blockEndFormatted = TimeSeriesUtils.formatEpochMillis(db.getEndTime());
+
+        String errMessage = "Trim range outside of valid data window for " + db.getName() + '\n'
+            + "Attempted to trim to range (" + trimStartFormatted
+            + ", " + trimEndFormatted + ")\n"
+            + "Data range is only from (" + blockStartFormatted
+            + ", " + blockEndFormatted + ")\n";
+        throw new IndexOutOfBoundsException(errMessage);
       }
 
       if (start < db.getStartTime()) {
