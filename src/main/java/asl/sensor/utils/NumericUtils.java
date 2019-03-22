@@ -129,6 +129,35 @@ public class NumericUtils {
   }
 
   /**
+   * Compute the standard deviation of a list of complex numbers. This will compute the deviation
+   * on the real and imaginary parts separately, so that an error term can be generated for each.
+   * @param cs List of complex numbers to do statistics over
+   * @return Complex value representing standard deviation of real and imaginary part respectively
+   */
+  public static Complex getComplexSDev(Complex[] cs) {
+
+    Complex summation = Complex.ZERO;
+    for (Complex c : cs) {
+      summation = summation.add(c);
+    }
+    summation = summation.divide(cs.length);
+
+    double realSigma = 0.;
+    double imaginarySigma = 0.;
+
+    // now get the standard deviation of the real parts and the imaginary parts
+    for (Complex c : cs) {
+      double real = c.getReal();
+      double imag = c.getImaginary();
+
+      realSigma += Math.pow(real - summation.getReal(), 2);
+      imaginarySigma += Math.pow(imag - summation.getImaginary(), 2);
+    }
+
+    return new Complex(Math.sqrt(realSigma), Math.sqrt(imaginarySigma));
+  }
+
+  /**
    * Perform a moving average on complex data, using the specified number of points to average at
    * each point in the input
    *

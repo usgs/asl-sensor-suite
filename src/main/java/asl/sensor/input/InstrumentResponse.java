@@ -769,6 +769,22 @@ public class InstrumentResponse {
     return unitType;
   }
 
+  public int getFitZeroCount(int offset, boolean lowFreq) {
+    int indexOfZero = offset + (lowFreq ? firstLowZeroIndex : firstHighZeroIndex);
+    if (indexOfZero < 0) {
+      return 0;
+    }
+    return zeros.get(indexOfZero).getSecond();
+  }
+
+  public int getFitPoleCount(int offset, boolean lowFreq) {
+    int indexOfPole = offset + (lowFreq ? firstLowPoleIndex : firstHighPoleIndex);
+    if (indexOfPole < 0) {
+      return 0;
+    }
+    return zeros.get(indexOfPole).getSecond();
+  }
+
   /**
    * Replace a given zero in fit range; this is used for error analysis in RandomizedExperiment,
    * where each P/Z value is optimized over an octave centered at its frequency value.
