@@ -773,7 +773,8 @@ public class InstrumentResponse {
    * Replace a given zero in fit range; this is used for error analysis in RandomizedExperiment,
    * where each P/Z value is optimized over an octave centered at its frequency value.
    * Indices here are based on the indices in zerosToVector, divided by 2 (as each pair of
-   * array entries represents a real and complex component of a specific zero)
+   * array entries represents a real and complex component of a specific zero).
+   * This will also replace a zero's complex conjugate if it has nonzero imaginary value.
    * @param zero The value to replace a given zero by
    * @param offset Which pole in the list of fit values it is
    * @param lowFreq True if the pole is being fit in a low-frqeuency cal (else high-frequency)
@@ -782,13 +783,19 @@ public class InstrumentResponse {
     int indexOfZero = offset + (lowFreq ? firstLowZeroIndex : firstHighZeroIndex);
     Integer count = zeros.get(indexOfZero).getSecond();
     zeros.set(indexOfZero, new Pair<>(zero, count));
+    if (zero.getImaginary() != 0) {
+      ++indexOfZero;
+      count = zeros.get(indexOfZero).getSecond();
+      zeros.set(indexOfZero, new Pair<>(zero, count));
+    }
   }
 
   /**
    * Replace a given pole in fit range; this is used for error analysis in RandomizedExperiment,
    * where each P/Z value is optimized over an octave centered at its frequency value.
    * Indices here are based on the indices in polesToVector, divided by 2 (as each pair of
-   * array entries represents a real and complex component of a specific pole)
+   * array entries represents a real and complex component of a specific pole).
+   * This will also replace a pole's complex conjugate if it has nonzero imaginary value.
    * @param pole The value to replace a given pole by
    * @param offset Which pole in the list of fit values it is
    * @param lowFreq True if the pole is being fit in a low-frqeuency cal (else high-frequency)
@@ -797,6 +804,12 @@ public class InstrumentResponse {
     int indexOfPole = offset + (lowFreq ? firstLowPoleIndex : firstHighPoleIndex);
     Integer count = poles.get(indexOfPole).getSecond();
     poles.set(indexOfPole, new Pair<>(pole, count));
+    if (pole.getImaginary() != 0) {
+      //
+      ++indexOfPole;
+      count = poles.get(indexOfPole).getSecond();
+      poles.set(indexOfPole, new Pair<>(pole, count));
+    }
   }
 
   /**
