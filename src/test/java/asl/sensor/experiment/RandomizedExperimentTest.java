@@ -240,7 +240,11 @@ public class RandomizedExperimentTest {
           ir.buildResponseFromFitVector(newPoles, false, 0);
 
       List<Complex> testList = ir2.getPoles();
-      //System.out.println(testList);
+
+      System.out.println(poles);
+      System.out.println(testList);
+      // System.out.println(poles2);
+
       int offsetIdx = 0;
       for (int i = 0; i < poles.size(); ++i) {
         if (i < start) {
@@ -289,10 +293,6 @@ public class RandomizedExperimentTest {
       List<Complex> testList = new ArrayList<>(poles);
       testList.set(0, c);
       testList.set(1, c.conjugate());
-
-      // System.out.println(testList);
-      // System.out.println(poles);
-      // System.out.println(poles2);
 
       for (int i = 0; i < poles.size(); ++i) {
         if (i < 2) {

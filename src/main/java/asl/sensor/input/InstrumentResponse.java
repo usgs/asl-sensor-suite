@@ -67,6 +67,12 @@ public class InstrumentResponse {
   private double normalization; // A0 normalization factor
   private double normalFreq; // cuz she's a normalFreq, normalFreq
   private Instant epochStart, epochEnd;
+  // data used to help find poles and zeros to fit on solving randomized calibrations
+  private int firstLowPoleIndex = -1;
+  private int firstLowZeroIndex = -1;
+  private int firstHighPoleIndex = -1;
+  private int firstHighZeroIndex = -1;
+
   /**
    * Reads in a response from an already-accessed bufferedreader handle
    * and assigns it to the name given (used with embedded response files)
@@ -80,6 +86,9 @@ public class InstrumentResponse {
     this.name = name;
 
     parserDriver(br, null);
+
+    // also make sure that we know where the low- and high-frequency poles and zeros are
+    findPoleZeroIndices();
   }
 
   /**
@@ -95,6 +104,8 @@ public class InstrumentResponse {
 
     zeros = new ArrayList<>(responseIn.getZerosList());
     poles = new ArrayList<>(responseIn.getPolesList());
+    // new poles and zeros? let's figure out where the frequency bounds are
+    findPoleZeroIndices();
 
     unitType = responseIn.getUnits();
 
@@ -114,6 +125,8 @@ public class InstrumentResponse {
   public InstrumentResponse(String filename, Instant epoch) throws IOException {
     name = new File(filename).getName();
     parseResponseFile(filename, epoch);
+    // also make sure that we know where the low- and high-frequency poles and zeros are
+    findPoleZeroIndices();
   }
 
   /**
@@ -124,7 +137,6 @@ public class InstrumentResponse {
    */
   public InstrumentResponse(String filename) throws IOException {
     this(filename, null);
-
   }
 
   /**
@@ -508,6 +520,46 @@ public class InstrumentResponse {
   }
 
   /**
+   * Used to calculate the index for the first valid pole and zero to replace for calibrations
+   */
+  void findPoleZeroIndices() {
+
+    for (int i = 0; i < zeros.size(); ++i) {
+      Pair<Complex, Integer> valueAndCount = zeros.get(i);
+      Complex c = valueAndCount.getFirst();
+      // if it's not zero, it might need to get replaced
+      if (c.abs() > 0) {
+        firstLowZeroIndex = i;
+        break;
+      }
+    }
+
+    if (firstLowZeroIndex > -1) {
+      for (int i = firstLowZeroIndex; i < zeros.size(); ++i) {
+        Pair<Complex, Integer> valueAndCount = zeros.get(i);
+        Complex c = valueAndCount.getFirst();
+        if (c.abs() / NumericUtils.TAU > 1.) {
+          firstHighZeroIndex = i;
+          break;
+        }
+      }
+    }
+
+    // starting pole index is 1 if the first pole is too low to fit in any cases
+    firstLowPoleIndex = isKS54000() ? 1 : 0;
+
+    for (int i = firstLowPoleIndex; i < poles.size(); ++i) {
+      Pair<Complex, Integer> valueAndCount = poles.get(i);
+      Complex c = valueAndCount.getFirst();
+      if (c.abs() / NumericUtils.TAU > 1.) {
+        firstHighPoleIndex = i;
+        break;
+      }
+    }
+
+  }
+
+  /**
    * Given a best-fit vector, build the poles and zeros to use the ones
    * defined by that vector. Imaginary values that are non-zero are constrained
    * to be (implicitly) defining a complex conjugate of the pole/zero they
@@ -525,114 +577,69 @@ public class InstrumentResponse {
   buildResponseFromFitVector(double[] params, boolean lowFreq,
       int numZeros) {
 
-    // get all distinct pole values as lists
-    // List<Complex> zList = getDistinctZeros();
-    // List<Complex> pList = getDistinctPoles();
+    findPoleZeroIndices();
+
+    // the values being replaced go here
+    int zerosCountOffset = lowFreq ? firstLowZeroIndex : firstHighZeroIndex;
+    int polesCountOffset = lowFreq ? firstLowPoleIndex : firstHighPoleIndex;
 
     // first covert poles and zeros back to complex values to make this easier
-    List<Complex> zerosAsComplex = new ArrayList<>();
+    List<Pair<Complex, Integer>> zerosWithCount = new ArrayList<>();
     for (int i = 0; i < numZeros; i += 2) {
       Complex c = new Complex(params[i], params[i + 1]);
-      zerosAsComplex.add(c);
+      Integer count = zeros.get(zerosWithCount.size() + zerosCountOffset).getSecond();
+      zerosWithCount.add(new Pair<>(c, count));
+      if (params[i+1] != 0) {
+        // if the imaginary part is nonzero, also add the complex conjugate
+        count = zeros.get(zerosWithCount.size() + zerosCountOffset).getSecond();
+        zerosWithCount.add(new Pair<>(c.conjugate(), count));
+      }
     }
 
-    List<Complex> polesAsComplex = new ArrayList<>();
+    List<Pair<Complex, Integer>> polesWithCount = new ArrayList<>();
     for (int i = numZeros; i < params.length; i += 2) {
       Complex c = new Complex(params[i], params[i + 1]);
-      polesAsComplex.add(c);
+      Integer count = poles.get(polesWithCount.size() + polesCountOffset).getSecond();
+      polesWithCount.add(new Pair<>(c, count));
+      if (params[i+1] != 0) {
+        // if the imaginary part is nonzero, also add the complex conjugate
+        count = poles.get(polesWithCount.size() + polesCountOffset).getSecond();
+        polesWithCount.add(new Pair<>(c.conjugate(), count));
+      }
     }
 
-    // fit the zeros
     List<Pair<Complex, Integer>> builtZeros = new ArrayList<>();
 
-    // first, add the literally zero values; these are never fit
-    // (NOTE: we expect count to never be more than 2)
-    int start;
-    for (start = 0; start < zeros.size(); ++start) {
-      Pair<Complex, Integer> valueAndCount = zeros.get(start);
-      Complex c = valueAndCount.getFirst();
-      // if it's not zero, it might need to get replaced
-      if (c.abs() > 0) {
-        break;
-      }
-      builtZeros.add(valueAndCount);
+    // firstLowZeroIndex is < 0 if all zeros are literally zero-valued
+    if (firstLowZeroIndex > -1) {
+      builtZeros.addAll(zeros.subList(0, firstLowZeroIndex));
     }
 
-    // add the low-frequency zeros from source if they're not being fit
-    if (!lowFreq) {
-      // add zeros until they reach the high-freq cutoff point
-      // start from current index of data
-      for (int i = start; i < zeros.size(); ++i) {
-        Pair<Complex, Integer> valueAndCount = zeros.get(i);
-        Complex zero = valueAndCount.getFirst();
-        if (zero.abs() / NumericUtils.TAU > 1.) {
-          // zeros after this point are high-frequency
-          break;
-        }
-        builtZeros.add(valueAndCount);
-      }
+    if (!lowFreq && firstLowZeroIndex > -1) {
+      // add the low-frequency zeros from here if they're not being fit
+      builtZeros.addAll(zeros.subList(firstLowZeroIndex, firstHighZeroIndex));
     }
 
-    // now add the zeros under consideration for fit
-    // these are the high-frequency zeros if we're doing high-frequency cal
-    // or the low-frequency zeros otherwise
-    int offset;
-    offset = builtZeros.size();
-    for (int i = 0; i < zerosAsComplex.size(); ++i) {
-      // get the number of times the original value appeared
-      int count = zeros.get(i + offset).getSecond();
-      Complex zero = zerosAsComplex.get(i);
-      builtZeros.add(new Pair<>(zero, count));
-
-      // add conjugate if it has one
-      if (zero.getImaginary() != 0.) {
-        builtZeros.add(new Pair<>(zero.conjugate(), count));
-        ++offset; // skipping over the original conjugate pair
-      }
-    }
-
+    // add in the newly fit zeros if there are any
+    builtZeros.addAll(zerosWithCount);
     // now add in all remaining zeros
-    for (int i = builtZeros.size(); i < zeros.size(); ++i) {
-      builtZeros.add(zeros.get(i));
-    }
+    builtZeros.addAll(zeros.subList(builtZeros.size(), zeros.size()));
 
     // now do the same thing as the zeros but for the poles
     List<Pair<Complex, Integer>> builtPoles = new ArrayList<>();
 
-    // low frequency poles not being fit added first (keeps list sorted)
-    if (!lowFreq) {
-      // first add low-frequency poles not getting fit by high-freq cal
-      for (Pair<Complex, Integer> valueAndCount : poles) {
-        Complex pole = valueAndCount.getFirst();
-        if (pole.abs() / NumericUtils.TAU > 1.) {
-          break;
-        }
-        builtPoles.add(valueAndCount);
-      }
-    } else if (isKS54000()) {
-      // used in the odd KS54000 case, we don't fit the low-freq damping pole
-      // there should only be the one, because the KS54000 is a weird one
-      builtPoles.add(poles.get(0));
+    if(!lowFreq) {
+      // add in the low-frequency poles if they're not getting fit
+      builtPoles.addAll(poles.subList(0, firstHighPoleIndex));
+    } else if (firstLowPoleIndex > 0) {
+      // this only matters if the response is a KS54000
+      builtPoles.addAll(poles.subList(0, firstLowPoleIndex));
     }
 
-    offset = builtPoles.size();
-    // now add the poles under consideration for fit as with zeros
-    for (int i = 0; i < polesAsComplex.size(); ++i) {
-      int count = poles.get(i + offset).getSecond();
-      Complex pole = polesAsComplex.get(i);
-      builtPoles.add(new Pair<>(pole, count));
-
-      // add conjugate if it has one
-      if (pole.getImaginary() != 0.) {
-        builtPoles.add(new Pair<>(pole.conjugate(), count));
-        ++offset;
-      }
-    }
-
-    // now add the poles that remain
-    for (int i = builtPoles.size(); i < poles.size(); ++i) {
-      builtPoles.add(poles.get(i));
-    }
+    // now add in the newly fit poles
+    builtPoles.addAll(polesWithCount);
+    // and add in any remaining poles (based on nyquist)
+    builtPoles.addAll(poles.subList(builtPoles.size(), poles.size()));
 
     // create a copy of this instrument response and set the new values
     InstrumentResponse out = new InstrumentResponse(this);
@@ -763,6 +770,36 @@ public class InstrumentResponse {
   }
 
   /**
+   * Replace a given zero in fit range; this is used for error analysis in RandomizedExperiment,
+   * where each P/Z value is optimized over an octave centered at its frequency value.
+   * Indices here are based on the indices in zerosToVector, divided by 2 (as each pair of
+   * array entries represents a real and complex component of a specific zero)
+   * @param zero The value to replace a given zero by
+   * @param offset Which pole in the list of fit values it is
+   * @param lowFreq True if the pole is being fit in a low-frqeuency cal (else high-frequency)
+   */
+  public void replaceFitZero(Complex zero, int offset, boolean lowFreq) {
+    int indexOfZero = offset + (lowFreq ? firstLowZeroIndex : firstHighZeroIndex);
+    Integer count = zeros.get(indexOfZero).getSecond();
+    zeros.set(indexOfZero, new Pair<>(zero, count));
+  }
+
+  /**
+   * Replace a given pole in fit range; this is used for error analysis in RandomizedExperiment,
+   * where each P/Z value is optimized over an octave centered at its frequency value.
+   * Indices here are based on the indices in polesToVector, divided by 2 (as each pair of
+   * array entries represents a real and complex component of a specific pole)
+   * @param pole The value to replace a given pole by
+   * @param offset Which pole in the list of fit values it is
+   * @param lowFreq True if the pole is being fit in a low-frqeuency cal (else high-frequency)
+   */
+  public void replaceFitPole(Complex pole, int offset, boolean lowFreq) {
+    int indexOfPole = offset + (lowFreq ? firstLowPoleIndex : firstHighPoleIndex);
+    Integer count = poles.get(indexOfPole).getSecond();
+    poles.set(indexOfPole, new Pair<>(pole, count));
+  }
+
+  /**
    * Return the list of zeros in the RESP file, not including error terms
    *
    * @return List of complex numbers; index y is the yth zero in response list
@@ -793,8 +830,7 @@ public class InstrumentResponse {
    */
   private boolean isKS54000() {
     final double CUTOFF = 1. / 1000.;
-    List<Complex> pList = getPoles();
-    return (pList.get(0).abs() / NumericUtils.TAU) < CUTOFF;
+    return (getPoles().get(0).abs() / NumericUtils.TAU) < CUTOFF;
   }
 
   /**
@@ -984,25 +1020,21 @@ public class InstrumentResponse {
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<>();
 
-    // starting index for poles, shift up one if lowest-freq pole is TOO low
-    int start = 0;
-    if (isKS54000()) {
-      start = 1;
+    int start, end;
+    if (!lowFreq) {
+      start = firstHighPoleIndex;
+      end = poles.size(); // we'll quit before this if we reach maximum freq. based on peak param
+    } else {
+      start = firstLowPoleIndex;
+      end = firstHighPoleIndex;
     }
 
-    for (int i = start; i < poles.size(); ++i) {
+    for (int i = start; i < end; ++i) {
       Pair<Complex, Integer> pairAndValue = poles.get(i);
       Complex p = pairAndValue.getFirst();
 
       double frq = p.abs() / NumericUtils.TAU;
-      if (!lowFreq && (frq < 1.)) {
-        // don't include poles below 1Hz in high-frequency calibration
-        continue;
-      }
-      if (lowFreq && (frq > 1.)) {
-        // only do low frequency calibrations on poles up to
-        break;
-      }
+
       if (!lowFreq && (frq >= peak)) {
         // don't fit poles above fraction of nyquist rate of sensor output
         break;
@@ -1183,7 +1215,20 @@ public class InstrumentResponse {
     // of poles, to convert to array and then vector format
     List<Double> componentList = new ArrayList<>();
 
-    for (int i = 0; i < zeros.size(); ++i) {
+    int start, end;
+    if (!lowFreq) {
+      start = firstHighZeroIndex;
+      end = zeros.size(); // we'll quit before this if we reach maximum freq. based on peak param
+    } else {
+      start = firstLowZeroIndex;
+      end = firstHighZeroIndex;
+    }
+
+    if (start < 0) {
+      return MatrixUtils.createRealVector(new double[]{});
+    }
+
+    for (int i = start; i < end; ++i) {
 
       Pair<Complex, Integer> valueAndCount = zeros.get(i);
       Complex c = valueAndCount.getFirst();
@@ -1195,16 +1240,8 @@ public class InstrumentResponse {
 
       double cutoffChecker = c.abs() / NumericUtils.TAU;
 
-      if (lowFreq && (cutoffChecker > 1.)) {
-        // only do low frequency calibrations on zeros up to 1Hz
-        break;
-      }
-      if (!lowFreq && (cutoffChecker < 1.)) {
-        // don't include zeros > 1Hz in high-frequency calibration
-        continue;
-      }
       if (!lowFreq && (cutoffChecker > peak)) {
-        // don't fit zeros above 80% nyquist rate of sensor output
+        // don't fit zeros above given peak frequency
         break;
       }
 
