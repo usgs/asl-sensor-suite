@@ -154,7 +154,7 @@ public class NumericUtils {
       imaginarySigma += Math.pow(imag - summation.getImaginary(), 2);
     }
 
-    return new Complex(Math.sqrt(realSigma), Math.sqrt(imaginarySigma));
+    return new Complex(Math.sqrt(realSigma / cs.length), Math.sqrt(imaginarySigma / cs.length));
   }
 
   /**

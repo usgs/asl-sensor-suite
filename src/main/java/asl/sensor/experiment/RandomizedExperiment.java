@@ -71,6 +71,13 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
   private Map<Complex, Complex> zeroErrors;
+
+  public static final ThreadLocal<ComplexFormat> COMPLEX_FORMAT =
+      ThreadLocal.withInitial(() -> {
+        ComplexFormat format = new ComplexFormat(DECIMAL_FORMAT.get());
+        return format;
+      });
+
   /**
    * True if calibration is low frequency.
    * This affects which poles are fitted, either low or high frequencies.
@@ -129,25 +136,29 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       List<Complex> complexList, Map<Complex, Complex> errorTerms) {
     final int MAX_LINE = 2; // maximum number of entries per line
 
-    ComplexFormat complexFormat = new ComplexFormat(DECIMAL_FORMAT.get());
     StringBuilder stringBuilder = new StringBuilder();
     int numInLine = 0;
+
+    System.out.println(complexList.size() + "," + errorTerms.size());
 
     for (Complex number : complexList) {
 
       double initPrd = NumericUtils.TAU / number.abs();
-      Complex error = errorTerms.get(complexList);
 
-      stringBuilder.append(complexFormat.format(number));
+
+      stringBuilder.append(COMPLEX_FORMAT.get().format(number));
       stringBuilder.append(" (");
       stringBuilder.append(DECIMAL_FORMAT.get().format(initPrd));
       stringBuilder.append(")");
 
-      stringBuilder.append(" [Err: +/- ");
-      stringBuilder.append(DECIMAL_FORMAT.get().format(error.getReal()));
-      stringBuilder.append(", ");
-      stringBuilder.append(DECIMAL_FORMAT.get().format(error.getImaginary()));
-      stringBuilder.append("i]");
+      if (errorTerms.containsKey(number)) {
+        Complex error = errorTerms.get(number);
+        stringBuilder.append(" [Err: +/- ");
+        stringBuilder.append(DECIMAL_FORMAT.get().format(error.getReal()));
+        stringBuilder.append(", ");
+        stringBuilder.append(DECIMAL_FORMAT.get().format(error.getImaginary()));
+        stringBuilder.append("i]");
+      }
 
       ++numInLine;
       // want to fit two to a line for paired values
@@ -719,114 +730,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     poleErrors = new HashMap<>();
     zeroErrors = new HashMap<>();
 
-    int currentZeroIndex = 0; // where zero under analysis lies in the response
-    int currentPoleIndex = 0; // as above for pole
-
-    // Get error analysis for each pole/zero value
-    for (int i = 0; i < fitParams.length; i += 2) {
-      boolean pole = i > numZeros;
-      Complex fitTerm = new Complex(fitParams[i], fitParams[i+1]);
-      double corner = fitTerm.abs() / NumericUtils.TAU;
-      // get the frequency range over the octave centered on the p/z corner frequency
-      int lowIndex = FFTResult.getIndexOfFrequency(freqs, corner / Math.sqrt(2.));
-      int highIndex = FFTResult.getIndexOfFrequency(freqs, Math.sqrt(2.) * corner);
-
-      double[] errorTermFreqsFull = Arrays.copyOfRange(freqs, lowIndex, highIndex);
-      double[] observedMagnitudeFull = Arrays.copyOfRange(observedResult, lowIndex, highIndex);
-      final int index;
-      // we keep track of count so that we can have a 1:1 mapping between error terms and
-      // listed p/z values in the
-
-      if (pole) {
-        index = currentPoleIndex++; // return before incrementing
-        // increment again to skip over complex conjugate for nonzero imaginary terms
-        if (fitTerm.getImaginary() != 0) {
-          ++currentPoleIndex;
-        }
-      } else {
-        index = currentZeroIndex++; // again, return before incrementing
-        if (fitTerm.getImaginary() != 0) {
-          ++currentZeroIndex;
-        }
-      }
-
-      List<Complex> bestFits = new ArrayList<>();
-      optimizer = new LevenbergMarquardtOptimizer().
-          withCostRelativeTolerance(1E-5).
-          withOrthoTolerance(1E-25).
-          withParameterRelativeTolerance(1E-5);
-
-      if (isLowFrequencyCalibration) {
-        for (int j = 0; j < errorTermFreqsFull.length; ++j) {
-          String message = "Estimating error for variable" + (i/2 + 1) +  " of " +
-              fitParams.length/2 + " using frequency range " + (j + 1) + " of " +
-              errorTermFreqsFull.length;
-          fireStateChange(message);
-
-          // get all but one frequency (and corresponding magnitude) term
-          final double[] errorTermFreqs = new double[errorTermFreqsFull.length - 1];
-          System.arraycopy(errorTermFreqsFull, 0, errorTermFreqs, 0, j);
-          if (j + 1 < errorTermFreqsFull.length) {
-            System.arraycopy(errorTermFreqsFull, j + 1,
-                errorTermFreqs, j, errorTermFreqs.length - j);
-          }
-          final double[] observedMagnitude = new double[errorTermFreqsFull.length - 1];
-          System.arraycopy(observedMagnitudeFull, 0, observedMagnitude, 0, j);
-          if (j + 1 < observedMagnitudeFull.length) {
-            System.arraycopy(observedMagnitudeFull, j + 1,
-                observedMagnitude, j, observedMagnitude.length - j);
-          }
-
-          MultivariateJacobianFunction errorJacobian = new MultivariateJacobianFunction() {
-            final double[] freqsSet = errorTermFreqs;
-            final int variableIndex = index;
-            final boolean isLowFrequency = isLowFrequencyCalibration;
-            final InstrumentResponse fitSet = fitResponse;
-
-            @Override
-            public Pair<RealVector, RealMatrix> value(final RealVector point) {
-              ++numIterations;
-              fireStateChange("Fitting, iteration count " + numIterations);
-              return errorJacobian(point, freqsSet, variableIndex, fitSet, isLowFrequency, pole);
-            }
-          };
-
-          RealVector initialError = MatrixUtils.createRealVector(
-              new double[]{fitParams[i], fitParams[i+1]});
-          RealVector observed = MatrixUtils.createRealVector(observedMagnitude);
-
-          LeastSquaresProblem errorLsq = new LeastSquaresBuilder().
-              start(initialError).
-              target(observed).
-              model(errorJacobian).
-              parameterValidator(this).
-              lazyEvaluation(false).
-              maxEvaluations(Integer.MAX_VALUE).
-              maxIterations(Integer.MAX_VALUE).
-              build();
-
-          optimum = optimizer.optimize(errorLsq);
-          RealVector errorVector = optimum.getPoint();
-          Complex c = new Complex(errorVector.getEntry(0), errorVector.getEntry(1));
-          bestFits.add(c);
-        } // end loop over frequency range (error term estimation for a given point)
-
-        // now that we have a list of best-fit p/z over range, we get the standard deviation
-        Complex threeSigma =
-            NumericUtils.getComplexSDev(bestFits.toArray(new Complex[]{})).multiply(3);
-
-        if (pole) {
-          poleErrors.put(fitTerm, threeSigma);
-          if (fitTerm.getImaginary() != 0) {
-            poleErrors.put(fitTerm.conjugate(), threeSigma);
-          }
-        } else {
-          zeroErrors.put(fitTerm, threeSigma);
-          if (fitTerm.getImaginary() != 0) {
-            poleErrors.put(fitTerm.conjugate(), threeSigma);
-          }
-        }
-      }
+    if (isLowFrequencyCalibration) {
+      constructErrorTerms(observedResult, numZeros, fitParams);
     }
 
     fireStateChange("Getting extended resp curves for high-freq plots...");
@@ -913,6 +818,118 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     xysc.addSeries(initResidPhase);
     xysc.addSeries(fitResidPhase);
     xySeriesData.add(xysc);
+  }
+
+  private void constructErrorTerms(double[] observedResult, int numZeros, double[] fitParams) {
+    int currentZeroIndex = 0; // where zero under analysis lies in the response
+    int currentPoleIndex = 0; // as above for pole
+
+    LeastSquaresOptimizer optimizer;
+    LeastSquaresOptimizer.Optimum optimum; // Get error analysis for each pole/zero value
+
+    for (int i = 0; i < fitParams.length; i += 2) {
+      boolean pole = i >= numZeros;
+      Complex fitTerm = new Complex(fitParams[i], fitParams[i+1]);
+      double corner = fitTerm.abs() / NumericUtils.TAU;
+      // get the frequency range over the octave centered on the p/z corner frequency
+      int lowIndex = FFTResult.getIndexOfFrequency(freqs, corner / Math.sqrt(2.));
+      int highIndex = FFTResult.getIndexOfFrequency(freqs, Math.sqrt(2.) * corner);
+
+      double[] errorTermFreqsFull = Arrays.copyOfRange(freqs, lowIndex, highIndex);
+      double[] observedMagnitudeFull = Arrays.copyOfRange(observedResult, lowIndex, highIndex);
+      final int index;
+      // we keep track of count so that we can have a 1:1 mapping between error terms and
+      // listed p/z values in the
+
+      if (pole) {
+        index = currentPoleIndex++; // return before incrementing
+        // increment again to skip over complex conjugate for nonzero imaginary terms
+        if (fitTerm.getImaginary() != 0) {
+          ++currentPoleIndex;
+        }
+      } else {
+        index = currentZeroIndex++; // again, return before incrementing
+        if (fitTerm.getImaginary() != 0) {
+          ++currentZeroIndex;
+        }
+      }
+
+      List<Complex> bestFits = new ArrayList<>();
+      optimizer = new LevenbergMarquardtOptimizer().
+          withCostRelativeTolerance(1E-5).
+          withOrthoTolerance(1E-25).
+          withParameterRelativeTolerance(1E-5);
+
+      for (int j = 0; j < errorTermFreqsFull.length; ++j) {
+        String message = "Estimating error for variable" + (i/2 + 1) +  " of " +
+            fitParams.length/2 + " using frequency range " + (j + 1) + " of " +
+            errorTermFreqsFull.length;
+        fireStateChange(message);
+
+        // get all but one frequency (and corresponding magnitude) term
+        final double[] errorTermFreqs = new double[errorTermFreqsFull.length - 1];
+        System.arraycopy(errorTermFreqsFull, 0, errorTermFreqs, 0, j);
+        if (j + 1 < errorTermFreqsFull.length) {
+          System.arraycopy(errorTermFreqsFull, j + 1,
+              errorTermFreqs, j, errorTermFreqs.length - j);
+        }
+        final double[] observedMagnitude = new double[errorTermFreqsFull.length - 1];
+        System.arraycopy(observedMagnitudeFull, 0, observedMagnitude, 0, j);
+        if (j + 1 < observedMagnitudeFull.length) {
+          System.arraycopy(observedMagnitudeFull, j + 1,
+              observedMagnitude, j, observedMagnitude.length - j);
+        }
+
+        MultivariateJacobianFunction errorJacobian = new MultivariateJacobianFunction() {
+          final double[] freqsSet = errorTermFreqs;
+          final int variableIndex = index;
+          final boolean isLowFrequency = isLowFrequencyCalibration;
+          final InstrumentResponse fitSet = fitResponse;
+
+          @Override
+          public Pair<RealVector, RealMatrix> value(final RealVector point) {
+            ++numIterations;
+            fireStateChange("Fitting, iteration count " + numIterations);
+            return errorJacobian(point, freqsSet, variableIndex, fitSet, isLowFrequency, pole);
+          }
+        };
+
+        RealVector initialError = MatrixUtils.createRealVector(
+            new double[]{fitParams[i], fitParams[i+1]});
+        RealVector observed = MatrixUtils.createRealVector(observedMagnitude);
+
+        LeastSquaresProblem errorLsq = new LeastSquaresBuilder().
+            start(initialError).
+            target(observed).
+            model(errorJacobian).
+            parameterValidator(this).
+            lazyEvaluation(false).
+            maxEvaluations(Integer.MAX_VALUE).
+            maxIterations(Integer.MAX_VALUE).
+            build();
+
+        optimum = optimizer.optimize(errorLsq);
+        RealVector errorVector = optimum.getPoint();
+        Complex c = new Complex(errorVector.getEntry(0), errorVector.getEntry(1));
+        bestFits.add(c);
+      } // end loop over frequency range (error term estimation for a given point)
+
+      // now that we have a list of best-fit p/z over range, we get the standard deviation
+      Complex threeSigma =
+          NumericUtils.getComplexSDev(bestFits.toArray(new Complex[]{})).multiply(3);
+
+      if (pole) {
+        poleErrors.put(fitTerm, threeSigma);
+        if (fitTerm.getImaginary() != 0) {
+          poleErrors.put(fitTerm.conjugate(), threeSigma);
+        }
+      } else {
+        zeroErrors.put(fitTerm, threeSigma);
+        if (fitTerm.getImaginary() != 0) {
+          zeroErrors.put(fitTerm.conjugate(), threeSigma);
+        }
+      }
+    }
   }
 
   @Override
