@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -72,11 +73,12 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   private List<Complex> fitZeros;
   private Map<Complex, Complex> zeroErrors;
 
+  /**
+   * 5-place precision data to match the level of precision in a typical response file
+   */
   public static final ThreadLocal<ComplexFormat> COMPLEX_FORMAT =
-      ThreadLocal.withInitial(() -> {
-        ComplexFormat format = new ComplexFormat(DECIMAL_FORMAT.get());
-        return format;
-      });
+      // we want to use a 5-place precision for our data if it's at all possible
+      ThreadLocal.withInitial(() -> new ComplexFormat(new DecimalFormat("#.#####")));
 
   /**
    * True if calibration is low frequency.
