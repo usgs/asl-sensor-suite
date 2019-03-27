@@ -13,6 +13,7 @@ import asl.sensor.output.CalResult;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -22,8 +23,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
@@ -413,6 +416,7 @@ public class RandomizedExperimentTest {
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
+
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
         new Complex(-0.012725101823426397, -0.011495336794506263),
@@ -425,6 +429,59 @@ public class RandomizedExperimentTest {
 
     assertEquals(423.7415521942539, rCal.getFitResidual(), 1E-6);
     assertEquals(482.45559437599235, rCal.getInitResidual(), 1E-7);
+  }
+
+  @Test
+  public void kievHasCorrectError() {
+    String respName = RESP_LOCATION + "RESP.IU.KIEV.00.BH1";
+    String dataFolderName = getSeedFolder("IU", "KIEV", "2018", "044");
+    String calName = dataFolderName + "_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_BH1.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+
+    dataFolderName = getSeedFolder("IU", "KIEV", "2018", "045");
+    calName = dataFolderName + "_BC0.512.seed";
+    sensOutName = dataFolderName + "00_BH1.512.seed";
+
+    ds = DataStoreUtils.appendFromNames(ds, calName, sensOutName);
+
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
+    cCal = cCal.withHour(23).withMinute(37).withSecond(0).withNano(0);
+    long start = cCal.toInstant().toEpochMilli();
+
+    cCal = TestUtils.getEndCalendar(ds);
+    cCal = cCal.withHour(7).withMinute(37);
+    long end = cCal.toInstant().toEpochMilli();
+
+    ds.trim(start, end);
+
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.RANDOMCAL.createExperiment();
+
+    rCal.setLowFrequencyCalibration(true);
+
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    Map<Complex, Complex> poleErrors = rCal.getPoleErrors();
+    Map<Complex, Complex> zeroErrors = rCal.getZeroErrors();
+
+    ComplexFormat cf = new ComplexFormat(new DecimalFormat("#.##########"));
+
+    assertEquals(0, zeroErrors.size());
+    assertEquals(2, poleErrors.size());
+
+    Complex[] expectedPoles = {
+        new Complex(-0.012725101823426397, -0.011495336794506263),
+        new Complex(-0.012725101823426397, 0.011495336794506263)
+    };
+
+    for (Complex pole : expectedPoles) {
+      assertTrue(Complex.equals(poleErrors.get(pole),
+          new Complex(0.0001812964, 0.0018500936), 1E-5));
+    }
+
   }
 
   @Test
