@@ -75,10 +75,21 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
   /**
    * 5-place precision data to match the level of precision in a typical response file
+   * This decimal formatter is used for formatting error term real and imaginary parts
+   * as well as the basis for the complex formatter for returned pole/zero values
+   */
+  public static final ThreadLocal<DecimalFormat> HIGH_PRECISION_DF =
+      ThreadLocal.withInitial(() -> new DecimalFormat("#.#####"));
+
+
+  /**
+   * 5-place precision formatter for pole/zero values
    */
   public static final ThreadLocal<ComplexFormat> COMPLEX_FORMAT =
       // we want to use a 5-place precision for our data if it's at all possible
-      ThreadLocal.withInitial(() -> new ComplexFormat(new DecimalFormat("#.#####")));
+      ThreadLocal.withInitial(() -> new ComplexFormat(HIGH_PRECISION_DF.get()));
+
+
 
   /**
    * True if calibration is low frequency.
@@ -118,6 +129,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       double initPrd = NumericUtils.TAU / number.abs();
 
       stringBuilder.append(complexFormat.format(number));
+      // p/z value as period isn't as important to get so precisely so we use the standard formatter
       stringBuilder.append(" (");
       stringBuilder.append(DECIMAL_FORMAT.get().format(initPrd));
       stringBuilder.append(")");
@@ -150,15 +162,15 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
       stringBuilder.append(COMPLEX_FORMAT.get().format(number));
       stringBuilder.append(" (");
-      stringBuilder.append(DECIMAL_FORMAT.get().format(initPrd));
+      stringBuilder.append(HIGH_PRECISION_DF.get().format(initPrd));
       stringBuilder.append(")");
 
       if (errorTerms.containsKey(number)) {
         Complex error = errorTerms.get(number);
         stringBuilder.append(" [Err: +/- ");
-        stringBuilder.append(DECIMAL_FORMAT.get().format(error.getReal()));
+        stringBuilder.append(HIGH_PRECISION_DF.get().format(error.getReal()));
         stringBuilder.append(", ");
-        stringBuilder.append(DECIMAL_FORMAT.get().format(error.getImaginary()));
+        stringBuilder.append(HIGH_PRECISION_DF.get().format(error.getImaginary()));
         stringBuilder.append("i]");
       }
 
