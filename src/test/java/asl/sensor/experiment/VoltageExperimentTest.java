@@ -14,7 +14,6 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.util.Calendar;
 import org.jfree.data.xy.XYSeries;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class VoltageExperimentTest {

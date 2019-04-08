@@ -7,7 +7,6 @@ import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.Instant;
 import org.apache.commons.math3.util.Pair;
-import org.jfree.data.time.TimeSeries;
 
 /**
  * Holds the inputted data from miniSEED files both as a simple struct
