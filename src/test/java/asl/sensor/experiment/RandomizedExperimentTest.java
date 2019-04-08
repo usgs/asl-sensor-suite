@@ -5,7 +5,6 @@ import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -13,17 +12,16 @@ import asl.sensor.output.CalResult;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
-import java.time.Instant;
+import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Random;
+import java.util.Map;
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
@@ -135,178 +133,6 @@ public class RandomizedExperimentTest {
     }
     double[] testFirstJacobianAgainst = jacobianResult.getSecond().getColumnVector(0).toArray();
     assertArrayEquals(testFirstJacobianAgainst, firstJacobian, 1E-3);
-  }
-
-  @Test
-  public void responseCorrectConvertedToVectorHighFreq() throws Exception {
-    String fname = folder + "resp-parse/TST5_response.txt";
-    InstrumentResponse ir;
-    ir = new InstrumentResponse(fname);
-    List<Complex> poles = new ArrayList<>(ir.getPoles());
-    // using an unnecessarily high nyquist rate here
-    RealVector high = ir.polesToVector(false, 1E8);
-
-    int complexIndex = 2; // start at second pole
-    int vectorIndex = 0;
-
-    while (vectorIndex < high.getDimension()) {
-      // return current index
-      double real = high.getEntry(vectorIndex++);
-      double imag = high.getEntry(vectorIndex++);
-
-      double poleImag = poles.get(complexIndex).getImaginary();
-
-      assertEquals(real, poles.get(complexIndex).getReal(), 0.0);
-      assertEquals(imag, poleImag, 0.0);
-
-      if (poleImag != 0) {
-        // complex conjugate case
-        ++complexIndex;
-        assertEquals(real, poles.get(complexIndex).getReal(), 0.0);
-        assertEquals(imag, -poles.get(complexIndex).getImaginary(), 0.0);
-      }
-      ++complexIndex;
-    }
-  }
-
-  @Test
-  public void responseCorrectlyConvertedToVectorLowFreq() {
-    String fname = folder + "resp-parse/TST5_response.txt";
-    InstrumentResponse ir;
-    try {
-
-      ir = new InstrumentResponse(fname);
-      List<Complex> poles = new ArrayList<>(ir.getPoles());
-      // again, use a very high nyquist rate
-      RealVector low = ir.polesToVector(true, 1E8);
-
-      // only test lower two poless
-      assertEquals(low.getEntry(0), poles.get(0).getReal(), 0.0);
-      assertEquals(low.getEntry(1), poles.get(0).getImaginary(), 0.0);
-
-      assertEquals(low.getEntry(0), poles.get(1).getReal(), 0.0);
-      assertEquals(low.getEntry(1), -poles.get(1).getImaginary(), 0.0);
-
-    } catch (IOException e) {
-      fail();
-      e.printStackTrace();
-    }
-  }
-
-  @Test
-  public void responseSetCorrectlyHighFreq() {
-    String fname = folder + "resp-parse/TST5_response.txt";
-    InstrumentResponse ir;
-
-    try {
-      ir = new InstrumentResponse(fname);
-
-      List<Complex> poles = new ArrayList<>(ir.getPoles());
-      List<Complex> replacements = new ArrayList<>();
-
-      int start = 2;
-      if (poles.get(0).getImaginary() == 0) {
-        start = 1;
-      }
-
-      for (int i = start; i < poles.size(); ++i) {
-        if (poles.get(i).getImaginary() == 0) {
-          Complex c = poles.get(i);
-          replacements.add(c.subtract(1));
-          int next = i + 1;
-          while (next < poles.size() && poles.get(next).equals(c)) {
-            ++next; // skip duplicates
-          }
-        } else {
-          Complex c = poles.get(i);
-          c = c.subtract(new Complex(1, 1));
-          replacements.add(c);
-          ++i;
-        }
-      }
-
-      //System.out.println(poles);
-      //System.out.println(replacements);
-
-      double[] newPoles = new double[replacements.size() * 2];
-      for (int i = 0; i < newPoles.length; i += 2) {
-        int poleIdx = i / 2;
-        Complex c = replacements.get(poleIdx);
-        newPoles[i] = c.getReal();
-        newPoles[i + 1] = c.getImaginary();
-      }
-
-      InstrumentResponse ir2 =
-          ir.buildResponseFromFitVector(newPoles, false, 0);
-
-      List<Complex> testList = ir2.getPoles();
-      //System.out.println(testList);
-      int offsetIdx = 0;
-      for (int i = 0; i < poles.size(); ++i) {
-        if (i < start) {
-          assertEquals(poles.get(i), testList.get(i));
-        } else {
-          Complex c = replacements.get(offsetIdx);
-          assertEquals(testList.get(i), c);
-          if (poles.get(i).getImaginary() != 0) {
-            Complex c1 = new Complex(1, 1);
-            assertEquals(poles.get(i), c.add(c1));
-            ++i;
-            Complex c2 = new Complex(1, -1);
-            assertEquals(testList.get(i), c.conjugate());
-            assertEquals(poles.get(i), c.conjugate().add(c2));
-          } else {
-            assertEquals(poles.get(i), c.add(1));
-          }
-          ++offsetIdx;
-        }
-      }
-
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-  }
-
-  @Test
-  public void responseSetCorrectlyLowFreq() {
-    String fname = folder + "resp-parse/TST5_response.txt";
-    InstrumentResponse ir;
-    try {
-      ir = new InstrumentResponse(fname);
-      List<Complex> poles = new ArrayList<>(ir.getPoles());
-
-      double[] newPoles = new double[2];
-      newPoles[0] = 0.;
-      newPoles[1] = 1.;
-
-      Complex c = new Complex(newPoles[0], newPoles[1]);
-
-      InstrumentResponse ir2 =
-          ir.buildResponseFromFitVector(newPoles, true, 0);
-      List<Complex> poles2 = ir2.getPoles();
-
-      List<Complex> testList = new ArrayList<>(poles);
-      testList.set(0, c);
-      testList.set(1, c.conjugate());
-
-      // System.out.println(testList);
-      // System.out.println(poles);
-      // System.out.println(poles2);
-
-      for (int i = 0; i < poles.size(); ++i) {
-        if (i < 2) {
-          assertNotEquals(poles.get(i), poles2.get(i));
-          assertEquals(poles2.get(i), testList.get(i));
-        }
-      }
-
-
-    } catch (IOException e) {
-      fail();
-      e.printStackTrace();
-    }
-
   }
 
   private DataStore setUpTest1() {
@@ -585,6 +411,7 @@ public class RandomizedExperimentTest {
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
+
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
         new Complex(-0.012725101823426397, -0.011495336794506263),
@@ -597,6 +424,59 @@ public class RandomizedExperimentTest {
 
     assertEquals(423.7415521942539, rCal.getFitResidual(), 1E-6);
     assertEquals(482.45559437599235, rCal.getInitResidual(), 1E-7);
+  }
+
+  @Test
+  public void kievHasCorrectError() {
+    String respName = RESP_LOCATION + "RESP.IU.KIEV.00.BH1";
+    String dataFolderName = getSeedFolder("IU", "KIEV", "2018", "044");
+    String calName = dataFolderName + "_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_BH1.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+
+    dataFolderName = getSeedFolder("IU", "KIEV", "2018", "045");
+    calName = dataFolderName + "_BC0.512.seed";
+    sensOutName = dataFolderName + "00_BH1.512.seed";
+
+    ds = DataStoreUtils.appendFromNames(ds, calName, sensOutName);
+
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
+    cCal = cCal.withHour(23).withMinute(37).withSecond(0).withNano(0);
+    long start = cCal.toInstant().toEpochMilli();
+
+    cCal = TestUtils.getEndCalendar(ds);
+    cCal = cCal.withHour(7).withMinute(37);
+    long end = cCal.toInstant().toEpochMilli();
+
+    ds.trim(start, end);
+
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.RANDOMCAL.createExperiment();
+
+    rCal.setLowFrequencyCalibration(true);
+
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    Map<Complex, Complex> poleErrors = rCal.getPoleErrors();
+    Map<Complex, Complex> zeroErrors = rCal.getZeroErrors();
+
+    ComplexFormat cf = new ComplexFormat(new DecimalFormat("#.##########"));
+
+    assertEquals(0, zeroErrors.size());
+    assertEquals(2, poleErrors.size());
+
+    Complex[] expectedPoles = {
+        new Complex(-0.012725101823426397, -0.011495336794506263),
+        new Complex(-0.012725101823426397, 0.011495336794506263)
+    };
+
+    for (Complex pole : expectedPoles) {
+      assertTrue(Complex.equals(poleErrors.get(pole),
+          new Complex(0.0001812964, 0.0018500936), 1E-5));
+    }
+
   }
 
   @Test
