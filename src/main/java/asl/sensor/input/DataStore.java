@@ -480,7 +480,7 @@ public class DataStore {
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
                 dataBlockArray[idx] = null;
-                throw new RuntimeException("Time range does not intersect");
+                throw new TimeRangeException("Time range does not intersect");
               } else {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
@@ -681,7 +681,7 @@ public class DataStore {
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
                 dataBlockArray[idx] = null;
-                throw new RuntimeException("Time range does not intersect");
+                throw new TimeRangeException("Time range does not intersect");
               } else {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
@@ -691,6 +691,14 @@ public class DataStore {
         }
       }
     }
+  }
+
+  public class TimeRangeException extends RuntimeException {
+
+    public TimeRangeException(String errorMessage) {
+      super(errorMessage);
+    }
+
   }
 
 }
