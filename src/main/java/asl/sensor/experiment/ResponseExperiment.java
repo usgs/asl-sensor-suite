@@ -23,8 +23,8 @@ import org.jfree.data.xy.XYSeriesCollection;
  */
 public class ResponseExperiment extends Experiment {
 
-  public static final String MAGNITUDE = "Response amplitude";
-  public static final String ARGUMENT = "Response phase";
+  public static final String MAGNITUDE = "Amplitude";
+  public static final String ARGUMENT = "Phase";
 
   private boolean freqSpace; // choose between units of Hz or seconds (time between samples)
 
@@ -83,8 +83,8 @@ public class ResponseExperiment extends Experiment {
       Complex[] result = instrumentResponse.applyResponseToInput(freqArray);
 
       double phiPrev = 0; // use with unwrapping
-      XYSeries magnitude = new XYSeries(name + " " + MAGNITUDE);
-      XYSeries argument = new XYSeries(name + " " + ARGUMENT);
+      XYSeries magnitude = new XYSeries(name);
+      XYSeries argument = new XYSeries(name);
       for (int i = 0; i < freqArray.length; ++i) {
         Complex tmp = result[i];
         double phi = NumericUtils.atanc(tmp);
