@@ -310,6 +310,9 @@ public class ResponsePanel extends ExperimentPanel {
     argumentChart.getXYPlot().getRangeAxis().setAutoRange(true);
     magnitudeChart = buildChart(magSeries, getXAxis(), yAxis);
     magnitudeChart.getXYPlot().getRangeAxis().setAutoRange(true);
+
+    appendChartTitle(argumentChart, " " + ResponseExperiment.ARGUMENT);
+    appendChartTitle(magnitudeChart, " " + ResponseExperiment.MAGNITUDE);
   }
 
 }

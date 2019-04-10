@@ -97,7 +97,9 @@ public class DataBlock {
     dataMap.put(startTime, dataIn);
 
     trimmedStart = startTime;
-    endTime = startTime + (interval * dataIn.length);
+    // subt. 1 from length as 'end time' should be identical to time of last point, not
+    // when the point after it is supposed to start
+    endTime = startTime + (interval * (dataIn.length - 1));
     trimmedEnd = endTime;
 
     name = nameIn;
@@ -593,7 +595,8 @@ public class DataBlock {
     startTime = times.get(0);
     trimmedStart = startTime;
     long lastListStart = times.get(times.size() - 1);
-    int pointsToEnd = dataMap.get(lastListStart).length;
+    // as previously seen, subtract 1 to get time of last point, not expected start of next point
+    int pointsToEnd = dataMap.get(lastListStart).length - 1;
     endTime = lastListStart + (pointsToEnd * interval);
     trimmedEnd = endTime;
     rebuildList = true;
