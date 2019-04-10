@@ -474,8 +474,8 @@ public class DataStore {
         for (int i = 0; i < FILE_COUNT; ++i) {
           if (i != idx && thisBlockIsSet[i]) {
             // whole block either comes before or after the data set
-            if (end < dataBlockArray[i].getStartTime() ||
-                start > dataBlockArray[i].getEndTime()) {
+            if (end <= dataBlockArray[i].getStartTime() ||
+                start >= dataBlockArray[i].getEndTime()) {
 
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
@@ -675,8 +675,10 @@ public class DataStore {
         for (int i = 0; i < FILE_COUNT; ++i) {
           if (i != idx && thisBlockIsSet[i]) {
             // whole block either comes before or after the data set
-            if (end < dataBlockArray[i].getStartTime() ||
-                start > dataBlockArray[i].getEndTime()) {
+            // note that if data ends when another starts, then the data has no overlap --
+            // the end time is effectively when the next sample should start
+            if (end <= dataBlockArray[i].getStartTime() ||
+                start >= dataBlockArray[i].getEndTime()) {
 
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
