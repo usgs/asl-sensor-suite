@@ -335,6 +335,8 @@ public class InputPanel
         clearAll.setEnabled(dataStore.isAnythingSet());
 
         dataStore.trimToCommonTime();
+        zoomOut.setEnabled(!dataStore.currentTrimIsMaximum(
+            startDate.getTime(), endDate.getTime(), activePlots));
 
         showRegionForGeneration();
 
@@ -728,8 +730,7 @@ public class InputPanel
       } catch (TimeRangeException e) {
         e.printStackTrace();
         if (seed instanceof LoadingJButton) {
-          String errorVerbose = "This seed file appears valid but has a mismatched time range\n"
-              + "relative to other inputs.";
+          String errorVerbose = e.getMessage();
           seedLoadHandleError(index, file.getName(), errorVerbose);
         } else {
           seedAppendErrorPopup(file.getName());
@@ -760,8 +761,7 @@ public class InputPanel
             e.printStackTrace();
             return 1;
           } catch (TimeRangeException e) {
-            returnedErrMsg = "This seed file appears valid but has a mismatched time range\n"
-                + "relative to other inputs.";
+            returnedErrMsg = e.getMessage();
             caughtException = true;
             e.printStackTrace();
             return 1;
@@ -826,7 +826,9 @@ public class InputPanel
           rightSlider.setValue(SLIDER_MAX);
           setVerticalBars();
 
-          zoomOut.setEnabled(false);
+          // we can only zoom out if current trim level is not the maximum
+          zoomOut.setEnabled(!dataStore.currentTrimIsMaximum(
+              startDate.getTime(), endDate.getTime(), activePlots));
           zoomIn.setEnabled(true);
           leftSlider.setEnabled(true);
           rightSlider.setEnabled(true);

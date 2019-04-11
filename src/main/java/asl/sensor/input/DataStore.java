@@ -474,13 +474,13 @@ public class DataStore {
         for (int i = 0; i < FILE_COUNT; ++i) {
           if (i != idx && thisBlockIsSet[i]) {
             // whole block either comes before or after the data set
-            if (end <= dataBlockArray[i].getStartTime() ||
-                start >= dataBlockArray[i].getEndTime()) {
+            if (end <= dataBlockArray[i].getInitialStartTime() ||
+                start >= dataBlockArray[i].getInitialEndTime()) {
 
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
                 dataBlockArray[idx] = null;
-                throw new TimeRangeException("Time range does not intersect");
+                throw new TimeRangeException(i+1);
               } else {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
@@ -633,7 +633,25 @@ public class DataStore {
       DataBlock data = dataBlockArray[i];
       data.trim(lastStartTime, firstEndTime);
     }
+  }
 
+  /**
+   * Check if the current trim level (specified by GUI wrapper) encloses all available active data
+   * @param start Start time value of zoom/trim set in the GUI
+   * @param end End time value of zoom/trim set in the GUI
+   * @param limit Number of currently active plots
+   * @return true if there is no data that exists beyond current specified trim length
+   */
+  public boolean currentTrimIsMaximum(long start, long end, int limit) {
+    boolean isZoomedOut = false;
+    for (int i = 0; i < limit; ++i) {
+      if (thisBlockIsSet[i]) {
+        // is there at least one block that has a start and end matching the current trim level?
+        isZoomedOut |= (start == dataBlockArray[i].getInitialStartTime()
+            && end == dataBlockArray[i].getInitialEndTime());
+      }
+    }
+    return isZoomedOut;
   }
 
   /**
@@ -677,13 +695,13 @@ public class DataStore {
             // whole block either comes before or after the data set
             // note that if data ends when another starts, then the data has no overlap --
             // the end time is effectively when the next sample should start
-            if (end <= dataBlockArray[i].getStartTime() ||
-                start >= dataBlockArray[i].getEndTime()) {
+            if (end <= dataBlockArray[i].getInitialStartTime() ||
+                start >= dataBlockArray[i].getInitialEndTime()) {
 
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
                 dataBlockArray[idx] = null;
-                throw new TimeRangeException("Time range does not intersect");
+                throw new TimeRangeException(i+1);
               } else {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
@@ -697,8 +715,8 @@ public class DataStore {
 
   public class TimeRangeException extends RuntimeException {
 
-    public TimeRangeException(String errorMessage) {
-      super(errorMessage);
+    TimeRangeException(int input) {
+      super("This data's time range has no overlap with input " + input + ".");
     }
 
   }
