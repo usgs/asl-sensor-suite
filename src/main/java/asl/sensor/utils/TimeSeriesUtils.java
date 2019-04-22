@@ -116,7 +116,7 @@ public class TimeSeriesUtils {
    * frequency of a 1Hz interval.
    *
    * @param data The timeseries to be decimated
-   * @param source The source frequency as interval between samples (microseconds)
+   * @param source The source frequency as interval between samples (milliseconds)
    * @return A timeseries decimated to the correct frequency
    */
   public static double[] decimate(double[] data, long source, long target) {
