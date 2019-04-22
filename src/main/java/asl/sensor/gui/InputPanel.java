@@ -452,7 +452,7 @@ public class InputPanel
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fileChooser.getSelectedFile();
         saveDirectory = selFile.getParent();
-        if (!selFile.getName().endsWith(ext.toLowerCase())) {
+        if (!selFile.getName().toLowerCase().endsWith(ext)) {
           selFile = new File(selFile.toString() + ext);
         }
         try {
