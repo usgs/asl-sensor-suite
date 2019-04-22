@@ -200,7 +200,7 @@ public abstract class ExperimentPanel
       int returnVal = fileChooser.showSaveDialog(save);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fileChooser.getSelectedFile();
-        if (!selFile.getName().endsWith(ext.toLowerCase())) {
+        if (!selFile.getName().toLowerCase().endsWith(ext)) {
           selFile = new File(selFile.toString() + ext);
         }
         try {
