@@ -415,10 +415,12 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
 
   static void scaleValues(double[] unrot, double[] freqs, boolean isLowFrequencyCalibration) {
 
-    scaleMagnitude(unrot, freqs);
 
     int normalIdx = FFTResult.getIndexOfFrequency(freqs, ZERO_TARGET);
     int argStart = unrot.length / 2;
+
+    scaleMagnitude(unrot, freqs, argStart);
+
     double unrotScaleArg = unrot[argStart + normalIdx];
     double phiPrev = 0;
     if (isLowFrequencyCalibration) {
@@ -433,9 +435,13 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
   }
 
   static void scaleMagnitude(double[] unscaled, double[] freqs) {
+    scaleMagnitude(unscaled, freqs, freqs.length);
+  }
+
+  static void scaleMagnitude(double[] unscaled, double[] freqs, int iterationLimit){
     int normalIdx = FFTResult.getIndexOfFrequency(freqs, ZERO_TARGET);
     double unrotScaleAmp = 20 * Math.log10(unscaled[normalIdx]);
-    for (int i = 0; i < freqs.length; ++i) {
+    for (int i = 0; i < iterationLimit; ++i) {
       double db = 20 * Math.log10(unscaled[i]);
       unscaled[i] = db - unrotScaleAmp;
     }
@@ -762,8 +768,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       fitValues[argIdx] = NumericUtils.atanc(fit[i]);
     }
     fireStateChange("Scaling extended resps...");
-    scaleValues(initialValues, freqs, isLowFrequencyCalibration);
-    scaleValues(fitValues, freqs, isLowFrequencyCalibration);
+    scaleValues(initialValues, plottingFreqs, isLowFrequencyCalibration);
+    scaleValues(fitValues, plottingFreqs, isLowFrequencyCalibration);
 
     fireStateChange("Compiling data into plots...");
 
