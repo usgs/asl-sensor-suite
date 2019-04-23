@@ -157,6 +157,45 @@ public class RandomizedExperimentTest {
   }
 
   @Test
+  public void testPlotScalingCorrect() {
+    String keyMustContain = "Calc. resp.";
+
+    DataStore ds = setUpTest1();
+    InstrumentResponse ir = ds.getResponse(1);
+
+    double nyq = ds.getBlock(0).getSampleRate() / 2.;
+    System.out.println("NYQUIST RATE: " + nyq);
+
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.RANDOMCAL.createExperiment();
+
+    rCal.setLowFrequencyCalibration(false);
+
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    List<XYSeriesCollection> xysc = rCal.getData();
+    int indexOfCalcCurve = 0;
+    for (int i = 0; i < xysc.get(0).getSeriesCount(); ++i) {
+      String key = (String) xysc.get(0).getSeriesKey(i);
+      if (key.startsWith(keyMustContain)) {
+        indexOfCalcCurve = i;
+        break;
+      }
+    }
+
+    // to check that scaling is correct, assert that every point in graph is bound to be <1
+    // this should be a good check against any scaling issues past the nyquist % cut-off parameter
+    // because in those cases the unscaled curve would be far beyond 1
+    XYSeries calcCurve = xysc.get(0).getSeries(indexOfCalcCurve);
+    for (int i = 0; i < calcCurve.getItemCount(); ++i) {
+      double y = (double) calcCurve.getY(i);
+      assertTrue("Violating y-value at index " + i + ": " + y, y <= 1.);
+    }
+
+  }
+
+  @Test
   public void testCalculationResult1() {
 
     String currentDir = System.getProperty("user.dir");
@@ -182,6 +221,8 @@ public class RandomizedExperimentTest {
       int height = 960;
 
       List<XYSeriesCollection> xysc = rCal.getData();
+
+
       String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
       JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
 
