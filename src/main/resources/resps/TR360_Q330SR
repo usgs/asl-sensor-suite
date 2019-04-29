@@ -18,7 +18,7 @@ B053F03     Transfer function type:                A
 B053F04     Stage sequence number:                 1
 B053F05     Response in units lookup:              M/S - Velocity in Meters Per Second
 B053F06     Response out units lookup:             V - Volts
-B053F07     A0 normalization factor:               +4.21806E+23
+B053F07     A0 normalization factor:               +4.21821E+23
 B053F08     Normalization frequency:               +2.00000E-02
 B053F09     Number of zeroes:                      3
 B053F14     Number of poles:                       10
@@ -29,8 +29,8 @@ B053F10-13     1  +0.00000E+00  +0.00000E+00  +0.00000E+00  +0.00000E+00
 B053F10-13     2  -3.50000E+02  +0.00000E+00  +0.00000E+00  +0.00000E+00
 #              Complex poles:
 #              i  real          imag          real_error    imag_error
-B053F15-18     0  -1.11890E-02  +1.18900E-02  +0.00000E+00  +0.00000E+00
-B053F15-18     1  -1.11890E-02  -1.18900E-02  +0.00000E+00  +0.00000E+00
+B053F15-18     0  -1.12219E-02  +1.18968E-02  +0.00000E+00  +0.00000E+00
+B053F15-18     1  -1.12219E-02  -1.18968E-02  +0.00000E+00  +0.00000E+00
 B053F15-18     2  -1.46000E+02  +0.00000E+00  +0.00000E+00  +0.00000E+00
 B053F15-18     3  -3.60000E+02  +4.05000E+02  +0.00000E+00  +0.00000E+00
 B053F15-18     4  -3.60000E+02  -4.05000E+02  +0.00000E+00  +0.00000E+00
