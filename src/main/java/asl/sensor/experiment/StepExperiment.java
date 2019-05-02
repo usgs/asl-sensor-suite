@@ -49,7 +49,7 @@ public class StepExperiment extends Experiment {
   /**
    * Resolution of step size for iterative solution process
    */
-  private final double STEP_FACTOR = 1E-10;
+  private final double STEP_FACTOR = 1E-15;
   /**
    * Used in the least squared solver (quit when function output changes by less than this value)
    */

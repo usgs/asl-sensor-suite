@@ -592,7 +592,7 @@ public class InstrumentResponseTest {
   @Test
   public void parseInstrumentList() throws IOException {
     Set<String> respFiles = InstrumentResponse.parseInstrumentList();
-    assertEquals(14, respFiles.size());
+    assertEquals(18, respFiles.size());
     for (String respFile : respFiles) {
       InstrumentResponse response = InstrumentResponse.loadEmbeddedResponse(respFile);
       assertNotNull(response);
