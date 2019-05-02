@@ -18,7 +18,7 @@ B053F03     Transfer function type:                A
 B053F04     Stage sequence number:                 1
 B053F05     Response in units lookup:              M/S - Velocity in Meters Per Second
 B053F06     Response out units lookup:             V - Volts
-B053F07     A0 normalization factor:               +1.73126297E+21
+B053F07     A0 normalization factor:               +1.73102E+21
 B053F08     Normalization frequency:               +2.00000E-02
 B053F09     Number of zeroes:                      8
 B053F14     Number of poles:                       13
@@ -34,8 +34,8 @@ B053F10-13         6  -3.75675e+02  -0.00000e+00  +0.00000E+00  +0.00000E+00
 B053F10-13         7  -3.75675e+02  -0.00000e+00  +0.00000E+00  +0.00000E+00
 #              Complex poles:
 #              i  real          imag          real_error    imag_error
-B053F15-18         0  -1.23000e-02  +1.23000e-02  +0.00000E+00  +0.00000E+00
-B053F15-18         1  -1.23000e-02  -1.23000e-02  +0.00000E+00  +0.00000E+00
+B053F15-18         0  -1.23580e-02  +1.24499e-02  +0.00000E+00  +0.00000E+00
+B053F15-18         1  -1.23580e-02  -1.24499e-02  +0.00000E+00  +0.00000E+0
 B053F15-18         2  -1.36833e+02  -0.00000e+00  +0.00000E+00  +0.00000E+00
 B053F15-18         3  -1.36833e+02  -0.00000e+00  +0.00000E+00  +0.00000E+00
 B053F15-18         4  -1.21500e+02  +6.47000e+02  +0.00000E+00  +0.00000E+00
@@ -53,7 +53,7 @@ B053F15-18        12  -1.04409e+10  -0.00000e+00  +0.00000E+00  +0.00000E+00
 #        +                  +---------------------------------------+                  +
 #        
 B058F03     Stage sequence number:                 1
-B058F04     Gain:                                  1183
+B058F04     Gain:                                  1.183000e+03
 B058F05     Frequency of gain:                     2.000000e-02 HZ
 B058F06     Number of calibrations:                0
 #        
