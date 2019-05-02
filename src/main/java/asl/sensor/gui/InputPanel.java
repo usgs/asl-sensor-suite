@@ -2,6 +2,7 @@ package asl.sensor.gui;
 
 import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
+import asl.sensor.input.DataStore.TimeRangeException;
 import asl.sensor.input.InstrumentResponse;
 import asl.sensor.utils.ReportingUtils;
 import asl.sensor.utils.TimeSeriesUtils;
@@ -334,6 +335,8 @@ public class InputPanel
         clearAll.setEnabled(dataStore.isAnythingSet());
 
         dataStore.trimToCommonTime();
+        zoomOut.setEnabled(!dataStore.currentTrimIsMaximum(
+            startDate.getTime(), endDate.getTime(), activePlots));
 
         showRegionForGeneration();
 
@@ -449,7 +452,7 @@ public class InputPanel
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fileChooser.getSelectedFile();
         saveDirectory = selFile.getParent();
-        if (!selFile.getName().endsWith(ext.toLowerCase())) {
+        if (!selFile.getName().toLowerCase().endsWith(ext)) {
           selFile = new File(selFile.toString() + ext);
         }
         try {
@@ -713,10 +716,22 @@ public class InputPanel
           return;
         }
 
-      } catch (SeedFormatException | IOException | RuntimeException e) {
+      } catch (SeedFormatException | IOException | NumberFormatException e) {
         e.printStackTrace();
         if (seed instanceof LoadingJButton) {
-          seedLoadHandleError(index, file.getName(), e.toString());
+          String errorVerbose = "This file is either not a SEED file "
+              + "or has a data integrity issue.";
+          seedLoadHandleError(index, file.getName(), errorVerbose);
+        } else {
+          seedAppendErrorPopup(file.getName());
+        }
+
+        return;
+      } catch (TimeRangeException e) {
+        e.printStackTrace();
+        if (seed instanceof LoadingJButton) {
+          String errorVerbose = e.getMessage();
+          seedLoadHandleError(index, file.getName(), errorVerbose);
         } else {
           seedAppendErrorPopup(file.getName());
         }
@@ -738,9 +753,15 @@ public class InputPanel
 
           try {
             seed.loadInData(dataStore, index, filePath, immutableFilter, activePlots);
-          } catch (RuntimeException | SeedFormatException | CodecException |
-              IOException e) {
-            returnedErrMsg = e.toString();
+          } catch (SeedFormatException | CodecException |
+              IOException | NumberFormatException e) {
+            returnedErrMsg = "This file is either not a SEED file "
+                + "or has a data integrity issue.";
+            caughtException = true;
+            e.printStackTrace();
+            return 1;
+          } catch (TimeRangeException e) {
+            returnedErrMsg = e.getMessage();
             caughtException = true;
             e.printStackTrace();
             return 1;
@@ -805,7 +826,9 @@ public class InputPanel
           rightSlider.setValue(SLIDER_MAX);
           setVerticalBars();
 
-          zoomOut.setEnabled(false);
+          // we can only zoom out if current trim level is not the maximum
+          zoomOut.setEnabled(!dataStore.currentTrimIsMaximum(
+              startDate.getTime(), endDate.getTime(), activePlots));
           zoomIn.setEnabled(true);
           leftSlider.setEnabled(true);
           rightSlider.setEnabled(true);
@@ -827,10 +850,9 @@ public class InputPanel
     instantiateChart(index);
     XYPlot xyPlot = (XYPlot) chartPanels[index].getChart().getPlot();
     TextTitle result = new TextTitle();
-    result.setText("COULD NOT LOAD IN FILE: " + filename
-        + "\n\nThis file is probably not a SEED file or has a formatting error.\n\n"
-        + "A full stack trace is in the terminal -- this is the exception:\n"
-        + error);
+    result.setText("COULD NOT LOAD IN FILE: " + filename + "\n"
+        + error
+        + "\nA full stack trace should be output to the terminal.\n");
     result.setBackgroundPaint(Color.red);
     result.setPaint(Color.white);
     XYTitleAnnotation titleAnnotation = new XYTitleAnnotation(0.5, 0.5, result,
@@ -1151,25 +1173,24 @@ public class InputPanel
 
     activePlots = panelsNeeded;
 
-    // get current time range of zoom data for resetting, if any data is loaded
-    long start, end;
-    if (dataStore.areAnyBlocksSet()) {
-      DataBlock dataBlock = dataStore.getXthLoadedBlock(1);
-      start = dataBlock.getStartTime();
-      end = dataBlock.getEndTime();
+    Pair<Long, Long> timeRange = dataStore.getCommonTime(activePlots);
+    // get max valid time range of zoom data for resetting, if any data is loaded
+    long start = timeRange.getFirst();
+    long end = timeRange.getSecond();
 
-      dataStore.trimToCommonTime(activePlots);
-      // try to trim to current active time range if possible, otherwise fit
-      // as much data as possible
-      dataBlock = dataStore.getXthLoadedBlock(1);
-      // was the data zoomed in more than it is now?
-      if (start > dataBlock.getStartTime() || end < dataBlock.getEndTime()) {
+    if (dataStore.areAnyBlocksSet()) {
+      // now to get the actual range of time that the plotted data is trimmed to
+      // (this will be true for all the data currently being plotted, at least one existing)
+      DataBlock dataBlock = dataStore.getXthLoadedBlock(1);
+      // is the data zoomed in at all? i.e., can we zoom out to a larger common time range?
+      if (start < dataBlock.getStartTime() || end > dataBlock.getEndTime()) {
         try {
           // zooms won't be modified if an exception is thrown
           dataStore.trim(start, end, activePlots);
           zoomOut.setEnabled(true);
         } catch (IndexOutOfBoundsException e) {
           // new time range not valid for all current data, show max range
+          dataStore.trimToCommonTime(activePlots);
           zoomOut.setEnabled(false);
         }
       } else {
@@ -1389,8 +1410,7 @@ public class InputPanel
 
     protected abstract void loadInData(DataStore dataStore, int index,
         String filePath, String fileFilter, int activePlots)
-        throws SeedFormatException, CodecException,
-        IOException, RuntimeException;
+        throws SeedFormatException, CodecException, IOException, TimeRangeException;
   }
 
   private class LoadingJButton extends FileOperationJButton {
@@ -1410,9 +1430,7 @@ public class InputPanel
     @Override
     public void loadInData(DataStore dataStore, int index, String filePath,
         String fileFilter, int activePlots) throws SeedFormatException,
-        CodecException,
-        IOException,
-        RuntimeException {
+        CodecException, IOException, TimeRangeException {
       dataStore.setBlock(index, filePath, fileFilter, activePlots);
     }
   }
@@ -1440,7 +1458,7 @@ public class InputPanel
     @Override
     public void loadInData(DataStore dataStore, int index, String filePath,
         String fileFilter, int activePlots)
-        throws SeedFormatException, CodecException, IOException, RuntimeException {
+        throws SeedFormatException, CodecException, IOException, TimeRangeException {
       dataStore.appendBlock(index, filePath, fileFilter, activePlots);
     }
   }

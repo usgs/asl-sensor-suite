@@ -78,15 +78,19 @@ public class VoltageExperiment extends Experiment {
       int minIndex = 0; // track value indices to get ~1s range on each side
       int maxIndex = 0;
 
-      for (int j = 3; j < data.length; ++j) {
+      // offset by a second on either side to make sure that the data doesn't include ringing
+      // artifacts -- i.e., data on either side of min/max should be flat relative to it
+      int offset = (int) dataStore.getBlock(loadedData[i]).getSampleRate() + 1;
+
+      for (int j = offset; j < data.length - offset; ++j) {
         // make sure the extremes are in a roughly flat part of the signal
         // i.e., both min and max values should be in the flat part of a pulse
-        double diff = Math.abs(data[j-3] - data[j]);
-        if (data[j] < min && diff < 1000) {
+        double diff = Math.abs(data[j-offset] - data[j+offset]);
+        if (data[j] < min && diff < 100) {
           min = data[j];
           minIndex = j;
         }
-        if (data[j] > max && diff < 1000) {
+        if (data[j] > max && diff < 100) {
           max = data[j];
           maxIndex = j;
         }
@@ -96,9 +100,15 @@ public class VoltageExperiment extends Experiment {
       double avgMin = 0.;
       double avgMax = 0.;
       int plotXPoint = 0;
+
+      int startingPoint = -2; // start from 2 behind the minimum value of the data if possible
+      while(minIndex + startingPoint < 0) {
+        ++startingPoint;
+      }
+
       XYSeries xys = new XYSeries(dataNames[i]);
       // get the 5 points centered around the max/min value
-      for (int j = -2; j < 3; ++j) {
+      for (int j = startingPoint; j < (startingPoint + 5); ++j) {
         int currentMinLookup = minIndex + j;
         int currentMaxLookup = maxIndex + j;
         // x-value is just the given point in the set

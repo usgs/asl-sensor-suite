@@ -1,8 +1,8 @@
 package asl.sensor.experiment;
 
+import asl.sensor.utils.TimeSeriesUtils;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -54,12 +54,6 @@ public abstract class Experiment {
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
 
-  public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
-      ThreadLocal.withInitial(() -> {
-        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return format;
-      });
   public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
       ThreadLocal.withInitial(() -> {
         DecimalFormat format = new DecimalFormat("#.###");
@@ -187,14 +181,11 @@ public abstract class Experiment {
    * @return formatted start time (Julian day)
    */
   String getFormattedStartDate() {
-    return "Data start time:\n" +
-            DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(start)));
+    return "Data start time:\n" + TimeSeriesUtils.formatEpochMillis(start);
   }
 
   String getFormattedEndDate() {
-    return "Data end time:\n" +
-            DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(end))) +
-            '\n';
+    return "Data end time:\n" + TimeSeriesUtils.formatEpochMillis(end) + '\n';
   }
 
   /**
@@ -405,8 +396,6 @@ public abstract class Experiment {
       backend(dataStore);
       return;
     }
-
-    // TODO: may want to do a check that enough data exists and throw exception as necessary
 
     final DataBlock db = dataStore.getXthLoadedBlock(1);
 

@@ -32,23 +32,21 @@ public class SolverTest {
     RealVector start = MatrixUtils.createRealVector(new double[]{0, 0});
     double delta = 1E-7;
 
-    MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
-      public Pair<RealVector, RealMatrix> value(final RealVector point) {
+    MultivariateJacobianFunction jacobian = point -> {
 
-        double[] pArr = point.toArray();
-        double[] res = new double[]{calcRosenbrock(pArr)};
-        RealVector ans = MatrixUtils.createRealVector(res);
+      double[] pArr = point.toArray();
+      double[] res = new double[]{calcRosenbrock(pArr)};
+      RealVector ans = MatrixUtils.createRealVector(res);
 
-        double[][] jcb = new double[1][pArr.length];
-        for (int i = 0; i < pArr.length; ++i) {
-          double[] newVars = pArr.clone();
-          newVars[i] += delta;
-          double diffY = calcRosenbrock(newVars);
-          jcb[0][i] = (diffY - res[0]) / delta;
-        }
-        RealMatrix jacobian = MatrixUtils.createRealMatrix(jcb);
-        return new Pair<>(ans, jacobian);
+      double[][] jcb = new double[1][pArr.length];
+      for (int i = 0; i < pArr.length; ++i) {
+        double[] newVars = pArr.clone();
+        newVars[i] += delta;
+        double diffY = calcRosenbrock(newVars);
+        jcb[0][i] = (diffY - res[0]) / delta;
       }
+      RealMatrix jacobian1 = MatrixUtils.createRealMatrix(jcb);
+      return new Pair<>(ans, jacobian1);
     };
 
     RealVector target = MatrixUtils.createRealVector(new double[]{0});

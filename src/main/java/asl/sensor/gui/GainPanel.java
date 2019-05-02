@@ -387,6 +387,9 @@ public class GainPanel extends ExperimentPanel
   protected void updateData(final DataStore dataStore) {
     set = true;
     setDataNames(dataStore);
+    // force the reference to be 0 on recalc
+    referenceSeries.setSelectedIndex(0);
+    updateReference(0);
     expResult.runExperimentOnData(dataStore);
     // need to have 2 series for relative gain
     referenceSeries.setEnabled(true);

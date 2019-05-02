@@ -37,7 +37,7 @@ public class ResponseExperimentTest {
     assertEquals(2, firstPlottedData.getSeriesCount());
     String[] chartRespNames = {respName + " [2010.041]", respName + " [2015.055]"};
     for (int i = 0; i < chartRespNames.length; ++i) {
-      assertEquals(chartRespNames[i] + " Response amplitude", firstPlottedData.getSeriesKey(i));
+      assertEquals(chartRespNames[i], firstPlottedData.getSeriesKey(i));
     }
   }
 

@@ -1,7 +1,7 @@
 package asl.sensor.experiment;
 
 import static asl.sensor.experiment.Experiment.DATE_FORMAT;
-import static asl.sensor.experiment.Experiment.DATE_TIME_FORMAT;
+import static asl.sensor.utils.TimeSeriesUtils.DATE_TIME_FORMAT;
 import static asl.sensor.experiment.Experiment.DECIMAL_FORMAT;
 import static asl.sensor.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static junit.framework.TestCase.assertEquals;

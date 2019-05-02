@@ -150,6 +150,10 @@ public class DataStore {
   }
 
   public Pair<Long, Long> getCommonTime() {
+    return getCommonTime(FILE_COUNT);
+  }
+
+  public Pair<Long, Long> getCommonTime(int limit) {
     if (numberOfBlocksSet() < 1) {
       return new Pair<>(Long.MIN_VALUE, Long.MAX_VALUE);
     } else {
@@ -157,16 +161,16 @@ public class DataStore {
       long firstEndTime = Long.MAX_VALUE;
 
       // first pass to get the limits of the time data
-      for (int i = 0; i < FILE_COUNT; ++i) {
+      for (int i = 0; i < limit; ++i) {
         DataBlock data = dataBlockArray[i];
         if (!thisBlockIsSet[i]) {
           continue;
         }
-        long start = data.getStartTime();
+        long start = data.getInitialStartTime();
         if (start > lastStartTime) {
           lastStartTime = start;
         }
-        long end = data.getEndTime();
+        long end = data.getInitialEndTime();
         if (end < firstEndTime) {
           firstEndTime = end;
         }
@@ -188,7 +192,29 @@ public class DataStore {
     double[] data = dataBlockArray[idx].getData();
     long interval = dataBlockArray[idx].getInterval();
     InstrumentResponse ir = responses[idx];
-    return FFTResult.crossPower(data, data, ir, ir, interval);
+    return FFTResult.crossPower(data, data, ir, ir, data.length, interval);
+  }
+
+  /**
+   * Gets the power-spectral density of an index in this object.
+   * If a PSD has already been calculated, this will return that. If not,
+   * it will calculate the result, store it, and then return that data.
+   *
+   * This version of the function is meant to be used in cases where exact length
+   * of the PSD must be specified in advance, such as when working with data that
+   * may have timing differences due to quantization that mean trimming makes
+   * some data be of different lengths from what is expected.
+   *
+   * @param idx Index of data to get the PSD of
+   * @param maxLength Maximum number of points to calculate PSD over -- range 0 to maxLength
+   * @return Complex array of frequency values and a
+   * double array of the frequencies
+   */
+  public FFTResult getPSD(int idx, int maxLength) {
+    double[] data = dataBlockArray[idx].getData();
+    long interval = dataBlockArray[idx].getInterval();
+    InstrumentResponse ir = responses[idx];
+    return FFTResult.crossPower(data, data, ir, ir, maxLength, interval);
   }
 
   /**
@@ -288,12 +314,12 @@ public class DataStore {
     // first loop to get lowest-frequency data
     for (int i = 0; i < limit; ++i) {
       if (thisBlockIsSet[i]) {
-        interval = Math.max(interval, getBlock(i).getInitialInterval());
+        interval = Math.max(interval, getBlock(i).getInterval());
       }
     }
     // second loop to downsample
     for (int i = 0; i < limit; ++i) {
-      if (thisBlockIsSet[i] && getBlock(i).getInitialInterval() != interval) {
+      if (thisBlockIsSet[i] && getBlock(i).getInterval() != interval) {
         getBlock(i).resample(interval);
       }
     }
@@ -448,13 +474,13 @@ public class DataStore {
         for (int i = 0; i < FILE_COUNT; ++i) {
           if (i != idx && thisBlockIsSet[i]) {
             // whole block either comes before or after the data set
-            if (end < dataBlockArray[i].getStartTime() ||
-                start > dataBlockArray[i].getEndTime()) {
+            if (end <= dataBlockArray[i].getInitialStartTime() ||
+                start >= dataBlockArray[i].getInitialEndTime()) {
 
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
                 dataBlockArray[idx] = null;
-                throw new RuntimeException("Time range does not intersect");
+                throw new TimeRangeException(i+1);
               } else {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
@@ -530,7 +556,18 @@ public class DataStore {
       DataBlock db = getBlock(i);
 
       if (end < db.getStartTime() || start > db.getEndTime()) {
-        throw new IndexOutOfBoundsException("Time range invalid for some data");
+
+        String trimStartFormatted = TimeSeriesUtils.formatEpochMillis(start);
+        String trimEndFormatted = TimeSeriesUtils.formatEpochMillis(end);
+        String blockStartFormatted = TimeSeriesUtils.formatEpochMillis(db.getStartTime());
+        String blockEndFormatted = TimeSeriesUtils.formatEpochMillis(db.getEndTime());
+
+        String errMessage = "Trim range outside of valid data window for " + db.getName() + '\n'
+            + "Attempted to trim to range (" + trimStartFormatted
+            + ", " + trimEndFormatted + ")\n"
+            + "Data range is only from (" + blockStartFormatted
+            + ", " + blockEndFormatted + ")\n";
+        throw new IndexOutOfBoundsException(errMessage);
       }
 
       if (start < db.getStartTime()) {
@@ -596,7 +633,25 @@ public class DataStore {
       DataBlock data = dataBlockArray[i];
       data.trim(lastStartTime, firstEndTime);
     }
+  }
 
+  /**
+   * Check if the current trim level (specified by GUI wrapper) encloses all available active data
+   * @param start Start time value of zoom/trim set in the GUI
+   * @param end End time value of zoom/trim set in the GUI
+   * @param limit Number of currently active plots
+   * @return true if there is no data that exists beyond current specified trim length
+   */
+  public boolean currentTrimIsMaximum(long start, long end, int limit) {
+    boolean isZoomedOut = false;
+    for (int i = 0; i < limit; ++i) {
+      if (thisBlockIsSet[i]) {
+        // is there at least one block that has a start and end matching the current trim level?
+        isZoomedOut |= (start == dataBlockArray[i].getInitialStartTime()
+            && end == dataBlockArray[i].getInitialEndTime());
+      }
+    }
+    return isZoomedOut;
   }
 
   /**
@@ -638,13 +693,15 @@ public class DataStore {
         for (int i = 0; i < FILE_COUNT; ++i) {
           if (i != idx && thisBlockIsSet[i]) {
             // whole block either comes before or after the data set
-            if (end < dataBlockArray[i].getStartTime() ||
-                start > dataBlockArray[i].getEndTime()) {
+            // note that if data ends when another starts, then the data has no overlap --
+            // the end time is effectively when the next sample should start
+            if (end <= dataBlockArray[i].getInitialStartTime() ||
+                start >= dataBlockArray[i].getInitialEndTime()) {
 
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
                 dataBlockArray[idx] = null;
-                throw new RuntimeException("Time range does not intersect");
+                throw new TimeRangeException(i+1);
               } else {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
@@ -654,6 +711,14 @@ public class DataStore {
         }
       }
     }
+  }
+
+  public class TimeRangeException extends RuntimeException {
+
+    TimeRangeException(int input) {
+      super("This data's time range has no overlap with input " + input + ".");
+    }
+
   }
 
 }
