@@ -136,6 +136,13 @@ public class AzimuthExperiment extends Experiment {
         getFormattedStartDate(), getFormattedEndDate()};
   }
 
+  @Override
+  public String getReportString() {
+    String output = super.getReportString() + "\n(Offset angle for reference was " + offset + ")";
+
+    return output;
+  }
+
   /**
    * Function used to get the orientation of inputted data
    * (Specifically, aligns the second and third horiz. inputs with the first)
