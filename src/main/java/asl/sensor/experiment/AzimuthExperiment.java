@@ -84,30 +84,56 @@ public class AzimuthExperiment extends Experiment {
   }
 
   private String getAzimuthResults() {
-    StringBuilder angleStr = new StringBuilder();
-    double angle = getFitAngle(); // angle reported should be in degrees
-    angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.get().format(angle));
-    double result = ((offset + angle) % 360 + 360) % 360;
 
-    angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(offset)).append(" = ");
-    angleStr.append(DECIMAL_FORMAT.get().format(result)).append(" (+/- ");
-    angleStr.append(DECIMAL_FORMAT.get().format(uncertainty)).append(")");
+    String name = "N";
+    double angle = getFitAngle();
+
+    return getAzimuthResultForAngleParameters(name, angle, offset, uncertainty, enoughPts);
+  }
+
+  private String getAzimuthResultsEast() {
+
+    String name = "E";
+    double angle = (getFitAngle() + 90) % 360;
+    // angle reported should be in degrees, so add 90 for east, modulus is 360
+
+    return getAzimuthResultForAngleParameters(name, angle, offset, uncertainty, enoughPts);
+  }
+
+  private static String getAzimuthResultForAngleParameters(
+      String name, double angle, double offset, double uncertainty, boolean enoughPts) {
+    StringBuilder angleStr = new StringBuilder();
+    // angle reported should be in degrees, so use 360 as modulus
+    double result = ((offset + angle) % 360 + 360) % 360;
+    angleStr.append(name).append(" FIT ANGLE: ")
+        .append(DECIMAL_FORMAT.get().format(angle));
+
+    // include offset value if nonzero
+    if (offset != 0.) {
+      angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(offset)).append(" = ")
+          .append(DECIMAL_FORMAT.get().format(result));
+    }
+
+    angleStr.append(" (+/- ")
+        .append(DECIMAL_FORMAT.get().format(uncertainty)).append(")");
     if (!enoughPts) {
       angleStr.append(" | WARNING: SMALL RANGE");
     }
+
     return angleStr.toString();
   }
 
   @Override
   public String[] getDataStrings() {
     // get azimuth (with offset) and uncertainty
-    return new String[]{getAzimuthResults()};
+    return new String[]{getAzimuthResults(), getAzimuthResultsEast()};
   }
 
   @Override
   public String[] getInsetStrings() {
     // set the start and end strings separately for compatibility with polar plot interface
-    return new String[]{getAzimuthResults(), getFormattedStartDate(), getFormattedEndDate()};
+    return new String[]{getAzimuthResults(), getAzimuthResultsEast(),
+        getFormattedStartDate(), getFormattedEndDate()};
   }
 
   /**
@@ -183,6 +209,7 @@ public class AzimuthExperiment extends Experiment {
     DataBlock testEastBlock = dataStore.getXthLoadedBlock(2);
     DataBlock refNorthBlock = dataStore.getXthLoadedBlock(3);
 
+    dataNames = new ArrayList<>();
     dataNames.add(testNorthBlock.getName());
     dataNames.add(testEastBlock.getName());
     dataNames.add(refNorthBlock.getName());

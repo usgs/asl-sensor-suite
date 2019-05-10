@@ -378,11 +378,14 @@ public class AzimuthExperimentTest {
     azi.runExperimentOnData(ds);
 
     String angle = Experiment.DECIMAL_FORMAT.get().format(azi.getFitAngle());
-    String expected1 = "FIT ANGLE: " + angle + " + 0 = " + angle + " (+/- 0.004)";
-    String expected2 = "Data start time:\n2017.177.12:00:00.069";
-    String expected3 = "Data end time:\n2017.177.14:00:00.069\n";
-    assertArrayEquals(new String[]{expected1}, azi.getDataStrings());
-    assertArrayEquals(new String[]{expected1, expected2, expected3}, azi.getInsetStrings());
+    String angleEast = Experiment.DECIMAL_FORMAT.get().format(azi.getFitAngle() + 90);
+    String expected1 = "N FIT ANGLE: " + angle + " (+/- 0.004)";
+    String expected2 = "E FIT ANGLE: " + angleEast + " (+/- 0.004)";
+    String expected3 = "Data start time:\n2017.177.12:00:00.069";
+    String expected4 = "Data end time:\n2017.177.14:00:00.069\n";
+    assertArrayEquals(new String[]{expected1, expected2}, azi.getDataStrings());
+    assertArrayEquals(
+        new String[]{expected1, expected2, expected3, expected4}, azi.getInsetStrings());
   }
 
   @Test
