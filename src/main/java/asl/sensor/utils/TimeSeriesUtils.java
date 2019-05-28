@@ -1,5 +1,10 @@
 package asl.sensor.utils;
 
+import edu.iris.dmc.seedcodec.Codec;
+import edu.sc.seis.seisFile.SeisFileException;
+import edu.sc.seis.seisFile.fdsnws.FDSNDataSelectQuerier;
+import edu.sc.seis.seisFile.fdsnws.FDSNDataSelectQueryParams;
+import edu.sc.seis.seisFile.mseed.DataRecordIterator;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
@@ -11,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -482,6 +488,40 @@ public class TimeSeriesUtils {
 
   }
 
+  /**
+   * This code is taken from an example in Crotwell's seisFile example code for reading in data
+   * from the FDSN in the standard SEED format, which is then read in like SEED data is.
+   * @param network Network code (2-character)
+   * @param station Station code (4- or 5-character expected)
+   * @param location Location code (2-digit numeric or empty expected)
+   * @param channel Channel code (3-character alphanumeric expected)
+   * @param startTime UTC-zoned date-time representing start time of data from query
+   * @param endTime UTC-zoned date-time representing end time of data from query
+   * @return DataBlock
+   * @throws SeisFileException If there was a problem executing the query
+   * @throws IOException If the queried data cannot be parsed as expected
+   * @throws CodecException If the data produced in the query has a compression error
+   */
+  public static DataBlock getTimeSeriesFromFDSNQuery(String network, String station,
+      String location, String channel, Date startTime, Date endTime)
+      throws SeisFileException, IOException, CodecException {
+    // see https://github.com/crotwell/seisFile/blob/master/src/example/.../FDSNDataSelect.java
+    FDSNDataSelectQueryParams params = new FDSNDataSelectQueryParams();
+    params.setStartTime(startTime).setEndTime(endTime).appendToNetwork(network)
+        .appendToStation(station).appendToLocation(location).appendToChannel(channel);
+    FDSNDataSelectQuerier querier = new FDSNDataSelectQuerier(params);
+    DataRecordIterator iterator = querier.getDataRecordIterator();
+
+    List<DataRecord> dataRecordList = new LinkedList<>();
+    while (iterator.hasNext()) {
+      dataRecordList.add(iterator.next());
+    }
+
+    String filter = network + "_" + station + "_" + location + "_" + channel;
+
+    return mapToTimeSeries(getTimeSeriesMap(dataRecordList), filter);
+  }
+
 
   /**
    * Extract data from records in a miniseed file and return them as a map
@@ -517,9 +557,8 @@ public class TimeSeriesUtils {
   getTimeSeriesMap(String[] filenames, String filter)
       throws IOException, SeedFormatException,
       CodecException {
-    long interval = 0L;
 
-    Map<Long, double[]> timeListMap = new LinkedHashMap<>();
+    List<DataRecord> dataRecordList = new LinkedList<>();
 
     for (String filename : filenames) {
       int byteSize = getByteSize(filename);
@@ -533,49 +572,62 @@ public class TimeSeriesUtils {
               DataHeader dh = dr.getHeader();
               String seriesID = extractName(dh);
 
-              if (!seriesID.equals(filter)) {
-                continue; // skip to next seedRecord
+              if (seriesID.equals(filter)) {
+                dataRecordList.add((DataRecord) sr);
               }
-
-              byte af = dh.getActivityFlags();
-              byte correctionFlag = 0b00000010; // is there a time correction?
-              int correction = 0;
-              if ((af & correctionFlag) != 0) {
-                correction = dh.getTimeCorrection();
-              }
-              if (correction > 0) {
-                System.out.println("Time correction? " + correction);
-              }
-              Btime bt = dh.getStartBtime();
-
-              // convert Btime to milliseconds
-              long start = bt.convertToCalendar().getTimeInMillis();
-              start += correction / 10; // correction in tenths of millis
-              //start = (start * 10) + bt.getTenthMilli();
-
-              int fact = dh.getSampleRateFactor();
-              int mult = dh.getSampleRateMultiplier();
-
-              // we can assume interval is consistent through a file
-              if (fact > 0 && mult > 0) {
-                interval = ONE_HZ_INTERVAL / (fact * mult);
-              } else if (fact > 0 && mult < 0) {
-                interval = Math.abs((ONE_HZ_INTERVAL * mult) / fact);
-              } else if (fact < 0 && mult > 0) {
-                interval = Math.abs((ONE_HZ_INTERVAL * fact) / mult);
-              } else {
-                interval = ONE_HZ_INTERVAL * fact * mult;
-              }
-
-              timeListMap.put(start, dr.decompress().getAsDouble());
             }
-          } catch (EOFException e) {
-            break;
-          }
-        } // end infinite while loop (read until EOF)
-      } catch (IOException e) {
-        e.printStackTrace();
+          } catch(EOFException e){
+              break;
+          } // end infinite while loop (read until EOF)
+        }
       }
+    }
+
+    return getTimeSeriesMap(dataRecordList);
+  }
+
+
+  private static Pair<Long, Map<Long, double[]>>
+  getTimeSeriesMap(List<DataRecord> dataRecords)
+      throws SeedFormatException, CodecException {
+
+    long interval = 0L;
+    Map<Long, double[]> timeListMap = new LinkedHashMap<>();
+
+    for (DataRecord dr : dataRecords) {
+      DataHeader dh = dr.getHeader();
+
+      byte af = dh.getActivityFlags();
+      byte correctionFlag = 0b00000010; // is there a time correction?
+      int correction = 0;
+      if ((af & correctionFlag) != 0) {
+        correction = dh.getTimeCorrection();
+      }
+      if (correction > 0) {
+        System.out.println("Time correction? " + correction);
+      }
+      Btime bt = dh.getStartBtime();
+
+      // convert Btime to milliseconds
+      long start = bt.convertToCalendar().getTimeInMillis();
+      start += correction / 10; // correction in tenths of millis
+      //start = (start * 10) + bt.getTenthMilli();
+
+      int fact = dh.getSampleRateFactor();
+      int mult = dh.getSampleRateMultiplier();
+
+      // we can assume interval is consistent through a file
+      if (fact > 0 && mult > 0) {
+        interval = ONE_HZ_INTERVAL / (fact * mult);
+      } else if (fact > 0 && mult < 0) {
+        interval = Math.abs((ONE_HZ_INTERVAL * mult) / fact);
+      } else if (fact < 0 && mult > 0) {
+        interval = Math.abs((ONE_HZ_INTERVAL * fact) / mult);
+      } else {
+        interval = ONE_HZ_INTERVAL * fact * mult;
+      }
+
+      timeListMap.put(start, dr.decompress().getAsDouble());
     }
 
     return new Pair<>(interval, timeListMap);
@@ -596,7 +648,6 @@ public class TimeSeriesUtils {
 
     long interval = data.getFirst();
     Map<Long, double[]> timeMap = data.getSecond();
-    // TODO: trim timeMap according to range
     DataBlock db;
 
     db = new DataBlock(timeMap, interval, filter);

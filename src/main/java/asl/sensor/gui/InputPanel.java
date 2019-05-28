@@ -14,12 +14,14 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -30,14 +32,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.imageio.ImageIO;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
@@ -46,6 +53,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.JTextComponent;
+import javax.swing.text.MaskFormatter;
+import jdk.nashorn.internal.scripts.JO;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
@@ -344,7 +353,7 @@ public class InputPanel
       }
 
       if (event.getSource() == seed) {
-        loadData(i, seed);
+        queryFDSN(i, seed);
       }
       if (event.getSource() == append) {
         loadData(i, append);
@@ -529,6 +538,88 @@ public class InputPanel
       clearButton[i].setEnabled(false);
       seedAppenders[i].setEnabled(false);
       instantiateChart(i);
+    }
+
+  }
+
+  private void queryFDSN(int panelToLoad, FileOperationJButton seedButton) {
+    // this section produces a selection box to make sure FDSN loading is user preference
+    {
+      JRadioButton local = new JRadioButton("Load from SEED file");
+      JRadioButton fdsn = new JRadioButton("Load from FDSN");
+      ButtonGroup group = new ButtonGroup();
+      group.add(local);
+      group.add(fdsn);
+      local.setSelected(true);
+
+      JPanel panel = new JPanel();
+      panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+      panel.add(local);
+      panel.add(fdsn);
+
+      int result = JOptionPane.showConfirmDialog(this, panel,
+          "Select load method", JOptionPane.OK_CANCEL_OPTION);
+
+      if (result == JOptionPane.CANCEL_OPTION) {
+        return;
+      }
+
+      if (local.isSelected()) {
+        loadData(panelToLoad, seedButton);
+        return;
+      }
+    }
+
+    try {
+      MaskFormatter networkFormatter = new MaskFormatter("UU");
+      MaskFormatter stationFormatter = new MaskFormatter("UUUUU");
+      MaskFormatter locationFormatter = new MaskFormatter("##");
+      MaskFormatter channelFormatter = new MaskFormatter("UUA");
+      JFormattedTextField networkField = new JFormattedTextField(networkFormatter);
+      networkField.setText("IU");
+      networkField.setMinimumSize(networkField.getPreferredSize());
+      JFormattedTextField stationField = new JFormattedTextField(stationFormatter);
+      stationField.setText("ANMO");
+      stationField.setMinimumSize(stationField.getPreferredSize());
+      JFormattedTextField locationField = new JFormattedTextField(locationFormatter);
+      locationField.setText("");
+      locationField.setMinimumSize(locationField.getPreferredSize());
+      JFormattedTextField channelField = new JFormattedTextField(channelFormatter);
+      channelField.setText("LHZ");
+      channelField.setMinimumSize(channelField.getPreferredSize());
+
+      JPanel queryPanel = new JPanel();
+      queryPanel.setLayout(new GridLayout(4, 2));
+
+      queryPanel.add(new JTextArea("Network:"));
+      queryPanel.add(networkField);
+      queryPanel.add(new JTextArea("Station:"));
+      queryPanel.add(stationField);
+      queryPanel.add(new JTextArea("Location:"));
+      queryPanel.add(locationField);
+      queryPanel.add(new JTextArea("Channel:"));
+      queryPanel.add(channelField);
+
+      int result = JOptionPane.showConfirmDialog(this, queryPanel,
+          "Set FDSN query parameters", JOptionPane.OK_CANCEL_OPTION);
+
+      if (result == JOptionPane.OK_OPTION) {
+        String net = networkField.getText();
+        String sta = stationField.getText();
+        String loc = locationField.getText();
+        String cha = channelField.getText();
+
+        String message = net + "." + sta + "." + loc + "." + cha;
+
+        JOptionPane.showMessageDialog(this,
+            "WIP, when implemented will query data for: " + message, "Field to query",
+            JOptionPane.INFORMATION_MESSAGE);
+      }
+
+    } catch (ParseException e) {
+      e.printStackTrace();
+      JOptionPane.showMessageDialog(this,
+          "ERROR CREATING FDSN QUERY DIALOG BOX", "FDSN ERROR", JOptionPane.ERROR_MESSAGE);
     }
 
   }
