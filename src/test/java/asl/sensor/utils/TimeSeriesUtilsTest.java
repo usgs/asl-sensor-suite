@@ -15,6 +15,7 @@ import asl.sensor.test.TestUtils;
 import edu.iris.dmc.seedcodec.B1000Types;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.iris.dmc.seedcodec.DecompressedData;
+import edu.sc.seis.seisFile.SeisFileException;
 import edu.sc.seis.seisFile.mseed.DataRecord;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import edu.sc.seis.seisFile.mseed.SeedRecord;
@@ -239,6 +240,35 @@ public class TimeSeriesUtilsTest {
       // System.out.println(timeseries.get(start)[0]);
 
     } catch (IOException | SeedFormatException | CodecException e) {
+      fail();
+      e.printStackTrace();
+    }
+  }
+
+  @Test
+  public void fromFDSNMatches() {
+    // ideally use data here that is known to not have gaps, so we'll take from a PSD test
+    String fname = folder + "psd-check/00_LHZ.512.seed";
+    try {
+      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(fname);
+
+      String[] components = db.getName().split("_");
+      String net = components[0];
+      String sta = components[1];
+      String loc = components[2];
+      String cha = components[3];
+
+      long start = db.getStartTime();
+      long end = db.getEndTime();
+
+      DataBlock fdsn = TimeSeriesUtils.getTimeSeriesFromFDSNQuery(net, sta, loc, cha, start, end);
+
+      double[] queriedData = fdsn.getData();
+      double[] expectedData = db.getData();
+
+      assertArrayEquals(expectedData, queriedData, 1E-15);
+
+    } catch (IOException | CodecException | SeisFileException e) {
       fail();
       e.printStackTrace();
     }

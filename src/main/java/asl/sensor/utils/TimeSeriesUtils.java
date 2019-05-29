@@ -56,7 +56,7 @@ public class TimeSeriesUtils {
 
   public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
       ThreadLocal.withInitial(() -> {
-        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
+        SimpleDateFormat format = new SimpleDateFormat("yyyy.DDD.HH:mm:ss.SSS");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
@@ -503,11 +503,15 @@ public class TimeSeriesUtils {
    * @throws CodecException If the data produced in the query has a compression error
    */
   public static DataBlock getTimeSeriesFromFDSNQuery(String network, String station,
-      String location, String channel, Date startTime, Date endTime)
+      String location, String channel, long startTime, long endTime)
       throws SeisFileException, IOException, CodecException {
+
+    Date start = Date.from(Instant.ofEpochMilli(startTime));
+    Date end = Date.from(Instant.ofEpochMilli(endTime));
+
     // see https://github.com/crotwell/seisFile/blob/master/src/example/.../FDSNDataSelect.java
     FDSNDataSelectQueryParams params = new FDSNDataSelectQueryParams();
-    params.setStartTime(startTime).setEndTime(endTime).appendToNetwork(network)
+    params.setStartTime(start).setEndTime(end).appendToNetwork(network)
         .appendToStation(station).appendToLocation(location).appendToChannel(channel);
     FDSNDataSelectQuerier querier = new FDSNDataSelectQuerier(params);
     DataRecordIterator iterator = querier.getDataRecordIterator();
