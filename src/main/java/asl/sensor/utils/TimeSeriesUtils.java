@@ -1,6 +1,5 @@
 package asl.sensor.utils;
 
-import edu.iris.dmc.seedcodec.Codec;
 import edu.sc.seis.seisFile.SeisFileException;
 import edu.sc.seis.seisFile.fdsnws.FDSNDataSelectQuerier;
 import edu.sc.seis.seisFile.fdsnws.FDSNDataSelectQueryParams;
