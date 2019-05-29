@@ -603,6 +603,15 @@ public class DataBlock {
       throws IOException, SeedFormatException, CodecException {
     Map<Long, double[]> toAppend =
         TimeSeriesUtils.getTimeSeriesMap(filepath, name).getSecond();
+    mergeDataMaps(toAppend);
+  }
+
+  public void appendTimeSeries(DataBlock blockToAppend) {
+    Map<Long, double[]> toAppend = blockToAppend.getDataMap();
+    mergeDataMaps(toAppend);
+  }
+
+  private void mergeDataMaps(Map<Long, double[]> toAppend) {
     dataMap.putAll(toAppend);
     mergeContiguousTimes();
     recalculateTimes();

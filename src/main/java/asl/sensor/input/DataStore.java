@@ -418,6 +418,40 @@ public class DataStore {
     dataBlockArray[idx] = db;
   }
 
+  public void setBlock(int idx, DataBlock db, int activePlots) throws TimeRangeException {
+
+    thisBlockIsSet[idx] = true;
+    dataBlockArray[idx] = db;
+
+    synchronized (this) {
+      if (numberOfBlocksSet() > 1) {
+        // don't trim data here, that way we don't lose data
+        long start = dataBlockArray[idx].getStartTime();
+        long end = dataBlockArray[idx].getEndTime();
+
+        // there's clearly already another block loaded, let's make sure they
+        // actually have an intersecting time range
+        for (int i = 0; i < FILE_COUNT; ++i) {
+          if (i != idx && thisBlockIsSet[i]) {
+            // whole block either comes before or after the data set
+            if (end <= dataBlockArray[i].getInitialStartTime() ||
+                start >= dataBlockArray[i].getInitialEndTime()) {
+
+              if (i < activePlots) {
+                thisBlockIsSet[idx] = false;
+                dataBlockArray[idx] = null;
+                throw new TimeRangeException(i + 1);
+              } else {
+                // unload data that we aren't currently using
+                thisBlockIsSet[i] = false;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Loads in a miniseed file with assumption that it is not multiplexed and only includes a single
    * channel's range of data. Mainly used as a shortcut for non-GUI calls (for test cases, etc.)
@@ -670,6 +704,44 @@ public class DataStore {
     trimToCommonTime(limit);
   }
 
+  public void appendBlock(int idx, DataBlock dataBlock, int activePlots) {
+    if (!thisBlockIsSet[idx]) {
+      setBlock(idx, dataBlock);
+      return;
+    }
+
+    dataBlockArray[idx].appendTimeSeries(dataBlock);
+
+    synchronized (this) {
+      if (numberOfBlocksSet() > 1) {
+        // don't trim data here, that way we don't lose data
+        long start = dataBlockArray[idx].getStartTime();
+        long end = dataBlockArray[idx].getEndTime();
+
+        // there's clearly already another block loaded, let's make sure they
+        // actually have an intersecting time range
+        for (int i = 0; i < FILE_COUNT; ++i) {
+          if (i != idx && thisBlockIsSet[i]) {
+            // whole block either comes before or after the data set
+            // note that if data ends when another starts, then the data has no overlap --
+            // the end time is effectively when the next sample should start
+            if (end <= dataBlockArray[i].getInitialStartTime() ||
+                start >= dataBlockArray[i].getInitialEndTime()) {
+
+              if (i < activePlots) {
+                thisBlockIsSet[idx] = false;
+                dataBlockArray[idx] = null;
+                throw new TimeRangeException(i+1);
+              } else {
+                // unload data that we aren't currently using
+                thisBlockIsSet[i] = false;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   public void appendBlock(int idx, String filepath, String nameFilter, int activePlots)
       throws SeedFormatException, CodecException,
