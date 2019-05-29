@@ -633,17 +633,17 @@ public class InputPanel
 
       JPanel queryPanel = new JPanel();
       queryPanel.setLayout(new GridLayout(6, 2));
-      queryPanel.add(new JTextArea("Network:"));
+      queryPanel.add(new JLabel("Network:"));
       queryPanel.add(networkField);
-      queryPanel.add(new JTextArea("Station:"));
+      queryPanel.add(new JLabel("Station:"));
       queryPanel.add(stationField);
-      queryPanel.add(new JTextArea("Location:"));
+      queryPanel.add(new JLabel("Location:"));
       queryPanel.add(locationField);
-      queryPanel.add(new JTextArea("Channel:"));
+      queryPanel.add(new JLabel("Channel:"));
       queryPanel.add(channelField);
-      queryPanel.add(new JTextArea("Start time (UTC):"));
+      queryPanel.add(new JLabel("Start time (UTC):"));
       queryPanel.add(startPicker);
-      queryPanel.add(new JTextArea("End time (UTC):"));
+      queryPanel.add(new JLabel("End time (UTC):"));
       queryPanel.add(endPicker);
 
       int result = JOptionPane.showConfirmDialog(this, queryPanel,
