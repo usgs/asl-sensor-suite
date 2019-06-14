@@ -8,6 +8,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -597,6 +598,13 @@ public class InstrumentResponseTest {
       InstrumentResponse response = InstrumentResponse.loadEmbeddedResponse(respFile);
       assertNotNull(response);
     }
+  }
+
+  @Test
+  public void getResponsesEnumCount() throws IOException {
+    int sensorTypes = InstrumentResponse.SensorType.values().length;
+    int resolutionTypes = InstrumentResponse.ResolutionType.values().length;
+    assertEquals(18, sensorTypes * resolutionTypes);
   }
 
   @Test

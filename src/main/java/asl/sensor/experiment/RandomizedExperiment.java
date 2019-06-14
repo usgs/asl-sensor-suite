@@ -60,7 +60,8 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
    * Maximum possible frequency value as a multiple of nyquist (0.9).
    * The solver will still default to 0.8 as results above that are very unstable for noisy cals
    */
-  private static final double PEAK_MULTIPLIER = InstrumentResponse.PEAK_MULTIPLIER;
+  public static final double PEAK_MULTIPLIER = 0.9;
+
   /**
    * Sets the default normalization point for curves (0.02 Hz)
    */
