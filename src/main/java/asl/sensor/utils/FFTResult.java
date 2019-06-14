@@ -325,6 +325,84 @@ public class FFTResult {
   }
 
   /**
+   * Collects the data points in the accelerometer low noise model
+   * into a plottable format.
+   * Assumes that there is a text file in the .resources folder that contains
+   * the ALNM data points for given input frequencies. ("ALNM.txt")
+   *
+   * @param freqSpace True if the data's x-axis should be units of Hz
+   * (otherwise it is units of seconds, the interval between samples)
+   * @return Plottable data series representing the ALNM
+   */
+  public static XYSeries getALNM(boolean freqSpace) {
+    XYSeries xys = new XYSeries("ALNM");
+    ClassLoader cl = FFTResult.class.getClassLoader();
+
+    InputStream is = cl.getResourceAsStream("ALNM.txt");
+
+    try (BufferedReader fr = new BufferedReader(new InputStreamReader(is))) {
+      String str = fr.readLine();
+      while (str != null) {
+        String[] values = str.split("\\s+");
+        double x = Double.parseDouble(values[0]); // period, in seconds
+        if (x > 1.0E6 + 1) {
+          break;
+        }
+        double y = Double.parseDouble(values[3]);
+        if (freqSpace) {
+          xys.add(1 / x, y);
+        } else {
+          xys.add(x, y);
+        }
+
+        str = fr.readLine();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return xys;
+  }
+
+  /**
+   * Collects the data points in the accelerometer high noise model
+   * into a plottable format.
+   * Assumes that there is a text file in the .resources folder that contains
+   * the ALNM data points for given input frequencies. ("AHNM.txt")
+   *
+   * @param freqSpace True if the data's x-axis should be units of Hz
+   * (otherwise it is units of seconds, the interval between samples)
+   * @return Plottable data series representing the AHNM
+   */
+  public static XYSeries getAHNM(boolean freqSpace) {
+    XYSeries xys = new XYSeries("AHNM");
+    ClassLoader cl = FFTResult.class.getClassLoader();
+
+    InputStream is = cl.getResourceAsStream("AHNM.txt");
+
+    try (BufferedReader fr = new BufferedReader(new InputStreamReader(is))) {
+      String str = fr.readLine();
+      while (str != null) {
+        String[] values = str.split("\\s+");
+        double x = Double.parseDouble(values[0]); // period, in seconds
+        if (x > 1.0E6 + 1) {
+          break;
+        }
+        double y = Double.parseDouble(values[3]);
+        if (freqSpace) {
+          xys.add(1 / x, y);
+        } else {
+          xys.add(x, y);
+        }
+
+        str = fr.readLine();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return xys;
+  }
+
+  /**
    * Produce a multitaper series using a sine function for use in spectral
    * calculations (i.e., specified when calculating PSD values)
    *
