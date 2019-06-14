@@ -30,6 +30,126 @@ public class NumericUtils {
       });
 
   /**
+   * Numerical Recipes cubic spline interpolation (spline.c and splint.c)
+   * Expects arrays with +1 offset: x[1,...,n], etc. - we will pass it arrays
+   * with 0 offset: x[0,1,...,n] and ignore the first points.
+   *
+   * @param x x
+   * @param y y
+   * @param n n
+   * @param yp1 yp1
+   * @param ypn ypn
+   * @param y2 y2
+   */
+  private static void spline(double[] x, double[] y, int n, double yp1, double ypn, double[] y2) {
+
+    double p, qn, sig, un;
+    p = qn = sig = un = 0;
+
+    // u=vector(1,n-1);
+    double[] u = new double[n];
+
+    if (yp1 > 0.99e30)
+      y2[1] = u[1] = 0.0;
+    else {
+      y2[1] = -0.5;
+      u[1] = (3.0 / (x[2] - x[1])) * ((y[2] - y[1]) / (x[2] - x[1]) - yp1);
+    }
+    for (int i = 2; i <= n - 1; i++) {
+      sig = (x[i] - x[i - 1]) / (x[i + 1] - x[i - 1]);
+      p = sig * y2[i - 1] + 2.0;
+      y2[i] = (sig - 1.0) / p;
+      u[i] = (y[i + 1] - y[i]) / (x[i + 1] - x[i]) - (y[i] - y[i - 1]) / (x[i] - x[i - 1]);
+      u[i] = (6.0 * u[i] / (x[i + 1] - x[i - 1]) - sig * u[i - 1]) / p;
+    }
+    if (ypn > 0.99e30)
+      qn = un = 0.0;
+    else {
+      qn = 0.5;
+      un = (3.0 / (x[n] - x[n - 1])) * (ypn - (y[n] - y[n - 1]) / (x[n] - x[n - 1]));
+    }
+    y2[n] = (un - qn * u[n - 1]) / (qn * y2[n - 1] + 1.0);
+    for (int k = n - 1; k >= 1; k--)
+      y2[k] = y2[k] * y2[k + 1] + u[k];
+
+  }
+
+  /**
+   * Same as above (+1 offset arrays) & y=double[1] is used to pass out the
+   * interpolated value (y=f(x)).
+   *
+   * @param xa xa
+   * @param ya ya
+   * @param y2a y2a
+   * @param n n
+   * @param x x
+   * @param y y
+   */
+  private static void splint(double[] xa, double[] ya, double[] y2a, int n, double x, double[] y) {
+
+    int klo, khi, k;
+    double h, b, a;
+
+    klo = 1;
+    khi = n;
+    while (khi - klo > 1) {
+      k = (khi + klo) >> 1;
+      if (xa[k] > x)
+        khi = k;
+      else
+        klo = k;
+    }
+    h = xa[khi] - xa[klo];
+    // if (h == 0.0) nrerror("Bad XA input to routine SPLINT");
+    if (h == 0.0)
+      System.out.format("Bad XA input to routine SPLINT\n");
+
+    a = (xa[khi] - x) / h;
+    b = (x - xa[klo]) / h;
+    // *y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
+    y[0] = a * ya[klo] + b * ya[khi] + ((a * a * a - a) * y2a[klo] + (b * b * b - b) * y2a[khi]) * (h * h) / 6.0;
+  }
+
+  /**
+   * Interpolate using a cubic spline.
+   *
+   * Interpolate measured Y[X] to the Y[Z]<br>
+   * We know Y[X] = Y at values of X <br>
+   * We want Y[Z] = Y interpolated to values of Z<br>
+   *
+   * @param X Measured X series
+   * @param Y Measured Y series
+   * @param Z Desired X coordinates to interpolate
+   * @return interpolated array of Y values corresponding to input Z
+   */
+  public static double[] interpolate(double[] X, double[] Y, double[] Z) {
+
+    double[] interpolatedValues = new double[Z.length];
+
+    int n = X.length;
+
+    double[] tmpY = new double[n + 1];
+    double[] tmpX = new double[n + 1];
+
+    // Create offset (+1) arrays to use with Num Recipes interpolation
+    // (spline.c)
+    for (int i = 0; i < n; i++) {
+      tmpY[i + 1] = Y[i];
+      tmpX[i + 1] = X[i];
+    }
+    double[] y2 = new double[n + 1];
+    spline(tmpX, tmpY, n, 0., 0., y2);
+
+    double[] y = new double[1];
+
+    for (int i = 0; i < Z.length; i++) {
+      splint(tmpX, tmpY, y2, n, Z[i], y);
+      interpolatedValues[i] = y[0];
+    }
+    return interpolatedValues;
+  }
+
+  /**
    * Get the two-component arctan of a complex number. A simpler way of calling
    * arctan2 using the real and imaginary components of a complex number
    * (see Math.atan2 for more details). This is the angle of the complex number

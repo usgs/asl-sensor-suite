@@ -11,6 +11,23 @@ import org.junit.Test;
 public class NumericUtilsTest {
 
   @Test
+  public final void testInterpolateBasic() throws Exception {
+    double[] X = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    double[] Y = {1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+    double[] Z = {1, 2.5, 3, 3.5, 7, 10.1};
+
+    Double[] answer = {1.0d, 2.5d, 3.0d, 3.5d, 7.0d, 7.9d};
+
+    double[] result = NumericUtils.interpolate(X, Y, Z);
+
+    // Super basic interpolation. If it isn't within 1 tenth of the answer,
+    // we should interpolate differently.
+    for (int i = 0; i < result.length; i++) {
+      assertEquals(new Double((double) Math.round(result[i] * 10d) / 10d), answer[i]);
+    }
+  }
+
+  @Test
   public void movingAverageCorrectValues() {
     double[] averaged = new double[]{1., 1.5, 2.0, 3.0, 4.0};
     double[] init = new double[]{1., 2., 3., 4., 5.};

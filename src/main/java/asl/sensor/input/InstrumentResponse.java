@@ -39,6 +39,66 @@ import asl.sensor.utils.NumericUtils;
  */
 public class InstrumentResponse {
 
+  /**
+   * Class enumerating sensor types using abbreviated name forms of each sensor.
+   * All sensors are assumed to be attached to a Q330 digitizer.
+   */
+  public enum SensorType {
+    /**
+     * Guralp CMG-3T Sensor
+     */
+    CMG3T,
+    /**
+     * Geotech KS-54000
+     */
+    KS54000,
+    /**
+     * Streckeisen STS-1 T5
+     */
+    STS1T5,
+    /**
+     * Standard gain Streckeisen STS-2
+     */
+    STS2gen3,
+    /**
+     * High gain Streckeisen STS-2
+     */
+    STS2HGgen3,
+    /**
+     * Streckeisen STS-6
+     */
+    STS6,
+    /**
+     * Nanometrics Trillium Compact 120
+     */
+    TR120,
+    /**
+     * Nanometrics Trillium Compact 240
+     */
+    TR240,
+    /**
+     * Nanometrics Trillium Compact 360
+     */
+    TR360
+  }
+
+  public enum ResolutionType {
+    HIGH("HR"),
+    STANDARD("SR");
+
+    private final String filename;
+    ResolutionType(String name) {
+      filename = name;
+    }
+
+    String getFilename() {return filename;}
+  }
+
+  public static InstrumentResponse loadEmbeddedResponse(SensorType sensor, ResolutionType res)
+      throws IOException {
+    return InstrumentResponse.loadEmbeddedResponse(sensor.name() + "_Q330" + res.getFilename());
+  }
+
   public static final String RESP_DIRECTORY = "resps/";
 
   /**
