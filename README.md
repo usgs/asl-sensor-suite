@@ -4,7 +4,7 @@
 
 This program is used to analyze various aspects of seismic sensor data in order to determine information about their configuration, such as gain and orientation. It is meant to be a simple program that can be used to generate data on a wide range of sensor tests, a one-stop-shop for sensor diagnostics designed to replace several disparate programs across multiple languages. The program is designed around an interface meant to be simple and intuitive.
 
-doi: https://doi.org/10.5066/P9XXBOVR  
+DOI: https://doi.org/10.5066/P9XXBOVR  
 IPDS: IP-101116  
 
 USGS Approved Release:  
