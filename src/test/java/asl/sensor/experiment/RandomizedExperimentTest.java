@@ -8,7 +8,18 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import asl.sensor.CalProcessingServer;
+import asl.sensor.ExperimentFactory;
+import asl.sensor.gui.RandomizedPanel;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.DataStoreUtils;
 import asl.sensor.output.CalResult;
+import asl.sensor.test.TestUtils;
+import asl.utils.NumericUtils;
+import asl.utils.ReportingUtils;
+import asl.utils.input.InstrumentResponse;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
@@ -35,17 +46,6 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-import asl.sensor.CalProcessingServer;
-import asl.sensor.ExperimentFactory;
-import asl.sensor.gui.RandomizedPanel;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.DataStoreUtils;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.ReportingUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class RandomizedExperimentTest {
 
