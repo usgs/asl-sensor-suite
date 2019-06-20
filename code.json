@@ -3,8 +3,8 @@
     "name": "asl-sensor-suite",
     "organization": "U.S. Geological Survey",
     "description": "A graphical suite for seismic sensor testing",
-    "version": "1.4.2",
-    "status": "Development",
+    "version": "1.7.0",
+    "status": "Production",
     "permissions": {
       "usageType": "openSource",
       "licenses": [
@@ -16,24 +16,24 @@
     },
     "homepageURL": "https://usgs.github.io/asl-sensor-suite/",
     "downloadURL": "https://github.com/usgs/asl-sensor-suite/archive/master.zip",
-    "disclaimerURL": "https://github.com/usgs/asl-sensor-suite/blob/master/LICENSE.md",
+    "disclaimerURL": "https://github.com/usgs/asl-sensor-suite/blob/master/DISCLAIMER.md",
     "repositoryURL": "https://github.com/usgs/asl-sensor-suite.git",
     "vcs": "git",
     "tags": [
       "Seismic-Hazards",
       "ASL",
-      "seismometer testing"
+      "Seismometer-Testing"
     ],
     "languages": [
       "Java"
     ],
-    "laborHours": 2080,
+    "laborHours": 2580,
     "contact": {
       "name": "Aaron Kearns",
-      "email": "akearns@usgs.gov"
+      "email": "akearns@contractor.usgs.gov"
     },
     "date": {
-      "metadataLastUpdated": "2018-08-23"
+      "metadataLastUpdated": "2019-06-18"
     }
   }
 ]
