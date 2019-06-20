@@ -116,5 +116,5 @@ task gitSubmodule(type: Exec) {
     commandLine 'git', 'submodule', 'update', '--init', '--recursive'
 }
 
-build.dependsOn copyJar, copyServerJar
+build.dependsOn copyJar, copyServerJar, gitSubmodule
 processTestResources.dependsOn gitSubmodule
