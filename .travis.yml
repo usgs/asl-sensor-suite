@@ -7,7 +7,8 @@ git:
     submodules: false
 
 before_install:
-    - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules | sed -i 's/git@code.usgs.gov:/https:\/\/code.usgs.gov\//'
+    - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+    - sed -i 's/git@code.usgs.gov:/https:\/\/code.usgs.gov\//' .gitmodules
     - git submodule update --init --recursive
 
 before_cache:
