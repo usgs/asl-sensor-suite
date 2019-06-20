@@ -1,8 +1,8 @@
 package asl.sensor.experiment;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.NumericUtils;
+import asl.utils.NumericUtils;
+import asl.utils.input.InstrumentResponse;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;

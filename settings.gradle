@@ -1,0 +1,3 @@
+rootProject.name = 'asl-sensor-suite'
+
+include 'asl-java-utils'

@@ -4,7 +4,7 @@ import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
+import asl.utils.input.InstrumentResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
