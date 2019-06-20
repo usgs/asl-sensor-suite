@@ -4,7 +4,7 @@ import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.SwingWorkerSingleton;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
+import asl.utils.ReportingUtils;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -36,10 +36,9 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.JFreeChart;
 
 /**
- * Main window of the sensor test program and the program's launcher
- * Mainly used for handling the input (InputPanel)
- * and output (ExperimentPanel)
- * GUI frames and making sure they fit together and cooperate.
+ * Main window of the sensor test program and the program's launcher Mainly used for handling the
+ * input (InputPanel) and output (ExperimentPanel) GUI frames and making sure they fit together and
+ * cooperate.
  *
  * @author akearns
  */
@@ -54,10 +53,10 @@ public class SensorSuite extends JPanel
   private final JButton savePDF; // run all calculations
   // used to store current directory locations
   private String saveDirectory = System.getProperty("user.home");
+
   /**
-   * Creates the main window of the program when called
-   * (Three main panels: the top panel for displaying the results
-   * of sensor tests; the lower panel for displaying plots of raw data from
+   * Creates the main window of the program when called (Three main panels: the top panel for
+   * displaying the results of sensor tests; the lower panel for displaying plots of raw data from
    * miniSEED files; the side panel for most file-IO operations
    */
   private SensorSuite() {
@@ -230,13 +229,11 @@ public class SensorSuite extends JPanel
   }
 
   /**
-   * Saves data collected from an experiment to. Files will be written into
-   * a specified folder, with the format "Chart#.png" and all metadata in a
-   * single file referred to as "outputData.txt".
+   * Saves data collected from an experiment to. Files will be written into a specified folder, with
+   * the format "Chart#.png" and all metadata in a single file referred to as "outputData.txt".
    *
-   * @param folderName Folder to write data into, presumably something like a
-   * user's home directory, but inside a subdirectory of format
-   * "test_results/[Experiment-specified filename]".
+   * @param folderName Folder to write data into, presumably something like a user's home directory,
+   * but inside a subdirectory of format "test_results/[Experiment-specified filename]".
    * @param text Text output from an experiment
    * @param charts Array of charts produced from the experiment
    */
@@ -278,11 +275,10 @@ public class SensorSuite extends JPanel
   }
 
   /**
-   * Handles actions when the buttons are clicked -- either the 'save PDF'
-   * button, which compiles the input and output plots into a single PDF, or
-   * the 'generate result' button.
-   * Because generating results of an experiment can be slow, the operation
-   * is set to run in a separate thread.
+   * Handles actions when the buttons are clicked -- either the 'save PDF' button, which compiles
+   * the input and output plots into a single PDF, or the 'generate result' button. Because
+   * generating results of an experiment can be slow, the operation is set to run in a separate
+   * thread.
    */
   @Override
   public void actionPerformed(ActionEvent event) {
@@ -347,8 +343,8 @@ public class SensorSuite extends JPanel
   }
 
   /**
-   * Checks when input panel gets new data or active experiment changes
-   * to determine whether or not the experiment can be run yet
+   * Checks when input panel gets new data or active experiment changes to determine whether or not
+   * the experiment can be run yet
    */
   @Override
   public void stateChanged(ChangeEvent event) {

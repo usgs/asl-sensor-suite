@@ -1,8 +1,8 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
 import org.jfree.data.xy.XYSeries;
 
 /**

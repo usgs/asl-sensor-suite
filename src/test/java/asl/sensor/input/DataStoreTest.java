@@ -9,7 +9,8 @@ import static org.junit.Assert.assertTrue;
 
 import asl.sensor.gui.InputPanel;
 import asl.sensor.test.TestUtils;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
 import java.time.OffsetDateTime;
 import org.junit.Test;
 
@@ -84,7 +85,6 @@ public class DataStoreTest {
     // tested in DataPanelTest
     long loc1 = InputPanel.getMarkerLocation(db, left);
     long loc2 = InputPanel.getMarkerLocation(db, right);
-    //  tested in DataBlockTest
     db.trim(loc1, loc2);
 
     ds.setBlock(1, filename, filter);
