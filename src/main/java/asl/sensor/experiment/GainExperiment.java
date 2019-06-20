@@ -1,9 +1,9 @@
 package asl.sensor.experiment;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
+import asl.utils.FFTResult;
+import asl.utils.NumericUtils;
+import asl.utils.input.InstrumentResponse;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;

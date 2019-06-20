@@ -4,6 +4,11 @@ import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.output.CalResult;
+import asl.utils.ReportingUtils;
+import asl.utils.ResponseUnits;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -14,6 +19,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -37,11 +43,7 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.SineExperiment;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import org.jfree.ui.RectangleAnchor;
@@ -71,17 +73,7 @@ public class CalProcessingServer {
    * @return List of names of embedded resps (will match common sensor & digitizer gain setups)
    */
   public static String[] getEmbeddedRESPFilenames() {
-    Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
-
-    List<String> names = new ArrayList<>(respFilenames);
-    Collections.sort(names);
-    String[] nameArray = new String[names.size()];
-    for (int k = 0; k < nameArray.length; ++k) {
-      String name = names.get(k);
-      name = name.replace("resps/", "");
-      nameArray[k] = name;
-    }
-    return nameArray;
+    return ResponseUnits.enumerateAllResponseFilenames();
   }
 
   public static void main(String[] args) {

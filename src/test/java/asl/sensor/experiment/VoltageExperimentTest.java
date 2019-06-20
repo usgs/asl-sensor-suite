@@ -7,8 +7,8 @@ import static org.junit.Assert.fail;
 
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.test.TestUtils;
+import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;

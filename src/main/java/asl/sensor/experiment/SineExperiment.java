@@ -1,7 +1,7 @@
 package asl.sensor.experiment;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.TimeSeriesUtils;
 import java.util.ArrayList;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jfree.data.xy.XYSeries;

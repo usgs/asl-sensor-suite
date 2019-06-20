@@ -1,5 +1,10 @@
 package asl.sensor.experiment;
 
+import asl.utils.FFTResult;
+import asl.utils.NumericUtils;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,12 +28,7 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * This experiment takes in a randomized calibration signal and the

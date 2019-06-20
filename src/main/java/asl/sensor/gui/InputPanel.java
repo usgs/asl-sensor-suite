@@ -1,11 +1,14 @@
 package asl.sensor.gui;
 
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStore.TimeRangeException;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.ReportingUtils;
+import asl.utils.ResponseUnits;
+import asl.utils.ResponseUnits.ResolutionType;
+import asl.utils.ResponseUnits.SensorType;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.SeisFileException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -30,7 +33,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -375,17 +377,28 @@ public class InputPanel
 
       if (event.getSource() == resp) {
         // don't need a new thread because resp loading is pretty prompt
+        SensorType[] sensors = SensorType.values();
+        ResolutionType[] resolutions = ResolutionType.values();
 
-        Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
-
-        List<String> names = new ArrayList<>(respFilenames);
-        Collections.sort(names);
-        names.add("Load custom response...");
-        String[] nameArray = names.toArray(new String[]{});
+        Arrays.sort(sensors);
+        List<Pair<SensorType, ResolutionType>> responses = new ArrayList<>();
+        for (SensorType sensor : sensors) {
+          for (ResolutionType resolution : resolutions) {
+            responses.add(new Pair<>(sensor, resolution));
+          }
+        }
+        // create new array with extra entry for a new string to load custom response
+        String[] nameArray = new String[responses.size() + 1];
+        for (int w = 0; w < responses.size(); ++w) {
+          Pair<SensorType, ResolutionType> respPair = responses.get(w);
+          nameArray[w] = ResponseUnits.getFilenameFromComponents(
+              respPair.getFirst(), respPair.getSecond());
+        }
+        nameArray[nameArray.length - 1] = "Load external RESP file...";
 
         int index = lastRespIndex;
         if (lastRespIndex < 0) {
-          index = names.size() - 1;
+          index = nameArray.length - 1;
         }
 
         JDialog dialog = new JDialog();
@@ -405,14 +418,16 @@ public class InputPanel
         }
 
         // is the loaded string one of the embedded response files?
-        if (respFilenames.contains(resultStr)) {
+        // if it is, then we can
+        if ((lastRespIndex = Arrays.binarySearch(nameArray, resultStr)) > 0) {
           // what was the index of the selected item?
-          // used to make sure we default to that choice next round
-          lastRespIndex = Collections.binarySearch(names, resultStr);
           // final used here in the event of thread weirdness
           try {
+            Pair<SensorType, ResolutionType> sensorResolutionPair = responses.get(lastRespIndex);
+            SensorType sensor = sensorResolutionPair.getFirst();
+            ResolutionType resolution = sensorResolutionPair.getSecond();
             InstrumentResponse instrumentResponse =
-                InstrumentResponse.loadEmbeddedResponse(resultStr);
+                InstrumentResponse.loadEmbeddedResponse(sensor, resolution);
             dataStore.setResponse(i, instrumentResponse);
 
             respFileNames[i].setText(instrumentResponse.getName());

@@ -1,6 +1,8 @@
 package asl.sensor.experiment;
 
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.NumericUtils;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,9 +18,7 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
 
 /**
  * This function defines template patterns for each type of sensor experiment

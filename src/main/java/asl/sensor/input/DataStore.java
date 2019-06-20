@@ -1,7 +1,9 @@
 package asl.sensor.input;
 
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.FFTResult;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;

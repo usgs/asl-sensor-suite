@@ -1,5 +1,10 @@
 package asl.sensor.experiment;
 
+import asl.utils.FFTResult;
+import asl.utils.FilterUtils;
+import asl.utils.NumericUtils;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,11 +23,7 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
@@ -274,10 +275,10 @@ public class AzimuthExperiment extends Experiment {
     double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / (double)interval);
     double low = 1. / 8; // filter from 8 seconds interval
     double high = 1. / 3; // up to 3 seconds interval
-
-    initTestNorth = FFTResult.bandFilter(initTestNorth, samplesPerSecond, low, high);
-    initTestEast = FFTResult.bandFilter(initTestEast, samplesPerSecond, low, high);
-    initRefNorth = FFTResult.bandFilter(initRefNorth, samplesPerSecond, low, high);
+    // bandpass filters of order 2 in the range specified above
+    initTestNorth = FilterUtils.bandFilter(initTestNorth, samplesPerSecond, low, high, 2);
+    initTestEast = FilterUtils.bandFilter(initTestEast, samplesPerSecond, low, high, 2);
+    initRefNorth = FilterUtils.bandFilter(initRefNorth, samplesPerSecond, low, high, 2);
 
     // enforce length constraint -- all data must be the same length
     double[][] data = matchArrayLengths(initTestNorth, initTestEast, initRefNorth);
@@ -362,9 +363,10 @@ public class AzimuthExperiment extends Experiment {
       testEastWin = TimeSeriesUtils.detrend(testEastWin);
       refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
 
-      testNorthWin = FFTResult.bandFilter(testNorthWin, samplesPerSecond, low, high);
-      testEastWin = FFTResult.bandFilter(testEastWin, samplesPerSecond, low, high);
-      refNorthWin = FFTResult.bandFilter(refNorthWin, samplesPerSecond, low, high);
+      // bandpass filters of order 2 again
+      testNorthWin = FilterUtils.bandFilter(testNorthWin, samplesPerSecond, low, high, 2);
+      testEastWin = FilterUtils.bandFilter(testEastWin, samplesPerSecond, low, high, 2);
+      refNorthWin = FilterUtils.bandFilter(refNorthWin, samplesPerSecond, low, high, 2);
 
       jacobian =
           getDampedJacobianFunction(testNorthWin, testEastWin, refNorthWin, bestCorr, bestTheta);
