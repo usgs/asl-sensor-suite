@@ -503,7 +503,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
       minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
       // get factor of nyquist rate, again due to noise
       maxFreq = nyquistMultiplier * nyquist;
-      maxPlotFreq = PEAK_MULTIPLIER * nyquist; // i.e., 80% of nyquist
+      maxPlotFreq = PEAK_MULTIPLIER * nyquist; // always plot up to 90% of nyquist
       // maxFreq = extFreq;
     }
 
