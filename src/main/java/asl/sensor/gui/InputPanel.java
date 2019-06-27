@@ -437,7 +437,7 @@ public class InputPanel
             fireStateChanged();
           } catch (IOException e) {
             // this really shouldn't be an issue with embedded responses
-            responseErrorPopup(resultStr);
+            responseErrorPopup(resultStr, e);
             e.printStackTrace();
             return;
           }
@@ -458,8 +458,8 @@ public class InputPanel
               respFileNames[i].setText(file.getName());
               clear.setEnabled(true);
               clearAll.setEnabled(true);
-            } catch (IOException e) {
-              responseErrorPopup(file.getName());
+            } catch (IOException | NullPointerException e) {
+              responseErrorPopup(file.getName(), e);
               e.printStackTrace();
               return;
             }
@@ -526,10 +526,13 @@ public class InputPanel
     }
   }
 
-  private void responseErrorPopup(String filename) {
+  private void responseErrorPopup(String filename, Exception e) {
     JDialog errorBox = new JDialog();
     String errorMsg = "Error while loading in response file:\n" + filename
-        + "\nCheck that file exists and is formatted correctly.";
+        + "\nCheck that file exists and is formatted correctly.\n"
+        + "Here is the error that was produced during the scan "
+        + "(check terminal for more detail):\n"
+        + e.getMessage() + "\nThrown at: " + e.getStackTrace()[0];
     JOptionPane.showMessageDialog(errorBox, errorMsg, "Response Loading Error",
         JOptionPane.ERROR_MESSAGE);
   }
