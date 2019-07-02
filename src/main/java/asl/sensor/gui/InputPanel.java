@@ -315,13 +315,17 @@ public class InputPanel
       }
     }
 
-    responseArray = new String[responses.size()];
+    responseArray = new String[responses.size() + 1];
     for (int w = 0; w < responses.size(); ++w) {
       Pair<SensorType, ResolutionType> respToName = responses.get(w);
       responseArray[w] = ResponseUnits.getFilenameFromComponents(
           respToName.getFirst(), respToName.getSecond());
     }
-    Arrays.sort(responseArray, String::compareToIgnoreCase);
+    // add an extra line here, for the custom response loading option, not part of sorted list
+    responseArray[responseArray.length - 1] =  "Load external RESP file...";
+    // sort everything except that last entry, and ignore case in doing so
+    Arrays.sort(responseArray, 0, responseArray.length - 1, String::compareToIgnoreCase);
+
   }
 
   public static JSpinner timePickerFactory(Date start, Date end) {
@@ -409,13 +413,10 @@ public class InputPanel
       if (event.getSource() == resp) {
         // don't need a new thread because resp loading is pretty prompt
         // create new array with extra entry for a new string to load custom response
-        String[] nameArray = new String[responseArray.length + 1];
-        System.arraycopy(responseArray, 0, nameArray, 0, responseArray.length);
-        nameArray[nameArray.length - 1] =  "Load external RESP file...";
 
         int index = lastRespIndex;
         if (lastRespIndex < 0) {
-          index = nameArray.length - 1;
+          index = responseArray.length - 1;
         }
 
         JDialog dialog = new JDialog();
@@ -424,8 +425,8 @@ public class InputPanel
             "Select a response to load:",
             "RESP File Selection",
             JOptionPane.PLAIN_MESSAGE,
-            null, nameArray,
-            nameArray[index]);
+            null, responseArray,
+            responseArray[index]);
 
         final String resultStr = (String) result;
         // did user cancel operation?
@@ -434,7 +435,7 @@ public class InputPanel
         }
 
         // ignore case when sorting embeds -- sorting of the enums ignores case too
-        lastRespIndex = Arrays.binarySearch(responseArray, resultStr, String::compareToIgnoreCase);
+        lastRespIndex = Arrays.binarySearch(responseArray, 0, responseArray.length-1, resultStr, String::compareToIgnoreCase);
 
         // is the loaded string one of the embedded response files?
         // if it is, then we can get the enums of its name and load from them
