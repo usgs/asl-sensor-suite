@@ -33,6 +33,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -136,6 +137,10 @@ public class InputPanel
   private final JButton[] clearButton;
   private final JLabel[] channelType;
   private final JPanel[] chartSubpanels;
+
+  private String[] responseArray;
+  private List<Pair<SensorType, ResolutionType>> responses;
+
   private int activePlots = FILE_COUNT; // how much data is being displayed
   private DataStore dataStore; // holds data to be plotted in each chartpanel
   private JFileChooser fileChooser;
@@ -151,6 +156,8 @@ public class InputPanel
    * the inputted data plots into a single PNG file.
    */
   public InputPanel() {
+
+    initializeResponseArray();
 
     chartPanels = new ChartPanel[FILE_COUNT];
     seedLoaders = new FileOperationJButton[FILE_COUNT];
@@ -293,6 +300,30 @@ public class InputPanel
 
   }
 
+
+  /**
+   * Initializes the array holding the names of embedded responses
+   */
+  private void initializeResponseArray() {
+    SensorType[] sensors = SensorType.values();
+    ResolutionType[] resolutions = ResolutionType.values();
+
+    responses = new ArrayList<>();
+    for (SensorType sensor : sensors) {
+      for (ResolutionType resolution : resolutions) {
+        responses.add(new Pair<>(sensor, resolution));
+      }
+    }
+
+    responseArray = new String[responses.size()];
+    for (int w = 0; w < responses.size(); ++w) {
+      Pair<SensorType, ResolutionType> respToName = responses.get(w);
+      responseArray[w] = ResponseUnits.getFilenameFromComponents(
+          respToName.getFirst(), respToName.getSecond());
+    }
+    Arrays.sort(responseArray, String::compareToIgnoreCase);
+  }
+
   public static JSpinner timePickerFactory(Date start, Date end) {
     String formatterPattern = "yyyy.DDD | HH:mm:ss.SSS";
     JSpinner.DateEditor timeEditor;
@@ -377,24 +408,10 @@ public class InputPanel
 
       if (event.getSource() == resp) {
         // don't need a new thread because resp loading is pretty prompt
-        SensorType[] sensors = SensorType.values();
-        ResolutionType[] resolutions = ResolutionType.values();
-
-        Arrays.sort(sensors);
-        List<Pair<SensorType, ResolutionType>> responses = new ArrayList<>();
-        for (SensorType sensor : sensors) {
-          for (ResolutionType resolution : resolutions) {
-            responses.add(new Pair<>(sensor, resolution));
-          }
-        }
         // create new array with extra entry for a new string to load custom response
-        String[] nameArray = new String[responses.size() + 1];
-        for (int w = 0; w < responses.size(); ++w) {
-          Pair<SensorType, ResolutionType> respPair = responses.get(w);
-          nameArray[w] = ResponseUnits.getFilenameFromComponents(
-              respPair.getFirst(), respPair.getSecond());
-        }
-        nameArray[nameArray.length - 1] = "Load external RESP file...";
+        String[] nameArray = new String[responseArray.length + 1];
+        System.arraycopy(responseArray, 0, nameArray, 0, responseArray.length);
+        nameArray[nameArray.length - 1] =  "Load external RESP file...";
 
         int index = lastRespIndex;
         if (lastRespIndex < 0) {
@@ -411,15 +428,17 @@ public class InputPanel
             nameArray[index]);
 
         final String resultStr = (String) result;
-
         // did user cancel operation?
         if (resultStr == null) {
           return;
         }
 
+        // ignore case when sorting embeds -- sorting of the enums ignores case too
+        lastRespIndex = Arrays.binarySearch(responseArray, resultStr, String::compareToIgnoreCase);
+
         // is the loaded string one of the embedded response files?
-        // if it is, then we can
-        if ((lastRespIndex = Arrays.binarySearch(nameArray, resultStr)) > 0) {
+        // if it is, then we can get the enums of its name and load from them
+        if (lastRespIndex  >= 0) {
           // what was the index of the selected item?
           // final used here in the event of thread weirdness
           try {
