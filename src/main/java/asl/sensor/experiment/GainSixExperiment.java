@@ -3,7 +3,12 @@ package asl.sensor.experiment;
 import asl.sensor.input.DataStore;
 import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * Augmented version of relative gain experiment that includes
@@ -72,6 +77,9 @@ public class GainSixExperiment extends Experiment {
   @Override
   protected void backend(DataStore dataStore) {
 
+    // make sure that xyseriesdata is synchronized
+    xySeriesData = Collections.synchronizedList(xySeriesData);
+
     assignReferenceIndex(); // make sure the expected reference is used
     // while GUI will start with reference index as 0, the server-side code needs to set this
     // before the backend is run
@@ -134,17 +142,18 @@ public class GainSixExperiment extends Experiment {
     // now get the datasets to plug into the datastore
     String[] direction = new String[]{"north", "east", "vertical"};
 
-    for (int i = 0; i < DIMENSIONS; ++i) {
+    //for (int i = 0; i < DIMENSIONS; ++i) {
+    IntStream.range(0, DIMENSIONS).parallel().forEach(i -> {
       fireStateChange("Running calculations on " + direction[i] + " components...");
       componentBackends[i].runExperimentOnData(stores[i]);
-    }
+    });
 
-    for (Experiment exp : componentBackends) {
-      // each backend only has one plot's worth of data
-      // but is formatted as a list of per-plot data, so we use addAll
-      xySeriesData.addAll(exp.getData());
-      // also get the names of the data going in for use w/ PDF, metadata
-    }
+    // each backend only has one plot's worth of data
+    // but is formatted as a list of per-plot data, so we use addAll
+    // also get the names of the data going in for use w/ PDF, metadata
+    Arrays.stream(componentBackends).parallel().forEachOrdered(
+        exp -> xySeriesData.addAll(exp.getData())
+    );
 
     for (GainExperiment componentBackend : componentBackends) {
       dataNames.addAll(componentBackend.getInputNames());
@@ -178,7 +187,7 @@ public class GainSixExperiment extends Experiment {
    * @return Angle of second east sensor (radians) minus 90-degree offset
    * representing angle between north and east sensors; this is the angle sent
    * to the rotation function
-   * @see TimeSeriesUtils#rotateX
+   * @see asl.utils.TimeSeriesUtils#rotateX(double[], double[], double)
    */
   public double getEastAzimuthDegrees() {
     double eastDegrees = Math.toDegrees(eastAngle);
