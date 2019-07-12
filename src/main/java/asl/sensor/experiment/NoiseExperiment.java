@@ -5,6 +5,7 @@ import asl.utils.FFTResult;
 import asl.utils.input.DataBlock;
 import asl.utils.input.InstrumentResponse;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -144,9 +145,10 @@ public class NoiseExperiment extends Experiment {
       noise[i][0] = Complex.ZERO;
     }
 
+    final double[] finalFreqs = freqs;
     for (int i = 1; i < freqs.length; ++i) {
-      if (1 / freqs[i] > MAX_PLOT_PERIOD) {
-        continue;
+      if ((1. / finalFreqs[i]) > MAX_PLOT_PERIOD) {
+        return;
       }
 
       Complex p11 = spectra[0][i];
