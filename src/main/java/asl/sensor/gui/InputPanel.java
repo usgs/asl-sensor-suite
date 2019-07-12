@@ -302,7 +302,9 @@ public class InputPanel
 
 
   /**
-   * Initializes the array holding the names of embedded responses
+   * Initializes the array holding the names of embedded responses.
+   * This array is indexed to match a list of paired sensor/resolution types,
+   * sorted (case-insensitive) alphabetically.
    */
   private void initializeResponseArray() {
     SensorType[] sensors = SensorType.values();
