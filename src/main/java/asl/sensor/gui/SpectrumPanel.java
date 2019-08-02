@@ -161,7 +161,7 @@ public class SpectrumPanel extends ExperimentPanel {
       if (null == name) {
         continue;
       }
-      Color plotColor = ReportingUtils.COLORS[i % 3];
+      Color plotColor = getColor(i);
       seriesColorMap.put(name, plotColor);
     }
   }

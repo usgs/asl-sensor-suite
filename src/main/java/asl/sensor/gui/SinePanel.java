@@ -148,7 +148,7 @@ public class SinePanel extends ExperimentPanel {
 
     XYSeriesCollection timeseries = expResult.getData().get(0);
     for (int i = 0; i < timeseries.getSeriesCount(); ++i) {
-      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
+      Color toColor = getColor(i);
       String curve = (String) timeseries.getSeriesKey(i);
       seriesColorMap.put(curve, toColor);
     }

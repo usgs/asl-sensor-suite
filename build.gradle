@@ -19,6 +19,7 @@ dependencies {
 
     compile group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.+'
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.+'
+    compile group: 'commons-configuration', name: 'commons-configuration', version: '1.7'
 
     compile group: 'net.sf.py4j', name: 'py4j', version: '0.10.7'
 

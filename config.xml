@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <LocalPaths>
+    <!-- Controls where file choosers for various file types will first look for data. -->
+    <DataPath>data</DataPath>
+    <RespPath>responses</RespPath>
+    <ReportPath>~</ReportPath>
+  </LocalPaths>
+  <FDSNPaths>
+    <!-- Protocol for web services, usually http or https -->
+    <Protocol>http</Protocol>
+    <!-- Domain. The default is service.iris.edu -->
+    <Domain>vmdevwb.cr.usgs.gov</Domain>
+    <!-- Service path. The default is fdsnws -->
+    <Service>metadatairis/fdsnws</Service>
+  </FDSNPaths>
+  <VisualOptions>
+    <!-- When set to true, uses orange and teal in reports instead of red and blue -->
+    <ColorblindFriendly>True</ColorblindFriendly>
+    <!-- Integer. Controls line thickness increase to improve visual readability -->
+    <LineThicknessIncrease>0</LineThicknessIncrease>
+  </VisualOptions>
+</Configuration>
