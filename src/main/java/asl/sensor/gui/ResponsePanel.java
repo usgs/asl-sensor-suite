@@ -295,7 +295,7 @@ public class ResponsePanel extends ExperimentPanel {
     XYSeriesCollection argSeries = timeSeries.get(1);
 
     for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
-      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
+      Color toColor = getColor(i);
       String magName = (String) magSeries.getSeriesKey(i);
       String argName = (String) argSeries.getSeriesKey(i);
       seriesColorMap.put(magName, toColor);
