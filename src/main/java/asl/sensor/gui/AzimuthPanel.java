@@ -242,7 +242,7 @@ public class AzimuthPanel extends ExperimentPanel {
 
       stroke = new BasicStroke(width, cap, join, 10f);
       polarRenderer.setSeriesStroke(i, stroke);
-      polarRenderer.setSeriesPaint(i, ReportingUtils.COLORS[i%3]);
+      polarRenderer.setSeriesPaint(i, getColor(i));
     }
     plot.clearCornerTextItems();
     // include result information -- angle estimation, start/end times in plot
@@ -277,7 +277,7 @@ public class AzimuthPanel extends ExperimentPanel {
     estimationPlot.mapDatasetToRangeAxis(1, 1);
 
     for (int i = 0; i < estimationPlot.getRendererCount(); ++i) {
-      estimationPlot.getRenderer(i).setSeriesPaint(0, ReportingUtils.COLORS[i%3]);
+      estimationPlot.getRenderer(i).setSeriesPaint(0, getColor(i));
       BasicStroke stroke = (BasicStroke) estimationPlot.getRenderer(i).getSeriesStroke(0);
       if (stroke == null) {
         stroke = (BasicStroke) renderer.getBaseStroke();

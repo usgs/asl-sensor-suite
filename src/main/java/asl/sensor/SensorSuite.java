@@ -3,6 +3,7 @@ package asl.sensor;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.SwingWorkerSingleton;
+import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
 import asl.utils.ReportingUtils;
 import java.awt.Dimension;
@@ -52,7 +53,7 @@ public class SensorSuite extends JPanel
   private final JButton generate;
   private final JButton savePDF; // run all calculations
   // used to store current directory locations
-  private String saveDirectory = System.getProperty("user.home");
+  private String saveDirectory;
 
   /**
    * Creates the main window of the program when called (Three main panels: the top panel for
@@ -60,8 +61,9 @@ public class SensorSuite extends JPanel
    * miniSEED files; the side panel for most file-IO operations
    */
   private SensorSuite() {
-
     super();
+
+    saveDirectory = Configuration.getInstance().getDefaultOutputFolder();
 
     // set up experiment panes in a tabbed pane
     tabbedPane = new JTabbedPane();

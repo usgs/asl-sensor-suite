@@ -2,6 +2,7 @@ package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.Experiment;
+import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
 import asl.utils.ReportingUtils;
 import java.awt.BasicStroke;
@@ -145,6 +146,20 @@ public abstract class ExperimentPanel
     save.setAlignmentX(Component.CENTER_ALIGNMENT);
   }
 
+  static Color getColor(int idx) {
+    if (Configuration.getInstance().useColorblindColors()) {
+      return ReportingUtils.COLORS[idx % ReportingUtils.COLORS.length];
+    }
+    switch (idx % 3) {
+      case 0:
+        return Color.RED;
+      case 1:
+        return Color.BLUE;
+      default:
+        return Color.GREEN;
+    }
+  }
+
   /**
    * Append text to a chart's title (used for distinguishing random cal types).
    *
@@ -272,9 +287,8 @@ public abstract class ExperimentPanel
     XYItemRenderer renderer = xyPlot.getRenderer();
 
     if (seriesColorMap.size() == 0) {
-      int modulus = ReportingUtils.COLORS.length;
       for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
-        renderer.setSeriesPaint(seriesIndex, ReportingUtils.COLORS[seriesIndex % modulus]);
+        renderer.setSeriesPaint(seriesIndex, getColor(seriesIndex));
       }
     }
 
@@ -284,7 +298,8 @@ public abstract class ExperimentPanel
       if (stroke == null) {
         stroke = (BasicStroke) renderer.getBaseStroke();
       }
-      float width = stroke.getLineWidth() + 2f;
+      float widthOffset = Configuration.getInstance().getLineWidthOffset();
+      float width = stroke.getLineWidth() + widthOffset;
       int join = stroke.getLineJoin();
       int cap = stroke.getEndCap();
 
@@ -318,7 +333,7 @@ public abstract class ExperimentPanel
         int join = stroke.getLineJoin();
         int cap = stroke.getEndCap();
 
-        float[] dashing = new float[]{1, 6};
+        float[] dashing = new float[]{10, 2};
 
         stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
         renderer.setSeriesStroke(seriesIndex, stroke);

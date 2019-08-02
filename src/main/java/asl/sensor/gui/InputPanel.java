@@ -1,5 +1,6 @@
 package asl.sensor.gui;
 
+import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStore.TimeRangeException;
 import asl.utils.ReportingUtils;
@@ -33,7 +34,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -145,8 +145,8 @@ public class InputPanel
   private DataStore dataStore; // holds data to be plotted in each chartpanel
   private JFileChooser fileChooser;
   // used to store current directory locations
-  private String seedDirectory = "data";
-  private String respDirectory = "responses";
+  private String seedDirectory;
+  private String respDirectory;
   private int lastRespIndex;
   private String saveDirectory = System.getProperty("user.home");
 
@@ -156,6 +156,9 @@ public class InputPanel
    * the inputted data plots into a single PNG file.
    */
   public InputPanel() {
+
+    seedDirectory = Configuration.getInstance().getDefaultDataFolder();
+    respDirectory = Configuration.getInstance().getDefaultRespFolder();
 
     initializeResponseArray();
 
@@ -630,16 +633,16 @@ public class InputPanel
       MaskFormatter locationFormatter = new MaskFormatter("##");
       MaskFormatter channelFormatter = new MaskFormatter("UUA");
       JFormattedTextField networkField = new JFormattedTextField(networkFormatter);
-      networkField.setText("IU");
+      networkField.setText("");
       networkField.setMinimumSize(networkField.getPreferredSize());
       JTextField stationField = new JTextField();
-      stationField.setText("ANMO");
+      stationField.setText("");
       stationField.setMinimumSize(stationField.getPreferredSize());
       JFormattedTextField locationField = new JFormattedTextField(locationFormatter);
-      locationField.setText("00");
+      locationField.setText("");
       locationField.setMinimumSize(locationField.getPreferredSize());
       JFormattedTextField channelField = new JFormattedTextField(channelFormatter);
-      channelField.setText("LHZ");
+      channelField.setText("");
       channelField.setMinimumSize(channelField.getPreferredSize());
 
       Date start = null;
@@ -671,14 +674,16 @@ public class InputPanel
       endPicker.setValue(defaultEndValue);
 
       JPanel queryPanel = new JPanel();
-      queryPanel.setLayout(new GridLayout(6, 2));
-      queryPanel.add(new JLabel("Network:"));
+      queryPanel.setLayout(new GridLayout(7, 2));
+      queryPanel.add(new JLabel("NOTE:"));
+      queryPanel.add(new JLabel("Wildcards are not supported!"));
+      queryPanel.add(new JLabel("Network: (ex: IU)"));
       queryPanel.add(networkField);
-      queryPanel.add(new JLabel("Station:"));
+      queryPanel.add(new JLabel("Station: (ex: ANMO)"));
       queryPanel.add(stationField);
-      queryPanel.add(new JLabel("Location:"));
+      queryPanel.add(new JLabel("Location: (ex: 00)"));
       queryPanel.add(locationField);
-      queryPanel.add(new JLabel("Channel:"));
+      queryPanel.add(new JLabel("Channel: (ex: LHZ)"));
       queryPanel.add(channelField);
       queryPanel.add(new JLabel("Start time (UTC):"));
       queryPanel.add(startPicker);
@@ -842,6 +847,10 @@ public class InputPanel
   private void threadedFromFDSN(final int index, final String net,
       final String sta, final String loc, final String cha, final long start, final long end) {
 
+    String scheme = Configuration.getInstance().getFDSNProtocol();
+    String host = Configuration.getInstance().getFDSNDomain();
+    String path = Configuration.getInstance().getFDSNPath();
+
     InputPanel thisPanel = this; // handle for JOptionPane if no data was found
     String filename = "FDSN query params: " + net + "_" + sta + "_" + loc + "_" + cha;
     SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
@@ -855,7 +864,8 @@ public class InputPanel
 
         try {
           DataBlock blockToLoad =
-              TimeSeriesUtils.getTimeSeriesFromFDSNQuery(net, sta, loc, cha, start, end);
+              TimeSeriesUtils.getTimeSeriesFromFDSNQuery(scheme, host, path,
+                  net, sta, loc, cha, start, end);
           dataStore.setBlock(index, blockToLoad, activePlots);
         } catch (CodecException | IOException e) {
           returnedErrMsg = "The queried data has an integrity issue preventing parsing.";
