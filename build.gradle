@@ -118,4 +118,5 @@ task gitSubmodule(type: Exec) {
 }
 
 build.dependsOn copyJar, copyServerJar, gitSubmodule
+compileJava.dependsOn(gitSubmodule)
 processTestResources.dependsOn gitSubmodule
