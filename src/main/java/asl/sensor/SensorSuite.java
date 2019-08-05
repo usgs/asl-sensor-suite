@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -163,6 +164,12 @@ public class SensorSuite extends JPanel
   public static void main(String[] args) {
     //Schedule a job for the event dispatch thread:
     //creating and showing this application's GUI.
+
+    // parse in configuration file if one is specified, otherwise default to config.xml
+    // in working directory, if it exists -- if it doesn't, populate with default values
+    if (args.length > 0) {
+      Configuration.getInstance(args[0]);
+    }
 
     // lambda method constructs a Runnable
     SwingUtilities.invokeLater(() -> {

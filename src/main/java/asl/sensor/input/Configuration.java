@@ -20,9 +20,9 @@ public class Configuration {
   private String fdsnDomain = "service.iris.edu";
   private String fdsnService = "fdsnws";
 
-  private Configuration() {
+  private Configuration(String configLocation) {
     try {
-      XMLConfiguration config = new XMLConfiguration(CONFIG_PATH);
+      XMLConfiguration config = new XMLConfiguration(configLocation);
       config.load();
 
       String defaultDataFolderParam = config.getString("LocalPaths.DataPath");
@@ -65,7 +65,14 @@ public class Configuration {
 
   synchronized public static Configuration getInstance() {
     if (instance == null) {
-        instance = new Configuration();
+        instance = new Configuration(CONFIG_PATH);
+    }
+    return instance;
+  }
+
+  synchronized public static Configuration getInstance(String configLocation) {
+    if (instance == null) {
+      instance = new Configuration(configLocation);
     }
     return instance;
   }
