@@ -847,9 +847,11 @@ public class InputPanel
   private void threadedFromFDSN(final int index, final String net,
       final String sta, final String loc, final String cha, final long start, final long end) {
 
-    String scheme = Configuration.getInstance().getFDSNProtocol();
-    String host = Configuration.getInstance().getFDSNDomain();
-    String path = Configuration.getInstance().getFDSNPath();
+    Configuration config = Configuration.getInstance();
+    String scheme = config.getFDSNProtocol();
+    String host = config.getFDSNDomain();
+    String path = config.getFDSNPath();
+    int port = config.getFDSNPort();
 
     InputPanel thisPanel = this; // handle for JOptionPane if no data was found
     String filename = "FDSN query params: " + net + "_" + sta + "_" + loc + "_" + cha;
@@ -864,7 +866,7 @@ public class InputPanel
 
         try {
           DataBlock blockToLoad =
-              TimeSeriesUtils.getTimeSeriesFromFDSNQuery(scheme, host, path,
+              TimeSeriesUtils.getTimeSeriesFromFDSNQuery(scheme, host, port, path,
                   net, sta, loc, cha, start, end);
           dataStore.setBlock(index, blockToLoad, activePlots);
         } catch (CodecException | IOException e) {
