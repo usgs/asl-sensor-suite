@@ -13,6 +13,8 @@
     <Domain>vmdevwb.cr.usgs.gov</Domain>
     <!-- Service path. The default is fdsnws -->
     <Service>metadatairis/fdsnws</Service>
+    <!-- Service port. The default is 80-->
+    <Port>80</Port>
   </FDSNPaths>
   <VisualOptions>
     <!-- When set to true, uses orange and teal in reports instead of red and blue -->

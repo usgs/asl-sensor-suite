@@ -27,6 +27,7 @@ public class Configuration {
   private String fdsnProtocol = "http";
   private String fdsnDomain = "service.iris.edu";
   private String fdsnService = "fdsnws";
+  private int fdsnPort = 80;
 
   private Configuration(String configLocation) {
     try {
@@ -59,6 +60,8 @@ public class Configuration {
       if (fdsnServiceParam != null) {
         fdsnService = fdsnServiceParam;
       }
+      int fdsnPort = config.getInt("FDSNPaths.Port", 80);
+
 
       useColorblindColors =
           config.getBoolean("VisualOptions.ColorblindFriendly", true);
@@ -182,6 +185,17 @@ public class Configuration {
    */
   public String getFDSNPath() {
     return fdsnService;
+  }
+
+  /**
+   * Gets the port to use for FDSN data acquisition. This is an integer value.
+   * If not set in the configuration file it defaults to 80.
+   *
+   * The property is defined from Configuration.FDSNPaths.Port
+   * @return The FDSN webservice connection port.
+   */
+  public int getFDSNPort() {
+    return fdsnPort;
   }
 
 }
