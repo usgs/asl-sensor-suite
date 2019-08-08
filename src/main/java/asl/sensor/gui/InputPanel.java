@@ -866,7 +866,7 @@ public class InputPanel
 
         try {
           DataBlock blockToLoad =
-              TimeSeriesUtils.getTimeSeriesFromFDSNQuery(scheme, host, port, path,
+              TimeSeriesUtils.getDataBlockFromFDSNQuery(scheme, host, port, path,
                   net, sta, loc, cha, start, end);
           dataStore.setBlock(index, blockToLoad, activePlots);
         } catch (CodecException | IOException e) {
