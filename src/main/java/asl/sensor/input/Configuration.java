@@ -1,7 +1,19 @@
 package asl.sensor.input;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.CharBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Objects;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.log4j.Logger;
 
 /**
  * Configuration file including parameters that have been requested for features by program users.
@@ -15,7 +27,8 @@ public class Configuration {
 
   private static Configuration instance;
 
-  private static final String CONFIG_PATH = "config.xml";
+  private static final String CONFIG_PATH = "sensor-suite-config.xml";
+  private static final Logger logger = Logger.getLogger(Configuration.class);
 
   private String defaultDataFolder = "data";
   private String defaultRespFolder = "responses";
@@ -30,9 +43,11 @@ public class Configuration {
   private int fdsnPort = 80;
 
   private Configuration(String configLocation) {
+    logger.info("Attempting reading in config file from " + configLocation);
     try {
       XMLConfiguration config = new XMLConfiguration(configLocation);
       config.load();
+      config.setAutoSave(true);
 
       String defaultDataFolderParam = config.getString("LocalPaths.DataPath");
       if (defaultDataFolderParam != null) {
@@ -60,7 +75,7 @@ public class Configuration {
       if (fdsnServiceParam != null) {
         fdsnService = fdsnServiceParam;
       }
-      int fdsnPort = config.getInt("FDSNPaths.Port", 80);
+      fdsnPort = config.getInt("FDSNPaths.Port", 80);
 
 
       useColorblindColors =
@@ -68,10 +83,28 @@ public class Configuration {
       lineWidthOffset =
           config.getInt("VisualOptions.LineThicknessIncrease", 2);
 
+      try {
+        logger.info("Succesfully loaded in configuration: " + config.getFile().getCanonicalPath());
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     } catch (ConfigurationException e) {
-      System.out.println("Error in processing configuration file! Using default settings.");
-      System.out.println("Check that config.xml exists in the program directory.");
+      logger.error("Error encountered while reading XML file, load failed, using defaults", e);
     }
+  }
+
+  private static boolean copyEmbedXML(String pathToPlaceFile){
+    File fileOut = new File(pathToPlaceFile);
+    File fileIn = new File( Objects.requireNonNull(Configuration.class.getClassLoader()
+        .getResource(CONFIG_PATH)).getFile());
+    logger.debug("XML FILE EXISTS IN RESOURCES? (expect true) " + fileIn.exists());
+    try {
+      Files.copy(fileIn.toPath(), fileOut.toPath());
+      return true;
+    } catch (IOException e) {
+      logger.warn("Could not copy over the file...", e);
+    }
+    return false;
   }
 
   /**
@@ -79,10 +112,7 @@ public class Configuration {
    * @return the current configuration instance
    */
   synchronized public static Configuration getInstance() {
-    if (instance == null) {
-        instance = new Configuration(CONFIG_PATH);
-    }
-    return instance;
+    return getInstance(System.getProperty("user.dir") + File.separator + CONFIG_PATH);
   }
 
   /**
@@ -93,6 +123,22 @@ public class Configuration {
    */
   synchronized public static Configuration getInstance(String configLocation) {
     if (instance == null) {
+      File config = new File(configLocation);
+      if (!config.exists()) {
+        boolean success = copyEmbedXML(configLocation);
+        if (!success) {
+          logger.warn("Could not find or write to specified config location: " + configLocation);
+          logger.warn("Will attempt to initialize config file at user home directory.");
+          configLocation = System.getProperty("user.home") + File.separator + CONFIG_PATH;
+          config = new File(configLocation);
+          if (!config.exists()) {
+            success = copyEmbedXML(configLocation);
+            if (!success) {
+              logger.warn("Could not find or write to user home directory either!");
+            }
+          }
+        }
+      }
       instance = new Configuration(configLocation);
     }
     return instance;
