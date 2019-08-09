@@ -168,13 +168,12 @@ public class SensorSuite extends JPanel
     // in working directory, if it exists -- if it doesn't, populate with default values
     if (args.length > 0) {
       Configuration.getInstance(args[0]);
+    } else {
+      Configuration.getInstance();
     }
 
     // lambda method constructs a Runnable
-    SwingUtilities.invokeLater(() -> {
-      Logger.getRootLogger().setLevel(Level.WARN);
-      createAndShowGUI();
-    });
+    SwingUtilities.invokeLater(SensorSuite::createAndShowGUI);
 
   }
 
