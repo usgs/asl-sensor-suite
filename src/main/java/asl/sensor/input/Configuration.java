@@ -1,7 +1,11 @@
 package asl.sensor.input;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Objects;
 import org.apache.commons.configuration.ConfigurationException;
@@ -88,14 +92,17 @@ public class Configuration {
 
   private static boolean copyEmbedXML(String pathToPlaceFile){
     File fileOut = new File(pathToPlaceFile);
-    File fileIn = new File( Objects.requireNonNull(Configuration.class.getClassLoader()
-        .getResource(CONFIG_PATH)).getFile());
-    logger.debug("XML FILE EXISTS IN RESOURCES? (expect true) " + fileIn.exists());
-    try {
-      Files.copy(fileIn.toPath(), fileOut.toPath());
-      return true;
+    try (InputStream stream =
+        Configuration.class.getClassLoader().getResourceAsStream(CONFIG_PATH)) {
+      try {
+        logger.info("Copying over embedded jar file to absolute path " + fileOut.getAbsolutePath());
+        Files.copy(stream, fileOut.toPath());
+        return true;
+      } catch (IOException e) {
+        logger.warn("Could not copy over the file...", e);
+      }
     } catch (IOException e) {
-      logger.warn("Could not copy over the file...", e);
+      logger.error("Major error: config XML file not part of resources!!");
     }
     return false;
   }
