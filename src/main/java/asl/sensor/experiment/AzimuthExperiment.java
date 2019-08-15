@@ -1,5 +1,10 @@
 package asl.sensor.experiment;
 
+import asl.utils.FFTResult;
+import asl.utils.FilterUtils;
+import asl.utils.NumericUtils;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,11 +23,7 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
@@ -84,30 +85,63 @@ public class AzimuthExperiment extends Experiment {
   }
 
   private String getAzimuthResults() {
-    StringBuilder angleStr = new StringBuilder();
-    double angle = getFitAngle(); // angle reported should be in degrees
-    angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.get().format(angle));
-    double result = ((offset + angle) % 360 + 360) % 360;
 
-    angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(offset)).append(" = ");
-    angleStr.append(DECIMAL_FORMAT.get().format(result)).append(" (+/- ");
-    angleStr.append(DECIMAL_FORMAT.get().format(uncertainty)).append(")");
+    String name = "N";
+    double angle = getFitAngle();
+
+    return getAzimuthResultForAngleParameters(name, angle, offset, uncertainty, enoughPts);
+  }
+
+  private String getAzimuthResultsEast() {
+
+    String name = "E";
+    double angle = (getFitAngle() + 90) % 360;
+    // angle reported should be in degrees, so add 90 for east, modulus is 360
+
+    return getAzimuthResultForAngleParameters(name, angle, offset, uncertainty, enoughPts);
+  }
+
+  private static String getAzimuthResultForAngleParameters(
+      String name, double angle, double offset, double uncertainty, boolean enoughPts) {
+    StringBuilder angleStr = new StringBuilder();
+    // angle reported should be in degrees, so use 360 as modulus
+    double result = ((offset + angle) % 360 + 360) % 360;
+    angleStr.append(name).append(" FIT ANGLE: ")
+        .append(DECIMAL_FORMAT.get().format(angle));
+
+    // include offset value if nonzero
+    if (offset != 0.) {
+      angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(offset)).append(" = ")
+          .append(DECIMAL_FORMAT.get().format(result));
+    }
+
+    angleStr.append(" (+/- ")
+        .append(DECIMAL_FORMAT.get().format(uncertainty)).append(")");
     if (!enoughPts) {
       angleStr.append(" | WARNING: SMALL RANGE");
     }
+
     return angleStr.toString();
   }
 
   @Override
   public String[] getDataStrings() {
     // get azimuth (with offset) and uncertainty
-    return new String[]{getAzimuthResults()};
+    return new String[]{getAzimuthResults(), getAzimuthResultsEast()};
   }
 
   @Override
   public String[] getInsetStrings() {
     // set the start and end strings separately for compatibility with polar plot interface
-    return new String[]{getAzimuthResults(), getFormattedStartDate(), getFormattedEndDate()};
+    return new String[]{getAzimuthResults(), getAzimuthResultsEast(),
+        getFormattedStartDate(), getFormattedEndDate()};
+  }
+
+  @Override
+  public String getReportString() {
+    String output = super.getReportString() + "\n(Offset angle for reference was " + offset + ")";
+
+    return output;
   }
 
   /**
@@ -183,6 +217,7 @@ public class AzimuthExperiment extends Experiment {
     DataBlock testEastBlock = dataStore.getXthLoadedBlock(2);
     DataBlock refNorthBlock = dataStore.getXthLoadedBlock(3);
 
+    dataNames = new ArrayList<>();
     dataNames.add(testNorthBlock.getName());
     dataNames.add(testEastBlock.getName());
     dataNames.add(refNorthBlock.getName());
@@ -240,10 +275,10 @@ public class AzimuthExperiment extends Experiment {
     double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / (double)interval);
     double low = 1. / 8; // filter from 8 seconds interval
     double high = 1. / 3; // up to 3 seconds interval
-
-    initTestNorth = FFTResult.bandFilter(initTestNorth, samplesPerSecond, low, high);
-    initTestEast = FFTResult.bandFilter(initTestEast, samplesPerSecond, low, high);
-    initRefNorth = FFTResult.bandFilter(initRefNorth, samplesPerSecond, low, high);
+    // bandpass filters of order 2 in the range specified above
+    initTestNorth = FilterUtils.bandFilter(initTestNorth, samplesPerSecond, low, high, 2);
+    initTestEast = FilterUtils.bandFilter(initTestEast, samplesPerSecond, low, high, 2);
+    initRefNorth = FilterUtils.bandFilter(initRefNorth, samplesPerSecond, low, high, 2);
 
     // enforce length constraint -- all data must be the same length
     double[][] data = matchArrayLengths(initTestNorth, initTestEast, initRefNorth);
@@ -328,9 +363,10 @@ public class AzimuthExperiment extends Experiment {
       testEastWin = TimeSeriesUtils.detrend(testEastWin);
       refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
 
-      testNorthWin = FFTResult.bandFilter(testNorthWin, samplesPerSecond, low, high);
-      testEastWin = FFTResult.bandFilter(testEastWin, samplesPerSecond, low, high);
-      refNorthWin = FFTResult.bandFilter(refNorthWin, samplesPerSecond, low, high);
+      // bandpass filters of order 2 again
+      testNorthWin = FilterUtils.bandFilter(testNorthWin, samplesPerSecond, low, high, 2);
+      testEastWin = FilterUtils.bandFilter(testEastWin, samplesPerSecond, low, high, 2);
+      refNorthWin = FilterUtils.bandFilter(refNorthWin, samplesPerSecond, low, high, 2);
 
       jacobian =
           getDampedJacobianFunction(testNorthWin, testEastWin, refNorthWin, bestCorr, bestTheta);

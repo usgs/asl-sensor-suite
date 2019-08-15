@@ -4,6 +4,11 @@ import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.output.CalResult;
+import asl.utils.ReportingUtils;
+import asl.utils.ResponseUnits;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -14,6 +19,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -37,11 +43,7 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.SineExperiment;
 import asl.sensor.experiment.StepExperiment;
 import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import org.jfree.ui.RectangleAnchor;
@@ -71,17 +73,7 @@ public class CalProcessingServer {
    * @return List of names of embedded resps (will match common sensor & digitizer gain setups)
    */
   public static String[] getEmbeddedRESPFilenames() {
-    Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
-
-    List<String> names = new ArrayList<>(respFilenames);
-    Collections.sort(names);
-    String[] nameArray = new String[names.size()];
-    for (int k = 0; k < nameArray.length; ++k) {
-      String name = names.get(k);
-      name = name.replace("resps/", "");
-      nameArray[k] = name;
-    }
-    return nameArray;
+    return ResponseUnits.enumerateAllResponseFilenames();
   }
 
   public static void main(String[] args) {
@@ -203,10 +195,11 @@ public class CalProcessingServer {
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
     ds.setResponse(1, ir);
-    ds.trim(start, end);
     if (lowFreq) {
       ds.resample(10.); // more than 5 Hz should be unnecessary for low-frequency curve fitting
     }
+    ds.trimToCommonTime();
+    ds.trim(start, end);
 
     return runExpGetDataRand(ds, lowFreq);
   }
@@ -504,6 +497,9 @@ public class CalProcessingServer {
     gainSix.runExperimentOnData(ds);
 
     String[] dataStrings = gainSix.getDataStrings();
+    double northAzimuth = gainSix.getNorthAzimuthDegrees();
+    double eastAzimuth = gainSix.getEastAzimuthDegrees();
+    double[][] statistics = gainSix.getStatistics();
 
     List<XYSeriesCollection> results = gainSix.getData();
 
@@ -547,9 +543,11 @@ public class CalProcessingServer {
           RectangleAnchor.TOP_RIGHT);
       plot.addAnnotation(title);
 
+      BasicStroke stroke;
+
       // now, make everything thicker!
       for (int seriesIndex = 0; seriesIndex < timeseriesIn.getSeriesCount(); ++seriesIndex) {
-        BasicStroke stroke = (BasicStroke) plot.getRenderer().getSeriesStroke(seriesIndex);
+        stroke = (BasicStroke) plot.getRenderer().getSeriesStroke(seriesIndex);
         if (stroke == null) {
           stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
         }
@@ -559,7 +557,7 @@ public class CalProcessingServer {
 
         stroke = new BasicStroke(width, cap, join, 10f);
         plot.getRenderer().setSeriesStroke(seriesIndex, stroke);
-        plot.getRenderer().setSeriesPaint(seriesIndex, COLORS[i % 3]);
+        plot.getRenderer().setSeriesPaint(seriesIndex, COLORS[seriesIndex % 3]);
       }
 
       LogarithmicAxis periodAxis = new LogarithmicAxis("Period (s)");
@@ -575,18 +573,11 @@ public class CalProcessingServer {
       // ensure that NLNM lines are bolder, colored black
       XYItemRenderer renderer = plot.getRenderer();
       // series index 0 - ref data; series index 1 - other data; series index 2 - NLNM plot
-      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(2);
-      if (stroke == null) {
-        stroke = (BasicStroke) renderer.getBaseStroke();
-      }
+      stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
       stroke = new BasicStroke(stroke.getLineWidth() * 2);
       renderer.setSeriesStroke(2, stroke);
       renderer.setSeriesPaint(2, new Color(0, 0, 0));
     }
-
-    double northAzimuth = gainSix.getNorthAzimuthDegrees();
-    double eastAzimuth = gainSix.getEastAzimuthDegrees();
-    double[][] statistics = gainSix.getStatistics();
 
     BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];

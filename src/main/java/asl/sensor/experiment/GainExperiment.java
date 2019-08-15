@@ -1,9 +1,9 @@
 package asl.sensor.experiment;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
+import asl.utils.FFTResult;
+import asl.utils.NumericUtils;
+import asl.utils.input.InstrumentResponse;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -93,7 +93,6 @@ public class GainExperiment extends Experiment {
   @Override
   protected void backend(final DataStore dataStore) {
 
-    referenceIndex = 0;
     lowPeriod = DEFAULT_LOW_BOUND;
     highPeriod = DEFAULT_UP_BOUND;
 
@@ -101,12 +100,15 @@ public class GainExperiment extends Experiment {
     // indices here is a linear array pointing to where
     // the data is in the passed-in data store, mainly to find relevant resps
 
+    int maxLength = Integer.MAX_VALUE;
+
     for (int i = 0; i < NUMBER_TO_LOAD; ++i) {
       // XthFullyLoaded starts at 1 (i.e., get first full-loaded), not 0
       int idx = dataStore.getXthFullyLoadedIndex(i + 1);
       indices[i] = idx;
       dataNames.add(dataStore.getBlock(idx).getName());
       dataNames.add(dataStore.getResponse(idx).getName());
+      maxLength = Math.min(maxLength, dataStore.getBlock(idx).size());
     }
 
     gainStage1 = new double[NUMBER_TO_LOAD];
@@ -130,7 +132,7 @@ public class GainExperiment extends Experiment {
       int idx = indices[i];
       String name = "PSD " + dataStore.getBlock(idx).getName() + " [" + idx + "]";
       XYSeries xys = new XYSeries(name);
-      fftResults[i] = dataStore.getPSD(idx);
+      fftResults[i] = dataStore.getPSD(idx, maxLength);
       Complex[] fft = fftResults[i].getFFT();
       double[] freqs = fftResults[i].getFreqs();
       // false, because we don't want to plot in frequency space

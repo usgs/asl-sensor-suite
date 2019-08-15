@@ -44,15 +44,7 @@ As a collection, this software is licensed under the GPL.
 ###### JFreeChart
 	(C) Copyright 2000-2013, by Object Refinery Limited and Contributors.   
 	URL: http://www.jfree.org/jfreechart/  
-	License: GNU Lesser General Public License (LGPL)  
-
-###### SeisFile
-	URL: http://www.seis.sc.edu/seisFile.html  
-	License: GNU Public License (GPL) 3.0  
-
-###### SeedCodec
-	URL: http://www.seis.sc.edu/seedCodec.html  
-	License: GNU Public License (GPL) 3.0  
+	License: GNU Lesser General Public License (LGPL) 
 
 ###### PDFBox
 	Copyright 2015 The Apache Software Foundation.  

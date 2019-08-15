@@ -3,7 +3,7 @@ package asl.sensor.gui;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.NoiseNineExperiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
+import asl.utils.ReportingUtils;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -244,7 +244,7 @@ public class NoiseNinePanel extends NoisePanel {
 
       for (int i = 0; i < NOISE_PLOT_COUNT; ++i) {
         String name = (String) timeseries.getSeriesKey(i);
-        Color plotColor = ReportingUtils.COLORS[i % 3];
+        Color plotColor = getColor(i);
         seriesColorMap.put(name, plotColor);
         if (i >= 3) {
           seriesDashedSet.add(name);

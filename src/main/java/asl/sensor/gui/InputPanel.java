@@ -1,11 +1,17 @@
 package asl.sensor.gui;
 
-import asl.sensor.input.DataBlock;
+import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.sensor.input.DataStore.TimeRangeException;
+import asl.utils.ReportingUtils;
+import asl.utils.ResponseUnits;
+import asl.utils.ResponseUnits.ResolutionType;
+import asl.utils.ResponseUnits.SensorType;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.SeisFileException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -13,38 +19,50 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import javax.imageio.ImageIO;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SpinnerDateModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.JTextComponent;
+import javax.swing.text.MaskFormatter;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
@@ -109,8 +127,8 @@ public class InputPanel
   private final JSlider leftSlider;
   private final JSlider rightSlider;
   private final JScrollPane inputScrollPane;
-  private final EditableDateDisplayPanel startDate;
-  private final EditableDateDisplayPanel endDate;
+  private final JSpinner startDate;
+  private final JSpinner endDate;
   private final FileOperationJButton[] seedLoaders;
   private final FileOperationJButton[] seedAppenders;
   private final JTextComponent[] seedFileNames;
@@ -119,12 +137,16 @@ public class InputPanel
   private final JButton[] clearButton;
   private final JLabel[] channelType;
   private final JPanel[] chartSubpanels;
+
+  private String[] responseArray;
+  private List<Pair<SensorType, ResolutionType>> responses;
+
   private int activePlots = FILE_COUNT; // how much data is being displayed
   private DataStore dataStore; // holds data to be plotted in each chartpanel
   private JFileChooser fileChooser;
   // used to store current directory locations
-  private String seedDirectory = "data";
-  private String respDirectory = "responses";
+  private String seedDirectory;
+  private String respDirectory;
   private int lastRespIndex;
   private String saveDirectory = System.getProperty("user.home");
 
@@ -134,6 +156,11 @@ public class InputPanel
    * the inputted data plots into a single PNG file.
    */
   public InputPanel() {
+
+    seedDirectory = Configuration.getInstance().getDefaultDataFolder();
+    respDirectory = Configuration.getInstance().getDefaultRespFolder();
+
+    initializeResponseArray();
 
     chartPanels = new ChartPanel[FILE_COUNT];
     seedLoaders = new FileOperationJButton[FILE_COUNT];
@@ -193,11 +220,6 @@ public class InputPanel
     this.add(inputScrollPane, constraints);
     constraints.gridy += 1;
 
-    // set size so that the result pane isn't distorted on window launch
-    Dimension dimension = inputScrollPane.getPreferredSize();
-    dimension.setSize(dimension.getWidth() + 5, dimension.getHeight());
-    this.setPreferredSize(dimension);
-
     leftSlider = new JSlider(0, SLIDER_MAX, 0);
     leftSlider.setEnabled(false);
     leftSlider.addChangeListener(this);
@@ -206,9 +228,9 @@ public class InputPanel
     rightSlider.setEnabled(false);
     rightSlider.addChangeListener(this);
 
-    startDate = new EditableDateDisplayPanel();
+    startDate = timePickerFactory(null, null);
     startDate.addChangeListener(this);
-    endDate = new EditableDateDisplayPanel();
+    endDate = timePickerFactory(null, null);
     endDate.addChangeListener(this);
 
     zoomIn = new JButton("Zoom in (on selection)");
@@ -281,6 +303,48 @@ public class InputPanel
 
   }
 
+
+  /**
+   * Initializes the array holding the names of embedded responses.
+   * This array is indexed to match a list of paired sensor/resolution types,
+   * sorted (case-insensitive) alphabetically.
+   */
+  private void initializeResponseArray() {
+    SensorType[] sensors = SensorType.values();
+    ResolutionType[] resolutions = ResolutionType.values();
+
+    responses = new ArrayList<>();
+    for (SensorType sensor : sensors) {
+      for (ResolutionType resolution : resolutions) {
+        responses.add(new Pair<>(sensor, resolution));
+      }
+    }
+
+    responseArray = new String[responses.size() + 1];
+    for (int w = 0; w < responses.size(); ++w) {
+      Pair<SensorType, ResolutionType> respToName = responses.get(w);
+      responseArray[w] = ResponseUnits.getFilenameFromComponents(
+          respToName.getFirst(), respToName.getSecond());
+    }
+    // add an extra line here, for the custom response loading option, not part of sorted list
+    responseArray[responseArray.length - 1] =  "Load external RESP file...";
+    // sort everything except that last entry, and ignore case in doing so
+    Arrays.sort(responseArray, 0, responseArray.length - 1, String::compareToIgnoreCase);
+
+  }
+
+  public static JSpinner timePickerFactory(Date start, Date end) {
+    String formatterPattern = "yyyy.DDD | HH:mm:ss.SSS";
+    JSpinner.DateEditor timeEditor;
+    SpinnerDateModel startModel = new SpinnerDateModel();
+    startModel.setStart(start);
+    startModel.setEnd(end);
+    JSpinner timePicker = new JSpinner(startModel);
+    timeEditor = new JSpinner.DateEditor(timePicker, formatterPattern);
+    timePicker.setEditor(timeEditor);
+    return timePicker;
+  }
+
   /**
    * Gets the value of start or end time from slider value and DataBlock
    *
@@ -334,6 +398,10 @@ public class InputPanel
         clearAll.setEnabled(dataStore.isAnythingSet());
 
         dataStore.trimToCommonTime();
+        Date start = (Date) startDate.getValue();
+        Date end = (Date) endDate.getValue();
+        zoomOut.setEnabled(!dataStore.currentTrimIsMaximum(
+            start.getTime(), end.getTime(), activePlots));
 
         showRegionForGeneration();
 
@@ -341,7 +409,7 @@ public class InputPanel
       }
 
       if (event.getSource() == seed) {
-        loadData(i, seed);
+        queryFDSN(i, seed);
       }
       if (event.getSource() == append) {
         loadData(i, append);
@@ -349,17 +417,11 @@ public class InputPanel
 
       if (event.getSource() == resp) {
         // don't need a new thread because resp loading is pretty prompt
-
-        Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
-
-        List<String> names = new ArrayList<>(respFilenames);
-        Collections.sort(names);
-        names.add("Load custom response...");
-        String[] nameArray = names.toArray(new String[]{});
+        // create new array with extra entry for a new string to load custom response
 
         int index = lastRespIndex;
         if (lastRespIndex < 0) {
-          index = names.size() - 1;
+          index = responseArray.length - 1;
         }
 
         JDialog dialog = new JDialog();
@@ -368,25 +430,29 @@ public class InputPanel
             "Select a response to load:",
             "RESP File Selection",
             JOptionPane.PLAIN_MESSAGE,
-            null, nameArray,
-            nameArray[index]);
+            null, responseArray,
+            responseArray[index]);
 
         final String resultStr = (String) result;
-
         // did user cancel operation?
         if (resultStr == null) {
           return;
         }
 
+        // ignore case when sorting embeds -- sorting of the enums ignores case too
+        lastRespIndex = Arrays.binarySearch(responseArray, 0, responseArray.length-1, resultStr, String::compareToIgnoreCase);
+
         // is the loaded string one of the embedded response files?
-        if (respFilenames.contains(resultStr)) {
+        // if it is, then we can get the enums of its name and load from them
+        if (lastRespIndex  >= 0) {
           // what was the index of the selected item?
-          // used to make sure we default to that choice next round
-          lastRespIndex = Collections.binarySearch(names, resultStr);
           // final used here in the event of thread weirdness
           try {
+            Pair<SensorType, ResolutionType> sensorResolutionPair = responses.get(lastRespIndex);
+            SensorType sensor = sensorResolutionPair.getFirst();
+            ResolutionType resolution = sensorResolutionPair.getSecond();
             InstrumentResponse instrumentResponse =
-                InstrumentResponse.loadEmbeddedResponse(resultStr);
+                InstrumentResponse.loadEmbeddedResponse(sensor, resolution);
             dataStore.setResponse(i, instrumentResponse);
 
             respFileNames[i].setText(instrumentResponse.getName());
@@ -396,7 +462,7 @@ public class InputPanel
             fireStateChanged();
           } catch (IOException e) {
             // this really shouldn't be an issue with embedded responses
-            responseErrorPopup(resultStr);
+            responseErrorPopup(resultStr, e);
             e.printStackTrace();
             return;
           }
@@ -417,8 +483,8 @@ public class InputPanel
               respFileNames[i].setText(file.getName());
               clear.setEnabled(true);
               clearAll.setEnabled(true);
-            } catch (IOException e) {
-              responseErrorPopup(file.getName());
+            } catch (IOException | NullPointerException e) {
+              responseErrorPopup(file.getName(), e);
               e.printStackTrace();
               return;
             }
@@ -449,7 +515,7 @@ public class InputPanel
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fileChooser.getSelectedFile();
         saveDirectory = selFile.getParent();
-        if (!selFile.getName().endsWith(ext.toLowerCase())) {
+        if (!selFile.getName().toLowerCase().endsWith(ext)) {
           selFile = new File(selFile.toString() + ext);
         }
         try {
@@ -485,10 +551,13 @@ public class InputPanel
     }
   }
 
-  private void responseErrorPopup(String filename) {
+  private void responseErrorPopup(String filename, Exception e) {
     JDialog errorBox = new JDialog();
     String errorMsg = "Error while loading in response file:\n" + filename
-        + "\nCheck that file exists and is formatted correctly.";
+        + "\nCheck that file exists and is formatted correctly.\n"
+        + "Here is the error that was produced during the scan "
+        + "(check terminal for more detail):\n"
+        + e.getMessage() + "\nThrown at: " + e.getStackTrace()[0];
     JOptionPane.showMessageDialog(errorBox, errorMsg, "Response Loading Error",
         JOptionPane.ERROR_MESSAGE);
   }
@@ -529,6 +598,123 @@ public class InputPanel
     }
 
   }
+
+  private void queryFDSN(int panelToLoad, FileOperationJButton seedButton) {
+    // this section produces a selection box to make sure FDSN loading is user preference
+    {
+      JRadioButton local = new JRadioButton("Load from SEED file");
+      JRadioButton fdsn = new JRadioButton("Load from FDSN");
+      ButtonGroup group = new ButtonGroup();
+      group.add(local);
+      group.add(fdsn);
+      local.setSelected(true);
+
+      JPanel panel = new JPanel();
+      panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+      panel.add(local);
+      panel.add(fdsn);
+
+      int result = JOptionPane.showConfirmDialog(this, panel,
+          "Select load method", JOptionPane.OK_CANCEL_OPTION);
+
+      if (result == JOptionPane.CANCEL_OPTION) {
+        return;
+      }
+
+      if (local.isSelected()) {
+        loadData(panelToLoad, seedButton);
+        return;
+      }
+    }
+
+    try {
+      MaskFormatter networkFormatter = new MaskFormatter("AA");
+      // MaskFormatter stationFormatter = new MaskFormatter("UUUUU");
+      MaskFormatter locationFormatter = new MaskFormatter("##");
+      MaskFormatter channelFormatter = new MaskFormatter("UUA");
+      JFormattedTextField networkField = new JFormattedTextField(networkFormatter);
+      networkField.setText("");
+      networkField.setMinimumSize(networkField.getPreferredSize());
+      JTextField stationField = new JTextField();
+      stationField.setText("");
+      stationField.setMinimumSize(stationField.getPreferredSize());
+      JFormattedTextField locationField = new JFormattedTextField(locationFormatter);
+      locationField.setText("");
+      locationField.setMinimumSize(locationField.getPreferredSize());
+      JFormattedTextField channelField = new JFormattedTextField(channelFormatter);
+      channelField.setText("");
+      channelField.setMinimumSize(channelField.getPreferredSize());
+
+      Date start = null;
+      Date end = null;
+      // set initial start and end times to be 2 days ago and 1 day ago at day start
+      // such that there should be data for the full day's length that already exists
+      Date defaultStartValue = Date.from(
+          LocalDate.now().minusDays(2).atStartOfDay(ZoneOffset.UTC).toInstant());
+      Date defaultEndValue = Date.from(
+          LocalDate.now().minusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant());
+      // if there is any data, enforce range restriction on that limit
+      if (dataStore.areAnyBlocksSet()) {
+        Pair<Long, Long> startAndEnd = dataStore.getCommonTime(activePlots);
+        start = Date.from(Instant.ofEpochMilli(startAndEnd.getFirst()));
+        defaultStartValue = start;
+        end = Date.from(Instant.ofEpochMilli(startAndEnd.getSecond()));
+        defaultEndValue = end;
+      }
+
+      JSpinner startPicker = timePickerFactory(start, end);
+      JSpinner endPicker = timePickerFactory(start, end);
+
+      SimpleDateFormat format = ((JSpinner.DateEditor) startPicker.getEditor()).getFormat();
+      format.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
+      format = ((JSpinner.DateEditor) endPicker.getEditor()).getFormat();
+      format.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
+
+      startPicker.setValue(defaultStartValue);
+      endPicker.setValue(defaultEndValue);
+
+      JPanel queryPanel = new JPanel();
+      queryPanel.setLayout(new GridLayout(7, 2));
+      queryPanel.add(new JLabel("NOTE:"));
+      queryPanel.add(new JLabel("Wildcards are not supported!"));
+      queryPanel.add(new JLabel("Network: (ex: IU)"));
+      queryPanel.add(networkField);
+      queryPanel.add(new JLabel("Station: (ex: ANMO)"));
+      queryPanel.add(stationField);
+      queryPanel.add(new JLabel("Location: (ex: 00)"));
+      queryPanel.add(locationField);
+      queryPanel.add(new JLabel("Channel: (ex: LHZ)"));
+      queryPanel.add(channelField);
+      queryPanel.add(new JLabel("Start time (UTC):"));
+      queryPanel.add(startPicker);
+      queryPanel.add(new JLabel("End time (UTC):"));
+      queryPanel.add(endPicker);
+
+      int result = JOptionPane.showConfirmDialog(this, queryPanel,
+          "Set FDSN query parameters", JOptionPane.OK_CANCEL_OPTION);
+
+      if (result == JOptionPane.OK_OPTION) {
+        String net = networkField.getText().toUpperCase();
+        String sta = stationField.getText().replaceAll("\\s","").toUpperCase();
+        String loc = locationField.getText().replaceAll("\\s","").toUpperCase();
+        String cha = channelField.getText().toUpperCase();
+
+        Date startDate = (Date) startPicker.getValue();
+        long startMillis = startDate.toInstant().toEpochMilli();
+        Date endDate = (Date) endPicker.getValue();
+        long endMillis = endDate.toInstant().toEpochMilli();
+
+        threadedFromFDSN(panelToLoad, net, sta, loc, cha, startMillis, endMillis);
+      }
+
+    } catch (ParseException e) {
+      e.printStackTrace();
+      JOptionPane.showMessageDialog(this,
+          "ERROR CREATING FDSN QUERY DIALOG BOX", "FDSN ERROR", JOptionPane.ERROR_MESSAGE);
+    }
+
+  }
+
 
   /**
    * Informs listening objects that the state of the inputs has changed
@@ -658,6 +844,81 @@ public class InputPanel
     chartPanels[index].setMouseZoomable(true);
   }
 
+  private void threadedFromFDSN(final int index, final String net,
+      final String sta, final String loc, final String cha, final long start, final long end) {
+
+    Configuration config = Configuration.getInstance();
+    String scheme = config.getFDSNProtocol();
+    String host = config.getFDSNDomain();
+    String path = config.getFDSNPath();
+    int port = config.getFDSNPort();
+
+    InputPanel thisPanel = this; // handle for JOptionPane if no data was found
+    String filename = "FDSN query params: " + net + "_" + sta + "_" + loc + "_" + cha;
+    SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
+
+      JFreeChart chart;
+      boolean caughtException = false;
+      String returnedErrMsg = "";
+
+      @Override
+      public Integer doInBackground() {
+
+        try {
+          DataBlock blockToLoad =
+              TimeSeriesUtils.getDataBlockFromFDSNQuery(scheme, host, port, path,
+                  net, sta, loc, cha, start, end);
+          dataStore.setBlock(index, blockToLoad, activePlots);
+        } catch (CodecException | IOException e) {
+          returnedErrMsg = "The queried data has an integrity issue preventing parsing.";
+          caughtException = true;
+          e.printStackTrace();
+          return 1;
+        } catch (TimeRangeException | SeisFileException e) {
+          returnedErrMsg = e.getMessage();
+          caughtException = true;
+          e.printStackTrace();
+          return 1;
+        }
+
+        dataStore.untrim(activePlots);
+
+        XYSeries timeSeries = dataStore.getBlock(index).toXYSeries();
+        String rateString = " (" + dataStore.getBlock(index).getSampleRate() + " Hz)";
+        chart = ChartFactory.createXYLineChart(
+            timeSeries.getKey().toString() + rateString,
+            "Time",
+            "Counts",
+            new XYSeriesCollection(timeSeries),
+            PlotOrientation.VERTICAL,
+            false, false, false);
+
+        setPlotParameters((XYPlot) chart.getPlot(), index);
+
+        return 0;
+      }
+
+      @Override
+      public void done() {
+        if (caughtException) {
+          seedLoadHandleError(index, filename, returnedErrMsg);
+          return;
+        }
+        if (chart != null) {
+          processDataAfterLoad(index, chart);
+          seedFileNames[index].setText("FDSN QUERY");
+          fireStateChanged();
+        } else {
+          String message = "Query returned no data.\n" + filename;
+          JOptionPane.showMessageDialog(thisPanel, message,
+             "FDSN Error", JOptionPane.ERROR_MESSAGE);
+        }
+      }
+    };
+
+    worker.execute();
+  }
+
   /**
    * Load in data for a specified SEED file, to be run in a specific thread.
    * Because loading can be a slow operation, this runs in a background thread
@@ -713,10 +974,22 @@ public class InputPanel
           return;
         }
 
-      } catch (SeedFormatException | IOException | RuntimeException e) {
+      } catch (SeedFormatException | IOException | NumberFormatException e) {
         e.printStackTrace();
         if (seed instanceof LoadingJButton) {
-          seedLoadHandleError(index, file.getName(), e.toString());
+          String errorVerbose = "This file is either not a SEED file "
+              + "or has a data integrity issue.";
+          seedLoadHandleError(index, file.getName(), errorVerbose);
+        } else {
+          seedAppendErrorPopup(file.getName());
+        }
+
+        return;
+      } catch (TimeRangeException e) {
+        e.printStackTrace();
+        if (seed instanceof LoadingJButton) {
+          String errorVerbose = e.getMessage();
+          seedLoadHandleError(index, file.getName(), errorVerbose);
         } else {
           seedAppendErrorPopup(file.getName());
         }
@@ -738,9 +1011,15 @@ public class InputPanel
 
           try {
             seed.loadInData(dataStore, index, filePath, immutableFilter, activePlots);
-          } catch (RuntimeException | SeedFormatException | CodecException |
-              IOException e) {
-            returnedErrMsg = e.toString();
+          } catch (SeedFormatException | CodecException |
+              IOException | NumberFormatException e) {
+            returnedErrMsg = "This file is either not a SEED file "
+                + "or has a data integrity issue.";
+            caughtException = true;
+            e.printStackTrace();
+            return 1;
+          } catch (TimeRangeException e) {
+            returnedErrMsg = e.getMessage();
             caughtException = true;
             e.printStackTrace();
             return 1;
@@ -758,17 +1037,7 @@ public class InputPanel
               PlotOrientation.VERTICAL,
               false, false, false);
 
-          XYPlot xyPlot = (XYPlot) chart.getPlot();
-
-          DateAxis dateAxis = new DateAxis();
-          dateAxis.setLabel("UTC Time (Year.Day.Hour:Minute)");
-          Font bold = dateAxis.getLabelFont();
-          bold = bold.deriveFont(Font.BOLD);
-          dateAxis.setLabelFont(bold);
-          dateAxis.setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
-          xyPlot.setDomainAxis(dateAxis);
-          int colorIndex = index % defaultColor.length;
-          xyPlot.getRenderer().setSeriesPaint(0, defaultColor[colorIndex]);
+          setPlotParameters((XYPlot) chart.getPlot(), index);
 
           return 0;
         }
@@ -784,36 +1053,9 @@ public class InputPanel
             return;
           }
 
-          NumberAxis numberAxis = (NumberAxis) chart.getXYPlot().getRangeAxis();
-          numberAxis.setAutoRange(true);
-          numberAxis.setAutoRangeIncludesZero(false);
-          chartPanels[index].setChart(chart);
-          chartPanels[index].repaint();
-          chartPanels[index].setMouseZoomable(true);
-
-          seedAppenders[index].setEnabled(true);
-          clearButton[index].setEnabled(true);
-
-          for (int i = 0; i < FILE_COUNT; ++i) {
-            if (!dataStore.blockIsSet(i)) {
-              continue;
-            }
-            resetPlotZoom(i);
-          }
-
-          leftSlider.setValue(0);
-          rightSlider.setValue(SLIDER_MAX);
-          setVerticalBars();
-
-          zoomOut.setEnabled(false);
-          zoomIn.setEnabled(true);
-          leftSlider.setEnabled(true);
-          rightSlider.setEnabled(true);
-          save.setEnabled(true);
-          clearAll.setEnabled(true);
-
+          processDataAfterLoad(index, chart);
           seedFileNames[index].setText(file.getName() + ": " + immutableFilter);
-
+          seedAppenders[index].setEnabled(true);
           fireStateChanged();
         }
       };
@@ -822,15 +1064,65 @@ public class InputPanel
     }
   }
 
+  private void setPlotParameters(XYPlot xyPlot, int index) {
+    DateAxis dateAxis = new DateAxis();
+    dateAxis.setLabel("UTC Time (Year.Day.Hour:Minute)");
+    Font bold = dateAxis.getLabelFont();
+    bold = bold.deriveFont(Font.BOLD);
+    dateAxis.setLabelFont(bold);
+    dateAxis.setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
+    xyPlot.setDomainAxis(dateAxis);
+
+    NumberAxis numberAxis = new NumberAxis();
+    numberAxis.setLabel("Counts");
+    numberAxis.setAutoRange(true);
+    numberAxis.setAutoRangeIncludesZero(false);
+    numberAxis.setLabelFont(bold);
+    xyPlot.setRangeAxis(numberAxis);
+
+    int colorIndex = index % defaultColor.length;
+    xyPlot.getRenderer().setSeriesPaint(0, defaultColor[colorIndex]);
+  }
+
+  private void processDataAfterLoad(int index, JFreeChart chart) {
+    chartPanels[index].setChart(chart);
+    chartPanels[index].repaint();
+    chartPanels[index].setMouseZoomable(true);
+
+    clearButton[index].setEnabled(true);
+
+    for (int i = 0; i < FILE_COUNT; ++i) {
+      if (!dataStore.blockIsSet(i)) {
+        continue;
+      }
+      resetPlotZoom(i);
+    }
+
+    leftSlider.setValue(0);
+    rightSlider.setValue(SLIDER_MAX);
+    setVerticalBars();
+
+    // we can only zoom out if current trim level is not the maximum
+    Date start = (Date) startDate.getValue();
+    Date end = (Date) endDate.getValue();
+    zoomOut.setEnabled(!dataStore.currentTrimIsMaximum(
+        start.getTime(), end.getTime(), activePlots));
+
+    zoomIn.setEnabled(true);
+    leftSlider.setEnabled(true);
+    rightSlider.setEnabled(true);
+    save.setEnabled(true);
+    clearAll.setEnabled(true);
+  }
+
   private void seedLoadHandleError(int index, String filename, String error) {
     dataStore.removeBlock(index);
     instantiateChart(index);
     XYPlot xyPlot = (XYPlot) chartPanels[index].getChart().getPlot();
     TextTitle result = new TextTitle();
-    result.setText("COULD NOT LOAD IN FILE: " + filename
-        + "\n\nThis file is probably not a SEED file or has a formatting error.\n\n"
-        + "A full stack trace is in the terminal -- this is the exception:\n"
-        + error);
+    result.setText("COULD NOT LOAD IN FILE: " + filename + "\n"
+        + error
+        + "\nA full stack trace should be output to the terminal.\n");
     result.setBackgroundPaint(Color.red);
     result.setPaint(Color.white);
     XYTitleAnnotation titleAnnotation = new XYTitleAnnotation(0.5, 0.5, result,
@@ -1089,8 +1381,8 @@ public class InputPanel
 
     startDate.removeChangeListener(this);
     endDate.removeChangeListener(this);
-    startDate.setValues(startMarkerLocation);
-    endDate.setValues(endMarkerLocation);
+    startDate.setValue(Date.from(Instant.ofEpochMilli(startMarkerLocation)));
+    endDate.setValue(Date.from(Instant.ofEpochMilli(endMarkerLocation)));
     startDate.addChangeListener(this);
     endDate.addChangeListener(this);
 
@@ -1151,25 +1443,24 @@ public class InputPanel
 
     activePlots = panelsNeeded;
 
-    // get current time range of zoom data for resetting, if any data is loaded
-    long start, end;
-    if (dataStore.areAnyBlocksSet()) {
-      DataBlock dataBlock = dataStore.getXthLoadedBlock(1);
-      start = dataBlock.getStartTime();
-      end = dataBlock.getEndTime();
+    Pair<Long, Long> timeRange = dataStore.getCommonTime(activePlots);
+    // get max valid time range of zoom data for resetting, if any data is loaded
+    long start = timeRange.getFirst();
+    long end = timeRange.getSecond();
 
-      dataStore.trimToCommonTime(activePlots);
-      // try to trim to current active time range if possible, otherwise fit
-      // as much data as possible
-      dataBlock = dataStore.getXthLoadedBlock(1);
-      // was the data zoomed in more than it is now?
-      if (start > dataBlock.getStartTime() || end < dataBlock.getEndTime()) {
+    if (dataStore.areAnyBlocksSet()) {
+      // now to get the actual range of time that the plotted data is trimmed to
+      // (this will be true for all the data currently being plotted, at least one existing)
+      DataBlock dataBlock = dataStore.getXthLoadedBlock(1);
+      // is the data zoomed in at all? i.e., can we zoom out to a larger common time range?
+      if (start < dataBlock.getStartTime() || end > dataBlock.getEndTime()) {
         try {
           // zooms won't be modified if an exception is thrown
           dataStore.trim(start, end, activePlots);
           zoomOut.setEnabled(true);
         } catch (IndexOutOfBoundsException e) {
           // new time range not valid for all current data, show max range
+          dataStore.trimToCommonTime(activePlots);
           zoomOut.setEnabled(false);
         }
       } else {
@@ -1262,8 +1553,8 @@ public class InputPanel
       if (dataStore.numberOfBlocksSet() < 1) {
         return;
       }
-
-      long time = startDate.getTime();
+      Date start = (Date) startDate.getValue();
+      long time = start.getTime();
       DataBlock dataBlock = dataStore.getXthLoadedBlock(1);
 
       long startTime = dataBlock.getStartTime();
@@ -1281,7 +1572,7 @@ public class InputPanel
         time = marginTime;
       }
 
-      startDate.setValues(time);
+      startDate.setValue(Date.from(Instant.ofEpochMilli(time)));
       int newLeftSliderValue = getSliderValue(dataBlock, time);
       leftSlider.removeChangeListener(this);
       leftSlider.setValue(newLeftSliderValue); // already validated
@@ -1296,7 +1587,8 @@ public class InputPanel
         return;
       }
 
-      long time = endDate.getTime();
+      Date end = (Date) endDate.getValue();
+      long time = end.getTime();
       DataBlock dataBlock = dataStore.getXthLoadedBlock(1);
 
       long endTime = dataBlock.getEndTime();
@@ -1311,7 +1603,7 @@ public class InputPanel
         time = marginTime;
       }
 
-      endDate.setValues(time);
+      endDate.setValue(Date.from(Instant.ofEpochMilli(time)));
       int newRightSliderValue = getSliderValue(dataBlock, time);
       rightSlider.removeChangeListener(this);
       rightSlider.setValue(newRightSliderValue); // already validated
@@ -1389,8 +1681,7 @@ public class InputPanel
 
     protected abstract void loadInData(DataStore dataStore, int index,
         String filePath, String fileFilter, int activePlots)
-        throws SeedFormatException, CodecException,
-        IOException, RuntimeException;
+        throws SeedFormatException, CodecException, IOException, TimeRangeException;
   }
 
   private class LoadingJButton extends FileOperationJButton {
@@ -1410,9 +1701,7 @@ public class InputPanel
     @Override
     public void loadInData(DataStore dataStore, int index, String filePath,
         String fileFilter, int activePlots) throws SeedFormatException,
-        CodecException,
-        IOException,
-        RuntimeException {
+        CodecException, IOException, TimeRangeException {
       dataStore.setBlock(index, filePath, fileFilter, activePlots);
     }
   }
@@ -1440,7 +1729,7 @@ public class InputPanel
     @Override
     public void loadInData(DataStore dataStore, int index, String filePath,
         String fileFilter, int activePlots)
-        throws SeedFormatException, CodecException, IOException, RuntimeException {
+        throws SeedFormatException, CodecException, IOException, TimeRangeException {
       dataStore.appendBlock(index, filePath, fileFilter, activePlots);
     }
   }

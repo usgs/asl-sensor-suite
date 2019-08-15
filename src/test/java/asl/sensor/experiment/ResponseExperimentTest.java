@@ -4,7 +4,7 @@ import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
+import asl.utils.input.InstrumentResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -37,7 +37,7 @@ public class ResponseExperimentTest {
     assertEquals(2, firstPlottedData.getSeriesCount());
     String[] chartRespNames = {respName + " [2010.041]", respName + " [2015.055]"};
     for (int i = 0; i < chartRespNames.length; ++i) {
-      assertEquals(chartRespNames[i] + " Response amplitude", firstPlottedData.getSeriesKey(i));
+      assertEquals(chartRespNames[i], firstPlottedData.getSeriesKey(i));
     }
   }
 

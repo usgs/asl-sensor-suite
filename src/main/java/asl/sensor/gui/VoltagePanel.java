@@ -3,7 +3,7 @@ package asl.sensor.gui;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
+import asl.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -60,7 +60,7 @@ public class VoltagePanel extends ExperimentPanel {
 
     double[] meanValues = voltage.getMeanLines();
     for (int i = 0; i < plotCount; ++i) {
-      Color lineColor = ReportingUtils.COLORS[i % 3].darker().darker();
+      Color lineColor = getColor(i).darker().darker();
       Marker meanMarker = new ValueMarker(meanValues[i]);
       meanMarker.setLabel("MEAN VALUE " + series.getSeriesKey(i));
       meanMarker.setLabelAnchor(RectangleAnchor.TOP);
@@ -118,7 +118,7 @@ public class VoltagePanel extends ExperimentPanel {
       if (null == name) {
         continue;
       }
-      Color plotColor = ReportingUtils.COLORS[i % 3];
+      Color plotColor = getColor(i);
       seriesColorMap.put(name, plotColor);
     }
 

@@ -1,10 +1,11 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
+import asl.utils.FFTResult;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -76,11 +77,13 @@ public class NoiseExperiment extends Experiment {
     // get the first (index.length) seed/resp pairs. while we expect to
     // have the first three plots be the ones with loaded data, in general
     // it is probably better to keep the program flexible against valid input
+    int maxLength = Integer.MAX_VALUE;
     for (int i = 0; i < respIndices.length; ++i) {
       // xth fully loaded function begins at 1
       int idx = dataStore.getXthFullyLoadedIndex(i + 1);
       respIndices[i] = idx;
       dataNames.add(dataStore.getBlock(idx).getName());
+      maxLength = Math.min(maxLength, dataStore.getBlock(idx).size());
       dataNames.add(dataStore.getResponse(idx).getName());
     }
 
@@ -101,7 +104,7 @@ public class NoiseExperiment extends Experiment {
       fireStateChange("Getting PSDs of data " + (idx + 1) + "...");
       String name = "PSD " + dataStore.getBlock(idx).getName() + " [" + idx + "]";
       XYSeries powerSeries = new XYSeries(name);
-      FFTResult psdCalc = dataStore.getPSD(idx);
+      FFTResult psdCalc = dataStore.getPSD(idx, maxLength);
       Complex[] fft = psdCalc.getFFT();
       spectra[i] = fft;
       freqs = psdCalc.getFreqs();
@@ -113,17 +116,17 @@ public class NoiseExperiment extends Experiment {
     // spectra[i] is crosspower pii, now to get pij terms for i!=j
     fireStateChange(getting + "1 & 3");
     FFTResult fft =
-        FFTResult.crossPower(dataIn[0], dataIn[2], responses[0], responses[2]);
+        FFTResult.crossPower(dataIn[0], dataIn[2], responses[0], responses[2], maxLength);
     Complex[] c13 = fft.getFFT();
 
     fireStateChange(getting + "2 & 1");
     fft =
-        FFTResult.crossPower(dataIn[1], dataIn[0], responses[1], responses[0]);
+        FFTResult.crossPower(dataIn[1], dataIn[0], responses[1], responses[0], maxLength);
     Complex[] c21 = fft.getFFT();
 
     fireStateChange(getting + "2 & 3");
     fft =
-        FFTResult.crossPower(dataIn[1], dataIn[2], responses[1], responses[2]);
+        FFTResult.crossPower(dataIn[1], dataIn[2], responses[1], responses[2], maxLength);
     Complex[] c23 = fft.getFFT();
 
     // WIP: use PSD results to get noise at each point see spectra
@@ -142,9 +145,10 @@ public class NoiseExperiment extends Experiment {
       noise[i][0] = Complex.ZERO;
     }
 
+    final double[] finalFreqs = freqs;
     for (int i = 1; i < freqs.length; ++i) {
-      if (1 / freqs[i] > MAX_PLOT_PERIOD) {
-        continue;
+      if ((1. / finalFreqs[i]) > MAX_PLOT_PERIOD) {
+        return;
       }
 
       Complex p11 = spectra[0][i];

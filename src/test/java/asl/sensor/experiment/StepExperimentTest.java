@@ -5,8 +5,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.test.TestUtils;
+import asl.utils.input.InstrumentResponse;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
@@ -33,8 +33,8 @@ public class StepExperimentTest {
     StepExperiment se = new StepExperiment();
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
-    assertEquals(366.97, 1. / fitParams[0], 0.5);
-    assertEquals(0.7196, fitParams[1], 0.0005);
+    assertEquals(366.94, 1. / fitParams[0], 0.5);
+    assertEquals(0.719, fitParams[1], 0.0005);
   }
 
   @Test
@@ -55,11 +55,11 @@ public class StepExperimentTest {
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
     assertEquals(120.00, 1. / fitParams[0], 0.5);
-    assertEquals(0.7035, fitParams[1], 0.0005);
-    String expected1 = "RESP parameters\nCorner frequency (Hz): 0.008 (120.078 secs)\n"
-        + "Damping: 0.707\n";
-    String expected2 = "Best-fit parameters\nCorner frequency (Hz): 0.008 (119.602 secs)\n"
-        + "Damping: 0.704\n";
+    assertEquals(0.7079, fitParams[1], 0.0005);
+    String expected1 = "RESP parameters\nCorner frequency (Hz): 0.008 (119.827 secs)\n"
+        + "Damping: 0.709\n";
+    String expected2 = "Best-fit parameters\nCorner frequency (Hz): 0.008 (119.535 secs)\n"
+        + "Damping: 0.708\n";
     assertArrayEquals(new String[] {expected1, expected2}, se.getInsetStrings());
   }
 
@@ -80,7 +80,7 @@ public class StepExperimentTest {
     StepExperiment se = new StepExperiment();
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
-    assertEquals(367.5, 1. / fitParams[0], 0.5);
+    assertEquals(367.6, 1. / fitParams[0], 0.5);
     assertEquals(0.715, fitParams[1], 0.005);
   }
 
@@ -102,7 +102,7 @@ public class StepExperimentTest {
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
     assertEquals(371.3, 1. / fitParams[0], 0.5);
-    assertEquals(0.719, fitParams[1], 0.005);
+    assertEquals(0.715, fitParams[1], 0.005);
   }
 
   @Test

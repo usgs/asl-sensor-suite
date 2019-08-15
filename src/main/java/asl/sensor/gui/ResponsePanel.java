@@ -5,8 +5,9 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
+import asl.utils.ReportingUtils;
+import asl.utils.ResponseUnits;
+import asl.utils.input.InstrumentResponse;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -19,12 +20,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -163,18 +162,15 @@ public class ResponsePanel extends ExperimentPanel {
     }
 
     if (event.getSource() == copyEmbeddedResp) {
-      Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
-
-      List<String> names = new ArrayList<>(respFilenames);
-      Collections.sort(names);
-
+      String[] names = ResponseUnits.enumerateAllResponseFilenames();
+      Arrays.sort(names);
       JDialog dialog = new JDialog();
       Object result = JOptionPane.showInputDialog(
           dialog,
           "Select a response to copy:",
           "RESP File Selection",
           JOptionPane.PLAIN_MESSAGE,
-          null, names.toArray(),
+          null, names,
           0);
 
       // did user cancel operation?
@@ -299,7 +295,7 @@ public class ResponsePanel extends ExperimentPanel {
     XYSeriesCollection argSeries = timeSeries.get(1);
 
     for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
-      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
+      Color toColor = getColor(i);
       String magName = (String) magSeries.getSeriesKey(i);
       String argName = (String) argSeries.getSeriesKey(i);
       seriesColorMap.put(magName, toColor);
@@ -310,6 +306,9 @@ public class ResponsePanel extends ExperimentPanel {
     argumentChart.getXYPlot().getRangeAxis().setAutoRange(true);
     magnitudeChart = buildChart(magSeries, getXAxis(), yAxis);
     magnitudeChart.getXYPlot().getRangeAxis().setAutoRange(true);
+
+    appendChartTitle(argumentChart, " " + ResponseExperiment.ARGUMENT);
+    appendChartTitle(magnitudeChart, " " + ResponseExperiment.MAGNITUDE);
   }
 
 }

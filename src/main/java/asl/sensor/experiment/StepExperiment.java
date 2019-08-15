@@ -1,11 +1,12 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.FFTResult;
+import asl.utils.FilterUtils;
+import asl.utils.NumericUtils;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +50,7 @@ public class StepExperiment extends Experiment {
   /**
    * Resolution of step size for iterative solution process
    */
-  private final double STEP_FACTOR = 1E-10;
+  private final double STEP_FACTOR = 1E-15;
   /**
    * Used in the least squared solver (quit when function output changes by less than this value)
    */
@@ -160,7 +161,8 @@ public class StepExperiment extends Experiment {
 
     fireStateChange("Initial filtering of the raw step signal...");
     double[] stepCalData = stepCalRaw.getData().clone();
-    stepCalData = FFTResult.lowPassFilter(stepCalData, sps, 0.1);
+    // use order-2 filter here
+    stepCalData = FilterUtils.lowPassFilter(stepCalData, sps, 0.1, 2);
 
     // trim 10s from each side of the input data
     cutAmount = (int) sps * 10;
@@ -203,7 +205,8 @@ public class StepExperiment extends Experiment {
     // single sided FFT includes lowpass filter and demean in preprocessing
     // additional processing is done when inverting the FFT in the calculate method
     FFTResult sensorsFFT =
-        FFTResult.singleSidedFilteredFFT(sensorOutput, needsFlip);
+        FFTResult.
+            singleSidedFilteredFFT(sensorOutput, needsFlip);
     // these values used in calculating the response deconvolution
     sensorFFTSeries = sensorsFFT.getFFT();
     freqs = sensorsFFT.getFreqs();
