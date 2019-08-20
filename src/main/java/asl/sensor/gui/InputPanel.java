@@ -340,6 +340,7 @@ public class InputPanel
     startModel.setEnd(end);
     JSpinner timePicker = new JSpinner(startModel);
     timeEditor = new JSpinner.DateEditor(timePicker, formatterPattern);
+    timeEditor.getFormat().setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
     timePicker.setEditor(timeEditor);
     return timePicker;
   }
@@ -842,7 +843,10 @@ public class InputPanel
   }
 
   private void threadedFromFDSN(final int index, final String net,
-      final String sta, final String loc, final String cha, final long start, final long end) {
+      final String sta, String loc, final String cha, final long start, final long end) {
+
+    // attempt to handle case where location is an empty value
+    final String fixedLoc = loc.replace(" ", "").equals("") ? " " : loc;
 
     Configuration config = Configuration.getInstance();
     String scheme = config.getFDSNProtocol();
@@ -851,7 +855,7 @@ public class InputPanel
     int port = config.getFDSNPort();
 
     InputPanel thisPanel = this; // handle for JOptionPane if no data was found
-    String filename = "FDSN query params: " + net + "_" + sta + "_" + loc + "_" + cha;
+    String filename = "FDSN query params: " + net + "_" + sta + "_" + fixedLoc + "_" + cha;
     SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
 
       JFreeChart chart;
@@ -865,7 +869,7 @@ public class InputPanel
         try {
           blockToLoad =
               TimeSeriesUtils.getDataBlockFromFDSNQuery(scheme, host, port, path,
-                  net, sta, loc, cha, start, end);
+                  net, sta, fixedLoc, cha, start, end);
           if (blockToLoad.size() == 0) {
             returnedErrMsg = "The query returned no data.\n" + filename;
             caughtException = true;
