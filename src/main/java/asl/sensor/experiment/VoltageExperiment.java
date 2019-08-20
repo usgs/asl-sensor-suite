@@ -92,7 +92,7 @@ public class VoltageExperiment extends Experiment {
 
       // offset by a second on either side to make sure that the data doesn't include ringing
       // artifacts -- i.e., data on either side of min/max should be flat relative to it
-      int offset = 2; //(int) dataStore.getBlock(loadedData[i]).getSampleRate() + 1;
+      int offset = (int) dataStore.getBlock(loadedData[i]).getSampleRate() + 1;
 
       outerLoop:
       for (int j = offset; j < data.length - offset; ++j) {

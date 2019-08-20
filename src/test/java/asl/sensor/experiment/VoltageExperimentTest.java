@@ -68,9 +68,9 @@ public class VoltageExperimentTest {
 
     double gain = ir.getGain()[2];
     double[] expectedGains = {gain, gain, gain};
-    double[] expectedSensitivities = {1677446.09, 1677642.94, 1677788.64};
+    double[] expectedSensitivities = {1677450, 1677647, 1677793};
     assertArrayEquals(expectedGains, gainValues,1E-15);
-    assertArrayEquals(expectedSensitivities, sensitivities, 1E-2);
+    assertArrayEquals(expectedSensitivities, sensitivities, 1);
     for (double percentDifference : percentDifferences) {
       assertTrue(Math.abs(percentDifference) < 0.05);
     }
