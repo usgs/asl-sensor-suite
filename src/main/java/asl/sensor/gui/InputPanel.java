@@ -43,7 +43,6 @@ import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
@@ -341,6 +340,7 @@ public class InputPanel
     startModel.setEnd(end);
     JSpinner timePicker = new JSpinner(startModel);
     timeEditor = new JSpinner.DateEditor(timePicker, formatterPattern);
+    timeEditor.getFormat().setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
     timePicker.setEditor(timeEditor);
     return timePicker;
   }
@@ -424,9 +424,8 @@ public class InputPanel
           index = responseArray.length - 1;
         }
 
-        JDialog dialog = new JDialog();
         Object result = JOptionPane.showInputDialog(
-            dialog,
+            this,
             "Select a response to load:",
             "RESP File Selection",
             JOptionPane.PLAIN_MESSAGE,
@@ -552,13 +551,12 @@ public class InputPanel
   }
 
   private void responseErrorPopup(String filename, Exception e) {
-    JDialog errorBox = new JDialog();
     String errorMsg = "Error while loading in response file:\n" + filename
         + "\nCheck that file exists and is formatted correctly.\n"
         + "Here is the error that was produced during the scan "
         + "(check terminal for more detail):\n"
         + e.getMessage() + "\nThrown at: " + e.getStackTrace()[0];
-    JOptionPane.showMessageDialog(errorBox, errorMsg, "Response Loading Error",
+    JOptionPane.showMessageDialog(this, errorMsg, "Response Loading Error",
         JOptionPane.ERROR_MESSAGE);
   }
 
@@ -654,7 +652,7 @@ public class InputPanel
       Date defaultEndValue = Date.from(
           LocalDate.now().minusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant());
       // if there is any data, enforce range restriction on that limit
-      if (dataStore.areAnyBlocksSet()) {
+      if (dataStore.areAnyBlocksSet(activePlots)) {
         Pair<Long, Long> startAndEnd = dataStore.getCommonTime(activePlots);
         start = Date.from(Instant.ofEpochMilli(startAndEnd.getFirst()));
         defaultStartValue = start;
@@ -845,7 +843,10 @@ public class InputPanel
   }
 
   private void threadedFromFDSN(final int index, final String net,
-      final String sta, final String loc, final String cha, final long start, final long end) {
+      final String sta, String loc, final String cha, final long start, final long end) {
+
+    // attempt to handle case where location is an empty value
+    final String fixedLoc = loc.replace(" ", "").equals("") ? " " : loc;
 
     Configuration config = Configuration.getInstance();
     String scheme = config.getFDSNProtocol();
@@ -854,7 +855,7 @@ public class InputPanel
     int port = config.getFDSNPort();
 
     InputPanel thisPanel = this; // handle for JOptionPane if no data was found
-    String filename = "FDSN query params: " + net + "_" + sta + "_" + loc + "_" + cha;
+    String filename = "FDSN query params: " + net + "_" + sta + "_" + fixedLoc + "_" + cha;
     SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
 
       JFreeChart chart;
@@ -864,11 +865,16 @@ public class InputPanel
       @Override
       public Integer doInBackground() {
 
+        DataBlock blockToLoad;
         try {
-          DataBlock blockToLoad =
+          blockToLoad =
               TimeSeriesUtils.getDataBlockFromFDSNQuery(scheme, host, port, path,
-                  net, sta, loc, cha, start, end);
-          dataStore.setBlock(index, blockToLoad, activePlots);
+                  net, sta, fixedLoc, cha, start, end);
+          if (blockToLoad.size() == 0) {
+            returnedErrMsg = "The query returned no data.\n" + filename;
+            caughtException = true;
+            return 1;
+          }
         } catch (CodecException | IOException e) {
           returnedErrMsg = "The queried data has an integrity issue preventing parsing.";
           caughtException = true;
@@ -881,6 +887,7 @@ public class InputPanel
           return 1;
         }
 
+        dataStore.setBlock(index, blockToLoad, activePlots);
         dataStore.untrim(activePlots);
 
         XYSeries timeSeries = dataStore.getBlock(index).toXYSeries();
@@ -947,9 +954,8 @@ public class InputPanel
           // more than one series in the file? prompt user for it
           String[] names = nameSet.toArray(new String[0]);
           Arrays.sort(names);
-          JDialog dialog = new JDialog();
           Object result = JOptionPane.showInputDialog(
-              dialog,
+              this,
               "Select the subseries to load:",
               "Multiplexed File Selection",
               JOptionPane.PLAIN_MESSAGE,
@@ -1135,22 +1141,20 @@ public class InputPanel
   }
 
   private void seedAppendEmptyPopup(String filename) {
-    JDialog errorBox = new JDialog();
     String errorMsg = "Could not load data from seed file: " + filename
         + '\n'
         + "The file appears to be formatted correctly but does not have data for the\n"
         + "SNCL data currently loaded in. Check that the correct file was chosen.\n"
         + "(No data was appended to the currently loaded data.)";
-    JOptionPane.showMessageDialog(errorBox, errorMsg, "Response Loading Error",
+    JOptionPane.showMessageDialog(this, errorMsg, "Response Loading Error",
         JOptionPane.ERROR_MESSAGE);
   }
 
   private void seedAppendErrorPopup(String filename) {
-    JDialog errorBox = new JDialog();
     String errorMsg = "Error while loading in seed file: " + filename
         + "\nCheck that file exists and is formatted correctly.\n"
         + "(No data was appended to the currently loaded data.)";
-    JOptionPane.showMessageDialog(errorBox, errorMsg, "Response Loading Error",
+    JOptionPane.showMessageDialog(this, errorMsg, "Response Loading Error",
         JOptionPane.ERROR_MESSAGE);
   }
 
@@ -1325,9 +1329,8 @@ public class InputPanel
         epochStrings[i] = startString + " | " + endString;
       }
       Arrays.sort(epochStrings);
-      JDialog dialog = new JDialog();
       Object result = JOptionPane.showInputDialog(
-          dialog,
+          this,
           "Select the response epoch to load:",
           "Response Epoch Selection",
           JOptionPane.PLAIN_MESSAGE,

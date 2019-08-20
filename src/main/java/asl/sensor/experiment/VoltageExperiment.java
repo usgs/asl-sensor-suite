@@ -94,15 +94,25 @@ public class VoltageExperiment extends Experiment {
       // artifacts -- i.e., data on either side of min/max should be flat relative to it
       int offset = (int) dataStore.getBlock(loadedData[i]).getSampleRate() + 1;
 
+      outerLoop:
       for (int j = offset; j < data.length - offset; ++j) {
+
         // make sure the extremes are in a roughly flat part of the signal
-        // i.e., both min and max values should be in the flat part of a pulse
-        double diff = Math.abs(data[j-offset] - data[j+offset]);
-        if (data[j] < min && diff < 100) {
+        // i.e., all values to consider for analysis should have low variances
+        for (int k = j - offset; k <= j + offset; ++k) {
+          // represent error as magnitude difference between values
+          double pctDiff = Math.abs(data[k] - data[j]) / Math.abs(data[j]) * 100;
+          if (pctDiff > 5) {
+            // if the percent error is too high, skip to next possible point
+            continue outerLoop;
+          }
+        }
+
+        if (data[j] <= min) {
           min = data[j];
           minIndex = j;
         }
-        if (data[j] > max && diff < 100) {
+        if (data[j] >= max) {
           max = data[j];
           maxIndex = j;
         }
@@ -114,7 +124,7 @@ public class VoltageExperiment extends Experiment {
       int plotXPoint = 0;
 
       int startingPoint = -2; // start from 2 behind the minimum value of the data if possible
-      while(minIndex + startingPoint < 0) {
+      while(minIndex + startingPoint < 0 || maxIndex + startingPoint < 0) {
         ++startingPoint;
       }
 
