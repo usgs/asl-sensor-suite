@@ -100,7 +100,18 @@ public class DataStore {
    */
   public boolean areAnyBlocksSet() {
 
-    for (int i = 0; i < FILE_COUNT; ++i) {
+    return areAnyBlocksSet(FILE_COUNT);
+  }
+
+  /**
+   * Determine if any data blocks in the current active plotting set have been initialized
+   * @param activePlots limit of plots shown by GUI currently
+   * @return true if at least one datablock visible in GUI has had data added
+   */
+  public boolean areAnyBlocksSet(int activePlots) {
+
+    activePlots = Math.min(activePlots, FILE_COUNT);
+    for (int i = 0; i < activePlots; ++i) {
       if (blockIsSet(i)) {
         return true;
       }
