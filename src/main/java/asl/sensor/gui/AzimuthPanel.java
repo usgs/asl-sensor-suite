@@ -267,6 +267,7 @@ public class AzimuthPanel extends ExperimentPanel {
     estimationPlot.setRenderer(1, renderer);
 
     NumberAxis angleEstimationAxis = new NumberAxis("Angle est. (deg)");
+    angleEstimationAxis.setAutoRangeIncludesZero(false);
     estimationPlot.setRangeAxis(0, angleEstimationAxis);
     NumberAxis correlationAxis = new NumberAxis("Correlation est. of best fit angle");
     estimationPlot.setRangeAxis(1, correlationAxis);
