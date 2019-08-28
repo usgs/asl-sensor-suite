@@ -50,7 +50,7 @@ import asl.sensor.input.DataStore;
  *
  * @author akearns - KBRWyle
  */
-public class RandomizedExperiment extends Experiment implements ParameterValidator {
+public class RandomizedExperiment extends Experiment {
 
   /**
    * Defines the resolution of steps in iterative solution process
@@ -711,7 +711,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
         target(obsResVector).
         model(jacobian).
         weight(weightMat).
-        parameterValidator(this).
+        parameterValidator(new PoleValidator(numZeros)).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
         maxIterations(Integer.MAX_VALUE).
@@ -923,7 +923,7 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
             start(initialError).
             target(observed).
             model(errorJacobian).
-            parameterValidator(this).
+            parameterValidator(new PoleValidator(numZeros)).
             lazyEvaluation(false).
             maxEvaluations(Integer.MAX_VALUE).
             maxIterations(Integer.MAX_VALUE).
@@ -1173,30 +1173,40 @@ public class RandomizedExperiment extends Experiment implements ParameterValidat
     plotUsingHz = setFreq;
   }
 
-  /**
-   * Simple validator method to enforce poles to be negative for their values
-   * (Since imaginary values are stored in resps as their value and complex
-   * conjugate, we can mandate this for all values in the vector, though only
-   * real components are strictly required to be negative).
-   *
-   * @param poleParams RealVector of parameters to be evaluated by solver
-   * @return Vector of parameters but with components all negative
-   */
-  @Override
-  public RealVector validate(RealVector poleParams) {
-    for (int i = 0; i < poleParams.getDimension(); ++i) {
-      double value = poleParams.getEntry(i);
-      if (value > 0 && (i % 2) == 0) {
-        // even index means this is a real-value vector entry
-        // if it's above zero, put it back below zero
-        poleParams.setEntry(i, -DELTA - Double.MIN_VALUE);
-      } else if (value > 0) {
-        // this means the value is complex, we can multiply it by -1
-        // this is ok for complex values since their conjugate is implied
-        // to be part of the set of poles being fit
-        poleParams.setEntry(i, value * -1);
-      }
+
+  private class PoleValidator implements ParameterValidator {
+
+    int numZeros;
+
+    public PoleValidator(int numZeros) {
+      this.numZeros = numZeros;
     }
-    return poleParams;
+
+
+    /**
+     * Simple validator method to enforce poles to be negative for their values (Since imaginary
+     * values are stored in resps as their value and complex conjugate, we can mandate this for all
+     * values in the vector, though only real components are strictly required to be negative).
+     *
+     * @param poleParams RealVector of parameters to be evaluated by solver
+     * @return Vector of parameters but with components all negative
+     */
+    @Override
+    public RealVector validate(RealVector poleParams) {
+      for (int i = 0; i < poleParams.getDimension(); ++i) {
+        double value = poleParams.getEntry(i);
+        if (value > 0 && (i % 2) == 0 && i > numZeros) {
+          // even index means this is a real-value vector entry
+          // if it's above zero, put it back below zero
+          poleParams.setEntry(i, -DELTA - Double.MIN_VALUE);
+        } else if (value > 0) {
+          // this means the value is complex, we can multiply it by -1
+          // this is ok for complex values since their conjugate is implied
+          // to be part of the set of poles being fit
+          poleParams.setEntry(i, value * -1);
+        }
+      }
+      return poleParams;
+    }
   }
 }
