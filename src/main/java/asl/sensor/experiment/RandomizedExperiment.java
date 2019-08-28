@@ -660,10 +660,16 @@ public class RandomizedExperiment extends Experiment {
     // variable. (we also need to ignore conjugate values, for constraints)
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
 
+    // The peak value here used to be set to nyquistMultiplier * nyquist, so ONLY points
+    // that are within the frequency band being fit could be modified.
+    // This has since been changed specifically because some responses like the STS-2.5
+    // have curves that are very dependent on poles which are out-of-band, and so we will
+    // not present an upper bound on the frequency range for HF cals in order to better
+    // produce fits for cases of such data.
     initialPoleGuess = fitResponse
-        .polesToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
+        .polesToVector(isLowFrequencyCalibration, Double.MAX_VALUE);
     initialZeroGuess = fitResponse
-        .zerosToVector(isLowFrequencyCalibration, nyquistMultiplier * nyquist);
+        .zerosToVector(isLowFrequencyCalibration, Double.MAX_VALUE);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
 
@@ -1195,9 +1201,10 @@ public class RandomizedExperiment extends Experiment {
     public RealVector validate(RealVector poleParams) {
       for (int i = 0; i < poleParams.getDimension(); ++i) {
         double value = poleParams.getEntry(i);
-        if (value > 0 && (i % 2) == 0 && i > numZeros) {
+        if (value > 0 && (i % 2) == 0) {
           // even index means this is a real-value vector entry
           // if it's above zero, put it back below zero
+          // with delta offset to prevent it from going to zero on the iterative step.
           poleParams.setEntry(i, -DELTA - Double.MIN_VALUE);
         } else if (value > 0) {
           // this means the value is complex, we can multiply it by -1
