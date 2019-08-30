@@ -154,8 +154,17 @@ public class Configuration {
     return defaultDataFolder;
   }
 
+  /**
+   * Set the starting directory for SEED file loading.
+   * Used when selecting a new folder to load data from but only written
+   * out to file when the configuration is edited from the main window.
+   * @param replacement Path (relative or absolute) to the folder where data is kept.
+   */
   public void setDefaultDataFolder(String replacement) {
-    defaultDataFolder = replacement;
+    File config = new File(replacement);
+    if (config.exists() && config.canRead()) {
+      defaultDataFolder = replacement;
+    }
   }
 
   /**
@@ -169,8 +178,17 @@ public class Configuration {
     return defaultRespFolder;
   }
 
+  /**
+   * Set the starting directory for resp loading.
+   * Used when selecting a new folder to load data from but only written
+   * out to file when the configuration is edited from the main window.
+   * @param replacement Path (relative or absolute) to the folder where resps are kept.
+   */
   public void setDefaultRespFolder(String replacement) {
-    defaultRespFolder = replacement;
+    File config = new File(replacement);
+    if (config.exists() && config.canRead()) {
+      defaultRespFolder = replacement;
+    }
   }
 
   /**
@@ -184,8 +202,15 @@ public class Configuration {
     return defaultOutputFolder;
   }
 
+  /**
+   * Set the default report folder.
+   * @param replacement The folder to write reports to.
+   */
   public void setDefaultOutputFolder(String replacement) {
-    defaultOutputFolder = replacement;
+    File config = new File(replacement);
+    if (config.exists() && config.canWrite()) {
+      defaultOutputFolder = replacement;
+    }
   }
 
   /**
@@ -200,6 +225,11 @@ public class Configuration {
     return useColorblindColors;
   }
 
+  /**
+   * Used to toggle whether or not plots should use colorblind-friendly colors.
+   * When true, red and green are replaced with teal and orange.
+   * @param trueIfUsed True if colorblind-friendly colors should be used
+   */
   public void setUseColorblindColors(boolean trueIfUsed) {
     useColorblindColors = trueIfUsed;
   }
@@ -215,6 +245,11 @@ public class Configuration {
     return lineWidthOffset;
   }
 
+  /**
+   * Set the thickness to apply to output plots.
+   * This will not affect plots that have already been produced by the program.
+   * @param replacementOffset New thickness increase to apply to plots.
+   */
   public void setLineWidthOffset(int replacementOffset) {
     lineWidthOffset = replacementOffset;
   }
@@ -230,6 +265,10 @@ public class Configuration {
     return fdsnProtocol;
   }
 
+  /**
+   * Set the connection protocol for FDSN data services.
+   * @param replacement Protocol to use (i.e., http, https)
+   */
   public void setFDSNProtocol(String replacement) {
     fdsnProtocol = replacement;
   }
@@ -245,6 +284,10 @@ public class Configuration {
     return fdsnDomain;
   }
 
+  /**
+   * Set the FDSN data services domain url.
+   * @param replacement New URL to use webservices from
+   */
   public void setFDSNDomain(String replacement) {
     fdsnDomain = replacement;
   }
@@ -260,6 +303,10 @@ public class Configuration {
     return fdsnService;
   }
 
+  /**
+   * Set the path (service) to use for FDSN data acquisition
+   * @param replacement The FDSN webservice path to use
+   */
   public void setFDSNPath(String replacement) {
     fdsnService = replacement;
   }
@@ -275,10 +322,18 @@ public class Configuration {
     return fdsnPort;
   }
 
+  /**
+   * Set the port to use for FDSN data acquisition.
+   * @param replacementPort New port to use for FDSN data.
+   */
   public void setFDSNPort(int replacementPort) {
     fdsnPort = replacementPort;
   }
 
+  /**
+   * Writes out the current configuration to file.
+   * This is called when the configuration is saved via the GUI utils.
+   */
   public void saveCurrentConfig() {
     XMLConfiguration config;
     try {
