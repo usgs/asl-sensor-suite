@@ -4,6 +4,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.ResponseExperiment;
+import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
 import asl.utils.ReportingUtils;
 import asl.utils.ResponseUnits;
@@ -182,10 +183,10 @@ public class ResponsePanel extends ExperimentPanel {
 
       try {
         // copy response file out of embedded set and into responses folder
-        File respDir = new File("responses/");
-        if (!respDir.exists()) {
+        File respDir = new File(Configuration.getInstance().getDefaultRespFolder());
+        if (!respDir.canWrite()) {
           //noinspection ResultOfMethodCallIgnored
-          respDir.mkdir();
+          respDir = new File(Configuration.getInstance().getDefaultOutputFolder());
         }
 
         ClassLoader cl = ResponsePanel.class.getClassLoader();
@@ -193,6 +194,9 @@ public class ResponsePanel extends ExperimentPanel {
             cl.getResourceAsStream(InstrumentResponse.RESP_DIRECTORY + resultStr);
         Path destinationPath = Paths.get(respDir.getCanonicalPath(), resultStr);
         Files.copy(respStream, destinationPath, REPLACE_EXISTING);
+
+        String message = "Response [" + resultStr + "] written to\n" + respDir.getCanonicalPath();
+        JOptionPane.showMessageDialog(this, message);
 
       } catch (IOException e) {
         e.printStackTrace();
