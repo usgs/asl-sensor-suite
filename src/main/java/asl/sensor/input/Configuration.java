@@ -20,8 +20,10 @@ public class Configuration {
 
   private static Configuration instance;
 
-  private static final String CONFIG_PATH = "sensor-suite-config.xml";
+  private static final String DEFAULT_CONFIG_PATH = "sensor-suite-config.xml";
   private static final Logger logger = Logger.getLogger(Configuration.class);
+
+  private String loadedConfigPath = DEFAULT_CONFIG_PATH;
 
   private String defaultDataFolder = "data";
   private String defaultRespFolder = "responses";
@@ -47,7 +49,7 @@ public class Configuration {
         defaultDataFolder = defaultDataFolderParam;
       }
       String defaultRespFolderParam = config.getString("LocalPaths.RespPath");
-      if (defaultDataFolderParam != null) {
+      if (defaultRespFolderParam != null) {
         defaultRespFolder = defaultRespFolderParam;
       }
       String defaultOutputFolderParam =
@@ -77,7 +79,8 @@ public class Configuration {
           config.getInt("VisualOptions.LineThicknessIncrease", 2);
 
       try {
-        logger.info("Succesfully loaded in configuration: " + config.getFile().getCanonicalPath());
+        loadedConfigPath = config.getFile().getCanonicalPath();
+        logger.info("Succesfully loaded in configuration: " + loadedConfigPath);
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -89,7 +92,7 @@ public class Configuration {
   private static boolean copyEmbedXML(String pathToPlaceFile){
     File fileOut = new File(pathToPlaceFile);
     try (InputStream stream =
-        Configuration.class.getClassLoader().getResourceAsStream(CONFIG_PATH)) {
+        Configuration.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG_PATH)) {
       try {
         logger.info("Copying over embedded jar file to absolute path " + fileOut.getAbsolutePath());
         Files.copy(stream, fileOut.toPath());
@@ -108,7 +111,7 @@ public class Configuration {
    * @return the current configuration instance
    */
   synchronized public static Configuration getInstance() {
-    return getInstance(System.getProperty("user.dir") + File.separator + CONFIG_PATH);
+    return getInstance(System.getProperty("user.dir") + File.separator + DEFAULT_CONFIG_PATH);
   }
 
   /**
@@ -125,7 +128,7 @@ public class Configuration {
         if (!success) {
           logger.warn("Could not find or write to specified config location: " + configLocation);
           logger.warn("Will attempt to initialize config file at user home directory.");
-          configLocation = System.getProperty("user.home") + File.separator + CONFIG_PATH;
+          configLocation = System.getProperty("user.home") + File.separator + DEFAULT_CONFIG_PATH;
           config = new File(configLocation);
           if (!config.exists()) {
             success = copyEmbedXML(configLocation);
@@ -151,6 +154,10 @@ public class Configuration {
     return defaultDataFolder;
   }
 
+  public void setDefaultDataFolder(String replacement) {
+    defaultDataFolder = replacement;
+  }
+
   /**
    * Gets the default resp folder. If none was specified in the XML file, the default is the 'resps'
    * subdirectory under the current working directory.
@@ -162,6 +169,10 @@ public class Configuration {
     return defaultRespFolder;
   }
 
+  public void setDefaultRespFolder(String replacement) {
+    defaultRespFolder = replacement;
+  }
+
   /**
    * Gets the default data output folder. If none was specified in the XML file, the default is the
    * user's home directory.
@@ -171,6 +182,10 @@ public class Configuration {
    */
   public String getDefaultOutputFolder() {
     return defaultOutputFolder;
+  }
+
+  public void setDefaultOutputFolder(String replacement) {
+    defaultOutputFolder = replacement;
   }
 
   /**
@@ -185,6 +200,10 @@ public class Configuration {
     return useColorblindColors;
   }
 
+  public void setUseColorblindColors(boolean trueIfUsed) {
+    useColorblindColors = trueIfUsed;
+  }
+
   /**
    * Gets the current line width offset (i.e., value to add to line thickness in experiment plots).
    * This value is set to default to 2 if not specified in the configuration file.
@@ -194,6 +213,10 @@ public class Configuration {
    */
   public int getLineWidthOffset() {
     return lineWidthOffset;
+  }
+
+  public void setLineWidthOffset(int replacementOffset) {
+    lineWidthOffset = replacementOffset;
   }
 
   /**
@@ -207,6 +230,10 @@ public class Configuration {
     return fdsnProtocol;
   }
 
+  public void setFDSNProtocol(String replacement) {
+    fdsnProtocol = replacement;
+  }
+
   /**
    * Gets the current domain to use for FDSN data acquisition. This is a string value.
    * If not set in the configuration file it defaults to "service.iris.edu"
@@ -218,8 +245,12 @@ public class Configuration {
     return fdsnDomain;
   }
 
+  public void setFDSNDomain(String replacement) {
+    fdsnDomain = replacement;
+  }
+
   /**
-   * Gets the current path to use for FDSN data acquisition. This is a string value.
+   * Gets the current path (service) to use for FDSN data acquisition. This is a string value.
    * If not set in the configuration file it defaults to "fdsnws".
    *
    * The property is defined from Configuration.FDSNPaths.Service
@@ -227,6 +258,10 @@ public class Configuration {
    */
   public String getFDSNPath() {
     return fdsnService;
+  }
+
+  public void setFDSNPath(String replacement) {
+    fdsnService = replacement;
   }
 
   /**
@@ -238,6 +273,32 @@ public class Configuration {
    */
   public int getFDSNPort() {
     return fdsnPort;
+  }
+
+  public void setFDSNPort(int replacementPort) {
+    fdsnPort = replacementPort;
+  }
+
+  public void saveCurrentConfig() {
+    XMLConfiguration config;
+    try {
+      config = new XMLConfiguration(loadedConfigPath);
+      config.load();
+
+      config.setProperty("LocalPaths.DataPath", defaultDataFolder);
+      config.setProperty("LocalPaths.RespPath", defaultRespFolder);
+      config.setProperty("LocalPaths.ReportPath", defaultOutputFolder);
+      config.setProperty("FDSNPaths.Protocol", fdsnProtocol);
+      config.setProperty("FDSNPaths.Domain", fdsnDomain);
+      config.setProperty("FDSNPaths.Service", fdsnService);
+      config.setProperty("FDSNPaths.Port", fdsnPort);
+      config.setProperty("VisualOptions.ColorblindFriendly", useColorblindColors);
+      config.setProperty("VisualOptions.LineThicknessIncrease", lineWidthOffset);
+
+      config.save();
+    } catch (ConfigurationException e) {
+      logger.error(e);
+    }
   }
 
 }

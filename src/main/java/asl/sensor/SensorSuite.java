@@ -1,5 +1,6 @@
 package asl.sensor;
 
+import asl.sensor.gui.ConfigurationPanel;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.SwingWorkerSingleton;
@@ -9,6 +10,7 @@ import asl.utils.ReportingUtils;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -22,6 +24,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
@@ -52,6 +55,7 @@ public class SensorSuite extends JPanel
   private final JTabbedPane tabbedPane; // holds set of experiment panels
   private final JButton generate;
   private final JButton savePDF; // run all calculations
+  private final JButton modifyConfig;
   // used to store current directory locations
   private String saveDirectory;
 
@@ -118,9 +122,6 @@ public class SensorSuite extends JPanel
     dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
     savePDF.setMinimumSize(dimension);
     savePDF.setPreferredSize(dimension);
-    constraints.anchor = GridBagConstraints.EAST;
-    this.add(savePDF, constraints);
-    constraints.gridx += 1;
 
     generate = new JButton("Generate test result");
     generate.setEnabled(false);
@@ -129,8 +130,26 @@ public class SensorSuite extends JPanel
     dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
     generate.setMinimumSize(dimension);
     generate.setPreferredSize(dimension);
+
+    JPanel generationPanel = new JPanel();
+    generationPanel.setLayout(new GridLayout(1, 2));
+    generationPanel.add(savePDF);
+    generationPanel.add(generate);
+
+    constraints.anchor = GridBagConstraints.EAST;
+    this.add(generationPanel, constraints);
+    constraints.gridx += 1;
+
+    modifyConfig = new JButton("Edit configuration");
+    modifyConfig.setEnabled(true);
+    modifyConfig.addActionListener(this);
+    dimension = modifyConfig.getPreferredSize();
+    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
+    modifyConfig.setMinimumSize(dimension);
+    modifyConfig.setPreferredSize(dimension);
+
     constraints.anchor = GridBagConstraints.WEST;
-    this.add(generate, constraints);
+    this.add(modifyConfig, constraints);
 
     fileChooser = new JFileChooser();
 
@@ -328,6 +347,15 @@ public class SensorSuite extends JPanel
 
         plotsToPDF(selectedFile, experimentPanel, inputPlots);
       }
+    } else if (event.getSource() == modifyConfig) {
+
+      ConfigurationPanel panel = new ConfigurationPanel();
+      int result = JOptionPane.showConfirmDialog(this,
+          panel, "Modify config. and write to file", JOptionPane.OK_CANCEL_OPTION);
+      if (result == JOptionPane.OK_OPTION) {
+        panel.writeValues();;
+      }
+
     }
 
   }
