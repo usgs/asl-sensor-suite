@@ -11,6 +11,10 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 
+/**
+ * Panel that displays key-value pairs for the configuration.
+ * Presented as a popup from the main window, which controls saving the data after it is edited.
+ */
 public class ConfigurationPanel extends JPanel {
 
   // text fields for file output locations
@@ -23,9 +27,13 @@ public class ConfigurationPanel extends JPanel {
   private JTextField lineWidthOffset;
   private JCheckBox colorblindColors;
 
+  /**
+   * Construct a panel allowing editing of the current configuration parameters.
+   */
   public ConfigurationPanel() {
     // populate fields based on current configuration file
     Configuration instance = Configuration.getInstance();
+
 
     dataFolder = new JTextField();
     dataFolder.setText(instance.getDefaultDataFolder());
@@ -55,7 +63,8 @@ public class ConfigurationPanel extends JPanel {
     colorblindColors.setEnabled(true);
     colorblindColors.setSelected(instance.useColorblindColors());
 
-    this.setLayout(new GridLayout(9, 2));
+    this.setLayout(new GridLayout(12, 2));
+
 
     this.add(new JLabel("Default SEED location:"));
     this.add(dataFolder);
@@ -79,6 +88,9 @@ public class ConfigurationPanel extends JPanel {
     this.add(colorblindColors);
   }
 
+  /**
+   * Save the values of the current configuration to file.
+   */
   public void writeValues() {
     Configuration instance = Configuration.getInstance();
 
@@ -97,7 +109,9 @@ public class ConfigurationPanel extends JPanel {
     instance.saveCurrentConfig();
   }
 
-
+  /**
+   * DocumentFilter implementation to force positive integers in relevant text fields
+   */
   private class PositiveIntegerFilter extends DocumentFilter {
 
     @Override
