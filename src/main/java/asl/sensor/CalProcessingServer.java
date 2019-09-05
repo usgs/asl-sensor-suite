@@ -2,13 +2,20 @@ package asl.sensor;
 
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.SineExperiment;
+import asl.sensor.experiment.StepExperiment;
 import asl.sensor.experiment.VoltageExperiment;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.input.DataStore;
 import asl.sensor.output.CalResult;
 import asl.utils.ReportingUtils;
 import asl.utils.ResponseUnits;
 import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import asl.utils.input.InstrumentResponse;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -18,11 +25,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.chart.ChartFactory;
@@ -38,15 +41,8 @@ import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.experiment.SineExperiment;
-import asl.sensor.experiment.StepExperiment;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.input.DataStore;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import org.jfree.ui.RectangleAnchor;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
@@ -549,7 +545,7 @@ public class CalProcessingServer {
       for (int seriesIndex = 0; seriesIndex < timeseriesIn.getSeriesCount(); ++seriesIndex) {
         stroke = (BasicStroke) plot.getRenderer().getSeriesStroke(seriesIndex);
         if (stroke == null) {
-          stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
+          stroke = (BasicStroke) plot.getRenderer().getDefaultStroke();
         }
         float width = stroke.getLineWidth() + 2f;
         int join = stroke.getLineJoin();
@@ -573,7 +569,7 @@ public class CalProcessingServer {
       // ensure that NLNM lines are bolder, colored black
       XYItemRenderer renderer = plot.getRenderer();
       // series index 0 - ref data; series index 1 - other data; series index 2 - NLNM plot
-      stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
+      stroke = (BasicStroke) plot.getRenderer().getDefaultStroke();
       stroke = new BasicStroke(stroke.getLineWidth() * 2);
       renderer.setSeriesStroke(2, stroke);
       renderer.setSeriesPaint(2, new Color(0, 0, 0));

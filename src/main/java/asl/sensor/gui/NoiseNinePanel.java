@@ -3,7 +3,6 @@ package asl.sensor.gui;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.NoiseNineExperiment;
 import asl.sensor.input.DataStore;
-import asl.utils.ReportingUtils;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;

@@ -1,8 +1,8 @@
 package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
-import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.experiment.GainExperiment;
+import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -18,8 +18,8 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Six-input extension for RelativeGain gui
