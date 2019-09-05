@@ -6,7 +6,6 @@ import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.utils.ReportingUtils;
 import asl.utils.ResponseUnits;
 import asl.utils.input.InstrumentResponse;
 import java.awt.Color;

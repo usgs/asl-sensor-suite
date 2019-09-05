@@ -5,7 +5,6 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
 import asl.utils.NumericUtils;
-import asl.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -38,9 +37,9 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.VerticalAlignment;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.VerticalAlignment;
 
 /**
  * Panel to display results from a randomized calibration experiment.

@@ -23,9 +23,9 @@ import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Panel to display the results of the gain experiment calculations.

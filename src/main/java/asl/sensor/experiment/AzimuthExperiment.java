@@ -1,6 +1,6 @@
 package asl.sensor.experiment;
 
-import asl.utils.FFTResult;
+import asl.sensor.input.DataStore;
 import asl.utils.FilterUtils;
 import asl.utils.NumericUtils;
 import asl.utils.TimeSeriesUtils;
@@ -23,7 +23,6 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataStore;
 
 /**
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
