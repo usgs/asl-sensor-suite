@@ -4,7 +4,6 @@ import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.input.DataStore;
 import asl.utils.NumericUtils;
-import asl.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -32,9 +31,9 @@ import org.jfree.chart.renderer.DefaultPolarItemRenderer;
 import org.jfree.chart.renderer.xy.DefaultXYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.Layer;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.Layer;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Wrapper class to display result from Azimuth. Overrides some parent
@@ -234,7 +233,7 @@ public class AzimuthPanel extends ExperimentPanel {
     for (int i = 0; i < polars.getSeriesCount(); ++i) {
       BasicStroke stroke = (BasicStroke) polarRenderer.getSeriesStroke(i);
       if (stroke == null) {
-        stroke = (BasicStroke) polarRenderer.getBaseStroke();
+        stroke = (BasicStroke) polarRenderer.getDefaultStroke();
       }
       float width = stroke.getLineWidth() + 4f;
       int join = stroke.getLineJoin();
@@ -281,7 +280,7 @@ public class AzimuthPanel extends ExperimentPanel {
       estimationPlot.getRenderer(i).setSeriesPaint(0, getColor(i));
       BasicStroke stroke = (BasicStroke) estimationPlot.getRenderer(i).getSeriesStroke(0);
       if (stroke == null) {
-        stroke = (BasicStroke) renderer.getBaseStroke();
+        stroke = (BasicStroke) renderer.getDefaultStroke();
       }
       float width = stroke.getLineWidth() + 2f;
       int join = stroke.getLineJoin();

@@ -5,10 +5,8 @@ import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.IntStream;
 import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * Augmented version of relative gain experiment that includes

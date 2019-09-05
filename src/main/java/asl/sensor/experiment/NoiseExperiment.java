@@ -5,7 +5,6 @@ import asl.utils.FFTResult;
 import asl.utils.input.DataBlock;
 import asl.utils.input.InstrumentResponse;
 import java.util.Arrays;
-import java.util.stream.IntStream;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;

@@ -31,7 +31,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.ChartUtils;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.ValueAxis;
@@ -40,8 +40,8 @@ import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Panel used to display the data produced from a specified sensor test.
@@ -219,7 +219,7 @@ public abstract class ExperimentPanel
           selFile = new File(selFile.toString() + ext);
         }
         try {
-          ChartUtilities.saveChartAsPNG(selFile, chart, 640, 480);
+          ChartUtils.saveChartAsPNG(selFile, chart, 640, 480);
         } catch (IOException e1) {
           e1.printStackTrace();
         }
@@ -296,7 +296,7 @@ public abstract class ExperimentPanel
     for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
       BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
       if (stroke == null) {
-        stroke = (BasicStroke) renderer.getBaseStroke();
+        stroke = (BasicStroke) renderer.getDefaultStroke();
       }
       float widthOffset = Configuration.getInstance().getLineWidthOffset();
       float width = stroke.getLineWidth() + widthOffset;
@@ -350,7 +350,7 @@ public abstract class ExperimentPanel
 
         BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
         if (stroke == null) {
-          stroke = (BasicStroke) renderer.getBaseStroke();
+          stroke = (BasicStroke) renderer.getDefaultStroke();
         }
         stroke = new BasicStroke(stroke.getLineWidth() * 2);
         renderer.setSeriesStroke(seriesIndex, stroke);
