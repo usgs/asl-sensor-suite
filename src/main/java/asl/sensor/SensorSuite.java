@@ -77,10 +77,6 @@ public class SensorSuite extends JPanel
     inputPlots = new InputPanel();
     inputPlots.addChangeListener(this);
 
-    Dimension dimension = tabbedPane.getPreferredSize();
-    inputPlots.setPreferredSize(dimension);
-    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight());
-    tabbedPane.setMinimumSize(dimension);
     tabbedPane.addChangeListener(this);
 
     // experiments on left, input on the right; split to allow resizing
@@ -116,7 +112,7 @@ public class SensorSuite extends JPanel
     savePDF = new JButton("Generate PDF report from current test");
     savePDF.setEnabled(false);
     savePDF.addActionListener(this);
-    dimension = savePDF.getPreferredSize();
+    Dimension dimension = savePDF.getPreferredSize();
     dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
     savePDF.setMinimumSize(dimension);
     savePDF.setPreferredSize(dimension);
@@ -154,6 +150,8 @@ public class SensorSuite extends JPanel
     ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
     inputPlots.showDataNeeded(experimentPanel.panelsNeeded());
     inputPlots.setChannelTypes(experimentPanel.getChannelTypes());
+
+    this.setPreferredSize(this.getPreferredSize());
 
   }
 
