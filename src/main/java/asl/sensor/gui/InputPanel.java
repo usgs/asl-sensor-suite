@@ -840,6 +840,7 @@ public class InputPanel
       chartPanels[index].setChart(chart);
     }
     chartPanels[index].setMouseZoomable(true);
+    chartPanels[index].setPreferredSize(chartPanels[index].getMinimumSize());
   }
 
   private void threadedFromFDSN(final int index, final String net,
@@ -1184,22 +1185,18 @@ public class InputPanel
 
     seedLoaders[index] = new LoadingJButton("Load SEED file " + (index + 1));
     seedLoaders[index].addActionListener(this);
-    seedLoaders[index].setMaximumSize(seedLoaders[index].getMinimumSize());
 
     seedAppenders[index] = new AppendingJButton("Append SEED");
     seedAppenders[index].addActionListener(this);
-    seedAppenders[index].setMaximumSize(seedLoaders[index].getMinimumSize());
     seedAppenders[index].setEnabled(false);
 
     JTextField text = new JTextField("NO FILE LOADED");
     text.setHorizontalAlignment(SwingConstants.CENTER);
-    text.setMaximumSize(text.getPreferredSize());
     seedFileNames[index] = text;
     seedFileNames[index].setEditable(false);
 
     respLoaders[index] = new JButton("Load RESP file " + (index + 1));
     respLoaders[index].addActionListener(this);
-    respLoaders[index].setMaximumSize(respLoaders[index].getMinimumSize());
 
     text = new JTextField("NO FILE LOADED");
     text.setHorizontalAlignment(SwingConstants.CENTER);
@@ -1208,7 +1205,6 @@ public class InputPanel
     respFileNames[index].setEditable(false);
 
     clearButton[index] = new JButton("Clear data " + (index + 1));
-    clearButton[index].setMaximumSize(clearButton[index].getMinimumSize());
 
     constraints.gridx = 0;
     constraints.gridy = 0;
@@ -1243,7 +1239,6 @@ public class InputPanel
     constraints.weighty = 1;
     constraints.gridy += 1;
     JScrollPane scrollPane = new JScrollPane();
-    scrollPane.setMaximumSize(scrollPane.getMinimumSize());
     scrollPane.setViewportView(seedFileNames[index]);
     scrollPane.setVerticalScrollBarPolicy(
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
@@ -1260,7 +1255,6 @@ public class InputPanel
     constraints.weighty = 1;
     constraints.gridy += 1;
     scrollPane = new JScrollPane();
-    scrollPane.setMaximumSize(scrollPane.getMinimumSize());
     scrollPane.setViewportView(respFileNames[index]);
     scrollPane.setVerticalScrollBarPolicy(
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
@@ -1504,7 +1498,7 @@ public class InputPanel
     cont.setScrollableTracksViewportHeight(activePlots <= MAX_UNSCROLLED);
 
     inputScrollPane.getViewport().setView(cont);
-    inputScrollPane.setPreferredSize(cont.getPreferredSize());
+    inputScrollPane.setPreferredSize(inputScrollPane.getMinimumSize());
   }
 
   /**
