@@ -154,8 +154,6 @@ public class RandomizedExperiment extends Experiment {
     StringBuilder stringBuilder = new StringBuilder();
     int numInLine = 0;
 
-    System.out.println(complexList.size() + "," + errorTerms.size());
-
     for (Complex number : complexList) {
 
       double initPrd = NumericUtils.TAU / number.abs();
