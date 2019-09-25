@@ -22,7 +22,9 @@ import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.Font;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -48,6 +50,42 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
 public class RandomizedExperimentTest {
+
+  private static class SharedGSN6TestRunner {
+    private static List<XYSeriesCollection> experimentResult;
+
+
+    static List<XYSeriesCollection> getGS6NResult() {
+        if (experimentResult == null) {
+          String respName = RESP_LOCATION + "resp_GSN6";
+          String dataFolderName = getSeedFolder("XX", "GSN6", "2019", "129");
+          String calName = dataFolderName + "CB_BC0.512.seed";
+          String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+          DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+
+          OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
+          cCal = cCal.withHour(15).withMinute(48).withSecond(59).withNano(0);
+          long start = cCal.toInstant().toEpochMilli();
+
+          //cCal = TestUtils.getEndCalendar(ds);
+          cCal = cCal.withHour(16).withMinute(3).withSecond(59).withNano(0);
+          long end = cCal.toInstant().toEpochMilli();
+
+          ds.trim(start, end);
+          RandomizedExperiment rCal = (RandomizedExperiment)
+              ExperimentFactory.RANDOMCAL.createExperiment();
+
+          rCal.setLowFrequencyCalibration(false);
+          rCal.setNyquistMultiplier(90);
+          assertTrue(rCal.hasEnoughData(ds));
+          rCal.runExperimentOnData(ds);
+          experimentResult = rCal.getData();
+      }
+      return experimentResult;
+    }
+
+  }
 
   private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
   private static final String testRespName =
@@ -465,6 +503,75 @@ public class RandomizedExperimentTest {
 
     assertEquals(423.6, rCal.getFitResidual(), 1E-1);
     assertEquals(482.4, rCal.getInitResidual(), 1E-1);
+  }
+
+  @Test
+  public void hrvHasReasonablePoleFit() throws FileNotFoundException {
+    String respName = RESP_LOCATION + "RESP.IU.HRV.00.BHZ";
+    String dataFolderName = getSeedFolder("IU", "HRV", "2018", "192");
+    String calName = dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    Complex expectedFitPole = new Complex(-37.39683437804999, -82.25199086188465);
+    InstrumentResponse ir = new InstrumentResponse(ds.getResponse(1));
+    List<Complex> poles = ir.getPoles();
+    // expectedFitPole = poles.get(4);
+    poles.set(4, expectedFitPole);
+    poles.set(5, expectedFitPole.conjugate());
+    ir.setPoles(poles);
+    ds.setResponse(1, ir);
+
+    RandomizedExperiment rCal = new RandomizedExperiment();
+    rCal.setLowFrequencyCalibration(false);
+    rCal.setNyquistMultiplier(0.3);
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    double initialResidual = rCal.getInitResidual();
+    double fitResidual = rCal.getFitResidual();
+
+    // instead of measuring RMS accuracy with the pole/zero expected values or deviation from
+    // the blue curve, measuring the residual % error is a good reliable way to test regression
+    // that should be reasonably stable to changes in the code that won't meaningfully affect
+    // the otherwise simple case here
+
+    double percentError = Math.abs((initialResidual - fitResidual) / initialResidual) * 100;
+    assertTrue(percentError < 2.);
+  }
+
+  // @Test uncommented because this is probably built off a bad response file
+  public void gsn6HasCorrectCalculatedCurve() throws FileNotFoundException {
+
+    XYSeriesCollection xyscAmp = SharedGSN6TestRunner.getGS6NResult().get(0);
+    XYSeriesCollection xyscPhase = SharedGSN6TestRunner.getGS6NResult().get(1);
+
+    // calculated magnitude ('blue') curve is second input
+    XYSeries calculatedCurveAmp = xyscAmp.getSeries(1);
+    XYSeries calculatedCurvePhase = xyscPhase.getSeries(1);
+    assertEquals("Calc. resp. (XX_GSN6_00_EHZ) magnitude", calculatedCurveAmp.getKey());
+    assertEquals("Calc. resp. (XX_GSN6_00_EHZ) phase", calculatedCurvePhase.getKey());
+
+    StringBuilder sb = new StringBuilder("FREQUENCY,\tAMPLITUDE,\tPHASE\n");
+    for (int i = 0; i < calculatedCurveAmp.getItemCount(); ++i) {
+      double frequency = (double) calculatedCurveAmp.getX(i);
+      double amplitude = (double) calculatedCurveAmp.getY(i);
+      double phase = (double) calculatedCurvePhase.getY(i);
+      // zero crossing point is also first point of fit
+      if (i == 0) {
+        assertEquals(0., amplitude, 1E-10);
+        assertEquals(0., phase, 1E-10);
+      }
+      if (frequency < 60.) {
+        sb.append(frequency).append(",\t").append(amplitude)
+            .append(",\t").append(phase).append("\n");
+
+      }
+    }
+
+    PrintWriter out = new PrintWriter(new File("GSN6-blue-curve.csv"));
+    out.write(sb.toString());
+    out.close();
   }
 
   @Test
