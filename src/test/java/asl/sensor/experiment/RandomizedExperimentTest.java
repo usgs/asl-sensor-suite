@@ -24,7 +24,6 @@ import java.awt.Font;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -317,7 +316,6 @@ public class RandomizedExperimentTest {
         System.out.println(bestResid + ", " + expectedResid);
       }
 
-      // TODO: add corrected assert here to compare best-fit and expected result
       //assertTrue("PCT DIFF EXPECTED <15%, GOT " + pctDiff, pctDiff < 15);
 
       // add initial curve from expected fit params to report
@@ -506,7 +504,7 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void hrvHasReasonablePoleFit() throws FileNotFoundException {
+  public void hrvHasReasonableRMSMeasure() throws FileNotFoundException {
     String respName = RESP_LOCATION + "RESP.IU.HRV.00.BHZ";
     String dataFolderName = getSeedFolder("IU", "HRV", "2018", "192");
     String calName = dataFolderName + "CB_BC0.512.seed";
@@ -540,7 +538,30 @@ public class RandomizedExperimentTest {
     assertTrue(percentError < 2.);
   }
 
-  // @Test uncommented because this is probably built off a bad response file
+  @Test
+  public void hrvHasReasonablePoleFit() throws FileNotFoundException {
+    String respName = RESP_LOCATION + "RESP.IU.HRV.00.BHZ";
+    String dataFolderName = getSeedFolder("IU", "HRV", "2018", "192");
+    String calName = dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    Complex expectedFitPole = new Complex(-37.39683437804999, -82.25199086188465);
+
+    RandomizedExperiment rCal = new RandomizedExperiment();
+    rCal.setLowFrequencyCalibration(false);
+    rCal.setNyquistMultiplier(0.3);
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    List<Complex> initialPoles = rCal.getFitPoles();
+
+    assertEquals(2, initialPoles.size());
+    assertEquals(expectedFitPole.getReal(), initialPoles.get(0).getReal(), 1E-3);
+    assertEquals(expectedFitPole.getImaginary(), initialPoles.get(0).getImaginary(), 1E-3);
+  }
+
+  // @Test case disabled because this is probably built off a bad response file
   public void gsn6HasCorrectCalculatedCurve() throws FileNotFoundException {
 
     XYSeriesCollection xyscAmp = SharedGSN6TestRunner.getGS6NResult().get(0);
@@ -552,7 +573,6 @@ public class RandomizedExperimentTest {
     assertEquals("Calc. resp. (XX_GSN6_00_EHZ) magnitude", calculatedCurveAmp.getKey());
     assertEquals("Calc. resp. (XX_GSN6_00_EHZ) phase", calculatedCurvePhase.getKey());
 
-    StringBuilder sb = new StringBuilder("FREQUENCY,\tAMPLITUDE,\tPHASE\n");
     for (int i = 0; i < calculatedCurveAmp.getItemCount(); ++i) {
       double frequency = (double) calculatedCurveAmp.getX(i);
       double amplitude = (double) calculatedCurveAmp.getY(i);
@@ -562,16 +582,7 @@ public class RandomizedExperimentTest {
         assertEquals(0., amplitude, 1E-10);
         assertEquals(0., phase, 1E-10);
       }
-      if (frequency < 60.) {
-        sb.append(frequency).append(",\t").append(amplitude)
-            .append(",\t").append(phase).append("\n");
-
-      }
     }
-
-    PrintWriter out = new PrintWriter(new File("GSN6-blue-curve.csv"));
-    out.write(sb.toString());
-    out.close();
   }
 
   @Test
