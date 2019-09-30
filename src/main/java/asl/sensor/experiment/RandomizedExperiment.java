@@ -189,8 +189,6 @@ public class RandomizedExperiment extends Experiment {
   @Override
   public String[] getDataStrings() {
 
-
-
     List<Complex> fitPoles = getFitPoles();
     List<Complex> initialPoles = getInitialPoles();
     List<Complex> fitZeros = getFitZeros();
@@ -414,7 +412,6 @@ public class RandomizedExperiment extends Experiment {
 
   static void scaleValues(double[] unrot, double[] freqs, boolean isLowFrequencyCalibration) {
 
-
     int normalIdx = FFTResult.getIndexOfFrequency(freqs, ZERO_TARGET);
     int argStart = unrot.length / 2;
 
@@ -517,8 +514,7 @@ public class RandomizedExperiment extends Experiment {
     double[] plottingFreqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, maxPlotIndex);
     freqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, endIndex);
 
-    double zeroTarget = 0.02; // frequency to set all curves to zero at
-    int normalIdx = FFTResult.getIndexOfFrequency(freqs, zeroTarget);
+    int normalIdx = FFTResult.getIndexOfFrequency(freqs, ZERO_TARGET);
 
     // trim the PSDs to the data in the trimmed frequency range
     Complex[] numeratorPSDVals = numeratorPSD.getFFT();
@@ -579,8 +575,8 @@ public class RandomizedExperiment extends Experiment {
     double phsScale = plottedPhs[normalIdx];
     double[] observedResult = new double[2 * freqs.length];
     double[] weights = new double[observedResult.length];
-    maxArgWeight = 1;
-    maxMagWeight = 0;
+    maxArgWeight = Double.MIN_VALUE;
+    maxMagWeight = Double.MIN_VALUE;
     for (int i = 0; i < freqs.length; ++i) {
       double xAxis = freqs[i];
       if (!plotUsingHz) {
@@ -627,8 +623,8 @@ public class RandomizedExperiment extends Experiment {
           denominator = .01;
         }
       }
-      weights[argIndex] = maxArgWeight / denominator;
-      weights[i] = maxMagWeight / denominator;
+      weights[argIndex] = maxArgWeight;
+      weights[i] = maxMagWeight; // / denominator;
     }
 
     // get the rest of the plotted data squared away
@@ -1166,6 +1162,33 @@ public class RandomizedExperiment extends Experiment {
    */
   public void setLowFrequencyCalibration(boolean isLowFrequencyCalibration) {
     this.isLowFrequencyCalibration = isLowFrequencyCalibration;
+  }
+
+  /**
+   * Auto-determines if a calibration is a long-period calibration or not based on the length of
+   * the data being inputted. Because most high-frequency cals are around 15 minutes and most
+   * low-frequency cals are several hours, we use a cutoff of one hour to make this determination.
+   *
+   * @param ds
+   */
+  public void autoDetermineCalibrationStatus(DataStore ds) {
+    if (!ds.blockIsSet(0)) {
+      return;
+    }
+    long start = ds.getBlock(0).getStartTime();
+    long end = ds.getBlock(0).getEndTime();
+    long timeDiff = end - start;
+    // this will be true if the calibration has a duration of more than one hour (3.6E6 ms)
+    // i.e., most high-frequency calibrations will be
+    isLowFrequencyCalibration = timeDiff >= 3.6E6;
+  }
+
+  /**
+   * Get status if poles/zeros being fit are in low (<1Hz) or high (>1Hz) frequency band
+   * @return true if cal being run is a low-frequency cal
+   */
+  public boolean isLowFrequencyCalibration() {
+    return isLowFrequencyCalibration;
   }
 
   /**

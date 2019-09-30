@@ -15,10 +15,13 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
@@ -58,7 +61,9 @@ public class RandomizedPanel extends ExperimentPanel {
   private final JSpinner nyquistMultiplier;
   private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
       residualXAxis, residualPeriodAxis;
-  private JCheckBox lowFrequency, showParams, frequencySpace, capacitiveCal;
+  private JRadioButton lowFrequency, autoFrequency;
+  // high frequency button created in constructor but not checked explicitly for status
+  private JCheckBox showParams, frequencySpace, capacitiveCal;
   private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
 
   public RandomizedPanel(ExperimentFactory experiment) {
@@ -72,6 +77,17 @@ public class RandomizedPanel extends ExperimentPanel {
     nyquistMultiplierLabel.setHorizontalAlignment(SwingConstants.RIGHT);
     JPanel labelPanel = new JPanel();
     labelPanel.add(nyquistMultiplierLabel);
+
+    JLabel introText = new JLabel("Calibration type: ");
+    lowFrequency = new JRadioButton("low freq.");
+    JRadioButton highFrequency = new JRadioButton("high freq.");
+    autoFrequency = new JRadioButton("auto");
+
+    ButtonGroup group = new ButtonGroup();
+    group.add(lowFrequency);
+    group.add(highFrequency);
+    group.add(autoFrequency);
+    autoFrequency.setSelected(true);
 
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
@@ -107,13 +123,25 @@ public class RandomizedPanel extends ExperimentPanel {
     constraints.fill = GridBagConstraints.NONE;
     constraints.gridy += 1;
     constraints.gridx = 0;
-    JPanel checkBoxPanel = new JPanel();
-    checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
-    checkBoxPanel.add(lowFrequency);
-    checkBoxPanel.add(showParams);
-    checkBoxPanel.add(frequencySpace);
-    checkBoxPanel.add(capacitiveCal);
-    this.add(checkBoxPanel, constraints);
+    JPanel optionsPanel = new JPanel();
+    optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
+
+    JPanel radioButtonPanel = new JPanel();
+    radioButtonPanel.setAlignmentX(LEFT_ALIGNMENT);
+    radioButtonPanel.setLayout(new BoxLayout(radioButtonPanel, BoxLayout.X_AXIS));
+    radioButtonPanel.add(introText);
+    radioButtonPanel.add(lowFrequency);
+    radioButtonPanel.add(highFrequency);
+    radioButtonPanel.add(autoFrequency);
+
+    optionsPanel.add(radioButtonPanel);
+    showParams.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(showParams);
+    frequencySpace.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(frequencySpace);
+    capacitiveCal.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(capacitiveCal);
+    this.add(optionsPanel, constraints);
 
     constraints.gridx += 1;
     constraints.weightx = 1.0;
@@ -422,7 +450,8 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   @Override
   public String getPDFFilename() {
-    if (lowFrequency.isSelected()) {
+    RandomizedExperiment rExp = (RandomizedExperiment) expResult;
+    if (rExp.isLowFrequencyCalibration()) {
       return "Low_Frq_" + super.getPDFFilename();
     } else {
       return "High_Frq_" + super.getPDFFilename();
@@ -492,9 +521,6 @@ public class RandomizedPanel extends ExperimentPanel {
     residualPhaseAxis.setLabelFont(bold);
     residualAmplitudeAxis.setLabelFont(bold);
 
-    lowFrequency = new JCheckBox("Low frequency calibration");
-    lowFrequency.setSelected(true);
-
     showParams = new JCheckBox("Show params");
     showParams.setEnabled(false);
     showParams.addActionListener(this);
@@ -548,7 +574,11 @@ public class RandomizedPanel extends ExperimentPanel {
     double multiplier = (double) nyquistMultiplier.getValue() / 100.;
 
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
-    rndExp.setLowFrequencyCalibration(isLowFreq);
+    if (autoFrequency.isSelected()) {
+      rndExp.autoDetermineCalibrationStatus(dataStore);
+    } else {
+      rndExp.setLowFrequencyCalibration(isLowFreq);
+    }
     rndExp.setPlotUsingHz(frequencySpace.isSelected());
     rndExp.setNyquistMultiplier(multiplier);
     rndExp.setCapactiveCalibration(capacitiveCal.isSelected());
