@@ -1061,7 +1061,7 @@ public class InputPanel
           }
 
           processDataAfterLoad(index, chart);
-          seedFileNames[index].setText(file.getName() + ": " + immutableFilter);
+          seedFileNames[index].setText(file.getName());
           seedAppenders[index].setEnabled(true);
           fireStateChanged();
         }
@@ -1190,17 +1190,18 @@ public class InputPanel
     seedAppenders[index].addActionListener(this);
     seedAppenders[index].setEnabled(false);
 
-    JTextField text = new JTextField("NO FILE LOADED");
-    text.setHorizontalAlignment(SwingConstants.CENTER);
-    seedFileNames[index] = text;
+    JTextField seedText = new JTextField("NO FILE LOADED");
+    seedText.setHorizontalAlignment(SwingConstants.CENTER);
+    seedFileNames[index] = seedText;
     seedFileNames[index].setEditable(false);
 
     respLoaders[index] = new JButton("Load RESP file " + (index + 1));
     respLoaders[index].addActionListener(this);
 
-    text = new JTextField("NO FILE LOADED");
+    JTextField text = new JTextField("NO FILE LOADED");
     text.setHorizontalAlignment(SwingConstants.CENTER);
-    text.setMaximumSize(text.getPreferredSize());
+    text.setMaximumSize(text.getMinimumSize());
+    text.setPreferredSize(text.getMinimumSize());
     respFileNames[index] = text;
     respFileNames[index].setEditable(false);
 
@@ -1244,6 +1245,8 @@ public class InputPanel
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
     scrollPane.setHorizontalScrollBarPolicy(
         ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+    scrollPane.setMaximumSize(text.getMinimumSize());
+    scrollPane.setPreferredSize(text.getMinimumSize());
     chartSubpanel.add(scrollPane, constraints);
 
     constraints.fill = GridBagConstraints.BOTH;
