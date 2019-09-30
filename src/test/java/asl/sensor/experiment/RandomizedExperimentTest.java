@@ -24,6 +24,7 @@ import java.awt.Font;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -387,7 +388,6 @@ public class RandomizedExperimentTest {
     double fitResidual = rCal.getFitResidual();
     InstrumentResponse fitResponse = rCal.getFitResponse();
 
-
     double[][] calculatedDataSeries = rCal.getData().get(0).getSeries(1).toArray();
     double[] frequencyTest = calculatedDataSeries[0];
     double[] calculatedResponseCurveAmp = calculatedDataSeries[1];
@@ -414,7 +414,6 @@ public class RandomizedExperimentTest {
 
     assertTrue(fitResidual <= initResidual);
     // assertTrue("Percent error not less than 30: " + pctError, pctError < 30);
-
   }
 
   @Test
@@ -460,8 +459,13 @@ public class RandomizedExperimentTest {
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-4);
     }
 
+<<<<<<< HEAD
     assertEquals(1.88619, rCal.getFitResidual(), 1E-4);
     assertEquals(2.35656, rCal.getInitResidual(), 1E-4);
+=======
+    assertEquals(423.6, rCal.getFitResidual(), 5);
+    assertEquals(482.4, rCal.getInitResidual(), 5);
+>>>>>>> Steps to fix issues related to randomized cal oddities
   }
 
   @Test
@@ -520,6 +524,46 @@ public class RandomizedExperimentTest {
   }
 
   @Test
+  public void verifySNZOFit() throws FileNotFoundException {
+    String respName = RESP_LOCATION + "RESP.XX.NS089..BHZ.STS3.120.1500";
+    String dataFolderName = getSeedFolder("IU", "SNZO", "2019", "086");
+    String calName = dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+
+    String startTime = "2019,086,15:31:00";
+    DateTimeFormatter dateTimeFormatter =
+        DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
+    long startCal = ZonedDateTime.parse(startTime, dateTimeFormatter).toInstant().toEpochMilli();
+    String endTime = "2019,086,15:56:00";
+    long endCal = ZonedDateTime.parse(endTime, dateTimeFormatter).toInstant().toEpochMilli();
+    ds.trim(startCal, endCal);
+
+    RandomizedExperiment rCal = new RandomizedExperiment();
+    rCal.setLowFrequencyCalibration(false);
+    rCal.setNyquistMultiplier(0.6);
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    XYSeries fitAmp = rCal.getData().get(0).getSeries(2);
+    XYSeries fitPhase = rCal.getData().get(1).getSeries(2);
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < fitAmp.getItemCount(); ++i) {
+      double frequency = (double) fitAmp.getX(i);
+      double amplitude = (double) fitAmp.getY(i);
+      double phase = (double) fitPhase.getY(i);
+
+      sb.append(frequency).append(",").append(amplitude).append(",").append(phase).append("\n");
+    }
+
+    PrintWriter out = new PrintWriter(new File("SNZO-fit.csv"));
+    out.write(sb.toString());
+    out.close();
+  }
+
+  @Test
   public void hrvHasReasonablePoleFit() throws FileNotFoundException {
     String respName = RESP_LOCATION + "RESP.IU.HRV.00.BHZ";
     String dataFolderName = getSeedFolder("IU", "HRV", "2018", "192");
@@ -538,8 +582,8 @@ public class RandomizedExperimentTest {
     List<Complex> initialPoles = rCal.getFitPoles();
 
     assertEquals(2, initialPoles.size());
-    assertEquals(expectedFitPole.getReal(), initialPoles.get(0).getReal(), 0.5);
-    assertEquals(expectedFitPole.getImaginary(), initialPoles.get(0).getImaginary(), 0.5);
+    assertEquals(expectedFitPole.getReal(), initialPoles.get(0).getReal(), 3E-1);
+    assertEquals(expectedFitPole.getImaginary(), initialPoles.get(0).getImaginary(), 3E-1);
   }
 
   @Test
