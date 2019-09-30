@@ -547,9 +547,11 @@ public abstract class ExperimentPanel
     test = test.replace(')', '_');
 
     List<String> names = expResult.getInputNames();
-    String name = "";
-    if (names.size() < getIndexOfMainData()) {
+    String name;
+    if (names.size() > getIndexOfMainData()) {
       name = names.get(getIndexOfMainData()); // name of input data
+    } else {
+      name = names.get(0);
     }
 
     return test + '_' + name + '_' + date + ".pdf";
