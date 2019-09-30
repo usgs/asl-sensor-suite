@@ -16,7 +16,7 @@ public class VoltageExperiment extends Experiment {
   private double[] sensitivity;
   private double[] gain;
   private int[] gainStage;
-  private String[] dataNames;
+  // private String[] dataNames;
   private int loadedAmount;
 
   public VoltageExperiment() {
@@ -24,7 +24,7 @@ public class VoltageExperiment extends Experiment {
     gain = new double[]{};
     // relevant gain stage is 3 in some newer installations, but default to 2
     gainStage = new int[]{2, 2, 2};
-    dataNames = new String[]{};
+    dataNames = new ArrayList<>();
     loadedAmount = 0;
   }
 
@@ -33,7 +33,7 @@ public class VoltageExperiment extends Experiment {
     String[] returnValue = new String[loadedAmount];
     for (int i = 0; i < loadedAmount; ++i) {
 
-      returnValue[i] = dataNames[i]
+      returnValue[i] = dataNames.get(i)
           + ":\nRESP. Stage " + gainStage[i] + " gain: " + DECIMAL_FORMAT.get().format(gain[i])
           + "\nEstimated sensitivity: " + DECIMAL_FORMAT.get().format(sensitivity[i])
           + "\nPercent difference: "
@@ -59,7 +59,7 @@ public class VoltageExperiment extends Experiment {
 
     gain = new double[loadedAmount];
     sensitivity = new double[loadedAmount];
-    dataNames = new String[loadedAmount];
+    dataNames = new ArrayList<>(loadedAmount);
     // intialize as stage-2 gain
     gainStage = new int[]{2, 2, 2};
 
@@ -72,7 +72,7 @@ public class VoltageExperiment extends Experiment {
           + " of " + (loadedAmount) + " (slot " + (indexUnderAnalysis+1) + ")...");
 
       DataBlock currentBlock = dataStore.getBlock(indexUnderAnalysis);
-      dataNames[i] = currentBlock.getName();
+      dataNames.set(i, currentBlock.getName());
 
       // stage 2 gain is the value from the digitizer, i.e., 2^24/40 or 2^26/40
       // depending on the digitizer's bit-depth
@@ -128,7 +128,7 @@ public class VoltageExperiment extends Experiment {
         ++startingPoint;
       }
 
-      XYSeries xys = new XYSeries(dataNames[i]);
+      XYSeries xys = new XYSeries(dataNames.get(i));
       // get the 5 points centered around the max/min value
       for (int j = startingPoint; j < (startingPoint + 5); ++j) {
         int currentMinLookup = minIndex + j;
