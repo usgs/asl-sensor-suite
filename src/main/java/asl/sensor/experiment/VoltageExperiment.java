@@ -72,7 +72,7 @@ public class VoltageExperiment extends Experiment {
           + " of " + (loadedAmount) + " (slot " + (indexUnderAnalysis+1) + ")...");
 
       DataBlock currentBlock = dataStore.getBlock(indexUnderAnalysis);
-      dataNames.set(i, currentBlock.getName());
+      dataNames.add(currentBlock.getName());
 
       // stage 2 gain is the value from the digitizer, i.e., 2^24/40 or 2^26/40
       // depending on the digitizer's bit-depth
