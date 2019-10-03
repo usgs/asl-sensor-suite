@@ -547,10 +547,10 @@ public abstract class ExperimentPanel
     test = test.replace(')', '_');
 
     List<String> names = expResult.getInputNames();
-    String name;
+    String name = "";
     if (names.size() > getIndexOfMainData()) {
       name = names.get(getIndexOfMainData()); // name of input data
-    } else {
+    } else if (names.size() > 0) {
       name = names.get(0);
     }
 
