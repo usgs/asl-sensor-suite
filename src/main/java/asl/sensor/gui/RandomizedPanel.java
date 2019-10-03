@@ -509,7 +509,7 @@ public class RandomizedPanel extends ExperimentPanel {
     degreeAxis = new NumberAxis(degreeAxisTitle);
     degreeAxis.setAutoRange(true);
 
-    residualPhaseAxis = new NumberAxis("Phase error (degrees)");
+    residualPhaseAxis = new NumberAxis("Phase error (percentage)");
     residualAmplitudeAxis = new NumberAxis("Amplitude error (percentage)");
 
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
