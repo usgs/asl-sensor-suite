@@ -55,7 +55,7 @@ public class RandomizedExperiment extends Experiment {
   /**
    * Defines the resolution of steps in iterative solution process
    */
-  static final double DELTA = 1E-12;
+  static final double DELTA = 1E-10;
   /**
    * Maximum possible frequency value as a multiple of nyquist (0.9).
    * The solver will still default to 0.8 as results above that are very unstable for noisy cals
@@ -324,21 +324,19 @@ public class RandomizedExperiment extends Experiment {
         continue;
       }
 
-      double[] changedVars = new double[currentVars.length];
-      System.arraycopy(currentVars, 0, changedVars, 0, currentVars.length);
+      double[] changedVars = Arrays.copyOf(currentVars, currentVars.length);
 
-      double diffX = changedVars[i] - DELTA;
-      changedVars[i] = diffX;
+
+      double diffX = 100 * Math.ulp(changedVars[i]);
+      changedVars[i] = changedVars[i] + diffX;
+
+
       double[] diffY =
           evaluateResponse(changedVars, freqs, numZeros, fitResponse, isLowFreq);
 
       for (int j = 0; j < diffY.length; ++j) {
-        if (changedVars[i] - currentVars[i] == 0.) {
-          jacobian[j][i] = 0.;
-        } else {
-          jacobian[j][i] = mag[j] - diffY[j];
-          jacobian[j][i] /= currentVars[i] - changedVars[i];
-        }
+        jacobian[j][i] = diffY[j] - mag[j];
+        jacobian[j][i] /= diffX;
       }
 
     }
@@ -359,21 +357,25 @@ public class RandomizedExperiment extends Experiment {
 
     double[][] jacobian = new double[mag.length][2];
 
-    Complex diffX = currentVar.subtract(DELTA);
+    double diff = 100 * Math.ulp(currentVar.getReal());
+    double next = diff + currentVar.getReal();
+    Complex diffX = new Complex(next, currentVar.getImaginary());
     double[] diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq);
 
     for (int j = 0; j < diffY.length; ++j) {
-        jacobian[j][0] = mag[j] - diffY[j];
-        jacobian[j][0] /= currentVar.getReal() - diffX.getReal();
+        jacobian[j][0] = diffY[j] - mag[j];
+        jacobian[j][0] /= diff;
     }
 
     if (currentVar.getImaginary() != 0) {
-      diffX = currentVar.subtract(new Complex(0., DELTA));
+      diff = 100 * Math.ulp(currentVar.getImaginary());
+      next = diff + currentVar.getImaginary();
+      diffX = new Complex(currentVar.getReal(), next);
       diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq);
 
       for (int j = 0; j < diffY.length; ++j) {
-        jacobian[j][1] = mag[j] - diffY[j];
-        jacobian[j][1] /= currentVar.getImaginary() - diffX.getImaginary();
+        jacobian[j][1] = diffY[j] - mag[j];
+        jacobian[j][1] /= diff;
       }
     } else {
       for (int j = 0; j < diffY.length; ++j) {
@@ -415,7 +417,7 @@ public class RandomizedExperiment extends Experiment {
     int normalIdx = FFTResult.getIndexOfFrequency(freqs, ZERO_TARGET);
     int argStart = unrot.length / 2;
 
-    scaleMagnitude(unrot, freqs, argStart);
+    scaleMagnitude(unrot, freqs);
 
     double unrotScaleArg = unrot[argStart + normalIdx];
     double phiPrev = 0;
@@ -430,14 +432,11 @@ public class RandomizedExperiment extends Experiment {
     }
   }
 
-  static void scaleMagnitude(double[] unscaled, double[] freqs) {
-    scaleMagnitude(unscaled, freqs, freqs.length);
-  }
 
-  static void scaleMagnitude(double[] unscaled, double[] freqs, int iterationLimit){
+  static void scaleMagnitude(double[] unscaled, double[] freqs){
     int normalIdx = FFTResult.getIndexOfFrequency(freqs, ZERO_TARGET);
     double unrotScaleAmp = 20 * Math.log10(unscaled[normalIdx]);
-    for (int i = 0; i < iterationLimit; ++i) {
+    for (int i = 0; i < freqs.length; ++i) {
       double db = 20 * Math.log10(unscaled[i]);
       unscaled[i] = db - unrotScaleAmp;
     }
@@ -601,7 +600,7 @@ public class RandomizedExperiment extends Experiment {
       calcArg.add(xAxis, NumericUtils.rewrapAngleDegrees(phs));
     }
 
-    maxMagWeight = 1000 / maxMagWeight;
+    maxMagWeight = 1. / maxMagWeight;
     if (maxArgWeight != 0) {
       maxArgWeight = 1. / maxArgWeight;
     }
@@ -609,6 +608,7 @@ public class RandomizedExperiment extends Experiment {
     // apply weights
     for (int i = 0; i < freqs.length; ++i) {
       int argIndex = i + freqs.length;
+      /*
       double denominator;
       if (!isLowFrequencyCalibration) {
         if (freqs[i] < 1) {
@@ -623,6 +623,7 @@ public class RandomizedExperiment extends Experiment {
           denominator = .01;
         }
       }
+      */
       weights[argIndex] = maxArgWeight;
       weights[i] = maxMagWeight; // / denominator;
     }
@@ -667,6 +668,7 @@ public class RandomizedExperiment extends Experiment {
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
 
+
     // now, solve for the response that gets us the best-fit response curve
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector obsResVector = MatrixUtils.createRealVector(observedResult);
@@ -687,8 +689,7 @@ public class RandomizedExperiment extends Experiment {
 
     };
 
-    double costTolerance = 1.0E-15;
-    double paramTolerance = 1.0E-10;
+    final double costTolerance = 1.0E-10;
     // probably acceptable tolerance for clean low-frequency cals BUT
     // high frequency cals are noisy and slow to converge
     // that said using these parameters in high-freq cases still seems to work
@@ -696,7 +697,7 @@ public class RandomizedExperiment extends Experiment {
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(costTolerance).
         withOrthoTolerance(1E-25).
-        withParameterRelativeTolerance(paramTolerance);
+        withParameterRelativeTolerance(1E-10);
 
     // set up structures that will hold the initial and final response plots
     name = fitResponse.getName();
@@ -738,9 +739,9 @@ public class RandomizedExperiment extends Experiment {
     // get results from evaluating the function at the two points
 
     XYSeries initResidMag = new XYSeries("Percent error of init. amplitude");
-    XYSeries initResidPhase = new XYSeries("Diff. with init phase");
+    XYSeries initResidPhase = new XYSeries("Percent error of with init. phase");
     XYSeries fitResidMag = new XYSeries("Percent error of fit amplitude");
-    XYSeries fitResidPhase = new XYSeries("Diff with fit phase");
+    XYSeries fitResidPhase = new XYSeries("Percent error of with fit phase");
 
     fitResponse = fitResponse.buildResponseFromFitVector(
         fitParams, isLowFrequencyCalibration, numZeros);
@@ -813,8 +814,16 @@ public class RandomizedExperiment extends Experiment {
           fitResidMag.add(xValue, Math.abs(errFitMag));
         }
 
-        initResidPhase.add(xValue, Math.abs(initialValues[argIdx] - observedResult[obsArgIdx]));
-        fitResidPhase.add(xValue, Math.abs(fitValues[argIdx] - observedResult[obsArgIdx]));
+        double obsPhase = observedResult[obsArgIdx];
+        if (obsPhase != 0.) {
+          double errInitPhase = Math.abs(100 * (initialValues[argIdx] - obsPhase) / obsPhase);
+          double errFitPhase = Math.abs(100 * (fitValues[argIdx] - obsPhase) / obsPhase);
+
+          initResidPhase.add(xValue, errInitPhase);
+          fitResidPhase.add(xValue, errFitPhase);
+        }
+
+
       }
     }
 
@@ -1226,7 +1235,7 @@ public class RandomizedExperiment extends Experiment {
           // even index means this is a real-value vector entry
           // if it's above zero, put it back below zero
           // with delta offset to prevent it from going to zero on the iterative step.
-          poleParams.setEntry(i, -DELTA - Double.MIN_VALUE);
+          poleParams.setEntry(i, Math.nextDown(-Double.MIN_VALUE));
         } else if (value > 0) {
           // this means the value is complex, we can multiply it by -1
           // this is ok for complex values since their conjugate is implied
