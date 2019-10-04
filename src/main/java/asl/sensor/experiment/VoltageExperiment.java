@@ -16,7 +16,6 @@ public class VoltageExperiment extends Experiment {
   private double[] sensitivity;
   private double[] gain;
   private int[] gainStage;
-  // private String[] dataNames;
   private int loadedAmount;
 
   public VoltageExperiment() {
@@ -59,7 +58,6 @@ public class VoltageExperiment extends Experiment {
 
     gain = new double[loadedAmount];
     sensitivity = new double[loadedAmount];
-    dataNames = new ArrayList<>(loadedAmount);
     // intialize as stage-2 gain
     gainStage = new int[]{2, 2, 2};
 
