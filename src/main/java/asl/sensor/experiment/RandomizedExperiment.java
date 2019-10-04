@@ -51,6 +51,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  * @author akearns - KBRWyle
  */
 public class RandomizedExperiment extends Experiment {
+<<<<<<< HEAD
 
   /**
 <<<<<<< HEAD
@@ -58,6 +59,9 @@ public class RandomizedExperiment extends Experiment {
    * Defines the resolution of steps in iterative solution process
    */
   static final double DELTA = 1E-10;
+=======
+  
+>>>>>>> Remove deleted variable
   /**
 >>>>>>> Fix issues with calibration stability, un-break test cases
    * Maximum possible frequency value as a multiple of nyquist (0.9).
@@ -364,11 +368,8 @@ public class RandomizedExperiment extends Experiment {
     double[] mag = evaluateError(currentVar, freqs, varIndex, fitResponse, pole, isLowFreq);
 
     double[][] jacobian = new double[mag.length][2];
-
-<<<<<<< HEAD
+    
     // same procedure as forward difference in main jacobian function
-=======
->>>>>>> Fix issues with calibration stability, un-break test cases
     double diff = 100 * Math.ulp(currentVar.getReal());
     double next = diff + currentVar.getReal();
     Complex diffX = new Complex(next, currentVar.getImaginary());
