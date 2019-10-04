@@ -23,7 +23,6 @@ public class VoltageExperiment extends Experiment {
     gain = new double[]{};
     // relevant gain stage is 3 in some newer installations, but default to 2
     gainStage = new int[]{2, 2, 2};
-    dataNames = new ArrayList<>();
     loadedAmount = 0;
   }
 
