@@ -608,22 +608,6 @@ public class RandomizedExperiment extends Experiment {
     // apply weights
     for (int i = 0; i < freqs.length; ++i) {
       int argIndex = i + freqs.length;
-      /*
-      double denominator;
-      if (!isLowFrequencyCalibration) {
-        if (freqs[i] < 1) {
-          denominator = 1; // weight everything up to 1Hz equally
-        } else {
-          denominator = freqs[i]; // set everything (else) to 1/f weighting
-        }
-      } else {
-        if (freqs[i] < .01) {
-          denominator = freqs[i];
-        } else {
-          denominator = .01;
-        }
-      }
-      */
       weights[argIndex] = maxArgWeight;
       weights[i] = maxMagWeight; // / denominator;
     }
