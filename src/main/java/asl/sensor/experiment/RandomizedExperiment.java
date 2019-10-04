@@ -51,19 +51,8 @@ import org.jfree.data.xy.XYSeriesCollection;
  * @author akearns - KBRWyle
  */
 public class RandomizedExperiment extends Experiment {
-<<<<<<< HEAD
 
   /**
-<<<<<<< HEAD
-=======
-   * Defines the resolution of steps in iterative solution process
-   */
-  static final double DELTA = 1E-10;
-=======
-  
->>>>>>> Remove deleted variable
-  /**
->>>>>>> Fix issues with calibration stability, un-break test cases
    * Maximum possible frequency value as a multiple of nyquist (0.9).
    * The solver will still default to 0.8 as results above that are very unstable for noisy cals
    */
