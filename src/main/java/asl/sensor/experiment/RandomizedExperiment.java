@@ -321,7 +321,7 @@ public class RandomizedExperiment extends Experiment {
       }
 
       double[] changedVars = Arrays.copyOf(currentVars, currentVars.length);
-      
+
       // forward difference approximation -- ulp here gives us the error between this variable
       // and the smallest double larger than it. We multiply this by 100 to get the forward diff.
       // so that the difference is small relative to the value of the variable but also able to
@@ -357,7 +357,7 @@ public class RandomizedExperiment extends Experiment {
     double[] mag = evaluateError(currentVar, freqs, varIndex, fitResponse, pole, isLowFreq);
 
     double[][] jacobian = new double[mag.length][2];
-    
+
     // same procedure as forward difference in main jacobian function
     double diff = 100 * Math.ulp(currentVar.getReal());
     double next = diff + currentVar.getReal();
