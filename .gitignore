@@ -11,6 +11,8 @@ src/test/resources/sprockets/*
 *.iml
 out/
 
+gradle.properties
+
 # Mac
 .DS_Store
 
