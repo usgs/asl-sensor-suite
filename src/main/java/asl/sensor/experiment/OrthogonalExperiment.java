@@ -88,23 +88,23 @@ public class OrthogonalExperiment extends Experiment {
     double[] testLH1 = testLH1Block.getData();
     double[] testLH2 = testLH2Block.getData();
 
-    refLH1 = TimeSeriesUtils.demean(refLH1);
-    refLH2 = TimeSeriesUtils.demean(refLH2);
-    testLH1 = TimeSeriesUtils.demean(testLH1);
-    testLH2 = TimeSeriesUtils.demean(testLH2);
+    refLH1 = NumericUtils.demean(refLH1);
+    refLH2 = NumericUtils.demean(refLH2);
+    testLH1 = NumericUtils.demean(testLH1);
+    testLH2 = NumericUtils.demean(testLH2);
 
-    refLH1 = TimeSeriesUtils.detrend(refLH1);
-    refLH2 = TimeSeriesUtils.detrend(refLH2);
-    testLH1 = TimeSeriesUtils.detrend(testLH1);
-    testLH2 = TimeSeriesUtils.detrend(testLH2);
+    refLH1 = NumericUtils.detrend(refLH1);
+    refLH2 = NumericUtils.detrend(refLH2);
+    testLH1 = NumericUtils.detrend(testLH1);
+    testLH2 = NumericUtils.detrend(testLH2);
 
     // note that parent class preprocessing should have already downsampled all data to same rate
     // so this just takes it down to 1Hz if it's still above that
 
-    refLH1 = TimeSeriesUtils.decimate(refLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    refLH2 = TimeSeriesUtils.decimate(refLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    testLH1 = TimeSeriesUtils.decimate(testLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    testLH2 = TimeSeriesUtils.decimate(testLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    refLH1 = NumericUtils.decimate(refLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    refLH2 = NumericUtils.decimate(refLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    testLH1 = NumericUtils.decimate(testLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    testLH2 = NumericUtils.decimate(testLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
 
     interval = Math.max(interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
 
