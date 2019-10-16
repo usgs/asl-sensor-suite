@@ -1,7 +1,7 @@
 package asl.sensor.experiment;
 
 import asl.sensor.input.DataStore;
-import asl.utils.TimeSeriesUtils;
+import asl.utils.NumericUtils;
 import java.util.ArrayList;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jfree.data.xy.XYSeries;
@@ -100,8 +100,8 @@ public class SineExperiment extends Experiment {
     }
 
     // we would like to have the signals centered on 0 for lining them up
-    calTimeSeries = TimeSeriesUtils.demean(calTimeSeries);
-    outTimeSeries = TimeSeriesUtils.demean(outTimeSeries);
+    calTimeSeries = NumericUtils.demean(calTimeSeries);
+    outTimeSeries = NumericUtils.demean(outTimeSeries);
     // standard deviation is a good
     calSDev = new DescriptiveStatistics(calTimeSeries).getStandardDeviation();
     outSDev = new DescriptiveStatistics(outTimeSeries).getStandardDeviation();

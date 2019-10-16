@@ -254,19 +254,19 @@ public class AzimuthExperiment extends Experiment {
     enoughPts = false;
 
     // does nothing if the data is already 1Hz sample rate
-    testNorth = TimeSeriesUtils.decimate(testNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    testEast = TimeSeriesUtils.decimate(testEast, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    refNorth = TimeSeriesUtils.decimate(refNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    testNorth = NumericUtils.decimate(testNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    testEast = NumericUtils.decimate(testEast, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    refNorth = NumericUtils.decimate(refNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
     // update the actual sample rate if data was above 1Hz sampling
     interval = Math.max(interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
 
-    double[] initTestNorth = TimeSeriesUtils.demean(testNorth);
-    double[] initTestEast = TimeSeriesUtils.demean(testEast);
-    double[] initRefNorth = TimeSeriesUtils.demean(refNorth);
+    double[] initTestNorth = NumericUtils.demean(testNorth);
+    double[] initTestEast = NumericUtils.demean(testEast);
+    double[] initRefNorth = NumericUtils.demean(refNorth);
 
-    initTestNorth = TimeSeriesUtils.detrend(initTestNorth);
-    initTestEast = TimeSeriesUtils.detrend(initTestEast);
-    initRefNorth = TimeSeriesUtils.detrend(initRefNorth);
+    initTestNorth = NumericUtils.detrend(initTestNorth);
+    initTestEast = NumericUtils.detrend(initTestEast);
+    initRefNorth = NumericUtils.detrend(initRefNorth);
 
     // should there be a normalization step here?
 
@@ -358,9 +358,9 @@ public class AzimuthExperiment extends Experiment {
       double[] testEastWin = Arrays.copyOfRange(initTestEast, startIdx, endIdx);
       double[] refNorthWin = Arrays.copyOfRange(initRefNorth, startIdx, endIdx);
 
-      testNorthWin = TimeSeriesUtils.detrend(testNorthWin);
-      testEastWin = TimeSeriesUtils.detrend(testEastWin);
-      refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
+      testNorthWin = NumericUtils.detrend(testNorthWin);
+      testEastWin = NumericUtils.detrend(testEastWin);
+      refNorthWin = NumericUtils.detrend(refNorthWin);
 
       // bandpass filters of order 2 again
       testNorthWin = FilterUtils.bandFilter(testNorthWin, samplesPerSecond, low, high, 2);

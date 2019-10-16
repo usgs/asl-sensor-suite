@@ -4,7 +4,6 @@ import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
 import asl.utils.FilterUtils;
 import asl.utils.NumericUtils;
-import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import asl.utils.input.InstrumentResponse;
 import java.util.ArrayList;
@@ -171,9 +170,9 @@ public class StepExperiment extends Experiment {
 
     // actually trim the data and demean, normalize
     double[] stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
-    stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.detrendEnds(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
+    stepCalSeries = NumericUtils.demean(stepCalSeries);
+    stepCalSeries = NumericUtils.detrendEnds(stepCalSeries);
+    stepCalSeries = NumericUtils.normalize(stepCalSeries);
 
     // but we want the response and the data of the cal result
     sensorOutIdx = dataStore.getXthFullyLoadedIndex(1);
@@ -432,8 +431,8 @@ public class StepExperiment extends Experiment {
     // trim data around areas with filter ringing and remove linear trend
     int trimOffset = 0;
     returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);
-    returnValue = TimeSeriesUtils.detrendEnds(returnValue);
-    returnValue = TimeSeriesUtils.normalize(returnValue);
+    returnValue = NumericUtils.detrendEnds(returnValue);
+    returnValue = NumericUtils.normalize(returnValue);
 
     return returnValue;
   }
