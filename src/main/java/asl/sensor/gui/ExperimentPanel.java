@@ -1,10 +1,14 @@
 package asl.sensor.gui;
 
+import static asl.utils.ReportingUtils.COLORS;
+import static asl.utils.ReportingUtils.chartsToPDFPage;
+import static asl.utils.ReportingUtils.textListToPDFPages;
+import static asl.utils.ReportingUtils.textToPDFPage;
+
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.Experiment;
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
@@ -148,7 +152,7 @@ public abstract class ExperimentPanel
 
   static Color getColor(int idx) {
     if (Configuration.getInstance().useColorblindColors()) {
-      return ReportingUtils.COLORS[idx % ReportingUtils.COLORS.length];
+      return COLORS[idx % COLORS.length];
     }
     switch (idx % 3) {
       case 0:
@@ -660,8 +664,8 @@ public abstract class ExperimentPanel
       sb.append("\n \n");
     }
     sb.append(expResult.getFormattedDateRange());
-    ReportingUtils.textToPDFPage(sb.toString(), pdf);
-    ReportingUtils.textListToPDFPages(pdf, getAdditionalReportPages());
+    textToPDFPage(sb.toString(), pdf);
+    textListToPDFPages(pdf, getAdditionalReportPages());
   }
 
   /**
@@ -676,10 +680,10 @@ public abstract class ExperimentPanel
     int height = 960;
     JFreeChart[] charts = getCharts();
 
-    ReportingUtils.chartsToPDFPage(width, height, pdf, charts);
+    chartsToPDFPage(width, height, pdf, charts);
     JFreeChart[] page2 = getSecondPageCharts();
     if (page2.length > 0) {
-      ReportingUtils.chartsToPDFPage(width, height, pdf, page2);
+      chartsToPDFPage(width, height, pdf, page2);
     }
     saveInsetDataText(pdf);
 

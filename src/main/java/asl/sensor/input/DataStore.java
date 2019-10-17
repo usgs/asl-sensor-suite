@@ -1,7 +1,11 @@
 package asl.sensor.input;
 
+import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static asl.utils.TimeSeriesUtils.formatEpochMillis;
+import static asl.utils.TimeSeriesUtils.getMplexNameList;
+import static asl.utils.TimeSeriesUtils.getTimeSeries;
+
 import asl.utils.FFTResult;
-import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -383,7 +387,7 @@ public class DataStore {
    * @param newSampleRate new sample rate (Hz)
    */
   public void resample(double newSampleRate) {
-    long newInterval = (long) (TimeSeriesUtils.ONE_HZ_INTERVAL / newSampleRate);
+    long newInterval = (long) (ONE_HZ_INTERVAL / newSampleRate);
     // make sure all data over range gets set to the same interval (and don't upsample)
     for (int i = 0; i < FILE_COUNT; ++i) {
       if (thisBlockIsSet[i]) {
@@ -475,7 +479,7 @@ public class DataStore {
   public void setBlock(int idx, String filepath)
       throws SeedFormatException, CodecException,
       IOException {
-    String nameFilter = TimeSeriesUtils.getMplexNameList(filepath).get(0);
+    String nameFilter = getMplexNameList(filepath).get(0);
     setBlock(idx, filepath, nameFilter, FILE_COUNT);
   }
 
@@ -506,7 +510,7 @@ public class DataStore {
       throws SeedFormatException, CodecException,
       IOException {
 
-    DataBlock xy = TimeSeriesUtils.getTimeSeries(filepath, nameFilter);
+    DataBlock xy = getTimeSeries(filepath, nameFilter);
     thisBlockIsSet[idx] = true;
     dataBlockArray[idx] = xy;
 
@@ -604,10 +608,10 @@ public class DataStore {
 
       if (end < db.getStartTime() || start > db.getEndTime()) {
 
-        String trimStartFormatted = TimeSeriesUtils.formatEpochMillis(start);
-        String trimEndFormatted = TimeSeriesUtils.formatEpochMillis(end);
-        String blockStartFormatted = TimeSeriesUtils.formatEpochMillis(db.getStartTime());
-        String blockEndFormatted = TimeSeriesUtils.formatEpochMillis(db.getEndTime());
+        String trimStartFormatted = formatEpochMillis(start);
+        String trimEndFormatted = formatEpochMillis(end);
+        String blockStartFormatted = formatEpochMillis(db.getStartTime());
+        String blockEndFormatted = formatEpochMillis(db.getEndTime());
 
         String errMessage = "Trim range outside of valid data window for " + db.getName() + '\n'
             + "Attempted to trim to range (" + trimStartFormatted
