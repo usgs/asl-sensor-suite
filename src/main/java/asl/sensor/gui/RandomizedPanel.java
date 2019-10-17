@@ -1,10 +1,11 @@
 package asl.sensor.gui;
 
+import static asl.utils.NumericUtils.setInfinityPrintable;
+
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
-import asl.utils.NumericUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -191,7 +192,7 @@ public class RandomizedPanel extends ExperimentPanel {
     StringBuilder csvZeros = new StringBuilder();
     StringBuilder csvTitle = new StringBuilder();
     DecimalFormat csvFormat = new DecimalFormat("+#.###;-#.###");
-    NumericUtils.setInfinityPrintable(csvFormat);
+    setInfinityPrintable(csvFormat);
 
     final int COL_WIDTH = 9;
     String[] columns = new String[]{"Init", "Fit", "Diff", "Mean", "PctDiff"};

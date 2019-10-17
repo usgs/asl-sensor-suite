@@ -1,7 +1,9 @@
 package asl.sensor.experiment;
 
+import static asl.utils.NumericUtils.atanc;
+import static asl.utils.NumericUtils.unwrap;
+
 import asl.sensor.input.DataStore;
-import asl.utils.NumericUtils;
 import asl.utils.input.InstrumentResponse;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -87,8 +89,8 @@ public class ResponseExperiment extends Experiment {
       XYSeries argument = new XYSeries(name);
       for (int i = 0; i < freqArray.length; ++i) {
         Complex tmp = result[i];
-        double phi = NumericUtils.atanc(tmp);
-        phi = NumericUtils.unwrap(phi, phiPrev);
+        double phi = atanc(tmp);
+        phi = unwrap(phi, phiPrev);
         phiPrev = phi;
         phi = Math.toDegrees(phi);
         double magAccel = 10 * Math.log10(tmp.abs());

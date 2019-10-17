@@ -1,12 +1,15 @@
 package asl.sensor;
 
+import static asl.utils.ReportingUtils.chartsToImage;
+import static asl.utils.ReportingUtils.imageListToPDFPages;
+import static asl.utils.ReportingUtils.textListToPDFPages;
+
 import asl.sensor.gui.ConfigurationPanel;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.SwingWorkerSingleton;
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.utils.ReportingUtils;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -218,11 +221,11 @@ public class SensorSuite extends JPanel
       BufferedImage[] toFile =
           ip.getAsMultipleImages(width, inHeight, inPlotCount);
 
-      ReportingUtils.imageListToPDFPages(pdf, toFile);
+      imageListToPDFPages(pdf, toFile);
     }
 
     if (responses.length > 0) {
-      ReportingUtils.textListToPDFPages(pdf, responses);
+      textListToPDFPages(pdf, responses);
     }
 
     try {
@@ -286,7 +289,7 @@ public class SensorSuite extends JPanel
       JFreeChart chart = charts[i];
       String plotName = folderName + "/chart" + (i + 1) + ".png";
       BufferedImage chartImage =
-          ReportingUtils.chartsToImage(1280, 960, chart);
+          chartsToImage(1280, 960, chart);
       File plotPNG = new File(plotName);
       try {
         ImageIO.write(chartImage, "png", plotPNG);

@@ -1,12 +1,12 @@
 package asl.sensor.gui;
 
+import static asl.utils.ResponseUnits.enumerateAllResponseFilenames;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.utils.ResponseUnits;
 import asl.utils.input.InstrumentResponse;
 import java.awt.Color;
 import java.awt.Font;
@@ -162,7 +162,7 @@ public class ResponsePanel extends ExperimentPanel {
     }
 
     if (event.getSource() == copyEmbeddedResp) {
-      String[] names = ResponseUnits.enumerateAllResponseFilenames();
+      String[] names = enumerateAllResponseFilenames();
       Arrays.sort(names);
       JDialog dialog = new JDialog();
       Object result = JOptionPane.showInputDialog(

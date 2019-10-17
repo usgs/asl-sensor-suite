@@ -1,8 +1,10 @@
 package asl.sensor.experiment;
 
+import static asl.utils.NumericUtils.getFFTMean;
+import static asl.utils.NumericUtils.getFFTSDev;
+
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
-import asl.utils.NumericUtils;
 import asl.utils.input.InstrumentResponse;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
@@ -258,16 +260,16 @@ public class GainExperiment extends Experiment {
     FFTResult plot0 = fftResults[refIndex];
     FFTResult plot1 = fftResults[refIndexPlusOne];
 
-    double mean0 = NumericUtils.getFFTMean(plot0, lowerBound, upperBound);
+    double mean0 = getFFTMean(plot0, lowerBound, upperBound);
     // since both datasets must have matching interval, PSDs have same frequencies
-    double mean1 = NumericUtils.getFFTMean(plot1, lowerBound, upperBound);
+    double mean1 = getFFTMean(plot1, lowerBound, upperBound);
 
     // double MIN_VALUE field is effectively java's machine epsilon
     // calculate ratio and sigma over the range
     double ratio = (mean0 + Double.MIN_VALUE) / (mean1 + Double.MIN_VALUE);
     // added terms exist to prevent division by 0
 
-    double sigma = NumericUtils.getFFTSDev(plot0, plot1, ratio, lowerBound, upperBound);
+    double sigma = getFFTSDev(plot0, plot1, ratio, lowerBound, upperBound);
 
     double refGain = gainStage1[refIndex];
     double calcGain = gainStage1[refIndexPlusOne] / Math.sqrt(ratio);
