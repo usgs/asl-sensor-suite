@@ -1,8 +1,10 @@
 package asl.sensor.experiment;
 
+import static asl.utils.NumericUtils.multipointMovingAverage;
+import static asl.utils.NumericUtils.setInfinityPrintable;
+import static asl.utils.TimeSeriesUtils.formatEpochMillis;
+
 import asl.sensor.input.DataStore;
-import asl.utils.NumericUtils;
-import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -57,7 +59,7 @@ public abstract class Experiment {
   public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
       ThreadLocal.withInitial(() -> {
         DecimalFormat format = new DecimalFormat("#.###");
-        NumericUtils.setInfinityPrintable(format);
+        setInfinityPrintable(format);
         return format;
       });
   static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
@@ -181,11 +183,11 @@ public abstract class Experiment {
    * @return formatted start time (Julian day)
    */
   String getFormattedStartDate() {
-    return "Data start time:\n" + TimeSeriesUtils.formatEpochMillis(start);
+    return "Data start time:\n" + formatEpochMillis(start);
   }
 
   String getFormattedEndDate() {
-    return "Data end time:\n" + TimeSeriesUtils.formatEpochMillis(end) + '\n';
+    return "Data end time:\n" + formatEpochMillis(end) + '\n';
   }
 
   /**
@@ -208,7 +210,7 @@ public abstract class Experiment {
       XYSeriesCollection xysc) {
 
     // Smooth the PSD data before it goes out to the plots
-    Complex[] smoothedPSD = NumericUtils.multipointMovingAverage(resultPSD, 9, false);
+    Complex[] smoothedPSD = multipointMovingAverage(resultPSD, 9, false);
     // for the last 3 points, do 7, 5, 3 last points
     Complex last3 = Complex.ZERO;
     Complex last5 = Complex.ZERO;

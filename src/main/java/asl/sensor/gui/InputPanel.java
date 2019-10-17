@@ -1,13 +1,16 @@
 package asl.sensor.gui;
 
+import static asl.utils.ReportingUtils.chartsToImage;
+import static asl.utils.ReportingUtils.chartsToImageList;
+import static asl.utils.ResponseUnits.getFilenameFromComponents;
+import static asl.utils.TimeSeriesUtils.getDataBlockFromFDSNQuery;
+import static asl.utils.TimeSeriesUtils.getMplexNameSet;
+
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStore.TimeRangeException;
-import asl.utils.ReportingUtils;
-import asl.utils.ResponseUnits;
 import asl.utils.ResponseUnits.ResolutionType;
 import asl.utils.ResponseUnits.SensorType;
-import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -322,7 +325,7 @@ public class InputPanel
     responseArray = new String[responses.size() + 1];
     for (int w = 0; w < responses.size(); ++w) {
       Pair<SensorType, ResolutionType> respToName = responses.get(w);
-      responseArray[w] = ResponseUnits.getFilenameFromComponents(
+      responseArray[w] = getFilenameFromComponents(
           respToName.getFirst(), respToName.getSecond());
     }
     // add an extra line here, for the custom response loading option, not part of sorted list
@@ -752,7 +755,7 @@ public class InputPanel
       chartsToPrint[i] = chartPanels[i].getChart();
     }
 
-    return ReportingUtils.chartsToImage(width, chartHeight, chartsToPrint);
+    return chartsToImage(width, chartHeight, chartsToPrint);
   }
 
 
@@ -778,8 +781,7 @@ public class InputPanel
       chartsToPrint[i] = chartPanels[i].getChart();
     }
 
-    return ReportingUtils.chartsToImageList(
-        PLOTS_PER_PAGE, width, chartHeight, chartsToPrint);
+    return chartsToImageList(PLOTS_PER_PAGE, width, chartHeight, chartsToPrint);
   }
 
   /**
@@ -869,7 +871,7 @@ public class InputPanel
         DataBlock blockToLoad;
         try {
           blockToLoad =
-              TimeSeriesUtils.getDataBlockFromFDSNQuery(scheme, host, port, path,
+              getDataBlockFromFDSNQuery(scheme, host, port, path,
                   net, sta, fixedLoc, cha, start, end);
           if (blockToLoad.size() == 0) {
             returnedErrMsg = "The query returned no data.\n" + filename;
@@ -1695,7 +1697,7 @@ public class InputPanel
     @Override
     public Set<String> getFilenameSet(DataStore dataStore, int index, String filePath)
         throws SeedFormatException, IOException {
-      return TimeSeriesUtils.getMplexNameSet(filePath);
+      return getMplexNameSet(filePath);
     }
 
     @Override
@@ -1718,7 +1720,7 @@ public class InputPanel
     public Set<String> getFilenameSet(DataStore dataStore, int index, String filePath)
         throws SeedFormatException, IOException {
       String thisName = dataStore.getBlock(index).getName();
-      if (!TimeSeriesUtils.getMplexNameSet(filePath).contains(thisName)) {
+      if (!getMplexNameSet(filePath).contains(thisName)) {
         return new HashSet<>();
       }
       Set<String> returnSet = new HashSet<>();

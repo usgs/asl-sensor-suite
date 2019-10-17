@@ -1,5 +1,8 @@
 package asl.sensor.experiment;
 
+import static asl.utils.TimeSeriesUtils.rotate;
+import static asl.utils.TimeSeriesUtils.rotateX;
+
 import asl.sensor.input.DataStore;
 import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
@@ -131,10 +134,10 @@ public class GainSixExperiment extends Experiment {
     // now to rotate the data according to these angles
     fireStateChange("Rotating data...");
     DataBlock north2Rotated =
-        TimeSeriesUtils.rotate(northRotate, eastRotate, northAngle);
+        rotate(northRotate, eastRotate, northAngle);
     stores[0].setBlock(indexOfRotatingData, north2Rotated);
     DataBlock east2Rotated =
-        TimeSeriesUtils.rotateX(northRotate, eastRotate, eastAngle);
+        rotateX(northRotate, eastRotate, eastAngle);
     stores[1].setBlock(indexOfRotatingData, east2Rotated);
 
     // now get the datasets to plug into the datastore
@@ -184,8 +187,8 @@ public class GainSixExperiment extends Experiment {
    *
    * @return Angle of second east sensor (radians) minus 90-degree offset
    * representing angle between north and east sensors; this is the angle sent
-   * to the rotation function
-   * @see asl.utils.TimeSeriesUtils#rotateX(double[], double[], double)
+   * to the rotation function,
+   * {@link asl.utils.TimeSeriesUtils#rotateX(DataBlock, DataBlock, double)}
    */
   public double getEastAzimuthDegrees() {
     double eastDegrees = Math.toDegrees(eastAngle);

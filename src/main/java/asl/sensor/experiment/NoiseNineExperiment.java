@@ -1,7 +1,9 @@
 package asl.sensor.experiment;
 
+import static asl.utils.TimeSeriesUtils.rotate;
+import static asl.utils.TimeSeriesUtils.rotateX;
+
 import asl.sensor.input.DataStore;
-import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import java.util.stream.IntStream;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -197,10 +199,10 @@ public class NoiseNineExperiment extends NoiseExperiment {
 
       fireStateChange("Rotating data " + (i + 1) + "...");
       DataBlock northUnknownRotate =
-          TimeSeriesUtils.rotate(northRotate, eastRotate, northAngles[i]);
+          rotate(northRotate, eastRotate, northAngles[i]);
       stores[0].setBlock(i, northUnknownRotate);
       DataBlock eastUnknownRotate =
-          TimeSeriesUtils.rotateX(northRotate, eastRotate, eastAngles[i]);
+          rotateX(northRotate, eastRotate, eastAngles[i]);
       stores[1].setBlock(i, eastUnknownRotate);
     });
 

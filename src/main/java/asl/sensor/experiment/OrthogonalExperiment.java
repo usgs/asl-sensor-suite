@@ -1,11 +1,15 @@
 package asl.sensor.experiment;
 
+import static asl.utils.NumericUtils.TAU;
+import static asl.utils.NumericUtils.decimate;
+import static asl.utils.NumericUtils.demean;
+import static asl.utils.NumericUtils.detrend;
+import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static org.apache.commons.math3.linear.MatrixUtils.createRealVector;
+
 import asl.sensor.input.DataStore;
-import asl.utils.NumericUtils;
-import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import java.util.Arrays;
-import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -37,10 +41,10 @@ public class OrthogonalExperiment extends Experiment {
    * @return signal rotated in the direction of the given angle
    */
   static RealVector rotateSignal(RealVector refX, RealVector refY, double angle) {
-    double theta = angle % NumericUtils.TAU;
+    double theta = angle % TAU;
 
     if (theta < 0) {
-      theta += NumericUtils.TAU;
+      theta += TAU;
     }
 
     double sinTheta = Math.sin(theta);
@@ -88,25 +92,25 @@ public class OrthogonalExperiment extends Experiment {
     double[] testLH1 = testLH1Block.getData();
     double[] testLH2 = testLH2Block.getData();
 
-    refLH1 = NumericUtils.demean(refLH1);
-    refLH2 = NumericUtils.demean(refLH2);
-    testLH1 = NumericUtils.demean(testLH1);
-    testLH2 = NumericUtils.demean(testLH2);
+    refLH1 = demean(refLH1);
+    refLH2 = demean(refLH2);
+    testLH1 = demean(testLH1);
+    testLH2 = demean(testLH2);
 
-    refLH1 = NumericUtils.detrend(refLH1);
-    refLH2 = NumericUtils.detrend(refLH2);
-    testLH1 = NumericUtils.detrend(testLH1);
-    testLH2 = NumericUtils.detrend(testLH2);
+    refLH1 = detrend(refLH1);
+    refLH2 = detrend(refLH2);
+    testLH1 = detrend(testLH1);
+    testLH2 = detrend(testLH2);
 
     // note that parent class preprocessing should have already downsampled all data to same rate
     // so this just takes it down to 1Hz if it's still above that
 
-    refLH1 = NumericUtils.decimate(refLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    refLH2 = NumericUtils.decimate(refLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    testLH1 = NumericUtils.decimate(testLH1, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    testLH2 = NumericUtils.decimate(testLH2, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    refLH1 = decimate(refLH1, interval, ONE_HZ_INTERVAL);
+    refLH2 = decimate(refLH2, interval, ONE_HZ_INTERVAL);
+    testLH1 = decimate(testLH1, interval, ONE_HZ_INTERVAL);
+    testLH2 = decimate(testLH2, interval, ONE_HZ_INTERVAL);
 
-    interval = Math.max(interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    interval = Math.max(interval, ONE_HZ_INTERVAL);
 
     int len = refLH1.length;
     double[] refYArr = Arrays.copyOfRange(refLH1, 0, len);
@@ -125,9 +129,9 @@ public class OrthogonalExperiment extends Experiment {
 
     angle = Math.abs(angleY - angleX);
 
-    RealVector refX = MatrixUtils.createRealVector(refXArr);
-    RealVector refY = MatrixUtils.createRealVector(refYArr);
-    RealVector testY = MatrixUtils.createRealVector(testYArr);
+    RealVector refX = createRealVector(refXArr);
+    RealVector refY = createRealVector(refYArr);
+    RealVector testY = createRealVector(testYArr);
 
     angle = ((angle % 360) + 360) % 360;
     // get the INTERNAL angle of the two components
@@ -141,7 +145,7 @@ public class OrthogonalExperiment extends Experiment {
     diffs[1] = ((diffs[1] % 360) + 360) % 360;
 
     double timeAtPoint = 0.;
-    double tick = interval / (double)TimeSeriesUtils.ONE_HZ_INTERVAL;
+    double tick = interval / (double) ONE_HZ_INTERVAL;
 
     fireStateChange("Getting plottable data...");
 

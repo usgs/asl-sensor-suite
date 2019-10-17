@@ -1,9 +1,10 @@
 package asl.sensor.gui;
 
+import static asl.utils.NumericUtils.DECIMAL_FORMAT;
+
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.input.DataStore;
-import asl.utils.NumericUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -188,7 +189,7 @@ public class AzimuthPanel extends ExperimentPanel {
     double[] correlations = azimuthExperiment.getCorrelations();
     StringBuilder sb = new StringBuilder("Best-fit correlation value per-window:\n");
     for (double correlation : correlations) {
-      sb.append(NumericUtils.DECIMAL_FORMAT.get().format(correlation)).append("  ");
+      sb.append(DECIMAL_FORMAT.get().format(correlation)).append("  ");
     }
     sb.append("\n");
 
