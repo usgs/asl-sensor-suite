@@ -1,5 +1,0 @@
-This data is used in multiple tests to verify integrity of azimuth
-calculation components. Tests exist to check that the data has its mean 
-removed, that it is filtered correctly, and that the correct azimuth
-result has been returned. Expected azimuth is 3.4 taken over time range
-02:00:00 to 13:00:00.
