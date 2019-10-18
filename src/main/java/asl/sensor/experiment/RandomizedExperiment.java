@@ -213,7 +213,7 @@ public class RandomizedExperiment extends Experiment {
       System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
     }
 
-    Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
+    Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
     double[] curValue = new double[freqs.length * 2];
 
     for (int i = 0; i < freqs.length; ++i) {
@@ -373,7 +373,7 @@ public class RandomizedExperiment extends Experiment {
       testResp.replaceFitZero(currentVar, varIndex, isLowFreq);
     }
 
-    Complex[] appliedCurve = testResp.applyResponseToInput(freqs);
+    Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
     double[] curValue = new double[freqs.length];
 
     for (int i = 0; i < freqs.length; ++i) {
@@ -743,8 +743,8 @@ public class RandomizedExperiment extends Experiment {
 
     fireStateChange("Getting extended resp curves for high-freq plots...");
     // we use the apply response method here to get the full range of plotted data, not just fit
-    Complex[] init = initResponse.applyResponseToInput(plottingFreqs);
-    Complex[] fit = fitResponse.applyResponseToInput(plottingFreqs);
+    Complex[] init = initResponse.applyResponseToInputUnscaled(plottingFreqs);
+    Complex[] fit = fitResponse.applyResponseToInputUnscaled(plottingFreqs);
     double[] initialValues = new double[plottingFreqs.length * 2];
     double[] fitValues = new double[plottingFreqs.length * 2];
     for (int i = 0; i < plottingFreqs.length; ++i) {
