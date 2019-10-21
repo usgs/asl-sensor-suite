@@ -93,14 +93,15 @@ public class RandomizedExperimentTest {
     }
     final boolean lowFreq = false;
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
-    initialPoleGuess = ir.polesToVector(lowFreq, 80.);
-    initialZeroGuess = ir.zerosToVector(lowFreq, 80.);
+    initialPoleGuess = ir.polesToVector(lowFreq, Double.MAX_VALUE);
+    initialZeroGuess = ir.zerosToVector(lowFreq, Double.MAX_VALUE);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
     Pair<RealVector, RealMatrix> jacobianResult =
         RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, lowFreq);
+
     // evaluate the data for reference
-    Complex[] result = ir.applyResponseToInput(freqs);
+    Complex[] result = ir.applyResponseToInputUnscaled(freqs);
     double[] testData = new double[2 * result.length];
     for (int i = 0; i < result.length; ++i) {
       int argIdx = i + result.length;
@@ -109,16 +110,18 @@ public class RandomizedExperimentTest {
       testData[argIdx] = NumericUtils.atanc(c);
     }
     RandomizedExperiment.scaleValues(testData, freqs, lowFreq);
+
     // test that the Jacobian first result is the actual evaluation
     double[] functionEvaluation = jacobianResult.getFirst().toArray();
     assertArrayEquals(testData, functionEvaluation, 1E-2);
     // now compare the forward difference to the first difference in the array
     RealVector testAgainst = initialGuess.copy();
     double changingVar = testAgainst.getEntry(0);
-    testAgainst.setEntry(0, changingVar + 100 * Math.ulp(changingVar));
+    double jacobianDiff = 100 * Math.ulp(changingVar);
+    testAgainst.setEntry(0, changingVar + jacobianDiff);
     InstrumentResponse testDiffResponse =
         ir.buildResponseFromFitVector(testAgainst.toArray(), lowFreq, numZeros);
-    Complex[] diffResult = testDiffResponse.applyResponseToInput(freqs);
+    Complex[] diffResult = testDiffResponse.applyResponseToInputUnscaled(freqs);
     double[] testDiffData = new double[2 * diffResult.length];
     for (int i = 0; i < diffResult.length; ++i) {
       int argIdx = i + result.length;
@@ -129,8 +132,8 @@ public class RandomizedExperimentTest {
     RandomizedExperiment.scaleValues(testDiffData, freqs, lowFreq);
     double[] firstJacobian = new double[testDiffData.length];
     for (int i = 0; i < testDiffData.length; ++i) {
-      firstJacobian[i] = testData[i] - testDiffData[i];
-      firstJacobian[i] /= (changingVar - (testAgainst.getEntry(0)));
+      firstJacobian[i] = testDiffData[i] - testData[i];
+      firstJacobian[i] /= jacobianDiff;
     }
     double[] testFirstJacobianAgainst = jacobianResult.getSecond().getColumnVector(0).toArray();
     assertArrayEquals(testFirstJacobianAgainst, firstJacobian, 1E-3);
@@ -185,7 +188,6 @@ public class RandomizedExperimentTest {
       double x = (double) calcCurve.getX(i);
       if (x > 1 && x < 2.5) {
         double y = (double) calcCurve.getY(i);
-        System.out.println(x + ", " + y);
         assertTrue("Curve value above expected normalization at index " + i  + " (freq. "
             + x + "): Got amplitude value of " + y, Math.abs(y) < 0.15);
       }
@@ -202,9 +204,6 @@ public class RandomizedExperimentTest {
 
       DataStore ds = setUpTest1();
       InstrumentResponse ir = ds.getResponse(1);
-
-      double nyq = ds.getBlock(0).getSampleRate() / 2.;
-      System.out.println("NYQUIST RATE: " + nyq);
 
       RandomizedExperiment rCal = (RandomizedExperiment)
           ExperimentFactory.RANDOMCAL.createExperiment();
@@ -458,8 +457,8 @@ public class RandomizedExperimentTest {
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-4);
     }
 
-    assertEquals(1.88619, rCal.getFitResidual(), 1E-4);
-    assertEquals(2.35656, rCal.getInitResidual(), 1E-4);
+    assertEquals(1.88619, rCal.getFitResidual(), 1E-3);
+    assertEquals(2.35656, rCal.getInitResidual(), 1E-3);
   }
 
   @Test
@@ -584,7 +583,9 @@ public class RandomizedExperimentTest {
     Complex[] evaluatedPoles = poleErrors.keySet().toArray(new Complex[]{});
 
     for (Complex pole : evaluatedPoles) {
-      Complex expectedPoleError = new Complex(0.01214, 0.01689);
+      // this value used to be 0.01214, 0.01689i from before the unscaled resp calculation was done
+      // TODO: get a better basis for understanding what a reasonable expected error should be
+      Complex expectedPoleError = new Complex(0.0010082633, 0.0059096432);
       Complex evaluatedPoleError = poleErrors.get(pole);
       String message = "Difference between expected "
           + "and evaluated poles outside of error bound:\n\t"
