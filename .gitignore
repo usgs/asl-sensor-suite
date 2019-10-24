@@ -11,6 +11,8 @@ src/test/resources/sprockets/*
 *.iml
 out/
 
+sensor-suite-config.xml
+
 gradle.properties
 
 # Mac
