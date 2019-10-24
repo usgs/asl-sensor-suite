@@ -116,7 +116,7 @@ task gitSubmodule(type: Exec) {
     println 'Interrupting may corrupt the test data submodule.'
     commandLine 'git', 'submodule', 'update', '--init', '--recursive'
     commandLine 'git', '--git-dir', 'asl-java-utils/.git', 'fetch', '--all'
-    commandLine 'git', '--git-dir', 'asl-java-utils/.git', 'checkout', 'origin/test'
+    commandLine 'git', '--git-dir', 'asl-java-utils/.git', 'checkout', 'origin/master'
 }
 
 build.dependsOn copyJar, copyServerJar, gitSubmodule
