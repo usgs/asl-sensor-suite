@@ -79,11 +79,11 @@ public class CalServerTest {
     assertEquals(expectedFitPoles.length, fitPoles.length);
 
     for (int i = 0; i < fitPoles.length; i++) {
-      assertEquals(expectedInitPoles[i].getReal(), initPoles[i].getReal(), 1E-4);
-      assertEquals(expectedInitPoles[i].getImaginary(), initPoles[i].getImaginary(), 1E-4);
+      assertEquals(expectedInitPoles[i].getReal(), initPoles[i].getReal(), 1.5E-4);
+      assertEquals(expectedInitPoles[i].getImaginary(), initPoles[i].getImaginary(), 1.5E-4);
 
-      assertEquals(expectedFitPoles[i].getReal(), fitPoles[i].getReal(), 1E-4);
-      assertEquals(expectedFitPoles[i].getImaginary(), fitPoles[i].getImaginary(), 1E-4);
+      assertEquals(expectedFitPoles[i].getReal(), fitPoles[i].getReal(), 1.5E-4);
+      assertEquals(expectedFitPoles[i].getImaginary(), fitPoles[i].getImaginary(), 1.5E-4);
     }
 
   }
