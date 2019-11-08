@@ -609,7 +609,7 @@ public class RandomizedExperiment extends Experiment {
       weights[argIndex] = maxArgWeight;
       weights[i] = maxMagWeight; // / denominator;
       if (isLowFrequencyCalibration && freqs[i] < 0.1) {
-        weights[i] *= 10;
+        weights[i] /= freqs[i];
       }
     }
 
