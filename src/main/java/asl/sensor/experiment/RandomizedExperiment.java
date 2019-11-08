@@ -608,6 +608,9 @@ public class RandomizedExperiment extends Experiment {
       int argIndex = i + freqs.length;
       weights[argIndex] = maxArgWeight;
       weights[i] = maxMagWeight; // / denominator;
+      if (isLowFrequencyCalibration && freqs[i] < 0.1) {
+        weights[i] *= 10;
+      }
     }
 
     // get the rest of the plotted data squared away

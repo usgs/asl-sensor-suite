@@ -449,16 +449,16 @@ public class RandomizedExperimentTest {
 
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
-        new Complex(-0.01247, -0.011495),
-        new Complex(-0.01247,  0.011495)
+        new Complex(-0.01247, -0.01179),
+        new Complex(-0.01247,  0.01179)
     };
     for (int i = 0; i < fitPoles.size(); i++) {
-      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-4);
-      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-4);
+      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 5E-4);
+      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 5E-4);
     }
 
-    assertEquals(1.88619, rCal.getFitResidual(), 1E-3);
-    assertEquals(2.35656, rCal.getInitResidual(), 1E-3);
+    assertEquals(3.96975, rCal.getFitResidual(), 1E-3);
+    assertEquals(4.30781, rCal.getInitResidual(), 1E-3);
   }
 
   @Test
@@ -583,9 +583,8 @@ public class RandomizedExperimentTest {
     Complex[] evaluatedPoles = poleErrors.keySet().toArray(new Complex[]{});
 
     for (Complex pole : evaluatedPoles) {
-      // this value used to be 0.01214, 0.01689i from before the unscaled resp calculation was done
-      // TODO: get a better basis for understanding what a reasonable expected error should be
-      Complex expectedPoleError = new Complex(0.0010082633, 0.0059096432);
+      // these values are clearly dependent on weighting scheme for calculated calibration curve
+      Complex expectedPoleError = new Complex(0.014546479, 0.0085197934);
       Complex evaluatedPoleError = poleErrors.get(pole);
       String message = "Difference between expected "
           + "and evaluated poles outside of error bound:\n\t"
