@@ -96,8 +96,8 @@ public class CalServerTest {
     String resp = "STS1T5_Q330HR";
     final boolean EMBED = true;
 
-    String startString = "2018-02-07T15:25:00+00:00";
-    String endString = "2018-02-07T16:00:00+00:00";
+    String startString = "2018-02-07T15:20:00+00:00";
+    String endString = "2018-02-07T15:59:00+00:00";
 
     CalProcessingServer server = new CalProcessingServer();
     CalResult result = server.runStep(calInputFile, calOutputFile,

@@ -27,7 +27,6 @@ public class ResponseExperimentTest {
         LocalDateTime.parse("2015,055,00:00:00", formatter).toInstant(ZoneOffset.UTC);
     String respName = "RESP.CU.BCIP.00.BHZ_2017_268";
     String respFile = RESP_LOCATION + respName;
-    System.out.println(InstrumentResponse.getRespFileEpochs(respFile));
     InstrumentResponse firstResp = new InstrumentResponse(respFile, startFirstEpoch);
     dataStore.setResponse(0, firstResp);
     InstrumentResponse secondResp = new InstrumentResponse(respFile, startSecondEpoch);
