@@ -347,8 +347,8 @@ public class RandomizedExperimentTest {
       CalProcessingServer cps = new CalProcessingServer();
       CalResult rCalResult = cps.runRand(calInFile, sensorOutFile, respFile,
           false, start, end, true);
-      System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_poles")));
-      System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_zeros")));
+      //System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_poles")));
+      //System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_zeros")));
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
@@ -457,8 +457,8 @@ public class RandomizedExperimentTest {
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 5E-4);
     }
 
-    assertEquals(11.194415, rCal.getFitResidual(), 1E-3);
-    assertEquals(13.537622, rCal.getInitResidual(), 1E-3);
+    assertEquals(10.9337, rCal.getFitResidual(), 1E-3);
+    assertEquals(12.8584, rCal.getInitResidual(), 1E-3);
   }
 
   @Test
@@ -584,7 +584,7 @@ public class RandomizedExperimentTest {
 
     for (Complex pole : evaluatedPoles) {
       // these values are clearly dependent on weighting scheme for calculated calibration curve
-      Complex expectedPoleError = new Complex(0.0122980183, 0.0144039402);
+      Complex expectedPoleError = new Complex(0.0044232172, 0.0092123909);
       Complex evaluatedPoleError = poleErrors.get(pole);
       String message = "Difference between expected "
           + "and evaluated poles outside of error bound:\n\t"

@@ -210,9 +210,11 @@ public class StepExperiment extends Experiment {
     // get FFT of datablock timeseries, deconvolve with response
     // single sided FFT includes lowpass filter and demean in preprocessing
     // additional processing is done when inverting the FFT in the calculate method
+    double[] data = sensorOutput.getData();
+    data = lowPassFilter(data, sensorOutput.getSampleRate(), 0.1, 2);
+    FFTResult.cosineTaper(data, 0.025);
     FFTResult sensorsFFT =
-        FFTResult.
-            singleSidedFilteredFFT(sensorOutput, needsFlip);
+        FFTResult.singleSidedFFT(data, sensorOutput.getSampleRate(), needsFlip);
     // these values used in calculating the response deconvolution
     sensorFFTSeries = sensorsFFT.getFFT();
     freqs = sensorsFFT.getFreqs();
