@@ -1,6 +1,6 @@
 package asl.sensor.gui;
 
-import static asl.utils.NumericUtils.setInfinityPrintable;
+import static asl.utils.ReportingUtils.setNonNumericPrintable;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
@@ -69,7 +69,7 @@ public class RandomizedPanel extends ExperimentPanel {
   public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
 
-    SpinnerModel spinModel = new SpinnerNumberModel(80., 30., 90., 1.);
+    SpinnerModel spinModel = new SpinnerNumberModel(50., 30., 90., 1.);
     nyquistMultiplier = new JSpinner(spinModel);
     JLabel nyquistMultiplierLabel = new JLabel("% bound of nyquist for HF cals");
     nyquistMultiplierLabel.setLabelFor(nyquistMultiplier);
@@ -192,7 +192,7 @@ public class RandomizedPanel extends ExperimentPanel {
     StringBuilder csvZeros = new StringBuilder();
     StringBuilder csvTitle = new StringBuilder();
     DecimalFormat csvFormat = new DecimalFormat("+#.###;-#.###");
-    setInfinityPrintable(csvFormat);
+    setNonNumericPrintable(csvFormat);
 
     final int COL_WIDTH = 9;
     String[] columns = new String[]{"Init", "Fit", "Diff", "Mean", "PctDiff"};
