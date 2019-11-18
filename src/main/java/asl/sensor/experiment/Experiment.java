@@ -1,7 +1,7 @@
 package asl.sensor.experiment;
 
 import static asl.utils.NumericUtils.multipointMovingAverage;
-import static asl.utils.NumericUtils.setInfinityPrintable;
+import static asl.utils.ReportingUtils.setNonNumericPrintable;
 import static asl.utils.TimeSeriesUtils.formatEpochMillis;
 
 import asl.sensor.input.DataStore;
@@ -59,7 +59,7 @@ public abstract class Experiment {
   public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
       ThreadLocal.withInitial(() -> {
         DecimalFormat format = new DecimalFormat("#.###");
-        setInfinityPrintable(format);
+        setNonNumericPrintable(format);
         return format;
       });
   static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
