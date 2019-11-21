@@ -17,6 +17,8 @@ import asl.sensor.output.CalResult;
 import asl.sensor.test.TestUtils;
 import asl.utils.NumericUtils;
 import asl.utils.ReportingUtils;
+import asl.utils.ResponseUnits.ResolutionType;
+import asl.utils.ResponseUnits.SensorType;
 import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -490,10 +492,9 @@ public class RandomizedExperimentTest {
     assertTrue("Residual value over 25: " + fitResidual,fitResidual < 25.);
   }
 
-  // @Test TODO: evaluate something in all of this
-  public void verifyRespCurveExpectation() {
+  @Test // TODO: evaluate something in all of this
+  public void verifyRespCurveBehavior() throws IOException {
     String respName1 = RESP_LOCATION + "RESP.IU.SNZO.00.BHZ";
-    String respName2 = RESP_LOCATION + "NEW.RESP.IU.SNZO.00.BHZ";
     String dataFolderName = getSeedFolder("IU", "SNZO", "2019", "086");
     String calName = dataFolderName + "CB_BC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
@@ -502,6 +503,9 @@ public class RandomizedExperimentTest {
         DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
 
     DataStore ds = DataStoreUtils.createFromNames(respName1, calName, sensOutName);
+    ds.setResponse(1,
+        InstrumentResponse.loadEmbeddedResponse(SensorType.TR360, ResolutionType.HIGH));
+    assertFalse(ds.responseIsSet(0));
     long startCal = ZonedDateTime.parse(startTime, dateTimeFormatter).toInstant().toEpochMilli();
     String endTime = "2019,086,15:56:00";
     long endCal = ZonedDateTime.parse(endTime, dateTimeFormatter).toInstant().toEpochMilli();
@@ -513,7 +517,13 @@ public class RandomizedExperimentTest {
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
 
-    InstrumentResponse ir = rCal.getFitResponse();
+    // second entry in data list is phase series for plots, first one is initial repsonse curve
+    // second index in array is the series of y-values
+    double[] results = rCal.getData().get(1).getSeries(0).toArray()[1];
+    double[] allZeros = new double[results.length]; // array values initialized to zero
+    // if this assert fails, there is an issue with the calculation of response curves in
+    // the random cal solver
+    assertFalse(Arrays.equals(allZeros, results));
   }
 
   @Test
