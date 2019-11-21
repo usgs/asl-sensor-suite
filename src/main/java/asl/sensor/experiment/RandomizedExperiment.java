@@ -772,13 +772,10 @@ public class RandomizedExperiment extends Experiment {
       }
 
       int argIdx = initialValues.length / 2 + i;
-      double plotArg;
       initMag.add(xValue, initialValues[i]);
-      plotArg = rewrapAngleDegrees(initialValues[argIdx]);
-      initArg.add(xValue, plotArg);
+      initArg.add(xValue, rewrapAngleDegrees(initialValues[argIdx]));
       fitMag.add(xValue, fitValues[i]);
-      plotArg = rewrapAngleDegrees(fitValues[argIdx]);
-      fitArg.add(xValue, plotArg);
+      fitArg.add(xValue, rewrapAngleDegrees(fitValues[argIdx]));
 
       if (i < freqs.length) {
         int obsArgIdx = i + freqs.length; // observedResult cuts off before freqsFull does
