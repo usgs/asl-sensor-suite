@@ -1,13 +1,13 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
+import asl.utils.input.DataBlock;
 import java.util.ArrayList;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 /**
- * Performs the calculations of a 10 volt test
+ * Performs the calculations of a 10 volt test to determine sensitivity values of a given channel.
  */
 public class VoltageExperiment extends Experiment {
 
@@ -15,13 +15,14 @@ public class VoltageExperiment extends Experiment {
 
   private double[] sensitivity;
   private double[] gain;
-  private String[] dataNames;
+  private int[] gainStage;
   private int loadedAmount;
 
   public VoltageExperiment() {
     sensitivity = new double[]{};
     gain = new double[]{};
-    dataNames = new String[]{};
+    // relevant gain stage is 3 in some newer installations, but default to 2
+    gainStage = new int[]{2, 2, 2};
     loadedAmount = 0;
   }
 
@@ -29,8 +30,9 @@ public class VoltageExperiment extends Experiment {
   public String[] getDataStrings() {
     String[] returnValue = new String[loadedAmount];
     for (int i = 0; i < loadedAmount; ++i) {
-      returnValue[i] = dataNames[i]
-          + ":\nRESP. Stage 2 gain: " + DECIMAL_FORMAT.get().format(gain[i])
+
+      returnValue[i] = dataNames.get(i)
+          + ":\nRESP. Stage " + gainStage[i] + " gain: " + DECIMAL_FORMAT.get().format(gain[i])
           + "\nEstimated sensitivity: " + DECIMAL_FORMAT.get().format(sensitivity[i])
           + "\nPercent difference: "
           + DECIMAL_FORMAT.get().format(getPercentDifference(i));
@@ -55,7 +57,8 @@ public class VoltageExperiment extends Experiment {
 
     gain = new double[loadedAmount];
     sensitivity = new double[loadedAmount];
-    dataNames = new String[loadedAmount];
+    // intialize as stage-2 gain
+    gainStage = new int[]{2, 2, 2};
 
     xySeriesData = new ArrayList<>();
     XYSeriesCollection xysc = new XYSeriesCollection();
@@ -66,11 +69,17 @@ public class VoltageExperiment extends Experiment {
           + " of " + (loadedAmount) + " (slot " + (indexUnderAnalysis+1) + ")...");
 
       DataBlock currentBlock = dataStore.getBlock(indexUnderAnalysis);
-      dataNames[i] = currentBlock.getName();
+      dataNames.add(currentBlock.getName());
 
       // stage 2 gain is the value from the digitizer, i.e., 2^24/40 or 2^26/40
       // depending on the digitizer's bit-depth
       gain[i] = dataStore.getResponse(indexUnderAnalysis).getGain()[2];
+      if (gain[i] == 1) {
+        // N4 sensors, possibly others may have a unit-value stage 2 gain
+        // if that is the case when we need to look at the stage after that
+        gain[i] = dataStore.getResponse(indexUnderAnalysis).getGain()[3];
+        gainStage[i] = 3;
+      }
 
       double[] data = currentBlock.getData();
       double min = data[0];
@@ -82,15 +91,25 @@ public class VoltageExperiment extends Experiment {
       // artifacts -- i.e., data on either side of min/max should be flat relative to it
       int offset = (int) dataStore.getBlock(loadedData[i]).getSampleRate() + 1;
 
+      outerLoop:
       for (int j = offset; j < data.length - offset; ++j) {
+
         // make sure the extremes are in a roughly flat part of the signal
-        // i.e., both min and max values should be in the flat part of a pulse
-        double diff = Math.abs(data[j-offset] - data[j+offset]);
-        if (data[j] < min && diff < 100) {
+        // i.e., all values to consider for analysis should have low variances
+        for (int k = j - offset; k <= j + offset; ++k) {
+          // represent error as magnitude difference between values
+          double pctDiff = Math.abs(data[k] - data[j]) / Math.abs(data[j]) * 100;
+          if (pctDiff > 5) {
+            // if the percent error is too high, skip to next possible point
+            continue outerLoop;
+          }
+        }
+
+        if (data[j] <= min) {
           min = data[j];
           minIndex = j;
         }
-        if (data[j] > max && diff < 100) {
+        if (data[j] >= max) {
           max = data[j];
           maxIndex = j;
         }
@@ -102,11 +121,11 @@ public class VoltageExperiment extends Experiment {
       int plotXPoint = 0;
 
       int startingPoint = -2; // start from 2 behind the minimum value of the data if possible
-      while(minIndex + startingPoint < 0) {
+      while(minIndex + startingPoint < 0 || maxIndex + startingPoint < 0) {
         ++startingPoint;
       }
 
-      XYSeries xys = new XYSeries(dataNames[i]);
+      XYSeries xys = new XYSeries(dataNames.get(i));
       // get the 5 points centered around the max/min value
       for (int j = startingPoint; j < (startingPoint + 5); ++j) {
         int currentMinLookup = minIndex + j;

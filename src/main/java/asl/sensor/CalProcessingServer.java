@@ -1,9 +1,23 @@
 package asl.sensor;
 
+import static asl.utils.ReportingUtils.COLORS;
+import static asl.utils.ReportingUtils.chartsToImageList;
+import static asl.utils.ResponseUnits.enumerateAllResponseFilenames;
+import static asl.utils.TimeSeriesUtils.getFirstTimeSeries;
+
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.SineExperiment;
+import asl.sensor.experiment.StepExperiment;
 import asl.sensor.experiment.VoltageExperiment;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.input.DataStore;
 import asl.sensor.output.CalResult;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -13,10 +27,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.chart.ChartFactory;
@@ -32,19 +43,8 @@ import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.experiment.SineExperiment;
-import asl.sensor.experiment.StepExperiment;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import org.jfree.ui.RectangleAnchor;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
@@ -59,9 +59,6 @@ import py4j.Py4JNetworkException;
  */
 public class CalProcessingServer {
 
-
-  private Color[] COLORS = ReportingUtils.COLORS;
-
   public CalProcessingServer() {
   }
 
@@ -71,17 +68,7 @@ public class CalProcessingServer {
    * @return List of names of embedded resps (will match common sensor & digitizer gain setups)
    */
   public static String[] getEmbeddedRESPFilenames() {
-    Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
-
-    List<String> names = new ArrayList<>(respFilenames);
-    Collections.sort(names);
-    String[] nameArray = new String[names.size()];
-    for (int k = 0; k < nameArray.length; ++k) {
-      String name = names.get(k);
-      name = name.replace("resps/", "");
-      nameArray[k] = name;
-    }
-    return nameArray;
+    return enumerateAllResponseFilenames();
   }
 
   public static void main(String[] args) {
@@ -149,7 +136,7 @@ public class CalProcessingServer {
 
     DataStore ds = new DataStore();
     for (int i = 0; i < seedFileNames.length; ++i) {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(seedFileNames[i]);
+      DataBlock db = getFirstTimeSeries(seedFileNames[i]);
       ds.setBlock(i, db);
       InstrumentResponse ir;
       if (embedResps[i]) {
@@ -190,8 +177,8 @@ public class CalProcessingServer {
     long end = endDateTime.toInstant().toEpochMilli();
 
     DataStore ds = new DataStore();
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -244,8 +231,8 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
     String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -292,8 +279,8 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
     String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -337,8 +324,8 @@ public class CalProcessingServer {
     long end = endDateTime.toInstant().toEpochMilli();
 
     DataStore ds = new DataStore();
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -379,8 +366,8 @@ public class CalProcessingServer {
     long end = endDateTime.toInstant().toEpochMilli();
 
     DataStore ds = new DataStore();
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
 
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
@@ -417,8 +404,8 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
     String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
 
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
@@ -557,7 +544,7 @@ public class CalProcessingServer {
       for (int seriesIndex = 0; seriesIndex < timeseriesIn.getSeriesCount(); ++seriesIndex) {
         stroke = (BasicStroke) plot.getRenderer().getSeriesStroke(seriesIndex);
         if (stroke == null) {
-          stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
+          stroke = (BasicStroke) plot.getRenderer().getDefaultStroke();
         }
         float width = stroke.getLineWidth() + 2f;
         int join = stroke.getLineJoin();
@@ -581,13 +568,13 @@ public class CalProcessingServer {
       // ensure that NLNM lines are bolder, colored black
       XYItemRenderer renderer = plot.getRenderer();
       // series index 0 - ref data; series index 1 - other data; series index 2 - NLNM plot
-      stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
+      stroke = (BasicStroke) plot.getRenderer().getDefaultStroke();
       stroke = new BasicStroke(stroke.getLineWidth() * 2);
       renderer.setSeriesStroke(2, stroke);
       renderer.setSeriesPaint(2, new Color(0, 0, 0));
     }
 
-    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    BufferedImage[] images = chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
     for (int i = 0; i < images.length; ++i) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -636,7 +623,7 @@ public class CalProcessingServer {
       }
     }
 
-    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    BufferedImage[] images = chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
     for (int i = 0; i < images.length; ++i) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -699,7 +686,7 @@ public class CalProcessingServer {
       }
     }
 
-    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    BufferedImage[] images = chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
     for (int i = 0; i < images.length; ++i) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -851,7 +838,7 @@ public class CalProcessingServer {
       charts[1].getXYPlot().addDomainMarker(maxFitMarker);
     }
 
-    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    BufferedImage[] images = chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
     for (int i = 0; i < images.length; ++i) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -901,7 +888,7 @@ public class CalProcessingServer {
     double[] sensitivities = voltage.getAllSensitivities();
     double[] differences = voltage.getPercentDifferences();
 
-    BufferedImage image = ReportingUtils.chartsToImageList(1, 1280, 960, chart)[0];
+    BufferedImage image = chartsToImageList(1, 1280, 960, chart)[0];
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ImageIO.write(image, "png", out);
     byte[] pngByteArray = out.toByteArray();

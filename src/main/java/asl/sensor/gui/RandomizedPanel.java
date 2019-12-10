@@ -1,11 +1,11 @@
 package asl.sensor.gui;
 
+import static asl.utils.ReportingUtils.setNonNumericPrintable;
+
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -16,10 +16,12 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
@@ -38,9 +40,9 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.VerticalAlignment;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.VerticalAlignment;
 
 /**
  * Panel to display results from a randomized calibration experiment.
@@ -59,13 +61,15 @@ public class RandomizedPanel extends ExperimentPanel {
   private final JSpinner nyquistMultiplier;
   private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
       residualXAxis, residualPeriodAxis;
-  private JCheckBox lowFrequency, showParams, frequencySpace, capacitiveCal;
+  private JRadioButton lowFrequency, autoFrequency;
+  // high frequency button created in constructor but not checked explicitly for status
+  private JCheckBox showParams, frequencySpace, capacitiveCal;
   private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
 
   public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
 
-    SpinnerModel spinModel = new SpinnerNumberModel(80., 30., 90., 1.);
+    SpinnerModel spinModel = new SpinnerNumberModel(50., 30., 90., 1.);
     nyquistMultiplier = new JSpinner(spinModel);
     JLabel nyquistMultiplierLabel = new JLabel("% bound of nyquist for HF cals");
     nyquistMultiplierLabel.setLabelFor(nyquistMultiplier);
@@ -73,6 +77,17 @@ public class RandomizedPanel extends ExperimentPanel {
     nyquistMultiplierLabel.setHorizontalAlignment(SwingConstants.RIGHT);
     JPanel labelPanel = new JPanel();
     labelPanel.add(nyquistMultiplierLabel);
+
+    JLabel introText = new JLabel("Calibration type: ");
+    lowFrequency = new JRadioButton("low freq.");
+    JRadioButton highFrequency = new JRadioButton("high freq.");
+    autoFrequency = new JRadioButton("auto");
+
+    ButtonGroup group = new ButtonGroup();
+    group.add(lowFrequency);
+    group.add(highFrequency);
+    group.add(autoFrequency);
+    autoFrequency.setSelected(true);
 
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
@@ -108,13 +123,25 @@ public class RandomizedPanel extends ExperimentPanel {
     constraints.fill = GridBagConstraints.NONE;
     constraints.gridy += 1;
     constraints.gridx = 0;
-    JPanel checkBoxPanel = new JPanel();
-    checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
-    checkBoxPanel.add(lowFrequency);
-    checkBoxPanel.add(showParams);
-    checkBoxPanel.add(frequencySpace);
-    checkBoxPanel.add(capacitiveCal);
-    this.add(checkBoxPanel, constraints);
+    JPanel optionsPanel = new JPanel();
+    optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
+
+    JPanel radioButtonPanel = new JPanel();
+    radioButtonPanel.setAlignmentX(LEFT_ALIGNMENT);
+    radioButtonPanel.setLayout(new BoxLayout(radioButtonPanel, BoxLayout.X_AXIS));
+    radioButtonPanel.add(introText);
+    radioButtonPanel.add(lowFrequency);
+    radioButtonPanel.add(highFrequency);
+    radioButtonPanel.add(autoFrequency);
+
+    optionsPanel.add(radioButtonPanel);
+    showParams.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(showParams);
+    frequencySpace.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(frequencySpace);
+    capacitiveCal.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(capacitiveCal);
+    this.add(optionsPanel, constraints);
 
     constraints.gridx += 1;
     constraints.weightx = 1.0;
@@ -165,7 +192,7 @@ public class RandomizedPanel extends ExperimentPanel {
     StringBuilder csvZeros = new StringBuilder();
     StringBuilder csvTitle = new StringBuilder();
     DecimalFormat csvFormat = new DecimalFormat("+#.###;-#.###");
-    NumericUtils.setInfinityPrintable(csvFormat);
+    setNonNumericPrintable(csvFormat);
 
     final int COL_WIDTH = 9;
     String[] columns = new String[]{"Init", "Fit", "Diff", "Mean", "PctDiff"};
@@ -423,7 +450,8 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   @Override
   public String getPDFFilename() {
-    if (lowFrequency.isSelected()) {
+    RandomizedExperiment rExp = (RandomizedExperiment) expResult;
+    if (rExp.isLowFrequencyCalibration()) {
       return "Low_Frq_" + super.getPDFFilename();
     } else {
       return "High_Frq_" + super.getPDFFilename();
@@ -481,7 +509,7 @@ public class RandomizedPanel extends ExperimentPanel {
     degreeAxis = new NumberAxis(degreeAxisTitle);
     degreeAxis.setAutoRange(true);
 
-    residualPhaseAxis = new NumberAxis("Phase error (degrees)");
+    residualPhaseAxis = new NumberAxis("Phase error (percentage)");
     residualAmplitudeAxis = new NumberAxis("Amplitude error (percentage)");
 
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
@@ -492,9 +520,6 @@ public class RandomizedPanel extends ExperimentPanel {
     degreeAxis.setLabelFont(bold);
     residualPhaseAxis.setLabelFont(bold);
     residualAmplitudeAxis.setLabelFont(bold);
-
-    lowFrequency = new JCheckBox("Low frequency calibration");
-    lowFrequency.setSelected(true);
 
     showParams = new JCheckBox("Show params");
     showParams.setEnabled(false);
@@ -549,7 +574,11 @@ public class RandomizedPanel extends ExperimentPanel {
     double multiplier = (double) nyquistMultiplier.getValue() / 100.;
 
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
-    rndExp.setLowFrequencyCalibration(isLowFreq);
+    if (autoFrequency.isSelected()) {
+      rndExp.autoDetermineCalibrationStatus(dataStore);
+    } else {
+      rndExp.setLowFrequencyCalibration(isLowFreq);
+    }
     rndExp.setPlotUsingHz(frequencySpace.isSelected());
     rndExp.setNyquistMultiplier(multiplier);
     rndExp.setCapactiveCalibration(capacitiveCal.isSelected());
@@ -570,7 +599,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
     for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
 
-      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
+      Color toColor = getColor(i);
       String magName = (String) magSeries.getSeriesKey(i);
       seriesColorMap.put(magName, toColor);
 
@@ -604,10 +633,10 @@ public class RandomizedPanel extends ExperimentPanel {
     XYItemRenderer renderer; // use this to set series paints to set the last color to use 3rd color
     residualAmplitudeChart = buildChart(xysc.get(2), getResidAxis(), residualAmplitudeAxis);
     renderer = residualAmplitudeChart.getXYPlot().getRenderer();
-    renderer.setSeriesPaint(1, ReportingUtils.COLORS[2]);
+    renderer.setSeriesPaint(1, getColor(2));
     residualPhaseChart = buildChart(xysc.get(3), getResidAxis(), residualPhaseAxis);
     renderer = residualPhaseChart.getXYPlot().getRenderer();
-    renderer.setSeriesPaint(1, ReportingUtils.COLORS[2]);
+    renderer.setSeriesPaint(1, getColor(2));
 
   }
 

@@ -3,7 +3,6 @@ package asl.sensor.gui;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -17,10 +16,10 @@ import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.VerticalAlignment;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.VerticalAlignment;
 
 public class VoltagePanel extends ExperimentPanel {
 
@@ -60,7 +59,7 @@ public class VoltagePanel extends ExperimentPanel {
 
     double[] meanValues = voltage.getMeanLines();
     for (int i = 0; i < plotCount; ++i) {
-      Color lineColor = ReportingUtils.COLORS[i % 3].darker().darker();
+      Color lineColor = getColor(i).darker().darker();
       Marker meanMarker = new ValueMarker(meanValues[i]);
       meanMarker.setLabel("MEAN VALUE " + series.getSeriesKey(i));
       meanMarker.setLabelAnchor(RectangleAnchor.TOP);
@@ -118,7 +117,7 @@ public class VoltagePanel extends ExperimentPanel {
       if (null == name) {
         continue;
       }
-      Color plotColor = ReportingUtils.COLORS[i % 3];
+      Color plotColor = getColor(i);
       seriesColorMap.put(name, plotColor);
     }
 

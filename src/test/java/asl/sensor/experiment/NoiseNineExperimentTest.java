@@ -9,7 +9,8 @@ import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.NoiseNinePanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
-import asl.sensor.utils.ReportingUtils;
+
+import asl.utils.ReportingUtils;
 import java.awt.Font;
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -33,9 +34,9 @@ public class NoiseNineExperimentTest {
   private final String currentDir = System.getProperty("user.dir");
 
   private final double[][] EXPECTED_RESULT = {
-      {-189.9680639665581,  -200.24125929077707, -189.83970408840372},
-      {-179.51495541797638, -202.96955785611723, -188.57426612488223},
-      {-187.56881966534036, -203.60470820383782, -188.1041096402045}};
+      {-189.968, -200.408, -189.840},
+      {-179.515, -202.862, -188.574},
+      {-187.685, -204.186, -188.104}};
 
   private final double NORTH_ANGLE_1 = 0.915;
   private final double NORTH_ANGLE_2 = -0.051;

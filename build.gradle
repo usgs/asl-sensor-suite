@@ -3,7 +3,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'application'
 
-version = '1.7.0'
+version = '1.7.3'
 
 mainClassName = 'asl.sensor.SensorSuite'
 sourceCompatibility = '1.8'
@@ -11,22 +11,22 @@ sourceCompatibility = '1.8'
 repositories {
     mavenCentral()
 }
+
 dependencies {
-    compile group: 'org.jfree', name: 'jfreechart', version: '1.0.19'
+    compile project(':asl-java-utils')
 
-    compile group: 'edu.sc.seis', name: 'seisFile', version: '1.8.+'
-    compile group: 'edu.sc.seis', name: 'seedCodec', version: '1.0.11'
-
+    compile group: 'org.jfree', name: 'jfreechart', version: '1.5.0'
 
     compile group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.+'
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.+'
+    compile group: 'commons-configuration', name: 'commons-configuration', version: '1.7'
 
     compile group: 'net.sf.py4j', name: 'py4j', version: '0.10.7'
 
-    compile group: 'uk.me.berndporr', name: 'iirj', version: '1.0'
-
     testCompile group: 'junit', name: 'junit', version: '4.+'
 }
+
+
 
 task jarMain(type: Jar) {
     baseName = rootProject.name
@@ -46,14 +46,6 @@ task jarMain(type: Jar) {
         }
     }
     with jar
-}
-
-task listResps() {
-    def files =  fileTree("$projectDir/src/main/resources/resps").filter { it.isFile() }.files.name
-    File respListFile = new File("$projectDir/src/main/resources/responses.txt")
-    respListFile.withWriter{ out ->
-        files.each {out.println it}
-    }
 }
 
 task jarServer(type: Jar) {
@@ -122,10 +114,11 @@ task gitSubmodule(type: Exec) {
     description 'Update git submodules'
     println 'Downloading the test data submodule may take a long time, potentially hours depending on your connection speed.'
     println 'Interrupting may corrupt the test data submodule.'
-    commandLine 'git', 'submodule', 'update', '--init'
+    commandLine 'git', 'submodule', 'update', '--init', '--recursive'
+    commandLine 'git', '--git-dir', 'asl-java-utils/.git', 'fetch', '--all'
+    commandLine 'git', '--git-dir', 'asl-java-utils/.git', 'checkout', 'origin/master'
 }
 
-test.dependsOn listResps
-compileJava.dependsOn listResps
-build.dependsOn copyJar, copyServerJar
+build.dependsOn copyJar, copyServerJar, gitSubmodule
+compileJava.dependsOn(gitSubmodule)
 processTestResources.dependsOn gitSubmodule

@@ -1,10 +1,10 @@
 package asl.sensor.gui;
 
+import static asl.utils.NumericUtils.DECIMAL_FORMAT;
+
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -32,9 +32,9 @@ import org.jfree.chart.renderer.DefaultPolarItemRenderer;
 import org.jfree.chart.renderer.xy.DefaultXYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.Layer;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.Layer;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Wrapper class to display result from Azimuth. Overrides some parent
@@ -189,7 +189,7 @@ public class AzimuthPanel extends ExperimentPanel {
     double[] correlations = azimuthExperiment.getCorrelations();
     StringBuilder sb = new StringBuilder("Best-fit correlation value per-window:\n");
     for (double correlation : correlations) {
-      sb.append(NumericUtils.DECIMAL_FORMAT.get().format(correlation)).append("  ");
+      sb.append(DECIMAL_FORMAT.get().format(correlation)).append("  ");
     }
     sb.append("\n");
 
@@ -234,7 +234,7 @@ public class AzimuthPanel extends ExperimentPanel {
     for (int i = 0; i < polars.getSeriesCount(); ++i) {
       BasicStroke stroke = (BasicStroke) polarRenderer.getSeriesStroke(i);
       if (stroke == null) {
-        stroke = (BasicStroke) polarRenderer.getBaseStroke();
+        stroke = (BasicStroke) polarRenderer.getDefaultStroke();
       }
       float width = stroke.getLineWidth() + 4f;
       int join = stroke.getLineJoin();
@@ -242,7 +242,7 @@ public class AzimuthPanel extends ExperimentPanel {
 
       stroke = new BasicStroke(width, cap, join, 10f);
       polarRenderer.setSeriesStroke(i, stroke);
-      polarRenderer.setSeriesPaint(i, ReportingUtils.COLORS[i%3]);
+      polarRenderer.setSeriesPaint(i, getColor(i));
     }
     plot.clearCornerTextItems();
     // include result information -- angle estimation, start/end times in plot
@@ -267,6 +267,7 @@ public class AzimuthPanel extends ExperimentPanel {
     estimationPlot.setRenderer(1, renderer);
 
     NumberAxis angleEstimationAxis = new NumberAxis("Angle est. (deg)");
+    angleEstimationAxis.setAutoRangeIncludesZero(false);
     estimationPlot.setRangeAxis(0, angleEstimationAxis);
     NumberAxis correlationAxis = new NumberAxis("Correlation est. of best fit angle");
     estimationPlot.setRangeAxis(1, correlationAxis);
@@ -277,10 +278,10 @@ public class AzimuthPanel extends ExperimentPanel {
     estimationPlot.mapDatasetToRangeAxis(1, 1);
 
     for (int i = 0; i < estimationPlot.getRendererCount(); ++i) {
-      estimationPlot.getRenderer(i).setSeriesPaint(0, ReportingUtils.COLORS[i%3]);
+      estimationPlot.getRenderer(i).setSeriesPaint(0, getColor(i));
       BasicStroke stroke = (BasicStroke) estimationPlot.getRenderer(i).getSeriesStroke(0);
       if (stroke == null) {
-        stroke = (BasicStroke) renderer.getBaseStroke();
+        stroke = (BasicStroke) renderer.getDefaultStroke();
       }
       float width = stroke.getLineWidth() + 2f;
       int join = stroke.getLineJoin();

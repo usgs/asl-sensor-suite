@@ -5,8 +5,8 @@ import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.CalProcessingServer;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.test.TestUtils;
+import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
@@ -69,8 +69,8 @@ public class CalServerTest {
         new InstrumentResponse(respName).getPoles().toArray(new Complex[]{});
 
     Complex[] expectedFitPoles = {
-        new Complex(-0.012725101823426397, -0.011495336794506263),
-        new Complex(-0.012725101823426397, 0.011495336794506263),
+        new Complex(-0.012758, -0.011495),
+        new Complex(-0.012758,  0.011495),
         expectedInitPoles[2],
         expectedInitPoles[3],
     };
@@ -79,11 +79,11 @@ public class CalServerTest {
     assertEquals(expectedFitPoles.length, fitPoles.length);
 
     for (int i = 0; i < fitPoles.length; i++) {
-      assertEquals(expectedInitPoles[i].getReal(), initPoles[i].getReal(), 1E-4);
-      assertEquals(expectedInitPoles[i].getImaginary(), initPoles[i].getImaginary(), 1E-4);
+      assertEquals(expectedInitPoles[i].getReal(), initPoles[i].getReal(), 1.5E-4);
+      assertEquals(expectedInitPoles[i].getImaginary(), initPoles[i].getImaginary(), 1.5E-4);
 
-      assertEquals(expectedFitPoles[i].getReal(), fitPoles[i].getReal(), 1E-4);
-      assertEquals(expectedFitPoles[i].getImaginary(), fitPoles[i].getImaginary(), 1E-4);
+      assertEquals(expectedFitPoles[i].getReal(), fitPoles[i].getReal(), 1.5E-4);
+      assertEquals(expectedFitPoles[i].getImaginary(), fitPoles[i].getImaginary(), 1.5E-4);
     }
 
   }
@@ -96,8 +96,8 @@ public class CalServerTest {
     String resp = "STS1T5_Q330HR";
     final boolean EMBED = true;
 
-    String startString = "2018-02-07T15:25:00+00:00";
-    String endString = "2018-02-07T16:00:00+00:00";
+    String startString = "2018-02-07T15:20:00+00:00";
+    String endString = "2018-02-07T15:59:00+00:00";
 
     CalProcessingServer server = new CalProcessingServer();
     CalResult result = server.runStep(calInputFile, calOutputFile,

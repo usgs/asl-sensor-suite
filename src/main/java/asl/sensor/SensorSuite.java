@@ -1,13 +1,19 @@
 package asl.sensor;
 
+import static asl.utils.ReportingUtils.chartsToImage;
+import static asl.utils.ReportingUtils.imageListToPDFPages;
+import static asl.utils.ReportingUtils.textListToPDFPages;
+
+import asl.sensor.gui.ConfigurationPanel;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.InputPanel;
 import asl.sensor.gui.SwingWorkerSingleton;
+import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -21,6 +27,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
@@ -30,16 +37,13 @@ import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.JFreeChart;
 
 /**
- * Main window of the sensor test program and the program's launcher
- * Mainly used for handling the input (InputPanel)
- * and output (ExperimentPanel)
- * GUI frames and making sure they fit together and cooperate.
+ * Main window of the sensor test program and the program's launcher Mainly used for handling the
+ * input (InputPanel) and output (ExperimentPanel) GUI frames and making sure they fit together and
+ * cooperate.
  *
  * @author akearns
  */
@@ -52,17 +56,19 @@ public class SensorSuite extends JPanel
   private final JTabbedPane tabbedPane; // holds set of experiment panels
   private final JButton generate;
   private final JButton savePDF; // run all calculations
+  private final JButton modifyConfig;
   // used to store current directory locations
-  private String saveDirectory = System.getProperty("user.home");
+  private String saveDirectory;
+
   /**
-   * Creates the main window of the program when called
-   * (Three main panels: the top panel for displaying the results
-   * of sensor tests; the lower panel for displaying plots of raw data from
+   * Creates the main window of the program when called (Three main panels: the top panel for
+   * displaying the results of sensor tests; the lower panel for displaying plots of raw data from
    * miniSEED files; the side panel for most file-IO operations
    */
   private SensorSuite() {
-
     super();
+
+    saveDirectory = Configuration.getInstance().getDefaultOutputFolder();
 
     // set up experiment panes in a tabbed pane
     tabbedPane = new JTabbedPane();
@@ -74,10 +80,6 @@ public class SensorSuite extends JPanel
     inputPlots = new InputPanel();
     inputPlots.addChangeListener(this);
 
-    Dimension dimension = tabbedPane.getPreferredSize();
-    inputPlots.setPreferredSize(dimension);
-    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight());
-    tabbedPane.setMinimumSize(dimension);
     tabbedPane.addChangeListener(this);
 
     // experiments on left, input on the right; split to allow resizing
@@ -113,13 +115,10 @@ public class SensorSuite extends JPanel
     savePDF = new JButton("Generate PDF report from current test");
     savePDF.setEnabled(false);
     savePDF.addActionListener(this);
-    dimension = savePDF.getPreferredSize();
+    Dimension dimension = savePDF.getPreferredSize();
     dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
     savePDF.setMinimumSize(dimension);
     savePDF.setPreferredSize(dimension);
-    constraints.anchor = GridBagConstraints.EAST;
-    this.add(savePDF, constraints);
-    constraints.gridx += 1;
 
     generate = new JButton("Generate test result");
     generate.setEnabled(false);
@@ -128,14 +127,34 @@ public class SensorSuite extends JPanel
     dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
     generate.setMinimumSize(dimension);
     generate.setPreferredSize(dimension);
+
+    JPanel generationPanel = new JPanel();
+    generationPanel.setLayout(new GridLayout(1, 2));
+    generationPanel.add(savePDF);
+    generationPanel.add(generate);
+
+    constraints.anchor = GridBagConstraints.EAST;
+    this.add(generationPanel, constraints);
+    constraints.gridx += 1;
+
+    modifyConfig = new JButton("Edit configuration");
+    modifyConfig.setEnabled(true);
+    modifyConfig.addActionListener(this);
+    dimension = modifyConfig.getPreferredSize();
+    dimension.setSize(dimension.getWidth() * 1.5, dimension.getHeight() * 1.5);
+    modifyConfig.setMinimumSize(dimension);
+    modifyConfig.setPreferredSize(dimension);
+
     constraints.anchor = GridBagConstraints.WEST;
-    this.add(generate, constraints);
+    this.add(modifyConfig, constraints);
 
     fileChooser = new JFileChooser();
 
     ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
     inputPlots.showDataNeeded(experimentPanel.panelsNeeded());
     inputPlots.setChannelTypes(experimentPanel.getChannelTypes());
+
+    this.setPreferredSize(this.getPreferredSize());
 
   }
 
@@ -163,11 +182,16 @@ public class SensorSuite extends JPanel
     //Schedule a job for the event dispatch thread:
     //creating and showing this application's GUI.
 
+    // parse in configuration file if one is specified, otherwise default to config.xml
+    // in working directory, if it exists -- if it doesn't, populate with default values
+    if (args.length > 0) {
+      Configuration.getInstance(args[0]);
+    } else {
+      Configuration.getInstance();
+    }
+
     // lambda method constructs a Runnable
-    SwingUtilities.invokeLater(() -> {
-      Logger.getRootLogger().setLevel(Level.WARN);
-      createAndShowGUI();
-    });
+    SwingUtilities.invokeLater(SensorSuite::createAndShowGUI);
 
   }
 
@@ -197,11 +221,11 @@ public class SensorSuite extends JPanel
       BufferedImage[] toFile =
           ip.getAsMultipleImages(width, inHeight, inPlotCount);
 
-      ReportingUtils.imageListToPDFPages(pdf, toFile);
+      imageListToPDFPages(pdf, toFile);
     }
 
     if (responses.length > 0) {
-      ReportingUtils.textListToPDFPages(pdf, responses);
+      textListToPDFPages(pdf, responses);
     }
 
     try {
@@ -230,13 +254,11 @@ public class SensorSuite extends JPanel
   }
 
   /**
-   * Saves data collected from an experiment to. Files will be written into
-   * a specified folder, with the format "Chart#.png" and all metadata in a
-   * single file referred to as "outputData.txt".
+   * Saves data collected from an experiment to. Files will be written into a specified folder, with
+   * the format "Chart#.png" and all metadata in a single file referred to as "outputData.txt".
    *
-   * @param folderName Folder to write data into, presumably something like a
-   * user's home directory, but inside a subdirectory of format
-   * "test_results/[Experiment-specified filename]".
+   * @param folderName Folder to write data into, presumably something like a user's home directory,
+   * but inside a subdirectory of format "test_results/[Experiment-specified filename]".
    * @param text Text output from an experiment
    * @param charts Array of charts produced from the experiment
    */
@@ -267,7 +289,7 @@ public class SensorSuite extends JPanel
       JFreeChart chart = charts[i];
       String plotName = folderName + "/chart" + (i + 1) + ".png";
       BufferedImage chartImage =
-          ReportingUtils.chartsToImage(1280, 960, chart);
+          chartsToImage(1280, 960, chart);
       File plotPNG = new File(plotName);
       try {
         ImageIO.write(chartImage, "png", plotPNG);
@@ -278,11 +300,10 @@ public class SensorSuite extends JPanel
   }
 
   /**
-   * Handles actions when the buttons are clicked -- either the 'save PDF'
-   * button, which compiles the input and output plots into a single PDF, or
-   * the 'generate result' button.
-   * Because generating results of an experiment can be slow, the operation
-   * is set to run in a separate thread.
+   * Handles actions when the buttons are clicked -- either the 'save PDF' button, which compiles
+   * the input and output plots into a single PDF, or the 'generate result' button. Because
+   * generating results of an experiment can be slow, the operation is set to run in a separate
+   * thread.
    */
   @Override
   public void actionPerformed(ActionEvent event) {
@@ -325,6 +346,15 @@ public class SensorSuite extends JPanel
 
         plotsToPDF(selectedFile, experimentPanel, inputPlots);
       }
+    } else if (event.getSource() == modifyConfig) {
+
+      ConfigurationPanel panel = new ConfigurationPanel();
+      int result = JOptionPane.showConfirmDialog(this,
+          panel, "Modify config. and write to file", JOptionPane.OK_CANCEL_OPTION);
+      if (result == JOptionPane.OK_OPTION) {
+        panel.writeValues();;
+      }
+
     }
 
   }
@@ -347,8 +377,8 @@ public class SensorSuite extends JPanel
   }
 
   /**
-   * Checks when input panel gets new data or active experiment changes
-   * to determine whether or not the experiment can be run yet
+   * Checks when input panel gets new data or active experiment changes to determine whether or not
+   * the experiment can be run yet
    */
   @Override
   public void stateChanged(ChangeEvent event) {

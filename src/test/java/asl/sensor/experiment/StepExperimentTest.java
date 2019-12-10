@@ -5,8 +5,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.test.TestUtils;
+import asl.utils.input.InstrumentResponse;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
@@ -25,8 +25,8 @@ public class StepExperimentTest {
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
     ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS1T5_Q330HR"));
-    String startString = "2018-038T15:25:00.0";
-    String endString = "2018-038T16:00:00.0";
+    String startString = "2018-038T15:20:00.0";
+    String endString = "2018-038T15:59:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
     long ed = TestUtils.timeStringToEpochMilli(endString);
     ds.trim(st, ed);
@@ -46,8 +46,8 @@ public class StepExperimentTest {
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
     ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS2gen3_Q330HR"));
-    String startString = "2018-037T20:02:00.0";
-    String endString = "2018-037T20:17:00.0";
+    String startString = "2018-037T19:55:00.0";
+    String endString = "2018-037T20:35:30.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
     long ed = TestUtils.timeStringToEpochMilli(endString);
     ds.trim(st, ed);
@@ -55,11 +55,11 @@ public class StepExperimentTest {
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
     assertEquals(120.00, 1. / fitParams[0], 0.5);
-    assertEquals(0.7079, fitParams[1], 0.0005);
+    assertEquals(0.7106, fitParams[1], 0.0005);
     String expected1 = "RESP parameters\nCorner frequency (Hz): 0.008 (119.827 secs)\n"
         + "Damping: 0.709\n";
-    String expected2 = "Best-fit parameters\nCorner frequency (Hz): 0.008 (119.535 secs)\n"
-        + "Damping: 0.708\n";
+    String expected2 = "Best-fit parameters\nCorner frequency (Hz): 0.008 (120.093 secs)\n"
+        + "Damping: 0.711\n";
     assertArrayEquals(new String[] {expected1, expected2}, se.getInsetStrings());
   }
 

@@ -1,9 +1,9 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
+import asl.utils.FFTResult;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
@@ -144,9 +144,10 @@ public class NoiseExperiment extends Experiment {
       noise[i][0] = Complex.ZERO;
     }
 
+    final double[] finalFreqs = freqs;
     for (int i = 1; i < freqs.length; ++i) {
-      if (1 / freqs[i] > MAX_PLOT_PERIOD) {
-        continue;
+      if ((1. / finalFreqs[i]) > MAX_PLOT_PERIOD) {
+        return;
       }
 
       Complex p11 = spectra[0][i];

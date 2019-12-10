@@ -8,6 +8,7 @@ git:
 
 before_install:
     - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+    - sed -i 's/git@code.usgs.gov:/https:\/\/code.usgs.gov\//' .gitmodules
     - git submodule update --init --recursive
 
 before_cache:
@@ -17,3 +18,5 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+
+install: travis_wait gradle gitSubmodule

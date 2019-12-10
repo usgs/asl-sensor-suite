@@ -4,6 +4,13 @@
 
 This program is used to analyze various aspects of seismic sensor data in order to determine information about their configuration, such as gain and orientation. It is meant to be a simple program that can be used to generate data on a wide range of sensor tests, a one-stop-shop for sensor diagnostics designed to replace several disparate programs across multiple languages. The program is designed around an interface meant to be simple and intuitive.
 
+DOI: https://doi.org/10.5066/P9XXBOVR  
+IPDS: IP-101116  
+
+USGS Approved Release:  
+Link: https://github.com/usgs/asl-sensor-suite/releases/tag/v1.4.2   
+Commit Hash: f25cfd70afc2195ad1f651efb319264c285d4ef4  
+
 ### Requirements
 
 ##### Software
