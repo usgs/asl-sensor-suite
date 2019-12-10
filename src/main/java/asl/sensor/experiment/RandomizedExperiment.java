@@ -53,13 +53,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 public class RandomizedExperiment extends Experiment {
 
   /**
-<<<<<<< HEAD
-=======
-   * Defines the resolution of steps in iterative solution process
-   */
-  static final double DELTA = 1E-10;
-  /**
->>>>>>> Fix issues with calibration stability, un-break test cases
    * Maximum possible frequency value as a multiple of nyquist (0.9).
    * The solver will still default to 0.8 as results above that are very unstable for noisy cals
    */
@@ -364,7 +357,7 @@ public class RandomizedExperiment extends Experiment {
     double[] mag = evaluateError(currentVar, freqs, varIndex, fitResponse, pole, isLowFreq);
 
     double[][] jacobian = new double[mag.length][2];
-
+    
     // same procedure as forward difference in main jacobian function
     double diff = 100 * Math.ulp(currentVar.getReal());
     double next = diff + currentVar.getReal();
