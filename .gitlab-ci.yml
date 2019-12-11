@@ -15,10 +15,12 @@ before_script:
 - sh ssl_acquire.bash
 - git submodule init
 - git submodule sync
-- git submodule update
+- git submodule update --recursive
 - cd asl-java-utils
-- git fetch --all
-- git checkout origin/test
+- ls -la
+- git status
+- #git fetch --all
+- #git checkout origin/test
 - cd ..
 
 cache:
