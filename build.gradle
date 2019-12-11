@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    compile project(':asl-java-utils')
+    compile project(path: ':asl-java-utils', configuration: 'default')
 
     compile group: 'org.jfree', name: 'jfreechart', version: '1.5.0'
 
