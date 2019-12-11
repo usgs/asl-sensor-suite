@@ -19,8 +19,6 @@ before_script:
 - cd asl-java-utils
 - ls -la
 - git status
-- #git fetch --all
-- #git checkout origin/test
 - cd ..
 
 cache:
