@@ -16,9 +16,10 @@ before_script:
 - git submodule init
 - git submodule sync
 - git submodule update
-- pwd
-- ls -la
-- ls -la asl-java-utils
+- ls -la ..
+- cd asl-java-utils
+- git fetch --all
+- git checkout origin/test
 
 cache:
   paths:
