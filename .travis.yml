@@ -7,9 +7,10 @@ git:
     submodules: false
 
 before_install:
-    - mkdir asl-java-utils
     - sed -i 's/git@code.usgs.gov:/https:\/\/code.usgs.gov\//' .gitmodules
-    - git submodule update --init --recursive
+    - git submodule init
+    - git submodule sync
+    - git submodule update
 
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
