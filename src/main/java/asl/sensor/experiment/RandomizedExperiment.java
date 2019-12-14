@@ -850,6 +850,12 @@ public class RandomizedExperiment extends Experiment {
       int lowIndex = FFTResult.getIndexOfFrequency(freqs, corner / Math.sqrt(2.));
       int highIndex = FFTResult.getIndexOfFrequency(freqs, Math.sqrt(2.) * corner);
 
+      if (lowIndex == highIndex) {
+        // in this case the pole/zero is either well beyond the minimum plotted frequency value
+        // or exists well inside the flat band of the sensor, so we will not fit it
+        continue;
+      }
+
       double[] errorTermFreqsFull = Arrays.copyOfRange(freqs, lowIndex, highIndex);
       double[] observedMagnitudeFull = Arrays.copyOfRange(observedResult, lowIndex, highIndex);
       final int index;

@@ -5,6 +5,7 @@ import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -17,6 +18,7 @@ import asl.sensor.output.CalResult;
 import asl.sensor.test.TestUtils;
 import asl.utils.NumericUtils;
 import asl.utils.ReportingUtils;
+import asl.utils.ResponseUnits;
 import asl.utils.ResponseUnits.ResolutionType;
 import asl.utils.ResponseUnits.SensorType;
 import asl.utils.input.InstrumentResponse;
@@ -461,6 +463,39 @@ public class RandomizedExperimentTest {
 
     assertEquals(10.9337, rCal.getFitResidual(), 1E-3);
     assertEquals(12.8584, rCal.getInitResidual(), 1E-3);
+  }
+
+  @Test
+  public void rssdCheckAgainstNaNErrorEstimates() {
+
+    String resp = ResponseUnits.getFilenameFromComponents(SensorType.STS6, ResolutionType.HIGH);
+
+    String dataFolderName1 = getSeedFolder("IU", "RSSD", "2019", "319");
+    String dataFolderName2 = getSeedFolder("IU", "RSSD", "2019", "320");
+    String calFilename = "_BC0.512.seed";
+    String calFirstDay = dataFolderName1 + calFilename;
+    String calSecondDay = dataFolderName2 + calFilename;
+    String sensorFilename = "00_BHZ.512.seed";
+    String sensorFirstDay = dataFolderName1 + sensorFilename;
+    String sensorSecondDay = dataFolderName2 + sensorFilename;
+
+    DataStore ds = DataStoreUtils.createFromNamesEmbedResp(resp, calFirstDay, sensorFirstDay);
+    DataStoreUtils.appendFromNames(ds, calSecondDay, sensorSecondDay);
+
+    long start = TestUtils.timeStringToEpochMilli("2019-319T22:00:48.2")+91;
+    long end = TestUtils.timeStringToEpochMilli("2019-320T06:08:50.2")+32;
+    ds.trim(start, end);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(true);
+    rExp.runExperimentOnData(ds);
+
+    for (Complex error : rExp.getPoleErrors().values()) {
+      assertNotEquals(error.getReal(), Double.NaN);
+    }
+    for (Complex error : rExp.getZeroErrors().values()) {
+      assertNotEquals(error.getReal(), Double.NaN);
+    }
   }
 
   @Test
