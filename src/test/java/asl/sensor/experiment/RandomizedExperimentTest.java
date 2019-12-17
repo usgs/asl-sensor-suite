@@ -331,7 +331,6 @@ public class RandomizedExperimentTest {
           testResultFolder + "Random-Calib-Test-1.pdf";
       pdf.save(new File(testResult));
       pdf.close();
-      System.out.println("Output result has been written");
 
     } catch (IOException e) {
       e.printStackTrace();
@@ -351,8 +350,6 @@ public class RandomizedExperimentTest {
       CalProcessingServer cps = new CalProcessingServer();
       CalResult rCalResult = cps.runRand(calInFile, sensorOutFile, respFile,
           false, start, end, true);
-      //System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_poles")));
-      //System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_zeros")));
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
