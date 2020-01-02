@@ -26,9 +26,7 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.+'
 }
 
-
-
-task jarMain(type: Jar) {
+jar {
     baseName = rootProject.name
     manifest {
         attributes 'Implementation-Title': 'ASL Sensor Test Suite',
@@ -45,7 +43,6 @@ task jarMain(type: Jar) {
             it.isDirectory() ? it : zipTree(it)
         }
     }
-    with jar
 }
 
 task jarServer(type: Jar) {
@@ -100,7 +97,7 @@ compileJava {
 }
 
 task copyJar(type: Copy) {
-    from jarMain
+    from jar
     into rootDir
 }
 
@@ -120,5 +117,5 @@ task gitSubmodule(type: Exec) {
 }
 
 build.dependsOn copyJar, copyServerJar, gitSubmodule
-compileJava.dependsOn(gitSubmodule)
+compileJava.dependsOn gitSubmodule
 processTestResources.dependsOn gitSubmodule
