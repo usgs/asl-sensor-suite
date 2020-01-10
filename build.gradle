@@ -4,8 +4,7 @@ apply plugin: 'idea'
 apply plugin: 'application'
 
 /* Get first and second version numbers from code.json */
-def json = new groovy.json.JsonSlurper().parseText(new File("code.json").text)
-def (first, second) = json.version[0].tokenize('.')
+def jsonVersion = new groovy.json.JsonSlurper().parseText(new File("code.json").text).version[0]
 
 /* Get thid version number from commit counts */
 def lastTagHash = "git rev-list --tags --max-count=1".execute().text
@@ -13,7 +12,7 @@ lastTagHash = lastTagHash.substring(0, lastTagHash.length() - 1)
 def commitCount = ("git rev-list "+lastTagHash+".. --count").execute().text
 commitCount = commitCount.substring(0, commitCount.length() - 1)
 
-version = "$first.$second.$commitCount"
+version = "$jsonVersion.$commitCount"
 
 mainClassName = 'asl.sensor.SensorSuite'
 sourceCompatibility = '1.8'
