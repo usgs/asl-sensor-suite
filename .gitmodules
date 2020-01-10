@@ -4,4 +4,3 @@
 [submodule "asl-java-utils"]
 	path = asl-java-utils
 	url = ../asl-java-utils.git
-	branch = master
