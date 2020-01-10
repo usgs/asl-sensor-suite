@@ -3,7 +3,12 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'application'
 
-version = '1.7.3'
+def lastTagHash = "git rev-list --tags --max-count=1".execute().text
+lastTagHash = lastTagHash.substring(0, lastTagHash.length() - 1)
+def commitCount = ("git rev-list "+lastTagHash+".. --count").execute().text
+commitCount = commitCount.substring(0, commitCount.length() - 1)
+
+version = "1.7.$commitCount"
 
 mainClassName = 'asl.sensor.SensorSuite'
 sourceCompatibility = '1.8'
@@ -112,8 +117,6 @@ task gitSubmodule(type: Exec) {
     println 'Downloading the test data submodule may take a long time, potentially hours depending on your connection speed.'
     println 'Interrupting may corrupt the test data submodule.'
     commandLine 'git', 'submodule', 'update', '--init', '--recursive'
-    commandLine 'git', '--git-dir', 'asl-java-utils/.git', 'fetch', '--all'
-    commandLine 'git', '--git-dir', 'asl-java-utils/.git', 'checkout', 'origin/master'
 }
 
 build.dependsOn copyJar, copyServerJar, gitSubmodule
