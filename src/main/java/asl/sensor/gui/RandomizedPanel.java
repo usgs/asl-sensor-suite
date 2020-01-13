@@ -5,28 +5,46 @@ import static asl.utils.ReportingUtils.setNonNumericPrintable;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
+import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
+import asl.utils.input.InstrumentResponse;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import jdk.nashorn.internal.scripts.JD;
 import org.apache.commons.math3.complex.Complex;
+import org.jfree.chart.ChartUtils;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -65,6 +83,7 @@ public class RandomizedPanel extends ExperimentPanel {
   // high frequency button created in constructor but not checked explicitly for status
   private JCheckBox showParams, frequencySpace, capacitiveCal;
   private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
+  private JButton generateResp, saveResp;
 
   public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
@@ -143,11 +162,27 @@ public class RandomizedPanel extends ExperimentPanel {
     optionsPanel.add(capacitiveCal);
     this.add(optionsPanel, constraints);
 
+    generateResp = new JButton("View fit RESP");
+    generateResp.setEnabled(false);
+    JPanel savePanel = new JPanel();
+    savePanel.setAlignmentX(CENTER_ALIGNMENT);
+    savePanel.setLayout(new BoxLayout(savePanel, BoxLayout.Y_AXIS));
+    generateResp.setAlignmentX(CENTER_ALIGNMENT);
+    savePanel.add(generateResp);
+    generateResp.addActionListener(this);
+    saveResp = new JButton("Save fit resp");
+    saveResp.setEnabled(false);
+    saveResp.setAlignmentX(CENTER_ALIGNMENT);
+    savePanel.add(saveResp);
+    saveResp.addActionListener(this);
+    save.setAlignmentX(CENTER_ALIGNMENT);
+    savePanel.add(save);
+
     constraints.gridx += 1;
     constraints.weightx = 1.0;
     constraints.fill = GridBagConstraints.NONE;
-    constraints.anchor = GridBagConstraints.SOUTH;
-    this.add(save, constraints);
+    constraints.anchor = GridBagConstraints.PAGE_END;
+    this.add(savePanel, constraints);
 
     // plot selection combo box
     constraints.fill = GridBagConstraints.BOTH;
@@ -346,6 +381,55 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   public void actionPerformed(ActionEvent event) {
     super.actionPerformed(event);
+
+    if (event.getSource() == generateResp) {
+      RandomizedExperiment rExp = (RandomizedExperiment) expResult;
+      InstrumentResponse fitResp = rExp.getFitResponse();
+      Map<Complex, Complex> poleMap = rExp.getPoleErrors();
+      Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
+
+      try {
+        StringBuilder sb = fitResp.printModifiedResponse(poleMap, zeroMap);
+        JTextPane respTextHolder = new JTextPane();
+        respTextHolder.setEditable(false);
+        respTextHolder.setFont(Font.getFont(Font.MONOSPACED));
+        respTextHolder.setText(sb.toString());
+        JScrollPane scroll = new JScrollPane(respTextHolder);
+        JDialog textBox = new JDialog((Frame) SwingUtilities.windowForComponent(this),
+            "FIT RESP TEXT", true); // boolean makes this dialog a modal popup
+        textBox.add(scroll);
+        Dimension d = respTextHolder.getPreferredSize();
+        d.setSize(d.getWidth() + 100, 200);
+        textBox.setMinimumSize(d);
+        textBox.setVisible(true);
+      } catch (IOException e) {
+        String errorMsg = "Could not open the expected response " + fitResp.getName() +
+            " for editing.";
+        JOptionPane.showMessageDialog(this, errorMsg, "Response Loading Error",
+            JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+      }
+      return;
+    }
+
+    if (event.getSource() == saveResp) {
+      JFileChooser fileChooser = new JFileChooser();
+      fileChooser.setCurrentDirectory(new File(Configuration.getInstance().getDefaultRespFolder()));
+      int returnVal = fileChooser.showSaveDialog(save);
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+        File selFile = fileChooser.getSelectedFile();
+        try {
+          FileWriter writer = new FileWriter(selFile);
+          RandomizedExperiment rExp = (RandomizedExperiment) expResult;
+          InstrumentResponse fitResp = rExp.getFitResponse();
+          Map<Complex, Complex> poleMap = rExp.getPoleErrors();
+          Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
+          writer.write(fitResp.printModifiedResponse(poleMap, zeroMap).toString());
+        } catch (IOException e1) {
+          e1.printStackTrace();
+        }
+      }
+    }
 
     if (event.getSource() == plotSelection) {
       if (!set) {
@@ -565,6 +649,8 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   protected void updateData(DataStore dataStore) {
     set = true;
+    generateResp.setEnabled(true);
+    saveResp.setEnabled(true);
     showParams.setSelected(false);
 
     final boolean isLowFreq = lowFrequency.isSelected();
