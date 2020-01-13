@@ -3,10 +3,10 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'application'
 
-/* Get first and second version numbers from code.json */
+/* Get first three version numbers from code.json */
 def jsonVersion = new groovy.json.JsonSlurper().parseText(new File("code.json").text).version[0]
 
-/* Get thid version number from commit counts */
+/* Get last version number from commit counts */
 def lastTagHash = "git rev-list --tags --max-count=1".execute().text
 lastTagHash = lastTagHash.substring(0, lastTagHash.length() - 1)
 def commitCount = ("git rev-list "+lastTagHash+".. --count").execute().text
