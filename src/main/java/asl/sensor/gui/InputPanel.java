@@ -442,7 +442,8 @@ public class InputPanel
         }
 
         // ignore case when sorting embeds -- sorting of the enums ignores case too
-        lastRespIndex = Arrays.binarySearch(responseArray, 0, responseArray.length-1, resultStr, String::compareToIgnoreCase);
+        lastRespIndex = Arrays.binarySearch(responseArray, 0,
+            responseArray.length-1, resultStr, String::compareToIgnoreCase);
 
         // is the loaded string one of the embedded response files?
         // if it is, then we can get the enums of its name and load from them
