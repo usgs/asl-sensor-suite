@@ -4,7 +4,8 @@ apply plugin: 'idea'
 apply plugin: 'application'
 
 /* Get first three version numbers from code.json */
-def jsonVersion = new groovy.json.JsonSlurper().parseText(new File("code.json").text).version[0]
+def codeJson = new groovy.json.JsonSlurper().parseText(new File("code.json").text)
+def jsonVersion = codeJson.version[0]
 
 /* Get last version number from commit counts */
 def lastTagHash = "git rev-list --tags --max-count=1".execute().text
@@ -122,6 +123,7 @@ task gitSubmodule(type: Exec) {
     println 'Interrupting may corrupt the test data submodule.'
     commandLine 'git', 'submodule', 'update', '--init', '--recursive'
 }
+
 
 build.dependsOn copyJar, copyServerJar, gitSubmodule
 compileJava.dependsOn gitSubmodule
