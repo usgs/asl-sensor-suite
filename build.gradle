@@ -124,12 +124,6 @@ task gitSubmodule(type: Exec) {
     commandLine 'git', 'submodule', 'update', '--init', '--recursive'
 }
 
-task release(type: Exec) {
-    def jsonBuilder = new groovy.json.JsonBuilder(codeJson)
-    def (first, second, third) = jsonVersion.tokenize('.')
-    def newVersion = first +"."+ second +"."+ (third.toInteger() + 1).toString()
-    println jsonBuilder
-}
 
 build.dependsOn copyJar, copyServerJar, gitSubmodule
 compileJava.dependsOn gitSubmodule
