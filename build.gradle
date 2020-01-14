@@ -3,7 +3,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'application'
 
-/* Get first and second version numbers from code.json */
+/* Get first three version numbers from code.json */
 def codeJson = new groovy.json.JsonSlurper().parseText(new File("code.json").text)
 def jsonVersion = codeJson.version[0]
 
