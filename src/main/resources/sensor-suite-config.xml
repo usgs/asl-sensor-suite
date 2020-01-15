@@ -8,11 +8,11 @@
 	</LocalPaths>
 	<FDSNPaths>
 		<!-- Protocol for web services, usually http or https -->
-		<Protocol>http</Protocol>
+		<Protocol>https</Protocol>
 		<!-- Domain. The default is service.iris.edu -->
-		<Domain>vmdevwb.cr.usgs.gov</Domain>
+		<Domain>vmweb01.cr.usgs.gov</Domain>
 		<!-- Service path. The default is fdsnws -->
-		<Service>metadatairis/fdsnws</Service>
+		<Service>metadata/iris/fdsnws</Service>
 		<!-- Service port. The default is 80-->
 		<Port>80</Port>
 	</FDSNPaths>
