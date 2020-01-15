@@ -74,8 +74,9 @@ public class Configuration {
       int fdsnPortParam = config.getInt("FDSNPaths.Port", -1);
       if (fdsnPortParam < 0) {
         // use value of 443 if https, use value of 80 if http
-        fdsnPort = fdsnProtocol.equals("https") ? 443 : 80;
+        fdsnPortParam = fdsnProtocol.equals("https") ? 443 : 80;
       }
+      fdsnPort = fdsnPortParam;
 
 
       useColorblindColors =
