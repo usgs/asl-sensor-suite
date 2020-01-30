@@ -3,6 +3,7 @@ package asl.sensor.experiment;
 import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.atanc;
 import static asl.utils.NumericUtils.complexRealsFirstSorter;
+import static asl.utils.NumericUtils.decimate;
 import static asl.utils.NumericUtils.getComplexSDev;
 import static asl.utils.NumericUtils.multipointMovingAverage;
 import static asl.utils.NumericUtils.rewrapAngleDegrees;
@@ -296,6 +297,31 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
+   * Perform decimation by 2, then 5, then 2 (20 overall). This downsampling should improve
+   * PSD resolution in low-frequencies. This is only used for LF cals.
+   * Multiple decimations are done to prevent artifacting from the filtering operation.
+   * @param inputData calibration/sensor data to downsample
+   * @param sampleInterval sampling interval
+   * @return decimated data
+   */
+  static Pair<double[], Long> performDecimationTrain(double[] inputData, long sampleInterval) {
+    int[] scaleFactors = getDecimationFactors();
+    long newInterval = sampleInterval;
+    long oldInterval = newInterval;
+    double[] downsampledData = inputData;
+    for (int scaleFactor : scaleFactors) {
+      newInterval *= scaleFactor;
+      downsampledData = decimate(downsampledData, oldInterval, newInterval);
+      oldInterval = newInterval;
+    }
+    return new Pair<>(downsampledData, oldInterval);
+  }
+
+  static int[] getDecimationFactors() {
+    return new int[]{2, 5, 2};
+  }
+
+  /**
    * Given a candidate value for error terms for a given variable in the best-fit response,
    * evaluate the response given that value and estimate the jacobian by forward-difference.
    * @param variables A vector with 2 entries representing a pole's real and complex value
@@ -470,42 +496,61 @@ public class RandomizedExperiment extends Experiment {
     // also, use those frequencies to get the applied response to input
     fireStateChange("Getting PSDs of data...");
     FFTResult numeratorPSD, denominatorPSD, crossPSD;
-    numeratorPSD = FFTResult.spectralCalc(sensorOut, sensorOut);
-    denominatorPSD = FFTResult.spectralCalc(calib, calib);
-    crossPSD = FFTResult.spectralCalc(sensorOut, calib);
+    long interval = sensorOut.getInterval();
+    // bracketed out to try to scope data better
+    // this will match sample rates and downsample for LF cals (better PSD resolution)
+    {
+      // we should already have matching sample rates for data on experiment pre-processing steps
 
+      double[] calData = calib.getData();
+      double[] sensorData = sensorOut.getData();
+      // perform decimation to increase spectral resolution but only if data is relatively HF
+      // we set over 400 because then after decimation by 20 we get 20 s period, our upper bound
+      if (isLowFrequencyCalibration && interval / ONE_HZ_INTERVAL > 400) {
+        Pair<double[], Long> decimationAndInterval = performDecimationTrain(sensorData, interval);
+        sensorData = decimationAndInterval.getFirst();
+        interval = decimationAndInterval.getSecond();
+        calData = performDecimationTrain(calData, interval).getFirst();
+      }
+
+      // now get the PSD data (already declared outside of this scope, so will persist)
+      numeratorPSD = FFTResult.spectralCalc(sensorData, sensorData, interval);
+      denominatorPSD = FFTResult.spectralCalc(calData, calData, interval);
+      crossPSD = FFTResult.spectralCalc(sensorData, calData, interval);
+
+    }
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
 
-    // store nyquist rate of data because freqs will be trimmed down later
-    double nyquist = ONE_HZ_INTERVAL / (double) sensorOut.getInterval();
-    nyquist = nyquist / 2.;
+    // store nyquist rate of data because freqs will be trimmed down later based on that value
+    double nyquist = ONE_HZ_INTERVAL / (interval * 2.);
 
     // trim frequency window in order to restrict range of response fits
-    double minFreq, maxFreq, maxPlotFreq;
+    int startIndex, endIndex, maxPlotIndex;
     // extfreq is how far out to extend data past range of fit
     // maxFreq is the largest frequency that we use in the solver
     // low frequency cal fits over a different range of data
     if (isLowFrequencyCalibration) {
-      minFreq = 0.001; // 1000s period
-      maxFreq = 0.05; // 20s period
-      maxPlotFreq = maxFreq;
+      double minFreq = 0.001; // 1000s period
+      double maxFreq = 0.05; // 20s period
+      //double maxPlotFreq = maxFreq;
+      startIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, minFreq);;
+      endIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxFreq);
+      maxPlotIndex = endIndex;
     } else {
-      minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
+      double minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
       // get factor of nyquist rate, again due to noise
-      maxFreq = nyquistMultiplier * nyquist;
-      maxPlotFreq = PEAK_MULTIPLIER * nyquist; // always plot up to 90% of nyquist
+      double maxFreq = nyquistMultiplier * nyquist;
+      double maxPlotFreq = PEAK_MULTIPLIER * nyquist; // always plot up to 90% of nyquist
+      startIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, minFreq);
+      endIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxFreq);
+      maxPlotIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxPlotFreq);
       // maxFreq = extFreq;
     }
 
     fireStateChange("Finding and trimming data to relevant frequency range");
+
     // now trim frequencies to in range
     // start and end are the region of the fit area, extIdx is the full plotted region
-    int startIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, minFreq);
-    int endIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxFreq);
-
-    //Used for plotting full range
-    int maxPlotIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxPlotFreq);
-
     double[] plottingFreqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, maxPlotIndex);
     freqs = Arrays.copyOfRange(freqsUntrimmed, startIndex, endIndex);
 
@@ -607,10 +652,12 @@ public class RandomizedExperiment extends Experiment {
     for (int i = 0; i < freqs.length; ++i) {
       int argIndex = i + freqs.length;
       weights[argIndex] = maxArgWeight;
-      weights[i] = maxMagWeight; // / denominator;
+      weights[i] = maxMagWeight; // denominator;
+      /*
       if (isLowFrequencyCalibration && freqs[i] < 0.1) {
         weights[i] /= freqs[i];
       }
+      */
     }
 
     // get the rest of the plotted data squared away
@@ -803,12 +850,9 @@ public class RandomizedExperiment extends Experiment {
         if (obsPhase != 0.) {
           double errInitPhase = Math.abs(100 * (initialValues[argIdx] - obsPhase) / obsPhase);
           double errFitPhase = Math.abs(100 * (fitValues[argIdx] - obsPhase) / obsPhase);
-
           initResidPhase.add(xValue, errInitPhase);
           fitResidPhase.add(xValue, errFitPhase);
         }
-
-
       }
     }
 
@@ -1105,8 +1149,8 @@ public class RandomizedExperiment extends Experiment {
 
   /**
    * Get the highest frequency value included in data set for the solver.
-   * This is used to mark where on the chart the
-   * @return
+   * This is used to mark where on the chart to plot a vertical line to denote the solver bounds
+   * @return Max frequency over fit range for HF cals
    */
   public double getMaxFitFrequency() {
     return freqs[freqs.length - 1];
@@ -1174,7 +1218,7 @@ public class RandomizedExperiment extends Experiment {
    * the data being inputted. Because most high-frequency cals are around 15 minutes and most
    * low-frequency cals are several hours, we use a cutoff of one hour to make this determination.
    *
-   * @param ds
+   * @param ds Data store which testing is to be done on
    */
   public void autoDetermineCalibrationStatus(DataStore ds) {
     if (!ds.blockIsSet(0)) {
@@ -1206,7 +1250,7 @@ public class RandomizedExperiment extends Experiment {
   }
 
 
-  private class PoleValidator implements ParameterValidator {
+  private static class PoleValidator implements ParameterValidator {
 
     int numZeros;
 
