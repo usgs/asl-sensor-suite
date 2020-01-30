@@ -505,8 +505,9 @@ public class RandomizedExperiment extends Experiment {
       double[] calData = calib.getData();
       double[] sensorData = sensorOut.getData();
       // perform decimation to increase spectral resolution but only if data is relatively HF
-      // we set over 400 because then after decimation by 20 we get 20 s period, our upper bound
-      if (isLowFrequencyCalibration && interval / ONE_HZ_INTERVAL > 400) {
+      // we set at 0.5s (2 Hz) so that data will be downsampled to 10s period sample rate
+      // meaning that the nyquist rate of the data is 20s, our max value cutoff for fit region
+      if (isLowFrequencyCalibration && interval > ONE_HZ_INTERVAL / 2) {
         Pair<double[], Long> decimationAndInterval = performDecimationTrain(sensorData, interval);
         sensorData = decimationAndInterval.getFirst();
         interval = decimationAndInterval.getSecond();
