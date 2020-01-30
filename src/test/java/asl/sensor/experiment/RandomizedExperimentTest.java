@@ -458,8 +458,8 @@ public class RandomizedExperimentTest {
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 5E-4);
     }
 
-    assertEquals(10.9337, rCal.getFitResidual(), 1E-3);
-    assertEquals(12.8584, rCal.getInitResidual(), 1E-3);
+    assertEquals(1.9071, rCal.getFitResidual(), 1E-3);
+    assertEquals(2.3301, rCal.getInitResidual(), 1E-3);
   }
 
   @Test
@@ -626,7 +626,7 @@ public class RandomizedExperimentTest {
 
     for (Complex pole : evaluatedPoles) {
       // these values are clearly dependent on weighting scheme for calculated calibration curve
-      Complex expectedPoleError = new Complex(0.0044232172, 0.0092123909);
+      Complex expectedPoleError = new Complex(0.0123959924, 0.0147265816);
       Complex evaluatedPoleError = poleErrors.get(pole);
       String message = "Difference between expected "
           + "and evaluated poles outside of error bound:\n\t"

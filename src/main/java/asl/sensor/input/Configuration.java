@@ -35,7 +35,8 @@ public class Configuration {
   private String fdsnProtocol = "http";
   private String fdsnDomain = "service.iris.edu";
   private String fdsnService = "fdsnws";
-  private int fdsnPort = 80;
+  private int fdsnPort = -1; // determined based on given protocol
+    // will default to 80 if other terms are not set from these default values
 
   private Configuration(String configLocation) {
     logger.info("Attempting reading in config file from " + configLocation);
@@ -70,7 +71,12 @@ public class Configuration {
       if (fdsnServiceParam != null) {
         fdsnService = fdsnServiceParam;
       }
-      fdsnPort = config.getInt("FDSNPaths.Port", 80);
+      int fdsnPortParam = config.getInt("FDSNPaths.Port", -1);
+      if (fdsnPortParam < 0) {
+        // use value of 443 if https, use value of 80 if http
+        fdsnPortParam = fdsnProtocol.equals("https") ? 443 : 80;
+      }
+      fdsnPort = fdsnPortParam;
 
 
       useColorblindColors =
