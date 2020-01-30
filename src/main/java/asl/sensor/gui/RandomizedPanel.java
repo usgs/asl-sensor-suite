@@ -19,6 +19,7 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
@@ -419,12 +420,13 @@ public class RandomizedPanel extends ExperimentPanel {
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fileChooser.getSelectedFile();
         try {
-          FileWriter writer = new FileWriter(selFile);
+          PrintWriter writer = new PrintWriter(new FileWriter(selFile));
           RandomizedExperiment rExp = (RandomizedExperiment) expResult;
           InstrumentResponse fitResp = rExp.getFitResponse();
           Map<Complex, Complex> poleMap = rExp.getPoleErrors();
           Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
           writer.write(fitResp.printModifiedResponse(poleMap, zeroMap).toString());
+          writer.close();
         } catch (IOException e1) {
           e1.printStackTrace();
         }
@@ -653,7 +655,6 @@ public class RandomizedPanel extends ExperimentPanel {
     saveResp.setEnabled(true);
     showParams.setSelected(false);
 
-    final boolean isLowFreq = lowFrequency.isSelected();
     seriesColorMap = new HashMap<>();
 
     // we display as % but backend expects this to be used
@@ -663,7 +664,7 @@ public class RandomizedPanel extends ExperimentPanel {
     if (autoFrequency.isSelected()) {
       rndExp.autoDetermineCalibrationStatus(dataStore);
     } else {
-      rndExp.setLowFrequencyCalibration(isLowFreq);
+      rndExp.setLowFrequencyCalibration(lowFrequency.isSelected());
     }
     rndExp.setPlotUsingHz(frequencySpace.isSelected());
     rndExp.setNyquistMultiplier(multiplier);
@@ -672,6 +673,9 @@ public class RandomizedPanel extends ExperimentPanel {
 
     String appendFreqTitle;
 
+    final boolean isLowFreq = rndExp.isLowFrequencyCalibration();
+
+    // since cal status can be autodetermined, refer to underlying experiment for freq range
     if (isLowFreq) {
       appendFreqTitle = " (LOW FREQ.)";
     } else {
