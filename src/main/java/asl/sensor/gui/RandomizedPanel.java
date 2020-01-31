@@ -24,6 +24,7 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -88,8 +89,9 @@ public class RandomizedPanel extends ExperimentPanel {
 
   public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
-
-    SpinnerModel spinModel = new SpinnerNumberModel(50., 30., 90., 1.);
+    SpinnerModel spinModel = new SpinnerNumberModel(
+        RandomizedExperiment.DEFAULT_NYQUIST_PERCENT_LIMIT, RandomizedExperiment.MIN_MULTIPLIER,
+        RandomizedExperiment.PEAK_MULTIPLIER, 1.);
     nyquistMultiplier = new JSpinner(spinModel);
     JLabel nyquistMultiplierLabel = new JLabel("% bound of nyquist for HF cals");
     nyquistMultiplierLabel.setLabelFor(nyquistMultiplier);
