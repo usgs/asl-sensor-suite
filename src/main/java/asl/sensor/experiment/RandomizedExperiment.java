@@ -62,10 +62,22 @@ import org.jfree.data.xy.XYSeriesCollection;
 public class RandomizedExperiment extends Experiment {
 
   /**
-   * Maximum possible frequency value as a multiple of nyquist (0.9).
-   * The solver will still default to 0.8 as results above that are very unstable for noisy cals
+   * Maximum possible frequency bound as a multiple of Nyquist rate of input (90%).
+   * Also used to set the maximum value of plottable data for high-frequency calibrations.
    */
   public static final double PEAK_MULTIPLIER = 0.9;
+
+  /**
+   * Default Nyquist rate limit for high-frequency calibrations,
+   * which usually preserves enough corner freq. information without becoming too
+   * susceptible to noise. Determined by experimentation.
+   */
+  public static final double DEFAULT_NYQUIST_PERCENT_LIMIT = 0.5;
+
+  /**
+   * Minimum nyquist rate percent for high-frequency calibrations.
+   */
+  public static final double MIN_MULTIPLIER = 0.3;
 
   /**
    * Sets the default normalization point for low-frequency calibration data (0.02 Hz)
@@ -78,6 +90,11 @@ public class RandomizedExperiment extends Experiment {
    */
   private static final double HIGH_FREQ_ZERO_TARGET = 1.0;
 
+  /**
+   * Decimation factors to be done in series for improving spectral resolution on LF cal data
+   * above 2Hz
+   */
+  private static final double[] DECIMATION_FACTORS = {2., 5., 2.};
 
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
@@ -110,7 +127,7 @@ public class RandomizedExperiment extends Experiment {
     isLowFrequencyCalibration = false;
     numIterations = 0;
     plotUsingHz = true;
-    nyquistMultiplier = 0.8; // defaults to 0.8
+    nyquistMultiplier = DEFAULT_NYQUIST_PERCENT_LIMIT; // defaults to 0.8
   }
 
   @Override
@@ -294,31 +311,6 @@ public class RandomizedExperiment extends Experiment {
     RealMatrix jacobianMatrix = MatrixUtils.createRealMatrix(jacobian);
 
     return new Pair<>(result, jacobianMatrix);
-  }
-
-  /**
-   * Perform decimation by 2, then 5, then 2 (20 overall). This downsampling should improve
-   * PSD resolution in low-frequencies. This is only used for LF cals.
-   * Multiple decimations are done to prevent artifacting from the filtering operation.
-   * @param inputData calibration/sensor data to downsample
-   * @param sampleInterval sampling interval
-   * @return decimated data
-   */
-  static Pair<double[], Long> performDecimationTrain(double[] inputData, long sampleInterval) {
-    int[] scaleFactors = getDecimationFactors();
-    long newInterval = sampleInterval;
-    long oldInterval = newInterval;
-    double[] downsampledData = inputData;
-    for (int scaleFactor : scaleFactors) {
-      newInterval *= scaleFactor;
-      downsampledData = decimate(downsampledData, oldInterval, newInterval);
-      oldInterval = newInterval;
-    }
-    return new Pair<>(downsampledData, oldInterval);
-  }
-
-  static int[] getDecimationFactors() {
-    return new int[]{2, 5, 2};
   }
 
   /**
@@ -507,11 +499,11 @@ public class RandomizedExperiment extends Experiment {
       // perform decimation to increase spectral resolution but only if data is relatively HF
       // we set at 0.5s (2 Hz) so that data will be downsampled to 10s period sample rate
       // meaning that the nyquist rate of the data is 20s, our max value cutoff for fit region
-      if (isLowFrequencyCalibration && interval > ONE_HZ_INTERVAL / 2) {
-        Pair<double[], Long> decimationAndInterval = performDecimationTrain(sensorData, interval);
-        sensorData = decimationAndInterval.getFirst();
-        interval = decimationAndInterval.getSecond();
-        calData = performDecimationTrain(calData, interval).getFirst();
+      if (isLowFrequencyCalibration) {
+        LowFreqDecimationManager lfdm = new LowFreqDecimationManager(calData, sensorData, interval);
+        calData = lfdm.getDownsampledCalibrationSignal();
+        sensorData = lfdm.getDownsampledOutputSignal();
+        interval = lfdm.getIntervalAfterDownsampling();
       }
 
       // now get the PSD data (already declared outside of this scope, so will persist)
@@ -1200,7 +1192,7 @@ public class RandomizedExperiment extends Experiment {
    */
   public void setNyquistMultiplier(double newMultiplier) {
     nyquistMultiplier = Math.min(newMultiplier, PEAK_MULTIPLIER);
-    nyquistMultiplier = Math.max(0.3, nyquistMultiplier);
+    nyquistMultiplier = Math.max(MIN_MULTIPLIER, nyquistMultiplier);
   }
 
   /**
@@ -1285,6 +1277,58 @@ public class RandomizedExperiment extends Experiment {
         }
       }
       return poleParams;
+    }
+  }
+
+  /**
+   * Private class to handle downsampling of the calibration input and output signals for use
+   * with high-frequency data
+   */
+  static class LowFreqDecimationManager {
+
+    private double[] calSignal;
+    private double[] outSignal;
+    private long interval;
+
+    /**
+     * Instantiate the calibrations and output signal data. Note that part of the experiment
+     * pre-processing steps ensures that both data should have the same sample rate at this point.
+     * The order of input here between the two arrays only matters for ensuring the right
+     * values are assigned out of here. The decimation is, of course, an independent operation.
+     * @param cal Calibration input signal
+     * @param out Calibration output signal
+     * @param itval Matching interval of both signals; decimation only done if above 2Hz frequency
+     */
+    public LowFreqDecimationManager(double[] cal, double[] out, long itval) {
+      calSignal = cal;
+      outSignal = out;
+      interval = itval;
+      long newInterval = interval;
+      long oldInterval = newInterval;
+      // Note that if we downsample 2Hz (0.5 s period) by a factor of 20, we get a period of 10s.
+      // Doubling that gives us the Nyquist rate of the downsampled data, 20s. This is the maximum
+      // value for our fit regions, so we don't downsample data slower than that.
+      if (itval < ONE_HZ_INTERVAL / 2) {
+        for (double scaleFactor : DECIMATION_FACTORS) {
+          newInterval *= scaleFactor;
+          calSignal = decimate(calSignal, oldInterval, newInterval);
+          outSignal = decimate(outSignal, oldInterval, newInterval);
+          oldInterval = newInterval;
+        }
+        interval = newInterval;
+      }
+    }
+
+    public double[] getDownsampledCalibrationSignal() {
+      return calSignal;
+    }
+
+    public double[] getDownsampledOutputSignal() {
+      return outSignal;
+    }
+
+    public long getIntervalAfterDownsampling() {
+      return interval;
     }
   }
 }
