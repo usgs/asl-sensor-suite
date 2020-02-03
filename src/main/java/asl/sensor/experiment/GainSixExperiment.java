@@ -4,7 +4,6 @@ import static asl.utils.TimeSeriesUtils.rotate;
 import static asl.utils.TimeSeriesUtils.rotateX;
 
 import asl.sensor.input.DataStore;
-import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import java.util.Arrays;
 import java.util.Collections;

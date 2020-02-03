@@ -1,5 +1,6 @@
 package asl.sensor.input;
 
+import static asl.utils.NumericUtils.euclidLCM;
 import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static asl.utils.TimeSeriesUtils.formatEpochMillis;
 import static asl.utils.TimeSeriesUtils.getMplexNameList;
@@ -321,17 +322,28 @@ public class DataStore {
   }
 
   /**
-   * Math the first [limit] inputs' intervals to the lowest-frequency used by
-   * any of the blocks within that range
+   * Math the first [limit] inputs' intervals to the GCD of all given frequencies.
+   * Note that this means that the final interval may be lower than that of any inputted data.
+   * For example, using 40 and 100 Hz data will lead to data being set to 20 Hz.
+   * This operation is done as a preprocessing step for all comparisons using timeseries data,
+   * including ones that compare by PSD operations (such as self noise, random cal., etc.).
    *
    * @param limit Index of last block to match intervals to
    */
   public void matchIntervals(int limit) {
-    long interval = 0;
-    // first loop to get lowest-frequency data
-    for (int i = 0; i < limit; ++i) {
+    if (!areAnyBlocksSet()) {
+      return;
+    }
+    long interval = getXthLoadedBlock(1).getInterval();
+    // we will decimate down to the lowest common denominator for all inputs
+    // this prevents any possible power loss from upsampling, and in general we expect
+    // that downsampling will never be so extreme as to cut data from a critical range like
+    // microseisms which need to be preserved for the gain or azimuth checks
+    for (int i = 1; i < limit; ++i) {
       if (thisBlockIsSet[i]) {
-        interval = Math.max(interval, getBlock(i).getInterval());
+        // LCM of sampling interval gives us GCD of frequency
+        // (GCD of frequency is smallest frequency all can be decimated to)
+        interval = euclidLCM(interval, getBlock(i).getInterval());
       }
     }
     // second loop to downsample
@@ -340,7 +352,6 @@ public class DataStore {
         getBlock(i).resample(interval);
       }
     }
-
     trimToCommonTime();
   }
 

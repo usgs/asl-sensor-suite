@@ -9,7 +9,6 @@ import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.NoiseNinePanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
-
 import asl.utils.ReportingUtils;
 import java.awt.Font;
 import java.io.File;
