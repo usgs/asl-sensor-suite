@@ -2,6 +2,9 @@ package asl.sensor.input;
 
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
+import static asl.utils.NumericUtils.euclidLCM;
+import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static asl.utils.TimeSeriesUtils.getFirstTimeSeries;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -9,7 +12,6 @@ import static org.junit.Assert.assertTrue;
 
 import asl.sensor.gui.InputPanel;
 import asl.sensor.test.TestUtils;
-import asl.utils.TimeSeriesUtils;
 import asl.utils.input.DataBlock;
 import java.time.OffsetDateTime;
 import org.junit.Test;
@@ -73,7 +75,7 @@ public class DataStoreTest {
     String filename = folder + "blocktrim/" + fileID;
     DataStore ds = new DataStore();
     DataBlock db;
-    db = TimeSeriesUtils.getFirstTimeSeries(filename);
+    db = getFirstTimeSeries(filename);
     String filter = db.getName();
     ds.setBlock(0, db);
 
@@ -101,9 +103,10 @@ public class DataStoreTest {
 
   @Test
   public void decimationMatchesFrequency() {
-    long interval40Hz = (TimeSeriesUtils.ONE_HZ_INTERVAL / 40);
-    long interval25Hz = (TimeSeriesUtils.ONE_HZ_INTERVAL / 25);
+    long interval40Hz = ONE_HZ_INTERVAL / 40;
+    long interval25Hz = ONE_HZ_INTERVAL / 25;
 
+    long target = euclidLCM(interval25Hz, interval40Hz);
     long start = 0;
 
     // range of 4 seconds
@@ -126,7 +129,7 @@ public class DataStoreTest {
     ds.setBlock(1, block40Hz);
     ds.matchIntervals();
 
-    assertEquals(ds.getBlock(1).getInterval(), interval25Hz);
+    assertEquals(target, ds.getBlock(1).getInterval());
     assertEquals(ds.getBlock(0).size(), ds.getBlock(1).size());
     // make sure that the data has been initialized (i.e., not all 0)
     // if data wasn't being set correctly, result would be all zeros
@@ -182,7 +185,7 @@ public class DataStoreTest {
     String filename = folder + "blocktrim/" + fileID;
     DataStore ds = new DataStore();
     DataBlock db;
-    db = TimeSeriesUtils.getFirstTimeSeries(filename);
+    db = getFirstTimeSeries(filename);
     ds.setBlock(0, db);
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     ds.setResponse(0, respName);
@@ -202,7 +205,7 @@ public class DataStoreTest {
     String filename = folder + "blocktrim/" + fileID;
     DataStore ds = new DataStore();
     DataBlock db;
-    db = TimeSeriesUtils.getFirstTimeSeries(filename);
+    db = getFirstTimeSeries(filename);
     ds.setBlock(0, db);
     String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
     ds.setResponse(0, respName);
