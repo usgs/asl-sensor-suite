@@ -343,7 +343,7 @@ public class DataStore {
       if (thisBlockIsSet[i]) {
         // LCM of sampling interval gives us GCD of frequency
         // (GCD of frequency is smallest frequency all can be decimated to)
-        interval = euclidLCM(interval, getBlock(i).getInterval());
+        interval = euclidLCM(interval, getBlock(i).getInitialInterval());
       }
     }
     // second loop to downsample
