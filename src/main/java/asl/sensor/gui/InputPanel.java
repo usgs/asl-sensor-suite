@@ -798,7 +798,7 @@ public class InputPanel
     if (dataStore.numberOfBlocksSet() > 1) {
       dataStore.trimToCommonTime(activePlots);
     }
-    return new DataStore(dataStore);
+    return dataStore;
   }
 
   /**
