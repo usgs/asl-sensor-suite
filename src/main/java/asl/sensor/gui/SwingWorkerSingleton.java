@@ -68,7 +68,6 @@ public class SwingWorkerSingleton {
 
       @Override
       protected void done() {
-        // TODO: handle more exceptions here
         try {
           boolean set = get();
           if (set) {

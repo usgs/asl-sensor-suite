@@ -69,8 +69,8 @@ public class CalServerTest {
         new InstrumentResponse(respName).getPoles().toArray(new Complex[]{});
 
     Complex[] expectedFitPoles = {
-        new Complex(-0.012301, -0.011495),
-        new Complex(-0.012301,  0.011495),
+        new Complex(-0.012659, -0.011003),
+        new Complex(-0.012659,  0.011003),
         expectedInitPoles[2],
         expectedInitPoles[3],
     };
