@@ -5,6 +5,7 @@ import static asl.utils.NumericUtils.atanc;
 import static asl.utils.NumericUtils.complexRealsFirstSorter;
 import static asl.utils.NumericUtils.decimate;
 import static asl.utils.NumericUtils.getComplexSDev;
+import static asl.utils.NumericUtils.getMean;
 import static asl.utils.NumericUtils.multipointMovingAverage;
 import static asl.utils.NumericUtils.rewrapAngleDegrees;
 import static asl.utils.NumericUtils.unwrap;
@@ -203,6 +204,45 @@ public class RandomizedExperiment extends Experiment {
    */
   static double getFrequencyForNormalization(boolean isLowFrequencyCalibration) {
     return isLowFrequencyCalibration ? LOW_FREQ_ZERO_TARGET : HIGH_FREQ_ZERO_TARGET;
+  }
+
+  /**
+   * Smooths out the low-frequency signals in a way that attempts to retain curve shape
+   * @param calData Calibration signal (expect either dB-scale amplitude or unwrapped phase)
+   * @param freqs Frequencies of each calibration signal value
+   * @param numPoints Smoothing radius length not including center.
+   * Total width of the smoothing window is (2 * numPoints) + 1
+   * @return Smoothed data.
+   */
+  static double[] smoothLowFrequencySeries(double[] calData, double[] freqs, int numPoints) {
+    double[] smoothedSignal = new double[calData.length-1];
+    double[] derivatives = new double[calData.length-1];
+
+    // if starting freq is 0 skip it since log(0) is undefined
+    int loopStart = freqs[0] > 0? 0 : 1;
+
+    for (int i = 1; i < derivatives.length; ++i) {
+      double denom = Math.log10(freqs[i+1]) - Math.log10(freqs[i]);
+      derivatives[i] = (calData[i+1] - calData[i]) / denom;
+    }
+
+
+    double[] smoothDeriv = new double[derivatives.length];
+
+    // we could probably replace this with a call to the moving average function but for now
+    // I would like to be sure that this works how we expect, so I'm duplicating the numbers
+    for (int i = 1; i < derivatives.length; ++i) {
+      int lowerBound = Math.max(0, i - numPoints);
+      int upperBound = Math.min(derivatives.length, i + numPoints);
+      smoothDeriv[i] = getMean(Arrays.copyOfRange(derivatives, lowerBound, upperBound));
+    }
+
+    for (int i = 1; i < smoothedSignal.length - 1; ++i) {
+      double freqDiff = Math.log10(freqs[i+1]) - Math.log10(freqs[i]);
+      smoothedSignal[i+1] = smoothedSignal[i] + smoothDeriv[i] * freqDiff;
+    }
+
+    return smoothedSignal;
   }
 
   /**
@@ -526,8 +566,8 @@ public class RandomizedExperiment extends Experiment {
       double minFreq = 0.001; // 1000s period
       double maxFreq = 0.05; // 20s period
       //double maxPlotFreq = maxFreq;
-      startIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, minFreq);;
-      endIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxFreq);
+      startIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, minFreq) - 1;
+      endIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxFreq) + 1;
       maxPlotIndex = endIndex;
     } else {
       double minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
@@ -590,6 +630,11 @@ public class RandomizedExperiment extends Experiment {
       untrimmedPhase = unwrapArray(untrimmedPhase);
       untrimmedPhase = multipointMovingAverage(untrimmedPhase, smoothingPoints,
           !isLowFrequencyCalibration);
+    } else {
+      int rad = 1; // smoothing radius of smoothing function not including center (3 overall)
+      untrimmedAmplitude = smoothLowFrequencySeries(untrimmedAmplitude, freqsUntrimmed, rad);
+      untrimmedPhase = unwrapArray(untrimmedPhase);
+      untrimmedPhase = smoothLowFrequencySeries(untrimmedPhase, freqsUntrimmed, rad);
     }
 
     // experimentation with offsets to deal with the way the moving average shifts the data
@@ -1293,8 +1338,9 @@ public class RandomizedExperiment extends Experiment {
     /**
      * Instantiate the calibrations and output signal data. Note that part of the experiment
      * pre-processing steps ensures that both data should have the same sample rate at this point.
-     * The order of input here between the two arrays only matters for ensuring the right
-     * values are assigned out of here. The decimation is, of course, an independent operation.
+     * The order of input here between the two arrays only matters for ensuring the right values are
+     * assigned out of here. The decimation is, of course, an independent operation.
+     *
      * @param cal Calibration input signal
      * @param out Calibration output signal
      * @param itval Matching interval of both signals; decimation only done if above 2Hz frequency
