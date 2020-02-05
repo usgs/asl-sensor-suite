@@ -218,9 +218,6 @@ public class RandomizedPanel extends ExperimentPanel {
    * @return List of strings, each one representing a new page's worth of data
    */
   public static String[] getAdditionalReportPages(RandomizedExperiment experiment) {
-
-    // TODO: refactor this now that period values are included in
-    // the inset portion of the report text instead of merely in the extra data
     StringBuilder resultString = new StringBuilder();
 
     StringBuilder csvPoles = new StringBuilder();
