@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.experiment.RandomizedExperiment.smoothLowFrequencySeries;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertArrayEquals;
@@ -17,6 +18,7 @@ import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStoreUtils;
 import asl.sensor.output.CalResult;
 import asl.sensor.test.TestUtils;
+import asl.utils.FFTResult;
 import asl.utils.NumericUtils;
 import asl.utils.ReportingUtils;
 import asl.utils.ResponseUnits;
@@ -437,8 +439,8 @@ public class RandomizedExperimentTest {
 
     List<Complex> fitPoles = rCal.getFitPoles();
     Complex[] expectedPoles = {
-        new Complex(-0.01247, -0.01114),
-        new Complex(-0.01247,  0.01114)
+        new Complex(-0.01247, -0.01174),
+        new Complex(-0.01247,  0.01174)
     };
     for (int i = 0; i < fitPoles.size(); i++) {
       assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 5E-4);
@@ -612,7 +614,7 @@ public class RandomizedExperimentTest {
 
     for (Complex pole : evaluatedPoles) {
       // these values are clearly dependent on weighting scheme for calculated calibration curve
-      Complex expectedPoleError = new Complex(0.0069771391, 0.0249520822);
+      Complex expectedPoleError = new Complex(0.0117278263, 0.0162274766);
       Complex evaluatedPoleError = poleErrors.get(pole);
       String message = "Difference between expected "
           + "and evaluated poles outside of error bound:\n\t"

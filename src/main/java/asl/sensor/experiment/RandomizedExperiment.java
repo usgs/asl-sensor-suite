@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import static asl.utils.FFTResult.DEFAULT_TAPER_WIDTH;
 import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.atanc;
 import static asl.utils.NumericUtils.complexRealsFirstSorter;
@@ -215,29 +216,33 @@ public class RandomizedExperiment extends Experiment {
    * @return Smoothed data.
    */
   static double[] smoothLowFrequencySeries(double[] calData, double[] freqs, int numPoints) {
-    double[] smoothedSignal = new double[calData.length-1];
+    // double[] smoothedSignal = new double[calData.length-1];
     double[] derivatives = new double[calData.length-1];
 
     // if starting freq is 0 skip it since log(0) is undefined
     int loopStart = freqs[0] > 0? 0 : 1;
 
-    for (int i = 1; i < derivatives.length; ++i) {
+    for (int i = loopStart; i < derivatives.length; ++i) {
       double denom = Math.log10(freqs[i+1]) - Math.log10(freqs[i]);
       derivatives[i] = (calData[i+1] - calData[i]) / denom;
     }
 
+    int points = 2 * numPoints + 1;
+    double[] smoothDeriv = multipointMovingAverage(derivatives, points, true);
 
+    /*
     double[] smoothDeriv = new double[derivatives.length];
-
     // we could probably replace this with a call to the moving average function but for now
     // I would like to be sure that this works how we expect, so I'm duplicating the numbers
-    for (int i = 1; i < derivatives.length; ++i) {
+    for (int i = loopStart; i < derivatives.length; ++i) {
       int lowerBound = Math.max(0, i - numPoints);
       int upperBound = Math.min(derivatives.length, i + numPoints);
       smoothDeriv[i] = getMean(Arrays.copyOfRange(derivatives, lowerBound, upperBound));
     }
+    */
 
-    for (int i = 1; i < smoothedSignal.length - 1; ++i) {
+    double[] smoothedSignal = Arrays.copyOf(calData, calData.length);
+    for (int i = loopStart; i < smoothedSignal.length - 1; ++i) {
       double freqDiff = Math.log10(freqs[i+1]) - Math.log10(freqs[i]);
       smoothedSignal[i+1] = smoothedSignal[i] + smoothDeriv[i] * freqDiff;
     }
@@ -532,24 +537,24 @@ public class RandomizedExperiment extends Experiment {
     // bracketed out to try to scope data better
     // this will match sample rates and downsample for LF cals (better PSD resolution)
     {
-      // we should already have matching sample rates for data on experiment pre-processing steps
+      double taperWidth = DEFAULT_TAPER_WIDTH;
 
+      // we should already have matching sample rates for data on experiment pre-processing steps
       double[] calData = calib.getData();
       double[] sensorData = sensorOut.getData();
       // perform decimation to increase spectral resolution but only if data is relatively HF
       // we set at 0.5s (2 Hz) so that data will be downsampled to 10s period sample rate
       // meaning that the nyquist rate of the data is 20s, our max value cutoff for fit region
       if (isLowFrequencyCalibration) {
-        LowFreqDecimationManager lfdm = new LowFreqDecimationManager(calData, sensorData, interval);
-        calData = lfdm.getDownsampledCalibrationSignal();
-        sensorData = lfdm.getDownsampledOutputSignal();
-        interval = lfdm.getIntervalAfterDownsampling();
+        taperWidth = 0.25;
+        // we use a single-side taper of 25% because LF cals had consistent significant artifacts
+        // around the corner where the
       }
 
       // now get the PSD data (already declared outside of this scope, so will persist)
-      numeratorPSD = FFTResult.spectralCalc(sensorData, sensorData, interval);
-      denominatorPSD = FFTResult.spectralCalc(calData, calData, interval);
-      crossPSD = FFTResult.spectralCalc(sensorData, calData, interval);
+      numeratorPSD = FFTResult.spectralCalc(sensorData, sensorData, interval, taperWidth);
+      denominatorPSD = FFTResult.spectralCalc(calData, calData, interval, taperWidth);
+      crossPSD = FFTResult.spectralCalc(sensorData, calData, interval, taperWidth);
 
     }
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
@@ -566,8 +571,8 @@ public class RandomizedExperiment extends Experiment {
       double minFreq = 0.001; // 1000s period
       double maxFreq = 0.05; // 20s period
       //double maxPlotFreq = maxFreq;
-      startIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, minFreq) - 1;
-      endIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxFreq) + 1;
+      startIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, minFreq) + 1;
+      endIndex = FFTResult.getIndexOfFrequency(freqsUntrimmed, maxFreq);
       maxPlotIndex = endIndex;
     } else {
       double minFreq = .2; // lower bound of .2 Hz (5s period) due to noise
@@ -630,19 +635,6 @@ public class RandomizedExperiment extends Experiment {
       untrimmedPhase = unwrapArray(untrimmedPhase);
       untrimmedPhase = multipointMovingAverage(untrimmedPhase, smoothingPoints,
           !isLowFrequencyCalibration);
-    } else {
-      int rad = 1; // smoothing radius of smoothing function not including center (3 overall)
-      untrimmedAmplitude = smoothLowFrequencySeries(untrimmedAmplitude, freqsUntrimmed, rad);
-      untrimmedPhase = unwrapArray(untrimmedPhase);
-      untrimmedPhase = smoothLowFrequencySeries(untrimmedPhase, freqsUntrimmed, rad);
-    }
-
-    // experimentation with offsets to deal with the way the moving average shifts the data
-    // since the plot is basically logarithmic this only matters due to the limited data
-    // on the low-frequency corner -- shifting here by half the smoothing re-centers the data
-    if (isLowFrequencyCalibration) {
-      startIndex -= offset;
-      maxPlotIndex -= offset;
     }
 
     fireStateChange("Trimming calculated resp data down to range of interest...");
