@@ -1,6 +1,5 @@
 package asl.sensor.experiment;
 
-import static asl.sensor.experiment.RandomizedExperiment.smoothLowFrequencySeries;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertArrayEquals;
@@ -12,29 +11,23 @@ import static org.junit.Assert.fail;
 
 import asl.sensor.CalProcessingServer;
 import asl.sensor.ExperimentFactory;
-import asl.sensor.experiment.RandomizedExperiment.LowFreqDecimationManager;
 import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStoreUtils;
 import asl.sensor.output.CalResult;
 import asl.sensor.test.TestUtils;
-import asl.utils.FFTResult;
 import asl.utils.NumericUtils;
 import asl.utils.ReportingUtils;
 import asl.utils.ResponseUnits;
 import asl.utils.ResponseUnits.ResolutionType;
 import asl.utils.ResponseUnits.SensorType;
-import asl.utils.TimeSeriesUtils;
-import asl.utils.input.DataBlock;
 import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.Font;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -669,72 +662,5 @@ public class RandomizedExperimentTest {
     RandomizedExperiment rCal = (RandomizedExperiment)
         ExperimentFactory.RANDOMCAL.createExperiment();
     assertTrue(rCal.hasEnoughData(ds));
-  }
-
-  @Test
-  public void testSNZODecimation() throws SeedFormatException, IOException, CodecException {
-    String dataFolderName = getSeedFolder("IU", "SNZO", "2018", "325");
-    String calName = dataFolderName + "_BC0.512.seed";
-    String sensOutName = dataFolderName + "00_BHZ.512.seed";
-    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268"; // not used
-
-
-    String expDataLocation = folder + "/decimation-by-20-SNZO-cal/decimated_data.seed";
-    String decimatedCalName = "IU_SNZO_  _BC0";
-    String decimatedOutName = "IU_SNZO_00_BHZ";
-
-    DataBlock expectedCal = TimeSeriesUtils.getTimeSeries(expDataLocation, decimatedCalName);
-    DataBlock expectedOut = TimeSeriesUtils.getTimeSeries(expDataLocation, decimatedOutName);
-    long start = Math.max(expectedCal.getStartTime(), expectedOut.getStartTime());
-    long end = Math.min(expectedCal.getEndTime(), expectedOut.getEndTime());
-    expectedCal.trim(start, end);
-    expectedOut.trim(start, end);
-    long expectedInterval = expectedCal.getInterval();
-
-    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
-    ds.matchIntervals();
-    ds.trim(start, end);
-
-    double[] decimationCal, decimationOut;
-    long interval;
-    {
-      double[] preDecimationCal = ds.getBlock(0).getData();
-      double[] preDecimationOut = ds.getBlock(1).getData();
-      interval = ds.getBlock(0).getInterval();
-      LowFreqDecimationManager ldfm =
-          new LowFreqDecimationManager(preDecimationCal, preDecimationOut, interval);
-      decimationCal = ldfm.getDownsampledCalibrationSignal();
-      decimationOut = ldfm.getDownsampledOutputSignal();
-      interval = ldfm.getIntervalAfterDownsampling();
-    }
-
-    StringBuilder decimCalWriteOut = new StringBuilder();
-    for (double dataPoint : decimationCal) {
-      decimCalWriteOut.append(dataPoint).append("\n");
-    }
-
-    PrintWriter out = new PrintWriter(new FileWriter(new File("SNZO-cal-decim.csv")));
-    // strip away the last line from the string here
-    out.write(decimCalWriteOut.substring(0, decimCalWriteOut.length() - 1));
-    out.close();
-
-    StringBuilder decimOutWriteOut = new StringBuilder();
-    for (double dataPoint : decimationOut) {
-      decimOutWriteOut.append(dataPoint).append("\n");
-    }
-
-    out = new PrintWriter(new FileWriter(new File("SNZO-out-decim.csv")));
-    // strip away the last line from the string here
-    out.write(decimOutWriteOut.substring(0, decimOutWriteOut.length() - 1));
-    out.close();
-
-    assertEquals(expectedInterval, interval);
-    assertEquals(expectedCal.getData().length, decimationCal.length);
-    assertEquals(expectedOut.getData().length, decimationOut.length);
-    /*
-    TODO: try to figure out why the expectation doesn't match our data more closely
-    assertArrayEquals(expectedCal.getData(), decimationCal, 1E-5);
-    assertArrayEquals(expectedOut.getData(), decimationOut, 1E-5);
-     */
   }
 }
