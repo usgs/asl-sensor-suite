@@ -4,9 +4,7 @@ import static asl.utils.FFTResult.DEFAULT_TAPER_WIDTH;
 import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.atanc;
 import static asl.utils.NumericUtils.complexRealsFirstSorter;
-import static asl.utils.NumericUtils.decimate;
 import static asl.utils.NumericUtils.getComplexSDev;
-import static asl.utils.NumericUtils.getMean;
 import static asl.utils.NumericUtils.multipointMovingAverage;
 import static asl.utils.NumericUtils.rewrapAngleDegrees;
 import static asl.utils.NumericUtils.unwrap;
@@ -534,21 +532,17 @@ public class RandomizedExperiment extends Experiment {
     fireStateChange("Getting PSDs of data...");
     FFTResult numeratorPSD, denominatorPSD, crossPSD;
     long interval = sensorOut.getInterval();
-    // bracketed out to try to scope data better
-    // this will match sample rates and downsample for LF cals (better PSD resolution)
     {
       double taperWidth = DEFAULT_TAPER_WIDTH;
-
       // we should already have matching sample rates for data on experiment pre-processing steps
       double[] calData = calib.getData();
       double[] sensorData = sensorOut.getData();
-      // perform decimation to increase spectral resolution but only if data is relatively HF
-      // we set at 0.5s (2 Hz) so that data will be downsampled to 10s period sample rate
-      // meaning that the nyquist rate of the data is 20s, our max value cutoff for fit region
       if (isLowFrequencyCalibration) {
-        taperWidth = 0.25;
         // we use a single-side taper of 25% because LF cals had consistent significant artifacts
-        // around the corner where the
+        // around the corner that were consistent across instrument types and stations
+        taperWidth = 0.25;
+        // other attempts to fix those artifacts included downsampling and smoothing
+        // but both had significant problems in replicating the shape of the curves
       }
 
       // now get the PSD data (already declared outside of this scope, so will persist)
@@ -670,7 +664,8 @@ public class RandomizedExperiment extends Experiment {
       observedResult[i] = amp;
       observedResult[argIdx] = phs;
       calcMag.add(xAxis, amp);
-      calcArg.add(xAxis, rewrapAngleDegrees(phs));
+      phs = rewrapAngleDegrees(phs);
+      calcArg.add(xAxis, phs);
     }
 
     maxMagWeight = 1. / maxMagWeight;
@@ -704,7 +699,8 @@ public class RandomizedExperiment extends Experiment {
       phs = Math.toDegrees(phs);
       // add to plot (re-wrap phase)
       calcMag.add(xAxis, amp);
-      calcArg.add(xAxis, rewrapAngleDegrees(phs));
+      phs = rewrapAngleDegrees(phs);
+      calcArg.add(xAxis, phs);
     }
 
     DiagonalMatrix weightMat = new DiagonalMatrix(weights);
@@ -1317,56 +1313,4 @@ public class RandomizedExperiment extends Experiment {
     }
   }
 
-  /**
-   * Private class to handle downsampling of the calibration input and output signals for use
-   * with high-frequency data
-   */
-  static class LowFreqDecimationManager {
-
-    private double[] calSignal;
-    private double[] outSignal;
-    private long interval;
-
-    /**
-     * Instantiate the calibrations and output signal data. Note that part of the experiment
-     * pre-processing steps ensures that both data should have the same sample rate at this point.
-     * The order of input here between the two arrays only matters for ensuring the right values are
-     * assigned out of here. The decimation is, of course, an independent operation.
-     *
-     * @param cal Calibration input signal
-     * @param out Calibration output signal
-     * @param itval Matching interval of both signals; decimation only done if above 2Hz frequency
-     */
-    public LowFreqDecimationManager(double[] cal, double[] out, long itval) {
-      calSignal = cal;
-      outSignal = out;
-      interval = itval;
-      long newInterval = interval;
-      long oldInterval = newInterval;
-      // Note that if we downsample 2Hz (0.5 s period) by a factor of 20, we get a period of 10s.
-      // Doubling that gives us the Nyquist rate of the downsampled data, 20s. This is the maximum
-      // value for our fit regions, so we don't downsample data slower than that.
-      if (itval < ONE_HZ_INTERVAL / 2) {
-        for (double scaleFactor : DECIMATION_FACTORS) {
-          newInterval *= scaleFactor;
-          calSignal = decimate(calSignal, oldInterval, newInterval);
-          outSignal = decimate(outSignal, oldInterval, newInterval);
-          oldInterval = newInterval;
-        }
-        interval = newInterval;
-      }
-    }
-
-    public double[] getDownsampledCalibrationSignal() {
-      return calSignal;
-    }
-
-    public double[] getDownsampledOutputSignal() {
-      return outSignal;
-    }
-
-    public long getIntervalAfterDownsampling() {
-      return interval;
-    }
-  }
 }
