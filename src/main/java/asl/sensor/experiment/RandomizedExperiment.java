@@ -435,14 +435,16 @@ public class RandomizedExperiment extends Experiment {
     }
 
     Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
-    double[] curValue = new double[freqs.length];
+    double[] curValue = new double[2 * freqs.length];
 
     for (int i = 0; i < freqs.length; ++i) {
+      int argIdx = i + freqs.length;
       Complex c = appliedCurve[i];
       curValue[i] = c.abs();
+      curValue[argIdx] = atanc(c);
     }
 
-    scaleMagnitude(curValue, freqs, isLowFreq);
+    scaleValues(curValue, freqs, isLowFreq);
 
     return curValue;
   }
@@ -927,7 +929,14 @@ public class RandomizedExperiment extends Experiment {
       }
 
       double[] errorTermFreqsFull = Arrays.copyOfRange(freqs, lowIndex, highIndex);
-      double[] observedMagnitudeFull = Arrays.copyOfRange(observedResult, lowIndex, highIndex);
+      double[] trimmedMagAndPhaseCurve = new double[errorTermFreqsFull.length * 2];
+      // copy the relevant portion of the magnitude curve
+      System.arraycopy(observedResult, lowIndex, trimmedMagAndPhaseCurve, 0,
+          highIndex - lowIndex);
+      // and copy the relevant portion of the phase curve
+      System.arraycopy(observedResult, lowIndex, trimmedMagAndPhaseCurve, highIndex - lowIndex,
+          highIndex - lowIndex);
+
       final int index;
       // we keep track of count so that we can have a 1:1 mapping between error terms and
       // listed p/z values in the
@@ -964,12 +973,19 @@ public class RandomizedExperiment extends Experiment {
           System.arraycopy(errorTermFreqsFull, j + 1,
               errorTermFreqs, j, errorTermFreqs.length - j);
         }
-        final double[] observedMagnitude = new double[errorTermFreqsFull.length - 1];
-        System.arraycopy(observedMagnitudeFull, 0, observedMagnitude, 0, j);
-        if (j + 1 < observedMagnitudeFull.length) {
-          System.arraycopy(observedMagnitudeFull, j + 1,
-              observedMagnitude, j, observedMagnitude.length - j);
-        }
+        // subtract 2 to reflect removal of specific pole and specific zero
+        final double[] observedCurve = new double[trimmedMagAndPhaseCurve.length - 2];
+        int trimOffset = trimmedMagAndPhaseCurve.length / 2; // where the phase component starts
+        // copy the first j points to this array (from 0 to j-1)
+        System.arraycopy(trimmedMagAndPhaseCurve, 0, observedCurve, 0, j);
+        // now copy from from j+1 to where the phase component starts
+        System.arraycopy(trimmedMagAndPhaseCurve, j + 1, observedCurve, j,
+            trimOffset - j - 1);
+        // now the first j phase components (note offset for destination due to missing phase term)
+        System.arraycopy(trimmedMagAndPhaseCurve, trimOffset, observedCurve,
+            trimOffset - 1, j);
+        System.arraycopy(trimmedMagAndPhaseCurve, trimOffset + j + 1, observedCurve,
+            trimOffset - 1 + j, trimOffset - j - 1);
 
         MultivariateJacobianFunction errorJacobian = new MultivariateJacobianFunction() {
           final double[] freqsSet = errorTermFreqs;
@@ -987,7 +1003,7 @@ public class RandomizedExperiment extends Experiment {
 
         RealVector initialError = MatrixUtils.createRealVector(
             new double[]{fitParams[i], fitParams[i+1]});
-        RealVector observed = MatrixUtils.createRealVector(observedMagnitude);
+        RealVector observed = MatrixUtils.createRealVector(observedCurve);
 
         LeastSquaresProblem errorLsq = new LeastSquaresBuilder().
             start(initialError).
