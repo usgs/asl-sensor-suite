@@ -605,6 +605,7 @@ public class RandomizedExperimentTest {
     assertEquals(2, poleErrors.size());
 
     Complex[] evaluatedPoles = poleErrors.keySet().toArray(new Complex[]{});
+    System.out.println(Arrays.toString(evaluatedPoles));
 
     for (Complex pole : evaluatedPoles) {
       // these values are clearly dependent on weighting scheme for calculated calibration curve

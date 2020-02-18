@@ -206,49 +206,6 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
-   * Smooths out the low-frequency signals in a way that attempts to retain curve shape
-   * @param calData Calibration signal (expect either dB-scale amplitude or unwrapped phase)
-   * @param freqs Frequencies of each calibration signal value
-   * @param numPoints Smoothing radius length not including center.
-   * Total width of the smoothing window is (2 * numPoints) + 1
-   * @return Smoothed data.
-   */
-  static double[] smoothLowFrequencySeries(double[] calData, double[] freqs, int numPoints) {
-    // double[] smoothedSignal = new double[calData.length-1];
-    double[] derivatives = new double[calData.length-1];
-
-    // if starting freq is 0 skip it since log(0) is undefined
-    int loopStart = freqs[0] > 0? 0 : 1;
-
-    for (int i = loopStart; i < derivatives.length; ++i) {
-      double denom = Math.log10(freqs[i+1]) - Math.log10(freqs[i]);
-      derivatives[i] = (calData[i+1] - calData[i]) / denom;
-    }
-
-    int points = 2 * numPoints + 1;
-    double[] smoothDeriv = multipointMovingAverage(derivatives, points, true);
-
-    /*
-    double[] smoothDeriv = new double[derivatives.length];
-    // we could probably replace this with a call to the moving average function but for now
-    // I would like to be sure that this works how we expect, so I'm duplicating the numbers
-    for (int i = loopStart; i < derivatives.length; ++i) {
-      int lowerBound = Math.max(0, i - numPoints);
-      int upperBound = Math.min(derivatives.length, i + numPoints);
-      smoothDeriv[i] = getMean(Arrays.copyOfRange(derivatives, lowerBound, upperBound));
-    }
-    */
-
-    double[] smoothedSignal = Arrays.copyOf(calData, calData.length);
-    for (int i = loopStart; i < smoothedSignal.length - 1; ++i) {
-      double freqDiff = Math.log10(freqs[i+1]) - Math.log10(freqs[i]);
-      smoothedSignal[i+1] = smoothedSignal[i] + smoothDeriv[i] * freqDiff;
-    }
-
-    return smoothedSignal;
-  }
-
-  /**
    * Backend function to set instrument response according to current
    * test variables (for best-fit calculation / backward difference) and
    * produce a response from that result. The passed response is copied on
@@ -370,12 +327,14 @@ public class RandomizedExperiment extends Experiment {
    * @see #jacobian(RealVector, double[], int, InstrumentResponse, boolean)
    */
   static Pair<RealVector, RealMatrix> errorJacobian(RealVector variables, double[] freqs,
-      int varIndex, InstrumentResponse fitResponse, boolean pole, boolean isLowFreq) {
+      int varIndex, InstrumentResponse fitResponse, boolean pole, boolean isLowFreq,
+      double freqToScaleAt) {
 
     // variables should always be size 2 (fitting one pole or zero value at a time)
     Complex currentVar = new Complex(variables.getEntry(0), variables.getEntry(1));
 
-    double[] mag = evaluateError(currentVar, freqs, varIndex, fitResponse, pole, isLowFreq);
+    double[] mag = evaluateError(currentVar, freqs, varIndex, fitResponse, pole, isLowFreq,
+        freqToScaleAt);
 
     double[][] jacobian = new double[mag.length][2];
 
@@ -383,7 +342,8 @@ public class RandomizedExperiment extends Experiment {
     double diff = 100 * Math.ulp(currentVar.getReal());
     double next = diff + currentVar.getReal();
     Complex diffX = new Complex(next, currentVar.getImaginary());
-    double[] diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq);
+    double[] diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq,
+        freqToScaleAt);
 
     for (int j = 0; j < diffY.length; ++j) {
       jacobian[j][0] = diffY[j] - mag[j];
@@ -394,7 +354,7 @@ public class RandomizedExperiment extends Experiment {
       diff = 100 * Math.ulp(currentVar.getImaginary());
       next = diff + currentVar.getImaginary();
       diffX = new Complex(currentVar.getReal(), next);
-      diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq);
+      diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq, freqToScaleAt);
 
       for (int j = 0; j < diffY.length; ++j) {
         jacobian[j][1] = diffY[j] - mag[j];
@@ -425,7 +385,7 @@ public class RandomizedExperiment extends Experiment {
    * @return Response curve with the modified pole/zero value replaced in the first response
    */
   static double[] evaluateError(Complex currentVar, double[] freqs, int varIndex,
-      InstrumentResponse fitResponse, boolean pole, boolean isLowFreq) {
+      InstrumentResponse fitResponse, boolean pole, boolean isLowFreq, double freqToScaleAt) {
 
     InstrumentResponse testResp = new InstrumentResponse(fitResponse);
     if (pole) {
@@ -437,14 +397,22 @@ public class RandomizedExperiment extends Experiment {
     Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
     double[] curValue = new double[2 * freqs.length];
 
+    Complex[] normalizationData = testResp.applyResponseToInput(new double[]{freqToScaleAt});
+    assert(normalizationData.length == 1);
+    Complex respAtNormalization = normalizationData[0];
+    double normalizeAmp = 20 * Math.log10(respAtNormalization.abs());
+    double normalizePhase = atanc(respAtNormalization);
+    double phiPrev = atanc(appliedCurve[3 * appliedCurve.length / 4]);
+
     for (int i = 0; i < freqs.length; ++i) {
       int argIdx = i + freqs.length;
       Complex c = appliedCurve[i];
-      curValue[i] = c.abs();
-      curValue[argIdx] = atanc(c);
+      curValue[i] = (20 * Math.log10(c.abs())) - normalizeAmp;
+      double phi = atanc(c) - normalizePhase;
+      phi = unwrap(phi, phiPrev);
+      phiPrev = phi;
+      curValue[argIdx] = Math.toDegrees(phi);
     }
-
-    scaleValues(curValue, freqs, isLowFreq);
 
     return curValue;
   }
@@ -639,6 +607,7 @@ public class RandomizedExperiment extends Experiment {
 
     fireStateChange("Scaling & weighting calculated resp data in preparation for solving");
     // get the data at the normalized index, use this to scale the data
+    double freqToScaleAt = freqs[normalIdx];
     double ampScale = plottedAmp[normalIdx];
     double phsScale = plottedPhs[normalIdx];
     double[] observedResult = new double[2 * freqs.length];
@@ -816,7 +785,7 @@ public class RandomizedExperiment extends Experiment {
     zeroErrors = new HashMap<>();
 
     if (isLowFrequencyCalibration) {
-      constructErrorTerms(observedResult, numZeros, fitParams);
+      constructErrorTerms(observedResult, numZeros, fitParams, freqToScaleAt);
     }
 
     fireStateChange("Getting extended resp curves for high-freq plots...");
@@ -907,7 +876,8 @@ public class RandomizedExperiment extends Experiment {
     xySeriesData.add(xysc);
   }
 
-  private void constructErrorTerms(double[] observedResult, int numZeros, double[] fitParams) {
+  private void constructErrorTerms(double[] observedResult, int numZeros, double[] fitParams,
+      double freqToScaleAt) {
     int currentZeroIndex = 0; // where zero under analysis lies in the response
     int currentPoleIndex = 0; // as above for pole
 
@@ -933,9 +903,9 @@ public class RandomizedExperiment extends Experiment {
       // copy the relevant portion of the magnitude curve
       System.arraycopy(observedResult, lowIndex, trimmedMagAndPhaseCurve, 0,
           highIndex - lowIndex);
-      // and copy the relevant portion of the phase curve
-      System.arraycopy(observedResult, lowIndex, trimmedMagAndPhaseCurve, highIndex - lowIndex,
-          highIndex - lowIndex);
+      // and copy the relevant portion of the phase curve (second half is where phase starts)
+      System.arraycopy(observedResult, observedResult.length/2 + lowIndex,
+          trimmedMagAndPhaseCurve, highIndex - lowIndex, highIndex - lowIndex);
 
       final int index;
       // we keep track of count so that we can have a 1:1 mapping between error terms and
@@ -980,12 +950,12 @@ public class RandomizedExperiment extends Experiment {
         System.arraycopy(trimmedMagAndPhaseCurve, 0, observedCurve, 0, j);
         // now copy from from j+1 to where the phase component starts
         System.arraycopy(trimmedMagAndPhaseCurve, j + 1, observedCurve, j,
-            trimOffset - j - 1);
+            errorTermFreqs.length - j);
         // now the first j phase components (note offset for destination due to missing phase term)
         System.arraycopy(trimmedMagAndPhaseCurve, trimOffset, observedCurve,
             trimOffset - 1, j);
         System.arraycopy(trimmedMagAndPhaseCurve, trimOffset + j + 1, observedCurve,
-            trimOffset - 1 + j, trimOffset - j - 1);
+            trimOffset - 1 + j, errorTermFreqs.length - j);
 
         MultivariateJacobianFunction errorJacobian = new MultivariateJacobianFunction() {
           final double[] freqsSet = errorTermFreqs;
@@ -997,7 +967,8 @@ public class RandomizedExperiment extends Experiment {
           public Pair<RealVector, RealMatrix> value(final RealVector point) {
             ++numIterations;
             fireStateChange("Fitting, iteration count " + numIterations);
-            return errorJacobian(point, freqsSet, variableIndex, fitSet, isLowFrequency, pole);
+            return errorJacobian(point, freqsSet, variableIndex, fitSet, isLowFrequency, pole,
+                freqToScaleAt);
           }
         };
 
@@ -1019,6 +990,7 @@ public class RandomizedExperiment extends Experiment {
         RealVector errorVector = optimum.getPoint();
         Complex c = new Complex(errorVector.getEntry(0), errorVector.getEntry(1));
         bestFits.add(c);
+        System.out.println(c);
       } // end loop over frequency range (error term estimation for a given point)
 
       // now that we have a list of best-fit p/z over range, we get the standard deviation
