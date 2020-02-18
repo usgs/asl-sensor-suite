@@ -605,11 +605,10 @@ public class RandomizedExperimentTest {
     assertEquals(2, poleErrors.size());
 
     Complex[] evaluatedPoles = poleErrors.keySet().toArray(new Complex[]{});
-    System.out.println(Arrays.toString(evaluatedPoles));
 
     for (Complex pole : evaluatedPoles) {
       // these values are clearly dependent on weighting scheme for calculated calibration curve
-      Complex expectedPoleError = new Complex(0.0117278263, 0.0162274766);
+      Complex expectedPoleError = new Complex(0.0022844869, 0.0003731201);
       Complex evaluatedPoleError = poleErrors.get(pole);
       String message = "Difference between expected "
           + "and evaluated poles outside of error bound:\n\t"
