@@ -2,6 +2,7 @@ package asl.sensor.experiment;
 
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
+import static asl.utils.NumericUtils.atanc;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -111,7 +112,7 @@ public class RandomizedExperimentTest {
       int argIdx = i + result.length;
       Complex c = result[i];
       testData[i] = c.abs();
-      testData[argIdx] = NumericUtils.atanc(c);
+      testData[argIdx] = atanc(c);
     }
     RandomizedExperiment.scaleValues(testData, freqs, lowFreq);
 
@@ -131,7 +132,7 @@ public class RandomizedExperimentTest {
       int argIdx = i + result.length;
       Complex c = diffResult[i];
       testDiffData[i] = c.abs();
-      testDiffData[argIdx] = NumericUtils.atanc(c);
+      testDiffData[argIdx] = atanc(c);
     }
     RandomizedExperiment.scaleValues(testDiffData, freqs, lowFreq);
     double[] firstJacobian = new double[testDiffData.length];
@@ -378,7 +379,7 @@ public class RandomizedExperimentTest {
     for (int i = 0; i < fitResponseCurve.length; ++i) {
       int phaseIndex = i + fitResponseCurve.length;
       fitAmpAndPhase[i] = fitResponseCurve[i].abs();
-      fitAmpAndPhase[phaseIndex] = NumericUtils.atanc(fitResponseCurve[i]);
+      fitAmpAndPhase[phaseIndex] = atanc(fitResponseCurve[i]);
     }
     RandomizedExperiment.scaleValues(fitAmpAndPhase, frequencyTest, false);
     RandomizedExperiment.scaleValues(expectedAmpAndPhase, frequencyTest, false);
@@ -604,6 +605,7 @@ public class RandomizedExperimentTest {
     assertEquals(2, poleErrors.size());
 
     Complex[] evaluatedPoles = poleErrors.keySet().toArray(new Complex[]{});
+    System.out.println(Arrays.toString(evaluatedPoles));
 
     for (Complex pole : evaluatedPoles) {
       // these values are clearly dependent on weighting scheme for calculated calibration curve
@@ -662,5 +664,45 @@ public class RandomizedExperimentTest {
     RandomizedExperiment rCal = (RandomizedExperiment)
         ExperimentFactory.RANDOMCAL.createExperiment();
     assertTrue(rCal.hasEnoughData(ds));
+  }
+
+  @Test
+  public void verifyThatCurveTrimmingIsCorrect() throws IOException {
+    double[] freqs = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    InstrumentResponse resp = InstrumentResponse.loadEmbeddedResponse(SensorType.STS2gen3, ResolutionType.HIGH);
+    Complex[] curve = resp.applyResponseToInput(freqs);
+    double[] ampAndPhase = new double[2 * curve.length];
+    for (int i = 0; i < curve.length; ++i) {
+      ampAndPhase[i] = curve[i].abs();
+      ampAndPhase[curve.length+i] = atanc(curve[i]);
+    }
+    for (int j = 0; j < freqs.length; ++j) {
+      final double[] freqsExceptOne = new double[freqs.length - 1];
+      System.arraycopy(freqs, 0, freqsExceptOne, 0, j);
+      if (j + 1 < freqs.length) {
+        System.arraycopy(freqs, j + 1, freqsExceptOne, j, freqsExceptOne.length - j);
+      }
+      Complex[] trimmedCurve = resp.applyResponseToInput(freqsExceptOne);
+      double[] expectedTrimmedAmpAndPhase = new double[trimmedCurve.length * 2];
+      for (int i = 0; i < trimmedCurve.length; ++i) {
+        expectedTrimmedAmpAndPhase[i] = trimmedCurve[i].abs();
+        expectedTrimmedAmpAndPhase[i+trimmedCurve.length] = atanc(trimmedCurve[i]);
+      }
+      // a copy and paste from randomizedexperiment with the variable names changed
+      final double[] observedCurve = new double[ampAndPhase.length - 2];
+      int trimOffset = ampAndPhase.length / 2; // where the phase component starts
+      // copy the first j points to this array (from 0 to j-1)
+      System.arraycopy(ampAndPhase, 0, observedCurve, 0, j);
+      // now copy from from j+1 to where the phase component starts
+      System.arraycopy(ampAndPhase, j + 1, observedCurve, j,
+          trimOffset - j - 1);
+      // now the first j phase components (note offset for destination due to missing phase term)
+      System.arraycopy(ampAndPhase, trimOffset, observedCurve,
+          trimOffset - 1, j);
+      System.arraycopy(ampAndPhase, trimOffset + j + 1, observedCurve,
+          trimOffset - 1 + j, trimOffset - j - 1);
+
+      assertArrayEquals(expectedTrimmedAmpAndPhase, observedCurve, 0);
+    }
   }
 }
