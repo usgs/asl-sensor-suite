@@ -1317,8 +1317,13 @@ public class InputPanel
     if (epochs.size() > 1) {
       // more than one series in the file? prompt user for it
       String[] epochStrings = new String[epochs.size()];
+      // sorted list of start times to match against presented list of strings
+      Instant[] epochStarts = new Instant[epochs.size()];
+
       for (int i = 0; i < epochStrings.length; ++i) {
-        String startString = dateTimeFormatter.format(epochs.get(i).getFirst());
+        Instant startInstant = epochs.get(i).getFirst();
+        epochStarts[i] = startInstant;
+        String startString = dateTimeFormatter.format(startInstant);
         Instant endInstant = epochs.get(i).getSecond();
         String endString;
         if (endInstant != null) {
@@ -1328,6 +1333,8 @@ public class InputPanel
         }
         epochStrings[i] = startString + " | " + endString;
       }
+      // sort both of these to make finding the user-selected epoch faster
+      Arrays.sort(epochStarts);
       Arrays.sort(epochStrings);
       Object result = JOptionPane.showInputDialog(
           this,
@@ -1338,7 +1345,7 @@ public class InputPanel
           epochStrings[epochStrings.length - 1]); // default to most recent
       if (result instanceof String) {
         int index = Arrays.binarySearch(epochStrings, result);
-        return epochs.get(index).getFirst();
+        return epochStarts[index];
       } else {
         return null;
       }
