@@ -18,6 +18,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -120,9 +121,7 @@ public abstract class ExperimentPanel
     channelType = new String[DataStore.FILE_COUNT];
 
     // default initialization for channel type string
-    for (int i = 0; i < channelType.length; ++i) {
-      channelType[i] = "NOT USED";
-    }
+    Arrays.fill(channelType, "NOT USED");
 
     seriesColorMap = new HashMap<>();
     seriesDashedSet = new HashSet<>();
