@@ -1,5 +1,6 @@
 package asl.sensor.gui;
 
+import static asl.sensor.experiment.RandomizedExperiment.VALID_CORRECTIONS;
 import static asl.utils.ReportingUtils.setNonNumericPrintable;
 
 import asl.sensor.ExperimentFactory;
@@ -7,9 +8,11 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
+import asl.utils.ResponseUnits.SensorType;
 import asl.utils.input.InstrumentResponse;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
@@ -32,6 +35,7 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -42,6 +46,7 @@ import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -74,6 +79,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
   private static final long serialVersionUID = -1791709117080520178L;
   private final JComboBox<String> plotSelection;
+  private final JComboBox<SensorType> sensorCorrectionSelector;
   private final JSpinner nyquistMultiplier;
   private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
       residualXAxis, residualPeriodAxis;
@@ -94,8 +100,6 @@ public class RandomizedPanel extends ExperimentPanel {
     nyquistMultiplierLabel.setLabelFor(nyquistMultiplier);
     nyquistMultiplierLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
     nyquistMultiplierLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-    JPanel labelPanel = new JPanel();
-    labelPanel.add(nyquistMultiplierLabel);
 
     JLabel introText = new JLabel("Calibration type: ");
     lowFrequency = new JRadioButton("low freq.");
@@ -107,6 +111,18 @@ public class RandomizedPanel extends ExperimentPanel {
     group.add(highFrequency);
     group.add(autoFrequency);
     autoFrequency.setSelected(true);
+
+    sensorCorrectionSelector = new JComboBox<>(VALID_CORRECTIONS);
+    sensorCorrectionSelector.setPreferredSize(sensorCorrectionSelector.getMinimumSize());
+    // use a custom renderer to handle the null option for correction response
+    sensorCorrectionSelector.setRenderer(new CorrectionComboBoxRenderer());
+    JLabel sensorCorrectionLabel =
+        new JLabel("Correction factor: (unneeded for embedded resps)");
+    sensorCorrectionLabel.setLabelFor(sensorCorrectionSelector);
+    sensorCorrectionLabel.setHorizontalTextPosition(SwingConstants.LEFT);
+    sensorCorrectionLabel.setHorizontalAlignment(SwingConstants.LEFT);
+    JPanel correctionPanel = new JPanel();
+    correctionPanel.add(sensorCorrectionLabel);
 
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
@@ -160,6 +176,12 @@ public class RandomizedPanel extends ExperimentPanel {
     optionsPanel.add(frequencySpace);
     capacitiveCal.setAlignmentX(LEFT_ALIGNMENT);
     optionsPanel.add(capacitiveCal);
+    JPanel sensorCorrectionPanel = new JPanel();
+    sensorCorrectionPanel.setLayout(new BoxLayout(sensorCorrectionPanel, BoxLayout.X_AXIS));
+    sensorCorrectionPanel.add(sensorCorrectionLabel);
+    sensorCorrectionPanel.add(sensorCorrectionSelector);
+    sensorCorrectionPanel.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(sensorCorrectionPanel);
     this.add(optionsPanel, constraints);
 
     generateResp = new JButton("View fit RESP");
@@ -663,6 +685,17 @@ public class RandomizedPanel extends ExperimentPanel {
     } else {
       rndExp.setLowFrequencyCalibration(lowFrequency.isSelected());
     }
+    try {
+      rndExp.setCorrectionResponse((SensorType) sensorCorrectionSelector.getSelectedItem());
+    } catch (IOException e) {
+      StringBuilder text = new StringBuilder();
+      text.append("There was an error loading data during operations.\n");
+      text.append("If this is a randomized calibration producing this error,\n");
+      text.append("Something must have gone wrong while trying to create the\n");
+      text.append("correction response for Trillium sensors.");
+      displayErrorMessage(text.toString());
+      return;
+    }
     rndExp.setPlotUsingHz(frequencySpace.isSelected());
     rndExp.setNyquistMultiplier(multiplier);
     rndExp.setCapactiveCalibration(capacitiveCal.isSelected());
@@ -727,4 +760,18 @@ public class RandomizedPanel extends ExperimentPanel {
 
   }
 
+  private static class CorrectionComboBoxRenderer extends BasicComboBoxRenderer {
+
+    public CorrectionComboBoxRenderer() {
+      super();
+    }
+
+    @Override
+    public Component getListCellRendererComponent(JList list, Object value, int index,
+        boolean isSelected,  boolean cellHasFocus) {
+      // if the object is null, display "None" instead of the empty string
+      String displayText = (value == null) ? "None" : value.toString();
+      return super.getListCellRendererComponent(list, displayText, index, isSelected, cellHasFocus);
+    }
+  }
 }

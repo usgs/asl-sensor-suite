@@ -11,12 +11,20 @@ import static asl.utils.NumericUtils.unwrap;
 import static asl.utils.NumericUtils.unwrapArray;
 import static asl.utils.ReportingUtils.complexListToString;
 import static asl.utils.ReportingUtils.complexListToStringWithErrorTerms;
+import static asl.utils.ResponseUnits.SensorType.TR120;
+import static asl.utils.ResponseUnits.SensorType.TR240;
+import static asl.utils.ResponseUnits.SensorType.TR360;
+import static asl.utils.ResponseUnits.getFilenameFromComponents;
 import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static asl.utils.input.InstrumentResponse.loadEmbeddedResponse;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
+import asl.utils.ResponseUnits.ResolutionType;
+import asl.utils.ResponseUnits.SensorType;
 import asl.utils.input.DataBlock;
 import asl.utils.input.InstrumentResponse;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,37 +48,32 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 /**
- * This experiment takes in a randomized calibration signal and the
- * corresponding output from a seismic sensor. It calculates the implicit
- * response by deconvolving the calibration signal from the sensor output, and
- * then finds the best-fit poles (lowest 2 for low-frequency calibrations,
- * all remaining poles for high-frequency calibrations) to
- * match the magnitude and rotation angle of the calculated response curve
- * produced from the deconvolution.
- * Plottable data includes the sensor's response curve
- * (Bode plot), the calculated response from deconvolution, and the plot
- * of the response from the best-fit parameters.
- * These plots are returned in a list of two datasets: the first holds
- * the absolute values per-frequency of those curves, and the second holds
- * the angle of each such point in complex space.
- * For more details on the algorithm, see Ringler, Hutt, et al.,
- * "Estimating Pole-Zero Errors in GSN-IRIS/USGS Network Calibration Metadata",
- * Bulletin of the Seismological Society of America, Vol 102 (Apr. 2012).
+ * This experiment takes in a randomized calibration signal and the corresponding output from a
+ * seismic sensor. It calculates the implicit response by deconvolving the calibration signal from
+ * the sensor output, and then finds the best-fit poles (lowest 2 for low-frequency calibrations,
+ * all remaining poles for high-frequency calibrations) to match the magnitude and rotation angle of
+ * the calculated response curve produced from the deconvolution. Plottable data includes the
+ * sensor's response curve (Bode plot), the calculated response from deconvolution, and the plot of
+ * the response from the best-fit parameters. These plots are returned in a list of two datasets:
+ * the first holds the absolute values per-frequency of those curves, and the second holds the angle
+ * of each such point in complex space. For more details on the algorithm, see Ringler, Hutt, et
+ * al., "Estimating Pole-Zero Errors in GSN-IRIS/USGS Network Calibration Metadata", Bulletin of the
+ * Seismological Society of America, Vol 102 (Apr. 2012).
  *
  * @author akearns - KBRWyle
  */
 public class RandomizedExperiment extends Experiment {
 
   /**
-   * Maximum possible frequency bound as a multiple of Nyquist rate of input (90%).
-   * Also used to set the maximum value of plottable data for high-frequency calibrations.
+   * Maximum possible frequency bound as a multiple of Nyquist rate of input (90%). Also used to set
+   * the maximum value of plottable data for high-frequency calibrations.
    */
   public static final double PEAK_MULTIPLIER = 0.9;
 
   /**
-   * Default Nyquist rate limit for high-frequency calibrations,
-   * which usually preserves enough corner freq. information without becoming too
-   * susceptible to noise. Determined by experimentation.
+   * Default Nyquist rate limit for high-frequency calibrations, which usually preserves enough
+   * corner freq. information without becoming too susceptible to noise. Determined by
+   * experimentation.
    */
   public static final double DEFAULT_NYQUIST_PERCENT_LIMIT = 0.5;
 
@@ -85,17 +88,17 @@ public class RandomizedExperiment extends Experiment {
   private static final double LOW_FREQ_ZERO_TARGET = 0.02;
 
   /**
-   * Sets the default normalization point for high-frequency calibration data (1.0 Hz)
-   * This value is subject to change based on verification of cal fitting performance.
+   * Sets the default normalization point for high-frequency calibration data (1.0 Hz) This value is
+   * subject to change based on verification of cal fitting performance.
    */
   private static final double HIGH_FREQ_ZERO_TARGET = 1.0;
 
   /**
-   * Decimation factors to be done in series for improving spectral resolution on LF cal data
-   * above 2Hz
+   * Choice of correction factor to use
    */
-  private static final double[] DECIMATION_FACTORS = {2., 5., 2.};
+  public static final SensorType[] VALID_CORRECTIONS = {null, TR120, TR240, TR360};
 
+  private InstrumentResponse correctionToApply;
   private double initialResidual, fitResidual;
   private List<Complex> initialPoles;
   private List<Complex> fitPoles;
@@ -103,15 +106,14 @@ public class RandomizedExperiment extends Experiment {
   private List<Complex> initialZeros;
   private List<Complex> fitZeros;
   private Map<Complex, Complex> zeroErrors;
-
   /**
-   * True if calibration is low frequency.
-   * This affects which poles are fitted, either low or high frequencies.
+   * True if calibration is low frequency. This affects which poles are fitted, either low or high
+   * frequencies.
    */
   private boolean isLowFrequencyCalibration;
   /**
-   * Used to ensure that scaling is done correctly on calibrations
-   * that use a capacitive setting. Default value will be false.
+   * Used to ensure that scaling is done correctly on calibrations that use a capacitive setting.
+   * Default value will be false.
    */
   private boolean isCapacitive;
   private InstrumentResponse fitResponse;
@@ -128,6 +130,314 @@ public class RandomizedExperiment extends Experiment {
     numIterations = 0;
     plotUsingHz = true;
     nyquistMultiplier = DEFAULT_NYQUIST_PERCENT_LIMIT; // defaults to 0.8
+  }
+
+  /**
+   * Get the frequency at which the data will be normalized.
+   *
+   * @return Correct frequency to normalize data at for the given type of calibration curve
+   * @see #LOW_FREQ_ZERO_TARGET
+   * @see #HIGH_FREQ_ZERO_TARGET
+   */
+  static double getFrequencyForNormalization(boolean isLowFrequencyCalibration) {
+    return isLowFrequencyCalibration ? LOW_FREQ_ZERO_TARGET : HIGH_FREQ_ZERO_TARGET;
+  }
+
+  private static Complex[] getResponseCorrection(double[] frequencies, InstrumentResponse resp) {
+    if (resp == null) {
+      Complex[] returnValue = new Complex[frequencies.length];
+      Arrays.fill(returnValue, Complex.ZERO);
+      return returnValue;
+    }
+
+    return resp.applyResponseToInputUnscaled(frequencies);
+  }
+
+  /**
+   * Backend function to set instrument response according to current test variables (for best-fit
+   * calculation / backward difference) and produce a response from that result. The passed response
+   * is copied on start and is not modified directly. Which values (poles) are modified depends on
+   * high or low frequency calibration setting.
+   *
+   * @param variables Values to set the response's poles to
+   * @param freqs Set of frequencies to get the response curve over
+   * @param numZeros How many (paired) variables represent zeros (to determine first pole index)
+   * @param fitResponse Response to apply these variables to
+   * @param isLowFreq True if the calibration being fit to is low-frequency
+   * @param correctionCurve Response correction used for some Trillium responses
+   * @return Doubles representing new response curve evaluation
+   */
+  private static double[] evaluateResponse(double[] variables, double[] freqs, int numZeros,
+      InstrumentResponse fitResponse, boolean isLowFreq, Complex[] correctionCurve) {
+
+    InstrumentResponse testResp = new InstrumentResponse(fitResponse);
+
+    // prevent terrible case where, say, only high-freq poles above nyquist rate
+    if (variables.length > 0) {
+      testResp = fitResponse.buildResponseFromFitVector(
+          variables, isLowFreq, numZeros);
+    } else {
+      System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
+    }
+
+    Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
+    double[] curValue = new double[freqs.length * 2];
+
+    if (correctionCurve != null) {
+      for (int i = 0; i < appliedCurve.length; ++i) {
+        appliedCurve[i] = appliedCurve[i].subtract(correctionCurve[i]);
+      }
+    }
+
+    for (int i = 0; i < freqs.length; ++i) {
+      int argIdx = freqs.length + i;
+      Complex c = appliedCurve[i];
+      curValue[i] = c.abs();
+      curValue[argIdx] = atanc(c);
+    }
+
+    scaleValues(curValue, freqs, isLowFreq);
+
+    return curValue;
+  }
+
+  /**
+   * Function to run evaluation and backward difference for Jacobian approximation given a set of
+   * points to set as response. Mainly a wrapper for the evaluateResponse function.
+   *
+   * @param variables Values to set the response's poles to
+   * @param freqs Set of frequencies to get the response curve over
+   * @param numZeros How many (paired) variables represent zeros (to determine first pole index)
+   * @param fitResponse Response to apply these variables to
+   * @param isLowFreq True if the calibration being fit to is low-frequency
+   * @param correctionCurve Response correction used for some Trillium responses
+   * @return RealVector with evaluation at current response value and RealMatrix with forward
+   * difference approximation of that response's Jacobian
+   */
+  static Pair<RealVector, RealMatrix> jacobian(RealVector variables, double[] freqs,
+      int numZeros, InstrumentResponse fitResponse, boolean isLowFreq,
+      Complex[] correctionCurve) {
+    int numVars = variables.getDimension();
+
+    double[] currentVars = new double[numVars];
+
+    for (int i = 0; i < numVars; ++i) {
+      currentVars[i] = variables.getEntry(i);
+    }
+
+    double[] mag =
+        evaluateResponse(currentVars, freqs, numZeros, fitResponse, isLowFreq, correctionCurve);
+
+    double[][] jacobian = new double[mag.length][numVars];
+    // now take the backward difference of each value
+    for (int i = 0; i < numVars; ++i) {
+
+      if (i % 2 == 1 && currentVars[i] == 0.) {
+        // imaginary value already zero, don't change this
+        // we assume that if an imaginary value is NOT zero, it's close enough
+        // to its correct value that it won't get turned down to zero
+        for (int j = 0; j < mag.length; ++j) {
+          jacobian[j][i] = 0.;
+        }
+        continue;
+      }
+
+      double[] changedVars = Arrays.copyOf(currentVars, currentVars.length);
+
+      // forward difference approximation -- ulp here gives us the error between this variable
+      // and the smallest double larger than it. We multiply this by 100 to get the forward diff.
+      // so that the difference is small relative to the value of the variable but also able to
+      // give us a measurable change in the actual response curve function generated by it
+      // and unlike having a fixed decimal step above the variable this is able to function on
+      // floating-point numbers of arbitrary magnitude (useful for very high-freq poles in STS-6)
+      double diffX = 100 * Math.ulp(changedVars[i]);
+      changedVars[i] = changedVars[i] + diffX;
+
+      double[] diffY =
+          evaluateResponse(changedVars, freqs, numZeros, fitResponse, isLowFreq, correctionCurve);
+
+      for (int j = 0; j < diffY.length; ++j) {
+        jacobian[j][i] = diffY[j] - mag[j];
+        jacobian[j][i] /= diffX;
+      }
+
+    }
+
+    RealVector result = MatrixUtils.createRealVector(mag);
+    RealMatrix jacobianMatrix = MatrixUtils.createRealMatrix(jacobian);
+
+    return new Pair<>(result, jacobianMatrix);
+  }
+
+  /**
+   * Given a candidate value for error terms for a given variable in the best-fit response, evaluate
+   * the response given that value and estimate the jacobian by forward-difference.
+   *
+   * @param variables A vector with 2 entries representing a pole's real and complex value
+   * respectively
+   * @param freqs Frequencies to compute the response over
+   * @param varIndex The entry in the fitResponse to be replaced with this given value
+   * @param fitResponse The best-fit response being modified
+   * @param pole True if the given variable being fit is a pole
+   * @param isLowFreq True if the given calibration is low-frequency
+   * @param freqToScaleAt Frequency that the source calculated response from cal is normalized on
+   * @param correctionCurve Response correction used for some Trillium responses
+   * @return Pair object holding the evaluation and the estimated jacobian at the given point
+   * @see #jacobian(RealVector, double[], int, InstrumentResponse, boolean, Complex[])
+   */
+  static Pair<RealVector, RealMatrix> errorJacobian(RealVector variables, double[] freqs,
+      int varIndex, InstrumentResponse fitResponse, boolean pole, boolean isLowFreq,
+      double freqToScaleAt, Complex[] correctionCurve) {
+
+    // variables should always be size 2 (fitting one pole or zero value at a time)
+    Complex currentVar = new Complex(variables.getEntry(0), variables.getEntry(1));
+
+    double[] mag = evaluateError(currentVar, freqs, varIndex, fitResponse, pole, isLowFreq,
+        freqToScaleAt, correctionCurve);
+
+    double[][] jacobian = new double[mag.length][2];
+
+    // same procedure as forward difference in main jacobian function
+    double diff = 100 * Math.ulp(currentVar.getReal());
+    double next = diff + currentVar.getReal();
+    Complex diffX = new Complex(next, currentVar.getImaginary());
+    double[] diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq,
+        freqToScaleAt, correctionCurve);
+
+    for (int j = 0; j < diffY.length; ++j) {
+      jacobian[j][0] = diffY[j] - mag[j];
+      jacobian[j][0] /= diff;
+    }
+
+    if (currentVar.getImaginary() != 0) {
+      diff = 100 * Math.ulp(currentVar.getImaginary());
+      next = diff + currentVar.getImaginary();
+      diffX = new Complex(currentVar.getReal(), next);
+      diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq, freqToScaleAt,
+          correctionCurve);
+
+      for (int j = 0; j < diffY.length; ++j) {
+        jacobian[j][1] = diffY[j] - mag[j];
+        jacobian[j][1] /= diff;
+      }
+    } else {
+      for (int j = 0; j < diffY.length; ++j) {
+        jacobian[j][1] = 0.;
+      }
+    }
+
+    RealVector result = MatrixUtils.createRealVector(mag);
+    RealMatrix jacobianMatrix = MatrixUtils.createRealMatrix(jacobian);
+
+    return new Pair<>(result, jacobianMatrix);
+  }
+
+  /**
+   * Calculate the response of modified single pole-zero values in order to get an estimation of the
+   * error for each term. Currently this is only performed on low-frequency calibrations for reasons
+   * of performance.
+   *
+   * @param currentVar P/Z value to fit
+   * @param freqs Range of frequencies to calculate the given response of
+   * @param varIndex Index noting where in the best-fit response this value belongs
+   * @param fitResponse Best-fit response returned by original solver
+   * @param pole True if the value being fit is from the response's poles
+   * @param isLowFreq True if the calibration being checked against is low-frequency
+   * @param freqToScaleAt Frequency that the full calibration was normalized on
+   * @param correctionCurve Response correction used for some Trillium responses
+   * @return Response curve with the modified pole/zero value replaced in the first response
+   */
+  static double[] evaluateError(Complex currentVar, double[] freqs, int varIndex,
+      InstrumentResponse fitResponse, boolean pole, boolean isLowFreq, double freqToScaleAt,
+      Complex[] correctionCurve) {
+
+    InstrumentResponse testResp = new InstrumentResponse(fitResponse);
+    if (pole) {
+      testResp.replaceFitPole(currentVar, varIndex, isLowFreq);
+    } else {
+      testResp.replaceFitZero(currentVar, varIndex, isLowFreq);
+    }
+
+
+    Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
+    double[] curValue = new double[2 * freqs.length];
+
+    if (correctionCurve != null) {
+      for (int i = 0; i < appliedCurve.length; ++i) {
+        appliedCurve[i] = appliedCurve[i].subtract(correctionCurve[i]);
+      }
+    }
+
+    Complex[] normalizationData =
+        testResp.applyResponseToInputUnscaled(new double[]{freqToScaleAt});
+    assert (normalizationData.length == 1);
+    Complex respAtNormalization = normalizationData[0];
+    double normalizeAmp = 20 * Math.log10(respAtNormalization.abs());
+    double normalizePhase = atanc(respAtNormalization);
+    double phiPrev = atanc(appliedCurve[3 * appliedCurve.length / 4]);
+
+    for (int i = 0; i < freqs.length; ++i) {
+      int argIdx = i + freqs.length;
+      Complex c = appliedCurve[i];
+      curValue[i] = (20 * Math.log10(c.abs())) - normalizeAmp;
+      double phi = atanc(c) - normalizePhase;
+      phi = unwrap(phi, phiPrev);
+      phiPrev = phi;
+      curValue[argIdx] = Math.toDegrees(phi);
+    }
+
+    return curValue;
+  }
+
+  /**
+   * Subtract a constant value from every point in the resp curve components such that the value at
+   * a fixed given frequency is zero. This value is derived from the calibration type. If it is a
+   * low-frequency cal, it is {@link #LOW_FREQ_ZERO_TARGET}, and if it is a high-frequency cal, then
+   * it is {@link #HIGH_FREQ_ZERO_TARGET}. In the process the response amplitude is set to units of
+   * dB, and the phase is set to units of degrees (instead of radians).
+   *
+   * @param unrot Unrotated response curve. First half is amplitude, second is phase
+   * @param freqs Frequencies associated with the given response curve points
+   * @param isLowFreq True if the calibration is low-frequency
+   */
+  static void scaleValues(double[] unrot, double[] freqs, boolean isLowFreq) {
+
+    int normalIdx = FFTResult.getIndexOfFrequency(freqs,
+        getFrequencyForNormalization(isLowFreq));
+    // note that cal curve first half is the amplitude, second is phase
+    int argStart = unrot.length / 2;
+    // scale the first half of the data (amplitude)
+    scaleMagnitude(unrot, freqs, isLowFreq);
+
+    double unrotScaleArg = unrot[argStart + normalIdx];
+    double phiPrev = 0;
+    if (isLowFreq) {
+      phiPrev = unrot[3 * unrot.length / 4];
+    }
+    for (int i = argStart; i < unrot.length; ++i) {
+      double phi = unrot[i] - unrotScaleArg;
+      phi = unwrap(phi, phiPrev);
+      phiPrev = phi;
+      unrot[i] = Math.toDegrees(phi);
+    }
+  }
+
+  /**
+   * Scale amplitude curve such that it is zero at the normalization frequency for the cal type.
+   * This also puts the associated magnitude data into a dB-scale (20 * log10(amplitude))
+   *
+   * @param unscaled Unscaled data, first half of which is magnitude data
+   * @param freqs Frequencies associated with each unmatched point
+   * @param isLowFreq True if the calibration is low-frequency
+   */
+  static void scaleMagnitude(double[] unscaled, double[] freqs, boolean isLowFreq) {
+    int normalIdx = FFTResult.getIndexOfFrequency(freqs,
+        getFrequencyForNormalization(isLowFreq));
+    double unrotScaleAmp = 20 * Math.log10(unscaled[normalIdx]);
+    for (int i = 0; i < freqs.length; ++i) {
+      double db = 20 * Math.log10(unscaled[i]);
+      unscaled[i] = db - unrotScaleAmp;
+    }
   }
 
   @Override
@@ -157,7 +467,6 @@ public class RandomizedExperiment extends Experiment {
     } else {
       sbFitPoles.append(complexListToString(fitPoles));
     }
-
 
     sbInitialPoles.append("\n");
     sbFitPoles.append("\n");
@@ -195,279 +504,22 @@ public class RandomizedExperiment extends Experiment {
     return new String[]{sbInitialPoles.toString(), sbInitZ.toString(), sbR};
   }
 
-  /**
-   * Get the frequency at which the data will be normalized.
-   * @see #LOW_FREQ_ZERO_TARGET
-   * @see #HIGH_FREQ_ZERO_TARGET
-   * @return Correct frequency to normalize data at for the given type of calibration curve
-   */
-  static double getFrequencyForNormalization(boolean isLowFrequencyCalibration) {
-    return isLowFrequencyCalibration ? LOW_FREQ_ZERO_TARGET : HIGH_FREQ_ZERO_TARGET;
-  }
-
-  /**
-   * Backend function to set instrument response according to current
-   * test variables (for best-fit calculation / backward difference) and
-   * produce a response from that result. The passed response is copied on
-   * start and is not modified directly. Which values (poles) are modified
-   * depends on high or low frequency calibration setting.
-   * @param variables Values to set the response's poles to
-   * @param freqs Set of frequencies to get the response curve over
-   * @param numZeros How many (paired) variables represent zeros (to determine first pole index)
-   * @param fitResponse Response to apply these variables to
-   * @param isLowFreq True if the calibration being fit to is low-frequency
-   * @return Doubles representing new response curve evaluation
-   */
-  private static double[] evaluateResponse(double[] variables, double[] freqs, int numZeros,
-      InstrumentResponse fitResponse, boolean isLowFreq) {
-
-    InstrumentResponse testResp = new InstrumentResponse(fitResponse);
-
-    // prevent terrible case where, say, only high-freq poles above nyquist rate
-    if (variables.length > 0) {
-      testResp = fitResponse.buildResponseFromFitVector(
-          variables, isLowFreq, numZeros);
-    } else {
-      System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
+  public void setCorrectionResponse(SensorType typeToCorrect) throws IOException {
+    if (typeToCorrect == null) {
+      correctionToApply = null;
+      return;
     }
 
-    Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
-    double[] curValue = new double[freqs.length * 2];
-
-    for (int i = 0; i < freqs.length; ++i) {
-      int argIdx = freqs.length + i;
-      Complex c = appliedCurve[i];
-      curValue[i] = c.abs();
-      curValue[argIdx] = atanc(c);
+    int index =
+        Arrays.binarySearch(VALID_CORRECTIONS,1, VALID_CORRECTIONS.length, typeToCorrect);
+    if (index <= 0) {
+      correctionToApply = null;
+      return;
     }
-
-    scaleValues(curValue, freqs, isLowFreq);
-
-    return curValue;
-  }
-
-  /**
-   * Function to run evaluation and backward difference for Jacobian
-   * approximation given a set of points to set as response.
-   * Mainly a wrapper for the evaluateResponse function.
-   *
-   * @param variables Values to set the response's poles to
-   * @param freqs Set of frequencies to get the response curve over
-   * @param numZeros How many (paired) variables represent zeros (to determine first pole index)
-   * @param fitResponse Response to apply these variables to
-   * @param isLowFreq True if the calibration being fit to is low-frequency
-   * @return RealVector with evaluation at current response value and
-   * RealMatrix with forward difference approximation of that response's Jacobian
-   */
-  static Pair<RealVector, RealMatrix> jacobian(RealVector variables, double[] freqs,
-      int numZeros, InstrumentResponse fitResponse, boolean isLowFreq) {
-    int numVars = variables.getDimension();
-
-    double[] currentVars = new double[numVars];
-
-    for (int i = 0; i < numVars; ++i) {
-      currentVars[i] = variables.getEntry(i);
-    }
-
-    double[] mag = evaluateResponse(currentVars, freqs, numZeros, fitResponse, isLowFreq);
-
-    double[][] jacobian = new double[mag.length][numVars];
-    // now take the backward difference of each value
-    for (int i = 0; i < numVars; ++i) {
-
-      if (i % 2 == 1 && currentVars[i] == 0.) {
-        // imaginary value already zero, don't change this
-        // we assume that if an imaginary value is NOT zero, it's close enough
-        // to its correct value that it won't get turned down to zero
-        for (int j = 0; j < mag.length; ++j) {
-          jacobian[j][i] = 0.;
-        }
-        continue;
-      }
-
-      double[] changedVars = Arrays.copyOf(currentVars, currentVars.length);
-
-      // forward difference approximation -- ulp here gives us the error between this variable
-      // and the smallest double larger than it. We multiply this by 100 to get the forward diff.
-      // so that the difference is small relative to the value of the variable but also able to
-      // give us a measurable change in the actual response curve function generated by it
-      // and unlike having a fixed decimal step above the variable this is able to function on
-      // floating-point numbers of arbitrary magnitude (useful for very high-freq poles in STS-6)
-      double diffX = 100 * Math.ulp(changedVars[i]);
-      changedVars[i] = changedVars[i] + diffX;
-
-
-      double[] diffY =
-          evaluateResponse(changedVars, freqs, numZeros, fitResponse, isLowFreq);
-
-      for (int j = 0; j < diffY.length; ++j) {
-        jacobian[j][i] = diffY[j] - mag[j];
-        jacobian[j][i] /= diffX;
-      }
-
-    }
-
-    RealVector result = MatrixUtils.createRealVector(mag);
-    RealMatrix jacobianMatrix = MatrixUtils.createRealMatrix(jacobian);
-
-    return new Pair<>(result, jacobianMatrix);
-  }
-
-  /**
-   * Given a candidate value for error terms for a given variable in the best-fit response,
-   * evaluate the response given that value and estimate the jacobian by forward-difference.
-   * @param variables A vector with 2 entries representing a pole's real and complex value
-   * respectively
-   * @param freqs Frequencies to compute the response over
-   * @param varIndex The entry in the fitResponse to be replaced with this given value
-   * @param fitResponse The best-fit response being modified
-   * @param pole True if the given variable being fit is a pole
-   * @param isLowFreq True if the given calibration is low-frequency
-   * @return Pair object holding the evaluation and the estimated jacobian at the given point
-   * @see #jacobian(RealVector, double[], int, InstrumentResponse, boolean)
-   */
-  static Pair<RealVector, RealMatrix> errorJacobian(RealVector variables, double[] freqs,
-      int varIndex, InstrumentResponse fitResponse, boolean pole, boolean isLowFreq,
-      double freqToScaleAt) {
-
-    // variables should always be size 2 (fitting one pole or zero value at a time)
-    Complex currentVar = new Complex(variables.getEntry(0), variables.getEntry(1));
-
-    double[] mag = evaluateError(currentVar, freqs, varIndex, fitResponse, pole, isLowFreq,
-        freqToScaleAt);
-
-    double[][] jacobian = new double[mag.length][2];
-
-    // same procedure as forward difference in main jacobian function
-    double diff = 100 * Math.ulp(currentVar.getReal());
-    double next = diff + currentVar.getReal();
-    Complex diffX = new Complex(next, currentVar.getImaginary());
-    double[] diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq,
-        freqToScaleAt);
-
-    for (int j = 0; j < diffY.length; ++j) {
-      jacobian[j][0] = diffY[j] - mag[j];
-      jacobian[j][0] /= diff;
-    }
-
-    if (currentVar.getImaginary() != 0) {
-      diff = 100 * Math.ulp(currentVar.getImaginary());
-      next = diff + currentVar.getImaginary();
-      diffX = new Complex(currentVar.getReal(), next);
-      diffY = evaluateError(diffX, freqs, varIndex, fitResponse, pole, isLowFreq, freqToScaleAt);
-
-      for (int j = 0; j < diffY.length; ++j) {
-        jacobian[j][1] = diffY[j] - mag[j];
-        jacobian[j][1] /= diff;
-      }
-    } else {
-      for (int j = 0; j < diffY.length; ++j) {
-        jacobian[j][1] = 0.;
-      }
-    }
-
-    RealVector result = MatrixUtils.createRealVector(mag);
-    RealMatrix jacobianMatrix = MatrixUtils.createRealMatrix(jacobian);
-
-    return new Pair<>(result, jacobianMatrix);
-  }
-
-  /**
-   * Calculate the response of modified single pole-zero values in order to get an estimation of
-   * the error for each term. Currently this is only performed on low-frequency calibrations for
-   * reasons of performance.
-   * @param currentVar P/Z value to fit
-   * @param freqs Range of frequencies to calculate the given response of
-   * @param varIndex Index noting where in the best-fit response this value belongs
-   * @param fitResponse Best-fit response returned by original solver
-   * @param pole True if the value being fit is from the response's poles
-   * @param isLowFreq True if the calibration being checked against is low-frequency
-   * @return Response curve with the modified pole/zero value replaced in the first response
-   */
-  static double[] evaluateError(Complex currentVar, double[] freqs, int varIndex,
-      InstrumentResponse fitResponse, boolean pole, boolean isLowFreq, double freqToScaleAt) {
-
-    InstrumentResponse testResp = new InstrumentResponse(fitResponse);
-    if (pole) {
-      testResp.replaceFitPole(currentVar, varIndex, isLowFreq);
-    } else {
-      testResp.replaceFitZero(currentVar, varIndex, isLowFreq);
-    }
-
-    Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
-    double[] curValue = new double[2 * freqs.length];
-
-    Complex[] normalizationData =
-        testResp.applyResponseToInputUnscaled(new double[]{freqToScaleAt});
-    assert(normalizationData.length == 1);
-    Complex respAtNormalization = normalizationData[0];
-    double normalizeAmp = 20 * Math.log10(respAtNormalization.abs());
-    double normalizePhase = atanc(respAtNormalization);
-    double phiPrev = atanc(appliedCurve[3 * appliedCurve.length / 4]);
-
-    for (int i = 0; i < freqs.length; ++i) {
-      int argIdx = i + freqs.length;
-      Complex c = appliedCurve[i];
-      curValue[i] = (20 * Math.log10(c.abs())) - normalizeAmp;
-      double phi = atanc(c) - normalizePhase;
-      phi = unwrap(phi, phiPrev);
-      phiPrev = phi;
-      curValue[argIdx] = Math.toDegrees(phi);
-    }
-
-    return curValue;
-  }
-
-
-  /**
-   * Subtract a constant value from every point in the resp curve components such that the
-   * value at a fixed given frequency is zero. This value is derived from the calibration type.
-   * If it is a low-frequency cal, it is {@link #LOW_FREQ_ZERO_TARGET}, and if it is a
-   * high-frequency cal, then it is {@link #HIGH_FREQ_ZERO_TARGET}.
-   * In the process the response amplitude is set to units of dB, and the phase is set to units
-   * of degrees (instead of radians).
-   * @param unrot Unrotated response curve. First half is amplitude, second is phase
-   * @param freqs Frequencies associated with the given response curve points
-   * @param isLowFreq True if the calibration is low-frequency
-   */
-  static void scaleValues(double[] unrot, double[] freqs, boolean isLowFreq) {
-
-    int normalIdx = FFTResult.getIndexOfFrequency(freqs,
-        getFrequencyForNormalization(isLowFreq));
-    // note that cal curve first half is the amplitude, second is phase
-    int argStart = unrot.length / 2;
-    // scale the first half of the data (amplitude)
-    scaleMagnitude(unrot, freqs, isLowFreq);
-
-    double unrotScaleArg = unrot[argStart + normalIdx];
-    double phiPrev = 0;
-    if (isLowFreq) {
-      phiPrev = unrot[3 * unrot.length / 4];
-    }
-    for (int i = argStart; i < unrot.length; ++i) {
-      double phi = unrot[i] - unrotScaleArg;
-      phi = unwrap(phi, phiPrev);
-      phiPrev = phi;
-      unrot[i] = Math.toDegrees(phi);
-    }
-  }
-
-
-  /**
-   * Scale amplitude curve such that it is zero at the normalization frequency for the cal type.
-   * This also puts the associated magnitude data into a dB-scale (20 * log10(amplitude))
-   * @param unscaled Unscaled data, first half of which is magnitude data
-   * @param freqs Frequencies associated with each unmatched point
-   * @param isLowFreq True if the calibration is low-frequency
-   */
-  static void scaleMagnitude(double[] unscaled, double[] freqs, boolean isLowFreq){
-    int normalIdx = FFTResult.getIndexOfFrequency(freqs,
-        getFrequencyForNormalization(isLowFreq));
-    double unrotScaleAmp = 20 * Math.log10(unscaled[normalIdx]);
-    for (int i = 0; i < freqs.length; ++i) {
-      double db = 20 * Math.log10(unscaled[i]);
-      unscaled[i] = db - unrotScaleAmp;
-    }
+    String filename =
+        getFilenameFromComponents(typeToCorrect, ResolutionType.STANDARD) + ".calresp";
+    System.out.println(filename);
+    correctionToApply = loadEmbeddedResponse(filename);
   }
 
   /*
@@ -690,11 +742,13 @@ public class RandomizedExperiment extends Experiment {
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
 
-
     // now, solve for the response that gets us the best-fit response curve
     // RealVector initialGuess = MatrixUtils.createRealVector(responseVariables);
     RealVector obsResVector = MatrixUtils.createRealVector(observedResult);
 
+    // we don't need to get the response correction here because the normalization is done
+    // when the full response curve is separated into its amplitude and phase
+    Complex[] responseCorrection = getResponseCorrection(freqs, correctionToApply);
     MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
 
       final double[] freqsSet = freqs;
@@ -706,7 +760,7 @@ public class RandomizedExperiment extends Experiment {
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         ++numIterations;
         fireStateChange("Fitting, iteration count " + numIterations);
-        return jacobian(point, freqsSet, numZerosSet, fitSet, isLowFrequency);
+        return jacobian(point, freqsSet, numZerosSet, fitSet, isLowFrequency, responseCorrection);
       }
 
     };
@@ -783,16 +837,19 @@ public class RandomizedExperiment extends Experiment {
 
     fireStateChange("Getting extended resp curves for high-freq plots...");
     // we use the apply response method here to get the full range of plotted data, not just fit
+    Complex[] correction = getResponseCorrection(plottingFreqs, correctionToApply);
     Complex[] init = initResponse.applyResponseToInputUnscaled(plottingFreqs);
     Complex[] fit = fitResponse.applyResponseToInputUnscaled(plottingFreqs);
     double[] initialValues = new double[plottingFreqs.length * 2];
     double[] fitValues = new double[plottingFreqs.length * 2];
     for (int i = 0; i < plottingFreqs.length; ++i) {
+      Complex initEntry = init[i].subtract(correction[i]);
+      Complex fitEntry = fit[i].subtract(correction[i]);
       int argIdx = plottingFreqs.length + i;
-      initialValues[i] = init[i].abs();
-      initialValues[argIdx] = atanc(init[i]);
-      fitValues[i] = fit[i].abs();
-      fitValues[argIdx] = atanc(fit[i]);
+      initialValues[i] = initEntry.abs();
+      initialValues[argIdx] = atanc(initEntry);
+      fitValues[i] = fitEntry.abs();
+      fitValues[argIdx] = atanc(fitEntry);
     }
     fireStateChange("Scaling extended resps...");
     scaleValues(initialValues, plottingFreqs, isLowFrequencyCalibration);
@@ -880,7 +937,7 @@ public class RandomizedExperiment extends Experiment {
         withParameterRelativeTolerance(1E-5);
     for (int i = 0; i < fitParams.length; i += 2) {
       boolean pole = i >= numZeros;
-      Complex fitTerm = new Complex(fitParams[i], fitParams[i+1]);
+      Complex fitTerm = new Complex(fitParams[i], fitParams[i + 1]);
       double corner = fitTerm.abs() / TAU;
       // get the frequency range over the octave centered on the p/z corner frequency
       int lowIndex = FFTResult.getIndexOfFrequency(freqs, corner / Math.sqrt(2.));
@@ -895,13 +952,13 @@ public class RandomizedExperiment extends Experiment {
       double[] errorTermFreqsFull = Arrays.copyOfRange(freqs, lowIndex, highIndex);
       double[] trimmedMagAndPhaseCurve = new double[errorTermFreqsFull.length * 2];
       double[] weights = new double[trimmedMagAndPhaseCurve.length - 2];
-      Arrays.fill(weights, 0, weights.length/2, maxMagWeight);
-      Arrays.fill(weights, weights.length/2, weights.length, maxArgWeight);
+      Arrays.fill(weights, 0, weights.length / 2, maxMagWeight);
+      Arrays.fill(weights, weights.length / 2, weights.length, maxArgWeight);
       // copy the relevant portion of the magnitude curve
       System.arraycopy(observedResult, lowIndex, trimmedMagAndPhaseCurve, 0,
           highIndex - lowIndex);
       // and copy the relevant portion of the phase curve (second half is where phase starts)
-      System.arraycopy(observedResult, observedResult.length/2 + lowIndex,
+      System.arraycopy(observedResult, observedResult.length / 2 + lowIndex,
           trimmedMagAndPhaseCurve, highIndex - lowIndex, highIndex - lowIndex);
 
       final int index;
@@ -923,13 +980,11 @@ public class RandomizedExperiment extends Experiment {
 
       List<Complex> bestFits = new ArrayList<>();
 
-
       for (int j = 0; j < errorTermFreqsFull.length; ++j) {
-        String message = "Estimating error for variable" + (i/2 + 1) +  " of " +
-            fitParams.length/2 + " using frequency range " + (j + 1) + " of " +
+        String message = "Estimating error for variable" + (i / 2 + 1) + " of " +
+            fitParams.length / 2 + " using frequency range " + (j + 1) + " of " +
             errorTermFreqsFull.length;
         fireStateChange(message);
-
 
         // get all but one frequency (and corresponding magnitude) term
         final double[] errorTermFreqs = new double[errorTermFreqsFull.length - 1];
@@ -952,6 +1007,16 @@ public class RandomizedExperiment extends Experiment {
         System.arraycopy(trimmedMagAndPhaseCurve, trimOffset + j + 1, observedCurve,
             trimOffset - 1 + j, errorTermFreqs.length - j);
 
+        Complex[] correctedCurve = getResponseCorrection(errorTermFreqs, correctionToApply);
+        // we DO need to do normalization here because the normalization requires calculating
+        // the curve at a specific value that otherwise does not have this correction applied
+        // and this will (hopefully) save us having to do scaling each iteration
+        Complex normalizationForCorrection =
+            getResponseCorrection(new double[]{freqToScaleAt}, correctionToApply)[0];
+        for (int w = 0; w < correctedCurve.length; ++w) {
+          correctedCurve[w] = correctedCurve[w].subtract(normalizationForCorrection);
+        }
+
         MultivariateJacobianFunction errorJacobian = new MultivariateJacobianFunction() {
           final double[] freqsSet = errorTermFreqs;
           final int variableIndex = index;
@@ -963,12 +1028,12 @@ public class RandomizedExperiment extends Experiment {
             ++numIterations;
             fireStateChange("Fitting, iteration count " + numIterations);
             return errorJacobian(point, freqsSet, variableIndex, fitSet, isLowFrequency, pole,
-                freqToScaleAt);
+                freqToScaleAt, correctedCurve);
           }
         };
 
         RealVector initialError = MatrixUtils.createRealVector(
-            new double[]{fitParams[i], fitParams[i+1]});
+            new double[]{fitParams[i], fitParams[i + 1]});
         RealVector observed = MatrixUtils.createRealVector(observedCurve);
 
         LeastSquaresProblem errorLsq = new LeastSquaresBuilder().
@@ -1014,8 +1079,9 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
-   * Calculates the scaling/rotation factor to be done on the calibration
-   * signal. If the calibration is capacitive this value is always 1.
+   * Calculates the scaling/rotation factor to be done on the calibration signal. If the calibration
+   * is capacitive this value is always 1.
+   *
    * @param freq Given frequency to apply the calculation to
    * @return Either 1 or 2*pi*i*freq depending on calibration type
    */
@@ -1063,6 +1129,15 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
+   * Gets the correction being applied to the data, which can be null if not one listed in
+   * {@link #VALID_CORRECTIONS}
+   * @return Response defining correction to zeros for some Trillium sensors
+   */
+  InstrumentResponse getCorrectionToApply() {
+    return correctionToApply;
+  }
+
+  /**
    * Get the zeros fitted from the experiment
    *
    * @return List of zeros (complex numbers) that are used in best-fit curve
@@ -1082,9 +1157,10 @@ public class RandomizedExperiment extends Experiment {
 
 
   /**
-   * Get the error terms of all the fitted poles.
-   * A map is used so as to allow efficient access for an error term by lookup from a value gotten
-   * in getFitPoles, which will be sorted into an order that may not match the original response.
+   * Get the error terms of all the fitted poles. A map is used so as to allow efficient access for
+   * an error term by lookup from a value gotten in getFitPoles, which will be sorted into an order
+   * that may not match the original response.
+   *
    * @return Map of complex pole values to the respective real/imaginary error terms, each as a
    * single complex value
    */
@@ -1093,9 +1169,10 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
-   * Get the error terms of all the fitted zeros.
-   * A map is used so as to allow efficient access for an error term by lookup from a value gotten
-   * in getFitZeros, which will be sorted into an order that may not match the original response.
+   * Get the error terms of all the fitted zeros. A map is used so as to allow efficient access for
+   * an error term by lookup from a value gotten in getFitZeros, which will be sorted into an order
+   * that may not match the original response.
+   *
    * @return Map of complex zero values to the respective real/imaginary error terms, each as a
    * single complex value
    */
@@ -1149,8 +1226,8 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
-   * Get the number of times the algorithm iterated to produce the optimum
-   * response fit, from the underlying least squares solver
+   * Get the number of times the algorithm iterated to produce the optimum response fit, from the
+   * underlying least squares solver
    *
    * @return the number of iterations
    */
@@ -1159,8 +1236,9 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
-   * Get the highest frequency value included in data set for the solver.
-   * This is used to mark where on the chart to plot a vertical line to denote the solver bounds
+   * Get the highest frequency value included in data set for the solver. This is used to mark where
+   * on the chart to plot a vertical line to denote the solver bounds
+   *
    * @return Max frequency over fit range for HF cals
    */
   public double getMaxFitFrequency() {
@@ -1168,8 +1246,8 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
-   * Get the values used to weight the residual calculation function.
-   * The first value is the magnitude weighting, the second is phase.
+   * Get the values used to weight the residual calculation function. The first value is the
+   * magnitude weighting, the second is phase.
    *
    * @return Weighting values for least-squared error terms of
    */
@@ -1190,8 +1268,9 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
-   * Used to control the scaling of the calibration signals based on whether or
-   * not a given calibration is capacitive. The default value is false (resistive).
+   * Used to control the scaling of the calibration signals based on whether or not a given
+   * calibration is capacitive. The default value is false (resistive).
+   *
    * @param isCapacitive True if the calibration to be calculated is capacitive
    */
   public void setCapactiveCalibration(boolean isCapacitive) {
@@ -1199,14 +1278,14 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
-   * Set the new peak multiplier for the data region under analysis.
-   * This should be a positive value, and is bounded by 0.8 (@see NumericUtils.PEAK_MULTIPLIER)
-   * This may be useful when trying to run the solver over a high-frequency calibration where
-   * the data is particularly noisy in some of the higher-frequency bounds, causing a bad corner
-   * fit to occur. We also enforce this to be over 0.3 as well.
+   * Set the new peak multiplier for the data region under analysis. This should be a positive
+   * value, and is bounded by 0.8 (@see NumericUtils.PEAK_MULTIPLIER) This may be useful when trying
+   * to run the solver over a high-frequency calibration where the data is particularly noisy in
+   * some of the higher-frequency bounds, causing a bad corner fit to occur. We also enforce this to
+   * be over 0.3 as well.
    *
-   * @param newMultiplier New maximum fraction of nyquist rate to fit data over (should be
-   * from 0.3 to 0.8).
+   * @param newMultiplier New maximum fraction of nyquist rate to fit data over (should be from 0.3
+   * to 0.8).
    */
   public void setNyquistMultiplier(double newMultiplier) {
     nyquistMultiplier = Math.min(newMultiplier, PEAK_MULTIPLIER);
@@ -1214,19 +1293,8 @@ public class RandomizedExperiment extends Experiment {
   }
 
   /**
-   * Determines which poles to fit when doing the response curve fitting;
-   * low frequency calibrations set the first two poles; high frequency
-   * calibrations set the remaining poles
-   *
-   * @param isLowFrequencyCalibration True if a low frequency calibration is to be used
-   */
-  public void setLowFrequencyCalibration(boolean isLowFrequencyCalibration) {
-    this.isLowFrequencyCalibration = isLowFrequencyCalibration;
-  }
-
-  /**
-   * Auto-determines if a calibration is a long-period calibration or not based on the length of
-   * the data being inputted. Because most high-frequency cals are around 15 minutes and most
+   * Auto-determines if a calibration is a long-period calibration or not based on the length of the
+   * data being inputted. Because most high-frequency cals are around 15 minutes and most
    * low-frequency cals are several hours, we use a cutoff of one hour to make this determination.
    *
    * @param ds Data store which testing is to be done on
@@ -1245,10 +1313,21 @@ public class RandomizedExperiment extends Experiment {
 
   /**
    * Get status if poles/zeros being fit are in low (<1Hz) or high (>1Hz) frequency band
+   *
    * @return true if cal being run is a low-frequency cal
    */
   public boolean isLowFrequencyCalibration() {
     return isLowFrequencyCalibration;
+  }
+
+  /**
+   * Determines which poles to fit when doing the response curve fitting; low frequency calibrations
+   * set the first two poles; high frequency calibrations set the remaining poles
+   *
+   * @param isLowFrequencyCalibration True if a low frequency calibration is to be used
+   */
+  public void setLowFrequencyCalibration(boolean isLowFrequencyCalibration) {
+    this.isLowFrequencyCalibration = isLowFrequencyCalibration;
   }
 
   /**

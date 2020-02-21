@@ -2,12 +2,12 @@ package asl.sensor.experiment;
 
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
-import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.atanc;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -18,7 +18,6 @@ import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStoreUtils;
 import asl.sensor.output.CalResult;
 import asl.sensor.test.TestUtils;
-import asl.utils.NumericUtils;
 import asl.utils.ReportingUtils;
 import asl.utils.ResponseUnits;
 import asl.utils.ResponseUnits.ResolutionType;
@@ -89,6 +88,21 @@ public class RandomizedExperimentTest {
   }
 
   @Test
+  public void testCorrectionResponseLoadsCorrectly() throws IOException {
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setCorrectionResponse(SensorType.TR120);
+  }
+
+  @Test
+  public void testCorrectionResponse_WontLoadNonTrillium() throws IOException {
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setCorrectionResponse(SensorType.STS2gen3);
+    assertNull(rExp.getCorrectionToApply());
+    rExp.setCorrectionResponse(null);
+    assertNull(rExp.getCorrectionToApply());
+  }
+
+  @Test
   public void testEvaluationOfJacobian() throws IOException {
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
@@ -103,8 +117,10 @@ public class RandomizedExperimentTest {
     initialZeroGuess = ir.zerosToVector(lowFreq, Double.MAX_VALUE);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
+    Complex[] corrections = new Complex[freqs.length];
+    Arrays.fill(corrections, Complex.ZERO);
     Pair<RealVector, RealMatrix> jacobianResult =
-        RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, lowFreq);
+        RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, lowFreq, corrections);
 
     // evaluate the data for reference
     Complex[] result = ir.applyResponseToInputUnscaled(freqs);
