@@ -1,6 +1,7 @@
 package asl.sensor.gui;
 
 import asl.sensor.input.DataStore;
+import java.io.IOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
@@ -94,13 +95,18 @@ public class SwingWorkerSingleton {
             text.append("but here is the error message returned by the backend:\n");
             text.append(cause.toString());
           } else if (cause instanceof ArrayIndexOutOfBoundsException) {
-            text.append("Solver attempted to access nonexistent data\n");
+            text.append("Solver attempted to access nonexistent data.\n");
             text.append("A common cause of this is having too little timeseries data to");
             text.append(" process.\n");
             text.append("(Are you running a low-frequency cal on a small amount of data?)\n");
             text.append("A more detailed explanation has been output to terminal,\n");
             text.append("but here is the error message returned by the backend:\n");
             text.append(cause.toString());
+          } else if (cause instanceof IOException) {
+            text.append("There was an error loading data during operations.\n");
+            text.append("If this is a randomized calibration producing this error,\n");
+            text.append("Something must have gone wrong while trying to create the\n");
+            text.append("correction response for Trillium sensors.");
           } else {
             if (ex.getMessage() == null) {
               text.append("CANCELLED");

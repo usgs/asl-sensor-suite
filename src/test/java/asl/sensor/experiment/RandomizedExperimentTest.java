@@ -7,6 +7,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -17,7 +18,6 @@ import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStoreUtils;
 import asl.sensor.output.CalResult;
 import asl.sensor.test.TestUtils;
-import asl.utils.NumericUtils;
 import asl.utils.ReportingUtils;
 import asl.utils.ResponseUnits;
 import asl.utils.ResponseUnits.ResolutionType;
@@ -88,6 +88,21 @@ public class RandomizedExperimentTest {
   }
 
   @Test
+  public void testCorrectionResponseLoadsCorrectly() throws IOException {
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setCorrectionResponse(SensorType.TR120);
+  }
+
+  @Test
+  public void testCorrectionResponse_WontLoadNonTrillium() throws IOException {
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setCorrectionResponse(SensorType.STS2gen3);
+    assertNull(rExp.getCorrectionToApply());
+    rExp.setCorrectionResponse(null);
+    assertNull(rExp.getCorrectionToApply());
+  }
+
+  @Test
   public void testEvaluationOfJacobian() throws IOException {
     String fname = folder + "resp-parse/TST5_response.txt";
     InstrumentResponse ir;
@@ -102,8 +117,10 @@ public class RandomizedExperimentTest {
     initialZeroGuess = ir.zerosToVector(lowFreq, Double.MAX_VALUE);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
+    Complex[] corrections = new Complex[freqs.length];
+    Arrays.fill(corrections, Complex.ZERO);
     Pair<RealVector, RealMatrix> jacobianResult =
-        RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, lowFreq);
+        RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, lowFreq, corrections);
 
     // evaluate the data for reference
     Complex[] result = ir.applyResponseToInputUnscaled(freqs);
@@ -423,6 +440,11 @@ public class RandomizedExperimentTest {
 
     ds.trim(start, end);
 
+    Complex[] expectedPoles = {
+        new Complex(-0.01247, -0.01174),
+        new Complex(-0.01247,  0.01174)
+    };
+
     RandomizedExperiment rCal = (RandomizedExperiment)
         ExperimentFactory.RANDOMCAL.createExperiment();
 
@@ -430,12 +452,8 @@ public class RandomizedExperimentTest {
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
-
     List<Complex> fitPoles = rCal.getFitPoles();
-    Complex[] expectedPoles = {
-        new Complex(-0.01247, -0.01174),
-        new Complex(-0.01247,  0.01174)
-    };
+
     for (int i = 0; i < fitPoles.size(); i++) {
       assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 5E-4);
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 5E-4);
@@ -608,12 +626,12 @@ public class RandomizedExperimentTest {
 
     for (Complex pole : evaluatedPoles) {
       // these values are clearly dependent on weighting scheme for calculated calibration curve
-      Complex expectedPoleError = new Complex(0.0022844869, 0.0003731201);
+      Complex expectedPoleError = new Complex(0.0000377356, 0.0000522877);
       Complex evaluatedPoleError = poleErrors.get(pole);
       String message = "Difference between expected "
           + "and evaluated poles outside of error bound:\n\t"
           + cf.format(expectedPoleError) + " , " + cf.format(evaluatedPoleError);
-      assertTrue(message, Complex.equals(poleErrors.get(pole), expectedPoleError, 2E-5));
+      assertTrue(message, Complex.equals(poleErrors.get(pole), expectedPoleError, 2E-8));
     }
 
   }

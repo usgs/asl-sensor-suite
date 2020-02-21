@@ -1,5 +1,6 @@
 package asl.sensor;
 
+import static asl.sensor.experiment.RandomizedExperiment.*;
 import static asl.utils.ReportingUtils.COLORS;
 import static asl.utils.ReportingUtils.chartsToImageList;
 import static asl.utils.ResponseUnits.enumerateAllResponseFilenames;
@@ -79,6 +80,16 @@ public class CalProcessingServer {
       System.exit(0);
     }
     System.out.println("Gateway Server Started");
+  }
+
+  /**
+   * Get the default Nyquist rate limit as a decimal value for random cals.
+   *
+   * {@link RandomizedExperiment}
+   * @return Decimal value of the default limit
+   */
+  public static double getDefaultRandomCalNyquistCutoff() {
+    return DEFAULT_NYQUIST_PERCENT_LIMIT;
   }
 
   /**
