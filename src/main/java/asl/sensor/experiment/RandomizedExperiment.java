@@ -397,7 +397,8 @@ public class RandomizedExperiment extends Experiment {
     Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
     double[] curValue = new double[2 * freqs.length];
 
-    Complex[] normalizationData = testResp.applyResponseToInput(new double[]{freqToScaleAt});
+    Complex[] normalizationData =
+        testResp.applyResponseToInputUnscaled(new double[]{freqToScaleAt});
     assert(normalizationData.length == 1);
     Complex respAtNormalization = normalizationData[0];
     double normalizeAmp = 20 * Math.log10(respAtNormalization.abs());
@@ -645,16 +646,8 @@ public class RandomizedExperiment extends Experiment {
     }
 
     // apply weights
-    for (int i = 0; i < freqs.length; ++i) {
-      int argIndex = i + freqs.length;
-      weights[argIndex] = maxArgWeight;
-      weights[i] = maxMagWeight; // denominator;
-      /*
-      if (isLowFrequencyCalibration && freqs[i] < 0.1) {
-        weights[i] /= freqs[i];
-      }
-      */
-    }
+    Arrays.fill(weights, 0, freqs.length, maxMagWeight);
+    Arrays.fill(weights, freqs.length, weights.length, maxArgWeight);
 
     // get the rest of the plotted data squared away
     for (int i = freqs.length; i < plottingFreqs.length; ++i) {
@@ -881,9 +874,10 @@ public class RandomizedExperiment extends Experiment {
     int currentZeroIndex = 0; // where zero under analysis lies in the response
     int currentPoleIndex = 0; // as above for pole
 
-    LeastSquaresOptimizer optimizer;
-    LeastSquaresOptimizer.Optimum optimum; // Get error analysis for each pole/zero value
-
+    LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
+        withCostRelativeTolerance(1E-5).
+        withOrthoTolerance(1E-25).
+        withParameterRelativeTolerance(1E-5);
     for (int i = 0; i < fitParams.length; i += 2) {
       boolean pole = i >= numZeros;
       Complex fitTerm = new Complex(fitParams[i], fitParams[i+1]);
@@ -900,6 +894,9 @@ public class RandomizedExperiment extends Experiment {
 
       double[] errorTermFreqsFull = Arrays.copyOfRange(freqs, lowIndex, highIndex);
       double[] trimmedMagAndPhaseCurve = new double[errorTermFreqsFull.length * 2];
+      double[] weights = new double[trimmedMagAndPhaseCurve.length - 2];
+      Arrays.fill(weights, 0, weights.length/2, maxMagWeight);
+      Arrays.fill(weights, weights.length/2, weights.length, maxArgWeight);
       // copy the relevant portion of the magnitude curve
       System.arraycopy(observedResult, lowIndex, trimmedMagAndPhaseCurve, 0,
           highIndex - lowIndex);
@@ -925,16 +922,14 @@ public class RandomizedExperiment extends Experiment {
       }
 
       List<Complex> bestFits = new ArrayList<>();
-      optimizer = new LevenbergMarquardtOptimizer().
-          withCostRelativeTolerance(1E-5).
-          withOrthoTolerance(1E-25).
-          withParameterRelativeTolerance(1E-5);
+
 
       for (int j = 0; j < errorTermFreqsFull.length; ++j) {
         String message = "Estimating error for variable" + (i/2 + 1) +  " of " +
             fitParams.length/2 + " using frequency range " + (j + 1) + " of " +
             errorTermFreqsFull.length;
         fireStateChange(message);
+
 
         // get all but one frequency (and corresponding magnitude) term
         final double[] errorTermFreqs = new double[errorTermFreqsFull.length - 1];
@@ -981,19 +976,21 @@ public class RandomizedExperiment extends Experiment {
             target(observed).
             model(errorJacobian).
             parameterValidator(new PoleValidator(numZeros)).
+            weight(new DiagonalMatrix(weights)).
             lazyEvaluation(false).
             maxEvaluations(Integer.MAX_VALUE).
             maxIterations(Integer.MAX_VALUE).
             build();
 
-        optimum = optimizer.optimize(errorLsq);
+        LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(errorLsq);
         RealVector errorVector = optimum.getPoint();
+
         Complex c = new Complex(errorVector.getEntry(0), errorVector.getEntry(1));
         bestFits.add(c);
-        System.out.println(c);
       } // end loop over frequency range (error term estimation for a given point)
 
-      // now that we have a list of best-fit p/z over range, we get the standard deviation
+      // now that we have a list of deviations for this pole or zero,
+      // it's time to do statistics to it to get our variation
       Complex threeSigma =
           getComplexSDev(bestFits.toArray(new Complex[]{})).multiply(3);
 
@@ -1008,7 +1005,7 @@ public class RandomizedExperiment extends Experiment {
           zeroErrors.put(fitTerm.conjugate(), threeSigma);
         }
       }
-    }
+    } // end loop over the fit poles and zeros
   }
 
   @Override

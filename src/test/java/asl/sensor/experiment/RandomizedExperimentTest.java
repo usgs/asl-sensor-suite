@@ -2,6 +2,7 @@ package asl.sensor.experiment;
 
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
+import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.atanc;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -423,6 +424,11 @@ public class RandomizedExperimentTest {
 
     ds.trim(start, end);
 
+    Complex[] expectedPoles = {
+        new Complex(-0.01247, -0.01174),
+        new Complex(-0.01247,  0.01174)
+    };
+
     RandomizedExperiment rCal = (RandomizedExperiment)
         ExperimentFactory.RANDOMCAL.createExperiment();
 
@@ -430,12 +436,8 @@ public class RandomizedExperimentTest {
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
-
     List<Complex> fitPoles = rCal.getFitPoles();
-    Complex[] expectedPoles = {
-        new Complex(-0.01247, -0.01174),
-        new Complex(-0.01247,  0.01174)
-    };
+
     for (int i = 0; i < fitPoles.size(); i++) {
       assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 5E-4);
       assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 5E-4);
@@ -608,12 +610,12 @@ public class RandomizedExperimentTest {
 
     for (Complex pole : evaluatedPoles) {
       // these values are clearly dependent on weighting scheme for calculated calibration curve
-      Complex expectedPoleError = new Complex(0.0022844869, 0.0003731201);
+      Complex expectedPoleError = new Complex(0.0000377356, 0.0000522877);
       Complex evaluatedPoleError = poleErrors.get(pole);
       String message = "Difference between expected "
           + "and evaluated poles outside of error bound:\n\t"
           + cf.format(expectedPoleError) + " , " + cf.format(evaluatedPoleError);
-      assertTrue(message, Complex.equals(poleErrors.get(pole), expectedPoleError, 2E-5));
+      assertTrue(message, Complex.equals(poleErrors.get(pole), expectedPoleError, 2E-8));
     }
 
   }
