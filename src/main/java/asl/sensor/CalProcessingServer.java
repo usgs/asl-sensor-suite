@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,7 +103,9 @@ public class CalProcessingServer {
     if (trilliumCalibrationCorrectionMap == null) {
       trilliumCalibrationCorrectionMap = new HashMap<>();
       // first entry in this array is null so skip it, no point in adding null-null mapping
-      for (SensorType enumeratedType : VALID_CORRECTIONS) {
+      SensorType[] correctionsExceptNull =
+          Arrays.copyOfRange(VALID_CORRECTIONS, 1, VALID_CORRECTIONS.length);
+      for (SensorType enumeratedType : correctionsExceptNull) {
         trilliumCalibrationCorrectionMap.put(enumeratedType.toString(), enumeratedType);
       }
     }
