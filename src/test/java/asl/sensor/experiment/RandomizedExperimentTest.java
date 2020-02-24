@@ -348,8 +348,9 @@ public class RandomizedExperimentTest {
     String end = "2018-01-30T11:55:00+00:00";
     try {
       CalProcessingServer cps = new CalProcessingServer();
+      // empty string because this calibration does not require a trillium correction
       CalResult rCalResult = cps.runRand(calInFile, sensorOutFile, respFile,
-          false, start, end, true);
+          false, start, end, true, "");
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();

@@ -518,7 +518,6 @@ public class RandomizedExperiment extends Experiment {
     }
     String filename =
         getFilenameFromComponents(typeToCorrect, ResolutionType.STANDARD) + ".calresp";
-    System.out.println(filename);
     correctionToApply = loadEmbeddedResponse(filename);
   }
 
