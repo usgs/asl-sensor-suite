@@ -27,7 +27,9 @@ public class CalServerTest {
     String endTime = "2019-03-14T22:51:00Z";
 
     CalProcessingServer server = new CalProcessingServer();
-    server.runRand(calName, sensOutName, respName, true, startTime, endTime, true);
+    // correctionType is empty string because we do not need to do a correction here
+    server.runRand(calName, sensOutName, respName, true, startTime, endTime,
+        true, "");
 
     // now, do we get a null pointer exception?
   }
@@ -47,8 +49,9 @@ public class CalServerTest {
     String sensOutName2 = dataFolderName + "00_BH1.512.seed";
 
     CalProcessingServer server = new CalProcessingServer();
-    CalResult result = server.runRand(calName, calName2, sensOutName, sensOutName2, respName, false,
-        startDateTime, endDateTime, true);
+    // once again, no trillium correction required here
+    CalResult result = server.runRand(calName, calName2, sensOutName, sensOutName2, respName,
+        false, startDateTime, endDateTime, true, "");
 
     double[] initPolesDoubles = result.getNumerMap().get("Initial_poles");
     double[] fitPolesDoubles = result.getNumerMap().get("Best_fit_poles");
