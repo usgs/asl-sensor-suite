@@ -15,6 +15,7 @@ import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.output.CalResult;
+import asl.utils.ResponseUnits.SensorType;
 import asl.utils.input.DataBlock;
 import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -28,7 +29,9 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.chart.ChartFactory;
@@ -61,6 +64,31 @@ import py4j.Py4JNetworkException;
 public class CalProcessingServer {
 
   public CalProcessingServer() {
+  }
+
+  /**
+   * Singleton object to handle mapping strings from Python into internal SensorType enum
+   */
+  private static Map<String, SensorType> trilliumCalibrationCorrectionMap;
+
+  /**
+   * Return the internal representation of trillium sensors requiring correction from a string
+   * specifying that, or null if the response does not require correction or an empty or null string
+   * is passed. Valid strings that produce a non-null sensor are "TR120", "TR240", and "TR360".
+   * @param type String of one of the valid Trillium sensor descriptors requiring resp correction
+   * @return SensorType representing the given sensor.
+   */
+  public static SensorType getSensorCorrectionFromString(String type) {
+    if (type == null) {
+      return null;
+    }
+    if (trilliumCalibrationCorrectionMap == null) {
+      trilliumCalibrationCorrectionMap = new HashMap<>();
+      trilliumCalibrationCorrectionMap.put("TR120", SensorType.TR120);
+      trilliumCalibrationCorrectionMap.put("TR240", SensorType.TR240);
+      trilliumCalibrationCorrectionMap.put("TR360", SensorType.TR360);
+    }
+    return trilliumCalibrationCorrectionMap.get(type);
   }
 
   /**
@@ -173,13 +201,16 @@ public class CalProcessingServer {
    * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param lowFreq True if a low-freq cal should be run
+   * @param correctionType String specifying name of sensor correction (will apply corrections for
+   * "TR120", "TR240", and "TR360", will apply no correction for anything else)
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    * @throws SeedFormatException If a data file cannot be parsed as a seed file
    * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runRand(String calFileName, String outFileName,
-      String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq)
+      String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq,
+      String correctionType)
       throws IOException, SeedFormatException, CodecException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -207,7 +238,7 @@ public class CalProcessingServer {
     ds.trimToCommonTime();
     ds.trim(start, end);
 
-    return runExpGetDataRand(ds, lowFreq);
+    return runExpGetDataRand(ds, lowFreq, correctionType);
   }
 
   /**
@@ -223,6 +254,8 @@ public class CalProcessingServer {
    * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param lowFreq True if a low-freq cal should be run
+   * @param correctionType String specifying name of sensor correction (will apply corrections for
+   * "TR120", "TR240", and "TR360", will apply no correction for anything else)
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    * @throws SeedFormatException If a data file cannot be parsed as a seed file
@@ -230,7 +263,7 @@ public class CalProcessingServer {
    */
   public CalResult runRand(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean useEmbeddedResp,
-      String startDate, String endDate, boolean lowFreq)
+      String startDate, String endDate, boolean lowFreq, String correctionType)
       throws IOException, SeedFormatException, CodecException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -257,7 +290,7 @@ public class CalProcessingServer {
     ds.setResponse(1, ir);
     ds.trim(start, end);
 
-    return runExpGetDataRand(ds, lowFreq);
+    return runExpGetDataRand(ds, lowFreq, correctionType);
   }
 
   /**
@@ -708,11 +741,13 @@ public class CalProcessingServer {
     return CalResult.buildStepCalData(pngByteArrays, fitParams, initParams);
   }
 
-  private CalResult runExpGetDataRand(DataStore dataStore, boolean isLowFrequency)
-      throws IOException {
+  private CalResult runExpGetDataRand(DataStore dataStore, boolean isLowFrequency,
+      String correctionType) throws IOException {
 
     RandomizedExperiment randomExperiment = new RandomizedExperiment();
+    SensorType correction = getSensorCorrectionFromString(correctionType);
 
+    randomExperiment.setCorrectionResponse(correction);
     randomExperiment.setLowFrequencyCalibration(isLowFrequency);
     randomExperiment.runExperimentOnData(dataStore);
 
