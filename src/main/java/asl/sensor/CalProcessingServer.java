@@ -32,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.chart.ChartFactory;
@@ -82,13 +83,30 @@ public class CalProcessingServer {
     if (type == null) {
       return null;
     }
+    Map<String, SensorType> correctionMap = getCalibrationCorrectionMap();
+
+    return correctionMap.get(type);
+  }
+
+  /**
+   * Get the map of strings to valid correction enums, so that it is possible for the enclosing
+   * Python code to get a list of valid correction names to present to users for selection.
+   * For example, a drop-down menu can have its options listed from the returned object's keySet()
+   * function, though {@link #getSensorCorrectionFromString(String)} lets the Python use the more
+   * straightforward py4j string interactions to get a specific enum when running cals.
+   * @return Calibration correction map from strings to sensor type enums
+   */
+  public static Map<String, SensorType> getCalibrationCorrectionMap() {
+    // it's our old friend the singleton design pattern again. yay for the first lecture of design
+    // patterns 101, it's not just useful for passing software design prelim interviews!!
     if (trilliumCalibrationCorrectionMap == null) {
       trilliumCalibrationCorrectionMap = new HashMap<>();
-      trilliumCalibrationCorrectionMap.put("TR120", SensorType.TR120);
-      trilliumCalibrationCorrectionMap.put("TR240", SensorType.TR240);
-      trilliumCalibrationCorrectionMap.put("TR360", SensorType.TR360);
+      // first entry in this array is null so skip it, no point in adding null-null mapping
+      for (SensorType enumeratedType : VALID_CORRECTIONS) {
+        trilliumCalibrationCorrectionMap.put(enumeratedType.toString(), enumeratedType);
+      }
     }
-    return trilliumCalibrationCorrectionMap.get(type);
+    return trilliumCalibrationCorrectionMap;
   }
 
   /**
