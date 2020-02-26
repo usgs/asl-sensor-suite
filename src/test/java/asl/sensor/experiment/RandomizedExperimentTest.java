@@ -2,6 +2,7 @@ package asl.sensor.experiment;
 
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
+import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.atanc;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -721,6 +722,118 @@ public class RandomizedExperimentTest {
           trimOffset - 1 + j, trimOffset - j - 1);
 
       assertArrayEquals(expectedTrimmedAmpAndPhase, observedCurve, 0);
+    }
+  }
+
+  @Test
+  public void testSyntheticLowFreq333() throws IOException {
+    String testLocation = folder + "synthetic-lowfreq-cals/";
+    String calSignalFile = testLocation + "_BC0.FAKE.333.mseed";
+    String calOutputFile = testLocation + "00_BHZ.FAKE.333.mseed";
+    String testRespName = "STS6_Q330HR";
+    DataStore ds =
+        DataStoreUtils.createFromNamesEmbedResp(testRespName, calSignalFile, calOutputFile);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(true);
+    rExp.runExperimentOnData(ds);
+    List<Complex> poles = rExp.getFitPoles();
+    // assert that there are two poles, complex conjugates
+    assertEquals(2, poles.size());
+    assertNotEquals(0., poles.get(0).getImaginary());
+    assertEquals(poles.get(0).getReal(), poles.get(1).getReal(), 0.);
+    assertEquals(poles.get(0).getImaginary(), -1 * poles.get(1).getImaginary(), 0.);
+    assertEquals(333,  TAU / poles.get(0).abs(), 1);
+  }
+
+  @Test
+  public void testSyntheticLowFreq125() throws IOException {
+    String testLocation = folder + "synthetic-lowfreq-cals/";
+    String calSignalFile = testLocation + "_BC0.FAKE.125.mseed";
+    String calOutputFile = testLocation + "00_BHZ.FAKE.125.mseed";
+    String testRespName = "STS2gen3_Q330HR";
+    DataStore ds =
+        DataStoreUtils.createFromNamesEmbedResp(testRespName, calSignalFile, calOutputFile);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(true);
+    rExp.runExperimentOnData(ds);
+    List<Complex> poles = rExp.getFitPoles();
+    // assert that there are two poles, complex conjugates
+    assertEquals(2, poles.size());
+    assertNotEquals(0., poles.get(0).getImaginary());
+    assertEquals(poles.get(0).getReal(), poles.get(1).getReal(), 0.);
+    assertEquals(poles.get(0).getImaginary(), -1 * poles.get(1).getImaginary(), 0.);
+    assertEquals(125,  TAU / poles.get(0).abs(), 1);
+  }
+
+  @Test
+  public void testSyntheticHighFreq333() throws IOException {
+    String testLocation = folder + "synthetic-lowfreq-cals/";
+    String calSignalFile = testLocation + "_BC0.FAKE.333.mseed";
+    String calOutputFile = testLocation + "00_BHZ.FAKE.333.mseed";
+    String testRespName = testLocation + "RESP.XX.FAKE.333.BHZ";
+    DataStore ds =
+        DataStoreUtils.createFromNames(testRespName, calSignalFile, calOutputFile);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(false);
+    rExp.runExperimentOnData(ds);
+
+    // the included response is intended to be as close to the optimum fit for this function as
+    // possible. so to test a valid result we'll make sure the results agree to a minimum level of
+    // precision (the results will not be exactly identical under most likely circumstances)
+    // which we will set to be the third significant figure
+
+    List<Complex> poles = rExp.getFitPoles();
+    assertEquals(5, poles.size());
+    for (int i = 0; i < poles.size(); ++i) {
+      double orderOfMagnitude = Math.floor(Math.log10(poles.get(i).abs()));
+      double delta = Math.pow(10, orderOfMagnitude - 3);
+      assertEquals(rExp.getInitialPoles().get(i).abs(), poles.get(i).abs(), delta);
+    }
+
+    List<Complex> zeros = rExp.getFitZeros();
+    assertEquals(6, zeros.size());
+    for (int i = 0; i < zeros.size(); ++i) {
+      double orderOfMagnitude = Math.ceil(Math.log10(zeros.get(i).abs()));
+      double delta = Math.pow(10, orderOfMagnitude - 3);
+      assertEquals(rExp.getInitialZeros().get(i).abs(), zeros.get(i).abs(), delta);
+    }
+  }
+
+  @Test
+  public void testSyntheticHighFreq125() throws IOException {
+    String testLocation = folder + "synthetic-lowfreq-cals/";
+    String calSignalFile = testLocation + "_BC0.FAKE.125.mseed";
+    String calOutputFile = testLocation + "00_BHZ.FAKE.125.mseed";
+    String testRespName = testLocation + "RESP.XX.FAKE.125.BHZ";
+    DataStore ds =
+        DataStoreUtils.createFromNames(testRespName, calSignalFile, calOutputFile);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(false);
+    rExp.runExperimentOnData(ds);
+
+    // the included response is intended to be as close to the optimum fit for this function as
+    // possible. so to test a valid result we'll make sure the results agree to a minimum level of
+    // precision (the results will not be exactly identical under most likely circumstances)
+    // which we will set to be the third significant figure
+
+    List<Complex> poles = rExp.getFitPoles();
+    assertEquals(9, poles.size());
+    for (int i = 0; i < poles.size(); ++i) {
+      double orderOfMagnitude = Math.floor(Math.log10(poles.get(i).abs()));
+      double delta = Math.pow(10, orderOfMagnitude - 3);
+      assertEquals(rExp.getInitialPoles().get(i).abs(), poles.get(i).abs(), delta);
+    }
+
+    List<Complex> zeros = rExp.getFitZeros();
+    assertEquals(4, zeros.size());
+    for (int i = 0; i < zeros.size(); ++i) {
+      double orderOfMagnitude = Math.ceil(Math.log10(zeros.get(i).abs()));
+      double delta = Math.pow(10, orderOfMagnitude - 3);
+      assertEquals(rExp.getInitialZeros().get(i).abs(), zeros.get(i).abs(), delta);
     }
   }
 }
