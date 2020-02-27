@@ -146,7 +146,9 @@ public class RandomizedExperiment extends Experiment {
   private static Complex[] getResponseCorrection(double[] frequencies, InstrumentResponse resp) {
     if (resp == null) {
       Complex[] returnValue = new Complex[frequencies.length];
-      Arrays.fill(returnValue, Complex.ZERO);
+      // since we divide out the correction, we have to fill with ones in the null case
+      // that way the division doesn't change the answer
+      Arrays.fill(returnValue, Complex.ONE);
       return returnValue;
     }
 
@@ -185,7 +187,7 @@ public class RandomizedExperiment extends Experiment {
 
     if (correctionCurve != null) {
       for (int i = 0; i < appliedCurve.length; ++i) {
-        appliedCurve[i] = appliedCurve[i].subtract(correctionCurve[i]);
+        appliedCurve[i] = appliedCurve[i].divide(correctionCurve[i]);
       }
     }
 
@@ -362,9 +364,10 @@ public class RandomizedExperiment extends Experiment {
     Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
     double[] curValue = new double[2 * freqs.length];
 
+    // note that the correction curve here has already had normalization applied
     if (correctionCurve != null) {
       for (int i = 0; i < appliedCurve.length; ++i) {
-        appliedCurve[i] = appliedCurve[i].subtract(correctionCurve[i]);
+        appliedCurve[i] = appliedCurve[i].divide(correctionCurve[i]);
       }
     }
 
@@ -372,6 +375,7 @@ public class RandomizedExperiment extends Experiment {
         testResp.applyResponseToInputUnscaled(new double[]{freqToScaleAt});
     assert (normalizationData.length == 1);
     Complex respAtNormalization = normalizationData[0];
+
     double normalizeAmp = 20 * Math.log10(respAtNormalization.abs());
     double normalizePhase = atanc(respAtNormalization);
     double phiPrev = atanc(appliedCurve[3 * appliedCurve.length / 4]);
@@ -842,8 +846,8 @@ public class RandomizedExperiment extends Experiment {
     double[] initialValues = new double[plottingFreqs.length * 2];
     double[] fitValues = new double[plottingFreqs.length * 2];
     for (int i = 0; i < plottingFreqs.length; ++i) {
-      Complex initEntry = init[i].subtract(correction[i]);
-      Complex fitEntry = fit[i].subtract(correction[i]);
+      Complex initEntry = init[i].divide(correction[i]);
+      Complex fitEntry = fit[i].divide(correction[i]);
       int argIdx = plottingFreqs.length + i;
       initialValues[i] = initEntry.abs();
       initialValues[argIdx] = atanc(initEntry);
@@ -1013,7 +1017,7 @@ public class RandomizedExperiment extends Experiment {
         Complex normalizationForCorrection =
             getResponseCorrection(new double[]{freqToScaleAt}, correctionToApply)[0];
         for (int w = 0; w < correctedCurve.length; ++w) {
-          correctedCurve[w] = correctedCurve[w].subtract(normalizationForCorrection);
+          correctedCurve[w] = correctedCurve[w].divide(normalizationForCorrection);
         }
 
         MultivariateJacobianFunction errorJacobian = new MultivariateJacobianFunction() {
