@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.experiment.RandomizedExperiment.getResponseCorrection;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static asl.utils.NumericUtils.TAU;
@@ -118,8 +119,7 @@ public class RandomizedExperimentTest {
     initialZeroGuess = ir.zerosToVector(lowFreq, Double.MAX_VALUE);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
-    Complex[] corrections = new Complex[freqs.length];
-    Arrays.fill(corrections, Complex.ZERO);
+    Complex[] corrections = getResponseCorrection(freqs, null);
     Pair<RealVector, RealMatrix> jacobianResult =
         RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, lowFreq, corrections);
 
