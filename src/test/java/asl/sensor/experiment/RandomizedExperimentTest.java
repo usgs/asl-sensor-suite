@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.experiment.RandomizedExperiment.getResponseCorrection;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static asl.utils.NumericUtils.TAU;
@@ -118,8 +119,7 @@ public class RandomizedExperimentTest {
     initialZeroGuess = ir.zerosToVector(lowFreq, Double.MAX_VALUE);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
-    Complex[] corrections = new Complex[freqs.length];
-    Arrays.fill(corrections, Complex.ZERO);
+    Complex[] corrections = getResponseCorrection(freqs, null);
     Pair<RealVector, RealMatrix> jacobianResult =
         RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, lowFreq, corrections);
 
@@ -835,5 +835,42 @@ public class RandomizedExperimentTest {
       double delta = Math.pow(10, orderOfMagnitude - 3);
       assertEquals(rExp.getInitialZeros().get(i).abs(), zeros.get(i).abs(), delta);
     }
+  }
+
+  @Test
+  public void assureThatResponseCorrectionIsGood() throws IOException {
+    String respName = RESP_LOCATION + "RESP.IU.SJG.00.BHZ";
+    String dataFolderName = getSeedFolder("IU", "SJG", "2019", "121");
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    String calInName = dataFolderName + "CB_BC0.512.seed";
+    DataStore ds =
+        DataStoreUtils.createFromNames(respName, calInName, sensOutName);
+
+    String startTime = "2019,121,17:22:00";
+    DateTimeFormatter dateTimeFormatter =
+        DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
+    long startCal = ZonedDateTime.parse(startTime, dateTimeFormatter).toInstant().toEpochMilli();
+    String endTime = "2019,121,17:47:30";
+    long endCal = ZonedDateTime.parse(endTime, dateTimeFormatter).toInstant().toEpochMilli();
+    ds.trim(startCal, endCal);
+
+
+    RandomizedExperiment randomExp = new RandomizedExperiment();
+    randomExp.setCorrectionResponse(null);
+    randomExp.setLowFrequencyCalibration(false);
+    randomExp.setCapactiveCalibration(false);
+    randomExp.runExperimentOnData(ds);
+
+    double uncorrectedResidual = randomExp.getInitResidual();
+    double uncorrectedFitResidual = randomExp.getFitResidual();
+    randomExp.setCorrectionResponse(SensorType.TR360);
+    randomExp.runExperimentOnData(ds);
+    double correctedResidual = randomExp.getInitResidual();
+    double correctedFitResidual = randomExp.getFitResidual();
+    assertTrue(correctedResidual < uncorrectedResidual);
+    // the correction CANNOT be compensated for by the solver on its own
+    // the uncorrected fit is WORSE than the corrected initial response
+    assertTrue(correctedResidual < uncorrectedFitResidual);
+    assertTrue(correctedFitResidual < uncorrectedFitResidual);
   }
 }
