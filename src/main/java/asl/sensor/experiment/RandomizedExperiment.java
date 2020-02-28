@@ -143,7 +143,7 @@ public class RandomizedExperiment extends Experiment {
     return isLowFrequencyCalibration ? LOW_FREQ_ZERO_TARGET : HIGH_FREQ_ZERO_TARGET;
   }
 
-  private static Complex[] getResponseCorrection(double[] frequencies, InstrumentResponse resp) {
+  static Complex[] getResponseCorrection(double[] frequencies, InstrumentResponse resp) {
     if (resp == null) {
       Complex[] returnValue = new Complex[frequencies.length];
       // since we divide out the correction, we have to fill with ones in the null case
