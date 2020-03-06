@@ -34,7 +34,7 @@ public class StepExperimentTest {
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
     assertEquals(366.94, 1. / fitParams[0], 0.5);
-    assertEquals(0.719, fitParams[1], 0.0005);
+    assertEquals(0.7195, fitParams[1], 0.0005);
   }
 
   @Test
@@ -58,7 +58,7 @@ public class StepExperimentTest {
     assertEquals(0.7106, fitParams[1], 0.0005);
     String expected1 = "RESP parameters\nCorner frequency (Hz): 0.008 (119.827 secs)\n"
         + "Damping: 0.709\n";
-    String expected2 = "Best-fit parameters\nCorner frequency (Hz): 0.008 (120.093 secs)\n"
+    String expected2 = "Best-fit parameters\nCorner frequency (Hz): 0.008 (120.095 secs)\n"
         + "Damping: 0.711\n";
     assertArrayEquals(new String[] {expected1, expected2}, se.getInsetStrings());
   }
@@ -72,8 +72,8 @@ public class StepExperimentTest {
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
     ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS1T5_Q330HR"));
-    String startString = "2017-248T05:00:00.0";
-    String endString = "2017-248T05:30:00.0";
+    String startString = "2017-248T04:55:00.0";
+    String endString = "2017-248T05:31:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
     long ed = TestUtils.timeStringToEpochMilli(endString);
     ds.trim(st, ed);

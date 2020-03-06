@@ -53,10 +53,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  */
 public class StepExperiment extends Experiment {
 
-  /**
-   * Resolution of step size for iterative solution process
-   */
-  private final double STEP_FACTOR = 1E-15;
+
   /**
    * Used in the least squared solver (quit when function output changes by less than this value)
    */
@@ -494,16 +491,18 @@ public class StepExperiment extends Experiment {
 
     double f1 = variables.getEntry(0);
     double h1 = variables.getEntry(1);
-    double f2 = f1 + STEP_FACTOR;
-    double h2 = h1 + STEP_FACTOR;
+    double fDiff = 100 * Math.ulp(f1);
+    double hDiff = 100 * Math.ulp(h1);
+    double f2 = f1 + fDiff;
+    double h2 = h1 + hDiff;
 
     double[] fInit = calculate(new double[]{f1, h1});
     double[] diffOnF = calculate(new double[]{f2, h1});
     double[] diffOnH = calculate(new double[]{f1, h2});
 
     for (int i = 0; i < trimmedLength; ++i) {
-      jacobian[i][0] = (diffOnF[i] - fInit[i]) / STEP_FACTOR;
-      jacobian[i][1] = (diffOnH[i] - fInit[i]) / STEP_FACTOR;
+      jacobian[i][0] = (diffOnF[i] - fInit[i]) / fDiff;
+      jacobian[i][1] = (diffOnH[i] - fInit[i]) / hDiff;
     }
 
     RealMatrix jMat = createRealMatrix(jacobian);
