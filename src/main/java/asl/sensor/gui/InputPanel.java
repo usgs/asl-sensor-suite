@@ -65,6 +65,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.MaskFormatter;
+import javax.xml.stream.XMLStreamException;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
@@ -348,6 +349,20 @@ public class InputPanel
     return timePicker;
   }
 
+  public static JSpinner timePickerFactory(Date start) {
+    String formatterPattern = "yyyy.DDD | HH:mm:ss.SSS";
+    JSpinner.DateEditor timeEditor;
+    SpinnerDateModel startModel = new SpinnerDateModel();
+    if (start != null) {
+      startModel.setValue(start);
+    }
+    JSpinner timePicker = new JSpinner(startModel);
+    timeEditor = new JSpinner.DateEditor(timePicker, formatterPattern);
+    timeEditor.getFormat().setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
+    timePicker.setEditor(timeEditor);
+    return timePicker;
+  }
+
   /**
    * Gets the value of start or end time from slider value and DataBlock
    *
@@ -409,93 +424,19 @@ public class InputPanel
         showRegionForGeneration();
 
         fireStateChanged();
+        return;
       }
 
       if (event.getSource() == seed) {
         queryFDSN(i, seed);
+        return;
       }
       if (event.getSource() == append) {
         loadData(i, append);
+        return;
       }
-
       if (event.getSource() == resp) {
-        // don't need a new thread because resp loading is pretty prompt
-        // create new array with extra entry for a new string to load custom response
-
-        int index = lastRespIndex;
-        if (lastRespIndex < 0) {
-          index = responseArray.length - 1;
-        }
-
-        Object result = JOptionPane.showInputDialog(
-            this,
-            "Select a response to load:",
-            "RESP File Selection",
-            JOptionPane.PLAIN_MESSAGE,
-            null, responseArray,
-            responseArray[index]);
-
-        final String resultStr = (String) result;
-        // did user cancel operation?
-        if (resultStr == null) {
-          return;
-        }
-
-        // ignore case when sorting embeds -- sorting of the enums ignores case too
-        lastRespIndex = Arrays.binarySearch(responseArray, 0,
-            responseArray.length-1, resultStr, String::compareToIgnoreCase);
-
-        // is the loaded string one of the embedded response files?
-        // if it is, then we can get the enums of its name and load from them
-        if (lastRespIndex  >= 0) {
-          // what was the index of the selected item?
-          // final used here in the event of thread weirdness
-          try {
-            Pair<SensorType, ResolutionType> sensorResolutionPair = responses.get(lastRespIndex);
-            SensorType sensor = sensorResolutionPair.getFirst();
-            ResolutionType resolution = sensorResolutionPair.getSecond();
-            InstrumentResponse instrumentResponse =
-                InstrumentResponse.loadEmbeddedResponse(sensor, resolution);
-            dataStore.setResponse(i, instrumentResponse);
-
-            respFileNames[i].setText(instrumentResponse.getName());
-            clear.setEnabled(true);
-            clearAll.setEnabled(true);
-
-            fireStateChanged();
-          } catch (IOException e) {
-            // this really shouldn't be an issue with embedded responses
-            responseErrorPopup(resultStr, e);
-            e.printStackTrace();
-            return;
-          }
-        } else {
-          lastRespIndex = -1;
-          fileChooser.setCurrentDirectory(new File(respDirectory));
-          fileChooser.resetChoosableFileFilters();
-          fileChooser.setDialogTitle("Load response file...");
-          int returnVal = fileChooser.showOpenDialog(resp);
-          if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            respDirectory = file.getParent();
-            try {
-              Instant startInst = respEpochChoose(file.getAbsolutePath());
-              InstrumentResponse instrumentResponse = new InstrumentResponse(file.getAbsolutePath(),
-                  startInst);
-              dataStore.setResponse(i, instrumentResponse);
-              respFileNames[i].setText(file.getName());
-              clear.setEnabled(true);
-              clearAll.setEnabled(true);
-            } catch (IOException | NullPointerException e) {
-              responseErrorPopup(file.getName(), e);
-              e.printStackTrace();
-              return;
-            }
-
-            fireStateChanged();
-          }
-        }
-
+        queryMetaFDSN(i, resp);
         return;
       }
 
@@ -706,7 +647,7 @@ public class InputPanel
         Date endDate = (Date) endPicker.getValue();
         long endMillis = endDate.toInstant().toEpochMilli();
 
-        threadedFromFDSN(panelToLoad, net, sta, loc, cha, startMillis, endMillis);
+        threadedDataFromFDSN(panelToLoad, net, sta, loc, cha, startMillis, endMillis);
       }
 
     } catch (ParseException e) {
@@ -714,7 +655,196 @@ public class InputPanel
       JOptionPane.showMessageDialog(this,
           "ERROR CREATING FDSN QUERY DIALOG BOX", "FDSN ERROR", JOptionPane.ERROR_MESSAGE);
     }
+  }
 
+  private void loadResponse(int i, JButton resp) {
+    JButton clear = clearButton[i];
+    // don't need a new thread because resp loading is pretty prompt
+    // create new array with extra entry for a new string to load custom response
+
+    int index = lastRespIndex;
+    if (lastRespIndex < 0) {
+      index = responseArray.length - 1;
+    }
+
+    Object result = JOptionPane.showInputDialog(
+        this,
+        "Select a response to load:",
+        "RESP File Selection",
+        JOptionPane.PLAIN_MESSAGE,
+        null, responseArray,
+        responseArray[index]);
+
+    final String resultStr = (String) result;
+    // did user cancel operation?
+    if (resultStr == null) {
+      return;
+    }
+
+    // ignore case when sorting embeds -- sorting of the enums ignores case too
+    lastRespIndex = Arrays.binarySearch(responseArray, 0,
+        responseArray.length-1, resultStr, String::compareToIgnoreCase);
+
+    // is the loaded string one of the embedded response files?
+    // if it is, then we can get the enums of its name and load from them
+    if (lastRespIndex  >= 0) {
+      // what was the index of the selected item?
+      // final used here in the event of thread weirdness
+      try {
+        Pair<SensorType, ResolutionType> sensorResolutionPair = responses.get(lastRespIndex);
+        SensorType sensor = sensorResolutionPair.getFirst();
+        ResolutionType resolution = sensorResolutionPair.getSecond();
+        InstrumentResponse instrumentResponse =
+            InstrumentResponse.loadEmbeddedResponse(sensor, resolution);
+        dataStore.setResponse(i, instrumentResponse);
+
+        respFileNames[i].setText(instrumentResponse.getName());
+        clear.setEnabled(true);
+        clearAll.setEnabled(true);
+
+        fireStateChanged();
+      } catch (IOException e) {
+        // this really shouldn't be an issue with embedded responses
+        responseErrorPopup(resultStr, e);
+        e.printStackTrace();
+        return;
+      }
+    } else {
+      lastRespIndex = -1;
+      fileChooser.setCurrentDirectory(new File(respDirectory));
+      fileChooser.resetChoosableFileFilters();
+      fileChooser.setDialogTitle("Load response file...");
+      int returnVal = fileChooser.showOpenDialog(resp);
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+        File file = fileChooser.getSelectedFile();
+        respDirectory = file.getParent();
+        try {
+          Instant startInst = respEpochChoose(file.getAbsolutePath());
+          InstrumentResponse instrumentResponse = new InstrumentResponse(file.getAbsolutePath(),
+              startInst);
+          dataStore.setResponse(i, instrumentResponse);
+          respFileNames[i].setText(file.getName());
+          clear.setEnabled(true);
+          clearAll.setEnabled(true);
+        } catch (IOException | NullPointerException e) {
+          responseErrorPopup(file.getName(), e);
+          e.printStackTrace();
+          return;
+        }
+
+        fireStateChanged();
+      }
+    }
+  }
+
+  private void queryMetaFDSN(int panelLoadingRespFrom, JButton respButton) {
+    // this section produces a selection box to make sure FDSN loading is user preference
+    {
+      JRadioButton local = new JRadioButton("Load from local/embedded RESP file");
+      JRadioButton fdsn = new JRadioButton("Load from FDSN");
+      ButtonGroup group = new ButtonGroup();
+      group.add(local);
+      group.add(fdsn);
+      local.setSelected(true);
+
+      JPanel panel = new JPanel();
+      panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+      panel.add(local);
+      panel.add(fdsn);
+
+      int result = JOptionPane.showConfirmDialog(this, panel,
+          "Select load method", JOptionPane.OK_CANCEL_OPTION);
+
+      if (result == JOptionPane.CANCEL_OPTION) {
+        return;
+      }
+
+      if (local.isSelected()) {
+        loadResponse(panelLoadingRespFrom, respButton);
+        return;
+      }
+    }
+
+    try {
+      MaskFormatter networkFormatter = new MaskFormatter("AA");
+      // MaskFormatter stationFormatter = new MaskFormatter("UUUUU");
+      MaskFormatter locationFormatter = new MaskFormatter("##");
+      MaskFormatter channelFormatter = new MaskFormatter("UUA");
+      JFormattedTextField networkField = new JFormattedTextField(networkFormatter);
+      networkField.setText("");
+      networkField.setMinimumSize(networkField.getPreferredSize());
+      JTextField stationField = new JTextField();
+      stationField.setText("");
+      stationField.setMinimumSize(stationField.getPreferredSize());
+      JFormattedTextField locationField = new JFormattedTextField(locationFormatter);
+      locationField.setText("");
+      locationField.setMinimumSize(locationField.getPreferredSize());
+      JFormattedTextField channelField = new JFormattedTextField(channelFormatter);
+      channelField.setText("");
+      channelField.setMinimumSize(channelField.getPreferredSize());
+      if (dataStore.blockIsSet(panelLoadingRespFrom)) {
+        String name = dataStore.getBlock(panelLoadingRespFrom).getName();
+        String[] fields = name.split("_");
+        networkField.setText(fields[0]);
+        stationField.setText(fields[1]);
+        locationField.setText(fields[2]);
+        channelField.setText(fields[3]);
+      }
+
+      Date start = null;
+      // set initial start and end times to be 2 days ago and 1 day ago at day start
+      // such that there should be data for the full day's length that already exists
+      Date defaultStartValue = Date.from(
+          LocalDate.now().minusDays(2).atStartOfDay(ZoneOffset.UTC).toInstant());
+      // if there is any data, enforce range restriction on that limit
+      if (dataStore.areAnyBlocksSet(activePlots)) {
+        Pair<Long, Long> startAndEnd = dataStore.getCommonTime(activePlots);
+        start = Date.from(Instant.ofEpochMilli(startAndEnd.getFirst()));
+        defaultStartValue = start;
+      }
+
+      JSpinner startPicker = timePickerFactory(start);
+
+      SimpleDateFormat format = ((JSpinner.DateEditor) startPicker.getEditor()).getFormat();
+      format.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
+
+      startPicker.setValue(defaultStartValue);
+
+      JPanel queryPanel = new JPanel();
+      queryPanel.setLayout(new GridLayout(7, 2));
+      queryPanel.add(new JLabel("NOTE:"));
+      queryPanel.add(new JLabel("Wildcards are not supported!"));
+      queryPanel.add(new JLabel("Network: (ex: IU)"));
+      queryPanel.add(networkField);
+      queryPanel.add(new JLabel("Station: (ex: ANMO)"));
+      queryPanel.add(stationField);
+      queryPanel.add(new JLabel("Location: (ex: 00)"));
+      queryPanel.add(locationField);
+      queryPanel.add(new JLabel("Channel: (ex: LHZ)"));
+      queryPanel.add(channelField);
+      queryPanel.add(new JLabel("Time within expected epoch (UTC):"));
+      queryPanel.add(startPicker);
+
+      int result = JOptionPane.showConfirmDialog(this, queryPanel,
+          "Set FDSN query parameters", JOptionPane.OK_CANCEL_OPTION);
+
+      if (result == JOptionPane.OK_OPTION) {
+        String net = networkField.getText().toUpperCase();
+        String sta = stationField.getText().replaceAll("\\s","").toUpperCase();
+        String loc = locationField.getText().replaceAll("\\s","").toUpperCase();
+        String cha = channelField.getText().toUpperCase();
+
+        Date startDate = (Date) startPicker.getValue();
+        long startMillis = startDate.toInstant().toEpochMilli();
+
+        threadedMetaFromFDSN(panelLoadingRespFrom, net, sta, loc, cha, startMillis);
+      }
+
+    } catch (ParseException e) {
+      e.printStackTrace();
+      JOptionPane.showMessageDialog(this,
+          "ERROR CREATING FDSN QUERY DIALOG BOX", "FDSN ERROR", JOptionPane.ERROR_MESSAGE);
+    }
   }
 
 
@@ -846,17 +976,17 @@ public class InputPanel
     chartPanels[index].setPreferredSize(chartPanels[index].getMinimumSize());
   }
 
-  private void threadedFromFDSN(final int index, final String net,
+  private void threadedDataFromFDSN(final int index, final String net,
       final String sta, String loc, final String cha, final long start, final long end) {
 
     // attempt to handle case where location is an empty value
     final String fixedLoc = loc.replace(" ", "").equals("") ? " " : loc;
 
     Configuration config = Configuration.getInstance();
-    String scheme = config.getFDSNProtocol();
-    String host = config.getFDSNDomain();
-    String path = config.getFDSNPath();
-    int port = config.getFDSNPort();
+    String scheme = config.getFDSNDataProtocol();
+    String host = config.getFDSNDataDomain();
+    String path = config.getFDSNDataPath();
+    int port = config.getFDSNDataPort();
 
     InputPanel thisPanel = this; // handle for JOptionPane if no data was found
     String filename = "FDSN query params: " + net + "_" + sta + "_" + fixedLoc + "_" + cha;
@@ -924,6 +1054,66 @@ public class InputPanel
           JOptionPane.showMessageDialog(thisPanel, message,
              "FDSN Error", JOptionPane.ERROR_MESSAGE);
         }
+      }
+    };
+
+    worker.execute();
+  }
+
+  private void threadedMetaFromFDSN(final int index, final String net,
+  final String sta, String loc, final String cha, final long epoch) {
+    // attempt to handle case where location is an empty value
+    final String fixedLoc = loc.replace(" ", "").equals("") ? " " : loc;
+
+    Configuration config = Configuration.getInstance();
+    String scheme = config.getFDSNMetaProtocol();
+    String host = config.getFDSNMetaDomain();
+    String path = config.getFDSNMetaPath();
+    int port = config.getFDSNMetaPort();
+
+    InputPanel thisPanel = this; // handle for JOptionPane if no data was found
+    String respID = net + "_" + sta + "_" + fixedLoc + "_" + cha;
+    String filename = "FDSN query params: " + respID;
+    SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
+
+      JFreeChart chart;
+      boolean caughtException = false;
+      String returnedErrMsg = "";
+
+      @Override
+      public Integer doInBackground() {
+
+        InstrumentResponse respToLoad;
+        try {
+          respToLoad =
+              InstrumentResponse.responseFromFDSNQuery(scheme, host, port, path,
+                  net, sta, fixedLoc, cha, epoch);
+        } catch (XMLStreamException | IOException e) {
+          returnedErrMsg = "The queried data has an integrity issue preventing parsing.";
+          caughtException = true;
+          e.printStackTrace();
+          return 1;
+        } catch (SeisFileException e) {
+          returnedErrMsg = e.getMessage();
+          caughtException = true;
+          e.printStackTrace();
+          return 1;
+        }
+        dataStore.setResponse(index, respToLoad);
+        return 0;
+      }
+
+      @Override
+      public void done() {
+        if (caughtException) {
+          String message = "Query on following params returned no data: " + filename +
+              "\n" + returnedErrMsg + "\nCheck the terminal for more details.";
+          JOptionPane.showMessageDialog(thisPanel, message,
+              "FDSN Error", JOptionPane.ERROR_MESSAGE);
+          return;
+        }
+        respFileNames[index].setText("FDSN: " + respID);
+        fireStateChanged();
       }
     };
 

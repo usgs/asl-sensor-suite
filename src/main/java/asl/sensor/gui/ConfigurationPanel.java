@@ -22,6 +22,8 @@ public class ConfigurationPanel extends JPanel {
 
   // text fields for FDSN data locations
   private JTextField fdsnDomain, fdsnProtocol, fdsnPort, fdsnService;
+  // text fields for FDSN meta locations
+  private JTextField fdsnMetaDomain, fdsnMetaProtocol, fdsnMetaPort, fdsnMetaService;
 
   // fields for controlling plot display parameters
   private JTextField lineWidthOffset;
@@ -33,6 +35,7 @@ public class ConfigurationPanel extends JPanel {
   public ConfigurationPanel() {
     // populate fields based on current configuration file
     Configuration instance = Configuration.getInstance();
+    PositiveIntegerFilter filter = new PositiveIntegerFilter();
 
 
     dataFolder = new JTextField();
@@ -43,28 +46,39 @@ public class ConfigurationPanel extends JPanel {
     outputFolder.setText(instance.getDefaultOutputFolder());
 
     fdsnProtocol = new JTextField();
-    fdsnProtocol.setText(instance.getFDSNProtocol());
+    fdsnProtocol.setText(instance.getFDSNDataProtocol());
     fdsnDomain = new JTextField();
-    fdsnDomain.setText(instance.getFDSNDomain());
+    fdsnDomain.setText(instance.getFDSNDataDomain());
     fdsnService = new JTextField();
-    fdsnService.setText(instance.getFDSNPath());
+    fdsnService.setText(instance.getFDSNDataPath());
     // enforce port to be a positive integer
     fdsnPort = new JTextField();
     AbstractDocument intDocument = (AbstractDocument) fdsnPort.getDocument();
-    intDocument.setDocumentFilter(new PositiveIntegerFilter());
-    fdsnPort.setText(Integer.toString(instance.getFDSNPort()));
+    intDocument.setDocumentFilter(filter);
+    fdsnPort.setText(Integer.toString(instance.getFDSNDataPort()));
+
+    fdsnMetaProtocol = new JTextField();
+    fdsnMetaProtocol.setText(instance.getFDSNMetaProtocol());
+    fdsnMetaDomain = new JTextField();
+    fdsnMetaDomain.setText(instance.getFDSNMetaDomain());
+    fdsnMetaService = new JTextField();
+    fdsnMetaService.setText(instance.getFDSNMetaPath());
+    // enforce port to be a positive integer
+    fdsnMetaPort = new JTextField();
+    intDocument = (AbstractDocument) fdsnMetaPort.getDocument();
+    intDocument.setDocumentFilter(filter);
+    fdsnMetaPort.setText(Integer.toString(instance.getFDSNMetaPort()));
 
     lineWidthOffset = new JTextField();
     intDocument = (AbstractDocument) lineWidthOffset.getDocument();
-    intDocument.setDocumentFilter(new PositiveIntegerFilter());
+    intDocument.setDocumentFilter(filter);
     lineWidthOffset.setText(Integer.toString(instance.getLineWidthOffset()));
 
     colorblindColors = new JCheckBox();
     colorblindColors.setEnabled(true);
     colorblindColors.setSelected(instance.useColorblindColors());
 
-    this.setLayout(new GridLayout(12, 2));
-
+    this.setLayout(new GridLayout(13, 2));
 
     this.add(new JLabel("Default SEED location:"));
     this.add(dataFolder);
@@ -82,6 +96,15 @@ public class ConfigurationPanel extends JPanel {
     this.add(new JLabel("FDSN service port:"));
     this.add(fdsnPort);
 
+    this.add(new JLabel("FDSN metadata query protocol (i.e., http, https):"));
+    this.add(fdsnMetaProtocol);
+    this.add(new JLabel("FDSN metadata URL domain:"));
+    this.add(fdsnMetaDomain);
+    this.add(new JLabel("FDSN metadata service subdomain:"));
+    this.add(fdsnMetaService);
+    this.add(new JLabel("FDSN metadata service port:"));
+    this.add(fdsnMetaPort);
+
     this.add(new JLabel("Line thickness increase (int):"));
     this.add(lineWidthOffset);
     this.add(new JLabel("Plot colorblind-friendly colors:"));
@@ -98,10 +121,15 @@ public class ConfigurationPanel extends JPanel {
     instance.setDefaultRespFolder(respFolder.getText());
     instance.setDefaultOutputFolder(outputFolder.getText());
 
-    instance.setFDSNProtocol(fdsnProtocol.getText());
-    instance.setFDSNDomain(fdsnDomain.getText());
-    instance.setFDSNPath(fdsnService.getText());
-    instance.setFDSNPort(Integer.parseInt(fdsnPort.getText()));
+    instance.setFDSNDataProtocol(fdsnProtocol.getText());
+    instance.setFDSNDataDomain(fdsnDomain.getText());
+    instance.setFDSNDataPath(fdsnService.getText());
+    instance.setFDSNDataPort(Integer.parseInt(fdsnPort.getText()));
+
+    instance.setFDSNMetaProtocol(fdsnMetaProtocol.getText());
+    instance.setFDSNMetaDomain(fdsnMetaDomain.getText());
+    instance.setFDSNMetaPath(fdsnMetaService.getText());
+    instance.setFDSNMetaPort(Integer.parseInt(fdsnMetaPort.getText()));
 
     instance.setLineWidthOffset(Integer.parseInt(lineWidthOffset.getText()));
     instance.setUseColorblindColors(colorblindColors.isSelected());
@@ -112,7 +140,7 @@ public class ConfigurationPanel extends JPanel {
   /**
    * DocumentFilter implementation to force positive integers in relevant text fields
    */
-  private class PositiveIntegerFilter extends DocumentFilter {
+  private static class PositiveIntegerFilter extends DocumentFilter {
 
     @Override
     public void insertString(DocumentFilter.FilterBypass fb, int offset, String text,
