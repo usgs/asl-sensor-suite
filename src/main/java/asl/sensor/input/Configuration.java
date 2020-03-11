@@ -11,7 +11,7 @@ import org.apache.log4j.Logger;
 /**
  * Configuration file including parameters that have been requested for features by program users.
  * These include the thickness of lines being plotted for experiment results,
- * the path of the FDSN data acquisition service,
+ * the path of the FDSN data and metadata acquisition services,
  * the default location from which to load data and responses,
  * the default folder to which reports are outputted (i.e,. as PDF files),
  * and whether or not to use colorblind-friendly colors in result plots.
@@ -32,11 +32,16 @@ public class Configuration {
   private int lineWidthOffset = 2;
   private boolean useColorblindColors = true;
 
-  private String fdsnProtocol = "http";
-  private String fdsnDomain = "service.iris.edu";
-  private String fdsnService = "fdsnws";
-  private int fdsnPort = -1; // determined based on given protocol
+  private String fdsnDataProtocol = "http";
+  private String fdsnDataDomain = "service.iris.edu";
+  private String fdsnDataService = "fdsnws";
+  private int fdsnDataPort = -1; // determined based on given protocol
     // will default to 80 if other terms are not set from these default values
+
+  private String fdsnMetaProtocol = "http";
+  private String fdsnMetaDomain = "service.iris.edu";
+  private String fdsnMetaService = "fdsnws";
+  private int fdsnMetaPort = -1;
 
   private Configuration(String configLocation) {
     logger.info("Attempting reading in config file from " + configLocation);
@@ -59,25 +64,43 @@ public class Configuration {
         defaultOutputFolder = defaultOutputFolderParam;
       }
 
-      String fdsnProtocolParam = config.getString("FDSNPaths.Protocol");
+      String fdsnProtocolParam = config.getString("FDSNData.Protocol");
       if (fdsnProtocolParam != null) {
-        fdsnProtocol = fdsnProtocolParam;
+        fdsnDataProtocol = fdsnProtocolParam;
       }
-      String fdsnDomainParam = config.getString("FDSNPaths.Domain");
+      String fdsnDomainParam = config.getString("FDSNData.Domain");
       if (fdsnDomainParam != null) {
-        fdsnDomain = fdsnDomainParam;
+        fdsnDataDomain = fdsnDomainParam;
       }
-      String fdsnServiceParam = config.getString("FDSNPaths.Service");
+      String fdsnServiceParam = config.getString("FDSNData.Service");
       if (fdsnServiceParam != null) {
-        fdsnService = fdsnServiceParam;
+        fdsnDataService = fdsnServiceParam;
       }
-      int fdsnPortParam = config.getInt("FDSNPaths.Port", -1);
+      int fdsnPortParam = config.getInt("FDSNData.Port", -1);
       if (fdsnPortParam < 0) {
         // use value of 443 if https, use value of 80 if http
-        fdsnPortParam = fdsnProtocol.equals("https") ? 443 : 80;
+        fdsnPortParam = fdsnDataProtocol.equals("https") ? 443 : 80;
       }
-      fdsnPort = fdsnPortParam;
+      fdsnDataPort = fdsnPortParam;
 
+      fdsnProtocolParam = config.getString("FDSNMeta.Protocol");
+      if (fdsnProtocolParam != null) {
+        fdsnMetaProtocol = fdsnProtocolParam;
+      }
+      fdsnDomainParam = config.getString("FDSNMeta.Domain");
+      if (fdsnDomainParam != null) {
+        fdsnMetaDomain = fdsnDomainParam;
+      }
+      fdsnServiceParam = config.getString("FDSNMeta.Service");
+      if (fdsnServiceParam != null) {
+        fdsnMetaService = fdsnServiceParam;
+      }
+      fdsnPortParam = config.getInt("FDSNMeta.Port", -1);
+      if (fdsnPortParam < 0) {
+        // use value of 443 if https, use value of 80 if http
+        fdsnPortParam = fdsnMetaProtocol.equals("https") ? 443 : 80;
+      }
+      fdsnMetaPort = fdsnPortParam;
 
       useColorblindColors =
           config.getBoolean("VisualOptions.ColorblindFriendly", true);
@@ -264,76 +287,152 @@ public class Configuration {
    * Gets the current protocol to use for FDSN data acquisition. This is a string value.
    * If not set in the configuration file, it defaults to "http".
    *
-   * The property is defined from Configuration.FDSNPaths.Protocol
+   * The property is defined from Configuration.FDSNData.Protocol
    * @return The FDSN connection protocol (URL prefix).
    */
-  public String getFDSNProtocol() {
-    return fdsnProtocol;
+  public String getFDSNDataProtocol() {
+    return fdsnDataProtocol;
   }
 
   /**
    * Set the connection protocol for FDSN data services.
    * @param replacement Protocol to use (i.e., http, https)
    */
-  public void setFDSNProtocol(String replacement) {
-    fdsnProtocol = replacement;
+  public void setFDSNDataProtocol(String replacement) {
+    fdsnDataProtocol = replacement;
   }
 
   /**
    * Gets the current domain to use for FDSN data acquisition. This is a string value.
    * If not set in the configuration file it defaults to "service.iris.edu"
    *
-   * The property is defined from Configuration.FDSNPaths.Domain
+   * The property is defined from Configuration.FDSNData.Domain
    * @return The FDSN webservice domain (URL).
    */
-  public String getFDSNDomain() {
-    return fdsnDomain;
+  public String getFDSNDataDomain() {
+    return fdsnDataDomain;
   }
 
   /**
    * Set the FDSN data services domain url.
    * @param replacement New URL to use webservices from
    */
-  public void setFDSNDomain(String replacement) {
-    fdsnDomain = replacement;
+  public void setFDSNDataDomain(String replacement) {
+    fdsnDataDomain = replacement;
   }
 
   /**
    * Gets the current path (service) to use for FDSN data acquisition. This is a string value.
    * If not set in the configuration file it defaults to "fdsnws".
    *
-   * The property is defined from Configuration.FDSNPaths.Service
+   * The property is defined from Configuration.FDSNData.Service
    * @return The FDSN webservice path.
    */
-  public String getFDSNPath() {
-    return fdsnService;
+  public String getFDSNDataPath() {
+    return fdsnDataService;
   }
 
   /**
    * Set the path (service) to use for FDSN data acquisition
    * @param replacement The FDSN webservice path to use
    */
-  public void setFDSNPath(String replacement) {
-    fdsnService = replacement;
+  public void setFDSNDataPath(String replacement) {
+    fdsnDataService = replacement;
   }
 
   /**
    * Gets the port to use for FDSN data acquisition. This is an integer value.
    * If not set in the configuration file it defaults to 80.
    *
-   * The property is defined from Configuration.FDSNPaths.Port
+   * The property is defined from Configuration.FDSNData.Port
    * @return The FDSN webservice connection port.
    */
-  public int getFDSNPort() {
-    return fdsnPort;
+  public int getFDSNDataPort() {
+    return fdsnDataPort;
   }
 
   /**
    * Set the port to use for FDSN data acquisition.
-   * @param replacementPort New port to use for FDSN data.
+   * @param replacementPort New port to use for FDSN Meta.
    */
-  public void setFDSNPort(int replacementPort) {
-    fdsnPort = replacementPort;
+  public void setFDSNDataPort(int replacementPort) {
+    fdsnDataPort = replacementPort;
+  }
+
+  /**
+   * Gets the current protocol to use for FDSN metadata acquisition. This is a string value.
+   * If not set in the configuration file, it defaults to "http".
+   *
+   * The property is defined from Configuration.FDSNMeta.Protocol
+   * @return The FDSN connection protocol (URL prefix).
+   */
+  public String getFDSNMetaProtocol() {
+    return fdsnMetaProtocol;
+  }
+
+  /**
+   * Set the connection protocol for FDSN metadata services.
+   * @param replacement Protocol to use (i.e., http, https)
+   */
+  public void setFDSNMetaProtocol(String replacement) {
+    fdsnMetaProtocol = replacement;
+  }
+
+  /**
+   * Gets the current domain to use for FDSN metadata acquisition. This is a string value.
+   * If not set in the configuration file it defaults to "service.iris.edu"
+   *
+   * The property is defined from Configuration.FDSNMeta.Domain
+   * @return The FDSN webservice domain (URL).
+   */
+  public String getFDSNMetaDomain() {
+    return fdsnMetaDomain;
+  }
+
+  /**
+   * Set the FDSN metadata services domain url.
+   * @param replacement New URL to use webservices from
+   */
+  public void setFDSNMetaDomain(String replacement) {
+    fdsnMetaDomain = replacement;
+  }
+
+  /**
+   * Gets the current path (service) to use for FDSN metadata acquisition. This is a string value.
+   * If not set in the configuration file it defaults to "fdsnws".
+   *
+   * The property is defined from Configuration.FDSNMeta.Service
+   * @return The FDSN webservice path.
+   */
+  public String getFDSNMetaPath() {
+    return fdsnMetaService;
+  }
+
+  /**
+   * Set the path (service) to use for FDSN metadata acquisition
+   * @param replacement The FDSN webservice path to use
+   */
+  public void setFDSNMetaPath(String replacement) {
+    fdsnMetaService = replacement;
+  }
+
+  /**
+   * Gets the port to use for FDSN metadata acquisition. This is an integer value.
+   * If not set in the configuration file it defaults to 80.
+   *
+   * The property is defined from Configuration.FDSNMeta.Port
+   * @return The FDSN webservice connection port.
+   */
+  public int getFDSNMetaPort() {
+    return fdsnMetaPort;
+  }
+
+  /**
+   * Set the port to use for FDSN metadata acquisition.
+   * @param replacementPort New port to use for FDSN Meta.
+   */
+  public void setFDSNMetaPort(int replacementPort) {
+    fdsnMetaPort = replacementPort;
   }
 
   /**
@@ -349,10 +448,14 @@ public class Configuration {
       config.setProperty("LocalPaths.DataPath", defaultDataFolder);
       config.setProperty("LocalPaths.RespPath", defaultRespFolder);
       config.setProperty("LocalPaths.ReportPath", defaultOutputFolder);
-      config.setProperty("FDSNPaths.Protocol", fdsnProtocol);
-      config.setProperty("FDSNPaths.Domain", fdsnDomain);
-      config.setProperty("FDSNPaths.Service", fdsnService);
-      config.setProperty("FDSNPaths.Port", fdsnPort);
+      config.setProperty("FDSNData.Protocol", fdsnDataProtocol);
+      config.setProperty("FDSNData.Domain", fdsnDataDomain);
+      config.setProperty("FDSNData.Service", fdsnDataService);
+      config.setProperty("FDSNData.Port", fdsnDataPort);
+      config.setProperty("FDSNMeta.Protocol", fdsnMetaProtocol);
+      config.setProperty("FDSNMeta.Domain", fdsnMetaDomain);
+      config.setProperty("FDSNMeta.Service", fdsnMetaService);
+      config.setProperty("FDSNMeta.Port", fdsnMetaPort);
       config.setProperty("VisualOptions.ColorblindFriendly", useColorblindColors);
       config.setProperty("VisualOptions.LineThicknessIncrease", lineWidthOffset);
 
