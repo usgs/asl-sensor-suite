@@ -1,33 +1,25 @@
-# This is the Gradle build system for JVM applications
-# https://gradle.org/
-# https://github.com/gradle/gradle
-image: asl:java
-
 # Disable the Gradle daemon for Continuous Integration servers as correctness
 # is usually a priority over speed in CI environments. Using a fresh
 # runtime for each build is more reliable since the runtime is completely
 # isolated from any previous builds.
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-  # GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
-- export GRADLE_USER_HOME=`pwd`/.gradle
-- sh ssl_acquire.bash
-- git submodule sync
-- git submodule update --init --recursive
-- cd asl-java-utils
-- ls -la
-- git status
-- cd ..
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+  - sh ssl_acquire.bash
 
-cache:
-  paths:
-     - .gradle/wrapper
-     - .gradle/caches
-
-test:
+.job_template: &test_definition
   stage: test
   script: gradle check
   cache:
     key: "$CI_COMMIT_REF_NAME"
+
+test:1804:
+  image: asl:1804
+  <<: *test_definition
+
+test:latest:
+  image: asl:latest
+  <<: *test_definition
+
