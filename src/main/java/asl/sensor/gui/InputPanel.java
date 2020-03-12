@@ -5,6 +5,7 @@ import static asl.utils.ReportingUtils.chartsToImageList;
 import static asl.utils.ResponseUnits.getFilenameFromComponents;
 import static asl.utils.TimeSeriesUtils.getDataBlockFromFDSNQuery;
 import static asl.utils.TimeSeriesUtils.getMplexNameSet;
+import static asl.utils.input.InstrumentResponse.parseXMLForEpochs;
 
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
@@ -38,8 +39,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import javax.imageio.ImageIO;
@@ -719,7 +722,7 @@ public class InputPanel
         File file = fileChooser.getSelectedFile();
         respDirectory = file.getParent();
         try {
-          Instant startInst = respEpochChoose(file.getAbsolutePath());
+          Instant startInst = respEpochChoose(file.getAbsolutePath(), file.getName());
           InstrumentResponse instrumentResponse = new InstrumentResponse(file.getAbsolutePath(),
               startInst);
           dataStore.setResponse(i, instrumentResponse);
@@ -741,15 +744,18 @@ public class InputPanel
     // this section produces a selection box to make sure FDSN loading is user preference
     {
       JRadioButton local = new JRadioButton("Load from local/embedded RESP file");
+      JRadioButton localXML = new JRadioButton("Load from local XML file");
       JRadioButton fdsn = new JRadioButton("Load from FDSN");
       ButtonGroup group = new ButtonGroup();
       group.add(local);
+      group.add(localXML);
       group.add(fdsn);
       local.setSelected(true);
 
       JPanel panel = new JPanel();
       panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
       panel.add(local);
+      panel.add(localXML);
       panel.add(fdsn);
 
       int result = JOptionPane.showConfirmDialog(this, panel,
@@ -761,6 +767,9 @@ public class InputPanel
 
       if (local.isSelected()) {
         loadResponse(panelLoadingRespFrom, respButton);
+        return;
+      } else if (localXML.isSelected()) {
+        loadXML(panelLoadingRespFrom, respButton);
         return;
       }
     }
@@ -844,6 +853,77 @@ public class InputPanel
       e.printStackTrace();
       JOptionPane.showMessageDialog(this,
           "ERROR CREATING FDSN QUERY DIALOG BOX", "FDSN ERROR", JOptionPane.ERROR_MESSAGE);
+    }
+  }
+
+  private void loadXML(int index, JButton respButton) {
+
+    fileChooser.setCurrentDirectory(new File(respDirectory));
+    fileChooser.resetChoosableFileFilters();
+    fileChooser.addChoosableFileFilter(
+        new FileNameExtensionFilter("StationXML file (.xml)", ".xml"));
+    fileChooser.setDialogTitle("Load StationXML file...");
+    int returnVal = fileChooser.showOpenDialog(respButton);
+    if (returnVal == JFileChooser.APPROVE_OPTION) {
+      File xmlFile = fileChooser.getSelectedFile();
+      try {
+        String xmlFileName = xmlFile.getCanonicalPath();
+        Map<String, List<Pair<Instant, Instant>>> epochs = parseXMLForEpochs(xmlFileName);
+        String chName = epochs.keySet().iterator().next();
+        long timeInEpoch = 0;
+        // autopopulate if there's really only one epoch (very unlikely)
+        if (epochs.keySet().size() == 1 && epochs.get(chName).size() == 1) {
+          timeInEpoch = epochs.get(chName).get(0).getFirst().toEpochMilli()+1;
+        } else {
+          ReponseEpochPanel epochPanel = new ReponseEpochPanel(epochs);
+          int result = JOptionPane.showConfirmDialog(this, epochPanel,
+              "Select channel and associated epoch", JOptionPane.OK_CANCEL_OPTION);
+          if (result == JOptionPane.OK_OPTION) {
+            chName = epochPanel.getSelectedChannelName();
+            Pair<Instant, Instant> epoch = epochPanel.getSelectedEpoch();
+            timeInEpoch = epoch.getFirst().toEpochMilli() + 1; // this is between start and end
+          }
+        }
+
+        String[] netStaLocCha = chName.split("_"); // split on underscore character
+        String net = netStaLocCha[0];
+        String sta = netStaLocCha[1];
+        String loc = netStaLocCha[2];
+        String cha = netStaLocCha[3];
+        InstrumentResponse resp = InstrumentResponse.getResponseFromXMLFile(xmlFileName,
+            net, sta, loc, cha, timeInEpoch);
+        dataStore.setResponse(index, resp);
+
+        respFileNames[index].setText(xmlFile.getName() + ": " + resp.getName());
+        clearButton[index].setEnabled(true);
+        clearAll.setEnabled(true);
+
+        fireStateChanged();
+
+      } catch (XMLStreamException e) {
+        StringBuilder message = new StringBuilder("XML Stream Exception caught while reading in\n");
+        message.append(xmlFile.getName()).append("\n");
+        message.append("Check that the XML is valid and meets StationXML specifications.");
+        JOptionPane.showMessageDialog(this, message.toString(),
+            "XML Stream Exception", JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+      } catch (IOException e) {
+        StringBuilder message = new StringBuilder("IO Exception caught while reading in\n");
+        message.append(xmlFile.getName()).append("\n");
+        message.append("Check that you have permissions to read the file.\n");
+        message.append("Please examine the stack trace for how and where this occurred.");
+        JOptionPane.showMessageDialog(this, message.toString(),
+            "XML Stream Exception", JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+      } catch (SeisFileException e) {
+        StringBuilder message = new StringBuilder("SeisFile Exception caught while reading in\n");
+        message.append(xmlFile.getName()).append("\n");
+        message.append("Check that the XML is valid and meets StationXML specifications.\n");
+        message.append("Please examine the stack trace for how and where this occurred.");
+        JOptionPane.showMessageDialog(this, message.toString(),
+            "XML Stream Exception", JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+      }
     }
   }
 
@@ -1052,7 +1132,7 @@ public class InputPanel
         } else {
           String message = "Query returned no data.\n" + filename;
           JOptionPane.showMessageDialog(thisPanel, message,
-             "FDSN Error", JOptionPane.ERROR_MESSAGE);
+              "FDSN Error", JOptionPane.ERROR_MESSAGE);
         }
       }
     };
@@ -1061,7 +1141,7 @@ public class InputPanel
   }
 
   private void threadedMetaFromFDSN(final int index, final String net,
-  final String sta, String loc, final String cha, final long epoch) {
+      final String sta, String loc, final String cha, final long epoch) {
     // attempt to handle case where location is an empty value
     final String fixedLoc = loc.replace(" ", "").equals("") ? " " : loc;
 
@@ -1493,58 +1573,27 @@ public class InputPanel
   /**
    * Get a selected epoch from a multi-epoch response
    *
-   * @param respHandle Name of a given response to read in
+   * @param respHandle Full path of a given response to read in
+   * @param filename Filename of the response
    * @return Value of the start instant of the epoch that the user has chosen
    * @throws IOException Error reading resp file
    * @throws FileNotFoundException File does not exist
    */
-  private Instant respEpochChoose(String respHandle) throws IOException {
-
-    DateTimeFormatter dateTimeFormatter = InstrumentResponse.RESP_DT_FORMAT
-        .withZone(ZoneOffset.UTC);
+  private Instant respEpochChoose(String respHandle, String filename) throws IOException {
     List<Pair<Instant, Instant>> epochs = InstrumentResponse.getRespFileEpochs(respHandle);
-
     if (epochs.size() > 1) {
-      // more than one series in the file? prompt user for it
-      String[] epochStrings = new String[epochs.size()];
-      // sorted list of start times to match against presented list of strings
-      Instant[] epochStarts = new Instant[epochs.size()];
-
-      for (int i = 0; i < epochStrings.length; ++i) {
-        Instant startInstant = epochs.get(i).getFirst();
-        epochStarts[i] = startInstant;
-        String startString = dateTimeFormatter.format(startInstant);
-        Instant endInstant = epochs.get(i).getSecond();
-        String endString;
-        if (endInstant != null) {
-          endString = dateTimeFormatter.format(epochs.get(i).getSecond());
-        } else {
-          endString = "(NO EPOCH END SPECIFIED)";
-        }
-        epochStrings[i] = startString + " | " + endString;
+      ReponseEpochPanel epochPanel = new ReponseEpochPanel(epochs);
+      int result = JOptionPane.showConfirmDialog(this, epochPanel,
+          "Select epoch", JOptionPane.OK_CANCEL_OPTION);
+      if (result == JOptionPane.OK_OPTION) {
+        return epochPanel.getSelectedEpoch().getFirst();
       }
-      // sort both of these to make finding the user-selected epoch faster
-      Arrays.sort(epochStarts);
-      Arrays.sort(epochStrings);
-      Object result = JOptionPane.showInputDialog(
-          this,
-          "Select the response epoch to load:",
-          "Response Epoch Selection",
-          JOptionPane.PLAIN_MESSAGE,
-          null, epochStrings,
-          epochStrings[epochStrings.length - 1]); // default to most recent
-      if (result instanceof String) {
-        int index = Arrays.binarySearch(epochStrings, result);
-        return epochStarts[index];
-      } else {
-        return null;
-      }
+      return null;
     } else if (epochs.size() > 0) {
       return epochs.get(0).getFirst();
     } else {
       throw new IOException("RESP file has no epoch data -- check formatting");
     }
-
   }
 
   /**
