@@ -452,7 +452,7 @@ public class InputPanel
     }
 
     if (event.getSource() == save) {
-      String ext = ".png";
+      String ext = "png";
       fileChooser = new JFileChooser();
       fileChooser.setCurrentDirectory(new File(saveDirectory));
       fileChooser.addChoosableFileFilter(
@@ -861,7 +861,8 @@ public class InputPanel
     fileChooser.setCurrentDirectory(new File(respDirectory));
     fileChooser.resetChoosableFileFilters();
     fileChooser.addChoosableFileFilter(
-        new FileNameExtensionFilter("StationXML file (.xml)", ".xml"));
+        new FileNameExtensionFilter("StationXML file (.xml)", "xml"));
+    fileChooser.setFileFilter(fileChooser.getChoosableFileFilters()[1]);
     fileChooser.setDialogTitle("Load StationXML file...");
     int returnVal = fileChooser.showOpenDialog(respButton);
     if (returnVal == JFileChooser.APPROVE_OPTION) {
