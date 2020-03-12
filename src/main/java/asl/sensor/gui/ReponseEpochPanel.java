@@ -8,7 +8,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.BoxLayout;
@@ -18,6 +17,17 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import org.apache.commons.math3.util.Pair;
 
+/**
+ * Class to organize the GUI components necessary for choosing epochs for RESP and XML files.
+ * For XML files we expect that files may contain multiple channels and so we allow for the
+ * channel of interest to be selected, and the epochs of that channel auto-populating the selection.
+ * RESP files are expected to only contain one channel (this is ASL convention), and so we have
+ * methods to select an epoch without needing to specify the channel in that case.
+ * We attempt to print out the epoch time ranges in a way that is more human-readable than the
+ * default method for doing so.
+ * The list of epochs is automatically sorted according to start time, increasing.
+ * @author akearns
+ */
 public class ReponseEpochPanel extends JPanel implements ActionListener {
 
   private String[] channels;
@@ -30,6 +40,11 @@ public class ReponseEpochPanel extends JPanel implements ActionListener {
   private List<Pair<Instant, Instant>> epochs;
   private JComboBox<String> selectableEpochBox;
 
+  /**
+   * Create a chooser for both channel and epoch from metadata. If there is only one channel
+   * specified in the metadata, only the epoch will be selectable
+   * @param gottenEpochs Map of epochs keyed to channel names
+   */
   public ReponseEpochPanel(Map<String, List<Pair<Instant, Instant>>> gottenEpochs) {
     epochMap = gottenEpochs;
     channels = epochMap.keySet().toArray(new String[]{});
@@ -47,6 +62,10 @@ public class ReponseEpochPanel extends JPanel implements ActionListener {
     this.add(selectableEpochBox);
   }
 
+  /**
+   * Create a chooser for epoch data under the assumption only one channel is specified in metadata.
+   * @param gottenEpochs List of epochs
+   */
   public ReponseEpochPanel(List<Pair<Instant, Instant>> gottenEpochs) {
     epochMap = null;
     channels = new String[]{""};
@@ -58,16 +77,25 @@ public class ReponseEpochPanel extends JPanel implements ActionListener {
     this.add(selectableEpochBox);
   }
 
+  /**
+   * Return the name of the currently selected channel based on the map keys
+   * @return String representation of the channel's identifier
+   */
   public String getSelectedChannelName() {
     return (String) channelIDBox.getSelectedItem();
   }
 
+  /**
+   * Get the selected epoch (for the selected channel)
+   * @return The start and end instants of the desired epoch
+   */
   public Pair<Instant, Instant> getSelectedEpoch() {
     return epochs.get(selectableEpochBox.getSelectedIndex());
   }
 
   @Override
   public void actionPerformed(ActionEvent e) {
+    // actionlistener should only be enabled if there are multiple channels
     if (e.getSource() == channelIDBox) {
       String channel = channels[channelIDBox.getSelectedIndex()];
       selectableEpochBox.removeAllItems();
@@ -76,6 +104,9 @@ public class ReponseEpochPanel extends JPanel implements ActionListener {
     }
   }
 
+  /**
+   * Populates the epoch selector with formatted date-times (listed in sorted order by start)
+   */
   private static class EpochComboBoxModel extends DefaultComboBoxModel<String> {
       public EpochComboBoxModel(List<Pair<Instant, Instant>> epochs) {
         super();
@@ -99,6 +130,9 @@ public class ReponseEpochPanel extends JPanel implements ActionListener {
         }
       }
 
+    /**
+     * Sorts the lists of epochs by start time increasing
+     */
     private static class EpochStartComparator implements Comparator<Pair<Instant, Instant>> {
 
       static final EpochStartComparator instance = new EpochStartComparator();
