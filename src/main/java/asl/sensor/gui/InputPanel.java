@@ -35,11 +35,9 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -326,14 +324,15 @@ public class InputPanel
       }
     }
 
+    // note the extra entry specifically to deal with prompting user to load an external file
     responseArray = new String[responses.size() + 1];
+    responseArray[responseArray.length - 1] =  "Load external RESP or XML file...";
     for (int w = 0; w < responses.size(); ++w) {
       Pair<SensorType, ResolutionType> respToName = responses.get(w);
       responseArray[w] = getFilenameFromComponents(
           respToName.getFirst(), respToName.getSecond());
     }
-    // add an extra line here, for the custom response loading option, not part of sorted list
-    responseArray[responseArray.length - 1] =  "Load external RESP file...";
+
     // sort everything except that last entry, and ignore case in doing so
     Arrays.sort(responseArray, 0, responseArray.length - 1, String::compareToIgnoreCase);
 
@@ -439,7 +438,7 @@ public class InputPanel
         return;
       }
       if (event.getSource() == resp) {
-        queryMetaFDSN(i, resp);
+        loadMetadata(i, resp);
         return;
       }
 
@@ -498,8 +497,8 @@ public class InputPanel
     }
   }
 
-  private void responseErrorPopup(String filename, Exception e) {
-    String errorMsg = "Error while loading in response file:\n" + filename
+  private void metadataErrorPopup(String filename, Exception e) {
+    String errorMsg = "Error while loading in metadata file:\n" + filename
         + "\nCheck that file exists and is formatted correctly.\n"
         + "Here is the error that was produced during the scan "
         + "(check terminal for more detail):\n"
@@ -660,33 +659,38 @@ public class InputPanel
     }
   }
 
-  private void loadResponse(int i, JButton resp) {
-    JButton clear = clearButton[i];
+  private void loadLocalMetadata(int dataIndex, JButton resp) {
+    JButton clear = clearButton[dataIndex];
     // don't need a new thread because resp loading is pretty prompt
     // create new array with extra entry for a new string to load custom response
 
-    int index = lastRespIndex;
+    int selectedRespIndex = lastRespIndex;
     if (lastRespIndex < 0) {
-      index = responseArray.length - 1;
+      selectedRespIndex = responseArray.length - 1;
     }
+    // since lastRespIndex is a class variable we can bracket out this routine
+    // no other state or object in this section needs to be retained
+    final String resultStr;
+    {
+      Object result = JOptionPane.showInputDialog(
+          this,
+          "Select metadata file to load:",
+          "Metadata File Selection",
+          JOptionPane.PLAIN_MESSAGE,
+          null, responseArray,
+          responseArray[selectedRespIndex]);
 
-    Object result = JOptionPane.showInputDialog(
-        this,
-        "Select a response to load:",
-        "RESP File Selection",
-        JOptionPane.PLAIN_MESSAGE,
-        null, responseArray,
-        responseArray[index]);
+      resultStr = (String) result;
+      // did user cancel operation?
+      if (resultStr == null) {
+        return;
+      }
 
-    final String resultStr = (String) result;
-    // did user cancel operation?
-    if (resultStr == null) {
-      return;
+
+      // ignore case when sorting embeds -- sorting of the enums ignores case too
+      lastRespIndex = Arrays.binarySearch(responseArray, 0,
+          responseArray.length - 1, resultStr, String::compareToIgnoreCase);
     }
-
-    // ignore case when sorting embeds -- sorting of the enums ignores case too
-    lastRespIndex = Arrays.binarySearch(responseArray, 0,
-        responseArray.length-1, resultStr, String::compareToIgnoreCase);
 
     // is the loaded string one of the embedded response files?
     // if it is, then we can get the enums of its name and load from them
@@ -699,38 +703,47 @@ public class InputPanel
         ResolutionType resolution = sensorResolutionPair.getSecond();
         InstrumentResponse instrumentResponse =
             InstrumentResponse.loadEmbeddedResponse(sensor, resolution);
-        dataStore.setResponse(i, instrumentResponse);
+        dataStore.setResponse(dataIndex, instrumentResponse);
 
-        respFileNames[i].setText(instrumentResponse.getName());
+        respFileNames[dataIndex].setText(instrumentResponse.getName());
         clear.setEnabled(true);
         clearAll.setEnabled(true);
 
         fireStateChanged();
       } catch (IOException e) {
         // this really shouldn't be an issue with embedded responses
-        responseErrorPopup(resultStr, e);
+        metadataErrorPopup(resultStr, e);
         e.printStackTrace();
-        return;
       }
     } else {
+      // in this case we're NOT selecting an embedded resp -- get file chooser
       lastRespIndex = -1;
       fileChooser.setCurrentDirectory(new File(respDirectory));
       fileChooser.resetChoosableFileFilters();
-      fileChooser.setDialogTitle("Load response file...");
+      fileChooser.setDialogTitle("Load external metadata file...");
+
       int returnVal = fileChooser.showOpenDialog(resp);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File file = fileChooser.getSelectedFile();
+
+        // handle case where the file is XML separately
+        // and otherwise assume the data is a RESP file (which may not have such nice extensions)
+        if (file.getName().endsWith(".xml")) {
+          loadXML(dataIndex, file);
+          return;
+        }
+
         respDirectory = file.getParent();
         try {
           Instant startInst = respEpochChoose(file.getAbsolutePath(), file.getName());
           InstrumentResponse instrumentResponse = new InstrumentResponse(file.getAbsolutePath(),
               startInst);
-          dataStore.setResponse(i, instrumentResponse);
-          respFileNames[i].setText(file.getName());
+          dataStore.setResponse(dataIndex, instrumentResponse);
+          respFileNames[dataIndex].setText(file.getName());
           clear.setEnabled(true);
           clearAll.setEnabled(true);
         } catch (IOException | NullPointerException e) {
-          responseErrorPopup(file.getName(), e);
+          metadataErrorPopup(file.getName(), e);
           e.printStackTrace();
           return;
         }
@@ -740,22 +753,19 @@ public class InputPanel
     }
   }
 
-  private void queryMetaFDSN(int panelLoadingRespFrom, JButton respButton) {
+  private void loadMetadata(int panelLoadingRespFrom, JButton respButton) {
     // this section produces a selection box to make sure FDSN loading is user preference
     {
-      JRadioButton local = new JRadioButton("Load from local/embedded RESP file");
-      JRadioButton localXML = new JRadioButton("Load from local XML file");
+      JRadioButton local = new JRadioButton("Load from local RESP or XML file");
       JRadioButton fdsn = new JRadioButton("Load from FDSN");
       ButtonGroup group = new ButtonGroup();
       group.add(local);
-      group.add(localXML);
       group.add(fdsn);
       local.setSelected(true);
 
       JPanel panel = new JPanel();
       panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
       panel.add(local);
-      panel.add(localXML);
       panel.add(fdsn);
 
       int result = JOptionPane.showConfirmDialog(this, panel,
@@ -766,10 +776,7 @@ public class InputPanel
       }
 
       if (local.isSelected()) {
-        loadResponse(panelLoadingRespFrom, respButton);
-        return;
-      } else if (localXML.isSelected()) {
-        loadXML(panelLoadingRespFrom, respButton);
+        loadLocalMetadata(panelLoadingRespFrom, respButton);
         return;
       }
     }
@@ -856,75 +863,47 @@ public class InputPanel
     }
   }
 
-  private void loadXML(int index, JButton respButton) {
-
-    fileChooser.setCurrentDirectory(new File(respDirectory));
-    fileChooser.resetChoosableFileFilters();
-    fileChooser.addChoosableFileFilter(
-        new FileNameExtensionFilter("StationXML file (.xml)", "xml"));
-    fileChooser.setFileFilter(fileChooser.getChoosableFileFilters()[1]);
-    fileChooser.setDialogTitle("Load StationXML file...");
-    int returnVal = fileChooser.showOpenDialog(respButton);
-    if (returnVal == JFileChooser.APPROVE_OPTION) {
-      File xmlFile = fileChooser.getSelectedFile();
-      try {
-        String xmlFileName = xmlFile.getCanonicalPath();
-        Map<String, List<Pair<Instant, Instant>>> epochs = parseXMLForEpochs(xmlFileName);
-        String chName = epochs.keySet().iterator().next();
-        long timeInEpoch = 0;
-        // autopopulate if there's really only one epoch (very unlikely)
-        if (epochs.keySet().size() == 1 && epochs.get(chName).size() == 1) {
-          timeInEpoch = epochs.get(chName).get(0).getFirst().toEpochMilli()+1;
-        } else {
-          ReponseEpochPanel epochPanel = new ReponseEpochPanel(epochs);
-          int result = JOptionPane.showConfirmDialog(this, epochPanel,
-              "Select channel and associated epoch", JOptionPane.OK_CANCEL_OPTION);
-          if (result == JOptionPane.OK_OPTION) {
-            chName = epochPanel.getSelectedChannelName();
-            Pair<Instant, Instant> epoch = epochPanel.getSelectedEpoch();
-            timeInEpoch = epoch.getFirst().toEpochMilli() + 1; // this is between start and end
-          }
+  /**
+   * Method to select epoch of interest from an XML file and load in the response parameters
+   * @param index Which input to load this response into
+   * @param xmlFile XML file with data to be loaded in
+   */
+  private void loadXML(int index, File xmlFile) {
+    try {
+      String xmlFilePath = xmlFile.getCanonicalPath();
+      String xmlFileName = xmlFile.getName();
+      Map<String, List<Pair<Instant, Instant>>> epochs = parseXMLForEpochs(xmlFilePath);
+      String chName = epochs.keySet().iterator().next();
+      long timeInEpoch = 0;
+      // autopopulate if there's really only one epoch (very unlikely)
+      if (epochs.keySet().size() == 1 && epochs.get(chName).size() == 1) {
+        timeInEpoch = epochs.get(chName).get(0).getFirst().toEpochMilli()+1;
+      } else {
+        ReponseEpochPanel epochPanel = new ReponseEpochPanel(epochs);
+        int result = JOptionPane.showConfirmDialog(this, epochPanel,
+            "Select channel and associated epoch", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+          chName = epochPanel.getSelectedChannelName();
+          Pair<Instant, Instant> epoch = epochPanel.getSelectedEpoch();
+          timeInEpoch = epoch.getFirst().toEpochMilli() + 1; // this is between start and end
         }
-
-        String[] netStaLocCha = chName.split("_"); // split on underscore character
-        String net = netStaLocCha[0];
-        String sta = netStaLocCha[1];
-        String loc = netStaLocCha[2];
-        String cha = netStaLocCha[3];
-        InstrumentResponse resp = InstrumentResponse.getResponseFromXMLFile(xmlFileName,
-            net, sta, loc, cha, timeInEpoch);
-        dataStore.setResponse(index, resp);
-
-        respFileNames[index].setText(xmlFile.getName() + ": " + resp.getName());
-        clearButton[index].setEnabled(true);
-        clearAll.setEnabled(true);
-
-        fireStateChanged();
-
-      } catch (XMLStreamException e) {
-        StringBuilder message = new StringBuilder("XML Stream Exception caught while reading in\n");
-        message.append(xmlFile.getName()).append("\n");
-        message.append("Check that the XML is valid and meets StationXML specifications.");
-        JOptionPane.showMessageDialog(this, message.toString(),
-            "XML Stream Exception", JOptionPane.ERROR_MESSAGE);
-        e.printStackTrace();
-      } catch (IOException e) {
-        StringBuilder message = new StringBuilder("IO Exception caught while reading in\n");
-        message.append(xmlFile.getName()).append("\n");
-        message.append("Check that you have permissions to read the file.\n");
-        message.append("Please examine the stack trace for how and where this occurred.");
-        JOptionPane.showMessageDialog(this, message.toString(),
-            "XML Stream Exception", JOptionPane.ERROR_MESSAGE);
-        e.printStackTrace();
-      } catch (SeisFileException e) {
-        StringBuilder message = new StringBuilder("SeisFile Exception caught while reading in\n");
-        message.append(xmlFile.getName()).append("\n");
-        message.append("Check that the XML is valid and meets StationXML specifications.\n");
-        message.append("Please examine the stack trace for how and where this occurred.");
-        JOptionPane.showMessageDialog(this, message.toString(),
-            "XML Stream Exception", JOptionPane.ERROR_MESSAGE);
-        e.printStackTrace();
       }
+
+      String[] netStaLocCha = chName.split("_"); // split on underscore character
+      String net = netStaLocCha[0];
+      String sta = netStaLocCha[1];
+      String loc = netStaLocCha[2];
+      String cha = netStaLocCha[3];
+      InstrumentResponse resp = InstrumentResponse.getResponseFromXMLFile(xmlFilePath,
+          net, sta, loc, cha, timeInEpoch);
+      dataStore.setResponse(index, resp);
+
+      respFileNames[index].setText(xmlFileName + ": " + resp.getName());
+      clearButton[index].setEnabled(true);
+      clearAll.setEnabled(true);
+      fireStateChanged();
+    } catch (XMLStreamException | IOException | SeisFileException e) {
+      metadataErrorPopup(xmlFile.getName(), e);
     }
   }
 
