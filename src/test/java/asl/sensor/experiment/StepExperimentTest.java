@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.experiment.Experiment.DECIMAL_FORMAT;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -56,11 +57,28 @@ public class StepExperimentTest {
     double[] fitParams = se.getFitParams();
     assertEquals(120.00, 1. / fitParams[0], 0.5);
     assertEquals(0.7106, fitParams[1], 0.0005);
-    String expected1 = "RESP parameters\nCorner frequency (Hz): 0.008 (119.827 secs)\n"
-        + "Damping: 0.709\n";
-    String expected2 = "Best-fit parameters\nCorner frequency (Hz): 0.008 (120.095 secs)\n"
-        + "Damping: 0.711\n";
-    assertArrayEquals(new String[] {expected1, expected2}, se.getInsetStrings());
+
+    String sb = "RESP parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(se.getInitParams()[0])
+        + " ("
+        + DECIMAL_FORMAT.get().format(1. / se.getInitParams()[0])
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(se.getInitParams()[1])
+        + "\n";
+
+    String sb2 = "Best-fit parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(fitParams[0])
+        + " ("
+        + DECIMAL_FORMAT.get().format(1. / fitParams[0])
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(fitParams[1])
+        + "\n";
+
+    assertArrayEquals(new String[] {sb, sb2}, se.getInsetStrings());
   }
 
   @Test

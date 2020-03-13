@@ -5,6 +5,7 @@ import static asl.utils.ReportingUtils.chartsToImageList;
 import static asl.utils.ResponseUnits.getFilenameFromComponents;
 import static asl.utils.TimeSeriesUtils.getDataBlockFromFDSNQuery;
 import static asl.utils.TimeSeriesUtils.getMplexNameSet;
+import static asl.utils.input.InstrumentResponse.parseXMLForEpochs;
 
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
@@ -34,12 +35,12 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import javax.imageio.ImageIO;
@@ -323,14 +324,15 @@ public class InputPanel
       }
     }
 
+    // note the extra entry specifically to deal with prompting user to load an external file
     responseArray = new String[responses.size() + 1];
+    responseArray[responseArray.length - 1] =  "Load external RESP or XML file...";
     for (int w = 0; w < responses.size(); ++w) {
       Pair<SensorType, ResolutionType> respToName = responses.get(w);
       responseArray[w] = getFilenameFromComponents(
           respToName.getFirst(), respToName.getSecond());
     }
-    // add an extra line here, for the custom response loading option, not part of sorted list
-    responseArray[responseArray.length - 1] =  "Load external RESP file...";
+
     // sort everything except that last entry, and ignore case in doing so
     Arrays.sort(responseArray, 0, responseArray.length - 1, String::compareToIgnoreCase);
 
@@ -436,7 +438,7 @@ public class InputPanel
         return;
       }
       if (event.getSource() == resp) {
-        queryMetaFDSN(i, resp);
+        loadMetadata(i, resp);
         return;
       }
 
@@ -449,7 +451,7 @@ public class InputPanel
     }
 
     if (event.getSource() == save) {
-      String ext = ".png";
+      String ext = "png";
       fileChooser = new JFileChooser();
       fileChooser.setCurrentDirectory(new File(saveDirectory));
       fileChooser.addChoosableFileFilter(
@@ -495,8 +497,8 @@ public class InputPanel
     }
   }
 
-  private void responseErrorPopup(String filename, Exception e) {
-    String errorMsg = "Error while loading in response file:\n" + filename
+  private void metadataErrorPopup(String filename, Exception e) {
+    String errorMsg = "Error while loading in metadata file:\n" + filename
         + "\nCheck that file exists and is formatted correctly.\n"
         + "Here is the error that was produced during the scan "
         + "(check terminal for more detail):\n"
@@ -657,33 +659,38 @@ public class InputPanel
     }
   }
 
-  private void loadResponse(int i, JButton resp) {
-    JButton clear = clearButton[i];
+  private void loadLocalMetadata(int dataIndex, JButton resp) {
+    JButton clear = clearButton[dataIndex];
     // don't need a new thread because resp loading is pretty prompt
     // create new array with extra entry for a new string to load custom response
 
-    int index = lastRespIndex;
+    int selectedRespIndex = lastRespIndex;
     if (lastRespIndex < 0) {
-      index = responseArray.length - 1;
+      selectedRespIndex = responseArray.length - 1;
     }
+    // since lastRespIndex is a class variable we can bracket out this routine
+    // no other state or object in this section needs to be retained
+    final String resultStr;
+    {
+      Object result = JOptionPane.showInputDialog(
+          this,
+          "Select metadata file to load:",
+          "Metadata File Selection",
+          JOptionPane.PLAIN_MESSAGE,
+          null, responseArray,
+          responseArray[selectedRespIndex]);
 
-    Object result = JOptionPane.showInputDialog(
-        this,
-        "Select a response to load:",
-        "RESP File Selection",
-        JOptionPane.PLAIN_MESSAGE,
-        null, responseArray,
-        responseArray[index]);
+      resultStr = (String) result;
+      // did user cancel operation?
+      if (resultStr == null) {
+        return;
+      }
 
-    final String resultStr = (String) result;
-    // did user cancel operation?
-    if (resultStr == null) {
-      return;
+
+      // ignore case when sorting embeds -- sorting of the enums ignores case too
+      lastRespIndex = Arrays.binarySearch(responseArray, 0,
+          responseArray.length - 1, resultStr, String::compareToIgnoreCase);
     }
-
-    // ignore case when sorting embeds -- sorting of the enums ignores case too
-    lastRespIndex = Arrays.binarySearch(responseArray, 0,
-        responseArray.length-1, resultStr, String::compareToIgnoreCase);
 
     // is the loaded string one of the embedded response files?
     // if it is, then we can get the enums of its name and load from them
@@ -696,38 +703,47 @@ public class InputPanel
         ResolutionType resolution = sensorResolutionPair.getSecond();
         InstrumentResponse instrumentResponse =
             InstrumentResponse.loadEmbeddedResponse(sensor, resolution);
-        dataStore.setResponse(i, instrumentResponse);
+        dataStore.setResponse(dataIndex, instrumentResponse);
 
-        respFileNames[i].setText(instrumentResponse.getName());
+        respFileNames[dataIndex].setText(instrumentResponse.getName());
         clear.setEnabled(true);
         clearAll.setEnabled(true);
 
         fireStateChanged();
       } catch (IOException e) {
         // this really shouldn't be an issue with embedded responses
-        responseErrorPopup(resultStr, e);
+        metadataErrorPopup(resultStr, e);
         e.printStackTrace();
-        return;
       }
     } else {
+      // in this case we're NOT selecting an embedded resp -- get file chooser
       lastRespIndex = -1;
       fileChooser.setCurrentDirectory(new File(respDirectory));
       fileChooser.resetChoosableFileFilters();
-      fileChooser.setDialogTitle("Load response file...");
+      fileChooser.setDialogTitle("Load external metadata file...");
+
       int returnVal = fileChooser.showOpenDialog(resp);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File file = fileChooser.getSelectedFile();
+
+        // handle case where the file is XML separately
+        // and otherwise assume the data is a RESP file (which may not have such nice extensions)
+        if (file.getName().endsWith(".xml")) {
+          loadXML(dataIndex, file);
+          return;
+        }
+
         respDirectory = file.getParent();
         try {
-          Instant startInst = respEpochChoose(file.getAbsolutePath());
+          Instant startInst = respEpochChoose(file.getAbsolutePath(), file.getName());
           InstrumentResponse instrumentResponse = new InstrumentResponse(file.getAbsolutePath(),
               startInst);
-          dataStore.setResponse(i, instrumentResponse);
-          respFileNames[i].setText(file.getName());
+          dataStore.setResponse(dataIndex, instrumentResponse);
+          respFileNames[dataIndex].setText(file.getName());
           clear.setEnabled(true);
           clearAll.setEnabled(true);
         } catch (IOException | NullPointerException e) {
-          responseErrorPopup(file.getName(), e);
+          metadataErrorPopup(file.getName(), e);
           e.printStackTrace();
           return;
         }
@@ -737,10 +753,10 @@ public class InputPanel
     }
   }
 
-  private void queryMetaFDSN(int panelLoadingRespFrom, JButton respButton) {
+  private void loadMetadata(int panelLoadingRespFrom, JButton respButton) {
     // this section produces a selection box to make sure FDSN loading is user preference
     {
-      JRadioButton local = new JRadioButton("Load from local/embedded RESP file");
+      JRadioButton local = new JRadioButton("Load from local RESP or XML file");
       JRadioButton fdsn = new JRadioButton("Load from FDSN");
       ButtonGroup group = new ButtonGroup();
       group.add(local);
@@ -760,7 +776,7 @@ public class InputPanel
       }
 
       if (local.isSelected()) {
-        loadResponse(panelLoadingRespFrom, respButton);
+        loadLocalMetadata(panelLoadingRespFrom, respButton);
         return;
       }
     }
@@ -844,6 +860,50 @@ public class InputPanel
       e.printStackTrace();
       JOptionPane.showMessageDialog(this,
           "ERROR CREATING FDSN QUERY DIALOG BOX", "FDSN ERROR", JOptionPane.ERROR_MESSAGE);
+    }
+  }
+
+  /**
+   * Method to select epoch of interest from an XML file and load in the response parameters
+   * @param index Which input to load this response into
+   * @param xmlFile XML file with data to be loaded in
+   */
+  private void loadXML(int index, File xmlFile) {
+    try {
+      String xmlFilePath = xmlFile.getCanonicalPath();
+      String xmlFileName = xmlFile.getName();
+      Map<String, List<Pair<Instant, Instant>>> epochs = parseXMLForEpochs(xmlFilePath);
+      String chName = epochs.keySet().iterator().next();
+      long timeInEpoch = 0;
+      // autopopulate if there's really only one epoch (very unlikely)
+      if (epochs.keySet().size() == 1 && epochs.get(chName).size() == 1) {
+        timeInEpoch = epochs.get(chName).get(0).getFirst().toEpochMilli()+1;
+      } else {
+        ReponseEpochPanel epochPanel = new ReponseEpochPanel(epochs);
+        int result = JOptionPane.showConfirmDialog(this, epochPanel,
+            "Select channel and associated epoch", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+          chName = epochPanel.getSelectedChannelName();
+          Pair<Instant, Instant> epoch = epochPanel.getSelectedEpoch();
+          timeInEpoch = epoch.getFirst().toEpochMilli() + 1; // this is between start and end
+        }
+      }
+
+      String[] netStaLocCha = chName.split("_"); // split on underscore character
+      String net = netStaLocCha[0];
+      String sta = netStaLocCha[1];
+      String loc = netStaLocCha[2];
+      String cha = netStaLocCha[3];
+      InstrumentResponse resp = InstrumentResponse.getResponseFromXMLFile(xmlFilePath,
+          net, sta, loc, cha, timeInEpoch);
+      dataStore.setResponse(index, resp);
+
+      respFileNames[index].setText(xmlFileName + ": " + resp.getName());
+      clearButton[index].setEnabled(true);
+      clearAll.setEnabled(true);
+      fireStateChanged();
+    } catch (XMLStreamException | IOException | SeisFileException e) {
+      metadataErrorPopup(xmlFile.getName(), e);
     }
   }
 
@@ -1052,7 +1112,7 @@ public class InputPanel
         } else {
           String message = "Query returned no data.\n" + filename;
           JOptionPane.showMessageDialog(thisPanel, message,
-             "FDSN Error", JOptionPane.ERROR_MESSAGE);
+              "FDSN Error", JOptionPane.ERROR_MESSAGE);
         }
       }
     };
@@ -1061,7 +1121,7 @@ public class InputPanel
   }
 
   private void threadedMetaFromFDSN(final int index, final String net,
-  final String sta, String loc, final String cha, final long epoch) {
+      final String sta, String loc, final String cha, final long epoch) {
     // attempt to handle case where location is an empty value
     final String fixedLoc = loc.replace(" ", "").equals("") ? " " : loc;
 
@@ -1493,58 +1553,27 @@ public class InputPanel
   /**
    * Get a selected epoch from a multi-epoch response
    *
-   * @param respHandle Name of a given response to read in
+   * @param respHandle Full path of a given response to read in
+   * @param filename Filename of the response
    * @return Value of the start instant of the epoch that the user has chosen
    * @throws IOException Error reading resp file
    * @throws FileNotFoundException File does not exist
    */
-  private Instant respEpochChoose(String respHandle) throws IOException {
-
-    DateTimeFormatter dateTimeFormatter = InstrumentResponse.RESP_DT_FORMAT
-        .withZone(ZoneOffset.UTC);
+  private Instant respEpochChoose(String respHandle, String filename) throws IOException {
     List<Pair<Instant, Instant>> epochs = InstrumentResponse.getRespFileEpochs(respHandle);
-
     if (epochs.size() > 1) {
-      // more than one series in the file? prompt user for it
-      String[] epochStrings = new String[epochs.size()];
-      // sorted list of start times to match against presented list of strings
-      Instant[] epochStarts = new Instant[epochs.size()];
-
-      for (int i = 0; i < epochStrings.length; ++i) {
-        Instant startInstant = epochs.get(i).getFirst();
-        epochStarts[i] = startInstant;
-        String startString = dateTimeFormatter.format(startInstant);
-        Instant endInstant = epochs.get(i).getSecond();
-        String endString;
-        if (endInstant != null) {
-          endString = dateTimeFormatter.format(epochs.get(i).getSecond());
-        } else {
-          endString = "(NO EPOCH END SPECIFIED)";
-        }
-        epochStrings[i] = startString + " | " + endString;
+      ReponseEpochPanel epochPanel = new ReponseEpochPanel(epochs);
+      int result = JOptionPane.showConfirmDialog(this, epochPanel,
+          "Select epoch", JOptionPane.OK_CANCEL_OPTION);
+      if (result == JOptionPane.OK_OPTION) {
+        return epochPanel.getSelectedEpoch().getFirst();
       }
-      // sort both of these to make finding the user-selected epoch faster
-      Arrays.sort(epochStarts);
-      Arrays.sort(epochStrings);
-      Object result = JOptionPane.showInputDialog(
-          this,
-          "Select the response epoch to load:",
-          "Response Epoch Selection",
-          JOptionPane.PLAIN_MESSAGE,
-          null, epochStrings,
-          epochStrings[epochStrings.length - 1]); // default to most recent
-      if (result instanceof String) {
-        int index = Arrays.binarySearch(epochStrings, result);
-        return epochStarts[index];
-      } else {
-        return null;
-      }
+      return null;
     } else if (epochs.size() > 0) {
       return epochs.get(0).getFirst();
     } else {
       throw new IOException("RESP file has no epoch data -- check formatting");
     }
-
   }
 
   /**
