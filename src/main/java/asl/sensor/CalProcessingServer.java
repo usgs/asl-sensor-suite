@@ -222,6 +222,8 @@ public class CalProcessingServer {
    * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param lowFreq True if a low-freq cal should be run
+   * @param nyquistPercentage Percentage of nyquist limit to fit a (high-frequency) cal.
+   * Expressed as a decimal value (i.e., for 50% put 0.5). Ignored if lowFreq is true.
    * @param correctionType String specifying name of sensor correction (will apply corrections for
    * "TR120", "TR240", and "TR360", will apply no correction for anything else)
    * @return Data from running the experiment (plots and fit pole/zero values)
@@ -231,7 +233,7 @@ public class CalProcessingServer {
    */
   public CalResult runRand(String calFileName, String outFileName,
       String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq,
-      String correctionType)
+      double nyquistPercentage, String correctionType)
       throws IOException, SeedFormatException, CodecException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -259,7 +261,7 @@ public class CalProcessingServer {
     ds.trimToCommonTime();
     ds.trim(start, end);
 
-    return runExpGetDataRand(ds, lowFreq, correctionType);
+    return runExpGetDataRand(ds, lowFreq, nyquistPercentage, correctionType);
   }
 
   /**
@@ -275,6 +277,8 @@ public class CalProcessingServer {
    * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param lowFreq True if a low-freq cal should be run
+   * @param nyquistPercentage Percentage of nyquist limit to fit a (high-frequency) cal.
+   * Expressed as a decimal value (i.e., for 50% put 0.5). Ignored if lowFreq is true.
    * @param correctionType String specifying name of sensor correction (will apply corrections for
    * "TR120", "TR240", and "TR360", will apply no correction for anything else)
    * @return Data from running the experiment (plots and fit pole/zero values)
@@ -284,8 +288,8 @@ public class CalProcessingServer {
    */
   public CalResult runRand(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean useEmbeddedResp,
-      String startDate, String endDate, boolean lowFreq, String correctionType)
-      throws IOException, SeedFormatException, CodecException {
+      String startDate, String endDate, boolean lowFreq, double nyquistPercentage,
+      String correctionType) throws IOException, SeedFormatException, CodecException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -311,7 +315,7 @@ public class CalProcessingServer {
     ds.setResponse(1, ir);
     ds.trim(start, end);
 
-    return runExpGetDataRand(ds, lowFreq, correctionType);
+    return runExpGetDataRand(ds, lowFreq, nyquistPercentage, correctionType);
   }
 
   /**
@@ -762,12 +766,13 @@ public class CalProcessingServer {
     return CalResult.buildStepCalData(pngByteArrays, fitParams, initParams);
   }
 
-  private CalResult runExpGetDataRand(DataStore dataStore, boolean isLowFrequency,
+  private CalResult runExpGetDataRand(DataStore dataStore, boolean isLowFrequency, double nyqPerct,
       String correctionType) throws IOException {
 
     RandomizedExperiment randomExperiment = new RandomizedExperiment();
     SensorType correction = getSensorCorrectionFromString(correctionType);
 
+    randomExperiment.setNyquistMultiplier(nyqPerct);
     randomExperiment.setCorrectionResponse(correction);
     randomExperiment.setLowFrequencyCalibration(isLowFrequency);
     randomExperiment.runExperimentOnData(dataStore);

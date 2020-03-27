@@ -1282,10 +1282,9 @@ public class RandomizedExperiment extends Experiment {
 
   /**
    * Set the new peak multiplier for the data region under analysis. This should be a positive
-   * value, and is bounded by 0.8 (@see NumericUtils.PEAK_MULTIPLIER) This may be useful when trying
-   * to run the solver over a high-frequency calibration where the data is particularly noisy in
-   * some of the higher-frequency bounds, causing a bad corner fit to occur. We also enforce this to
-   * be over 0.3 as well.
+   * value, and is bounded by {@link #PEAK_MULTIPLIER} and {@link #MIN_MULTIPLIER}
+   * Using a non-default value may be of use for signals with noise in the HF spectrum.
+   * In those cases limiting calibrations to around 0.5 may produce better fits.
    *
    * @param newMultiplier New maximum fraction of nyquist rate to fit data over (should be from 0.3
    * to 0.8).

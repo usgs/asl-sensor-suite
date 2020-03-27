@@ -1,10 +1,12 @@
 package asl.sensor.output;
 
+import static asl.sensor.experiment.RandomizedExperiment.DEFAULT_NYQUIST_PERCENT_LIMIT;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.CalProcessingServer;
+import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.test.TestUtils;
 import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
@@ -29,7 +31,7 @@ public class CalServerTest {
     CalProcessingServer server = new CalProcessingServer();
     // correctionType is empty string because we do not need to do a correction here
     server.runRand(calName, sensOutName, respName, true, startTime, endTime,
-        true, "");
+        true, DEFAULT_NYQUIST_PERCENT_LIMIT, "");
 
     // now, do we get a null pointer exception?
   }
@@ -51,7 +53,8 @@ public class CalServerTest {
     CalProcessingServer server = new CalProcessingServer();
     // once again, no trillium correction required here
     CalResult result = server.runRand(calName, calName2, sensOutName, sensOutName2, respName,
-        false, startDateTime, endDateTime, true, "");
+        false, startDateTime, endDateTime, true,
+        DEFAULT_NYQUIST_PERCENT_LIMIT, "");
 
     double[] initPolesDoubles = result.getNumerMap().get("Initial_poles");
     double[] fitPolesDoubles = result.getNumerMap().get("Best_fit_poles");
