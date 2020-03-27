@@ -1,5 +1,6 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.experiment.RandomizedExperiment.DEFAULT_NYQUIST_PERCENT_LIMIT;
 import static asl.sensor.experiment.RandomizedExperiment.getResponseCorrection;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
@@ -351,7 +352,8 @@ public class RandomizedExperimentTest {
       CalProcessingServer cps = new CalProcessingServer();
       // empty string because this calibration does not require a trillium correction
       CalResult rCalResult = cps.runRand(calInFile, sensorOutFile, respFile,
-          false, start, end, true, "");
+          false, start, end, true,
+          DEFAULT_NYQUIST_PERCENT_LIMIT, "");
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
@@ -688,7 +690,8 @@ public class RandomizedExperimentTest {
   @Test
   public void verifyThatCurveTrimmingIsCorrect() throws IOException {
     double[] freqs = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    InstrumentResponse resp = InstrumentResponse.loadEmbeddedResponse(SensorType.STS2gen3, ResolutionType.HIGH);
+    InstrumentResponse resp =
+        InstrumentResponse.loadEmbeddedResponse(SensorType.STS2gen3, ResolutionType.HIGH);
     Complex[] curve = resp.applyResponseToInput(freqs);
     double[] ampAndPhase = new double[2 * curve.length];
     for (int i = 0; i < curve.length; ++i) {
