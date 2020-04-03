@@ -635,9 +635,9 @@ public class RandomizedExperimentTest {
       String message = "Difference between expected "
           + "and evaluated error values outside of precision bound:\n\t"
           + cf.format(expectedPoleError) + " , " + cf.format(evaluatedPoleError);
-      assertTrue(message, expectedPoleError.getReal() <= evaluatedPoleError.getReal());
+      assertTrue(message, expectedPoleError.getReal() >= evaluatedPoleError.getReal());
       assertTrue(message,
-          expectedPoleError.getImaginary() <= evaluatedPoleError.getImaginary());
+          expectedPoleError.getImaginary() >= evaluatedPoleError.getImaginary());
     }
 
   }
