@@ -93,7 +93,7 @@ public class CalServerTest {
       // these values may have some variance depending on machine state
       // as a result of how the curve fitting routines work
       assertEquals(expectedFitPoles[i].abs(), fitPoles[i].abs(), 1E-3);
-      assertEquals(atanc(expectedFitPoles[i]), atanc(fitPoles[i]), 1E-2);
+      assertEquals(atanc(expectedFitPoles[i]), atanc(fitPoles[i]), 1.5E-2);
     }
   }
 
