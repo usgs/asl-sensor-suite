@@ -3,11 +3,13 @@ package asl.sensor.output;
 import static asl.sensor.experiment.RandomizedExperiment.DEFAULT_NYQUIST_PERCENT_LIMIT;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
+import static asl.utils.NumericUtils.atanc;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.CalProcessingServer;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.test.TestUtils;
+import asl.utils.NumericUtils;
 import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -84,11 +86,14 @@ public class CalServerTest {
     assertEquals(expectedInitPoles.length, initPoles.length);
     assertEquals(expectedFitPoles.length, fitPoles.length);
     for (int i = 0; i < fitPoles.length; i++) {
-      assertEquals(expectedInitPoles[i].getReal(), initPoles[i].getReal(), 1.5E-4);
-      assertEquals(expectedInitPoles[i].getImaginary(), initPoles[i].getImaginary(), 1.5E-4);
+      // these values should match exactly
+      assertEquals(expectedInitPoles[i].getReal(), initPoles[i].getReal(), 0.);
+      assertEquals(expectedInitPoles[i].getImaginary(), initPoles[i].getImaginary(), 0.);
 
-      assertEquals(expectedFitPoles[i].getReal(), fitPoles[i].getReal(), 1.5E-4);
-      assertEquals(expectedFitPoles[i].getImaginary(), fitPoles[i].getImaginary(), 1.5E-4);
+      // these values may have some variance depending on machine state
+      // as a result of how the curve fitting routines work
+      assertEquals(expectedFitPoles[i].abs(), fitPoles[i].abs(), 1E-3);
+      assertEquals(atanc(expectedFitPoles[i]), atanc(fitPoles[i]), 1E-2);
     }
   }
 
