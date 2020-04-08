@@ -563,19 +563,25 @@ public class RandomizedExperiment extends Experiment {
       // we should already have matching sample rates for data on experiment pre-processing steps
       double[] calData = calib.getData();
       double[] sensorData = sensorOut.getData();
+      int windowSize = sensorData.length / 4;
+      int shiftLength = windowSize / 4;
       if (isLowFrequencyCalibration) {
         // we use a single-side taper of 25% because LF cals had consistent significant artifacts
         // around the corner that were consistent across instrument types and stations
         taperWidth = 0.25;
-        // other attempts to fix those artifacts included downsampling and smoothing
-        // but both had significant problems in replicating the shape of the curves
+        // based on Dave Wilson's suggestions we will try to run this with 1/3 of the length and
+        // a shift length of 5% of the window (95% overlap) to see if the data is improved
+        windowSize = sensorData.length / 3;
+        shiftLength = windowSize / 20;
       }
 
       // now get the PSD data (already declared outside of this scope, so will persist)
-      numeratorPSD = FFTResult.spectralCalc(sensorData, sensorData, interval, taperWidth);
-      denominatorPSD = FFTResult.spectralCalc(calData, calData, interval, taperWidth);
-      crossPSD = FFTResult.spectralCalc(sensorData, calData, interval, taperWidth);
-
+      numeratorPSD = FFTResult.spectralCalc(sensorData, sensorData, interval, windowSize,
+          shiftLength, taperWidth);
+      denominatorPSD = FFTResult.spectralCalc(calData, calData, interval, windowSize,
+          shiftLength, taperWidth);
+      crossPSD = FFTResult.spectralCalc(sensorData, calData, interval, windowSize,
+          shiftLength, taperWidth);
     }
     double[] freqsUntrimmed = numeratorPSD.getFreqs(); // should be same for both results
 
