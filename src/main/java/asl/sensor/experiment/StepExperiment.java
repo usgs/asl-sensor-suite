@@ -197,7 +197,7 @@ public class StepExperiment extends Experiment {
     dataNames.add(ir.getName());
     Complex pole = ir.getPoles().get(0);
 
-    f = 1. / (TAU / pole.abs()); // corner frequency
+    f = pole.abs() / TAU; // corner frequency
     h = Math.abs(pole.getReal() / pole.abs()); // damping
 
     double[] params = new double[]{f, h};
