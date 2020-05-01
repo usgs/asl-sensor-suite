@@ -409,11 +409,11 @@ public class RandomizedPanel extends ExperimentPanel {
       Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
 
       try {
-        StringBuilder sb = fitResp.printModifiedResponse(poleMap, zeroMap);
+        CharSequence bufferedText = fitResp.printModifiedResponse(poleMap, zeroMap);
         JTextPane respTextHolder = new JTextPane();
         respTextHolder.setEditable(false);
         respTextHolder.setFont(Font.getFont(Font.MONOSPACED));
-        respTextHolder.setText(sb.toString());
+        respTextHolder.setText(bufferedText.toString());
         JScrollPane scroll = new JScrollPane(respTextHolder);
         JDialog textBox = new JDialog((Frame) SwingUtilities.windowForComponent(this),
             "FIT RESP TEXT", true); // boolean makes this dialog a modal popup
@@ -438,14 +438,14 @@ public class RandomizedPanel extends ExperimentPanel {
       int returnVal = fileChooser.showSaveDialog(save);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fileChooser.getSelectedFile();
-        try (PrintWriter writer = new PrintWriter(new FileWriter(selFile))) {
+        try {
           RandomizedExperiment rExp = (RandomizedExperiment) expResult;
           InstrumentResponse fitResp = rExp.getFitResponse();
           Map<Complex, Complex> poleMap = rExp.getPoleErrors();
           Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
-          writer.write(fitResp.printModifiedResponse(poleMap, zeroMap).toString());
-        } catch (IOException e1) {
-          e1.printStackTrace();
+          fitResp.writeModifiedResponse(poleMap, zeroMap, selFile);
+        } catch (IOException e) {
+          e.printStackTrace();
         }
       }
     }
@@ -686,12 +686,11 @@ public class RandomizedPanel extends ExperimentPanel {
     try {
       rndExp.setCorrectionResponse((SensorType) sensorCorrectionSelector.getSelectedItem());
     } catch (IOException e) {
-      StringBuilder text = new StringBuilder();
-      text.append("There was an error loading data during operations.\n");
-      text.append("If this is a randomized calibration producing this error,\n");
-      text.append("Something must have gone wrong while trying to create the\n");
-      text.append("correction response for Trillium sensors.");
-      displayErrorMessage(text.toString());
+      String text = "There was an error loading data during operations.\n"
+          + "If this is a randomized calibration producing this error,\n"
+          + "Something must have gone wrong while trying to create the\n"
+          + "correction response for Trillium sensors.";
+      displayErrorMessage(text);
       return;
     }
     rndExp.setPlotUsingHz(frequencySpace.isSelected());
