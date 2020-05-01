@@ -649,6 +649,7 @@ public class CalProcessingServer {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       ImageIO.write(images[i], "png", out);
       pngByteArrays[i] = out.toByteArray();
+      out.close();
     }
 
     return CalResult.buildSixGainData(refDataMatches, northAzimuth, eastAzimuth,

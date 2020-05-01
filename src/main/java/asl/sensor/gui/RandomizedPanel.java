@@ -438,14 +438,12 @@ public class RandomizedPanel extends ExperimentPanel {
       int returnVal = fileChooser.showSaveDialog(save);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fileChooser.getSelectedFile();
-        try {
-          PrintWriter writer = new PrintWriter(new FileWriter(selFile));
+        try (PrintWriter writer = new PrintWriter(new FileWriter(selFile))) {
           RandomizedExperiment rExp = (RandomizedExperiment) expResult;
           InstrumentResponse fitResp = rExp.getFitResponse();
           Map<Complex, Complex> poleMap = rExp.getPoleErrors();
           Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
           writer.write(fitResp.printModifiedResponse(poleMap, zeroMap).toString());
-          writer.close();
         } catch (IOException e1) {
           e1.printStackTrace();
         }
