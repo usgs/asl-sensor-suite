@@ -189,14 +189,14 @@ public class ResponsePanel extends ExperimentPanel {
         }
 
         ClassLoader cl = ResponsePanel.class.getClassLoader();
-        InputStream respStream =
-            cl.getResourceAsStream(InstrumentResponse.RESP_DIRECTORY + resultStr);
-        Path destinationPath = Paths.get(respDir.getCanonicalPath(), resultStr);
-        Files.copy(respStream, destinationPath, REPLACE_EXISTING);
+        try (InputStream respStream =
+            cl.getResourceAsStream(InstrumentResponse.RESP_DIRECTORY + resultStr)) {
+          Path destinationPath = Paths.get(respDir.getCanonicalPath(), resultStr);
+          Files.copy(respStream, destinationPath, REPLACE_EXISTING);
 
-        String message = "Response [" + resultStr + "] written to\n" + respDir.getCanonicalPath();
-        JOptionPane.showMessageDialog(this, message);
-
+          String message = "Response [" + resultStr + "] written to\n" + respDir.getCanonicalPath();
+          JOptionPane.showMessageDialog(this, message);
+        }
       } catch (IOException e) {
         e.printStackTrace();
       }

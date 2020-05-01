@@ -276,10 +276,8 @@ public class SensorSuite extends JPanel
 
     String textName = folderName + "/outputData.txt";
 
-    try {
-      PrintWriter out = new PrintWriter(textName);
+    try (PrintWriter out = new PrintWriter(textName)) {
       out.println(text);
-      out.close();
     } catch (FileNotFoundException e) {
       System.out.println("Can't write the text");
       e.printStackTrace();
