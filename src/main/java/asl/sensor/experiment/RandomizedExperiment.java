@@ -78,6 +78,14 @@ public class RandomizedExperiment extends Experiment {
   public static final double DEFAULT_NYQUIST_PERCENT_LIMIT = 0.5;
 
   /**
+   * Upper limit for frequency of poles/zeros to include in fit. Values above this
+   * cause the solver to over-fit the data and produce worse results. As calibrations are
+   * commonly done on data sampled at around ~200Hz, values above this parameter are too high to
+   * relate to the shape of a calibration curve or lead to an improvement of fit.
+   */
+  public static final double POLE_ZERO_FREQ_CUTOFF = 1000;
+
+  /**
    * Minimum nyquist rate percent for high-frequency calibrations.
    */
   public static final double MIN_MULTIPLIER = 0.3;
@@ -745,9 +753,9 @@ public class RandomizedExperiment extends Experiment {
     // not present an upper bound on the frequency range for HF cals in order to better
     // produce fits for cases of such data.
     initialPoleGuess = fitResponse
-        .polesToVector(isLowFrequencyCalibration, Double.MAX_VALUE);
+        .polesToVector(isLowFrequencyCalibration, POLE_ZERO_FREQ_CUTOFF);
     initialZeroGuess = fitResponse
-        .zerosToVector(isLowFrequencyCalibration, Double.MAX_VALUE);
+        .zerosToVector(isLowFrequencyCalibration, POLE_ZERO_FREQ_CUTOFF);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
 
