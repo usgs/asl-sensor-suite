@@ -828,7 +828,10 @@ public class RandomizedExperimentTest {
     // which we will set to be the third significant figure
 
     List<Complex> poles = rExp.getFitPoles();
-    assertEquals(9, poles.size());
+    // 9 poles have a frequency above 1 hz, but the last 3 are above 2000 Hz
+    // that's far too high to include in the fit, so we don't adjust them at all
+    // leaving us with only 6 poles that the solver is going to adjust
+    assertEquals(6, poles.size());
     for (int i = 0; i < poles.size(); ++i) {
       double orderOfMagnitude = Math.floor(Math.log10(poles.get(i).abs()));
       double delta = Math.pow(10, orderOfMagnitude - 3);
