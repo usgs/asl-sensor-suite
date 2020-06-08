@@ -33,7 +33,7 @@ public class GainExperiment extends Experiment {
    */
   public static final double DEFAULT_LOW_BOUND = 3.;
 
-  private double[] gainStage1, A0Freqs;
+  private double[] gainStage1, A0Freqs, calcA0s, respA0s;
   private FFTResult[] fftResults;
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
   private int referenceIndex;
@@ -61,13 +61,25 @@ public class GainExperiment extends Experiment {
     double calculatedGain = varResultArray[3];
     double referenceFrequency = varResultArray[4];
     double calculatedFrequency = varResultArray[5];
+    double calculatedA0 = varResultArray[6];
+    double responseA0 = varResultArray[7];
+    double percentErrorA0 = varResultArray[8];
 
-    return "ratio: " + DECIMAL_FORMAT.get().format(mean)
-        + "\nsigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
-        + "\nref. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
+    StringBuilder sb = new StringBuilder("Ratio: " + DECIMAL_FORMAT.get().format(mean)
+        + "\nSigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
+        + "\nRef. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
         + " [w/ A0 " + DECIMAL_FORMAT.get().format(referenceFrequency) + "Hz]"
         + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain)
-        + " [w/ A0 " + DECIMAL_FORMAT.get().format(calculatedFrequency) + "Hz]";
+        + " [w/ A0 " + DECIMAL_FORMAT.get().format(calculatedFrequency) + "Hz]");
+
+    if (percentErrorA0 > 1) {
+      sb.append("\n** A0 VALUE ERROR **")
+          .append("\nEstimated A0: ").append(DECIMAL_FORMAT.get().format(calculatedA0))
+          .append("\nResp file A0: ").append(DECIMAL_FORMAT.get().format(responseA0))
+          .append("\nPercent error of A0: ").append(DECIMAL_FORMAT.get().format(percentErrorA0));
+    }
+
+    return sb.toString();
   }
 
   @Override
@@ -115,6 +127,8 @@ public class GainExperiment extends Experiment {
 
     gainStage1 = new double[NUMBER_TO_LOAD];
     A0Freqs = new double[NUMBER_TO_LOAD];
+    calcA0s = new double[NUMBER_TO_LOAD];
+    respA0s = new double[NUMBER_TO_LOAD];
 
     fireStateChange("Accumulating gain values...");
     // InstrumentResponse[] resps = ds.getResponses();
@@ -123,6 +137,9 @@ public class GainExperiment extends Experiment {
       double[] gains = ir.getGain();
       gainStage1[i] = gains[1];
       A0Freqs[i] = ir.getNormalizationFrequency();
+      Complex respAtA0 = ir.applyResponseToInputUnscaled(new double[]{A0Freqs[i]})[0];
+      respA0s[i] = ir.getNormalization();
+      calcA0s[i] = 1. / respAtA0.abs();
     }
 
     fftResults = new FFTResult[NUMBER_TO_LOAD];
@@ -277,7 +294,14 @@ public class GainExperiment extends Experiment {
     double normalFreqRef = A0Freqs[refIndex];
     double normalFreqCalc = A0Freqs[refIndexPlusOne];
 
-    return new double[]{Math.sqrt(ratio), sigma, refGain, calcGain, normalFreqRef, normalFreqCalc};
+    double calcA0 = calcA0s[refIndexPlusOne];
+    double respA0 = respA0s[refIndexPlusOne];
+    double errorOnA0 = Math.abs(calcA0 - respA0) / Math.abs(respA0) * 100.;
+
+    return new double[]{
+        Math.sqrt(ratio), sigma, refGain, calcGain, normalFreqRef, normalFreqCalc,
+        calcA0, respA0, errorOnA0
+    };
   }
 
   @Override
