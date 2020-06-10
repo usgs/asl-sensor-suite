@@ -2,10 +2,12 @@ package asl.sensor.experiment;
 
 import static asl.utils.NumericUtils.getFFTMean;
 import static asl.utils.NumericUtils.getFFTSDev;
+import static java.util.Arrays.copyOfRange;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
 import asl.utils.input.InstrumentResponse;
+import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -73,10 +75,17 @@ public class GainExperiment extends Experiment {
         + " [w/ A0 " + DECIMAL_FORMAT.get().format(calculatedFrequency) + "Hz]");
 
     if (percentErrorA0 > 1) {
-      sb.append("\n** A0 VALUE ERROR **")
-          .append("\nEstimated A0: ").append(DECIMAL_FORMAT.get().format(calculatedA0))
+      // these values are not part of the result if the percent error is 1% or lower
+      double correctedMean = varResultArray[9];
+      double correctedStdDev = varResultArray[10];
+      double correctedCalcGain = varResultArray[11];
+
+      sb.append("\n** A0 VALUE ERROR (PCT ERROR ").append(percentErrorA0).append(")**")
           .append("\nResp file A0: ").append(DECIMAL_FORMAT.get().format(responseA0))
-          .append("\nPercent error of A0: ").append(DECIMAL_FORMAT.get().format(percentErrorA0));
+          .append("\nEstimated A0: ").append(DECIMAL_FORMAT.get().format(calculatedA0))
+          .append("\nRatio w/ est. A0: ").append(DECIMAL_FORMAT.get().format(correctedMean))
+          .append("\nSigma w/ est. A0: ").append(DECIMAL_FORMAT.get().format(correctedStdDev))
+          .append("** CORRECTED GAIN: ").append(DECIMAL_FORMAT.get().format(correctedCalcGain));
     }
 
     return sb.toString();
@@ -297,6 +306,26 @@ public class GainExperiment extends Experiment {
     double calcA0 = calcA0s[refIndexPlusOne];
     double respA0 = respA0s[refIndexPlusOne];
     double errorOnA0 = Math.abs(calcA0 - respA0) / Math.abs(respA0) * 100.;
+
+    // if errorOnA0 > 1, then we need to do the mean over the data
+    if (errorOnA0 > 1) {
+      Complex[] refCurve = copyOfRange(plot0.getFFT(), lowerBound, upperBound);
+      Complex[] testWithNewA0 = copyOfRange(plot1.getFFT(), lowerBound, upperBound);
+      for (int i = 0; i < testWithNewA0.length; ++i) {
+        // rescale by dividing by likely-bad A0 and multiplying by estimated A0
+        testWithNewA0[i] = testWithNewA0[i].multiply(calcA0 / respA0);
+      }
+
+      double mean1NewA0 = getFFTMean(testWithNewA0);
+      double ratioNewA0 = (mean0 + Double.MIN_VALUE) / (mean1NewA0 + Double.MIN_VALUE);
+      double sigmaNewA0 = getFFTSDev(refCurve, testWithNewA0, ratioNewA0);
+      double calcGainNewA0 = gainStage1[refIndexPlusOne] / Math.sqrt(ratio);
+
+      return new double[]{
+          Math.sqrt(ratio), sigma, refGain, calcGain, normalFreqRef, normalFreqCalc,
+          calcA0, respA0, errorOnA0, Math.sqrt(ratioNewA0), sigmaNewA0, calcGainNewA0
+      };
+    }
 
     return new double[]{
         Math.sqrt(ratio), sigma, refGain, calcGain, normalFreqRef, normalFreqCalc,

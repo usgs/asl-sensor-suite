@@ -1,15 +1,19 @@
 package asl.sensor.experiment;
 
+import static java.lang.Math.abs;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
+import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import org.apache.commons.math3.complex.Complex;
 import org.junit.Test;
 
 public class GainExperimentTest {
@@ -64,5 +68,24 @@ public class GainExperimentTest {
     double gain = stats[3];
     // System.out.println( Arrays.toString(stats) );
     assertEquals(11719., gain, 2.0);
+  }
+
+  @Test
+  public void testA0Calculation() throws IOException {
+    // attempts to replicate the logic of the A0 calculation in the backend
+    String testFolder = folder + "relative-gain-100/";
+    String filename = "RESP.IU.ANMO.00.BHZ_gainx100";
+    InstrumentResponse ir = new InstrumentResponse(testFolder + filename);
+    double norm = ir.getNormalization();
+    double freq = ir.getNormalizationFrequency();
+    ir.setNormalization(1);
+
+    // could also check this inside the method by running a calculation with this modified resp,
+    // and see that the error message for >1% bound occurs in the inset string
+    Complex respAtNormFreq = ir.applyResponseToInputUnscaled(new double[]{freq})[0];
+    double calcNorm = 1. / respAtNormFreq.abs();
+    assertEquals(norm, calcNorm, 1E-1);
+    double pctError = abs(calcNorm - ir.getNormalization()) / abs(ir.getNormalization()) * 100;
+    assertTrue(pctError > 1);
   }
 }
