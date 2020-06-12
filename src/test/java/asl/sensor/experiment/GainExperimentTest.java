@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import org.apache.commons.math3.complex.Complex;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
 
 public class GainExperimentTest {
@@ -71,21 +73,39 @@ public class GainExperimentTest {
   }
 
   @Test
-  public void testA0Calculation() throws IOException {
+  public void testA0Calculation() throws IOException, SeedFormatException, CodecException {
     // attempts to replicate the logic of the A0 calculation in the backend
     String testFolder = folder + "relative-gain-100/";
+    String seedName = testFolder + "00_BHZ.512.seed";
+    DataStore ds = new DataStore();
+    ds.setBlock(0, seedName);
+    ds.setBlock(1, seedName);
+
     String filename = "RESP.IU.ANMO.00.BHZ_gainx100";
     InstrumentResponse ir = new InstrumentResponse(testFolder + filename);
-    double norm = ir.getNormalization();
-    double freq = ir.getNormalizationFrequency();
+    ds.setResponse(0, ir);
+    ir = new InstrumentResponse(testFolder + filename);
     ir.setNormalization(1);
+    ds.setResponse(1, ir);
 
-    // could also check this inside the method by running a calculation with this modified resp,
-    // and see that the error message for >1% bound occurs in the inset string
-    Complex respAtNormFreq = ir.applyResponseToInputUnscaled(new double[]{freq})[0];
-    double calcNorm = 1. / respAtNormFreq.abs();
-    assertEquals(norm, calcNorm, 1E-1);
-    double pctError = abs(calcNorm - ir.getNormalization()) / abs(ir.getNormalization()) * 100;
-    assertTrue(pctError > 1);
+    OffsetDateTime start =
+        OffsetDateTime.ofInstant(ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);
+    start = start.withHour(10);
+    OffsetDateTime end = start.withHour(12);
+    ds.trim(start.toInstant(), end.toInstant());
+
+    GainExperiment ge = new GainExperiment();
+    ge.runExperimentOnData(ds);
+
+    XYSeriesCollection xys = ge.getData().get(0);
+    XYSeries ref = xys.getSeries(0);
+    XYSeries test = xys.getSeries(1);
+    for (int i = 0; i < ref.getItemCount(); ++i) {
+      assertEquals((double) ref.getY(i), (double) test.getY(i), 1E-3);
+    }
+    double[] resultValues = ge.getStatsFromFreqs();
+    double referenceGain = resultValues[2];
+    double calculatedGain = resultValues[3];
+    assertEquals(referenceGain, calculatedGain, 1E-1);
   }
 }
