@@ -83,6 +83,7 @@ public class GainExperimentTest {
 
     String filename = "RESP.IU.ANMO.00.BHZ_gainx100";
     InstrumentResponse ir = new InstrumentResponse(testFolder + filename);
+    double initialA0 = ir.getNormalization();
     ds.setResponse(0, ir);
     ir = new InstrumentResponse(testFolder + filename);
     ir.setNormalization(1);
@@ -107,5 +108,7 @@ public class GainExperimentTest {
     double referenceGain = resultValues[2];
     double calculatedGain = resultValues[3];
     assertEquals(referenceGain, calculatedGain, 1E-1);
+    double testA0 = resultValues[9];
+    assertEquals(initialA0, testA0, 1E-1);
   }
 }
