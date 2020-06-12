@@ -319,12 +319,9 @@ public class GainExperiment extends Experiment {
     double respA0Ref = respA0s[refIndex];
     double errorOnA0Ref = Math.abs(calcA0Ref - respA0Ref) / Math.abs(respA0Ref) * 100.;
 
-
     double calcA0Test = calcA0s[refIndexPlusOne];
     double respA0Test = respA0s[refIndexPlusOne];
     double errorOnA0Test = Math.abs(calcA0Test - respA0Test) / Math.abs(respA0Test) * 100.;
-
-
 
     return new double[]{
         Math.sqrt(ratio), sigma, refGain, calcGain, normalFreqRef, normalFreqTest,
