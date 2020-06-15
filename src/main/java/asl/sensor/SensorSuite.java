@@ -50,6 +50,9 @@ import org.jfree.chart.JFreeChart;
 public class SensorSuite extends JPanel
     implements ActionListener, ChangeListener, PropertyChangeListener {
 
+  private static final String CANCEL_STRING = "Cancel operation";
+  private static final String GENERATE_STRING = "Generate test result";
+
   private static final long serialVersionUID = 2866426897343097822L;
   private final JFileChooser fileChooser; // loads in files based on parameter
   private final InputPanel inputPlots;
@@ -120,7 +123,7 @@ public class SensorSuite extends JPanel
     savePDF.setMinimumSize(dimension);
     savePDF.setPreferredSize(dimension);
 
-    generate = new JButton("Generate test result");
+    generate = new JButton(GENERATE_STRING);
     generate.setEnabled(false);
     generate.addActionListener(this);
     dimension = generate.getPreferredSize();
@@ -308,6 +311,12 @@ public class SensorSuite extends JPanel
 
     if (event.getSource() == generate) {
 
+      if (generate.getText().equals(CANCEL_STRING)) {
+        SwingWorkerSingleton.getInstance().cancel(true);
+        generate.setText(GENERATE_STRING);
+        return;
+      }
+
       ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
       experimentPanel.addPropertyChangeListener("Backend completed", this);
       savePDF.setEnabled(false);
@@ -316,10 +325,15 @@ public class SensorSuite extends JPanel
       inputPlots.showRegionForGeneration();
       // pass the inputted data to the panels that handle them
       DataStore ds = inputPlots.getData();
-      SwingWorkerSingleton.setInstance(experimentPanel, ds);
       SwingWorker<Boolean, Void> worker = SwingWorkerSingleton.getInstance();
+      if (worker != null) {
+        worker.cancel(true);
+      }
+      SwingWorkerSingleton.setInstance(experimentPanel, ds);
+      worker = SwingWorkerSingleton.getInstance();
       worker.execute();
-
+      generate.setText(CANCEL_STRING);
+      generate.setText(CANCEL_STRING);
     } else if (event.getSource() == savePDF) {
 
       String ext = ".pdf";
@@ -361,6 +375,7 @@ public class SensorSuite extends JPanel
   public void propertyChange(PropertyChangeEvent event) {
     // handle the completion of the SwingWorker thread of the backend
     if (event.getPropertyName().equals("Backend completed")) {
+      generate.setText(GENERATE_STRING);
       ExperimentPanel source = (ExperimentPanel) event.getSource();
       source.removePropertyChangeListener(this);
 
@@ -388,6 +403,14 @@ public class SensorSuite extends JPanel
       generate.setEnabled(canGenerate);
     } else if (event.getSource() == tabbedPane) {
       ExperimentPanel experimentPanel = (ExperimentPanel) tabbedPane.getSelectedComponent();
+
+      SwingWorker<Boolean, Void> instance = SwingWorkerSingleton.getInstance();
+      if (instance != null && SwingWorkerSingleton.getEpHandle() == experimentPanel &&
+          !instance.isDone()) {
+        generate.setText(CANCEL_STRING);
+      } else {
+        generate.setText(GENERATE_STRING);
+      }
 
       inputPlots.setChannelTypes(experimentPanel.getChannelTypes());
 
