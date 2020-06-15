@@ -7,6 +7,8 @@ import static java.util.Arrays.copyOfRange;
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
 import asl.utils.input.InstrumentResponse;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
@@ -19,6 +21,10 @@ import org.jfree.data.xy.XYSeriesCollection;
  * the result of the calculated gain is given as gain2/ratio where gain2 is the gain of the sensor
  * we want to calculate (that is, not the reference sensor).
  *
+ * Some additional details in the backend relate to how these calculations are done if the A0
+ * value in the RESP file is deemed inaccurate; see {@link #ERROR_LOW_BOUND} and
+ * {@link GainExperiment#backend(DataStore)}.
+ *
  * @author akearns - KBRWyle
  */
 public class GainExperiment extends Experiment {
@@ -29,12 +35,16 @@ public class GainExperiment extends Experiment {
    */
   private static final double ERROR_LOW_BOUND = 1.;
 
+  /**
+   * Number of sensor data inputs to load (reference sensor +
+   */
   private static final int NUMBER_TO_LOAD = 2;
 
   /**
    * Upper bound of initial region to calculate gain estimation over (9 seconds period)
    */
   public static final double DEFAULT_UP_BOUND = 9.;
+
   /**
    * Lower bound of initial region to calculate gain estimation over (3 seconds period)
    */
@@ -44,7 +54,7 @@ public class GainExperiment extends Experiment {
   private FFTResult[] fftResults;
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
   private int referenceIndex;
-  private double lowPeriod, highPeriod;
+  private double lowPeriod, highPeriod; // initialized as DEFAULT_UP/LOW_BOUND as above
 
 
   /**
@@ -58,6 +68,7 @@ public class GainExperiment extends Experiment {
     highPeriod = DEFAULT_UP_BOUND;
   }
 
+
   String getResultString() {
     double[] varResultArray = getStatsFromFreqs();
 
@@ -70,6 +81,10 @@ public class GainExperiment extends Experiment {
     double refErrorA0 = varResultArray[6];
     double testErrorA0 = varResultArray[7];
 
+    // Scientific notation format for printing experimentally-derived A0
+    // will allow for printing both very large and very small values of A0
+    NumberFormat sciFormat = new DecimalFormat("0.00000E00");
+
     StringBuilder sb = new StringBuilder("Ratio: " + DECIMAL_FORMAT.get().format(mean)
         + "\nSigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
         + "\nRef. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
@@ -81,12 +96,12 @@ public class GainExperiment extends Experiment {
       // these values are not part of the result if the percent error is 1% or lower
       double calcA0 = varResultArray[8];
       sb.append("\n**REF SENSOR A0 VALUE ERROR**")
-          .append("\nUsed estimated A0: ").append(DECIMAL_FORMAT.get().format(calcA0));
+          .append("\nUsed estimated A0: ").append(sciFormat.format(calcA0));
     }
     if (testErrorA0 > ERROR_LOW_BOUND) {
       double calcA0 = varResultArray[9];
       sb.append("\n**TEST SENSOR A0 VALUE ERROR**")
-          .append("\nUsed estimated A0: ").append(DECIMAL_FORMAT.get().format(calcA0));
+          .append("\nUsed estimated A0: ").append(sciFormat.format(calcA0));
     }
 
     return sb.toString();
@@ -110,6 +125,13 @@ public class GainExperiment extends Experiment {
    * series held as constant and a second series for which a gain estimation is done. The specific
    * statistics being calculated are the mean and standard dev. of the ratios of the series within
    * the given frequency range, used to calculate an estimation of gain from the second series.
+   *
+   * Note that because the gain values are dependent both on the actual gain stages specified
+   * and the pole-zero stage's A0 value, in the event that a RESP file has a bad A0 parameter,
+   * the calculations are performed on an experimentally derived A0 value (done by getting
+   * 1/r(A0f) where r() is the unscaled response curve and A0f is the value defined in the resp
+   * for the A0 frequency. This value is applied both to the results published in the index and
+   * also to the plotted results; the inset will include text warning the user this has been done.
    */
   @Override
   protected void backend(final DataStore dataStore) {
@@ -243,10 +265,12 @@ public class GainExperiment extends Experiment {
 
   /**
    * Given indices to specific PSD data sets and frequency boundaries, gets the mean and standard
-   * deviation ratios
+   * deviation ratios. For more details on the specifics of this calculation see the linked
+   * method where the values are actually calculated.
    *
+   * @see #getStatsFromIndices(int, int, int)
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq., calc. A0
-   * freq.}
+   * freq., ref. A0 error, calc. A0 error, ref. sensor's exp. A0, calc. sensor's exp. A0}
    */
   protected double[] getStatsFromFreqs() {
     FFTResult plot0 = fftResults[referenceIndex];
@@ -264,9 +288,10 @@ public class GainExperiment extends Experiment {
    * Find the peak frequency of the reference series and use it to get the gain statistics. Only
    * used as a quick reference call from an automated test.
    *
+   * @see #getStatsFromIndices(int, int, int)
    * @param refIndex Index of the reference sensor's FFT data
-   * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq, calc. A0
-   * freq}
+   * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq., calc. A0
+   * freq., ref. A0 error, calc. A0 error, ref. sensor's exp. A0, calc. sensor's exp. A0}
    */
   public double[] getStatsFromPeak(int refIndex) {
     double[] freqBounds = getOctaveCenteredAtPeak(refIndex);
@@ -278,19 +303,23 @@ public class GainExperiment extends Experiment {
   /**
    * Given indices to specific PSD data sets and indices to the corresponding frequency boundaries,
    * gets the mean and standard deviation ratios as well as the frequencies the normalizations are
-   * taken from
+   * taken from. The percent error on the RESP vs. experimental A0 is also provided, along with what
+   * the experimental A0 values are for each sensor.
+   *
+   * Note that if an A0 error value is above {@link #ERROR_LOW_BOUND}, the calculations
+   * for gain, etc. (along with the plotted data) will use the experimental A0 value.
    *
    * @param refIndex Index of first curve to be plotted (numerator PSD)
    * @param lowerBound Lower-bound index of PSDs' frequency array
    * @param upperBound Upper-bound index of PSDs' frequency array
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq., calc. A0
-   * freq.}
+   * freq., ref. A0 error, calc. A0 error, ref. sensor's exp. A0, calc. sensor's exp. A0}
    */
   private double[] getStatsFromIndices(int refIndex, int lowerBound, int upperBound) {
 
     int refIndexPlusOne = (refIndex + 1) % NUMBER_TO_LOAD;
 
-    // make sure lowInd really is the lower index
+    // make sure lower bound really is the lower bound
     int temp = Math.min(lowerBound, upperBound);
     upperBound = Math.max(lowerBound, upperBound);
     lowerBound = temp;
