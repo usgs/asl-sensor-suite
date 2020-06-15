@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
+import org.apache.commons.math3.analysis.function.Exp;
 import org.apache.commons.math3.exception.ConvergenceException;
 import org.apache.commons.math3.exception.NoDataException;
 
@@ -23,8 +24,23 @@ public class SwingWorkerSingleton {
     // empty constructor; worker is built when experiment is passed into it
   }
 
+  /**
+   * Produce a handle to the currently active swingworker, which will be null if no
+   * swingworker has been generated yet.
+   * @return Swingworker instance
+   */
   public static SwingWorker<Boolean, Void> getInstance() {
     return worker;
+  }
+
+  /**
+   * Return a handle to the current experiment panel whose backend is being run.
+   * The returned result will be null if no swingworker has run. This method is used to
+   * compare to the currently displayed experiment to allow for cancellation if it is running.
+   * @return Handle for currently running experimentpanel
+   */
+  public static ExperimentPanel getEpHandle() {
+    return epHandle;
   }
 
   /**
@@ -125,6 +141,8 @@ public class SwingWorkerSingleton {
           }
           epHandle.displayErrorMessage(text);
           ex.getCause().printStackTrace();
+        } catch (CancellationException ex) {
+          epHandle.displayErrorMessage("CANCELLED");
         }
       }
     };
