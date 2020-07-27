@@ -88,7 +88,7 @@ public class RandomizedExperiment extends Experiment {
   /**
    * Minimum nyquist rate percent for high-frequency calibrations.
    */
-  public static final double MIN_MULTIPLIER = 0.3;
+  public static final double MIN_MULTIPLIER = 0.1;
 
   /**
    * Sets the default normalization point for low-frequency calibration data (0.02 Hz)
