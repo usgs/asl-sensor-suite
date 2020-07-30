@@ -84,23 +84,26 @@ public class GainExperiment extends Experiment {
     // Scientific notation format for printing experimentally-derived A0
     // will allow for printing both very large and very small values of A0
     NumberFormat sciFormat = new DecimalFormat("0.00000E00");
+    NumberFormat trimFormat = new DecimalFormat("00.00E0");
 
     StringBuilder sb = new StringBuilder("Ratio: " + DECIMAL_FORMAT.get().format(mean)
         + "\nSigma: " + DECIMAL_FORMAT.get().format(standardDeviation)
         + "\nRef. gain: " + DECIMAL_FORMAT.get().format(referenceGain)
-        + " [w/ A0 " + DECIMAL_FORMAT.get().format(referenceFrequency) + "Hz]"
+        + " [resp. A0 " + sciFormat.format(referenceFrequency) + "Hz]"
         + "\n** CALCULATED GAIN: " + DECIMAL_FORMAT.get().format(calculatedGain)
-        + " [w/ A0 " + DECIMAL_FORMAT.get().format(calculatedFrequency) + "Hz]");
+        + " [resp. A0 " + sciFormat.format(calculatedFrequency) + "Hz]");
 
     if (refErrorA0 > ERROR_LOW_BOUND) {
       // these values are not part of the result if the percent error is 1% or lower
       double calcA0 = varResultArray[8];
-      sb.append("\n**REF SENSOR A0 VALUE ERROR**")
+      sb.append("\n**REF SENSOR A0 VALUE ERROR ")
+          .append(trimFormat.format(refErrorA0)).append("%**")
           .append("\nUsed estimated A0: ").append(sciFormat.format(calcA0));
     }
     if (testErrorA0 > ERROR_LOW_BOUND) {
       double calcA0 = varResultArray[9];
-      sb.append("\n**TEST SENSOR A0 VALUE ERROR**")
+      sb.append("\n**TEST SENSOR A0 VALUE ERROR ")
+          .append(trimFormat.format(testErrorA0)).append("%**")
           .append("\nUsed estimated A0: ").append(sciFormat.format(calcA0));
     }
 
