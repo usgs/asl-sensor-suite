@@ -29,19 +29,21 @@ in order to function correctly. The repository for this code is designed to use 
 from code.usgs.gov which is a version control system that is not exclusively public. Downloading the
 code from github instead will require manual adding of this code to the repository.
 
-The main dependency is asl-java-utils, which is available from this link: 
-https://code.usgs.gov/asl/asl-java-utils.
-Either run `git clone` from the root folder of this codebase (i.e., the same location of this readme
-file) or download a zip from the link using the download option (left of "clone" on the main menu)
-and extract the contents of the zip into a subfolder named `asl-java-utils`. (Note that on some 
-operating systems trying to open the zip file may cause it be auto-extracted to a folder called
-`asl-java-utils-master`. Renaming this folder and relocating it here should solve the dependency.)
+The simplest way to change this is to manually edit the .gitmodules file with a text editor.
+Replace the lines starting with `url =` to include the full path to the repositories.
+For the first entry, the seismic test data repository (needed for running test cases) should
+have the line set to `url = https://github.com/usgs/seismic-test-data.git`. For the second entry,
+the asl-java-tools repository (used for most backend functionality of this code) should have the 
+line set to `url = https://code.usgs.gov/asl/asl-java-utils.git`. This is a link to a public
+repository maintained by USGS using gitlab.
 
-A similar requirement for the test data (for running test cases before compilation).
-This repository can be found here: https://github.com/usgs/seismic-test-data, 
-and should be cloned into the `src/test/resources` folder as
-`seismic-test-data`, or copied to that location in the same manner as specified above.
-
+It is also possible to manually clone from the two specified URLs 
+(https://github.com/usgs/seismic-test-data.git and https://code.usgs.gov/asl/asl-java-utils.git).
+The data for the former should be extracted into a folder named `seismic-test-data` under the
+`src/test/resources` subdirectory latter into a folder named `asl-java-utils` from the project root
+(where this README file is kept), but this is not recommended as updates to these repositories or
+to this project's test cases may break unless these are also properly kept up-to-date, which 
+editing .gitmodules will ensure happens automatically when running `git fetch --all`.
 
 ##### Hardware
 
