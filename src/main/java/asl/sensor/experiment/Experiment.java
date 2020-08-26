@@ -1,8 +1,13 @@
 package asl.sensor.experiment;
 
+import static asl.utils.NumericUtils.multipointMovingAverage;
+import static asl.utils.ReportingUtils.setNonNumericPrintable;
+import static asl.utils.TimeSeriesUtils.formatEpochMillis;
+
+import asl.sensor.input.DataStore;
+import asl.utils.input.DataBlock;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -16,9 +21,6 @@ import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
 
 /**
  * This function defines template patterns for each type of sensor experiment
@@ -54,16 +56,10 @@ public abstract class Experiment {
   // defines template pattern for each type of test, given by backend
   // each test returns new (set of) timeseries data from the input data
 
-  public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
-      ThreadLocal.withInitial(() -> {
-        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return format;
-      });
   public static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT =
       ThreadLocal.withInitial(() -> {
         DecimalFormat format = new DecimalFormat("#.###");
-        NumericUtils.setInfinityPrintable(format);
+        setNonNumericPrintable(format);
         return format;
       });
   static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
@@ -187,14 +183,11 @@ public abstract class Experiment {
    * @return formatted start time (Julian day)
    */
   String getFormattedStartDate() {
-    return "Data start time:\n" +
-            DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(start)));
+    return "Data start time:\n" + formatEpochMillis(start);
   }
 
   String getFormattedEndDate() {
-    return "Data end time:\n" +
-            DATE_TIME_FORMAT.get().format(Date.from(Instant.ofEpochMilli(end))) +
-            '\n';
+    return "Data end time:\n" + formatEpochMillis(end) + '\n';
   }
 
   /**
@@ -217,7 +210,7 @@ public abstract class Experiment {
       XYSeriesCollection xysc) {
 
     // Smooth the PSD data before it goes out to the plots
-    Complex[] smoothedPSD = NumericUtils.multipointMovingAverage(resultPSD, 9, false);
+    Complex[] smoothedPSD = multipointMovingAverage(resultPSD, 9, false);
     // for the last 3 points, do 7, 5, 3 last points
     Complex last3 = Complex.ZERO;
     Complex last5 = Complex.ZERO;
@@ -405,8 +398,6 @@ public abstract class Experiment {
       backend(dataStore);
       return;
     }
-
-    // TODO: may want to do a check that enough data exists and throw exception as necessary
 
     final DataBlock db = dataStore.getXthLoadedBlock(1);
 

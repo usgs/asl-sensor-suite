@@ -1,23 +1,47 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.experiment.RandomizedExperiment.DEFAULT_NYQUIST_PERCENT_LIMIT;
+import static asl.sensor.experiment.RandomizedExperiment.getResponseCorrection;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
+import static asl.utils.NumericUtils.TAU;
+import static asl.utils.NumericUtils.atanc;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import asl.sensor.CalProcessingServer;
+import asl.sensor.ExperimentFactory;
+import asl.sensor.gui.RandomizedPanel;
+import asl.sensor.input.DataStore;
+import asl.sensor.input.DataStoreUtils;
 import asl.sensor.output.CalResult;
+import asl.sensor.test.TestUtils;
+import asl.utils.ReportingUtils;
+import asl.utils.ResponseUnits;
+import asl.utils.ResponseUnits.ResolutionType;
+import asl.utils.ResponseUnits.SensorType;
+import asl.utils.input.InstrumentResponse;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.Font;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.complex.ComplexFormat;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
@@ -31,17 +55,6 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
-import asl.sensor.CalProcessingServer;
-import asl.sensor.ExperimentFactory;
-import asl.sensor.gui.RandomizedPanel;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.DataStoreUtils;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.test.TestUtils;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.ReportingUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
 
 public class RandomizedExperimentTest {
 
@@ -49,6 +62,48 @@ public class RandomizedExperimentTest {
   private static final String testRespName =
       folder + "random-high-32+70i/RESP.XX.NS088..BHZ.STS1.360.2400";
 
+
+  @Test
+  public void testSampleRateMismatchError() {
+    String respName = "STS2gen3_Q330HR";
+    String dataFolderName = getSeedFolder("IU", "FUNA", "2019", "073");
+    String calName = dataFolderName + "_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_BHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNamesEmbedResp(respName, calName, sensOutName);
+
+    String startTime = "2019,073,18:51";
+    DateTimeFormatter dateTimeFormatter =
+        DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm").withZone(ZoneOffset.UTC);
+    long startCal = ZonedDateTime.parse(startTime, dateTimeFormatter).toInstant().toEpochMilli();
+    String endTime = "2019,073,22:51";
+    long endCal = ZonedDateTime.parse(endTime, dateTimeFormatter).toInstant().toEpochMilli();
+
+    ds.trim(startCal, endCal);
+
+    RandomizedExperiment randomExp = new RandomizedExperiment();
+    randomExp.setLowFrequencyCalibration(true);
+    randomExp.setCapactiveCalibration(false);
+    randomExp.runExperimentOnData(ds);
+
+    // now, do we get a null pointer exception?
+
+  }
+
+  @Test
+  public void testCorrectionResponseLoadsCorrectly() throws IOException {
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setCorrectionResponse(SensorType.TR120);
+  }
+
+  @Test
+  public void testCorrectionResponse_WontLoadNonTrillium() throws IOException {
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setCorrectionResponse(SensorType.STS2gen3);
+    assertNull(rExp.getCorrectionToApply());
+    rExp.setCorrectionResponse(null);
+    assertNull(rExp.getCorrectionToApply());
+  }
 
   @Test
   public void testEvaluationOfJacobian() throws IOException {
@@ -59,221 +114,53 @@ public class RandomizedExperimentTest {
     for (int i = 0; i < freqs.length; ++i) {
       freqs[i] = i;
     }
-    boolean isLowFrequencyCalibration = false;
+    final boolean lowFreq = false;
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
-    initialPoleGuess = ir.polesToVector(isLowFrequencyCalibration, 80.);
-    initialZeroGuess = ir.zerosToVector(isLowFrequencyCalibration, 80.);
+    initialPoleGuess = ir.polesToVector(lowFreq, Double.MAX_VALUE);
+    initialZeroGuess = ir.zerosToVector(lowFreq, Double.MAX_VALUE);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
+    Complex[] corrections = getResponseCorrection(freqs, null);
     Pair<RealVector, RealMatrix> jacobianResult =
-        RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, isLowFrequencyCalibration);
+        RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, lowFreq, corrections);
+
     // evaluate the data for reference
-    Complex[] result = ir.applyResponseToInput(freqs);
+    Complex[] result = ir.applyResponseToInputUnscaled(freqs);
     double[] testData = new double[2 * result.length];
     for (int i = 0; i < result.length; ++i) {
       int argIdx = i + result.length;
       Complex c = result[i];
       testData[i] = c.abs();
-      testData[argIdx] = NumericUtils.atanc(c);
+      testData[argIdx] = atanc(c);
     }
-    RandomizedExperiment.scaleValues(testData, freqs, isLowFrequencyCalibration);
+    RandomizedExperiment.scaleValues(testData, freqs, lowFreq);
+
     // test that the Jacobian first result is the actual evaluation
     double[] functionEvaluation = jacobianResult.getFirst().toArray();
     assertArrayEquals(testData, functionEvaluation, 1E-2);
     // now compare the forward difference to the first difference in the array
     RealVector testAgainst = initialGuess.copy();
     double changingVar = testAgainst.getEntry(0);
-    testAgainst.setEntry(0, changingVar - RandomizedExperiment.DELTA);
+    double jacobianDiff = 100 * Math.ulp(changingVar);
+    testAgainst.setEntry(0, changingVar + jacobianDiff);
     InstrumentResponse testDiffResponse =
-        ir.buildResponseFromFitVector(testAgainst.toArray(), isLowFrequencyCalibration, numZeros);
-    Complex[] diffResult = testDiffResponse.applyResponseToInput(freqs);
+        ir.buildResponseFromFitVector(testAgainst.toArray(), lowFreq, numZeros);
+    Complex[] diffResult = testDiffResponse.applyResponseToInputUnscaled(freqs);
     double[] testDiffData = new double[2 * diffResult.length];
     for (int i = 0; i < diffResult.length; ++i) {
       int argIdx = i + result.length;
       Complex c = diffResult[i];
       testDiffData[i] = c.abs();
-      testDiffData[argIdx] = NumericUtils.atanc(c);
+      testDiffData[argIdx] = atanc(c);
     }
-    RandomizedExperiment.scaleValues(testDiffData, freqs, isLowFrequencyCalibration);
+    RandomizedExperiment.scaleValues(testDiffData, freqs, lowFreq);
     double[] firstJacobian = new double[testDiffData.length];
     for (int i = 0; i < testDiffData.length; ++i) {
-      firstJacobian[i] = testData[i] - testDiffData[i];
-      firstJacobian[i] /= (changingVar - (testAgainst.getEntry(0)));
+      firstJacobian[i] = testDiffData[i] - testData[i];
+      firstJacobian[i] /= jacobianDiff;
     }
     double[] testFirstJacobianAgainst = jacobianResult.getSecond().getColumnVector(0).toArray();
     assertArrayEquals(testFirstJacobianAgainst, firstJacobian, 1E-3);
-  }
-
-  @Test
-  public void responseCorrectConvertedToVectorHighFreq() throws Exception {
-    String fname = folder + "resp-parse/TST5_response.txt";
-    InstrumentResponse ir;
-    ir = new InstrumentResponse(fname);
-    List<Complex> poles = new ArrayList<>(ir.getPoles());
-    // using an unnecessarily high nyquist rate here
-    RealVector high = ir.polesToVector(false, 1E8);
-
-    int complexIndex = 2; // start at second pole
-    int vectorIndex = 0;
-
-    while (vectorIndex < high.getDimension()) {
-      // return current index
-      double real = high.getEntry(vectorIndex++);
-      double imag = high.getEntry(vectorIndex++);
-
-      double poleImag = poles.get(complexIndex).getImaginary();
-
-      assertEquals(real, poles.get(complexIndex).getReal(), 0.0);
-      assertEquals(imag, poleImag, 0.0);
-
-      if (poleImag != 0) {
-        // complex conjugate case
-        ++complexIndex;
-        assertEquals(real, poles.get(complexIndex).getReal(), 0.0);
-        assertEquals(imag, -poles.get(complexIndex).getImaginary(), 0.0);
-      }
-      ++complexIndex;
-    }
-  }
-
-  @Test
-  public void responseCorrectlyConvertedToVectorLowFreq() {
-    String fname = folder + "resp-parse/TST5_response.txt";
-    InstrumentResponse ir;
-    try {
-
-      ir = new InstrumentResponse(fname);
-      List<Complex> poles = new ArrayList<>(ir.getPoles());
-      // again, use a very high nyquist rate
-      RealVector low = ir.polesToVector(true, 1E8);
-
-      // only test lower two poless
-      assertEquals(low.getEntry(0), poles.get(0).getReal(), 0.0);
-      assertEquals(low.getEntry(1), poles.get(0).getImaginary(), 0.0);
-
-      assertEquals(low.getEntry(0), poles.get(1).getReal(), 0.0);
-      assertEquals(low.getEntry(1), -poles.get(1).getImaginary(), 0.0);
-
-    } catch (IOException e) {
-      fail();
-      e.printStackTrace();
-    }
-  }
-
-  @Test
-  public void responseSetCorrectlyHighFreq() {
-    String fname = folder + "resp-parse/TST5_response.txt";
-    InstrumentResponse ir;
-
-    try {
-      ir = new InstrumentResponse(fname);
-
-      List<Complex> poles = new ArrayList<>(ir.getPoles());
-      List<Complex> replacements = new ArrayList<>();
-
-      int start = 2;
-      if (poles.get(0).getImaginary() == 0) {
-        start = 1;
-      }
-
-      for (int i = start; i < poles.size(); ++i) {
-        if (poles.get(i).getImaginary() == 0) {
-          Complex c = poles.get(i);
-          replacements.add(c.subtract(1));
-          int next = i + 1;
-          while (next < poles.size() && poles.get(next).equals(c)) {
-            ++next; // skip duplicates
-          }
-        } else {
-          Complex c = poles.get(i);
-          c = c.subtract(new Complex(1, 1));
-          replacements.add(c);
-          ++i;
-        }
-      }
-
-      //System.out.println(poles);
-      //System.out.println(replacements);
-
-      double[] newPoles = new double[replacements.size() * 2];
-      for (int i = 0; i < newPoles.length; i += 2) {
-        int poleIdx = i / 2;
-        Complex c = replacements.get(poleIdx);
-        newPoles[i] = c.getReal();
-        newPoles[i + 1] = c.getImaginary();
-      }
-
-      InstrumentResponse ir2 =
-          ir.buildResponseFromFitVector(newPoles, false, 0);
-
-      List<Complex> testList = ir2.getPoles();
-      //System.out.println(testList);
-      int offsetIdx = 0;
-      for (int i = 0; i < poles.size(); ++i) {
-        if (i < start) {
-          assertEquals(poles.get(i), testList.get(i));
-        } else {
-          Complex c = replacements.get(offsetIdx);
-          assertEquals(testList.get(i), c);
-          if (poles.get(i).getImaginary() != 0) {
-            Complex c1 = new Complex(1, 1);
-            assertEquals(poles.get(i), c.add(c1));
-            ++i;
-            Complex c2 = new Complex(1, -1);
-            assertEquals(testList.get(i), c.conjugate());
-            assertEquals(poles.get(i), c.conjugate().add(c2));
-          } else {
-            assertEquals(poles.get(i), c.add(1));
-          }
-          ++offsetIdx;
-        }
-      }
-
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-  }
-
-  @Test
-  public void responseSetCorrectlyLowFreq() {
-    String fname = folder + "resp-parse/TST5_response.txt";
-    InstrumentResponse ir;
-    try {
-      ir = new InstrumentResponse(fname);
-      List<Complex> poles = new ArrayList<>(ir.getPoles());
-
-      double[] newPoles = new double[2];
-      newPoles[0] = 0.;
-      newPoles[1] = 1.;
-
-      Complex c = new Complex(newPoles[0], newPoles[1]);
-
-      InstrumentResponse ir2 =
-          ir.buildResponseFromFitVector(newPoles, true, 0);
-      List<Complex> poles2 = ir2.getPoles();
-
-      List<Complex> testList = new ArrayList<>(poles);
-      testList.set(0, c);
-      testList.set(1, c.conjugate());
-
-      // System.out.println(testList);
-      // System.out.println(poles);
-      // System.out.println(poles2);
-
-      for (int i = 0; i < poles.size(); ++i) {
-        if (i < 2) {
-          assertNotEquals(poles.get(i), poles2.get(i));
-          assertEquals(poles2.get(i), testList.get(i));
-        }
-      }
-
-
-    } catch (IOException e) {
-      fail();
-      e.printStackTrace();
-    }
-
   }
 
   private DataStore setUpTest1() {
@@ -289,7 +176,7 @@ public class RandomizedExperimentTest {
     cCal = cCal.withSecond(0);
     long start = cCal.toInstant().toEpochMilli();
 
-    cCal = cCal.withMinute(41);
+    cCal = cCal.withMinute(49); // was 41 -- changed to 49 to allow sensor output to settle
     long end = cCal.toInstant().toEpochMilli();
 
     ds.trim(start, end);
@@ -298,144 +185,159 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void testCalculationResult1() {
+  public void testPlotScalingCorrect() {
+    String keyMustContain = "Calc. resp.";
+
+    DataStore ds = setUpTest1();
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.RANDOMCAL.createExperiment();
+    rCal.setLowFrequencyCalibration(false);
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    List<XYSeriesCollection> xysc = rCal.getData();
+    int indexOfCalcCurve = 0;
+    for (int i = 0; i < xysc.get(0).getSeriesCount(); ++i) {
+      String key = (String) xysc.get(0).getSeriesKey(i);
+      if (key.startsWith(keyMustContain)) {
+        indexOfCalcCurve = i;
+        break;
+      }
+    }
+
+    // to check that scaling is correct, assert data near the normalization is close to 0
+    XYSeries calcCurve = xysc.get(0).getSeries(indexOfCalcCurve);
+
+    for (int i = 0; i < calcCurve.getItemCount(); ++i) {
+      double x = (double) calcCurve.getX(i);
+      if (x > 1 && x < 2.5) {
+        double y = (double) calcCurve.getY(i);
+        assertTrue("Curve value above expected normalization at index " + i  + " (freq. "
+            + x + "): Got amplitude value of " + y, Math.abs(y) < 0.15);
+      }
+    }
+
+
+  }
+
+  // @Test
+  public void testCalculationResult1() throws IOException {
 
     String currentDir = System.getProperty("user.dir");
-    try {
+    DataStore ds = setUpTest1();
+    InstrumentResponse ir = ds.getResponse(1);
 
-      DataStore ds = setUpTest1();
-      InstrumentResponse ir = ds.getResponse(1);
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.RANDOMCAL.createExperiment();
 
-      double nyq = ds.getBlock(0).getSampleRate() / 2.;
-      System.out.println("NYQUIST RATE: " + nyq);
+    rCal.setLowFrequencyCalibration(false);
 
-      RandomizedExperiment rCal = (RandomizedExperiment)
-          ExperimentFactory.RANDOMCAL.createExperiment();
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
 
-      rCal.setLowFrequencyCalibration(false);
+    double bestResid = rCal.getFitResidual();
 
-      assertTrue(rCal.hasEnoughData(ds));
-      rCal.runExperimentOnData(ds);
+    int width = 1280;
+    int height = 960;
 
-      double bestResid = rCal.getFitResidual();
+    List<XYSeriesCollection> xysc = rCal.getData();
 
-      int width = 1280;
-      int height = 960;
 
-      List<XYSeriesCollection> xysc = rCal.getData();
-      String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
-      JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
+    String[] yAxisTitles = new String[]{"Resp(f), dB", "Angle / TAU"};
+    JFreeChart[] jfcl = new JFreeChart[yAxisTitles.length];
 
-      String xAxisTitle = "Frequency (Hz)";
-      NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
-      Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
-      xAxis.setLabelFont(bold);
+    String xAxisTitle = "Frequency (Hz)";
+    NumberAxis xAxis = new LogarithmicAxis(xAxisTitle);
+    Font bold = xAxis.getLabelFont().deriveFont(Font.BOLD);
+    xAxis.setLabelFont(bold);
 
-      StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder();
 
-      String[] resultString = rCal.getInsetStrings();
-      for (String resultPart : resultString) {
-        sb.append(resultPart);
-        sb.append('\n');
-      }
-      sb.append(rCal.getFormattedDateRange());
+    String[] resultString = rCal.getInsetStrings();
+    for (String resultPart : resultString) {
+      sb.append(resultPart);
       sb.append('\n');
-      sb.append("Input files:\n");
-      sb.append(ds.getBlock(0).getName());
-      sb.append(" (calibration)\n");
-      sb.append(ds.getBlock(1).getName());
-      sb.append(" (sensor output)\n");
-      sb.append("Response file used:\n");
-      sb.append(ds.getResponse(1).getName());
-      sb.append("\n \n");
-
-      String page1 = sb.toString();
-
-      String[] addtlPages = (RandomizedPanel.getAdditionalReportPages(rCal));
-      // technically 'page 2' but really second part of first dataset report
-      // and I'm too lazy to rename everything to reflect that
-      String page1Part2 = addtlPages[0];
-
-      sb = new StringBuilder();
-
-      // expected best fit params, for debugging
-      sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)\n");
-      double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
-      ir = ir.buildResponseFromFitVector(expectedParams, false, 0);
-      ir.setName("Best-fit params");
-      ds.setResponse(1, ir);
-      rCal.runExperimentOnData(ds);
-
-      // residual from other code's best-fit parameters
-      // compare to best-fit residual and assume difference is < 5%
-      double expectedResid = rCal.getInitResidual();
-
-      double pctDiff =
-          Math.abs(100 * (bestResid - expectedResid) / bestResid);
-
-      if (pctDiff > 15) {
-        System.out.println(rCal.getFitPoles());
-        System.out.println(rCal.getInitialPoles());
-        System.out.println(bestResid + ", " + expectedResid);
-      }
-
-      // TODO: add corrected assert here to compare best-fit and expected result
-      //assertTrue("PCT DIFF EXPECTED <15%, GOT " + pctDiff, pctDiff < 15);
-
-      // add initial curve from expected fit params to report
-      XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);
-      xysc.get(0).addSeries(expectedInitialCurve);
-      XYSeries expectedInitialAngle = rCal.getData().get(1).getSeries(0);
-      xysc.get(1).addSeries(expectedInitialAngle);
-
-      resultString = rCal.getInsetStrings();
-      for (String resultPart : resultString) {
-        sb.append(resultPart);
-        sb.append('\n');
-      }
-
-      for (int i = 0; i < jfcl.length; ++i) {
-
-        jfcl[i] = ChartFactory.createXYLineChart(
-            ExperimentFactory.RANDOMCAL.getName(),
-            xAxisTitle,
-            yAxisTitles[i],
-            xysc.get(i),
-            PlotOrientation.VERTICAL,
-            true,
-            false,
-            false);
-
-        XYPlot xyp = jfcl[i].getXYPlot();
-
-        //xyp.clearAnnotations();
-        //xyp.addAnnotation(xyt);
-
-        xyp.setDomainAxis(xAxis);
-      }
-
-      String page2 = sb.toString();
-
-      PDDocument pdf = new PDDocument();
-      ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
-      ReportingUtils.textListToPDFPages(pdf, page1, page1Part2, page2);
-
-      String testResultFolder = currentDir + "/testResultImages/";
-      File dir = new File(testResultFolder);
-      if (!dir.exists()) {
-        dir.mkdir();
-      }
-
-      String testResult =
-          testResultFolder + "Random-Calib-Test-1.pdf";
-      pdf.save(new File(testResult));
-      pdf.close();
-      System.out.println("Output result has been written");
-
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
     }
+    sb.append(rCal.getFormattedDateRange());
+    sb.append('\n');
+    sb.append("Input files:\n");
+    sb.append(ds.getBlock(0).getName());
+    sb.append(" (calibration)\n");
+    sb.append(ds.getBlock(1).getName());
+    sb.append(" (sensor output)\n");
+    sb.append("Response file used:\n");
+    sb.append(ds.getResponse(1).getName());
+    sb.append("\n \n");
+
+    String page1 = sb.toString();
+
+    String[] addtlPages = (RandomizedPanel.getAdditionalReportPages(rCal));
+    // technically 'page 2' but really second part of first dataset report
+    // and I'm too lazy to rename everything to reflect that
+    String page1Part2 = addtlPages[0];
+
+    sb = new StringBuilder();
+
+    // expected best fit params, for debugging
+    sb.append("BELOW RESULTS FOR EXPECTED BEST FIT (YELLOW CURVE)\n");
+    double[] expectedParams = new double[]{-3.580104E+1, +7.122400E+1};
+    ir = ir.buildResponseFromFitVector(expectedParams, false, 0);
+    ir.setName("Best-fit params");
+    ds.setResponse(1, ir);
+    rCal.runExperimentOnData(ds);
+
+    // residual from other code's best-fit parameters
+    // compare to best-fit residual and assume difference is < 5%
+    double expectedResid = rCal.getInitResidual();
+
+    // add initial curve from expected fit params to report
+    XYSeries expectedInitialCurve = rCal.getData().get(0).getSeries(0);
+    xysc.get(0).addSeries(expectedInitialCurve);
+    XYSeries expectedInitialAngle = rCal.getData().get(1).getSeries(0);
+    xysc.get(1).addSeries(expectedInitialAngle);
+
+    resultString = rCal.getInsetStrings();
+    for (String resultPart : resultString) {
+      sb.append(resultPart);
+      sb.append('\n');
+    }
+
+    for (int i = 0; i < jfcl.length; ++i) {
+
+      jfcl[i] = ChartFactory.createXYLineChart(
+          ExperimentFactory.RANDOMCAL.getName(),
+          xAxisTitle,
+          yAxisTitles[i],
+          xysc.get(i),
+          PlotOrientation.VERTICAL,
+          true,
+          false,
+          false);
+
+      XYPlot xyp = jfcl[i].getXYPlot();
+
+      //xyp.clearAnnotations();
+      //xyp.addAnnotation(xyt);
+
+      xyp.setDomainAxis(xAxis);
+    }
+
+    String page2 = sb.toString();
+
+    PDDocument pdf = new PDDocument();
+    ReportingUtils.chartsToPDFPage(width, height, pdf, jfcl);
+    ReportingUtils.textListToPDFPages(pdf, page1, page1Part2, page2);
+
+    String testResultFolder = currentDir + "/testResultImages/";
+    File dir = new File(testResultFolder);
+    if (!dir.exists()) {
+      dir.mkdir();
+    }
+
+    String testResult =
+        testResultFolder + "Random-Calib-Test-1.pdf";
+    pdf.save(new File(testResult));
+    pdf.close();
   }
 
   @Test
@@ -448,10 +350,10 @@ public class RandomizedExperimentTest {
     String end = "2018-01-30T11:55:00+00:00";
     try {
       CalProcessingServer cps = new CalProcessingServer();
+      // empty string because this calibration does not require a trillium correction
       CalResult rCalResult = cps.runRand(calInFile, sensorOutFile, respFile,
-          false, start, end, true);
-      System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_poles")));
-      System.out.println(Arrays.toString(rCalResult.getNumerMap().get("Best_fit_zeros")));
+          false, start, end, true,
+          DEFAULT_NYQUIST_PERCENT_LIMIT, "");
     } catch (IOException | SeedFormatException | CodecException e) {
       e.printStackTrace();
       fail();
@@ -483,11 +385,10 @@ public class RandomizedExperimentTest {
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
+    double initResidual = rCal.getInitResidual();
+    double fitResidual = rCal.getFitResidual();
     InstrumentResponse fitResponse = rCal.getFitResponse();
-    // these are expected poles which are good-fit. response fit may differ depending on JDK and
-    // order of operations, etc. so we prefer to compare response curves over raw parameters,
-    // as many different output responses may produce equally good fits for the data under analysis
-    InstrumentResponse expectedResponse = new InstrumentResponse(RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268_EXPECTED");
+
 
     double[][] calculatedDataSeries = rCal.getData().get(0).getSeries(1).toArray();
     double[] frequencyTest = calculatedDataSeries[0];
@@ -495,33 +396,197 @@ public class RandomizedExperimentTest {
 
     Complex[] fitResponseCurve = fitResponse.applyResponseToInput(frequencyTest);
     double[] fitAmpAndPhase = new double[2 * fitResponseCurve.length];
-    Complex[] expectedResponseCurve = expectedResponse.applyResponseToInput(frequencyTest);
     double[] expectedAmpAndPhase = new double[2 * fitResponseCurve.length];
     for (int i = 0; i < fitResponseCurve.length; ++i) {
       int phaseIndex = i + fitResponseCurve.length;
       fitAmpAndPhase[i] = fitResponseCurve[i].abs();
-      fitAmpAndPhase[phaseIndex] = NumericUtils.atanc(fitResponseCurve[i]);
-      expectedAmpAndPhase[i] = expectedResponseCurve[i].abs();
-      expectedAmpAndPhase[phaseIndex] = NumericUtils.atanc(expectedResponseCurve[i]);
+      fitAmpAndPhase[phaseIndex] = atanc(fitResponseCurve[i]);
     }
     RandomizedExperiment.scaleValues(fitAmpAndPhase, frequencyTest, false);
     RandomizedExperiment.scaleValues(expectedAmpAndPhase, frequencyTest, false);
 
     double[] fitAmp = Arrays.copyOfRange(fitAmpAndPhase, 0, fitResponseCurve.length);
-    double[] expectedAmp = Arrays.copyOfRange(expectedAmpAndPhase, 0, expectedResponseCurve.length);
+    double ampRMS = 0.;
     for (int i = 0; i < fitResponseCurve.length; ++i) {
-      fitAmp[i] = Math.abs(fitAmp[i] - calculatedResponseCurveAmp[i]);
-      expectedAmp[i] = Math.abs(expectedAmp[i] - calculatedResponseCurveAmp[i]);
-      String msg = "EXPECTED: " + expectedAmp[i] + " FIT: " + fitAmp[i] + " AT FREQ: " + frequencyTest[i];
-      assertTrue(msg,fitAmp[i] <= expectedAmp[i] + 0.1);
+      ampRMS += Math.pow(fitAmp[i] - calculatedResponseCurveAmp[i], 2);
     }
 
-    assertTrue("Value of fit residual: " + rCal.getFitResidual(), rCal.getFitResidual() < 52.);
-    assertEquals(1082.7313334829698, rCal.getInitResidual(), 1E-7);
+    ampRMS = Math.sqrt(ampRMS / fitResponseCurve.length);
+    assertTrue(ampRMS < 1.5);
+
+    assertTrue(fitResidual <= initResidual);
+    // assertTrue("Percent error not less than 30: " + pctError, pctError < 30);
+
   }
 
   @Test
   public void runExperiment_KIEV_LFCalibration() {
+    String respName = RESP_LOCATION + "RESP.IU.KIEV.00.BH1";
+    String dataFolderName = getSeedFolder("IU", "KIEV", "2018", "044");
+    String calName = dataFolderName + "_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_BH1.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+
+    dataFolderName = getSeedFolder("IU", "KIEV", "2018", "045");
+    calName = dataFolderName + "_BC0.512.seed";
+    sensOutName = dataFolderName + "00_BH1.512.seed";
+
+    ds = DataStoreUtils.appendFromNames(ds, calName, sensOutName);
+
+    OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
+    cCal = cCal.withHour(23).withMinute(37).withSecond(0).withNano(0);
+    long start = cCal.toInstant().toEpochMilli();
+
+    cCal = TestUtils.getEndCalendar(ds);
+    cCal = cCal.withHour(7).withMinute(37);
+    long end = cCal.toInstant().toEpochMilli();
+
+    ds.trim(start, end);
+
+    Complex[] expectedPoles = {
+        new Complex(-0.01247, -0.01174),
+        new Complex(-0.01247,  0.01174)
+    };
+
+    RandomizedExperiment rCal = (RandomizedExperiment)
+        ExperimentFactory.RANDOMCAL.createExperiment();
+
+    rCal.setLowFrequencyCalibration(true);
+
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+    List<Complex> fitPoles = rCal.getFitPoles();
+
+    for (int i = 0; i < fitPoles.size(); i++) {
+      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 5E-4);
+      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 5E-4);
+    }
+
+    assertTrue(rCal.getFitResidual() < rCal.getInitResidual());
+  }
+
+  @Test
+  public void rssdCheckAgainstNaNErrorEstimates() {
+
+    String resp = ResponseUnits.getFilenameFromComponents(SensorType.STS6, ResolutionType.HIGH);
+
+    String dataFolderName1 = getSeedFolder("IU", "RSSD", "2019", "319");
+    String dataFolderName2 = getSeedFolder("IU", "RSSD", "2019", "320");
+    String calFilename = "_BC0.512.seed";
+    String calFirstDay = dataFolderName1 + calFilename;
+    String calSecondDay = dataFolderName2 + calFilename;
+    String sensorFilename = "00_BHZ.512.seed";
+    String sensorFirstDay = dataFolderName1 + sensorFilename;
+    String sensorSecondDay = dataFolderName2 + sensorFilename;
+
+    DataStore ds = DataStoreUtils.createFromNamesEmbedResp(resp, calFirstDay, sensorFirstDay);
+    DataStoreUtils.appendFromNames(ds, calSecondDay, sensorSecondDay);
+
+    long start = TestUtils.timeStringToEpochMilli("2019-319T22:00:48.2")+91;
+    long end = TestUtils.timeStringToEpochMilli("2019-320T06:08:50.2")+32;
+    ds.trim(start, end);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(true);
+    rExp.runExperimentOnData(ds);
+
+    for (Complex error : rExp.getPoleErrors().values()) {
+      assertNotEquals(error.getReal(), Double.NaN);
+    }
+    for (Complex error : rExp.getZeroErrors().values()) {
+      assertNotEquals(error.getReal(), Double.NaN);
+    }
+  }
+
+  @Test
+  public void hrvHasReasonableRMSMeasure() throws FileNotFoundException {
+    String respName = RESP_LOCATION + "RESP.IU.HRV.00.BHZ";
+    String dataFolderName = getSeedFolder("IU", "HRV", "2018", "192");
+    String calName = dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    Complex expectedFitPole = new Complex(-37.39683437804999, -82.25199086188465);
+    InstrumentResponse ir = new InstrumentResponse(ds.getResponse(1));
+    List<Complex> poles = ir.getPoles();
+    // expectedFitPole = poles.get(4);
+    poles.set(4, expectedFitPole);
+    poles.set(5, expectedFitPole.conjugate());
+    ir.setPoles(poles);
+    ds.setResponse(1, ir);
+
+    RandomizedExperiment rCal = new RandomizedExperiment();
+    rCal.setLowFrequencyCalibration(false);
+    rCal.setNyquistMultiplier(0.3);
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    double initialResidual = rCal.getInitResidual();
+    double fitResidual = rCal.getFitResidual();
+
+    assertTrue("Residual value over 25: " + fitResidual,fitResidual < 25.);
+  }
+
+  @Test // TODO: evaluate something in all of this
+  public void verifyRespCurveBehavior() throws IOException {
+    String respName1 = RESP_LOCATION + "RESP.IU.SNZO.00.BHZ";
+    String dataFolderName = getSeedFolder("IU", "SNZO", "2019", "086");
+    String calName = dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    String startTime = "2019,086,15:31:00";
+    DateTimeFormatter dateTimeFormatter =
+        DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
+
+    DataStore ds = DataStoreUtils.createFromNames(respName1, calName, sensOutName);
+    ds.setResponse(1,
+        InstrumentResponse.loadEmbeddedResponse(SensorType.TR360, ResolutionType.HIGH));
+    assertFalse(ds.responseIsSet(0));
+    long startCal = ZonedDateTime.parse(startTime, dateTimeFormatter).toInstant().toEpochMilli();
+    String endTime = "2019,086,15:56:00";
+    long endCal = ZonedDateTime.parse(endTime, dateTimeFormatter).toInstant().toEpochMilli();
+    ds.trim(startCal, endCal);
+
+    RandomizedExperiment rCal = new RandomizedExperiment();
+    rCal.setLowFrequencyCalibration(false);
+    rCal.setNyquistMultiplier(0.6);
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    // second entry in data list is phase series for plots, first one is initial repsonse curve
+    // second index in array is the series of y-values
+    double[] results = rCal.getData().get(1).getSeries(0).toArray()[1];
+    double[] allZeros = new double[results.length]; // array values initialized to zero
+    // if this assert fails, there is an issue with the calculation of response curves in
+    // the random cal solver
+    assertFalse(Arrays.equals(allZeros, results));
+  }
+
+  @Test
+  public void hrvHasReasonablePoleFit() throws FileNotFoundException {
+    String respName = RESP_LOCATION + "RESP.IU.HRV.00.BHZ";
+    String dataFolderName = getSeedFolder("IU", "HRV", "2018", "192");
+    String calName = dataFolderName + "CB_BC0.512.seed";
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+
+    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    Complex expectedFitPole = new Complex(-34.92592022858792, -82.25199086188465);
+
+    RandomizedExperiment rCal = new RandomizedExperiment();
+    rCal.setLowFrequencyCalibration(false);
+    rCal.setNyquistMultiplier(0.3);
+    assertTrue(rCal.hasEnoughData(ds));
+    rCal.runExperimentOnData(ds);
+
+    List<Complex> initialPoles = rCal.getFitPoles();
+
+    assertEquals(2, initialPoles.size());
+    assertEquals(expectedFitPole.getReal(), initialPoles.get(0).getReal(), 0.5);
+    assertEquals(expectedFitPole.getImaginary(), initialPoles.get(0).getImaginary(), 0.5);
+  }
+
+  @Test
+  public void kievHasCorrectError() {
     String respName = RESP_LOCATION + "RESP.IU.KIEV.00.BH1";
     String dataFolderName = getSeedFolder("IU", "KIEV", "2018", "044");
     String calName = dataFolderName + "_BC0.512.seed";
@@ -552,18 +617,31 @@ public class RandomizedExperimentTest {
 
     assertTrue(rCal.hasEnoughData(ds));
     rCal.runExperimentOnData(ds);
-    List<Complex> fitPoles = rCal.getFitPoles();
-    Complex[] expectedPoles = {
-        new Complex(-0.012725101823426397, -0.011495336794506263),
-        new Complex(-0.012725101823426397, 0.011495336794506263)
-    };
-    for (int i = 0; i < fitPoles.size(); i++) {
-      assertEquals(expectedPoles[i].getReal(), fitPoles.get(i).getReal(), 1E-5);
-      assertEquals(expectedPoles[i].getImaginary(), fitPoles.get(i).getImaginary(), 1E-5);
+
+    Map<Complex, Complex> poleErrors = rCal.getPoleErrors();
+    Map<Complex, Complex> zeroErrors = rCal.getZeroErrors();
+
+    ComplexFormat cf = new ComplexFormat(new DecimalFormat("#.##########"));
+
+    assertEquals(0, zeroErrors.size());
+    assertEquals(2, poleErrors.size());
+
+    Complex[] evaluatedPoles = poleErrors.keySet().toArray(new Complex[]{});
+
+    for (Complex pole : evaluatedPoles) {
+      // these values are clearly dependent on weighting scheme for calculated calibration curve
+      Complex expectedPoleError = new Complex(0.0000520969, 0.0000590451);
+      Complex evaluatedPoleError = poleErrors.get(pole);
+      String message = "Difference between expected "
+          + "and evaluated error values outside of precision bound:\n\t"
+          + cf.format(expectedPoleError) + " , " + cf.format(evaluatedPoleError);
+      double error = 1E-5;
+      assertTrue(message,
+          expectedPoleError.getReal() + error >= evaluatedPoleError.getReal());
+      assertTrue(message,
+          expectedPoleError.getImaginary() + error >= evaluatedPoleError.getImaginary());
     }
 
-    assertEquals(423.7415521942539, rCal.getFitResidual(), 1E-6);
-    assertEquals(482.45559437599235, rCal.getInitResidual(), 1E-7);
   }
 
   @Test
@@ -611,5 +689,198 @@ public class RandomizedExperimentTest {
     RandomizedExperiment rCal = (RandomizedExperiment)
         ExperimentFactory.RANDOMCAL.createExperiment();
     assertTrue(rCal.hasEnoughData(ds));
+  }
+
+  @Test
+  public void verifyThatCurveTrimmingIsCorrect() throws IOException {
+    double[] freqs = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    InstrumentResponse resp =
+        InstrumentResponse.loadEmbeddedResponse(SensorType.STS2gen3, ResolutionType.HIGH);
+    Complex[] curve = resp.applyResponseToInput(freqs);
+    double[] ampAndPhase = new double[2 * curve.length];
+    for (int i = 0; i < curve.length; ++i) {
+      ampAndPhase[i] = curve[i].abs();
+      ampAndPhase[curve.length+i] = atanc(curve[i]);
+    }
+    for (int j = 0; j < freqs.length; ++j) {
+      final double[] freqsExceptOne = new double[freqs.length - 1];
+      System.arraycopy(freqs, 0, freqsExceptOne, 0, j);
+      if (j + 1 < freqs.length) {
+        System.arraycopy(freqs, j + 1, freqsExceptOne, j, freqsExceptOne.length - j);
+      }
+      Complex[] trimmedCurve = resp.applyResponseToInput(freqsExceptOne);
+      double[] expectedTrimmedAmpAndPhase = new double[trimmedCurve.length * 2];
+      for (int i = 0; i < trimmedCurve.length; ++i) {
+        expectedTrimmedAmpAndPhase[i] = trimmedCurve[i].abs();
+        expectedTrimmedAmpAndPhase[i+trimmedCurve.length] = atanc(trimmedCurve[i]);
+      }
+      // a copy and paste from randomizedexperiment with the variable names changed
+      final double[] observedCurve = new double[ampAndPhase.length - 2];
+      int trimOffset = ampAndPhase.length / 2; // where the phase component starts
+      // copy the first j points to this array (from 0 to j-1)
+      System.arraycopy(ampAndPhase, 0, observedCurve, 0, j);
+      // now copy from from j+1 to where the phase component starts
+      System.arraycopy(ampAndPhase, j + 1, observedCurve, j,
+          trimOffset - j - 1);
+      // now the first j phase components (note offset for destination due to missing phase term)
+      System.arraycopy(ampAndPhase, trimOffset, observedCurve,
+          trimOffset - 1, j);
+      System.arraycopy(ampAndPhase, trimOffset + j + 1, observedCurve,
+          trimOffset - 1 + j, trimOffset - j - 1);
+
+      assertArrayEquals(expectedTrimmedAmpAndPhase, observedCurve, 0);
+    }
+  }
+
+  @Test
+  public void testSyntheticLowFreq333() throws IOException {
+    String testLocation = folder + "synthetic-lowfreq-cals/";
+    String calSignalFile = testLocation + "_BC0.FAKE.333.mseed";
+    String calOutputFile = testLocation + "00_BHZ.FAKE.333.mseed";
+    String testRespName = "STS6_Q330HR";
+    DataStore ds =
+        DataStoreUtils.createFromNamesEmbedResp(testRespName, calSignalFile, calOutputFile);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(true);
+    rExp.runExperimentOnData(ds);
+    List<Complex> poles = rExp.getFitPoles();
+    // assert that there are two poles, complex conjugates
+    assertEquals(2, poles.size());
+    assertNotEquals(0., poles.get(0).getImaginary());
+    assertEquals(poles.get(0).getReal(), poles.get(1).getReal(), 0.);
+    assertEquals(poles.get(0).getImaginary(), -1 * poles.get(1).getImaginary(), 0.);
+    assertEquals(333,  TAU / poles.get(0).abs(), 1);
+  }
+
+  @Test
+  public void testSyntheticLowFreq125() throws IOException {
+    String testLocation = folder + "synthetic-lowfreq-cals/";
+    String calSignalFile = testLocation + "_BC0.FAKE.125.mseed";
+    String calOutputFile = testLocation + "00_BHZ.FAKE.125.mseed";
+    String testRespName = "STS2gen3_Q330HR";
+    DataStore ds =
+        DataStoreUtils.createFromNamesEmbedResp(testRespName, calSignalFile, calOutputFile);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(true);
+    rExp.runExperimentOnData(ds);
+    List<Complex> poles = rExp.getFitPoles();
+    // assert that there are two poles, complex conjugates
+    assertEquals(2, poles.size());
+    assertNotEquals(0., poles.get(0).getImaginary());
+    assertEquals(poles.get(0).getReal(), poles.get(1).getReal(), 0.);
+    assertEquals(poles.get(0).getImaginary(), -1 * poles.get(1).getImaginary(), 0.);
+    assertEquals(125,  TAU / poles.get(0).abs(), 1);
+  }
+
+  @Test
+  public void testSyntheticHighFreq333() throws IOException {
+    String testLocation = folder + "synthetic-lowfreq-cals/";
+    String calSignalFile = testLocation + "_BC0.FAKE.333.mseed";
+    String calOutputFile = testLocation + "00_BHZ.FAKE.333.mseed";
+    String testRespName = testLocation + "RESP.XX.FAKE.333.BHZ";
+    DataStore ds =
+        DataStoreUtils.createFromNames(testRespName, calSignalFile, calOutputFile);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(false);
+    rExp.runExperimentOnData(ds);
+
+    // the included response is intended to be as close to the optimum fit for this function as
+    // possible. so to test a valid result we'll make sure the results agree to a minimum level of
+    // precision (the results will not be exactly identical under most likely circumstances)
+    // which we will set to be the third significant figure
+
+    List<Complex> poles = rExp.getFitPoles();
+    assertEquals(5, poles.size());
+    for (int i = 0; i < poles.size(); ++i) {
+      double orderOfMagnitude = Math.floor(Math.log10(poles.get(i).abs()));
+      double delta = Math.pow(10, orderOfMagnitude - 3);
+      assertEquals(rExp.getInitialPoles().get(i).abs(), poles.get(i).abs(), delta);
+    }
+
+    List<Complex> zeros = rExp.getFitZeros();
+    assertEquals(6, zeros.size());
+    for (int i = 0; i < zeros.size(); ++i) {
+      double orderOfMagnitude = Math.ceil(Math.log10(zeros.get(i).abs()));
+      double delta = Math.pow(10, orderOfMagnitude - 3);
+      assertEquals(rExp.getInitialZeros().get(i).abs(), zeros.get(i).abs(), delta);
+    }
+  }
+
+  @Test
+  public void testSyntheticHighFreq125() throws IOException {
+    String testLocation = folder + "synthetic-lowfreq-cals/";
+    String calSignalFile = testLocation + "_BC0.FAKE.125.mseed";
+    String calOutputFile = testLocation + "00_BHZ.FAKE.125.mseed";
+    String testRespName = testLocation + "RESP.XX.FAKE.125.BHZ";
+    DataStore ds =
+        DataStoreUtils.createFromNames(testRespName, calSignalFile, calOutputFile);
+
+    RandomizedExperiment rExp = new RandomizedExperiment();
+    rExp.setLowFrequencyCalibration(false);
+    rExp.runExperimentOnData(ds);
+
+    // the included response is intended to be as close to the optimum fit for this function as
+    // possible. so to test a valid result we'll make sure the results agree to a minimum level of
+    // precision (the results will not be exactly identical under most likely circumstances)
+    // which we will set to be the third significant figure
+
+    List<Complex> poles = rExp.getFitPoles();
+    // 9 poles have a frequency above 1 hz, but the last 3 are above 2000 Hz
+    // that's far too high to include in the fit, so we don't adjust them at all
+    // leaving us with only 6 poles that the solver is going to adjust
+    assertEquals(6, poles.size());
+    for (int i = 0; i < poles.size(); ++i) {
+      double orderOfMagnitude = Math.floor(Math.log10(poles.get(i).abs()));
+      double delta = Math.pow(10, orderOfMagnitude - 3);
+      assertEquals(rExp.getInitialPoles().get(i).abs(), poles.get(i).abs(), delta);
+    }
+
+    List<Complex> zeros = rExp.getFitZeros();
+    assertEquals(4, zeros.size());
+    for (int i = 0; i < zeros.size(); ++i) {
+      double orderOfMagnitude = Math.ceil(Math.log10(zeros.get(i).abs()));
+      double delta = Math.pow(10, orderOfMagnitude - 3);
+      assertEquals(rExp.getInitialZeros().get(i).abs(), zeros.get(i).abs(), delta);
+    }
+  }
+
+  @Test
+  public void assureThatResponseCorrectionIsGood() throws IOException {
+    String respName = RESP_LOCATION + "RESP.IU.SJG.00.BHZ";
+    String dataFolderName = getSeedFolder("IU", "SJG", "2019", "121");
+    String sensOutName = dataFolderName + "00_EHZ.512.seed";
+    String calInName = dataFolderName + "CB_BC0.512.seed";
+    DataStore ds =
+        DataStoreUtils.createFromNames(respName, calInName, sensOutName);
+
+    String startTime = "2019,121,17:22:00";
+    DateTimeFormatter dateTimeFormatter =
+        DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
+    long startCal = ZonedDateTime.parse(startTime, dateTimeFormatter).toInstant().toEpochMilli();
+    String endTime = "2019,121,17:47:30";
+    long endCal = ZonedDateTime.parse(endTime, dateTimeFormatter).toInstant().toEpochMilli();
+    ds.trim(startCal, endCal);
+
+
+    RandomizedExperiment randomExp = new RandomizedExperiment();
+    randomExp.setCorrectionResponse(null);
+    randomExp.setLowFrequencyCalibration(false);
+    randomExp.setCapactiveCalibration(false);
+    randomExp.runExperimentOnData(ds);
+
+    double uncorrectedResidual = randomExp.getInitResidual();
+    double uncorrectedFitResidual = randomExp.getFitResidual();
+    randomExp.setCorrectionResponse(SensorType.TR360);
+    randomExp.runExperimentOnData(ds);
+    double correctedResidual = randomExp.getInitResidual();
+    double correctedFitResidual = randomExp.getFitResidual();
+    assertTrue(correctedResidual < uncorrectedResidual);
+    // the correction CANNOT be compensated for by the solver on its own
+    // the uncorrected fit is WORSE than the corrected initial response
+    assertTrue(correctedResidual < uncorrectedFitResidual);
+    assertTrue(correctedFitResidual < uncorrectedFitResidual);
   }
 }

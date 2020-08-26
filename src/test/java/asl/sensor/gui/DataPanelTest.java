@@ -2,9 +2,9 @@ package asl.sensor.gui;
 
 import static org.junit.Assert.assertEquals;
 
-import asl.sensor.input.DataBlock;
 import asl.sensor.test.TestUtils;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
 import org.junit.Test;
 
 public class DataPanelTest {

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+	<LocalPaths>
+		<!-- Controls where file choosers for various file types will first look for data. -->
+		<DataPath>data</DataPath>
+		<RespPath>responses</RespPath>
+		<ReportPath>~</ReportPath>
+	</LocalPaths>
+	<!-- Fields for FDSN data (SEED) webservice -->
+	<FDSNData>
+		<!-- Protocol for web services, usually http or https -->
+		<Protocol>http</Protocol>
+		<!-- Domain. The default is service.iris.edu -->
+		<Domain>service.iris.edu</Domain>
+		<!-- Service path. The default is fdsnws -->
+		<Service>fdsnws</Service>
+		<!-- Service port. If not specified, will use 80 for http and 443 for https-->
+		<Port>80</Port>
+	</FDSNData>
+	<!-- Fields for FDSN metadata (stationXML) webservice -->
+	<FSDNMeta>
+		<!-- Protocol for web services, usually http or https -->
+		<Protocol>http</Protocol>
+		<!-- Domain. The default is service.iris.edu -->
+		<Domain>service.iris.edu</Domain>
+		<!-- Service path. The default is fdsnws -->
+		<Service>fdsnws</Service>
+		<!-- Service port. If not specified, will use 80 for http and 443 for https-->
+		<Port>80</Port>
+	</FSDNMeta>
+	<VisualOptions>
+		<!-- When set to true, uses orange and teal in reports instead of red and blue -->
+		<ColorblindFriendly>True</ColorblindFriendly>
+		<!-- Integer. Controls line thickness increase to improve visual readability -->
+		<LineThicknessIncrease>0</LineThicknessIncrease>
+	</VisualOptions>
+</Configuration>

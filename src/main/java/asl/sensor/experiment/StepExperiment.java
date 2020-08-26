@@ -1,11 +1,19 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
+import static asl.utils.FilterUtils.lowPassFilter;
+import static asl.utils.NumericUtils.TAU;
+import static asl.utils.NumericUtils.atanc;
+import static asl.utils.NumericUtils.demean;
+import static asl.utils.NumericUtils.detrendEnds;
+import static asl.utils.NumericUtils.normalize;
+import static asl.utils.NumericUtils.unwrap;
+import static org.apache.commons.math3.linear.MatrixUtils.createRealMatrix;
+import static org.apache.commons.math3.linear.MatrixUtils.createRealVector;
+
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.FFTResult;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,7 +22,6 @@ import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
-import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.Pair;
@@ -46,10 +53,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  */
 public class StepExperiment extends Experiment {
 
-  /**
-   * Resolution of step size for iterative solution process
-   */
-  private final double STEP_FACTOR = 1E-10;
+
   /**
    * Used in the least squared solver (quit when function output changes by less than this value)
    */
@@ -160,7 +164,8 @@ public class StepExperiment extends Experiment {
 
     fireStateChange("Initial filtering of the raw step signal...");
     double[] stepCalData = stepCalRaw.getData().clone();
-    stepCalData = FFTResult.lowPassFilter(stepCalData, sps, 0.1);
+    // use order-2 filter here
+    stepCalData = lowPassFilter(stepCalData, sps, 0.1, 2);
 
     // trim 10s from each side of the input data
     cutAmount = (int) sps * 10;
@@ -169,9 +174,9 @@ public class StepExperiment extends Experiment {
 
     // actually trim the data and demean, normalize
     double[] stepCalSeries = Arrays.copyOfRange(stepCalData, cutAmount, highBound);
-    stepCalSeries = TimeSeriesUtils.demean(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.detrendEnds(stepCalSeries);
-    stepCalSeries = TimeSeriesUtils.normalize(stepCalSeries);
+    stepCalSeries = demean(stepCalSeries);
+    stepCalSeries = detrendEnds(stepCalSeries);
+    stepCalSeries = normalize(stepCalSeries);
 
     // but we want the response and the data of the cal result
     sensorOutIdx = dataStore.getXthFullyLoadedIndex(1);
@@ -192,7 +197,7 @@ public class StepExperiment extends Experiment {
     dataNames.add(ir.getName());
     Complex pole = ir.getPoles().get(0);
 
-    f = 1. / (NumericUtils.TAU / pole.abs()); // corner frequency
+    f = pole.abs() / TAU; // corner frequency
     h = Math.abs(pole.getReal() / pole.abs()); // damping
 
     double[] params = new double[]{f, h};
@@ -202,8 +207,11 @@ public class StepExperiment extends Experiment {
     // get FFT of datablock timeseries, deconvolve with response
     // single sided FFT includes lowpass filter and demean in preprocessing
     // additional processing is done when inverting the FFT in the calculate method
+    double[] data = sensorOutput.getData();
+    data = lowPassFilter(data, sensorOutput.getSampleRate(), 0.1, 2);
+    FFTResult.cosineTaper(data, 0.025);
     FFTResult sensorsFFT =
-        FFTResult.singleSidedFilteredFFT(sensorOutput, needsFlip);
+        FFTResult.singleSidedFFT(data, sensorOutput.getSampleRate(), needsFlip);
     // these values used in calculating the response deconvolution
     sensorFFTSeries = sensorsFFT.getFFT();
     freqs = sensorsFFT.getFreqs();
@@ -235,8 +243,8 @@ public class StepExperiment extends Experiment {
 
     fireStateChange("Solving for best-fit corner and damping...");
     // next step: curve fitting
-    RealVector startVector = MatrixUtils.createRealVector(params);
-    RealVector observedComponents = MatrixUtils.createRealVector(stepCalSeries);
+    RealVector startVector = createRealVector(params);
+    RealVector observedComponents = createRealVector(stepCalSeries);
 
     LeastSquaresProblem lsp = new LeastSquaresBuilder().
         start(startVector).
@@ -272,7 +280,6 @@ public class StepExperiment extends Experiment {
     hCorr = newParams[1];
 
     double[] fitPlot = calculate(newParams);
-    // fitPlot = TimeSeriesUtils.normalize(fitPlot);
     now = start;
     XYSeries bfs = new XYSeries("BEST FIT PLOT");
     for (double point : fitPlot) {
@@ -292,9 +299,9 @@ public class StepExperiment extends Experiment {
 
     // p1 = -(h+i*sqrt(1-h^2))*2*pi*f
     Complex p1 = new Complex(hCorr, Math.sqrt(1 - Math.pow(hCorr, 2)));
-    p1 = p1.multiply(-1 * NumericUtils.TAU * fCorr);
+    p1 = p1.multiply(-1 * TAU * fCorr);
     Complex p2 = new Complex(hCorr, -1 * Math.sqrt(1 - Math.pow(hCorr, 2)));
-    p2 = p2.multiply(-1 * NumericUtils.TAU * fCorr);
+    p2 = p2.multiply(-1 * TAU * fCorr);
 
     InstrumentResponse fitResp = new InstrumentResponse(ir);
     List<Complex> poles = fitResp.getPoles();
@@ -323,13 +330,13 @@ public class StepExperiment extends Experiment {
       Complex tmpIn = inputCurve[i];
       Complex tmpFit = fitCurve[i];
 
-      double phiIn = NumericUtils.atanc(tmpIn);
-      phiIn = NumericUtils.unwrap(phiIn, phiPrevIn);
+      double phiIn = atanc(tmpIn);
+      phiIn = unwrap(phiIn, phiPrevIn);
       phiPrevIn = phiIn;
       phiIn = Math.toDegrees(phiIn);
 
-      double phiFit = NumericUtils.atanc(tmpFit);
-      phiFit = NumericUtils.unwrap(phiFit, phiPrevFit);
+      double phiFit = atanc(tmpFit);
+      phiFit = unwrap(phiFit, phiPrevFit);
       phiPrevFit = phiFit;
       phiFit = Math.toDegrees(phiFit);
 
@@ -429,8 +436,8 @@ public class StepExperiment extends Experiment {
     // trim data around areas with filter ringing and remove linear trend
     int trimOffset = 0;
     returnValue = Arrays.copyOfRange(returnValue, cutAmount + trimOffset, upperBound + trimOffset);
-    returnValue = TimeSeriesUtils.detrendEnds(returnValue);
-    returnValue = TimeSeriesUtils.normalize(returnValue);
+    returnValue = detrendEnds(returnValue);
+    returnValue = normalize(returnValue);
 
     return returnValue;
   }
@@ -484,20 +491,22 @@ public class StepExperiment extends Experiment {
 
     double f1 = variables.getEntry(0);
     double h1 = variables.getEntry(1);
-    double f2 = f1 + STEP_FACTOR;
-    double h2 = h1 + STEP_FACTOR;
+    double fDiff = 100 * Math.ulp(f1);
+    double hDiff = 100 * Math.ulp(h1);
+    double f2 = f1 + fDiff;
+    double h2 = h1 + hDiff;
 
     double[] fInit = calculate(new double[]{f1, h1});
     double[] diffOnF = calculate(new double[]{f2, h1});
     double[] diffOnH = calculate(new double[]{f1, h2});
 
     for (int i = 0; i < trimmedLength; ++i) {
-      jacobian[i][0] = (diffOnF[i] - fInit[i]) / STEP_FACTOR;
-      jacobian[i][1] = (diffOnH[i] - fInit[i]) / STEP_FACTOR;
+      jacobian[i][0] = (diffOnF[i] - fInit[i]) / fDiff;
+      jacobian[i][1] = (diffOnH[i] - fInit[i]) / hDiff;
     }
 
-    RealMatrix jMat = MatrixUtils.createRealMatrix(jacobian);
-    RealVector fnc = MatrixUtils.createRealVector(fInit);
+    RealMatrix jMat = createRealMatrix(jacobian);
+    RealVector fnc = createRealVector(fInit);
 
     return new Pair<>(fnc, jMat);
   }

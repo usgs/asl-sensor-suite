@@ -1,9 +1,25 @@
 package asl.sensor;
 
+import static asl.sensor.experiment.RandomizedExperiment.*;
+import static asl.utils.ReportingUtils.COLORS;
+import static asl.utils.ReportingUtils.chartsToImageList;
+import static asl.utils.ResponseUnits.enumerateAllResponseFilenames;
+import static asl.utils.TimeSeriesUtils.getFirstTimeSeries;
+
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
+import asl.sensor.experiment.RandomizedExperiment;
+import asl.sensor.experiment.SineExperiment;
+import asl.sensor.experiment.StepExperiment;
 import asl.sensor.experiment.VoltageExperiment;
+import asl.sensor.gui.ExperimentPanel;
+import asl.sensor.input.DataStore;
 import asl.sensor.output.CalResult;
+import asl.utils.ResponseUnits.SensorType;
+import asl.utils.input.DataBlock;
+import asl.utils.input.InstrumentResponse;
+import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -13,10 +29,11 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.Random;
 import javax.imageio.ImageIO;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.chart.ChartFactory;
@@ -32,19 +49,8 @@ import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.experiment.RandomizedExperiment;
-import asl.sensor.experiment.SineExperiment;
-import asl.sensor.experiment.StepExperiment;
-import asl.sensor.gui.ExperimentPanel;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
-import asl.sensor.utils.ReportingUtils;
-import asl.sensor.utils.TimeSeriesUtils;
-import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.mseed.SeedFormatException;
-import org.jfree.ui.RectangleAnchor;
 import py4j.GatewayServer;
 import py4j.Py4JNetworkException;
 
@@ -59,10 +65,51 @@ import py4j.Py4JNetworkException;
  */
 public class CalProcessingServer {
 
-
-  private Color[] COLORS = ReportingUtils.COLORS;
-
   public CalProcessingServer() {
+  }
+
+  /**
+   * Singleton object to handle mapping strings from Python into internal SensorType enum
+   */
+  private static Map<String, SensorType> trilliumCalibrationCorrectionMap;
+
+  /**
+   * Return the internal representation of trillium sensors requiring correction from a string
+   * specifying that, or null if the response does not require correction or an empty or null string
+   * is passed. Valid strings that produce a non-null sensor are "TR120", "TR240", and "TR360".
+   * @param type String of one of the valid Trillium sensor descriptors requiring resp correction
+   * @return SensorType representing the given sensor.
+   */
+  public static SensorType getSensorCorrectionFromString(String type) {
+    if (type == null) {
+      return null;
+    }
+    Map<String, SensorType> correctionMap = getCalibrationCorrectionMap();
+
+    return correctionMap.get(type);
+  }
+
+  /**
+   * Get the map of strings to valid correction enums, so that it is possible for the enclosing
+   * Python code to get a list of valid correction names to present to users for selection.
+   * For example, a drop-down menu can have its options listed from the returned object's keySet()
+   * function, though {@link #getSensorCorrectionFromString(String)} lets the Python use the more
+   * straightforward py4j string interactions to get a specific enum when running cals.
+   * @return Calibration correction map from strings to sensor type enums
+   */
+  public static Map<String, SensorType> getCalibrationCorrectionMap() {
+    // it's our old friend the singleton design pattern again. yay for the first lecture of design
+    // patterns 101, it's not just useful for passing software design prelim interviews!!
+    if (trilliumCalibrationCorrectionMap == null) {
+      trilliumCalibrationCorrectionMap = new HashMap<>();
+      // first entry in this array is null so skip it, no point in adding null-null mapping
+      SensorType[] correctionsExceptNull =
+          Arrays.copyOfRange(VALID_CORRECTIONS, 1, VALID_CORRECTIONS.length);
+      for (SensorType enumeratedType : correctionsExceptNull) {
+        trilliumCalibrationCorrectionMap.put(enumeratedType.toString(), enumeratedType);
+      }
+    }
+    return trilliumCalibrationCorrectionMap;
   }
 
   /**
@@ -71,17 +118,7 @@ public class CalProcessingServer {
    * @return List of names of embedded resps (will match common sensor & digitizer gain setups)
    */
   public static String[] getEmbeddedRESPFilenames() {
-    Set<String> respFilenames = InstrumentResponse.parseInstrumentList();
-
-    List<String> names = new ArrayList<>(respFilenames);
-    Collections.sort(names);
-    String[] nameArray = new String[names.size()];
-    for (int k = 0; k < nameArray.length; ++k) {
-      String name = names.get(k);
-      name = name.replace("resps/", "");
-      nameArray[k] = name;
-    }
-    return nameArray;
+    return enumerateAllResponseFilenames();
   }
 
   public static void main(String[] args) {
@@ -92,6 +129,16 @@ public class CalProcessingServer {
       System.exit(0);
     }
     System.out.println("Gateway Server Started");
+  }
+
+  /**
+   * Get the default Nyquist rate limit as a decimal value for random cals.
+   *
+   * {@link RandomizedExperiment}
+   * @return Decimal value of the default limit
+   */
+  public static double getDefaultRandomCalNyquistCutoff() {
+    return DEFAULT_NYQUIST_PERCENT_LIMIT;
   }
 
   /**
@@ -149,7 +196,7 @@ public class CalProcessingServer {
 
     DataStore ds = new DataStore();
     for (int i = 0; i < seedFileNames.length; ++i) {
-      DataBlock db = TimeSeriesUtils.getFirstTimeSeries(seedFileNames[i]);
+      DataBlock db = getFirstTimeSeries(seedFileNames[i]);
       ds.setBlock(i, db);
       InstrumentResponse ir;
       if (embedResps[i]) {
@@ -175,13 +222,18 @@ public class CalProcessingServer {
    * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param lowFreq True if a low-freq cal should be run
+   * @param nyquistPercentage Percentage of nyquist limit to fit a (high-frequency) cal.
+   * Expressed as a decimal value (i.e., for 50% put 0.5). Ignored if lowFreq is true.
+   * @param correctionType String specifying name of sensor correction (will apply corrections for
+   * "TR120", "TR240", and "TR360", will apply no correction for anything else)
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    * @throws SeedFormatException If a data file cannot be parsed as a seed file
    * @throws CodecException If there is an issue with the compression of the seed files
    */
   public CalResult runRand(String calFileName, String outFileName,
-      String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq)
+      String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq,
+      double nyquistPercentage, String correctionType)
       throws IOException, SeedFormatException, CodecException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
@@ -190,8 +242,8 @@ public class CalProcessingServer {
     long end = endDateTime.toInstant().toEpochMilli();
 
     DataStore ds = new DataStore();
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -203,12 +255,13 @@ public class CalProcessingServer {
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
     ds.setResponse(1, ir);
-    ds.trim(start, end);
     if (lowFreq) {
       ds.resample(10.); // more than 5 Hz should be unnecessary for low-frequency curve fitting
     }
+    ds.trimToCommonTime();
+    ds.trim(start, end);
 
-    return runExpGetDataRand(ds, lowFreq);
+    return runExpGetDataRand(ds, lowFreq, nyquistPercentage, correctionType);
   }
 
   /**
@@ -224,6 +277,10 @@ public class CalProcessingServer {
    * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param lowFreq True if a low-freq cal should be run
+   * @param nyquistPercentage Percentage of nyquist limit to fit a (high-frequency) cal.
+   * Expressed as a decimal value (i.e., for 50% put 0.5). Ignored if lowFreq is true.
+   * @param correctionType String specifying name of sensor correction (will apply corrections for
+   * "TR120", "TR240", and "TR360", will apply no correction for anything else)
    * @return Data from running the experiment (plots and fit pole/zero values)
    * @throws IOException If a string does not refer to a valid accessible file
    * @throws SeedFormatException If a data file cannot be parsed as a seed file
@@ -231,8 +288,8 @@ public class CalProcessingServer {
    */
   public CalResult runRand(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean useEmbeddedResp,
-      String startDate, String endDate, boolean lowFreq)
-      throws IOException, SeedFormatException, CodecException {
+      String startDate, String endDate, boolean lowFreq, double nyquistPercentage,
+      String correctionType) throws IOException, SeedFormatException, CodecException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -243,8 +300,8 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
     String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -258,7 +315,7 @@ public class CalProcessingServer {
     ds.setResponse(1, ir);
     ds.trim(start, end);
 
-    return runExpGetDataRand(ds, lowFreq);
+    return runExpGetDataRand(ds, lowFreq, nyquistPercentage, correctionType);
   }
 
   /**
@@ -291,8 +348,8 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
     String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -336,8 +393,8 @@ public class CalProcessingServer {
     long end = endDateTime.toInstant().toEpochMilli();
 
     DataStore ds = new DataStore();
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -378,8 +435,8 @@ public class CalProcessingServer {
     long end = endDateTime.toInstant().toEpochMilli();
 
     DataStore ds = new DataStore();
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
 
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
@@ -416,8 +473,8 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
     String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-    DataBlock calBlock = TimeSeriesUtils.getFirstTimeSeries(calFileName);
-    DataBlock outBlock = TimeSeriesUtils.getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileName);
+    DataBlock outBlock = getFirstTimeSeries(outFileName);
 
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
@@ -504,6 +561,9 @@ public class CalProcessingServer {
     gainSix.runExperimentOnData(ds);
 
     String[] dataStrings = gainSix.getDataStrings();
+    double northAzimuth = gainSix.getNorthAzimuthDegrees();
+    double eastAzimuth = gainSix.getEastAzimuthDegrees();
+    double[][] statistics = gainSix.getStatistics();
 
     List<XYSeriesCollection> results = gainSix.getData();
 
@@ -547,11 +607,13 @@ public class CalProcessingServer {
           RectangleAnchor.TOP_RIGHT);
       plot.addAnnotation(title);
 
+      BasicStroke stroke;
+
       // now, make everything thicker!
       for (int seriesIndex = 0; seriesIndex < timeseriesIn.getSeriesCount(); ++seriesIndex) {
-        BasicStroke stroke = (BasicStroke) plot.getRenderer().getSeriesStroke(seriesIndex);
+        stroke = (BasicStroke) plot.getRenderer().getSeriesStroke(seriesIndex);
         if (stroke == null) {
-          stroke = (BasicStroke) plot.getRenderer().getBaseStroke();
+          stroke = (BasicStroke) plot.getRenderer().getDefaultStroke();
         }
         float width = stroke.getLineWidth() + 2f;
         int join = stroke.getLineJoin();
@@ -559,7 +621,7 @@ public class CalProcessingServer {
 
         stroke = new BasicStroke(width, cap, join, 10f);
         plot.getRenderer().setSeriesStroke(seriesIndex, stroke);
-        plot.getRenderer().setSeriesPaint(seriesIndex, COLORS[i % 3]);
+        plot.getRenderer().setSeriesPaint(seriesIndex, COLORS[seriesIndex % 3]);
       }
 
       LogarithmicAxis periodAxis = new LogarithmicAxis("Period (s)");
@@ -575,25 +637,19 @@ public class CalProcessingServer {
       // ensure that NLNM lines are bolder, colored black
       XYItemRenderer renderer = plot.getRenderer();
       // series index 0 - ref data; series index 1 - other data; series index 2 - NLNM plot
-      BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(2);
-      if (stroke == null) {
-        stroke = (BasicStroke) renderer.getBaseStroke();
-      }
+      stroke = (BasicStroke) plot.getRenderer().getDefaultStroke();
       stroke = new BasicStroke(stroke.getLineWidth() * 2);
       renderer.setSeriesStroke(2, stroke);
       renderer.setSeriesPaint(2, new Color(0, 0, 0));
     }
 
-    double northAzimuth = gainSix.getNorthAzimuthDegrees();
-    double eastAzimuth = gainSix.getEastAzimuthDegrees();
-    double[][] statistics = gainSix.getStatistics();
-
-    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    BufferedImage[] images = chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
     for (int i = 0; i < images.length; ++i) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       ImageIO.write(images[i], "png", out);
       pngByteArrays[i] = out.toByteArray();
+      out.close();
     }
 
     return CalResult.buildSixGainData(refDataMatches, northAzimuth, eastAzimuth,
@@ -637,7 +693,7 @@ public class CalProcessingServer {
       }
     }
 
-    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    BufferedImage[] images = chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
     for (int i = 0; i < images.length; ++i) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -700,7 +756,7 @@ public class CalProcessingServer {
       }
     }
 
-    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    BufferedImage[] images = chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
     for (int i = 0; i < images.length; ++i) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -711,11 +767,14 @@ public class CalProcessingServer {
     return CalResult.buildStepCalData(pngByteArrays, fitParams, initParams);
   }
 
-  private CalResult runExpGetDataRand(DataStore dataStore, boolean isLowFrequency)
-      throws IOException {
+  private CalResult runExpGetDataRand(DataStore dataStore, boolean isLowFrequency, double nyqPerct,
+      String correctionType) throws IOException {
 
     RandomizedExperiment randomExperiment = new RandomizedExperiment();
+    SensorType correction = getSensorCorrectionFromString(correctionType);
 
+    randomExperiment.setNyquistMultiplier(nyqPerct);
+    randomExperiment.setCorrectionResponse(correction);
     randomExperiment.setLowFrequencyCalibration(isLowFrequency);
     randomExperiment.runExperimentOnData(dataStore);
 
@@ -852,7 +911,7 @@ public class CalProcessingServer {
       charts[1].getXYPlot().addDomainMarker(maxFitMarker);
     }
 
-    BufferedImage[] images = ReportingUtils.chartsToImageList(1, 1280, 960, charts);
+    BufferedImage[] images = chartsToImageList(1, 1280, 960, charts);
     byte[][] pngByteArrays = new byte[images.length][];
     for (int i = 0; i < images.length; ++i) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -902,7 +961,7 @@ public class CalProcessingServer {
     double[] sensitivities = voltage.getAllSensitivities();
     double[] differences = voltage.getPercentDifferences();
 
-    BufferedImage image = ReportingUtils.chartsToImageList(1, 1280, 960, chart)[0];
+    BufferedImage image = chartsToImageList(1, 1280, 960, chart)[0];
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ImageIO.write(image, "png", out);
     byte[] pngByteArray = out.toByteArray();

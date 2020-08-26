@@ -1,9 +1,11 @@
 package asl.sensor.gui;
 
 import asl.sensor.input.DataStore;
+import java.io.IOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
+import org.apache.commons.math3.analysis.function.Exp;
 import org.apache.commons.math3.exception.ConvergenceException;
 import org.apache.commons.math3.exception.NoDataException;
 
@@ -22,8 +24,23 @@ public class SwingWorkerSingleton {
     // empty constructor; worker is built when experiment is passed into it
   }
 
+  /**
+   * Produce a handle to the currently active swingworker, which will be null if no
+   * swingworker has been generated yet.
+   * @return Swingworker instance
+   */
   public static SwingWorker<Boolean, Void> getInstance() {
     return worker;
+  }
+
+  /**
+   * Return a handle to the current experiment panel whose backend is being run.
+   * The returned result will be null if no swingworker has run. This method is used to
+   * compare to the currently displayed experiment to allow for cancellation if it is running.
+   * @return Handle for currently running experimentpanel
+   */
+  public static ExperimentPanel getEpHandle() {
+    return epHandle;
   }
 
   /**
@@ -68,7 +85,6 @@ public class SwingWorkerSingleton {
 
       @Override
       protected void done() {
-        // TODO: handle more exceptions here
         try {
           boolean set = get();
           if (set) {
@@ -95,13 +111,18 @@ public class SwingWorkerSingleton {
             text.append("but here is the error message returned by the backend:\n");
             text.append(cause.toString());
           } else if (cause instanceof ArrayIndexOutOfBoundsException) {
-            text.append("Solver attempted to access nonexistent data\n");
+            text.append("Solver attempted to access nonexistent data.\n");
             text.append("A common cause of this is having too little timeseries data to");
             text.append(" process.\n");
             text.append("(Are you running a low-frequency cal on a small amount of data?)\n");
             text.append("A more detailed explanation has been output to terminal,\n");
             text.append("but here is the error message returned by the backend:\n");
             text.append(cause.toString());
+          } else if (cause instanceof IOException) {
+            text.append("There was an error loading data during operations.\n");
+            text.append("If this is a randomized calibration producing this error,\n");
+            text.append("Something must have gone wrong while trying to create the\n");
+            text.append("correction response for Trillium sensors.");
           } else {
             if (ex.getMessage() == null) {
               text.append("CANCELLED");
@@ -120,6 +141,8 @@ public class SwingWorkerSingleton {
           }
           epHandle.displayErrorMessage(text);
           ex.getCause().printStackTrace();
+        } catch (CancellationException ex) {
+          epHandle.displayErrorMessage("CANCELLED");
         }
       }
     };

@@ -1,8 +1,8 @@
 package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
-import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.experiment.GainExperiment;
+import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -18,8 +18,8 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Six-input extension for RelativeGain gui
@@ -106,37 +106,33 @@ public class GainSixPanel extends GainPanel {
     constraints.fill = GridBagConstraints.NONE;
     this.add(angleRefSelection, constraints);
 
-    constraints.fill = GridBagConstraints.BOTH;
+    JPanel rangeSubpanel = new JPanel();
+    rangeSubpanel.setLayout(new BoxLayout(rangeSubpanel, BoxLayout.X_AXIS));
+    rangeSubpanel.add(leftSlider);
+    rangeSubpanel.add(recalcButton);
+    rangeSubpanel.add(rightSlider);
+
+    constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.gridx = 0;
     constraints.gridy += 1;
-    constraints.gridwidth = 1;
-    constraints.anchor = GridBagConstraints.EAST;
-    this.add(leftSlider, constraints);
-    constraints.fill = GridBagConstraints.NONE;
-    constraints.gridx += 1;
-    constraints.anchor = GridBagConstraints.CENTER;
-    constraints.weightx = 0;
-    this.add(recalcButton, constraints);
-    constraints.fill = GridBagConstraints.BOTH;
-    constraints.gridx += 1;
-    constraints.anchor = GridBagConstraints.WEST;
     constraints.weightx = 1;
-    this.add(rightSlider, constraints);
+    constraints.weighty = 0;
+    constraints.anchor = GridBagConstraints.CENTER;
+    this.add(rangeSubpanel, constraints);
 
     constraints.gridx = 0;
     constraints.gridy += 1;
-    constraints.fill = GridBagConstraints.BOTH;
-    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.WEST;
     this.add(referenceSeries, constraints);
     constraints.weightx = 0;
     constraints.gridx += 1;
-    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.CENTER;
     this.add(save, constraints);
 
-    constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.gridx += 1;
     constraints.weightx = 0;
-    constraints.anchor = GridBagConstraints.WEST;
+    constraints.anchor = GridBagConstraints.EAST;
     plotSelection = new JComboBox<>();
     plotSelection.addItem("North component plot");
     plotSelection.addItem("East component plot");

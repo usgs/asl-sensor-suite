@@ -3,7 +3,6 @@ package asl.sensor.gui;
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -16,8 +15,8 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Panel for displaying the results of the self-noise experiment (3-input).
@@ -149,7 +148,7 @@ public class NoisePanel extends ExperimentPanel {
 
     for (int i = 0; i < NOISE_PLOT_COUNT; ++i) {
       String name = (String) timeseries.getSeriesKey(i);
-      Color plotColor = ReportingUtils.COLORS[i % 3];
+      Color plotColor = getColor(i);
       seriesColorMap.put(name, plotColor);
       if (i >= 3) {
         seriesDashedSet.add(name);

@@ -1,8 +1,11 @@
 package asl.sensor.experiment;
 
-import asl.sensor.input.DataBlock;
+import static asl.utils.TimeSeriesUtils.rotate;
+import static asl.utils.TimeSeriesUtils.rotateX;
+
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.TimeSeriesUtils;
+import asl.utils.input.DataBlock;
+import java.util.stream.IntStream;
 import org.jfree.data.xy.XYSeriesCollection;
 
 /**
@@ -160,13 +163,13 @@ public class NoiseNineExperiment extends NoiseExperiment {
     double[] eastReference = eastRef.getData();
 
     // bound here is the number of unknown angles -- one is assumed to be fixed at N & E
-    for (int i = 0; i < DATA_NEEDED; ++i) {
-
+    // for (int i = 0; i < DATA_NEEDED; ++i) {
+    IntStream.range(0, DATA_NEEDED).parallel().forEach(i -> {
       if (i == indexOfAngleRefData) {
         // unable to rotate the reference -- fix it at 0
         northAngles[i] = 0;
         eastAngles[i] = 0;
-        continue;
+        return; // this should break out of the stream loop
       }
 
       fireStateChange("Getting orientation of data set "
@@ -196,12 +199,12 @@ public class NoiseNineExperiment extends NoiseExperiment {
 
       fireStateChange("Rotating data " + (i + 1) + "...");
       DataBlock northUnknownRotate =
-          TimeSeriesUtils.rotate(northRotate, eastRotate, northAngles[i]);
+          rotate(northRotate, eastRotate, northAngles[i]);
       stores[0].setBlock(i, northUnknownRotate);
       DataBlock eastUnknownRotate =
-          TimeSeriesUtils.rotateX(northRotate, eastRotate, eastAngles[i]);
+          rotateX(northRotate, eastRotate, eastAngles[i]);
       stores[1].setBlock(i, eastUnknownRotate);
-    }
+    });
 
     // set components into N,E,Z directional subcomponents
 

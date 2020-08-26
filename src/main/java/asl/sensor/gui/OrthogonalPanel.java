@@ -9,7 +9,7 @@ import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
-import org.jfree.ui.RectangleAnchor;
+import org.jfree.chart.ui.RectangleAnchor;
 
 /**
  * Panel to display results of Orthogonal Experiment.

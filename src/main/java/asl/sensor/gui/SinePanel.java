@@ -2,7 +2,6 @@ package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -16,8 +15,8 @@ import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 public class SinePanel extends ExperimentPanel {
 
@@ -148,7 +147,7 @@ public class SinePanel extends ExperimentPanel {
 
     XYSeriesCollection timeseries = expResult.getData().get(0);
     for (int i = 0; i < timeseries.getSeriesCount(); ++i) {
-      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
+      Color toColor = getColor(i);
       String curve = (String) timeseries.getSeriesKey(i);
       seriesColorMap.put(curve, toColor);
     }

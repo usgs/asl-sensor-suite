@@ -1,12 +1,13 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.experiment.Experiment.DECIMAL_FORMAT;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
 import asl.sensor.test.TestUtils;
+import asl.utils.input.InstrumentResponse;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
@@ -25,16 +26,16 @@ public class StepExperimentTest {
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
     ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS1T5_Q330HR"));
-    String startString = "2018-038T15:25:00.0";
-    String endString = "2018-038T16:00:00.0";
+    String startString = "2018-038T15:20:00.0";
+    String endString = "2018-038T15:59:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
     long ed = TestUtils.timeStringToEpochMilli(endString);
     ds.trim(st, ed);
     StepExperiment se = new StepExperiment();
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
-    assertEquals(366.97, 1. / fitParams[0], 0.5);
-    assertEquals(0.7196, fitParams[1], 0.0005);
+    assertEquals(366.94, 1. / fitParams[0], 0.5);
+    assertEquals(0.7195, fitParams[1], 0.0005);
   }
 
   @Test
@@ -46,8 +47,8 @@ public class StepExperimentTest {
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
     ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS2gen3_Q330HR"));
-    String startString = "2018-037T20:02:00.0";
-    String endString = "2018-037T20:17:00.0";
+    String startString = "2018-037T19:55:00.0";
+    String endString = "2018-037T20:35:30.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
     long ed = TestUtils.timeStringToEpochMilli(endString);
     ds.trim(st, ed);
@@ -55,12 +56,29 @@ public class StepExperimentTest {
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
     assertEquals(120.00, 1. / fitParams[0], 0.5);
-    assertEquals(0.7035, fitParams[1], 0.0005);
-    String expected1 = "RESP parameters\nCorner frequency (Hz): 0.008 (120.078 secs)\n"
-        + "Damping: 0.707\n";
-    String expected2 = "Best-fit parameters\nCorner frequency (Hz): 0.008 (119.602 secs)\n"
-        + "Damping: 0.704\n";
-    assertArrayEquals(new String[] {expected1, expected2}, se.getInsetStrings());
+    assertEquals(0.7106, fitParams[1], 0.0005);
+
+    String sb = "RESP parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(se.getInitParams()[0])
+        + " ("
+        + DECIMAL_FORMAT.get().format(1. / se.getInitParams()[0])
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(se.getInitParams()[1])
+        + "\n";
+
+    String sb2 = "Best-fit parameters"
+        + "\nCorner frequency (Hz): "
+        + DECIMAL_FORMAT.get().format(fitParams[0])
+        + " ("
+        + DECIMAL_FORMAT.get().format(1. / fitParams[0])
+        + " secs)"
+        + "\nDamping: "
+        + DECIMAL_FORMAT.get().format(fitParams[1])
+        + "\n";
+
+    assertArrayEquals(new String[] {sb, sb2}, se.getInsetStrings());
   }
 
   @Test
@@ -72,15 +90,15 @@ public class StepExperimentTest {
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
     ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS1T5_Q330HR"));
-    String startString = "2017-248T05:00:00.0";
-    String endString = "2017-248T05:30:00.0";
+    String startString = "2017-248T04:55:00.0";
+    String endString = "2017-248T05:31:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
     long ed = TestUtils.timeStringToEpochMilli(endString);
     ds.trim(st, ed);
     StepExperiment se = new StepExperiment();
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
-    assertEquals(367.5, 1. / fitParams[0], 0.5);
+    assertEquals(367.6, 1. / fitParams[0], 0.5);
     assertEquals(0.715, fitParams[1], 0.005);
   }
 
@@ -102,7 +120,7 @@ public class StepExperimentTest {
     se.runExperimentOnData(ds);
     double[] fitParams = se.getFitParams();
     assertEquals(371.3, 1. / fitParams[0], 0.5);
-    assertEquals(0.719, fitParams[1], 0.005);
+    assertEquals(0.715, fitParams[1], 0.005);
   }
 
   @Test

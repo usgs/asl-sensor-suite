@@ -10,8 +10,10 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.util.HashSet;
 import java.util.Set;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -23,9 +25,9 @@ import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Panel to display the results of the gain experiment calculations.
@@ -114,32 +116,34 @@ public class GainPanel extends ExperimentPanel
     constraints.anchor = GridBagConstraints.CENTER;
     this.add(chartPanel, constraints);
 
-    constraints.gridx = 0;
-    constraints.gridy += 1;
-    constraints.weighty = 0;
-    constraints.gridwidth = 1;
-    constraints.anchor = GridBagConstraints.EAST;
-    this.add(leftSlider, constraints);
-    constraints.fill = GridBagConstraints.NONE;
-    constraints.gridx += 1;
-    constraints.anchor = GridBagConstraints.CENTER;
-    constraints.weightx = 0;
-    this.add(recalcButton, constraints);
-    constraints.fill = GridBagConstraints.BOTH;
-    constraints.gridx += 1;
-    constraints.anchor = GridBagConstraints.WEST;
-    constraints.weightx = 1;
-    this.add(rightSlider, constraints);
+    JPanel rangeSubpanel = new JPanel();
+    rangeSubpanel.setLayout(new BoxLayout(rangeSubpanel, BoxLayout.X_AXIS));
+    rangeSubpanel.add(leftSlider);
+    rangeSubpanel.add(recalcButton);
+    rangeSubpanel.add(rightSlider);
 
+    constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.gridx = 0;
     constraints.gridy += 1;
-    constraints.fill = GridBagConstraints.BOTH;
+    constraints.weightx = 1;
+    constraints.weighty = 0;
     constraints.anchor = GridBagConstraints.CENTER;
-    this.add(referenceSeries, constraints);
-    constraints.weightx = 0;
-    constraints.gridx += 1;
+    this.add(rangeSubpanel, constraints);
+
     constraints.fill = GridBagConstraints.NONE;
+    constraints.gridx = 0;
+    constraints.gridy += 1;
+    constraints.weightx = 1;
+    constraints.anchor = GridBagConstraints.WEST;
+    this.add(referenceSeries, constraints);
+    constraints.gridx += 1;
+    constraints.weightx = 0;
+    constraints.anchor = GridBagConstraints.CENTER;
     this.add(save, constraints);
+    constraints.gridx += 1;
+    constraints.weightx = 1;
+    constraints.anchor = GridBagConstraints.EAST;
+    this.add(new JPanel(), constraints);
 
   }
 
@@ -387,6 +391,9 @@ public class GainPanel extends ExperimentPanel
   protected void updateData(final DataStore dataStore) {
     set = true;
     setDataNames(dataStore);
+    // force the reference to be 0 on recalc
+    referenceSeries.setSelectedIndex(0);
+    updateReference(0);
     expResult.runExperimentOnData(dataStore);
     // need to have 2 series for relative gain
     referenceSeries.setEnabled(true);

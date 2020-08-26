@@ -1,7 +1,6 @@
 package asl.sensor;
-
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.experiment.GainExperiment;

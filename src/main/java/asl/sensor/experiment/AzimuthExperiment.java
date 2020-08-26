@@ -1,5 +1,15 @@
 package asl.sensor.experiment;
 
+import static asl.utils.FilterUtils.bandFilter;
+import static asl.utils.NumericUtils.TAU;
+import static asl.utils.NumericUtils.decimate;
+import static asl.utils.NumericUtils.demean;
+import static asl.utils.NumericUtils.detrend;
+import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static asl.utils.TimeSeriesUtils.rotate;
+
+import asl.sensor.input.DataStore;
+import asl.utils.input.DataBlock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,11 +28,6 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.Pair;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import asl.sensor.input.DataBlock;
-import asl.sensor.input.DataStore;
-import asl.sensor.utils.FFTResult;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.TimeSeriesUtils;
 
 /**
  * The program attempts to fit known-orthogonal sensors of unknown azimuth to a
@@ -84,30 +89,63 @@ public class AzimuthExperiment extends Experiment {
   }
 
   private String getAzimuthResults() {
-    StringBuilder angleStr = new StringBuilder();
-    double angle = getFitAngle(); // angle reported should be in degrees
-    angleStr.append("FIT ANGLE: ").append(DECIMAL_FORMAT.get().format(angle));
-    double result = ((offset + angle) % 360 + 360) % 360;
 
-    angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(offset)).append(" = ");
-    angleStr.append(DECIMAL_FORMAT.get().format(result)).append(" (+/- ");
-    angleStr.append(DECIMAL_FORMAT.get().format(uncertainty)).append(")");
+    String name = "N";
+    double angle = getFitAngle();
+
+    return getAzimuthResultForAngleParameters(name, angle, offset, uncertainty, enoughPts);
+  }
+
+  private String getAzimuthResultsEast() {
+
+    String name = "E";
+    double angle = (getFitAngle() + 90) % 360;
+    // angle reported should be in degrees, so add 90 for east, modulus is 360
+
+    return getAzimuthResultForAngleParameters(name, angle, offset, uncertainty, enoughPts);
+  }
+
+  private static String getAzimuthResultForAngleParameters(
+      String name, double angle, double offset, double uncertainty, boolean enoughPts) {
+    StringBuilder angleStr = new StringBuilder();
+    // angle reported should be in degrees, so use 360 as modulus
+    double result = ((offset + angle) % 360 + 360) % 360;
+    angleStr.append(name).append(" FIT ANGLE: ")
+        .append(DECIMAL_FORMAT.get().format(angle));
+
+    // include offset value if nonzero
+    if (offset != 0.) {
+      angleStr.append(" + ").append(DECIMAL_FORMAT.get().format(offset)).append(" = ")
+          .append(DECIMAL_FORMAT.get().format(result));
+    }
+
+    angleStr.append(" (+/- ")
+        .append(DECIMAL_FORMAT.get().format(uncertainty)).append(")");
     if (!enoughPts) {
       angleStr.append(" | WARNING: SMALL RANGE");
     }
+
     return angleStr.toString();
   }
 
   @Override
   public String[] getDataStrings() {
     // get azimuth (with offset) and uncertainty
-    return new String[]{getAzimuthResults()};
+    return new String[]{getAzimuthResults(), getAzimuthResultsEast()};
   }
 
   @Override
   public String[] getInsetStrings() {
     // set the start and end strings separately for compatibility with polar plot interface
-    return new String[]{getAzimuthResults(), getFormattedStartDate(), getFormattedEndDate()};
+    return new String[]{getAzimuthResults(), getAzimuthResultsEast(),
+        getFormattedStartDate(), getFormattedEndDate()};
+  }
+
+  @Override
+  public String getReportString() {
+    String output = super.getReportString() + "\n(Offset angle for reference was " + offset + ")";
+
+    return output;
   }
 
   /**
@@ -183,6 +221,7 @@ public class AzimuthExperiment extends Experiment {
     DataBlock testEastBlock = dataStore.getXthLoadedBlock(2);
     DataBlock refNorthBlock = dataStore.getXthLoadedBlock(3);
 
+    dataNames = new ArrayList<>();
     dataNames.add(testNorthBlock.getName());
     dataNames.add(testEastBlock.getName());
     dataNames.add(refNorthBlock.getName());
@@ -215,35 +254,34 @@ public class AzimuthExperiment extends Experiment {
       double[] refNorth, long interval, long startTime, long endTime) {
 
     minCorr = 0; // make sure to initialize
-    double tau = NumericUtils.TAU; // 2 pi
 
     enoughPts = false;
 
     // does nothing if the data is already 1Hz sample rate
-    testNorth = TimeSeriesUtils.decimate(testNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    testEast = TimeSeriesUtils.decimate(testEast, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
-    refNorth = TimeSeriesUtils.decimate(refNorth, interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    testNorth = decimate(testNorth, interval, ONE_HZ_INTERVAL);
+    testEast = decimate(testEast, interval, ONE_HZ_INTERVAL);
+    refNorth = decimate(refNorth, interval, ONE_HZ_INTERVAL);
     // update the actual sample rate if data was above 1Hz sampling
-    interval = Math.max(interval, TimeSeriesUtils.ONE_HZ_INTERVAL);
+    interval = Math.max(interval, ONE_HZ_INTERVAL);
 
-    double[] initTestNorth = TimeSeriesUtils.demean(testNorth);
-    double[] initTestEast = TimeSeriesUtils.demean(testEast);
-    double[] initRefNorth = TimeSeriesUtils.demean(refNorth);
+    double[] initTestNorth = demean(testNorth);
+    double[] initTestEast = demean(testEast);
+    double[] initRefNorth = demean(refNorth);
 
-    initTestNorth = TimeSeriesUtils.detrend(initTestNorth);
-    initTestEast = TimeSeriesUtils.detrend(initTestEast);
-    initRefNorth = TimeSeriesUtils.detrend(initRefNorth);
+    initTestNorth = detrend(initTestNorth);
+    initTestEast = detrend(initTestEast);
+    initRefNorth = detrend(initRefNorth);
 
     // should there be a normalization step here?
 
     // data will be downsampled to 1 if > 1Hz rate, else will keep sample rate from input
-    double samplesPerSecond = Math.min(1., TimeSeriesUtils.ONE_HZ_INTERVAL / (double)interval);
+    double samplesPerSecond = Math.min(1., ONE_HZ_INTERVAL / (double)interval);
     double low = 1. / 8; // filter from 8 seconds interval
     double high = 1. / 3; // up to 3 seconds interval
-
-    initTestNorth = FFTResult.bandFilter(initTestNorth, samplesPerSecond, low, high);
-    initTestEast = FFTResult.bandFilter(initTestEast, samplesPerSecond, low, high);
-    initRefNorth = FFTResult.bandFilter(initRefNorth, samplesPerSecond, low, high);
+    // bandpass filters of order 2 in the range specified above
+    initTestNorth = bandFilter(initTestNorth, samplesPerSecond, low, high, 2);
+    initTestEast = bandFilter(initTestEast, samplesPerSecond, low, high, 2);
+    initRefNorth = bandFilter(initRefNorth, samplesPerSecond, low, high, 2);
 
     // enforce length constraint -- all data must be the same length
     double[][] data = matchArrayLengths(initTestNorth, initTestEast, initRefNorth);
@@ -272,8 +310,8 @@ public class AzimuthExperiment extends Experiment {
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
     double bestGuessAngle = angleVector.getEntry(0);
-    bestGuessAngle = ((bestGuessAngle % NumericUtils.TAU) + NumericUtils.TAU)
-        % NumericUtils.TAU;
+    bestGuessAngle = ((bestGuessAngle % TAU) + TAU)
+        % TAU;
 
     fireStateChange("Found initial guess for angle: " + bestGuessAngle);
 
@@ -305,7 +343,7 @@ public class AzimuthExperiment extends Experiment {
     // (improves susceptibility to noise)
     double bestCorr = jacobian.value(angleVector).getFirst().getEntry(0);
     double bestTheta = bestGuessAngle;
-    final long twoThouSecs = 2000L * TimeSeriesUtils.ONE_HZ_INTERVAL;
+    final long twoThouSecs = 2000L * ONE_HZ_INTERVAL;
     // 1000 ms per second, range length
     final long fiveHundredSecs = twoThouSecs / 4L; // distance between windows
     int numWindows = (int) ((timeRange - twoThouSecs) / fiveHundredSecs);
@@ -324,13 +362,14 @@ public class AzimuthExperiment extends Experiment {
       double[] testEastWin = Arrays.copyOfRange(initTestEast, startIdx, endIdx);
       double[] refNorthWin = Arrays.copyOfRange(initRefNorth, startIdx, endIdx);
 
-      testNorthWin = TimeSeriesUtils.detrend(testNorthWin);
-      testEastWin = TimeSeriesUtils.detrend(testEastWin);
-      refNorthWin = TimeSeriesUtils.detrend(refNorthWin);
+      testNorthWin = detrend(testNorthWin);
+      testEastWin = detrend(testEastWin);
+      refNorthWin = detrend(refNorthWin);
 
-      testNorthWin = FFTResult.bandFilter(testNorthWin, samplesPerSecond, low, high);
-      testEastWin = FFTResult.bandFilter(testEastWin, samplesPerSecond, low, high);
-      refNorthWin = FFTResult.bandFilter(refNorthWin, samplesPerSecond, low, high);
+      // bandpass filters of order 2 again
+      testNorthWin = bandFilter(testNorthWin, samplesPerSecond, low, high, 2);
+      testEastWin = bandFilter(testEastWin, samplesPerSecond, low, high, 2);
+      refNorthWin = bandFilter(refNorthWin, samplesPerSecond, low, high, 2);
 
       jacobian =
           getDampedJacobianFunction(testNorthWin, testEastWin, refNorthWin, bestCorr, bestTheta);
@@ -351,7 +390,7 @@ public class AzimuthExperiment extends Experiment {
       // call to evaluate at best-fit point gives corresponding latestCorrelation as side effect
       double currentWindowAngle = angleVectorWindow.getEntry(0);
 
-      currentWindowAngle = ((currentWindowAngle % tau) + tau) % tau;
+      currentWindowAngle = ((currentWindowAngle % TAU) + TAU) % TAU;
 
       double correlation = latestCorrelation;
 
@@ -371,7 +410,7 @@ public class AzimuthExperiment extends Experiment {
       fireStateChange("Window size too small for good angle estimation...");
 
       // The initial best estimate from before windowing occurs
-      angle = bestGuessAngle % tau;
+      angle = bestGuessAngle % TAU;
 
     } else {
       // get the best-correlation estimations of angle and average them
@@ -404,7 +443,7 @@ public class AzimuthExperiment extends Experiment {
       // shift term here used to deal with potential discontinuities in the mean of the data
       double shift = angles[0] + Math.PI / 4; // 45 degrees offset
       for (int i = 0; i < angles.length; ++i) {
-        angles[i] = (((angles[i] + shift) % tau) + tau) % tau;
+        angles[i] = (((angles[i] + shift) % TAU) + TAU) % TAU;
       }
 
       // now get the average
@@ -437,7 +476,7 @@ public class AzimuthExperiment extends Experiment {
           MatrixUtils.createRealVector(new double[]{averageAngle});
       findAngleY.evaluate(angleVec);
 
-      angle = ((averageAngle % tau) + tau) % tau;
+      angle = ((averageAngle % TAU) + TAU) % TAU;
 
     }
 
@@ -474,7 +513,7 @@ public class AzimuthExperiment extends Experiment {
     for (int i = 0; i < angles.length; ++i) {
       long xVal = i * 500;
       double angle = angles[i];
-      angle = (angle % tau);
+      angle = (angle % TAU);
       double correlation = correlations[i];
       timeMapCorrelation.add(xVal, correlation);
       timeMapAngle.add(xVal, Math.toDegrees(angle));
@@ -646,9 +685,9 @@ public class AzimuthExperiment extends Experiment {
 
     // angles of rotation are x, x+dx respectively
     double[] testRotated =
-        TimeSeriesUtils.rotate(testNorth, testEast, theta);
+        rotate(testNorth, testEast, theta);
     double[] rotatedDiff =
-        TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
+        rotate(testNorth, testEast, thetaDelta);
 
     PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
     double value = pearsonsCorrelation.correlation(refNorth, testRotated);
@@ -693,9 +732,9 @@ public class AzimuthExperiment extends Experiment {
 
     // angles of rotation are x, x+dx respectively
     double[] testRotated =
-        TimeSeriesUtils.rotate(testNorth, testEast, theta);
+        rotate(testNorth, testEast, theta);
     double[] rotatedDiff =
-        TimeSeriesUtils.rotate(testNorth, testEast, thetaDelta);
+        rotate(testNorth, testEast, thetaDelta);
 
     PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
     double value = pearsonsCorrelation.correlation(refNorth, testRotated);

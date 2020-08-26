@@ -32,23 +32,21 @@ public class SolverTest {
     RealVector start = MatrixUtils.createRealVector(new double[]{0, 0});
     double delta = 1E-7;
 
-    MultivariateJacobianFunction jacobian = new MultivariateJacobianFunction() {
-      public Pair<RealVector, RealMatrix> value(final RealVector point) {
+    MultivariateJacobianFunction jacobian = point -> {
 
-        double[] pArr = point.toArray();
-        double[] res = new double[]{calcRosenbrock(pArr)};
-        RealVector ans = MatrixUtils.createRealVector(res);
+      double[] pArr = point.toArray();
+      double[] res = new double[]{calcRosenbrock(pArr)};
+      RealVector ans = MatrixUtils.createRealVector(res);
 
-        double[][] jcb = new double[1][pArr.length];
-        for (int i = 0; i < pArr.length; ++i) {
-          double[] newVars = pArr.clone();
-          newVars[i] += delta;
-          double diffY = calcRosenbrock(newVars);
-          jcb[0][i] = (diffY - res[0]) / delta;
-        }
-        RealMatrix jacobian = MatrixUtils.createRealMatrix(jcb);
-        return new Pair<>(ans, jacobian);
+      double[][] jcb = new double[1][pArr.length];
+      for (int i = 0; i < pArr.length; ++i) {
+        double[] newVars = pArr.clone();
+        newVars[i] += delta;
+        double diffY = calcRosenbrock(newVars);
+        jcb[0][i] = (diffY - res[0]) / delta;
       }
+      RealMatrix jacobian1 = MatrixUtils.createRealMatrix(jcb);
+      return new Pair<>(ans, jacobian1);
     };
 
     RealVector target = MatrixUtils.createRealVector(new double[]{0});
@@ -69,7 +67,6 @@ public class SolverTest {
     LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
     double[] values = optimum.getPoint().toArray();
     for (double value : values) {
-      System.out.println(value);
       assertEquals(1.0, value, 5E-3);
     }
   }
@@ -102,8 +99,6 @@ public class SolverTest {
 
         RealVector result = MatrixUtils.createRealVector(resultArr);
 
-        // System.out.println(init + "," + res);
-
         double[][] jacobianArr = new double[resultArr.length][pointArr.length];
 
         for (int i = 0; i < pointArr.length; ++i) {
@@ -120,7 +115,6 @@ public class SolverTest {
             }
           }
 
-          // System.out.println( Arrays.toString(fwdDiffArr) );
           double[] forwardDiffRes = doCalculation(fwdDiffArr);
 
           for (int j = 0; j < forwardDiffRes.length; ++j) {
@@ -158,8 +152,6 @@ public class SolverTest {
 
     double[] firstOptimum = optimum.getPoint().toArray();
 
-    // System.out.println( Arrays.toString( optimum.getPoint().toArray() ) );
-
     lsp = new LeastSquaresBuilder().
         start(initialGuess2).
         target(obsResVector).
@@ -172,8 +164,6 @@ public class SolverTest {
     optimum = optimizer.optimize(lsp);
 
     double[] secondOptimum = optimum.getPoint().toArray();
-
-    // System.out.println( Arrays.toString( optimum.getPoint().toArray() ) );
 
     assertEquals(firstOptimum[0], -4, 0.1);
     assertEquals(secondOptimum[0], 3, 0.1);

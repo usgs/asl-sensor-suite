@@ -4,28 +4,94 @@
 
 This program is used to analyze various aspects of seismic sensor data in order to determine information about their configuration, such as gain and orientation. It is meant to be a simple program that can be used to generate data on a wide range of sensor tests, a one-stop-shop for sensor diagnostics designed to replace several disparate programs across multiple languages. The program is designed around an interface meant to be simple and intuitive.
 
+DOI: https://doi.org/10.5066/P9XXBOVR  
+IPDS: IP-101116  
+
+USGS Approved Release:  
+Link: https://github.com/usgs/asl-sensor-suite/releases/tag/v1.4.2   
+Commit Hash: f25cfd70afc2195ad1f651efb319264c285d4ef4  
+
 ### Requirements
 
 ##### Software
-This program is designed to be used with Java 1.8. Some early releases were more compatible with 1.7 but changes to the date/time libraries used in recent releases will have made it incompatible.
-This program also requires Gradle in order to be run from source. For instructions on installing Gradle, see https://gradle.org/install
-Running the program with gradle can be done by using the command `gradle run`, which compiles the source into classes and runs the program that way; using the command `gradle build` produces an executable JAR file that can be launched using the command `java -jar build/libs/SensorTestSuite$version_number$.jar`.
-NOTE: because Gradle requires access to the maven repositories to download dependencies, there may be build issues when running the program on DOI-networked computers. The instructions for using DOI certificates for maven authentication can be found under the Java subheader at https://github.com/usgs/best-practices/blob/master/WorkingWithinSSLIntercept.md. You will also need the file "DOIRootCA.crt" from the linked page near the top detailing how to configure git.
-For those using Mac computers, the last step for trusting the certificate in Java may be slightly different. If installing the certificate using the instructions above fails, try using this command instead (NOTE: requires administrative access due to the use of the sudo command) https://blog.alwold.com/2011/06/30/how-to-trust-a-certificate-in-java-on-mac-os-x/
+
+This program is designed to be used with Java 1.8. Some early releases were more compatible with 1.7
+but changes to the date/time libraries used in recent releases will have made it incompatible.
+This program also requires Gradle in order to be run from source. For instructions on installing 
+Gradle, see https://gradle.org/install
+
+Additional details on compiling and running the code can be seen in the Compilation subheader below.
+
+##### Additional repositories
+
+Depending on the download source for the code, this program may also require additional libraries
+in order to function correctly. The repository for this code is designed to use relative pathing
+from code.usgs.gov which is a version control system that is not exclusively public. Downloading the
+code from github instead will require manual adding of this code to the repository.
+
+The simplest way to change this is to manually edit the .gitmodules file with a text editor.
+Replace the lines starting with `url =` to include the full path to the repositories.
+For the first entry, the seismic test data repository (needed for running test cases) should
+have the line set to `url = https://github.com/usgs/seismic-test-data.git`. For the second entry,
+the asl-java-tools repository (used for most backend functionality of this code) should have the 
+line set to `url = https://code.usgs.gov/asl/asl-java-utils.git`. This is a link to a public
+repository maintained by USGS using gitlab.
+
+After doing this, you should be able to build and run the program according to the instructions
+given here. If there are errors tied to these submodules when trying to build (such as test cases
+having null-related exceptions when loading files, or the java utils dependency not available),
+manually run the command `git submodule update --init --recursive`. (This should hopefully not
+be necessary, as the gradle build script runs this command automatically to initialize these repos.
+Because the repository for test data is particularly large, however, it may take a long time to
+fully download.)
+
+It is also possible to manually clone from the two specified URLs 
+(https://github.com/usgs/seismic-test-data.git and https://code.usgs.gov/asl/asl-java-utils.git).
+The data for the former should be extracted into a folder named `seismic-test-data` under the
+`src/test/resources` subdirectory latter into a folder named `asl-java-utils` from the project root
+(where this README file is kept), but this is not recommended as updates to these repositories or
+to this project's test cases may break unless these are also properly kept up-to-date, which 
+editing .gitmodules will ensure happens automatically when running `git fetch --all`.
 
 ##### Hardware
-Because SEED files must be decompressed and stored in memory, the footprint of this application has the potential to be rather large. Running this program on OSX v. 10.11.15, the total memory usage was 76.6 MB compressed but 1.82 GB uncompressed. As a result, this program's performance may be dependent on the memory management systems used by the OS of the system it runs on.
+
+Because SEED files must be decompressed and stored in memory, the footprint of this application has 
+the potential to be rather large. Running this program on OSX v. 10.11.15, the total memory usage 
+was 76.6 MB compressed but 1.82 GB uncompressed. As a result, this program's performance may be 
+dependent on the memory management systems used by the OS of the system it runs on.
 
 ### Compilation
 
-While releases are regularly updated with major feature changes included in the releases tab on this project's Github and approximately-daily snapshots included among the projects files, it may be desired to build the project direct from source. There are a few ways of doing this, explained below.
+Out of interest to remain compliant with some library licensing restrictions, the program can currently
+only be built or run from source. This requires gradle to be installed where the build will happen.
 
-##### Command Line
-The program can be compiled by using the commands `gradle compileJava` which will compile the source code, or `gradle build` which will also run the unit tests.
-Running the program can be done by either opening the jar through a filebrowser or running either `gradle run`, which launches the jar file, or `java -jar build/libs/SensorTestSuite$version_number$.jar` after the program has been built, with $version_number$ replaced with the current version, based on the value of the parameter 'version' in the build.gradle file. The gradle build script also allows the built jar file to be placed in the root directory; if `gradle compileJava` was previously run, then `gradle copyJar` will move it there. Note that `gradle build` includes this step by default, and also runs all tests -- in the initial run of tests (also performed by `gradle test` or `gradle check`, this may be slow, as the test data used in the test cases will need to be downloaded before they can be run, though once this is completed, running the test cases will likely only take a couple minutes).
+The command `gradle build` run from the project's root folder should produce jar files that are then
+runnable from the root directory. These are also found in the `./build/libs` subfolder. This operation
+will run all test cases to verify performance of the build, which may be a slow operation especially
+on its first completion (as roughly a gigabyte of data to be used for testing must be downloaded).
 
-##### Eclipse
-For those who wish to compile and run this program with Eclipse, run the command `gradle eclipse` and then, inside eclipse, go to File>"Open projects from file system..." and direct Eclipse to the root folder of the test suite. Now the code will be available as an Eclipse project. For more information on using Eclipse, consult the Eclipse documentation.
+Note that there are two jars produced in the build process. Most end users will only need the one 
+called 'asl-sensor-suite-[version]'. The one called 'CalServer-[version]' is an alternate build of 
+the program mainly intended for internal use on a data verification server running django and python.
+
+The program can also be run from source with the `gradle run` command. This may be useful for
+development and test work. It is also possible to load and run from IDEs such as Eclipe or IntelliJ
+if gradle plugin support is installed.
+
+There are additional gradle commands available for people with interest in development. The gradle
+`jar` command will produce a build of the program without running any test cases. This produces a 
+jar file of the main program.
+
+NOTE: because Gradle requires access to the maven repositories to download dependencies, there may 
+be build issues when running the program on DOI-networked computers. The instructions for using DOI 
+certificates for maven authentication can be found under the Java subheader at 
+https://github.com/usgs/best-practices/blob/master/WorkingWithinSSLIntercept.md. You will also need 
+the file "DOIRootCA.crt" from the linked page near the top detailing how to configure git.
+For those using Mac computers, the last step for trusting the certificate in Java may be slightly 
+different. If installing the certificate using the instructions above fails, try using this 
+command instead (NOTE: requires administrative access due to the use of the sudo command) 
+https://blog.alwold.com/2011/06/30/how-to-trust-a-certificate-in-java-on-mac-os-x/
+
 
 ### File Selection
 The program will default to looking for SEED files in the "data" subdirectory in the same folder the jar is, if it exists. It is possible to choose a different folder, which will become the new default folder when loading in additional files. It will not, however, persist after the program is closed.

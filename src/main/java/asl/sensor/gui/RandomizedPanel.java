@@ -1,29 +1,52 @@
 package asl.sensor.gui;
 
+import static asl.sensor.experiment.RandomizedExperiment.VALID_CORRECTIONS;
+import static asl.utils.ReportingUtils.setNonNumericPrintable;
+
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
+import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.NumericUtils;
-import asl.sensor.utils.ReportingUtils;
+import asl.utils.ResponseUnits.SensorType;
+import asl.utils.input.InstrumentResponse;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JTextPane;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -38,9 +61,9 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.VerticalAlignment;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.VerticalAlignment;
 
 /**
  * Panel to display results from a randomized calibration experiment.
@@ -56,23 +79,50 @@ public class RandomizedPanel extends ExperimentPanel {
 
   private static final long serialVersionUID = -1791709117080520178L;
   private final JComboBox<String> plotSelection;
+  private final JComboBox<SensorType> sensorCorrectionSelector;
   private final JSpinner nyquistMultiplier;
   private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
       residualXAxis, residualPeriodAxis;
-  private JCheckBox lowFrequency, showParams, frequencySpace, capacitiveCal;
+  private JRadioButton lowFrequency, autoFrequency;
+  // high frequency button created in constructor but not checked explicitly for status
+  private JCheckBox showParams, frequencySpace, capacitiveCal;
   private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
+  private JButton generateResp, saveResp;
 
   public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
-
-    SpinnerModel spinModel = new SpinnerNumberModel(80., 30., 90., 1.);
+    SpinnerModel spinModel = new SpinnerNumberModel(
+        RandomizedExperiment.DEFAULT_NYQUIST_PERCENT_LIMIT * 100,
+        RandomizedExperiment.MIN_MULTIPLIER * 100,
+        RandomizedExperiment.PEAK_MULTIPLIER * 100, 1.);
     nyquistMultiplier = new JSpinner(spinModel);
     JLabel nyquistMultiplierLabel = new JLabel("% bound of nyquist for HF cals");
     nyquistMultiplierLabel.setLabelFor(nyquistMultiplier);
     nyquistMultiplierLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
     nyquistMultiplierLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-    JPanel labelPanel = new JPanel();
-    labelPanel.add(nyquistMultiplierLabel);
+
+    JLabel introText = new JLabel("Calibration type: ");
+    lowFrequency = new JRadioButton("low freq.");
+    JRadioButton highFrequency = new JRadioButton("high freq.");
+    autoFrequency = new JRadioButton("auto");
+
+    ButtonGroup group = new ButtonGroup();
+    group.add(lowFrequency);
+    group.add(highFrequency);
+    group.add(autoFrequency);
+    autoFrequency.setSelected(true);
+
+    sensorCorrectionSelector = new JComboBox<>(VALID_CORRECTIONS);
+    sensorCorrectionSelector.setPreferredSize(sensorCorrectionSelector.getMinimumSize());
+    // use a custom renderer to handle the null option for correction response
+    sensorCorrectionSelector.setRenderer(new CorrectionComboBoxRenderer());
+    JLabel sensorCorrectionLabel =
+        new JLabel("Correction factor: (unneeded for embedded resps)");
+    sensorCorrectionLabel.setLabelFor(sensorCorrectionSelector);
+    sensorCorrectionLabel.setHorizontalTextPosition(SwingConstants.LEFT);
+    sensorCorrectionLabel.setHorizontalAlignment(SwingConstants.LEFT);
+    JPanel correctionPanel = new JPanel();
+    correctionPanel.add(sensorCorrectionLabel);
 
     channelType[0] = "Calibration input";
     channelType[1] = "Calibration output from sensor (RESP required)";
@@ -108,19 +158,53 @@ public class RandomizedPanel extends ExperimentPanel {
     constraints.fill = GridBagConstraints.NONE;
     constraints.gridy += 1;
     constraints.gridx = 0;
-    JPanel checkBoxPanel = new JPanel();
-    checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
-    checkBoxPanel.add(lowFrequency);
-    checkBoxPanel.add(showParams);
-    checkBoxPanel.add(frequencySpace);
-    checkBoxPanel.add(capacitiveCal);
-    this.add(checkBoxPanel, constraints);
+    JPanel optionsPanel = new JPanel();
+    optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
+
+    JPanel radioButtonPanel = new JPanel();
+    radioButtonPanel.setAlignmentX(LEFT_ALIGNMENT);
+    radioButtonPanel.setLayout(new BoxLayout(radioButtonPanel, BoxLayout.X_AXIS));
+    radioButtonPanel.add(introText);
+    radioButtonPanel.add(lowFrequency);
+    radioButtonPanel.add(highFrequency);
+    radioButtonPanel.add(autoFrequency);
+
+    optionsPanel.add(radioButtonPanel);
+    showParams.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(showParams);
+    frequencySpace.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(frequencySpace);
+    capacitiveCal.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(capacitiveCal);
+    JPanel sensorCorrectionPanel = new JPanel();
+    sensorCorrectionPanel.setLayout(new BoxLayout(sensorCorrectionPanel, BoxLayout.X_AXIS));
+    sensorCorrectionPanel.add(sensorCorrectionLabel);
+    sensorCorrectionPanel.add(sensorCorrectionSelector);
+    sensorCorrectionPanel.setAlignmentX(LEFT_ALIGNMENT);
+    optionsPanel.add(sensorCorrectionPanel);
+    this.add(optionsPanel, constraints);
+
+    generateResp = new JButton("View fit RESP");
+    generateResp.setEnabled(false);
+    JPanel savePanel = new JPanel();
+    savePanel.setAlignmentX(CENTER_ALIGNMENT);
+    savePanel.setLayout(new BoxLayout(savePanel, BoxLayout.Y_AXIS));
+    generateResp.setAlignmentX(CENTER_ALIGNMENT);
+    savePanel.add(generateResp);
+    generateResp.addActionListener(this);
+    saveResp = new JButton("Save fit resp");
+    saveResp.setEnabled(false);
+    saveResp.setAlignmentX(CENTER_ALIGNMENT);
+    savePanel.add(saveResp);
+    saveResp.addActionListener(this);
+    save.setAlignmentX(CENTER_ALIGNMENT);
+    savePanel.add(save);
 
     constraints.gridx += 1;
     constraints.weightx = 1.0;
     constraints.fill = GridBagConstraints.NONE;
-    constraints.anchor = GridBagConstraints.SOUTH;
-    this.add(save, constraints);
+    constraints.anchor = GridBagConstraints.PAGE_END;
+    this.add(savePanel, constraints);
 
     // plot selection combo box
     constraints.fill = GridBagConstraints.BOTH;
@@ -157,15 +241,13 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   public static String[] getAdditionalReportPages(RandomizedExperiment experiment) {
 
-    // TODO: refactor this now that period values are included in
-    // the inset portion of the report text instead of merely in the extra data
     StringBuilder resultString = new StringBuilder();
 
     StringBuilder csvPoles = new StringBuilder();
     StringBuilder csvZeros = new StringBuilder();
     StringBuilder csvTitle = new StringBuilder();
     DecimalFormat csvFormat = new DecimalFormat("+#.###;-#.###");
-    NumericUtils.setInfinityPrintable(csvFormat);
+    setNonNumericPrintable(csvFormat);
 
     final int COL_WIDTH = 9;
     String[] columns = new String[]{"Init", "Fit", "Diff", "Mean", "PctDiff"};
@@ -320,6 +402,54 @@ public class RandomizedPanel extends ExperimentPanel {
   public void actionPerformed(ActionEvent event) {
     super.actionPerformed(event);
 
+    if (event.getSource() == generateResp) {
+      RandomizedExperiment rExp = (RandomizedExperiment) expResult;
+      InstrumentResponse fitResp = rExp.getFitResponse();
+      Map<Complex, Complex> poleMap = rExp.getPoleErrors();
+      Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
+
+      try {
+        CharSequence bufferedText = fitResp.printModifiedResponse(poleMap, zeroMap);
+        JTextPane respTextHolder = new JTextPane();
+        respTextHolder.setEditable(false);
+        respTextHolder.setFont(Font.getFont(Font.MONOSPACED));
+        respTextHolder.setText(bufferedText.toString());
+        JScrollPane scroll = new JScrollPane(respTextHolder);
+        JDialog textBox = new JDialog((Frame) SwingUtilities.windowForComponent(this),
+            "FIT RESP TEXT", true); // boolean makes this dialog a modal popup
+        textBox.add(scroll);
+        Dimension d = respTextHolder.getPreferredSize();
+        d.setSize(d.getWidth() + 100, 200);
+        textBox.setMinimumSize(d);
+        textBox.setVisible(true);
+      } catch (IOException e) {
+        String errorMsg = "Could not open the expected response " + fitResp.getName() +
+            " for editing.";
+        JOptionPane.showMessageDialog(this, errorMsg, "Response Loading Error",
+            JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+      }
+      return;
+    }
+
+    if (event.getSource() == saveResp) {
+      JFileChooser fileChooser = new JFileChooser();
+      fileChooser.setCurrentDirectory(new File(Configuration.getInstance().getDefaultRespFolder()));
+      int returnVal = fileChooser.showSaveDialog(save);
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+        File selFile = fileChooser.getSelectedFile();
+        try {
+          RandomizedExperiment rExp = (RandomizedExperiment) expResult;
+          InstrumentResponse fitResp = rExp.getFitResponse();
+          Map<Complex, Complex> poleMap = rExp.getPoleErrors();
+          Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
+          fitResp.writeModifiedResponse(poleMap, zeroMap, selFile);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+
     if (event.getSource() == plotSelection) {
       if (!set) {
         XYPlot plot = chart.getXYPlot();
@@ -423,7 +553,8 @@ public class RandomizedPanel extends ExperimentPanel {
    */
   @Override
   public String getPDFFilename() {
-    if (lowFrequency.isSelected()) {
+    RandomizedExperiment rExp = (RandomizedExperiment) expResult;
+    if (rExp.isLowFrequencyCalibration()) {
       return "Low_Frq_" + super.getPDFFilename();
     } else {
       return "High_Frq_" + super.getPDFFilename();
@@ -481,7 +612,7 @@ public class RandomizedPanel extends ExperimentPanel {
     degreeAxis = new NumberAxis(degreeAxisTitle);
     degreeAxis.setAutoRange(true);
 
-    residualPhaseAxis = new NumberAxis("Phase error (degrees)");
+    residualPhaseAxis = new NumberAxis("Phase error (percentage)");
     residualAmplitudeAxis = new NumberAxis("Amplitude error (percentage)");
 
     ((NumberAxis) yAxis).setAutoRangeIncludesZero(false);
@@ -492,9 +623,6 @@ public class RandomizedPanel extends ExperimentPanel {
     degreeAxis.setLabelFont(bold);
     residualPhaseAxis.setLabelFont(bold);
     residualAmplitudeAxis.setLabelFont(bold);
-
-    lowFrequency = new JCheckBox("Low frequency calibration");
-    lowFrequency.setSelected(true);
 
     showParams = new JCheckBox("Show params");
     showParams.setEnabled(false);
@@ -540,16 +668,31 @@ public class RandomizedPanel extends ExperimentPanel {
   @Override
   protected void updateData(DataStore dataStore) {
     set = true;
+    generateResp.setEnabled(true);
+    saveResp.setEnabled(true);
     showParams.setSelected(false);
 
-    final boolean isLowFreq = lowFrequency.isSelected();
     seriesColorMap = new HashMap<>();
 
     // we display as % but backend expects this to be used
     double multiplier = (double) nyquistMultiplier.getValue() / 100.;
 
     RandomizedExperiment rndExp = (RandomizedExperiment) expResult;
-    rndExp.setLowFrequencyCalibration(isLowFreq);
+    if (autoFrequency.isSelected()) {
+      rndExp.autoDetermineCalibrationStatus(dataStore);
+    } else {
+      rndExp.setLowFrequencyCalibration(lowFrequency.isSelected());
+    }
+    try {
+      rndExp.setCorrectionResponse((SensorType) sensorCorrectionSelector.getSelectedItem());
+    } catch (IOException e) {
+      String text = "There was an error loading data during operations.\n"
+          + "If this is a randomized calibration producing this error,\n"
+          + "Something must have gone wrong while trying to create the\n"
+          + "correction response for Trillium sensors.";
+      displayErrorMessage(text);
+      return;
+    }
     rndExp.setPlotUsingHz(frequencySpace.isSelected());
     rndExp.setNyquistMultiplier(multiplier);
     rndExp.setCapactiveCalibration(capacitiveCal.isSelected());
@@ -557,6 +700,9 @@ public class RandomizedPanel extends ExperimentPanel {
 
     String appendFreqTitle;
 
+    final boolean isLowFreq = rndExp.isLowFrequencyCalibration();
+
+    // since cal status can be autodetermined, refer to underlying experiment for freq range
     if (isLowFreq) {
       appendFreqTitle = " (LOW FREQ.)";
     } else {
@@ -570,7 +716,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
     for (int i = 0; i < magSeries.getSeriesCount(); ++i) {
 
-      Color toColor = ReportingUtils.COLORS[i % ReportingUtils.COLORS.length];
+      Color toColor = getColor(i);
       String magName = (String) magSeries.getSeriesKey(i);
       seriesColorMap.put(magName, toColor);
 
@@ -604,11 +750,25 @@ public class RandomizedPanel extends ExperimentPanel {
     XYItemRenderer renderer; // use this to set series paints to set the last color to use 3rd color
     residualAmplitudeChart = buildChart(xysc.get(2), getResidAxis(), residualAmplitudeAxis);
     renderer = residualAmplitudeChart.getXYPlot().getRenderer();
-    renderer.setSeriesPaint(1, ReportingUtils.COLORS[2]);
+    renderer.setSeriesPaint(1, getColor(2));
     residualPhaseChart = buildChart(xysc.get(3), getResidAxis(), residualPhaseAxis);
     renderer = residualPhaseChart.getXYPlot().getRenderer();
-    renderer.setSeriesPaint(1, ReportingUtils.COLORS[2]);
+    renderer.setSeriesPaint(1, getColor(2));
 
   }
 
+  private static class CorrectionComboBoxRenderer extends BasicComboBoxRenderer {
+
+    public CorrectionComboBoxRenderer() {
+      super();
+    }
+
+    @Override
+    public Component getListCellRendererComponent(JList list, Object value, int index,
+        boolean isSelected,  boolean cellHasFocus) {
+      // if the object is null, display "None" instead of the empty string
+      String displayText = (value == null) ? "None" : value.toString();
+      return super.getListCellRendererComponent(list, displayText, index, isSelected, cellHasFocus);
+    }
+  }
 }

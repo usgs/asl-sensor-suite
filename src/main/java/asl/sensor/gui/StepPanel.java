@@ -18,9 +18,9 @@ import org.jfree.chart.block.BlockContainer;
 import org.jfree.chart.block.FlowArrangement;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.VerticalAlignment;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.VerticalAlignment;
 
 /**
  * Holds the plot results of a step experiment. Gets the timeseries data from it

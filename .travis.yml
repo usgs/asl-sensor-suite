@@ -1,15 +1,16 @@
 language: java
 
 jdk:
-  - oraclejdk8
   - openjdk8
 
 git:
     submodules: false
 
 before_install:
-    - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
-    - git submodule update --init --recursive
+    - sed -i 's/git@code.usgs.gov:/https:\/\/code.usgs.gov\//' .gitmodules
+    - git submodule init
+    - git submodule sync
+    - git submodule update
 
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
@@ -18,3 +19,5 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+
+install: travis_wait gradle gitSubmodule

@@ -4,7 +4,7 @@ import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.input.DataStore;
-import asl.sensor.input.InstrumentResponse;
+import asl.utils.input.InstrumentResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -27,7 +27,6 @@ public class ResponseExperimentTest {
         LocalDateTime.parse("2015,055,00:00:00", formatter).toInstant(ZoneOffset.UTC);
     String respName = "RESP.CU.BCIP.00.BHZ_2017_268";
     String respFile = RESP_LOCATION + respName;
-    System.out.println(InstrumentResponse.getRespFileEpochs(respFile));
     InstrumentResponse firstResp = new InstrumentResponse(respFile, startFirstEpoch);
     dataStore.setResponse(0, firstResp);
     InstrumentResponse secondResp = new InstrumentResponse(respFile, startSecondEpoch);
@@ -37,7 +36,7 @@ public class ResponseExperimentTest {
     assertEquals(2, firstPlottedData.getSeriesCount());
     String[] chartRespNames = {respName + " [2010.041]", respName + " [2015.055]"};
     for (int i = 0; i < chartRespNames.length; ++i) {
-      assertEquals(chartRespNames[i] + " Response amplitude", firstPlottedData.getSeriesKey(i));
+      assertEquals(chartRespNames[i], firstPlottedData.getSeriesKey(i));
     }
   }
 

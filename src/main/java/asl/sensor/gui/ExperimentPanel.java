@@ -1,9 +1,14 @@
 package asl.sensor.gui;
 
+import static asl.utils.ReportingUtils.COLORS;
+import static asl.utils.ReportingUtils.chartsToPDFPage;
+import static asl.utils.ReportingUtils.textListToPDFPages;
+import static asl.utils.ReportingUtils.textToPDFPage;
+
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.Experiment;
+import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.sensor.utils.ReportingUtils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
@@ -13,6 +18,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +36,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.ChartUtils;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.ValueAxis;
@@ -39,8 +45,8 @@ import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleAnchor;
 
 /**
  * Panel used to display the data produced from a specified sensor test.
@@ -115,9 +121,7 @@ public abstract class ExperimentPanel
     channelType = new String[DataStore.FILE_COUNT];
 
     // default initialization for channel type string
-    for (int i = 0; i < channelType.length; ++i) {
-      channelType[i] = "NOT USED";
-    }
+    Arrays.fill(channelType, "NOT USED");
 
     seriesColorMap = new HashMap<>();
     seriesDashedSet = new HashSet<>();
@@ -143,6 +147,20 @@ public abstract class ExperimentPanel
     this.add(chartPanel);
     this.add(save);
     save.setAlignmentX(Component.CENTER_ALIGNMENT);
+  }
+
+  static Color getColor(int idx) {
+    if (Configuration.getInstance().useColorblindColors()) {
+      return COLORS[idx % COLORS.length];
+    }
+    switch (idx % 3) {
+      case 0:
+        return Color.RED;
+      case 1:
+        return Color.BLUE;
+      default:
+        return Color.GREEN;
+    }
   }
 
   /**
@@ -200,11 +218,11 @@ public abstract class ExperimentPanel
       int returnVal = fileChooser.showSaveDialog(save);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File selFile = fileChooser.getSelectedFile();
-        if (!selFile.getName().endsWith(ext.toLowerCase())) {
+        if (!selFile.getName().toLowerCase().endsWith(ext)) {
           selFile = new File(selFile.toString() + ext);
         }
         try {
-          ChartUtilities.saveChartAsPNG(selFile, chart, 640, 480);
+          ChartUtils.saveChartAsPNG(selFile, chart, 640, 480);
         } catch (IOException e1) {
           e1.printStackTrace();
         }
@@ -272,9 +290,8 @@ public abstract class ExperimentPanel
     XYItemRenderer renderer = xyPlot.getRenderer();
 
     if (seriesColorMap.size() == 0) {
-      int modulus = ReportingUtils.COLORS.length;
       for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
-        renderer.setSeriesPaint(seriesIndex, ReportingUtils.COLORS[seriesIndex % modulus]);
+        renderer.setSeriesPaint(seriesIndex, getColor(seriesIndex));
       }
     }
 
@@ -282,9 +299,10 @@ public abstract class ExperimentPanel
     for (int seriesIndex = 0; seriesIndex < xyDataset.getSeriesCount(); ++seriesIndex) {
       BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
       if (stroke == null) {
-        stroke = (BasicStroke) renderer.getBaseStroke();
+        stroke = (BasicStroke) renderer.getDefaultStroke();
       }
-      float width = stroke.getLineWidth() + 2f;
+      float widthOffset = Configuration.getInstance().getLineWidthOffset();
+      float width = stroke.getLineWidth() + widthOffset;
       int join = stroke.getLineJoin();
       int cap = stroke.getEndCap();
 
@@ -318,7 +336,7 @@ public abstract class ExperimentPanel
         int join = stroke.getLineJoin();
         int cap = stroke.getEndCap();
 
-        float[] dashing = new float[]{1, 6};
+        float[] dashing = new float[]{10, 2};
 
         stroke = new BasicStroke(width, cap, join, 10f, dashing, 0f);
         renderer.setSeriesStroke(seriesIndex, stroke);
@@ -335,7 +353,7 @@ public abstract class ExperimentPanel
 
         BasicStroke stroke = (BasicStroke) renderer.getSeriesStroke(seriesIndex);
         if (stroke == null) {
-          stroke = (BasicStroke) renderer.getBaseStroke();
+          stroke = (BasicStroke) renderer.getDefaultStroke();
         }
         stroke = new BasicStroke(stroke.getLineWidth() * 2);
         renderer.setSeriesStroke(seriesIndex, stroke);
@@ -533,8 +551,10 @@ public abstract class ExperimentPanel
 
     List<String> names = expResult.getInputNames();
     String name = "";
-    if (names.size() < getIndexOfMainData()) {
+    if (names.size() > getIndexOfMainData()) {
       name = names.get(getIndexOfMainData()); // name of input data
+    } else if (names.size() > 0) {
+      name = names.get(0);
     }
 
     return test + '_' + name + '_' + date + ".pdf";
@@ -643,8 +663,8 @@ public abstract class ExperimentPanel
       sb.append("\n \n");
     }
     sb.append(expResult.getFormattedDateRange());
-    ReportingUtils.textToPDFPage(sb.toString(), pdf);
-    ReportingUtils.textListToPDFPages(pdf, getAdditionalReportPages());
+    textToPDFPage(sb.toString(), pdf);
+    textListToPDFPages(pdf, getAdditionalReportPages());
   }
 
   /**
@@ -659,10 +679,10 @@ public abstract class ExperimentPanel
     int height = 960;
     JFreeChart[] charts = getCharts();
 
-    ReportingUtils.chartsToPDFPage(width, height, pdf, charts);
+    chartsToPDFPage(width, height, pdf, charts);
     JFreeChart[] page2 = getSecondPageCharts();
     if (page2.length > 0) {
-      ReportingUtils.chartsToPDFPage(width, height, pdf, page2);
+      chartsToPDFPage(width, height, pdf, page2);
     }
     saveInsetDataText(pdf);
 
