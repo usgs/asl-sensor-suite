@@ -37,6 +37,14 @@ the asl-java-tools repository (used for most backend functionality of this code)
 line set to `url = https://code.usgs.gov/asl/asl-java-utils.git`. This is a link to a public
 repository maintained by USGS using gitlab.
 
+After doing this, you should be able to build and run the program according to the instructions
+given here. If there are errors tied to these submodules when trying to build (such as test cases
+having null-related exceptions when loading files, or the java utils dependency not available),
+manually run the command `git submodule update --init --recursive`. (This should hopefully not
+be necessary, as the gradle build script runs this command automatically to initialize these repos.
+Because the repository for test data is particularly large, however, it may take a long time to
+fully download.)
+
 It is also possible to manually clone from the two specified URLs 
 (https://github.com/usgs/seismic-test-data.git and https://code.usgs.gov/asl/asl-java-utils.git).
 The data for the former should be extracted into a folder named `seismic-test-data` under the
