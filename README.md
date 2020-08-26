@@ -22,8 +22,43 @@ Gradle, see https://gradle.org/install
 
 Additional details on compiling and running the code can be seen in the Compilation subheader below.
 
+##### Additional repositories
+
+Depending on the download source for the code, this program may also require additional libraries
+in order to function correctly. The repository for this code is designed to use relative pathing
+from code.usgs.gov which is a version control system that is not exclusively public. Downloading the
+code from github instead will require manual adding of this code to the repository.
+
+The simplest way to change this is to manually edit the .gitmodules file with a text editor.
+Replace the lines starting with `url =` to include the full path to the repositories.
+For the first entry, the seismic test data repository (needed for running test cases) should
+have the line set to `url = https://github.com/usgs/seismic-test-data.git`. For the second entry,
+the asl-java-tools repository (used for most backend functionality of this code) should have the 
+line set to `url = https://code.usgs.gov/asl/asl-java-utils.git`. This is a link to a public
+repository maintained by USGS using gitlab.
+
+After doing this, you should be able to build and run the program according to the instructions
+given here. If there are errors tied to these submodules when trying to build (such as test cases
+having null-related exceptions when loading files, or the java utils dependency not available),
+manually run the command `git submodule update --init --recursive`. (This should hopefully not
+be necessary, as the gradle build script runs this command automatically to initialize these repos.
+Because the repository for test data is particularly large, however, it may take a long time to
+fully download.)
+
+It is also possible to manually clone from the two specified URLs 
+(https://github.com/usgs/seismic-test-data.git and https://code.usgs.gov/asl/asl-java-utils.git).
+The data for the former should be extracted into a folder named `seismic-test-data` under the
+`src/test/resources` subdirectory latter into a folder named `asl-java-utils` from the project root
+(where this README file is kept), but this is not recommended as updates to these repositories or
+to this project's test cases may break unless these are also properly kept up-to-date, which 
+editing .gitmodules will ensure happens automatically when running `git fetch --all`.
+
 ##### Hardware
-Because SEED files must be decompressed and stored in memory, the footprint of this application has the potential to be rather large. Running this program on OSX v. 10.11.15, the total memory usage was 76.6 MB compressed but 1.82 GB uncompressed. As a result, this program's performance may be dependent on the memory management systems used by the OS of the system it runs on.
+
+Because SEED files must be decompressed and stored in memory, the footprint of this application has 
+the potential to be rather large. Running this program on OSX v. 10.11.15, the total memory usage 
+was 76.6 MB compressed but 1.82 GB uncompressed. As a result, this program's performance may be 
+dependent on the memory management systems used by the OS of the system it runs on.
 
 ### Compilation
 
