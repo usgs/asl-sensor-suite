@@ -22,8 +22,33 @@ Gradle, see https://gradle.org/install
 
 Additional details on compiling and running the code can be seen in the Compilation subheader below.
 
+##### Additional repositories
+
+Depending on the download source for the code, this program may also require additional libraries
+in order to function correctly. The repository for this code is designed to use relative pathing
+from code.usgs.gov which is a version control system that is not exclusively public. Downloading the
+code from github instead will require manual adding of this code to the repository.
+
+The main dependency is asl-java-utils, which is available from this link: 
+https://code.usgs.gov/asl/asl-java-utils.
+Either run `git clone` from the root folder of this codebase (i.e., the same location of this readme
+file) or download a zip from the link using the download option (left of "clone" on the main menu)
+and extract the contents of the zip into a subfolder named `asl-java-utils`. (Note that on some 
+operating systems trying to open the zip file may cause it be auto-extracted to a folder called
+`asl-java-utils-master`. Renaming this folder and relocating it here should solve the dependency.)
+
+A similar requirement for the test data (for running test cases before compilation).
+This repository can be found here: https://github.com/usgs/seismic-test-data, 
+and should be cloned into the `src/test/resources` folder as
+`seismic-test-data`, or copied to that location in the same manner as specified above.
+
+
 ##### Hardware
-Because SEED files must be decompressed and stored in memory, the footprint of this application has the potential to be rather large. Running this program on OSX v. 10.11.15, the total memory usage was 76.6 MB compressed but 1.82 GB uncompressed. As a result, this program's performance may be dependent on the memory management systems used by the OS of the system it runs on.
+
+Because SEED files must be decompressed and stored in memory, the footprint of this application has 
+the potential to be rather large. Running this program on OSX v. 10.11.15, the total memory usage 
+was 76.6 MB compressed but 1.82 GB uncompressed. As a result, this program's performance may be 
+dependent on the memory management systems used by the OS of the system it runs on.
 
 ### Compilation
 
