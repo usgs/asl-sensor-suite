@@ -7,6 +7,8 @@ import static org.junit.Assert.assertTrue;
 
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
+import asl.utils.ResponseUnits.ResolutionType;
+import asl.utils.ResponseUnits.SensorType;
 import asl.utils.input.InstrumentResponse;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +27,8 @@ public class StepExperimentTest {
     String fname2 = "00_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS1T5_Q330HR"));
+    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse(
+        SensorType.STS1T5, ResolutionType.HIGH));
     String startString = "2018-038T15:20:00.0";
     String endString = "2018-038T15:59:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
@@ -89,7 +92,8 @@ public class StepExperimentTest {
     String fname2 = "00_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS1T5_Q330HR"));
+    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse(
+        SensorType.STS1T5, ResolutionType.HIGH));
     String startString = "2017-248T04:55:00.0";
     String endString = "2017-248T05:31:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
