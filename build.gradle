@@ -46,11 +46,10 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.+'
 }
 
-
-
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    archivesBaseName = rootProject.name
+    archiveVersion = version
+    archiveBaseName = rootProject.name
     manifest {
         attributes 'Implementation-Title': 'ASL Sensor Test Suite',
                 'Implementation-Version': version,
@@ -64,11 +63,18 @@ jar {
             it.isDirectory() ? it : zipTree(it)
         }
     }
+    dependsOn configurations.compileClasspath
+    from {
+        configurations.compileClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
 }
 
 task jarServer(type: Jar) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    archivesBaseName = 'CalServer'
+    archiveVersion = version
+    archiveBaseName = 'CalServer'
     manifest {
         attributes 'Implementation-Title': 'Calibration Processing Server(cmd)',
                 'Implementation-Version': version,
@@ -78,6 +84,12 @@ task jarServer(type: Jar) {
     dependsOn configurations.runtimeClasspath
     from {
         configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    dependsOn configurations.compileClasspath
+    from {
+        configurations.compileClasspath.collect {
             it.isDirectory() ? it : zipTree(it)
         }
     }
