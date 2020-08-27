@@ -518,8 +518,7 @@ public class DataStore {
    * @param activePlots Max index of active panel to check as active
    */
   public void setBlock(int idx, String filepath, String nameFilter, int activePlots)
-      throws SeedFormatException, CodecException,
-      IOException {
+      throws SeedFormatException, CodecException, IOException {
 
     DataBlock xy = getTimeSeries(filepath, nameFilter);
     thisBlockIsSet[idx] = true;
@@ -542,7 +541,7 @@ public class DataStore {
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
                 dataBlockArray[idx] = null;
-                throw new TimeRangeException(i+1);
+                throw new TimeRangeException(i + 1);
               } else {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
@@ -759,7 +758,7 @@ public class DataStore {
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
                 dataBlockArray[idx] = null;
-                throw new TimeRangeException(i+1);
+                throw new TimeRangeException(i + 1);
               } else {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
@@ -801,7 +800,7 @@ public class DataStore {
               if (i < activePlots) {
                 thisBlockIsSet[idx] = false;
                 dataBlockArray[idx] = null;
-                throw new TimeRangeException(i+1);
+                throw new TimeRangeException(i + 1);
               } else {
                 // unload data that we aren't currently using
                 thisBlockIsSet[i] = false;
@@ -813,8 +812,7 @@ public class DataStore {
     }
   }
 
-  public class TimeRangeException extends RuntimeException {
-
+  public static class TimeRangeException extends RuntimeException {
     TimeRangeException(int input) {
       super("This data's time range has no overlap with input " + input + ".");
     }
