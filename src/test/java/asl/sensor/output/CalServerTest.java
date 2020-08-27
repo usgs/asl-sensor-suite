@@ -7,9 +7,7 @@ import static asl.utils.NumericUtils.atanc;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.CalProcessingServer;
-import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.test.TestUtils;
-import asl.utils.NumericUtils;
 import asl.utils.input.InstrumentResponse;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -102,7 +100,7 @@ public class CalServerTest {
     String testFolder = folder + "kiev-step/";
     String calInputFile = testFolder + "_BC0.512.seed";
     String calOutputFile = testFolder +  "00_BHZ.512.seed";
-    String resp = "STS1T5_Q330HR";
+    String resp = "STS1_Q330HR";
     final boolean EMBED = true;
 
     String startString = "2018-02-07T15:20:00+00:00";

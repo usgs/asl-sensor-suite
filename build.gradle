@@ -1,9 +1,12 @@
 import groovy.json.JsonSlurper
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-apply plugin: 'application'
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'idea'
+    id 'eclipse'
+    id 'application'
+}
 
 /* Get first three version numbers from code.json */
 def codeJson = new JsonSlurper().parseText(new File("$projectDir", "code.json").text)
@@ -30,7 +33,7 @@ repositories {
 }
 
 dependencies {
-    implementation project(path: ':asl-java-utils')
+    api project(path: ':asl-java-utils')
 
     implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.0'
 
@@ -43,7 +46,10 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.+'
 }
 
+
+
 jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archivesBaseName = rootProject.name
     manifest {
         attributes 'Implementation-Title': 'ASL Sensor Test Suite',
@@ -52,17 +58,16 @@ jar {
     }
 
     /* Adds all dependent libraries*/
+    dependsOn configurations.runtimeClasspath
     from {
-        configurations.compile.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-        configurations.runtime.collect {
+        configurations.runtimeClasspath.collect {
             it.isDirectory() ? it : zipTree(it)
         }
     }
 }
 
 task jarServer(type: Jar) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archivesBaseName = 'CalServer'
     manifest {
         attributes 'Implementation-Title': 'Calibration Processing Server(cmd)',
@@ -70,11 +75,9 @@ task jarServer(type: Jar) {
                 'Main-Class': 'asl.sensor.CalProcessingServer'
     }
 
+    dependsOn configurations.runtimeClasspath
     from {
-        configurations.compile.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-        configurations.runtime.collect {
+        configurations.runtimeClasspath.collect {
             it.isDirectory() ? it : zipTree(it)
         }
     }

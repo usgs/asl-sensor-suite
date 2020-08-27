@@ -2,7 +2,11 @@
 
 ### Purpose
 
-This program is used to analyze various aspects of seismic sensor data in order to determine information about their configuration, such as gain and orientation. It is meant to be a simple program that can be used to generate data on a wide range of sensor tests, a one-stop-shop for sensor diagnostics designed to replace several disparate programs across multiple languages. The program is designed around an interface meant to be simple and intuitive.
+This program is used to analyze various aspects of seismic sensor data in order to determine 
+information about their configuration, such as gain and orientation. It is meant to be a simple 
+program that can be used to generate data on a wide range of sensor tests, a one-stop-shop for 
+sensor diagnostics designed to replace several disparate programs across multiple languages. 
+The program is designed around an interface meant to be simple and intuitive.
 
 DOI: https://doi.org/10.5066/P9XXBOVR  
 IPDS: IP-101116  
@@ -45,11 +49,13 @@ be necessary, as the gradle build script runs this command automatically to init
 Because the repository for test data is particularly large, however, it may take a long time to
 fully download.)
 
+
+
 It is also possible to manually clone from the two specified URLs 
 (https://github.com/usgs/seismic-test-data.git and https://code.usgs.gov/asl/asl-java-utils.git).
 The data for the former should be extracted into a folder named `seismic-test-data` under the
 `src/test/resources` subdirectory latter into a folder named `asl-java-utils` from the project root
-(where this README file is kept), but this is not recommended as updates to these repositories or
+(location of this README), but this is not recommended as updates to these repositories or
 to this project's test cases may break unless these are also properly kept up-to-date, which 
 editing .gitmodules will ensure happens automatically when running `git fetch --all`.
 
