@@ -20,9 +20,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +40,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextPane;
+import javax.swing.ListCellRenderer;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
@@ -83,11 +82,11 @@ public class RandomizedPanel extends ExperimentPanel {
   private final JSpinner nyquistMultiplier;
   private ValueAxis degreeAxis, residualPhaseAxis, residualAmplitudeAxis, periodAxis,
       residualXAxis, residualPeriodAxis;
-  private JRadioButton lowFrequency, autoFrequency;
+  private final JRadioButton lowFrequency, autoFrequency;
   // high frequency button created in constructor but not checked explicitly for status
   private JCheckBox showParams, frequencySpace, capacitiveCal;
   private JFreeChart magnitudeChart, argumentChart, residualAmplitudeChart, residualPhaseChart;
-  private JButton generateResp, saveResp;
+  private final JButton generateResp, saveResp;
 
   public RandomizedPanel(ExperimentFactory experiment) {
     super(experiment);
@@ -114,6 +113,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
     sensorCorrectionSelector = new JComboBox<>(VALID_CORRECTIONS);
     sensorCorrectionSelector.setPreferredSize(sensorCorrectionSelector.getMinimumSize());
+
     // use a custom renderer to handle the null option for correction response
     sensorCorrectionSelector.setRenderer(new CorrectionComboBoxRenderer());
     JLabel sensorCorrectionLabel =
@@ -746,7 +746,7 @@ public class RandomizedPanel extends ExperimentPanel {
     appendChartTitle(argumentChart, appendFreqTitle);
     appendChartTitle(magnitudeChart, appendFreqTitle);
 
-    // get residuals plots
+    // get residuals plotsString
     XYItemRenderer renderer; // use this to set series paints to set the last color to use 3rd color
     residualAmplitudeChart = buildChart(xysc.get(2), getResidAxis(), residualAmplitudeAxis);
     renderer = residualAmplitudeChart.getXYPlot().getRenderer();
@@ -757,18 +757,23 @@ public class RandomizedPanel extends ExperimentPanel {
 
   }
 
-  private static class CorrectionComboBoxRenderer extends BasicComboBoxRenderer {
+  private static class CorrectionComboBoxRenderer implements ListCellRenderer<SensorType> {
+
+    // using composition here rather than 'extends' to allow type-safety in implementation
+    // while not actually having to do a full implementation of a renderer here
+    private final BasicComboBoxRenderer renderer;
 
     public CorrectionComboBoxRenderer() {
-      super();
+      renderer = new BasicComboBoxRenderer();
     }
 
     @Override
-    public Component getListCellRendererComponent(JList list, Object value, int index,
-        boolean isSelected,  boolean cellHasFocus) {
+    public Component getListCellRendererComponent(JList<? extends SensorType> list,
+        SensorType value, int index, boolean isSelected, boolean cellHasFocus) {
       // if the object is null, display "None" instead of the empty string
-      String displayText = (value == null) ? "None" : value.toString();
-      return super.getListCellRendererComponent(list, displayText, index, isSelected, cellHasFocus);
+      String displayText = ((value == null) ? "None" : value.toString());
+      return renderer.getListCellRendererComponent(
+          list, displayText, index, isSelected, cellHasFocus);
     }
   }
 }
