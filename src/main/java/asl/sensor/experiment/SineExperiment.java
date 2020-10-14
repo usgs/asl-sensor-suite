@@ -73,7 +73,6 @@ public class SineExperiment extends Experiment {
   protected void backend(DataStore dataStore) {
     calSDev = 0.;
     outSDev = 0.;
-    peakPeakFreq = 0.;
 
     double[] calTimeSeries = dataStore.getBlock(0).getData().clone();
     double[] outTimeSeries = dataStore.getBlock(1).getData().clone();
@@ -81,24 +80,7 @@ public class SineExperiment extends Experiment {
     dataNames.add(dataStore.getBlock(0).getName());
     dataNames.add(dataStore.getBlock(1).getName());
 
-    // get the sine wave frequency by measuring wavelengths (get distance between peaks)
-    int currentPeakDistance = 0;
-    int totalPeakDistance = 0;
-    int peakCount = -1; // start at negative 1 so first peak counts as 0
-    for (int i = 1; i < outTimeSeries.length - 1; ++i) {
-      if (outTimeSeries[i] > outTimeSeries[i - 1] && outTimeSeries[i] > outTimeSeries[i + 1]) {
-        ++peakCount;
-        totalPeakDistance += currentPeakDistance;
-        currentPeakDistance = 0;
-      } else {
-        ++currentPeakDistance;
-      }
-    }
-    if (peakCount > 0) {
-      peakPeakFreq = totalPeakDistance / (double) peakCount;
-    } else {
-      peakPeakFreq = 0;
-    }
+    peakPeakFreq = calculateFrequency(outTimeSeries);
 
     // we would like to have the signals centered on 0 for lining them up
     calTimeSeries = demean(calTimeSeries);
@@ -111,8 +93,7 @@ public class SineExperiment extends Experiment {
     XYSeriesCollection xysc = new XYSeriesCollection();
     XYSeries cal = new XYSeries(dataStore.getBlock(0).getName() + " [cal]");
     XYSeries out = new XYSeries(dataStore.getBlock(1).getName() + " [out, scaled]");
-    double interval =
-        dataStore.getBlock(0).getInterval();
+    double interval = dataStore.getBlock(0).getInterval();
     double start = getStart();
     for (int i = 0; i < calTimeSeries.length; ++i) {
       cal.add(start + interval * i, calTimeSeries[i]);
@@ -131,6 +112,29 @@ public class SineExperiment extends Experiment {
     }
     xysc.addSeries(lin);
     xySeriesData.add(xysc);
+  }
+
+  public static double calculateFrequency(double[] outTimeSeries) {
+    double peakPeakFreq;
+    // get the sine wave frequency by measuring wavelengths (get distance between peaks)
+    int currentPeakDistance = 0;
+    int totalPeakDistance = 0;
+    int peakCount = -1; // start at negative 1 so first peak counts as 0
+    for (int i = 1; i < outTimeSeries.length - 1; ++i) {
+      if (outTimeSeries[i] > outTimeSeries[i - 1] && outTimeSeries[i] > outTimeSeries[i + 1]) {
+        ++peakCount;
+        totalPeakDistance += currentPeakDistance;
+        currentPeakDistance = 0;
+      } else {
+        ++currentPeakDistance;
+      }
+    }
+    if (peakCount > 0) {
+      peakPeakFreq = totalPeakDistance / (double) peakCount;
+    } else {
+      peakPeakFreq = 0;
+    }
+    return peakPeakFreq;
   }
 
   @Override

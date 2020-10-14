@@ -91,6 +91,25 @@ public class CalResult {
     return out;
   }
 
+  public static CalResult buildSineCalData(byte[][] images, double[] amplitudes, double[] ampErrors,
+      double ampMean, double[] frequencies, double[] freqErrors, double freqMean,
+      double[] phaseDiscrepancies, double phaseMean) {
+    CalResult out = new CalResult();
+    out.numerMap.put("Amplitude_mean", new double[]{ampMean});
+    out.numerMap.put("Frequency_mean", new double[]{freqMean});
+    out.numerMap.put("Phase_discrepancy_mean", new double[]{phaseMean});
+    String[] directions = {"north", "east", "vertical"};
+    for (int i = 0; i < directions.length; ++i) {
+      out.numerMap.put("Amplitude_" + directions[i], new double[]{amplitudes[i]});
+      out.numerMap.put("Frequency_" + directions[i], new double[]{frequencies[i]});
+      out.numerMap.put("Phase_discrepancy_" + directions[i], new double[]{phaseDiscrepancies[i]});
+      out.numerMap.put("Amplitude_error_" + directions[i], new double[]{ampErrors[i]});
+      out.numerMap.put("Frequency_error_" + directions[i], new double[]{freqErrors[i]});
+    }
+    out.imageMap.put("Sine_curves_plot", images[0]);
+    return out;
+  }
+
   /**
    * Get data from a six-input gain result
    * @param firstAngleRef boolean that is true if first series being plotted is also angle ref
