@@ -4,7 +4,6 @@
 # isolated from any previous builds.
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-  GIT_STRATEGY: clone
 
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
