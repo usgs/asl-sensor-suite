@@ -8,6 +8,8 @@ plugins {
     id 'application'
 }
 
+def progTitle = 'ASL Sensor Test Suite'
+
 /* Get first three version numbers from code.json */
 def codeJson = new JsonSlurper().parseText(new File("$projectDir", "code.json").text)
 // NOTE: codeJson.version is a String[], and any IDE warning here can be safely ignored
@@ -32,18 +34,56 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    sourceOnly
+}
+
 dependencies {
     api project(path: ':asl-java-utils')
 
     implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.0'
+    sourceOnly group: 'org.jfree', name: 'jfreechart', version: '1.5.0',  classifier: 'sources'
 
     implementation group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.+'
+    sourceOnly group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.+',  classifier: 'sources'
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.+'
+    sourceOnly group: 'org.apache.commons', name: 'commons-math3', version: '3.+',
+            classifier: 'sources'
     implementation group: 'commons-configuration', name: 'commons-configuration', version: '1.7'
+    sourceOnly group: 'commons-configuration', name: 'commons-configuration', version: '1.7',
+            classifier: 'sources'
 
     implementation group: 'net.sf.py4j', name: 'py4j', version: '0.10.7'
+    sourceOnly group: 'net.sf.py4j', name: 'py4j', version: '0.10.7', classifier: 'sources'
 
     testImplementation group: 'junit', name: 'junit', version: '4.+'
+}
+
+task sourcesJar(type: Jar, dependsOn: configurations.sourceOnly){
+    classifier = 'sources'
+    // archiveBaseName = rootProject.name
+    archiveVersion = version
+    manifest {
+        attributes 'Implementation-Title': progTitle,
+                'Implementation-Version': version,
+                'Main-Class': mainClassName
+    }
+    from sourceSets.main.allSource
+    from project(':asl-java-utils').sourceSets.main.allSource
+    // Adds all dependent libraries
+    dependsOn configurations.sourceOnly
+    from {
+        configurations.sourceOnly.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    from {
+        configurations.sourceOnly.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+
+    with jar
 }
 
 jar {
@@ -51,7 +91,7 @@ jar {
     archiveVersion = version
     archiveBaseName = rootProject.name
     manifest {
-        attributes 'Implementation-Title': 'ASL Sensor Test Suite',
+        attributes 'Implementation-Title': progTitle,
                 'Implementation-Version': version,
                 'Main-Class': mainClassName
     }
@@ -155,5 +195,5 @@ gradle.beforeProject {
     println("Done with pre-project setup")
 }
 
-
+sourcesJar.dependsOn(build)
 build.dependsOn copyJar, copyServerJar
