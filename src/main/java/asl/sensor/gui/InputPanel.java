@@ -1136,7 +1136,6 @@ public class InputPanel
     String filename = "FDSN query params: " + respID;
     SwingWorker<Integer, Void> worker = new SwingWorker<Integer, Void>() {
 
-      JFreeChart chart;
       boolean caughtException = false;
       String returnedErrMsg = "";
 
@@ -1157,6 +1156,10 @@ public class InputPanel
           returnedErrMsg = e.getMessage();
           caughtException = true;
           e.printStackTrace();
+          return 1;
+        }
+
+        if (respToLoad == null) {
           return 1;
         }
         dataStore.setResponse(index, respToLoad);
