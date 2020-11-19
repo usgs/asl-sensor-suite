@@ -486,7 +486,7 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param needsRotation True if sensor needs to be rotated into UVW coordinates.
    * @param isTrillium True if sensor is a trillium-type sensor (ignored if needsRotation is false)
-   * @param addedManually Used to determine if a 2.5 delay for sensor settling needs to be added,
+   * @param addedManually Used to determine if a 2.5s delay for sensor settling needs to be added,
    * under the presumption that manually-specified cals will have a start time after settling but
    * automatically-run cals will use the blockette start time.
    * @return Experiment results -- an overlaid plot of the sine signals in each direction,
@@ -536,7 +536,7 @@ public class CalProcessingServer {
    * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
    * @param needsRotation True if sensor needs to be rotated into UVW coordinates.
    * @param isTrillium True if sensor is a trillium-type sensor (ignored if needsRotation is false)
-   * @param addedManually Used to determine if a 2.5 delay for sensor settling needs to be added,
+   * @param addedManually Used to determine if a 2.5s delay for sensor settling needs to be added,
    * under the presumption that manually-specified cals will have a start time after settling but
    * automatically-run cals will use the blockette start time.
    * @return Experiment results -- an overlaid plot of the sine signals in each direction,
