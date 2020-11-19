@@ -6,6 +6,7 @@ import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.experiment.NoiseNineExperiment;
+import asl.sensor.experiment.OrientedSineExperiment;
 import asl.sensor.experiment.OrthogonalExperiment;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
@@ -19,6 +20,7 @@ import asl.sensor.gui.GainPanel;
 import asl.sensor.gui.GainSixPanel;
 import asl.sensor.gui.NoiseNinePanel;
 import asl.sensor.gui.NoisePanel;
+import asl.sensor.gui.OrientedSinePanel;
 import asl.sensor.gui.OrthogonalPanel;
 import asl.sensor.gui.RandomizedPanel;
 import asl.sensor.gui.ResponsePanel;
@@ -116,6 +118,17 @@ public enum ExperimentFactory {
     @Override
     public ExperimentPanel createPanel() {
       return new SinePanel(this);
+    }
+  },
+  ORIENTEDSINECAL("Oriented sine calibration") {
+    @Override
+    public Experiment createExperiment() {
+      return new OrientedSineExperiment();
+    }
+
+    @Override
+    public ExperimentPanel createPanel() {
+      return new OrientedSinePanel(this);
     }
   },
   VOLTAGE("10-Volt calibration") {

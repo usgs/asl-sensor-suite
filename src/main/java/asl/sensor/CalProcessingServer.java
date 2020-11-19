@@ -8,6 +8,7 @@ import static asl.utils.TimeSeriesUtils.getFirstTimeSeries;
 
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
+import asl.sensor.experiment.OrientedSineExperiment;
 import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.SineExperiment;
 import asl.sensor.experiment.StepExperiment;
@@ -298,10 +299,8 @@ public class CalProcessingServer {
     long end = endDateTime.toInstant().toEpochMilli();
 
     DataStore ds = new DataStore();
-    String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
-    String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-    DataBlock calBlock = getFirstTimeSeries(calFileName);
-    DataBlock outBlock = getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileNameD1, calFileNameD2);
+    DataBlock outBlock = getFirstTimeSeries(outFileNameD1, outFileNameD2);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -346,10 +345,8 @@ public class CalProcessingServer {
     long end = endDateTime.toInstant().toEpochMilli();
 
     DataStore ds = new DataStore();
-    String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
-    String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-    DataBlock calBlock = getFirstTimeSeries(calFileName);
-    DataBlock outBlock = getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileNameD1, calFileNameD2);
+    DataBlock outBlock = getFirstTimeSeries(outFileNameD1, outFileNameD2);
     InstrumentResponse ir;
     if (useEmbeddedResp) {
       ir = InstrumentResponse.loadEmbeddedResponse(respName);
@@ -471,16 +468,159 @@ public class CalProcessingServer {
     long end = endDateTime.toInstant().toEpochMilli();
 
     DataStore ds = new DataStore();
-    String[] calFileName = new String[]{calFileNameD1, calFileNameD2};
-    String[] outFileName = new String[]{outFileNameD1, outFileNameD2};
-    DataBlock calBlock = getFirstTimeSeries(calFileName);
-    DataBlock outBlock = getFirstTimeSeries(outFileName);
+    DataBlock calBlock = getFirstTimeSeries(calFileNameD1, calFileNameD2);
+    DataBlock outBlock = getFirstTimeSeries(outFileNameD1, outFileNameD2);
 
     ds.setBlock(0, calBlock);
     ds.setBlock(1, outBlock);
     ds.trim(start, end);
 
     return runExpGetDataSine(ds);
+  }
+
+  /**
+   * @param northFileName Filename of north-facing input signal
+   * @param eastFileName Filename of east-facing input signal
+   * @param vertFileName Filename of vertical input signal
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @param needsRotation True if sensor needs to be rotated into UVW coordinates.
+   * @param isTrillium True if sensor is a trillium-type sensor (ignored if needsRotation is false)
+   * @param addedManually Used to determine if a 2.5s delay for sensor settling needs to be added,
+   * under the presumption that manually-specified cals will have a start time after settling but
+   * automatically-run cals will use the blockette start time.
+   * @return Experiment results -- an overlaid plot of the sine signals in each direction,
+   * as well as the estimated amplitude and frequency values, their means, and their percent error
+   * relative to the means, along with any discrepancy in phase (i.e., peak locations) between the
+   * data.
+   * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
+   */
+  public CalResult runSineOriented(String northFileName, String eastFileName, String vertFileName,
+      String startDate, String endDate, boolean addedManually, boolean needsRotation,
+      boolean isTrillium) throws IOException, CodecException, SeedFormatException {
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+    // NOTE: we automatically add 2.5 minutes here to account for settling time of data
+    // when the start/end are derived from the calibration blockettes
+    long start = startDateTime.toInstant().toEpochMilli();
+    if (!addedManually) {
+      start += 150000; // 2.5 minutes in milliseconds
+    }
+    long end = endDateTime.toInstant().toEpochMilli();
+
+    DataStore ds = new DataStore();
+    DataBlock northBlock = getFirstTimeSeries(northFileName);
+    DataBlock eastBlock = getFirstTimeSeries(eastFileName);
+    DataBlock vertBlock = getFirstTimeSeries(vertFileName);
+    ds.setBlock(0, northBlock);
+    ds.setBlock(1, eastBlock);
+    ds.setBlock(2, vertBlock);
+    ds.trim(start, end);
+
+    return runExpGetDataSineOriented(ds, needsRotation, isTrillium);
+  }
+
+  /**
+   * Get results from a sine calibration over an NEZ sensor triple spanning multiple days.
+   * Returns the experiment results (all data kept locally to maintain thread safety)
+   * @param northFileNameD1 Filename of north-facing input signal (day 1)
+   * @param northFileNameD2 Filename of north-facing input signal (day 2)
+   * @param eastFileNameD1 Filename of east-facing input signal (day 1)
+   * @param eastFileNameD2 Filename of east-facing input signal (day 2)
+   * @param vertFileNameD1 Filename of vertical input signal (day 1)
+   * @param vertFileNameD2 Filename of vertical input signal (day 2)
+   * @param startDate ISO-861 formatted datetime string with timezone offset; start of data window
+   * @param endDate ISO-861 formatted datetime string with timezone offset; end of data window
+   * @param needsRotation True if sensor needs to be rotated into UVW coordinates.
+   * @param isTrillium True if sensor is a trillium-type sensor (ignored if needsRotation is false)
+   * @param addedManually Used to determine if a 2.5s delay for sensor settling needs to be added,
+   * under the presumption that manually-specified cals will have a start time after settling but
+   * automatically-run cals will use the blockette start time.
+   * @return Experiment results -- an overlaid plot of the sine signals in each direction,
+   * as well as the estimated amplitude and frequency values, their means, and their percent error
+   * relative to the means, along with any discrepancy in phase (i.e., peak locations) between the
+   * data.
+   * @throws IOException If a string does not refer to a valid accessible file
+   * @throws SeedFormatException If a data file cannot be parsed as a seed file
+   * @throws CodecException If there is an issue with the compression of the seed files
+   */
+  public CalResult runSineOriented(String northFileNameD1, String northFileNameD2,
+      String eastFileNameD1, String eastFileNameD2, String vertFileNameD1, String vertFileNameD2,
+      String startDate, String endDate, boolean addedManually, boolean needsRotation,
+      boolean isTrillium) throws IOException, CodecException, SeedFormatException {
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+    // NOTE: we automatically add 2.5 minutes here to account for settling time of data
+    // when the start/end are derived from the calibration blockettes
+    long start = startDateTime.toInstant().toEpochMilli();
+    if (!addedManually) {
+      start += 150000; // 2.5 minutes in milliseconds
+    }
+    long end = endDateTime.toInstant().toEpochMilli();
+
+    DataStore ds = new DataStore();
+    DataBlock northBlock = getFirstTimeSeries(northFileNameD1, northFileNameD2);
+    DataBlock eastBlock = getFirstTimeSeries(eastFileNameD1, eastFileNameD2);
+    DataBlock vertBlock = getFirstTimeSeries(vertFileNameD1, vertFileNameD2);
+    ds.setBlock(0, northBlock);
+    ds.setBlock(1, eastBlock);
+    ds.setBlock(2, vertBlock);
+    ds.trim(start, end);
+
+    return runExpGetDataSineOriented(ds, needsRotation, isTrillium);
+  }
+
+  private CalResult runExpGetDataSineOriented(DataStore ds, boolean rotate, boolean trillium)
+      throws IOException {
+    OrientedSineExperiment sine = new OrientedSineExperiment();
+    sine.setDoRotation(rotate);
+    sine.setRotationTrillium(trillium);
+    sine.runExperimentOnData(ds);
+    List<XYSeriesCollection> plots = sine.getData();
+
+    double[] amplitudes = sine.getAmplitudes();
+    double[] ampErrors = sine.getAmplitudeErrors();
+    double ampMean = sine.getMeanAmplitude();
+
+    double[] frequencies = sine.getFrequencies();
+    double[] freqErrors = sine.getFrequencyErrors();
+    double freqMean = sine.getMeanFrequency();
+
+    double[] phaseDiscrepancies = sine.getPhaseDiscrepancies();
+    double phaseMean = sine.getMeanPhase();
+
+    DateAxis timeAxis = new DateAxis();
+    timeAxis.setDateFormatOverride(ExperimentPanel.DATE_TIME_FORMAT.get());
+    Font bold = timeAxis.getLabelFont().deriveFont(Font.BOLD);
+    timeAxis.setLabelFont(bold);
+    JFreeChart sineChart = ChartFactory.createXYLineChart(
+        "Sine Calibration",
+        "Time of sample (Julian date)",
+        "Normalized calibration signals (counts)",
+        plots.get(0));
+    sineChart.getXYPlot().setDomainAxis(timeAxis);
+    JFreeChart[] charts = {sineChart};
+
+    for (JFreeChart chart : charts) {
+      XYItemRenderer renderer = chart.getXYPlot().getRenderer();
+      for (int i = 0; i < chart.getXYPlot().getSeriesCount(); ++i) {
+        renderer.setSeriesPaint(i, COLORS[i % 3]);
+      }
+    }
+
+    BufferedImage[] images = chartsToImageList(1, 1280, 960, charts);
+    byte[][] pngByteArrays = new byte[images.length][];
+    for (int i = 0; i < images.length; ++i) {
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      ImageIO.write(images[i], "png", out);
+      pngByteArrays[i] = out.toByteArray();
+    }
+    return CalResult.buildSineCalData(pngByteArrays, amplitudes, ampErrors, ampMean,
+        frequencies, freqErrors, freqMean, phaseDiscrepancies, phaseMean);
   }
 
   /**
