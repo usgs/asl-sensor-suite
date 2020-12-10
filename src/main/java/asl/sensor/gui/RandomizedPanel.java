@@ -119,7 +119,7 @@ public class RandomizedPanel extends ExperimentPanel {
     // use a custom renderer to handle the null option for correction response
     sensorCorrectionSelector.setRenderer(new CorrectionComboBoxRenderer());
     JLabel sensorCorrectionLabel =
-        new JLabel("Correction factor: (unneeded for embedded resps)");
+        new JLabel("Correction factor:");
     sensorCorrectionLabel.setLabelFor(sensorCorrectionSelector);
     sensorCorrectionLabel.setHorizontalTextPosition(SwingConstants.LEFT);
     sensorCorrectionLabel.setHorizontalAlignment(SwingConstants.LEFT);
@@ -779,7 +779,7 @@ public class RandomizedPanel extends ExperimentPanel {
     public Component getListCellRendererComponent(JList<? extends SensorType> list,
         SensorType value, int index, boolean isSelected, boolean cellHasFocus) {
       // if the object is null, display "None" instead of the empty string
-      String displayText = ((value == null) ? "None" : value.toString());
+      String displayText = ((value == null) ? "None/Embedded" : value.toString());
       return renderer.getListCellRendererComponent(
           list, displayText, index, isSelected, cellHasFocus);
     }

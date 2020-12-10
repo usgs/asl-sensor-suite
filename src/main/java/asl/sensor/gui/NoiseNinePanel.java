@@ -110,6 +110,12 @@ public class NoiseNinePanel extends NoisePanel {
     constraints.fill = GridBagConstraints.NONE;
     this.add(angleRefSelection, constraints);
 
+    plotSelection = new JComboBox<>();
+    plotSelection.addItem("North component plot");
+    plotSelection.addItem("East component plot");
+    plotSelection.addItem("Vertical component plot");
+    plotSelection.addActionListener(this);
+
     // place the other UI elements in a single row below the chart
     constraints.gridwidth = 1;
     constraints.weighty = 0.0;
@@ -118,6 +124,8 @@ public class NoiseNinePanel extends NoisePanel {
     constraints.fill = GridBagConstraints.NONE;
     constraints.gridy += 1;
     constraints.gridx = 0;
+    freqSpaceBox.setPreferredSize(plotSelection.getPreferredSize());
+    freqSpaceBox.setMaximumSize(plotSelection.getMaximumSize());
     add(freqSpaceBox, constraints);
 
     constraints.gridx += 1;
@@ -131,11 +139,6 @@ public class NoiseNinePanel extends NoisePanel {
     constraints.gridx += 1;
     constraints.weightx = 0;
     constraints.anchor = GridBagConstraints.WEST;
-    plotSelection = new JComboBox<>();
-    plotSelection.addItem("North component plot");
-    plotSelection.addItem("East component plot");
-    plotSelection.addItem("Vertical component plot");
-    plotSelection.addActionListener(this);
     add(plotSelection, constraints);
 
     revalidate();

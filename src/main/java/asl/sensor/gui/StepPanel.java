@@ -95,15 +95,19 @@ public class StepPanel extends ExperimentPanel {
     this.add(chartPanel, constraints);
 
     // add empty space on left side to space out other components
-    JPanel space = new JPanel();
-    space.setMaximumSize(plotSelection.getMaximumSize());
-    space.setPreferredSize(plotSelection.getPreferredSize());
     constraints.weighty = 0.0;
     constraints.weightx = 1.0;
-    constraints.fill = GridBagConstraints.BOTH;
     constraints.gridwidth = 1;
     constraints.gridy += 1;
-    this.add(space, constraints);
+    constraints.gridx = 0;
+    constraints.anchor = GridBagConstraints.WEST;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    JPanel spacer = new JPanel();
+    spacer.setPreferredSize(plotSelection.getPreferredSize());
+    spacer.setMaximumSize(plotSelection.getMaximumSize());
+    spacer.setMinimumSize(plotSelection.getMinimumSize());
+    spacer.setSize(plotSelection.getSize());
+    this.add(spacer, constraints);
 
     constraints.fill = GridBagConstraints.NONE;
     constraints.anchor = GridBagConstraints.CENTER;
@@ -113,8 +117,9 @@ public class StepPanel extends ExperimentPanel {
 
     constraints.weightx = 1.0;
     constraints.gridx += 1;
-    constraints.anchor = GridBagConstraints.LINE_END;
+    constraints.anchor = GridBagConstraints.EAST;
     this.add(plotSelection, constraints);
+
 
     plotTheseInBold = new String[]{};
 

@@ -4,9 +4,13 @@ import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import org.jfree.chart.annotations.XYTitleAnnotation;
@@ -84,7 +88,7 @@ public class NoisePanel extends ExperimentPanel {
     constraints.weighty = 0.0;
     constraints.weightx = 0.0;
     constraints.anchor = GridBagConstraints.WEST;
-    constraints.fill = GridBagConstraints.NONE;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.gridy += 1;
     constraints.gridx = 0;
     this.add(freqSpaceBox, constraints);
@@ -96,13 +100,17 @@ public class NoisePanel extends ExperimentPanel {
     this.add(save, constraints);
 
     // add an empty panel as a spacer to keep the save button in the center
-    constraints.fill = GridBagConstraints.NONE;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.gridx += 1;
     constraints.weightx = 0;
-    constraints.anchor = GridBagConstraints.WEST;
+    constraints.anchor = GridBagConstraints.EAST;
     JPanel spacer = new JPanel();
     spacer.setPreferredSize(freqSpaceBox.getPreferredSize());
+    spacer.setMaximumSize(freqSpaceBox.getMaximumSize());
+    spacer.setMinimumSize(freqSpaceBox.getMinimumSize());
+    spacer.setSize(freqSpaceBox.getSize());
     this.add(spacer, constraints);
+
   }
 
   @Override

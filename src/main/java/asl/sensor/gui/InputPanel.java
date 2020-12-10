@@ -1433,10 +1433,6 @@ public class InputPanel
     chartSubpanel.setLayout(new GridBagLayout());
     GridBagConstraints constraints = new GridBagConstraints();
 
-    constraints.weightx = 1.0;
-    constraints.weighty = 1.0;
-    constraints.anchor = GridBagConstraints.CENTER;
-
     instantiateChart(index);
 
     channelType[index] = new JLabel("");
@@ -1460,8 +1456,6 @@ public class InputPanel
 
     JTextField text = new JTextField("NO FILE LOADED");
     text.setHorizontalAlignment(SwingConstants.CENTER);
-    text.setMaximumSize(text.getMinimumSize());
-    text.setPreferredSize(text.getMinimumSize());
     respFileNames[index] = text;
     respFileNames[index].setEditable(false);
 
@@ -1469,11 +1463,8 @@ public class InputPanel
 
     constraints.gridx = 0;
     constraints.gridy = 0;
-
     constraints.weightx = 0;
     constraints.weighty = 0;
-    constraints.fill = GridBagConstraints.BOTH;
-
     constraints.fill = GridBagConstraints.NONE;
     chartSubpanel.add(channelType[index], constraints);
 
@@ -1487,12 +1478,10 @@ public class InputPanel
 
     constraints.fill = GridBagConstraints.BOTH;
     constraints.gridx = 1;
-    constraints.gridwidth = 1;
     constraints.gridheight = 1;
     constraints.weightx = 0;
     constraints.weighty = 0.25;
     chartSubpanel.add(seedLoaders[index], constraints);
-
     constraints.gridy += 1;
     chartSubpanel.add(seedAppenders[index], constraints);
 
@@ -1505,16 +1494,12 @@ public class InputPanel
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
     scrollPane.setHorizontalScrollBarPolicy(
         ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
-    scrollPane.setMaximumSize(text.getMinimumSize());
-    scrollPane.setPreferredSize(text.getMinimumSize());
     chartSubpanel.add(scrollPane, constraints);
 
-    constraints.fill = GridBagConstraints.BOTH;
     constraints.weighty = 0.25;
     constraints.gridy += 1;
     chartSubpanel.add(respLoaders[index], constraints);
 
-    constraints.fill = GridBagConstraints.BOTH;
     constraints.weighty = 1;
     constraints.gridy += 1;
     scrollPane = new JScrollPane();
@@ -1534,6 +1519,11 @@ public class InputPanel
     clearButton[index].addActionListener(this);
     clearButton[index].setEnabled(false);
     chartSubpanel.add(clearButton[index], constraints);
+
+    chartSubpanel.setPreferredSize(new Dimension(
+        chartSubpanel.getPreferredSize().width,
+        (int) (chartSubpanel.getPreferredSize().height * 1.5)
+    ));
 
     return chartSubpanel;
   }
