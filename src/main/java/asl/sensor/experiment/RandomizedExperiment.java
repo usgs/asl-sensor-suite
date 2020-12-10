@@ -187,18 +187,16 @@ public class RandomizedExperiment extends Experiment {
       throws ResponseStageException {
 
     // backup current poles, because we will try to modify in-place
-    List<Zero> originalZeros = fitResponse.getPoleZeroStage().getZeroDoubleList();
-    List<Pole> originalPoles = fitResponse.getPoleZeroStage().getPoleDoubleList();
+    List<Pair<Zero, Integer>> originalZeros =
+        new ArrayList<>(fitResponse.getPoleZeroStage().getZerosPairs());
+    List<Pair<Pole, Integer>> originalPoles =
+        new ArrayList<>(fitResponse.getPoleZeroStage().getPolesPairs());
 
     // prevent terrible case where, say, only high-freq poles above nyquist rate
     if (variables.length > 0) {
-      // construct pole/zero list from the fit vector (this has relatively low overhead)
-      PolesZeros pzStage = fitResponse.getPoleZeroStage().buildPolesZerosFromFitVector(
+      // modify the response in-place with new poles and zeros
+      fitResponse.getPoleZeroStage().replacePolesZerosFromFitVector(
           variables, isLowFreq, numZeros);
-      // rather than creating entirely new responses, we'll just replace the poles and zeros
-      // (and, of course, replace them back with the originals at the end of this function)
-      fitResponse.getPoleZeroStage().setPoles(pzStage.getPoleDoubleList());
-      fitResponse.getPoleZeroStage().setZeros(pzStage.getZeroDoubleList());
     } else {
       System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
     }
@@ -219,8 +217,9 @@ public class RandomizedExperiment extends Experiment {
     }
     scaleValues(curValue, freqs, isLowFreq);
 
-    fitResponse.getPoleZeroStage().setPoles(originalPoles);
-    fitResponse.getPoleZeroStage().setZeros(originalZeros);
+    // reset the poles and zeros to original values
+    fitResponse.getPoleZeroStage().setPolesPairs(originalPoles);
+    fitResponse.getPoleZeroStage().setZerosPairs(originalZeros);
 
     return curValue;
   }
@@ -371,10 +370,10 @@ public class RandomizedExperiment extends Experiment {
       Complex[] correctionCurve) throws ResponseStageException {
 
     // backup the list of poles/zeros so we don't have to duplicate the response
-    List<Pole> originalPolesList =
-        new ArrayList<>(fitResponse.getPoleZeroStage().getPoleDoubleList());
-    List<Zero> originalZerosList =
-        new ArrayList<>(fitResponse.getPoleZeroStage().getZeroDoubleList());
+    List<Pair<Pole, Integer>> originalPolesList =
+        new ArrayList<>(fitResponse.getPoleZeroStage().getPolesPairs());
+    List<Pair<Zero, Integer>> originalZerosList =
+        new ArrayList<>(fitResponse.getPoleZeroStage().getZerosPairs());
 
     if (pole) {
       fitResponse.getPoleZeroStage().replaceFitPole(currentVar, varIndex, isLowFreq);
@@ -413,9 +412,9 @@ public class RandomizedExperiment extends Experiment {
     }
 
     if (pole) {
-      fitResponse.getPoleZeroStage().setPoles(originalPolesList);
+      fitResponse.getPoleZeroStage().setPolesPairs(originalPolesList);
     } else {
-      fitResponse.getPoleZeroStage().setZeros(originalZerosList);
+      fitResponse.getPoleZeroStage().setZerosPairs(originalZerosList);
     }
 
     return curValue;
