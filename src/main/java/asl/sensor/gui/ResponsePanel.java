@@ -136,10 +136,14 @@ public class ResponsePanel extends ExperimentPanel {
     this.add(save, constraints);
 
     // add an empty panel as a spacer to keep the save button in the center
-    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.fill = GridBagConstraints.NONE;
     constraints.gridx += 1;
     constraints.weightx = 0;
     constraints.anchor = GridBagConstraints.WEST;
+    plotSelection.setMaximumSize(freqSpaceBox.getMaximumSize());
+    plotSelection.setMinimumSize(freqSpaceBox.getMinimumSize());
+    plotSelection.setPreferredSize(freqSpaceBox.getPreferredSize());
+    plotSelection.setSize(freqSpaceBox.getSize());
     this.add(plotSelection, constraints);
 
   }

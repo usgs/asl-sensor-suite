@@ -5,6 +5,8 @@ import asl.sensor.experiment.OrientedSineExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -60,10 +62,22 @@ public class OrientedSinePanel extends ExperimentPanel {
     rotationSubpanel.add(rotationTypeSelector);
 
 
-    this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-    this.add(chartPanel);
-    this.add(rotationSubpanel);
-    this.add(save);
+    this.setLayout(new GridBagLayout());
+    GridBagConstraints constraints = new GridBagConstraints();
+    constraints.weighty = 1;
+    constraints.weightx = 1;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.fill = GridBagConstraints.BOTH;
+    this.add(chartPanel, constraints);
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.weightx = 0;
+    constraints.weighty = 0;
+    ++constraints.gridy;
+    this.add(rotationSubpanel, constraints);
+    ++constraints.gridy;
+    this.add(save, constraints);
 
   }
 

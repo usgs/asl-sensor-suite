@@ -126,6 +126,8 @@ public class NoiseNinePanel extends NoisePanel {
     constraints.gridx = 0;
     freqSpaceBox.setPreferredSize(plotSelection.getPreferredSize());
     freqSpaceBox.setMaximumSize(plotSelection.getMaximumSize());
+    freqSpaceBox.setMinimumSize(plotSelection.getMinimumSize());
+    freqSpaceBox.setSize(plotSelection.getSize());
     add(freqSpaceBox, constraints);
 
     constraints.gridx += 1;
@@ -138,7 +140,7 @@ public class NoiseNinePanel extends NoisePanel {
     constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.gridx += 1;
     constraints.weightx = 0;
-    constraints.anchor = GridBagConstraints.WEST;
+    constraints.anchor = GridBagConstraints.EAST;
     add(plotSelection, constraints);
 
     revalidate();

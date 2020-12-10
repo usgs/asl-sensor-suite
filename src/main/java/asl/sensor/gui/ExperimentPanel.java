@@ -13,6 +13,8 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -143,10 +145,21 @@ public abstract class ExperimentPanel
     // basic layout for components (recommended to override in concrete class)
     // if specific formatting or additional components are unnecessary, the
     // implementing class can simply call super(expType) to make a panel
-    this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-    this.add(chartPanel);
-    this.add(save);
-    save.setAlignmentX(Component.CENTER_ALIGNMENT);
+    this.setLayout(new GridBagLayout());
+    GridBagConstraints constraints = new GridBagConstraints();
+    constraints.gridwidth = 1;
+    constraints.weighty = 1;
+    constraints.weightx = 1;
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.fill = GridBagConstraints.BOTH;
+    this.add(chartPanel, constraints);
+    constraints.weighty = 0;
+    ++constraints.gridy;
+    constraints.fill = GridBagConstraints.NONE;
+    this.add(save, constraints);
+    // save.setAlignmentX(Component.CENTER_ALIGNMENT);
   }
 
   static Color getColor(int idx) {

@@ -12,10 +12,12 @@ import asl.utils.response.ChannelMetadata.ResponseStageException;
 import asl.utils.response.ResponseUnits.SensorType;
 import asl.utils.response.ChannelMetadata;
 import asl.utils.response.ResponseUnits.SensorType;
+import com.sun.tools.javac.comp.Flow;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
@@ -102,10 +104,10 @@ public class RandomizedPanel extends ExperimentPanel {
     nyquistMultiplierLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
     nyquistMultiplierLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
-    JLabel introText = new JLabel("Calibration type: ");
-    lowFrequency = new JRadioButton("low freq.");
-    JRadioButton highFrequency = new JRadioButton("high freq.");
+    JLabel introText = new JLabel("Calibration: ");
     autoFrequency = new JRadioButton("auto");
+    lowFrequency = new JRadioButton("low");
+    JRadioButton highFrequency = new JRadioButton("high");
 
     ButtonGroup group = new ButtonGroup();
     group.add(lowFrequency);
@@ -153,10 +155,9 @@ public class RandomizedPanel extends ExperimentPanel {
 
     // place the other UI elements in a single row below the chart
     constraints.gridwidth = 1;
-    constraints.gridheight = 2;
     constraints.weighty = 0.0;
     constraints.weightx = 0.0;
-    constraints.anchor = GridBagConstraints.WEST;
+    constraints.anchor = GridBagConstraints.LAST_LINE_START;
     constraints.fill = GridBagConstraints.NONE;
     constraints.gridy += 1;
     constraints.gridx = 0;
@@ -208,28 +209,33 @@ public class RandomizedPanel extends ExperimentPanel {
     constraints.anchor = GridBagConstraints.PAGE_END;
     this.add(savePanel, constraints);
 
-    // plot selection combo box
-    constraints.fill = GridBagConstraints.BOTH;
-    constraints.gridheight = 1;
-    constraints.gridy = 1;
-    constraints.gridx += 1;
-    constraints.weightx = 0;
-    constraints.anchor = GridBagConstraints.CENTER;
+    JPanel rightSidePanel = new JPanel();
+    rightSidePanel.setLayout(new BoxLayout(rightSidePanel, BoxLayout.Y_AXIS));
+    rightSidePanel.setAlignmentY(BOTTOM_ALIGNMENT);
+
     JPanel nyquistLimitPanel = new JPanel();
-    nyquistLimitPanel.setLayout(new BoxLayout(nyquistLimitPanel, BoxLayout.X_AXIS));
+    nyquistLimitPanel.setLayout(new FlowLayout());
     nyquistLimitPanel.add(nyquistMultiplier);
     nyquistLimitPanel.add(nyquistMultiplierLabel);
-    this.add(nyquistLimitPanel, constraints);
+    rightSidePanel.add(nyquistLimitPanel);
 
-    constraints.fill = GridBagConstraints.NONE;
-    constraints.gridy += 1;
     plotSelection = new JComboBox<>();
     plotSelection.addItem(ResponseExperiment.MAGNITUDE);
     plotSelection.addItem(ResponseExperiment.ARGUMENT);
     plotSelection.addItem("Residual amplitude plot");
     plotSelection.addItem("Residual phase plot");
     plotSelection.addActionListener(this);
-    this.add(plotSelection, constraints);
+    rightSidePanel.add(plotSelection);
+
+    constraints.gridx += 1;
+    constraints.weightx = 0;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.anchor = GridBagConstraints.LAST_LINE_END;
+    rightSidePanel.setPreferredSize(optionsPanel.getPreferredSize());
+    rightSidePanel.setMinimumSize(optionsPanel.getMinimumSize());
+    rightSidePanel.setMaximumSize(optionsPanel.getMaximumSize());
+    rightSidePanel.setSize(optionsPanel.getSize());
+    this.add(rightSidePanel, constraints);
   }
 
   /**

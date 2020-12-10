@@ -100,6 +100,9 @@ public class SpectrumPanel extends ExperimentPanel {
     constraints.anchor = GridBagConstraints.WEST;
     JPanel spacer = new JPanel();
     spacer.setPreferredSize(freqSpaceBox.getPreferredSize());
+    spacer.setMaximumSize(freqSpaceBox.getMaximumSize());
+    spacer.setMinimumSize(freqSpaceBox.getMinimumSize());
+    spacer.setSize(freqSpaceBox.getSize());
     this.add(spacer, constraints);
   }
 

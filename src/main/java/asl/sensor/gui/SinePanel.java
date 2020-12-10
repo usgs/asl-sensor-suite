@@ -72,11 +72,14 @@ public class SinePanel extends ExperimentPanel {
     constraints.weighty = 0.0;
     constraints.weightx = 0.0;
     constraints.anchor = GridBagConstraints.WEST;
-    constraints.fill = GridBagConstraints.NONE;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.gridy += 1;
     constraints.gridx = 0;
     JPanel space = new JPanel();
     space.setPreferredSize(plotSelection.getPreferredSize());
+    space.setMaximumSize(plotSelection.getMaximumSize());
+    space.setMinimumSize(plotSelection.getMinimumSize());
+    space.setSize(plotSelection.getSize());
     this.add(space, constraints);
 
     constraints.gridx += 1;

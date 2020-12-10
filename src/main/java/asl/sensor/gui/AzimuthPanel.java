@@ -110,18 +110,24 @@ public class AzimuthPanel extends ExperimentPanel {
     constraints.weighty = 0.0;
     constraints.gridy += 1;
     constraints.gridwidth = 1;
+    constraints.weightx = 0;
     constraints.fill = GridBagConstraints.NONE;
     constraints.anchor = GridBagConstraints.WEST;
     this.add(offsetPanel, constraints);
 
     constraints.gridx += 1;
+    constraints.weightx = 1;
+    constraints.anchor = GridBagConstraints.CENTER;
     constraints.fill = GridBagConstraints.NONE;
-    constraints.anchor = GridBagConstraints.SOUTH;
     this.add(save, constraints);
 
     constraints.gridx += 1;
-    constraints.fill = GridBagConstraints.HORIZONTAL;
-    constraints.anchor = GridBagConstraints.CENTER;
+    constraints.weightx = 0;
+    constraints.anchor = GridBagConstraints.EAST;
+    chartSelector.setMaximumSize(offsetPanel.getMaximumSize());
+    chartSelector.setMinimumSize(offsetPanel.getMinimumSize());
+    chartSelector.setPreferredSize(offsetPanel.getPreferredSize());
+    chartSelector.setSize(offsetPanel.getSize());
     this.add(chartSelector, constraints);
 
   }
