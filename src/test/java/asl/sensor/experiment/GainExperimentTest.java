@@ -1,19 +1,22 @@
 package asl.sensor.experiment;
 
-import static java.lang.Math.abs;
+import static asl.utils.response.ResponseBuilders.deepCopyWithNewPolesZeros;
+import static asl.utils.response.ResponseParser.parseResponse;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
+import asl.utils.response.PolesZeros;
+import asl.utils.response.ResponseBuilders;
+import asl.utils.response.ResponseBuilders.PolesZerosBuilder;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.Test;
@@ -73,7 +76,8 @@ public class GainExperimentTest {
   }
 
   @Test
-  public void testA0Calculation() throws IOException, SeedFormatException, CodecException {
+  public void testA0Calculation()
+      throws IOException, SeedFormatException, CodecException, ResponseStageException {
     // attempts to replicate the logic of the A0 calculation in the backend
     String testFolder = folder + "relative-gain-100/";
     String seedName = testFolder + "00_BHZ.512.seed";
@@ -82,12 +86,21 @@ public class GainExperimentTest {
     ds.setBlock(1, seedName);
 
     String filename = "RESP.IU.ANMO.00.BHZ_gainx100";
-    InstrumentResponse ir = new InstrumentResponse(testFolder + filename);
-    double initialA0 = ir.getNormalization();
+    ChannelMetadata ir = parseResponse(testFolder + filename);
+    double initialA0 = ir.getPoleZeroStage().getNormalizationFactor();
     ds.setResponse(0, ir);
-    ir = new InstrumentResponse(testFolder + filename);
-    ir.setNormalization(1);
-    ds.setResponse(1, ir);
+    ir = parseResponse(testFolder + filename);
+    PolesZeros original = ir.getPoleZeroStage();
+    PolesZerosBuilder builder = new PolesZerosBuilder()
+        .withPoles(original.getPoleDoubleList())
+        .withZeros(original.getZeroDoubleList())
+        .withInputUnits(original.getInputMotionUnit())
+        .withOutputUnits(original.getOutputUnits())
+        .withTransferFunction(original.getTransferFunction())
+        .withNormalization(1)
+        .withNormalizationFrequency(original.getNormalizationFreq());
+    ChannelMetadata replacedNormalization = deepCopyWithNewPolesZeros(ir, builder.build());
+    ds.setResponse(1, replacedNormalization);
 
     OffsetDateTime start =
         OffsetDateTime.ofInstant(ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);

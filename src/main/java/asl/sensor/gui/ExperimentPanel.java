@@ -73,13 +73,13 @@ public abstract class ExperimentPanel
 
   public static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT =
       ThreadLocal.withInitial(() -> {
-        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD.HH:mm:ss.SSS");
+        SimpleDateFormat format = new SimpleDateFormat("yyyy.DDD.HH:mm:ss.SSS");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });
   static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
       ThreadLocal.withInitial(() -> {
-        SimpleDateFormat format = new SimpleDateFormat("YYYY.DDD");
+        SimpleDateFormat format = new SimpleDateFormat("yyyy.DDD");
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
       });

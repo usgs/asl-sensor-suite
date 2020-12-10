@@ -7,20 +7,27 @@ import static asl.utils.NumericUtils.demean;
 import static asl.utils.NumericUtils.detrendEnds;
 import static asl.utils.NumericUtils.normalize;
 import static asl.utils.NumericUtils.unwrap;
+import static asl.utils.response.ResponseBuilders.deepCopyResponse;
 import static org.apache.commons.math3.linear.MatrixUtils.createRealMatrix;
 import static org.apache.commons.math3.linear.MatrixUtils.createRealVector;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
-import asl.utils.input.DataBlock;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
+import asl.utils.response.PolesZeros;
+import asl.utils.response.PolesZeros.Pole;
+import asl.utils.timeseries.DataBlock;
+import edu.sc.seis.seisFile.fdsnws.stationxml.FloatNoUnitType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer.Optimum;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem.Evaluation;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
@@ -57,11 +64,11 @@ public class StepExperiment extends Experiment {
   /**
    * Used in the least squared solver (quit when function output changes by less than this value)
    */
-  private final double F_TOLER = 1E-15;
+  private static final double F_TOLER = 1E-15;
   /**
    * Used in the least squared solver (limit in change to apply to corner and damping params)
    */
-  private final double X_TOLER = 1E-15;
+  private static final double X_TOLER = 1E-15;
   private double f, h; //corner and damping of output (uncorrected)
   private double fCorr, hCorr; // fit parameters to turn output into cal input
   private double initResid, fitResid; // residual values
@@ -193,9 +200,14 @@ public class StepExperiment extends Experiment {
     dataNames.add(sensorOutput.getName());
 
     // long interval = sensorOutput.getInterval();
-    InstrumentResponse ir = dataStore.getResponse(sensorOutIdx);
+    ChannelMetadata ir = dataStore.getResponse(sensorOutIdx);
     dataNames.add(ir.getName());
-    Complex pole = ir.getPoles().get(0);
+    Complex pole;
+    try {
+      pole = ir.getPoleZeroStage().getPolesAsComplex().get(0);
+    } catch (ResponseStageException e) {
+      throw new RuntimeException("Response is missing a pole-zero stage?!");
+    }
 
     f = pole.abs() / TAU; // corner frequency
     h = Math.abs(pole.getReal() / pole.abs()); // damping
@@ -255,7 +267,7 @@ public class StepExperiment extends Experiment {
         maxIterations(Integer.MAX_VALUE).
         build();
 
-    LeastSquaresProblem.Evaluation initEval = lsp.evaluate(startVector);
+    Evaluation initEval = lsp.evaluate(startVector);
     // System.out.println("INITIAL GUESS RESIDUAL: " +  initEval.getRMS() );
 
     initResid = initEval.getRMS() * 100;
@@ -264,12 +276,10 @@ public class StepExperiment extends Experiment {
         withCostRelativeTolerance(F_TOLER).
         withParameterRelativeTolerance(X_TOLER);
 
-    LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+    Optimum optimum = optimizer.optimize(lsp);
     // line below used to quickly disable solver
     // comment out above assignment and uncomment that line to do so
-    //LeastSquaresProblem.Evaluation optimum = lsp.evaluate(startVector);
-
-    // System.out.println("FIT PARAMS RESIDUAL: " +  optimum.getRMS() );
+    // LeastSquaresProblem.Evaluation optimum = lsp.evaluate(startVector);
 
     fitResid = optimum.getRMS() * 100;
 
@@ -303,12 +313,29 @@ public class StepExperiment extends Experiment {
     Complex p2 = new Complex(hCorr, -1 * Math.sqrt(1 - Math.pow(hCorr, 2)));
     p2 = p2.multiply(-1 * TAU * fCorr);
 
-    InstrumentResponse fitResp = new InstrumentResponse(ir);
-    List<Complex> poles = fitResp.getPoles();
-    poles.set(0, p1);
-    poles.set(1, p2);
-    fitResp.setPoles(poles);
-    fitResp.setName(fitResp.getName() + " [FIT]");
+    ChannelMetadata fitResp = deepCopyResponse(ir);
+    try {
+      PolesZeros pzStage = ir.getPoleZeroStage();
+
+      List<Pole> poles = new ArrayList<>(pzStage.getPoleDoubleList());
+      FloatNoUnitType errorComponentsReal = poles.get(0).getRealWithError();
+      FloatNoUnitType errorComponentsImaginary = poles.get(0).getImaginaryWithError();
+      poles.set(0, new Pole(
+          new FloatNoUnitType((float) p1.getReal(), errorComponentsReal.getPlusError(),
+              errorComponentsReal.getMinusError()),
+          new FloatNoUnitType((float) p1.getImaginary(), errorComponentsImaginary.getPlusError(),
+              errorComponentsImaginary.getMinusError())));
+      poles.set(1, new Pole(
+          new FloatNoUnitType((float) p2.getReal(), errorComponentsReal.getPlusError(),
+              errorComponentsReal.getMinusError()),
+          new FloatNoUnitType((float) p2.getImaginary(), errorComponentsImaginary.getPlusError(),
+              errorComponentsImaginary.getMinusError())));
+      pzStage.setPoles(poles);
+      fitResp.setName(fitResp.getName() + " [FIT]");
+    } catch (ResponseStageException e) {
+      // this shouldn't happen by the time we've gotten this far
+      throw new RuntimeException(e);
+    }
 
     // go ahead and plot magnitude and phase of data
     Complex[] inputCurve = ir.applyResponseToInput(freqs);

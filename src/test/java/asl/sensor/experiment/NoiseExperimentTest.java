@@ -5,7 +5,7 @@ import static org.junit.Assert.fail;
 
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
-import asl.utils.TimeSeriesUtils;
+import asl.utils.timeseries.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;

@@ -1,14 +1,16 @@
 package asl.sensor.input;
 
 import static asl.utils.NumericUtils.euclidLCM;
-import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
-import static asl.utils.TimeSeriesUtils.formatEpochMillis;
-import static asl.utils.TimeSeriesUtils.getMplexNameList;
-import static asl.utils.TimeSeriesUtils.getTimeSeries;
+import static asl.utils.response.ResponseParser.parseResponse;
+import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static asl.utils.timeseries.TimeSeriesUtils.formatEpochMillis;
+import static asl.utils.timeseries.TimeSeriesUtils.getMplexNameList;
+import static asl.utils.timeseries.TimeSeriesUtils.getTimeSeries;
 
 import asl.utils.FFTResult;
-import asl.utils.input.DataBlock;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata;
+import asl.utils.timeseries.DataBlock;
+import asl.utils.response.ChannelMetadata;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
@@ -50,7 +52,7 @@ public class DataStore {
    */
   public final static int FILE_COUNT = 9;
   private final DataBlock[] dataBlockArray;
-  private final InstrumentResponse[] responses;
+  private final ChannelMetadata[] responses;
 
   // these are used to check to make sure data has been loaded
   private final boolean[] thisBlockIsSet;
@@ -62,7 +64,7 @@ public class DataStore {
    */
   public DataStore() {
     dataBlockArray = new DataBlock[FILE_COUNT];
-    responses = new InstrumentResponse[FILE_COUNT];
+    responses = new ChannelMetadata[FILE_COUNT];
     thisBlockIsSet = new boolean[FILE_COUNT];
     thisResponseIsSet = new boolean[FILE_COUNT];
     for (int i = 0; i < FILE_COUNT; ++i) {
@@ -79,7 +81,7 @@ public class DataStore {
    */
   public DataStore(DataStore ds) {
     dataBlockArray = new DataBlock[FILE_COUNT];
-    responses = new InstrumentResponse[FILE_COUNT];
+    responses = new ChannelMetadata[FILE_COUNT];
     thisBlockIsSet = new boolean[FILE_COUNT];
     thisResponseIsSet = new boolean[FILE_COUNT];
     boolean[] setBlocks = ds.dataIsSet();
@@ -209,7 +211,7 @@ public class DataStore {
   public FFTResult getPSD(int idx) {
     double[] data = dataBlockArray[idx].getData();
     long interval = dataBlockArray[idx].getInterval();
-    InstrumentResponse ir = responses[idx];
+    ChannelMetadata ir = responses[idx];
     return FFTResult.crossPower(data, data, ir, ir, data.length, interval);
   }
 
@@ -231,7 +233,7 @@ public class DataStore {
   public FFTResult getPSD(int idx, int maxLength) {
     double[] data = dataBlockArray[idx].getData();
     long interval = dataBlockArray[idx].getInterval();
-    InstrumentResponse ir = responses[idx];
+    ChannelMetadata ir = responses[idx];
     return FFTResult.crossPower(data, data, ir, ir, maxLength, interval);
   }
 
@@ -241,7 +243,7 @@ public class DataStore {
    * @param idx Index to get the response for
    * @return The instrument response data (gain, poles, zeros, etc.)
    */
-  public InstrumentResponse getResponse(int idx) {
+  public ChannelMetadata getResponse(int idx) {
     return responses[idx];
   }
 
@@ -560,7 +562,7 @@ public class DataStore {
    * @param idx index in this object to place the response at
    * @param ir InstrumentResponse to have placed into this object
    */
-  public void setResponse(int idx, InstrumentResponse ir) {
+  public void setResponse(int idx, ChannelMetadata ir) {
     responses[idx] = ir;
     thisResponseIsSet[idx] = true;
   }
@@ -572,7 +574,7 @@ public class DataStore {
    * @param filepath Full address of file to be loaded in
    */
   public void setResponse(int idx, String filepath) throws IOException {
-    responses[idx] = new InstrumentResponse(filepath);
+    responses[idx] = parseResponse(filepath);
     thisResponseIsSet[idx] = true;
   }
 

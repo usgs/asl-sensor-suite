@@ -1,15 +1,15 @@
 package asl.sensor.experiment;
 
 import static asl.sensor.experiment.Experiment.DECIMAL_FORMAT;
+import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
-import asl.utils.ResponseUnits.ResolutionType;
-import asl.utils.ResponseUnits.SensorType;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ResponseUnits.ResolutionType;
+import asl.utils.response.ResponseUnits.SensorType;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.math3.complex.Complex;
@@ -27,8 +27,7 @@ public class StepExperimentTest {
     String fname2 = "00_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse(
-        SensorType.STS1T5, ResolutionType.HIGH));
+    ds.setResponse(1, loadEmbeddedResponse(SensorType.STS1T5, ResolutionType.HIGH));
     String startString = "2018-038T15:20:00.0";
     String endString = "2018-038T15:59:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
@@ -49,7 +48,7 @@ public class StepExperimentTest {
     String fname2 = "10_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("STS2gen3_Q330HR"));
+    ds.setResponse(1, loadEmbeddedResponse("STS2gen3_Q330HR"));
     String startString = "2018-037T19:55:00.0";
     String endString = "2018-037T20:35:30.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
@@ -92,10 +91,9 @@ public class StepExperimentTest {
     String fname2 = "00_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse(
-        SensorType.STS1T5, ResolutionType.HIGH));
-    String startString = "2017-248T04:55:00.0";
-    String endString = "2017-248T05:31:00.0";
+    ds.setResponse(1, loadEmbeddedResponse(SensorType.STS1T5, ResolutionType.HIGH));
+    String startString = "2017-248T04:54:00.0";
+    String endString = "2017-248T05:32:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
     long ed = TestUtils.timeStringToEpochMilli(endString);
     ds.trim(st, ed);
@@ -114,7 +112,7 @@ public class StepExperimentTest {
     String fname2 = "00_BHZ.512.seed";
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
-    ds.setResponse(1, InstrumentResponse.loadEmbeddedResponse("TR360_Q330HR"));
+    ds.setResponse(1, loadEmbeddedResponse("TR360_Q330HR"));
     String startString = "2018-102T22:22:00.0";
     String endString = "2018-102T23:00:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);

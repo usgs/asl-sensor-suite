@@ -2,10 +2,10 @@ package asl.sensor.experiment;
 
 import static asl.utils.NumericUtils.multipointMovingAverage;
 import static asl.utils.ReportingUtils.setNonNumericPrintable;
-import static asl.utils.TimeSeriesUtils.formatEpochMillis;
+import static asl.utils.timeseries.TimeSeriesUtils.formatEpochMillis;
 
 import asl.sensor.input.DataStore;
-import asl.utils.input.DataBlock;
+import asl.utils.timeseries.DataBlock;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

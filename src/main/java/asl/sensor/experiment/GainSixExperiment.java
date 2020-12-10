@@ -1,10 +1,10 @@
 package asl.sensor.experiment;
 
-import static asl.utils.TimeSeriesUtils.rotate;
-import static asl.utils.TimeSeriesUtils.rotateX;
+import static asl.utils.timeseries.TimeSeriesUtils.rotate;
+import static asl.utils.timeseries.TimeSeriesUtils.rotateX;
 
 import asl.sensor.input.DataStore;
-import asl.utils.input.DataBlock;
+import asl.utils.timeseries.DataBlock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.IntStream;
@@ -187,7 +187,7 @@ public class GainSixExperiment extends Experiment {
    * @return Angle of second east sensor (radians) minus 90-degree offset
    * representing angle between north and east sensors; this is the angle sent
    * to the rotation function,
-   * {@link asl.utils.TimeSeriesUtils#rotateX(DataBlock, DataBlock, double)}
+   * {@link asl.utils.timeseries.TimeSeriesUtils#rotateX(DataBlock, DataBlock, double)}
    */
   public double getEastAzimuthDegrees() {
     double eastDegrees = Math.toDegrees(eastAngle);

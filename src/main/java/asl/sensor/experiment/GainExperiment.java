@@ -6,7 +6,8 @@ import static java.util.Arrays.copyOfRange;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -165,13 +166,19 @@ public class GainExperiment extends Experiment {
     fireStateChange("Accumulating gain values...");
     // InstrumentResponse[] resps = ds.getResponses();
     for (int i = 0; i < indices.length; ++i) {
-      InstrumentResponse ir = dataStore.getResponse(indices[i]);
+      ChannelMetadata ir = dataStore.getResponse(indices[i]);
       double[] gains = ir.getGain();
       gainStage1[i] = gains[1];
-      A0Freqs[i] = ir.getNormalizationFrequency();
-      Complex respAtA0 = ir.applyResponseToInputUnscaled(new double[]{A0Freqs[i]})[0];
-      respA0s[i] = ir.getNormalization();
-      calcA0s[i] = 1. / respAtA0.abs();
+      try {
+        A0Freqs[i] = ir.getPoleZeroStage().getNormalizationFreq();
+        Complex respAtA0 = ir.applyResponseToInputUnscaled(new double[]{A0Freqs[i]})[0];
+        respA0s[i] = ir.getPoleZeroStage().getNormalizationFactor();
+        calcA0s[i] = 1. / respAtA0.abs();
+      } catch (ResponseStageException e) {
+        // this probably shouldn't happen
+        String errMsg = "There is no Pole-Zero response stage for " + ir.getName();
+        throw new RuntimeException(errMsg);
+      }
     }
 
     fftResults = new FFTResult[NUMBER_TO_LOAD];

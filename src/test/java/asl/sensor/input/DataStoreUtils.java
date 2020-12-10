@@ -1,8 +1,10 @@
 package asl.sensor.input;
 
+import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
+import static asl.utils.response.ResponseParser.parseResponse;
 import static org.junit.Assert.fail;
 
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
@@ -22,7 +24,7 @@ public class DataStoreUtils {
       }
 
       if (respName != null) {
-        InstrumentResponse ir = new InstrumentResponse(respName);
+        ChannelMetadata ir = parseResponse(respName);
         dataStore.setResponse(1, ir);
       }
 
@@ -48,7 +50,7 @@ public class DataStoreUtils {
       }
 
       if (respName != null) {
-        InstrumentResponse ir = InstrumentResponse.loadEmbeddedResponse(respName);
+        ChannelMetadata ir = loadEmbeddedResponse(respName);
         dataStore.setResponse(1, ir);
       }
 

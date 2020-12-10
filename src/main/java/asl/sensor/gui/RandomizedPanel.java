@@ -8,8 +8,10 @@ import asl.sensor.experiment.RandomizedExperiment;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.utils.ResponseUnits.SensorType;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
+import asl.utils.response.ResponseUnits.SensorType;
+import asl.utils.response.ChannelMetadata;
+import asl.utils.response.ResponseUnits.SensorType;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
@@ -404,7 +406,7 @@ public class RandomizedPanel extends ExperimentPanel {
 
     if (event.getSource() == generateResp) {
       RandomizedExperiment rExp = (RandomizedExperiment) expResult;
-      InstrumentResponse fitResp = rExp.getFitResponse();
+      ChannelMetadata fitResp = rExp.getFitResponse();
       Map<Complex, Complex> poleMap = rExp.getPoleErrors();
       Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
 
@@ -428,6 +430,11 @@ public class RandomizedPanel extends ExperimentPanel {
         JOptionPane.showMessageDialog(this, errorMsg, "Response Loading Error",
             JOptionPane.ERROR_MESSAGE);
         e.printStackTrace();
+      } catch (ResponseStageException e) {
+        String errorMsg = "The response doesn't have a pole-zero stage. Something is very wrong.";
+        JOptionPane.showMessageDialog(this, errorMsg, "Response Loading Error",
+            JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
       }
       return;
     }
@@ -440,11 +447,12 @@ public class RandomizedPanel extends ExperimentPanel {
         File selFile = fileChooser.getSelectedFile();
         try {
           RandomizedExperiment rExp = (RandomizedExperiment) expResult;
-          InstrumentResponse fitResp = rExp.getFitResponse();
+          ChannelMetadata fitResp = rExp.getFitResponse();
           Map<Complex, Complex> poleMap = rExp.getPoleErrors();
           Map<Complex, Complex> zeroMap = rExp.getZeroErrors();
           fitResp.writeModifiedResponse(poleMap, zeroMap, selFile);
-        } catch (IOException e) {
+        } catch (IOException | ResponseStageException e) {
+          // there shouldn't actually be a way to trigger the ResponseStageException here
           e.printStackTrace();
         }
       }

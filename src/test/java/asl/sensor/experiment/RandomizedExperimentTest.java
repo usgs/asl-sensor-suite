@@ -6,6 +6,9 @@ import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.atanc;
+import static asl.utils.response.ResponseBuilders.deepCopyResponse;
+import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
+import static asl.utils.response.ResponseParser.parseResponse;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -22,11 +25,14 @@ import asl.sensor.input.DataStoreUtils;
 import asl.sensor.output.CalResult;
 import asl.sensor.test.TestUtils;
 import asl.utils.ReportingUtils;
-import asl.utils.ResponseUnits;
-import asl.utils.ResponseUnits.ResolutionType;
-import asl.utils.ResponseUnits.SensorType;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
+import asl.utils.response.PolesZeros.Pole;
+import asl.utils.response.ResponseUnits;
+import asl.utils.response.ResponseUnits.ResolutionType;
+import asl.utils.response.ResponseUnits.SensorType;
+import asl.utils.response.ChannelMetadata;
 import edu.iris.dmc.seedcodec.CodecException;
+import edu.sc.seis.seisFile.fdsnws.stationxml.FloatNoUnitType;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.Font;
 import java.io.File;
@@ -106,18 +112,18 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void testEvaluationOfJacobian() throws IOException {
+  public void testEvaluationOfJacobian() throws IOException, ResponseStageException {
     String fname = folder + "resp-parse/TST5_response.txt";
-    InstrumentResponse ir;
-    ir = new InstrumentResponse(fname);
+    ChannelMetadata ir;
+    ir = parseResponse(fname);
     double[] freqs = new double[80];
     for (int i = 0; i < freqs.length; ++i) {
       freqs[i] = i;
     }
     final boolean lowFreq = false;
     RealVector initialGuess, initialPoleGuess, initialZeroGuess;
-    initialPoleGuess = ir.polesToVector(lowFreq, Double.MAX_VALUE);
-    initialZeroGuess = ir.zerosToVector(lowFreq, Double.MAX_VALUE);
+    initialPoleGuess = ir.getPoleZeroStage().polesToVector(lowFreq, Double.MAX_VALUE);
+    initialZeroGuess = ir.getPoleZeroStage().zerosToVector(lowFreq, Double.MAX_VALUE);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
     Complex[] corrections = getResponseCorrection(freqs, null);
@@ -143,7 +149,7 @@ public class RandomizedExperimentTest {
     double changingVar = testAgainst.getEntry(0);
     double jacobianDiff = 100 * Math.ulp(changingVar);
     testAgainst.setEntry(0, changingVar + jacobianDiff);
-    InstrumentResponse testDiffResponse =
+    ChannelMetadata testDiffResponse =
         ir.buildResponseFromFitVector(testAgainst.toArray(), lowFreq, numZeros);
     Complex[] diffResult = testDiffResponse.applyResponseToInputUnscaled(freqs);
     double[] testDiffData = new double[2 * diffResult.length];
@@ -221,11 +227,11 @@ public class RandomizedExperimentTest {
   }
 
   // @Test
-  public void testCalculationResult1() throws IOException {
+  public void testCalculationResult1() throws IOException, ResponseStageException {
 
     String currentDir = System.getProperty("user.dir");
     DataStore ds = setUpTest1();
-    InstrumentResponse ir = ds.getResponse(1);
+    ChannelMetadata ir = ds.getResponse(1);
 
     RandomizedExperiment rCal = (RandomizedExperiment)
         ExperimentFactory.RANDOMCAL.createExperiment();
@@ -354,7 +360,7 @@ public class RandomizedExperimentTest {
       CalResult rCalResult = cps.runRand(calInFile, sensorOutFile, respFile,
           false, start, end, true,
           DEFAULT_NYQUIST_PERCENT_LIMIT, "");
-    } catch (IOException | SeedFormatException | CodecException e) {
+    } catch (IOException | SeedFormatException | CodecException | ResponseStageException e) {
       e.printStackTrace();
       fail();
     }
@@ -387,7 +393,7 @@ public class RandomizedExperimentTest {
     rCal.runExperimentOnData(ds);
     double initResidual = rCal.getInitResidual();
     double fitResidual = rCal.getFitResidual();
-    InstrumentResponse fitResponse = rCal.getFitResponse();
+    ChannelMetadata fitResponse = rCal.getFitResponse();
 
 
     double[][] calculatedDataSeries = rCal.getData().get(0).getSeries(1).toArray();
@@ -500,7 +506,7 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void hrvHasReasonableRMSMeasure() throws FileNotFoundException {
+  public void hrvHasReasonableRMSMeasure() throws FileNotFoundException, ResponseStageException {
     String respName = RESP_LOCATION + "RESP.IU.HRV.00.BHZ";
     String dataFolderName = getSeedFolder("IU", "HRV", "2018", "192");
     String calName = dataFolderName + "CB_BC0.512.seed";
@@ -508,12 +514,12 @@ public class RandomizedExperimentTest {
 
     DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
     Complex expectedFitPole = new Complex(-37.39683437804999, -82.25199086188465);
-    InstrumentResponse ir = new InstrumentResponse(ds.getResponse(1));
-    List<Complex> poles = ir.getPoles();
+    ChannelMetadata ir = deepCopyResponse(ds.getResponse(1));
+    List<Pole> poles = ir.getPoleZeroStage().getPoleDoubleList();
     // expectedFitPole = poles.get(4);
-    poles.set(4, expectedFitPole);
-    poles.set(5, expectedFitPole.conjugate());
-    ir.setPoles(poles);
+    poles.set(4, new Pole(expectedFitPole));
+    poles.set(5, new Pole(expectedFitPole.conjugate()));
+    ir.getPoleZeroStage().setPoles(poles);
     ds.setResponse(1, ir);
 
     RandomizedExperiment rCal = new RandomizedExperiment();
@@ -539,8 +545,7 @@ public class RandomizedExperimentTest {
         DateTimeFormatter.ofPattern("uuuu,DDD,HH:mm:ss").withZone(ZoneOffset.UTC);
 
     DataStore ds = DataStoreUtils.createFromNames(respName1, calName, sensOutName);
-    ds.setResponse(1,
-        InstrumentResponse.loadEmbeddedResponse(SensorType.TR360, ResolutionType.HIGH));
+    ds.setResponse(1, loadEmbeddedResponse(SensorType.TR360, ResolutionType.HIGH));
     assertFalse(ds.responseIsSet(0));
     long startCal = ZonedDateTime.parse(startTime, dateTimeFormatter).toInstant().toEpochMilli();
     String endTime = "2019,086,15:56:00";
@@ -694,8 +699,7 @@ public class RandomizedExperimentTest {
   @Test
   public void verifyThatCurveTrimmingIsCorrect() throws IOException {
     double[] freqs = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    InstrumentResponse resp =
-        InstrumentResponse.loadEmbeddedResponse(SensorType.STS2gen3, ResolutionType.HIGH);
+    ChannelMetadata resp = loadEmbeddedResponse(SensorType.STS2gen3, ResolutionType.HIGH);
     Complex[] curve = resp.applyResponseToInput(freqs);
     double[] ampAndPhase = new double[2 * curve.length];
     for (int i = 0; i < curve.length; ++i) {
@@ -791,9 +795,9 @@ public class RandomizedExperimentTest {
     // possible. so to test a valid result we'll make sure the results agree to a minimum level of
     // precision (the results will not be exactly identical under most likely circumstances)
     // which we will set to be the third significant figure
-
     List<Complex> poles = rExp.getFitPoles();
-    assertEquals(5, poles.size());
+    // also, as some poles are close to optimum, we allow for them not all being changed
+    assertTrue(poles.size() <= 5);
     for (int i = 0; i < poles.size(); ++i) {
       double orderOfMagnitude = Math.floor(Math.log10(poles.get(i).abs()));
       double delta = Math.pow(10, orderOfMagnitude - 3);
@@ -801,7 +805,7 @@ public class RandomizedExperimentTest {
     }
 
     List<Complex> zeros = rExp.getFitZeros();
-    assertEquals(6, zeros.size());
+    assertTrue(zeros.size() <= 6);
     for (int i = 0; i < zeros.size(); ++i) {
       double orderOfMagnitude = Math.ceil(Math.log10(zeros.get(i).abs()));
       double delta = Math.pow(10, orderOfMagnitude - 3);
@@ -820,6 +824,7 @@ public class RandomizedExperimentTest {
 
     RandomizedExperiment rExp = new RandomizedExperiment();
     rExp.setLowFrequencyCalibration(false);
+    rExp.setNyquistMultiplier(0.5);
     rExp.runExperimentOnData(ds);
 
     // the included response is intended to be as close to the optimum fit for this function as
@@ -863,7 +868,6 @@ public class RandomizedExperimentTest {
     String endTime = "2019,121,17:47:30";
     long endCal = ZonedDateTime.parse(endTime, dateTimeFormatter).toInstant().toEpochMilli();
     ds.trim(startCal, endCal);
-
 
     RandomizedExperiment randomExp = new RandomizedExperiment();
     randomExp.setCorrectionResponse(null);

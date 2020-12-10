@@ -2,8 +2,8 @@ package asl.sensor.experiment;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
-import asl.utils.input.DataBlock;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.timeseries.DataBlock;
+import asl.utils.response.ChannelMetadata;
 import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
@@ -87,7 +87,7 @@ public class NoiseExperiment extends Experiment {
     }
 
     DataBlock[] dataIn = new DataBlock[respIndices.length];
-    InstrumentResponse[] responses = new InstrumentResponse[respIndices.length];
+    ChannelMetadata[] responses = new ChannelMetadata[respIndices.length];
 
     for (int i = 0; i < respIndices.length; ++i) {
       dataIn[i] = dataStore.getBlock(respIndices[i]);

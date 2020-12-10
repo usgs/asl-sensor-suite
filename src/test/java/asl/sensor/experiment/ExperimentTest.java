@@ -3,14 +3,14 @@ package asl.sensor.experiment;
 import static asl.sensor.experiment.Experiment.DATE_FORMAT;
 import static asl.sensor.experiment.Experiment.DECIMAL_FORMAT;
 import static asl.sensor.gui.ExperimentPanel.DATE_TIME_FORMAT;
-import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
 
 import asl.sensor.input.DataStore;
-import asl.utils.input.DataBlock;
+import asl.utils.timeseries.DataBlock;
 import org.junit.Test;
 
 public class ExperimentTest {

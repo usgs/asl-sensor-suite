@@ -3,8 +3,8 @@ package asl.sensor.gui;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.test.TestUtils;
-import asl.utils.TimeSeriesUtils;
-import asl.utils.input.DataBlock;
+import asl.utils.timeseries.TimeSeriesUtils;
+import asl.utils.timeseries.DataBlock;
 import org.junit.Test;
 
 public class DataPanelTest {

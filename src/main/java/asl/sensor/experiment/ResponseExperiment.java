@@ -4,7 +4,7 @@ import static asl.utils.NumericUtils.atanc;
 import static asl.utils.NumericUtils.unwrap;
 
 import asl.sensor.input.DataStore;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class ResponseExperiment extends Experiment {
 
   private boolean freqSpace; // choose between units of Hz or seconds (time between samples)
 
-  private Set<InstrumentResponse> responses;
+  private Set<ChannelMetadata> responses;
 
   public ResponseExperiment() {
     super();
@@ -71,7 +71,7 @@ public class ResponseExperiment extends Experiment {
         continue;
       }
 
-      InstrumentResponse instrumentResponse = dataStore.getResponse(responseIndex);
+      ChannelMetadata instrumentResponse = dataStore.getResponse(responseIndex);
       String name = instrumentResponse.getName() + " [" +
           DateTimeFormatter.ofPattern("uuuu.DDD").withZone(ZoneOffset.UTC)
               .format(instrumentResponse.getEpochStart()) + ']';
@@ -124,8 +124,8 @@ public class ResponseExperiment extends Experiment {
     return 0L;
   }
 
-  public InstrumentResponse[] getResponses() {
-    return responses.toArray(new InstrumentResponse[0]);
+  public ChannelMetadata[] getResponses() {
+    return responses.toArray(new ChannelMetadata[0]);
   }
 
   @Override

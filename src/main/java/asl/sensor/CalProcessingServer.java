@@ -3,8 +3,11 @@ package asl.sensor;
 import static asl.sensor.experiment.RandomizedExperiment.*;
 import static asl.utils.ReportingUtils.COLORS;
 import static asl.utils.ReportingUtils.chartsToImageList;
-import static asl.utils.ResponseUnits.enumerateAllResponseFilenames;
-import static asl.utils.TimeSeriesUtils.getFirstTimeSeries;
+import static asl.utils.response.ResponseParser.getRespFileClosestEpoch;
+import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
+import static asl.utils.response.ResponseParser.parseResponse;
+import static asl.utils.response.ResponseUnits.enumerateAllResponseFilenames;
+import static asl.utils.timeseries.TimeSeriesUtils.getFirstTimeSeries;
 
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
@@ -16,9 +19,10 @@ import asl.sensor.experiment.VoltageExperiment;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.input.DataStore;
 import asl.sensor.output.CalResult;
-import asl.utils.ResponseUnits.SensorType;
-import asl.utils.input.DataBlock;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
+import asl.utils.timeseries.DataBlock;
+import asl.utils.response.ResponseUnits.SensorType;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.BasicStroke;
@@ -199,11 +203,13 @@ public class CalProcessingServer {
     for (int i = 0; i < seedFileNames.length; ++i) {
       DataBlock db = getFirstTimeSeries(seedFileNames[i]);
       ds.setBlock(i, db);
-      InstrumentResponse ir;
+      ChannelMetadata ir;
       if (embedResps[i]) {
-        ir = InstrumentResponse.loadEmbeddedResponse(respFileNames[i]);
+        ir = loadEmbeddedResponse(respFileNames[i]);
       } else {
-        ir = new InstrumentResponse(respFileNames[i]);
+        String respName = respFileNames[i];
+        long filePointer = getRespFileClosestEpoch(respName, start, end).filePointer;
+        ir = parseResponse(respName, filePointer);
       }
       ds.setResponse(i, ir);
     }
@@ -235,7 +241,7 @@ public class CalProcessingServer {
   public CalResult runRand(String calFileName, String outFileName,
       String respName, boolean useEmbeddedResp, String startDate, String endDate, boolean lowFreq,
       double nyquistPercentage, String correctionType)
-      throws IOException, SeedFormatException, CodecException {
+      throws IOException, SeedFormatException, CodecException, ResponseStageException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -245,12 +251,12 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     DataBlock calBlock = getFirstTimeSeries(calFileName);
     DataBlock outBlock = getFirstTimeSeries(outFileName);
-    InstrumentResponse ir;
+    ChannelMetadata ir;
     if (useEmbeddedResp) {
-      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+      ir = loadEmbeddedResponse(respName);
     } else {
-      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
-      ir = new InstrumentResponse(respName, epoch);
+      long filePointer = getRespFileClosestEpoch(respName, start, end).filePointer;
+      ir = parseResponse(respName, filePointer);
     }
 
     ds.setBlock(0, calBlock);
@@ -290,7 +296,8 @@ public class CalProcessingServer {
   public CalResult runRand(String calFileNameD1, String calFileNameD2,
       String outFileNameD1, String outFileNameD2, String respName, boolean useEmbeddedResp,
       String startDate, String endDate, boolean lowFreq, double nyquistPercentage,
-      String correctionType) throws IOException, SeedFormatException, CodecException {
+      String correctionType)
+      throws IOException, SeedFormatException, CodecException, ResponseStageException {
     DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
     OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
@@ -301,12 +308,12 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     DataBlock calBlock = getFirstTimeSeries(calFileNameD1, calFileNameD2);
     DataBlock outBlock = getFirstTimeSeries(outFileNameD1, outFileNameD2);
-    InstrumentResponse ir;
+    ChannelMetadata ir;
     if (useEmbeddedResp) {
-      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+      ir = loadEmbeddedResponse(respName);
     } else {
-      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
-      ir = new InstrumentResponse(respName, epoch);
+      long filePointer = getRespFileClosestEpoch(respName, start, end).filePointer;
+      ir = parseResponse(respName, filePointer);
     }
 
     ds.setBlock(0, calBlock);
@@ -347,12 +354,12 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     DataBlock calBlock = getFirstTimeSeries(calFileNameD1, calFileNameD2);
     DataBlock outBlock = getFirstTimeSeries(outFileNameD1, outFileNameD2);
-    InstrumentResponse ir;
+    ChannelMetadata ir;
     if (useEmbeddedResp) {
-      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+      ir = loadEmbeddedResponse(respName);
     } else {
-      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
-      ir = new InstrumentResponse(respName, epoch);
+      long filePointer = getRespFileClosestEpoch(respName, start, end).filePointer;
+      ir = parseResponse(respName, filePointer);
     }
 
     ds.setBlock(0, calBlock);
@@ -392,12 +399,12 @@ public class CalProcessingServer {
     DataStore ds = new DataStore();
     DataBlock calBlock = getFirstTimeSeries(calFileName);
     DataBlock outBlock = getFirstTimeSeries(outFileName);
-    InstrumentResponse ir;
+    ChannelMetadata ir;
     if (useEmbeddedResp) {
-      ir = InstrumentResponse.loadEmbeddedResponse(respName);
+      ir = loadEmbeddedResponse(respName);
     } else {
-      Instant epoch = InstrumentResponse.getRespFileClosestEpoch(respName, start, end);
-      ir = new InstrumentResponse(respName, epoch);
+      long filePointer = getRespFileClosestEpoch(respName, start, end).filePointer;
+      ir = parseResponse(respName, filePointer);
     }
 
     ds.setBlock(0, calBlock);
@@ -652,6 +659,12 @@ public class CalProcessingServer {
     String[] resps = {respName1, respName2, respName3};
     boolean[] embeds = {useEmbedded1, useEmbedded2, useEmbedded3};
 
+    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
+    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
+    long start = startDateTime.toInstant().toEpochMilli();
+    long end = endDateTime.toInstant().toEpochMilli();
+
     int loadIndex = 0; // used to point to next empty
     for (int i = 0; i < seeds.length; ++i) {
       if (seeds[i].length() == 0 || resps[i].length() == 0) {
@@ -660,18 +673,15 @@ public class CalProcessingServer {
 
       ds.setBlock(loadIndex, seeds[i]);
       if (embeds[i]) {
-        ds.setResponse(loadIndex, InstrumentResponse.loadEmbeddedResponse(resps[i]));
+        ds.setResponse(loadIndex, loadEmbeddedResponse(resps[i]));
       } else {
-        ds.setResponse(loadIndex, resps[i]);
+        ChannelMetadata metadata = parseResponse(resps[i],
+            getRespFileClosestEpoch(resps[i], start, end).filePointer);
+        ds.setResponse(loadIndex, metadata);
       }
       ++loadIndex;
     }
 
-    DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-    OffsetDateTime startDateTime = OffsetDateTime.parse(startDate, dtf);
-    OffsetDateTime endDateTime = OffsetDateTime.parse(endDate, dtf);
-    long start = startDateTime.toInstant().toEpochMilli();
-    long end = endDateTime.toInstant().toEpochMilli();
     ds.trim(start, end);
 
     return runExpGetDataVolt(ds);
@@ -908,7 +918,7 @@ public class CalProcessingServer {
   }
 
   private CalResult runExpGetDataRand(DataStore dataStore, boolean isLowFrequency, double nyqPerct,
-      String correctionType) throws IOException {
+      String correctionType) throws IOException, ResponseStageException {
 
     RandomizedExperiment randomExperiment = new RandomizedExperiment();
     SensorType correction = getSensorCorrectionFromString(correctionType);
@@ -918,12 +928,14 @@ public class CalProcessingServer {
     randomExperiment.setLowFrequencyCalibration(isLowFrequency);
     randomExperiment.runExperimentOnData(dataStore);
 
-    Complex[] fitZerosComplex = randomExperiment.getFitResponse().getZeros()
-        .toArray(new Complex[]{});
-    Complex[] fitPolesComplex = randomExperiment.getFitResponse().getPoles()
-        .toArray(new Complex[]{});
-    Complex[] initialZerosComplex = dataStore.getResponse(1).getZeros().toArray(new Complex[]{});
-    Complex[] initialPolesComplex = dataStore.getResponse(1).getPoles().toArray(new Complex[]{});
+    Complex[] fitZerosComplex = randomExperiment.getFitResponse()
+        .getPoleZeroStage().getZerosAsComplex().toArray(new Complex[0]);
+    Complex[] fitPolesComplex = randomExperiment.getFitResponse()
+        .getPoleZeroStage().getPolesAsComplex().toArray(new Complex[0]);
+    Complex[] initialZerosComplex =
+        dataStore.getResponse(1).getPoleZeroStage().getZerosAsComplex().toArray(new Complex[0]);
+    Complex[] initialPolesComplex =
+        dataStore.getResponse(1).getPoleZeroStage().getPolesAsComplex().toArray(new Complex[0]);
 
     double[] fitZeros = new double[2 * fitZerosComplex.length];
     double[] initialZeros = new double[fitZeros.length];

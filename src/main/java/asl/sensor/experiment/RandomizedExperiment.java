@@ -11,19 +11,24 @@ import static asl.utils.NumericUtils.unwrap;
 import static asl.utils.NumericUtils.unwrapArray;
 import static asl.utils.ReportingUtils.complexListToString;
 import static asl.utils.ReportingUtils.complexListToStringWithErrorTerms;
-import static asl.utils.ResponseUnits.SensorType.TR120;
-import static asl.utils.ResponseUnits.SensorType.TR240;
-import static asl.utils.ResponseUnits.SensorType.TR360;
-import static asl.utils.ResponseUnits.getFilenameFromComponents;
-import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
-import static asl.utils.input.InstrumentResponse.loadEmbeddedResponse;
+import static asl.utils.response.ResponseBuilders.deepCopyResponse;
+import static asl.utils.response.ResponseUnits.SensorType.TR120;
+import static asl.utils.response.ResponseUnits.SensorType.TR240;
+import static asl.utils.response.ResponseUnits.SensorType.TR360;
+import static asl.utils.response.ResponseUnits.getFilenameFromComponents;
+import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
-import asl.utils.ResponseUnits.ResolutionType;
-import asl.utils.ResponseUnits.SensorType;
-import asl.utils.input.DataBlock;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
+import asl.utils.response.PolesZeros;
+import asl.utils.response.PolesZeros.Pole;
+import asl.utils.response.PolesZeros.Zero;
+import asl.utils.response.ResponseUnits.ResolutionType;
+import asl.utils.response.ResponseUnits.SensorType;
+import asl.utils.response.ChannelMetadata;
+import asl.utils.timeseries.DataBlock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -106,13 +111,13 @@ public class RandomizedExperiment extends Experiment {
    */
   public static final SensorType[] VALID_CORRECTIONS = {null, TR120, TR240, TR360};
 
-  private InstrumentResponse correctionToApply;
+  private ChannelMetadata correctionToApply;
   private double initialResidual, fitResidual;
-  private List<Complex> initialPoles;
-  private List<Complex> fitPoles;
+  private List<Pole> initialPoles;
+  private List<Pole> fitPoles;
   private Map<Complex, Complex> poleErrors;
-  private List<Complex> initialZeros;
-  private List<Complex> fitZeros;
+  private List<Zero> initialZeros;
+  private List<Zero> fitZeros;
   private Map<Complex, Complex> zeroErrors;
   /**
    * True if calibration is low frequency. This affects which poles are fitted, either low or high
@@ -124,7 +129,7 @@ public class RandomizedExperiment extends Experiment {
    * Default value will be false.
    */
   private boolean isCapacitive;
-  private InstrumentResponse fitResponse;
+  private ChannelMetadata fitResponse;
   private double[] freqs;
   private boolean plotUsingHz;
   private double maxMagWeight, maxArgWeight; // max values of magnitude, phase
@@ -151,7 +156,7 @@ public class RandomizedExperiment extends Experiment {
     return isLowFrequencyCalibration ? LOW_FREQ_ZERO_TARGET : HIGH_FREQ_ZERO_TARGET;
   }
 
-  static Complex[] getResponseCorrection(double[] frequencies, InstrumentResponse resp) {
+  static Complex[] getResponseCorrection(double[] frequencies, ChannelMetadata resp) {
     if (resp == null) {
       Complex[] returnValue = new Complex[frequencies.length];
       // since we divide out the correction, we have to fill with ones in the null case
@@ -178,19 +183,26 @@ public class RandomizedExperiment extends Experiment {
    * @return Doubles representing new response curve evaluation
    */
   private static double[] evaluateResponse(double[] variables, double[] freqs, int numZeros,
-      InstrumentResponse fitResponse, boolean isLowFreq, Complex[] correctionCurve) {
+      ChannelMetadata fitResponse, boolean isLowFreq, Complex[] correctionCurve)
+      throws ResponseStageException {
 
-    InstrumentResponse testResp = new InstrumentResponse(fitResponse);
+    // backup current poles, because we will try to modify in-place
+    List<Zero> originalZeros = fitResponse.getPoleZeroStage().getZeroDoubleList();
+    List<Pole> originalPoles = fitResponse.getPoleZeroStage().getPoleDoubleList();
 
     // prevent terrible case where, say, only high-freq poles above nyquist rate
     if (variables.length > 0) {
-      testResp = fitResponse.buildResponseFromFitVector(
+      // construct pole/zero list from the fit vector (this has relatively low overhead)
+      PolesZeros pzStage = fitResponse.getPoleZeroStage().buildPolesZerosFromFitVector(
           variables, isLowFreq, numZeros);
+      // rather than creating entirely new responses, we'll just replace the poles and zeros
+      // (and, of course, replace them back with the originals at the end of this function)
+      fitResponse.getPoleZeroStage().setPoles(pzStage.getPoleDoubleList());
+      fitResponse.getPoleZeroStage().setZeros(pzStage.getZeroDoubleList());
     } else {
       System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
     }
-
-    Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
+    Complex[] appliedCurve = fitResponse.applyResponseToInputUnscaled(freqs);
     double[] curValue = new double[freqs.length * 2];
 
     if (correctionCurve != null) {
@@ -205,8 +217,10 @@ public class RandomizedExperiment extends Experiment {
       curValue[i] = c.abs();
       curValue[argIdx] = atanc(c);
     }
-
     scaleValues(curValue, freqs, isLowFreq);
+
+    fitResponse.getPoleZeroStage().setPoles(originalPoles);
+    fitResponse.getPoleZeroStage().setZeros(originalZeros);
 
     return curValue;
   }
@@ -225,8 +239,8 @@ public class RandomizedExperiment extends Experiment {
    * difference approximation of that response's Jacobian
    */
   static Pair<RealVector, RealMatrix> jacobian(RealVector variables, double[] freqs,
-      int numZeros, InstrumentResponse fitResponse, boolean isLowFreq,
-      Complex[] correctionCurve) {
+      int numZeros, ChannelMetadata fitResponse, boolean isLowFreq,
+      Complex[] correctionCurve) throws ResponseStageException {
     int numVars = variables.getDimension();
 
     double[] currentVars = new double[numVars];
@@ -253,13 +267,9 @@ public class RandomizedExperiment extends Experiment {
       }
 
       double[] changedVars = Arrays.copyOf(currentVars, currentVars.length);
-
-      // forward difference approximation -- ulp here gives us the error between this variable
-      // and the smallest double larger than it. We multiply this by 100 to get the forward diff.
-      // so that the difference is small relative to the value of the variable but also able to
-      // give us a measurable change in the actual response curve function generated by it
-      // and unlike having a fixed decimal step above the variable this is able to function on
-      // floating-point numbers of arbitrary magnitude (useful for very high-freq poles in STS-6)
+      // difference approximation -- ulp here gives us the error between this variable
+      // and the smallest double larger than it.
+      // scale ulp by a factor to ensure that the difference is big enough to affect resp curves
       double diffX = 100 * Math.ulp(changedVars[i]);
       changedVars[i] = changedVars[i] + diffX;
 
@@ -270,7 +280,6 @@ public class RandomizedExperiment extends Experiment {
         jacobian[j][i] = diffY[j] - mag[j];
         jacobian[j][i] /= diffX;
       }
-
     }
 
     RealVector result = MatrixUtils.createRealVector(mag);
@@ -293,11 +302,11 @@ public class RandomizedExperiment extends Experiment {
    * @param freqToScaleAt Frequency that the source calculated response from cal is normalized on
    * @param correctionCurve Response correction used for some Trillium responses
    * @return Pair object holding the evaluation and the estimated jacobian at the given point
-   * @see #jacobian(RealVector, double[], int, InstrumentResponse, boolean, Complex[])
+   * @see #jacobian(RealVector, double[], int, ChannelMetadata, boolean, Complex[])
    */
   static Pair<RealVector, RealMatrix> errorJacobian(RealVector variables, double[] freqs,
-      int varIndex, InstrumentResponse fitResponse, boolean pole, boolean isLowFreq,
-      double freqToScaleAt, Complex[] correctionCurve) {
+      int varIndex, ChannelMetadata fitResponse, boolean pole, boolean isLowFreq,
+      double freqToScaleAt, Complex[] correctionCurve) throws ResponseStageException {
 
     // variables should always be size 2 (fitting one pole or zero value at a time)
     Complex currentVar = new Complex(variables.getEntry(0), variables.getEntry(1));
@@ -307,7 +316,7 @@ public class RandomizedExperiment extends Experiment {
 
     double[][] jacobian = new double[mag.length][2];
 
-    // same procedure as forward difference in main jacobian function
+    // similar to procedure in main jacobian function
     double diff = 100 * Math.ulp(currentVar.getReal());
     double next = diff + currentVar.getReal();
     Complex diffX = new Complex(next, currentVar.getImaginary());
@@ -358,18 +367,23 @@ public class RandomizedExperiment extends Experiment {
    * @return Response curve with the modified pole/zero value replaced in the first response
    */
   static double[] evaluateError(Complex currentVar, double[] freqs, int varIndex,
-      InstrumentResponse fitResponse, boolean pole, boolean isLowFreq, double freqToScaleAt,
-      Complex[] correctionCurve) {
+      ChannelMetadata fitResponse, boolean pole, boolean isLowFreq, double freqToScaleAt,
+      Complex[] correctionCurve) throws ResponseStageException {
 
-    InstrumentResponse testResp = new InstrumentResponse(fitResponse);
+    // backup the list of poles/zeros so we don't have to duplicate the response
+    List<Pole> originalPolesList =
+        new ArrayList<>(fitResponse.getPoleZeroStage().getPoleDoubleList());
+    List<Zero> originalZerosList =
+        new ArrayList<>(fitResponse.getPoleZeroStage().getZeroDoubleList());
+
     if (pole) {
-      testResp.replaceFitPole(currentVar, varIndex, isLowFreq);
+      fitResponse.getPoleZeroStage().replaceFitPole(currentVar, varIndex, isLowFreq);
     } else {
-      testResp.replaceFitZero(currentVar, varIndex, isLowFreq);
+      fitResponse.getPoleZeroStage().replaceFitZero(currentVar, varIndex, isLowFreq);
     }
 
 
-    Complex[] appliedCurve = testResp.applyResponseToInputUnscaled(freqs);
+    Complex[] appliedCurve = fitResponse.applyResponseToInputUnscaled(freqs);
     double[] curValue = new double[2 * freqs.length];
 
     // note that the correction curve here has already had normalization applied
@@ -380,7 +394,7 @@ public class RandomizedExperiment extends Experiment {
     }
 
     Complex[] normalizationData =
-        testResp.applyResponseToInputUnscaled(new double[]{freqToScaleAt});
+        fitResponse.applyResponseToInputUnscaled(new double[]{freqToScaleAt});
     assert (normalizationData.length == 1);
     Complex respAtNormalization = normalizationData[0];
 
@@ -396,6 +410,12 @@ public class RandomizedExperiment extends Experiment {
       phi = unwrap(phi, phiPrev);
       phiPrev = phi;
       curValue[argIdx] = Math.toDegrees(phi);
+    }
+
+    if (pole) {
+      fitResponse.getPoleZeroStage().setPoles(originalPolesList);
+    } else {
+      fitResponse.getPoleZeroStage().setZeros(originalZerosList);
     }
 
     return curValue;
@@ -540,11 +560,21 @@ public class RandomizedExperiment extends Experiment {
    */
   @Override
   protected void backend(DataStore dataStore) {
+    try {
+      backendMainMethod(dataStore);
+    } catch (ResponseStageException e) {
+      String msg = "Can't run randomized calibration without a PoleZero stage\n" +
+          "in the response file being examined:\n" + dataStore.getResponse(1).getName();
+      throw new RuntimeException(msg);
+    }
+  }
+
+  private void backendMainMethod(DataStore dataStore) throws ResponseStageException {
     numIterations = 0;
 
     DataBlock calib = dataStore.getBlock(0);
     DataBlock sensorOut = dataStore.getBlock(1);
-    fitResponse = new InstrumentResponse(dataStore.getResponse(1));
+    fitResponse = deepCopyResponse(dataStore.getResponse(1));
 
     dataNames.add(calib.getName());
     String name = sensorOut.getName();
@@ -553,9 +583,9 @@ public class RandomizedExperiment extends Experiment {
     XYSeries calcMag = new XYSeries("Calc. resp. (" + name + ") magnitude");
     XYSeries calcArg = new XYSeries("Calc. resp. (" + name + ") phase");
 
-    InstrumentResponse initResponse = new InstrumentResponse(fitResponse);
-    initialPoles = new ArrayList<>(fitResponse.getPoles());
-    initialZeros = new ArrayList<>(fitResponse.getZeros());
+    ChannelMetadata initResponse = deepCopyResponse(fitResponse);
+    initialPoles = new ArrayList<>(fitResponse.getPoleZeroStage().getPoleDoubleList());
+    initialZeros = new ArrayList<>(fitResponse.getPoleZeroStage().getZeroDoubleList());
 
     // get the plots of the calculated response from deconvolution
     // PSD(out, in) / PSD(in, in) gives us PSD(out) / PSD(in) while removing
@@ -682,8 +712,8 @@ public class RandomizedExperiment extends Experiment {
     double phsScale = plottedPhs[normalIdx];
     double[] observedResult = new double[2 * freqs.length];
     double[] weights = new double[observedResult.length];
-    maxArgWeight = Double.MIN_VALUE;
-    maxMagWeight = Double.MIN_VALUE;
+    maxArgWeight = Float.MIN_VALUE;
+    maxMagWeight = Float.MIN_VALUE;
     for (int i = 0; i < freqs.length; ++i) {
       double xAxis = freqs[i];
       if (!plotUsingHz) {
@@ -752,9 +782,9 @@ public class RandomizedExperiment extends Experiment {
     // have curves that are very dependent on poles which are out-of-band, and so we will
     // not present an upper bound on the frequency range for HF cals in order to better
     // produce fits for cases of such data.
-    initialPoleGuess = fitResponse
+    initialPoleGuess = fitResponse.getPoleZeroStage()
         .polesToVector(isLowFrequencyCalibration, POLE_ZERO_FREQ_CUTOFF);
-    initialZeroGuess = fitResponse
+    initialZeroGuess = fitResponse.getPoleZeroStage()
         .zerosToVector(isLowFrequencyCalibration, POLE_ZERO_FREQ_CUTOFF);
     int numZeros = initialZeroGuess.getDimension();
     initialGuess = initialZeroGuess.append(initialPoleGuess);
@@ -771,13 +801,18 @@ public class RandomizedExperiment extends Experiment {
       final double[] freqsSet = freqs;
       final int numZerosSet = numZeros;
       final boolean isLowFrequency = isLowFrequencyCalibration;
-      final InstrumentResponse fitSet = fitResponse;
+      final ChannelMetadata fitSet = fitResponse;
 
       @Override
       public Pair<RealVector, RealMatrix> value(final RealVector point) {
         ++numIterations;
-        fireStateChange("Fitting, iteration count " + numIterations);
-        return jacobian(point, freqsSet, numZerosSet, fitSet, isLowFrequency, responseCorrection);
+        fireStateChange("Fitting, evaluation count " + numIterations);
+        try {
+          return jacobian(point, freqsSet, numZerosSet, fitSet, isLowFrequency, responseCorrection);
+        } catch (ResponseStageException e) {
+          // this should have been thrown long before we reach this point
+          throw new RuntimeException(e);
+        }
       }
 
     };
@@ -787,8 +822,8 @@ public class RandomizedExperiment extends Experiment {
     // value to apply to for both parameters and produces good fit curves.
     // These are relative tolerance precisions that are already lower in magnitude than the last
     // digits of precision of most resp files' poles and zeros, at least.
-    final double costTolerance = 1.0E-10;
-    final double paramTolerance = 1.0E-10;
+    final double costTolerance = 1E-10;
+    final double paramTolerance = Float.MIN_VALUE;
 
     LeastSquaresOptimizer optimizer = new LevenbergMarquardtOptimizer().
         withCostRelativeTolerance(costTolerance).
@@ -811,7 +846,7 @@ public class RandomizedExperiment extends Experiment {
         parameterValidator(new PoleValidator(numZeros)).
         lazyEvaluation(false).
         maxEvaluations(Integer.MAX_VALUE).
-        maxIterations(Integer.MAX_VALUE).
+        maxIterations(1000).
         build();
 
     fireStateChange("Built least-squares problem; evaluating intial guess...");
@@ -825,7 +860,8 @@ public class RandomizedExperiment extends Experiment {
 
     RealVector finalResultVector;
 
-    LeastSquaresOptimizer.Optimum optimum = optimizer.optimize(lsp);
+    LeastSquaresOptimizer.Optimum optimum;
+    optimum = optimizer.optimize(lsp);
     finalResultVector = optimum.getPoint();
     numIterations = optimum.getIterations();
 
@@ -841,8 +877,8 @@ public class RandomizedExperiment extends Experiment {
 
     fitResponse = fitResponse.buildResponseFromFitVector(
         fitParams, isLowFrequencyCalibration, numZeros);
-    fitPoles = fitResponse.getPoles();
-    fitZeros = fitResponse.getZeros();
+    fitPoles = fitResponse.getPoleZeroStage().getPoleDoubleList();
+    fitZeros = fitResponse.getPoleZeroStage().getZeroDoubleList();
 
     // response error term calculation here (3-sigma bounds)
     poleErrors = new HashMap<>();
@@ -895,7 +931,7 @@ public class RandomizedExperiment extends Experiment {
 
         double obsAmpDbl = observedResult[i];
         if (obsAmpDbl == 0.) {
-          obsAmpDbl = Double.MIN_VALUE;
+          obsAmpDbl = Float.MIN_VALUE;
         }
 
         obsAmpDbl = Math.pow(10, obsAmpDbl / 20);
@@ -998,7 +1034,7 @@ public class RandomizedExperiment extends Experiment {
       List<Complex> bestFits = new ArrayList<>();
 
       for (int j = 0; j < errorTermFreqsFull.length; ++j) {
-        String message = "Estimating error for variable" + (i / 2 + 1) + " of " +
+        String message = "Estimating error for variable " + (i / 2 + 1) + " of " +
             fitParams.length / 2 + " using frequency range " + (j + 1) + " of " +
             errorTermFreqsFull.length;
         fireStateChange(message);
@@ -1038,14 +1074,18 @@ public class RandomizedExperiment extends Experiment {
           final double[] freqsSet = errorTermFreqs;
           final int variableIndex = index;
           final boolean isLowFrequency = isLowFrequencyCalibration;
-          final InstrumentResponse fitSet = fitResponse;
+          final ChannelMetadata fitSet = fitResponse;
 
           @Override
           public Pair<RealVector, RealMatrix> value(final RealVector point) {
             ++numIterations;
             fireStateChange("Fitting, iteration count " + numIterations);
-            return errorJacobian(point, freqsSet, variableIndex, fitSet, isLowFrequency, pole,
-                freqToScaleAt, correctedCurve);
+            try {
+              return errorJacobian(point, freqsSet, variableIndex, fitSet, isLowFrequency, pole,
+                  freqToScaleAt, correctedCurve);
+            } catch (ResponseStageException e) {
+              throw new RuntimeException(e);
+            }
           }
         };
 
@@ -1115,14 +1155,17 @@ public class RandomizedExperiment extends Experiment {
    * @return new poles that should improve fit over inputted response, as a list
    */
   public List<Complex> getFitPoles() {
-    List<Complex> polesOut = new ArrayList<>();
-    Set<Complex> retain = new HashSet<>(fitPoles);
-    retain.removeAll(initialPoles);
-    for (Complex c : fitPoles) {
-      if (retain.contains(c)) {
-        polesOut.add(c);
-      }
+    Set<Complex> retain = new HashSet<>();
+    for (Pole pole : fitPoles) {
+      Complex complex = new Complex(pole.getReal(), pole.getImaginary());
+      retain.add(complex);
     }
+    for (Pole pole : initialPoles) {
+      Complex complex = new Complex(pole.getReal(), pole.getImaginary());
+      retain.remove(complex);
+    }
+
+    List<Complex> polesOut = new ArrayList<>(retain);
     complexRealsFirstSorter(polesOut);
     return polesOut;
   }
@@ -1141,7 +1184,7 @@ public class RandomizedExperiment extends Experiment {
    *
    * @return the best-fit response
    */
-  public InstrumentResponse getFitResponse() {
+  public ChannelMetadata getFitResponse() {
     return fitResponse;
   }
 
@@ -1150,7 +1193,7 @@ public class RandomizedExperiment extends Experiment {
    * {@link #VALID_CORRECTIONS}
    * @return Response defining correction to zeros for some Trillium sensors
    */
-  InstrumentResponse getCorrectionToApply() {
+  ChannelMetadata getCorrectionToApply() {
     return correctionToApply;
   }
 
@@ -1160,14 +1203,17 @@ public class RandomizedExperiment extends Experiment {
    * @return List of zeros (complex numbers) that are used in best-fit curve
    */
   public List<Complex> getFitZeros() {
-    List<Complex> zerosOut = new ArrayList<>();
-    Set<Complex> retain = new HashSet<>(fitZeros);
-    retain.removeAll(initialZeros);
-    for (Complex c : fitZeros) {
-      if (retain.contains(c)) {
-        zerosOut.add(c);
-      }
+    Set<Complex> retain = new HashSet<>();
+    for (Zero zero : initialZeros) {
+      Complex complex = new Complex(zero.getReal(), zero.getImaginary());
+      retain.add(complex);
     }
+    for (Zero zero : fitZeros) {
+      Complex complex = new Complex(zero.getReal(), zero.getImaginary());
+      retain.remove(complex);
+    }
+
+    List<Complex> zerosOut = new ArrayList<>(retain);
     complexRealsFirstSorter(zerosOut);
     return zerosOut;
   }
@@ -1203,14 +1249,17 @@ public class RandomizedExperiment extends Experiment {
    * @return poles taken from initial response file
    */
   public List<Complex> getInitialPoles() {
-    List<Complex> polesOut = new ArrayList<>();
-    Set<Complex> retain = new HashSet<>(initialPoles);
-    retain.removeAll(fitPoles);
-    for (Complex c : initialPoles) {
-      if (retain.contains(c)) {
-        polesOut.add(c);
-      }
+    Set<Complex> retain = new HashSet<>();
+    for (Pole pole : initialPoles) {
+      Complex complex = new Complex(pole.getReal(), pole.getImaginary());
+      retain.add(complex);
     }
+    for (Pole pole : fitPoles) {
+      Complex complex = new Complex(pole.getReal(), pole.getImaginary());
+      retain.remove(complex);
+    }
+
+    List<Complex> polesOut = new ArrayList<>(retain);
     complexRealsFirstSorter(polesOut);
     return polesOut;
   }
@@ -1221,14 +1270,17 @@ public class RandomizedExperiment extends Experiment {
    * @return zeros taken from initial response file
    */
   public List<Complex> getInitialZeros() {
-    List<Complex> zerosOut = new ArrayList<>();
-    Set<Complex> retain = new HashSet<>(initialZeros);
-    retain.removeAll(fitZeros);
-    for (Complex c : initialZeros) {
-      if (retain.contains(c)) {
-        zerosOut.add(c);
-      }
+    Set<Complex> retain = new HashSet<>();
+    for (Zero zero : fitZeros) {
+      Complex complex = new Complex(zero.getReal(), zero.getImaginary());
+      retain.add(complex);
     }
+    for (Zero zero : initialZeros) {
+      Complex complex = new Complex(zero.getReal(), zero.getImaginary());
+      retain.remove(complex);
+    }
+
+    List<Complex> zerosOut = new ArrayList<>(retain);
     complexRealsFirstSorter(zerosOut);
     return zerosOut;
   }

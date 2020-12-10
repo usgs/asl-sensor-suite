@@ -1,13 +1,13 @@
 package asl.sensor.gui;
 
-import static asl.utils.ResponseUnits.enumerateAllResponseFilenames;
+import static asl.utils.response.ResponseUnits.enumerateAllResponseFilenames;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.ResponseExperiment;
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -190,7 +190,7 @@ public class ResponsePanel extends ExperimentPanel {
 
         ClassLoader cl = ResponsePanel.class.getClassLoader();
         try (InputStream respStream =
-            cl.getResourceAsStream(InstrumentResponse.RESP_DIRECTORY + resultStr)) {
+            cl.getResourceAsStream(ChannelMetadata.RESP_DIRECTORY + resultStr)) {
           Path destinationPath = Paths.get(respDir.getCanonicalPath(), resultStr);
           Files.copy(respStream, destinationPath, REPLACE_EXISTING);
 
@@ -214,7 +214,7 @@ public class ResponsePanel extends ExperimentPanel {
   @Override
   public String[] getAdditionalReportPages() {
     ResponseExperiment respExp = (ResponseExperiment) expResult;
-    InstrumentResponse[] responses = respExp.getResponses();
+    ChannelMetadata[] responses = respExp.getResponses();
     String[] pages = new String[responses.length];
     for (int i = 0; i < pages.length; ++i) {
       pages[i] = responses[i].toString();

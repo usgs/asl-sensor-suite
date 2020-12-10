@@ -1,10 +1,11 @@
 package asl.sensor.experiment;
 
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
+import static asl.utils.response.ResponseParser.parseResponse;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.input.DataStore;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -27,9 +28,9 @@ public class ResponseExperimentTest {
         LocalDateTime.parse("2015,055,00:00:00", formatter).toInstant(ZoneOffset.UTC);
     String respName = "RESP.CU.BCIP.00.BHZ_2017_268";
     String respFile = RESP_LOCATION + respName;
-    InstrumentResponse firstResp = new InstrumentResponse(respFile, startFirstEpoch);
+    ChannelMetadata firstResp = parseResponse(respFile, startFirstEpoch);
     dataStore.setResponse(0, firstResp);
-    InstrumentResponse secondResp = new InstrumentResponse(respFile, startSecondEpoch);
+    ChannelMetadata secondResp = parseResponse(respFile, startSecondEpoch);
     dataStore.setResponse(1, secondResp);
     respExperiment.runExperimentOnData(dataStore);
     XYSeriesCollection firstPlottedData = respExperiment.getData().get(0);

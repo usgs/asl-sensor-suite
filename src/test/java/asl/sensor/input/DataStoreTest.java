@@ -3,8 +3,8 @@ package asl.sensor.input;
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static asl.utils.NumericUtils.euclidLCM;
-import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
-import static asl.utils.TimeSeriesUtils.getFirstTimeSeries;
+import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static asl.utils.timeseries.TimeSeriesUtils.getFirstTimeSeries;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -12,7 +12,7 @@ import static org.junit.Assert.assertTrue;
 
 import asl.sensor.gui.InputPanel;
 import asl.sensor.test.TestUtils;
-import asl.utils.input.DataBlock;
+import asl.utils.timeseries.DataBlock;
 import java.time.OffsetDateTime;
 import org.junit.Test;
 

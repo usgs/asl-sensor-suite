@@ -2,18 +2,24 @@ package asl.sensor.gui;
 
 import static asl.utils.ReportingUtils.chartsToImage;
 import static asl.utils.ReportingUtils.chartsToImageList;
-import static asl.utils.ResponseUnits.getFilenameFromComponents;
-import static asl.utils.TimeSeriesUtils.getDataBlockFromFDSNQuery;
-import static asl.utils.TimeSeriesUtils.getMplexNameSet;
-import static asl.utils.input.InstrumentResponse.parseXMLForEpochs;
+import static asl.utils.response.ResponseParser.listEpochsForSelection;
+import static asl.utils.response.ResponseParser.getResponseFromXMLFile;
+import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
+import static asl.utils.response.ResponseParser.parseResponse;
+import static asl.utils.response.ResponseParser.responseFromFDSNQuery;
+import static asl.utils.response.ResponseUnits.getFilenameFromComponents;
+import static asl.utils.timeseries.TimeSeriesUtils.getDataBlockFromFDSNQuery;
+import static asl.utils.timeseries.TimeSeriesUtils.getMplexNameSet;
+import static asl.utils.response.ResponseParser.parseXMLForEpochs;
 
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStore.TimeRangeException;
-import asl.utils.ResponseUnits.ResolutionType;
-import asl.utils.ResponseUnits.SensorType;
-import asl.utils.input.DataBlock;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ResponseParser.EpochIdentifier;
+import asl.utils.response.ResponseUnits.ResolutionType;
+import asl.utils.response.ResponseUnits.SensorType;
+import asl.utils.timeseries.DataBlock;
+import asl.utils.response.ChannelMetadata;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.SeisFileException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -112,7 +118,7 @@ public class InputPanel
    */
   private static final int IMAGE_HEIGHT = 240;
   private static final int IMAGE_WIDTH = 640;
-  private static final int MAX_UNSCROLLED = 3;
+  private static final int MAX_UNSCROLLED = 2;
   private static final int PLOTS_PER_PAGE = 3;
   private static final int FILE_COUNT = DataStore.FILE_COUNT;
   /**
@@ -701,11 +707,11 @@ public class InputPanel
         Pair<SensorType, ResolutionType> sensorResolutionPair = responses.get(lastRespIndex);
         SensorType sensor = sensorResolutionPair.getFirst();
         ResolutionType resolution = sensorResolutionPair.getSecond();
-        InstrumentResponse instrumentResponse =
-            InstrumentResponse.loadEmbeddedResponse(sensor, resolution);
-        dataStore.setResponse(dataIndex, instrumentResponse);
+        ChannelMetadata ChannelMetadata =
+            loadEmbeddedResponse(sensor, resolution);
+        dataStore.setResponse(dataIndex, ChannelMetadata);
 
-        respFileNames[dataIndex].setText(instrumentResponse.getName());
+        respFileNames[dataIndex].setText(ChannelMetadata.getName());
         clear.setEnabled(true);
         clearAll.setEnabled(true);
 
@@ -735,10 +741,9 @@ public class InputPanel
 
         respDirectory = file.getParent();
         try {
-          Instant startInst = respEpochChoose(file.getAbsolutePath(), file.getName());
-          InstrumentResponse instrumentResponse = new InstrumentResponse(file.getAbsolutePath(),
-              startInst);
-          dataStore.setResponse(dataIndex, instrumentResponse);
+          long filePointer = respEpochChoose(file.getAbsolutePath());
+          ChannelMetadata ChannelMetadata = parseResponse(file.getAbsolutePath(), filePointer);
+          dataStore.setResponse(dataIndex, ChannelMetadata);
           respFileNames[dataIndex].setText(file.getName());
           clear.setEnabled(true);
           clearAll.setEnabled(true);
@@ -883,9 +888,9 @@ public class InputPanel
         int result = JOptionPane.showConfirmDialog(this, epochPanel,
             "Select channel and associated epoch", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
-          chName = epochPanel.getSelectedChannelName();
-          Pair<Instant, Instant> epoch = epochPanel.getSelectedEpoch();
-          timeInEpoch = epoch.getFirst().toEpochMilli() + 1; // this is between start and end
+          EpochIdentifier epoch = epochPanel.getSelectedEpoch();
+          chName = epoch.channelIdentifier;
+          timeInEpoch = epoch.startInstant.toEpochMilli() + 1; // this is between start and end
         }
       }
 
@@ -894,7 +899,7 @@ public class InputPanel
       String sta = netStaLocCha[1];
       String loc = netStaLocCha[2];
       String cha = netStaLocCha[3];
-      InstrumentResponse resp = InstrumentResponse.getResponseFromXMLFile(xmlFilePath,
+      ChannelMetadata resp = getResponseFromXMLFile(xmlFilePath,
           net, sta, loc, cha, timeInEpoch);
       dataStore.setResponse(index, resp);
 
@@ -1142,10 +1147,9 @@ public class InputPanel
       @Override
       public Integer doInBackground() {
 
-        InstrumentResponse respToLoad;
+        ChannelMetadata respToLoad;
         try {
-          respToLoad =
-              InstrumentResponse.responseFromFDSNQuery(scheme, host, port, path,
+          respToLoad = responseFromFDSNQuery(scheme, host, port, path,
                   net, sta, fixedLoc, cha, epoch);
         } catch (XMLStreamException | IOException e) {
           returnedErrMsg = "The queried data has an integrity issue preventing parsing.";
@@ -1557,23 +1561,22 @@ public class InputPanel
    * Get a selected epoch from a multi-epoch response
    *
    * @param respHandle Full path of a given response to read in
-   * @param filename Filename of the response
-   * @return Value of the start instant of the epoch that the user has chosen
+   * @return File pointer for the start of the epoch in the given resp file
    * @throws IOException Error reading resp file
    * @throws FileNotFoundException File does not exist
    */
-  private Instant respEpochChoose(String respHandle, String filename) throws IOException {
-    List<Pair<Instant, Instant>> epochs = InstrumentResponse.getRespFileEpochs(respHandle);
+  private long respEpochChoose(String respHandle) throws IOException {
+    List<EpochIdentifier> epochs = listEpochsForSelection(respHandle);
     if (epochs.size() > 1) {
       ReponseEpochPanel epochPanel = new ReponseEpochPanel(epochs);
       int result = JOptionPane.showConfirmDialog(this, epochPanel,
           "Select epoch", JOptionPane.OK_CANCEL_OPTION);
       if (result == JOptionPane.OK_OPTION) {
-        return epochPanel.getSelectedEpoch().getFirst();
+        return epochPanel.getSelectedEpoch().filePointer;
       }
-      return null;
+      return 0;
     } else if (epochs.size() > 0) {
-      return epochs.get(0).getFirst();
+      return epochs.get(0).filePointer;
     } else {
       throw new IOException("RESP file has no epoch data -- check formatting");
     }

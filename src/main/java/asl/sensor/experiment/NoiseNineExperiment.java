@@ -1,10 +1,10 @@
 package asl.sensor.experiment;
 
-import static asl.utils.TimeSeriesUtils.rotate;
-import static asl.utils.TimeSeriesUtils.rotateX;
+import static asl.utils.timeseries.TimeSeriesUtils.rotate;
+import static asl.utils.timeseries.TimeSeriesUtils.rotateX;
 
 import asl.sensor.input.DataStore;
-import asl.utils.input.DataBlock;
+import asl.utils.timeseries.DataBlock;
 import java.util.stream.IntStream;
 import org.jfree.data.xy.XYSeriesCollection;
 

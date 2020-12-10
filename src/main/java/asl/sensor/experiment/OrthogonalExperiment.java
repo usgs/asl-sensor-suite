@@ -4,11 +4,11 @@ import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.decimate;
 import static asl.utils.NumericUtils.demean;
 import static asl.utils.NumericUtils.detrend;
-import static asl.utils.TimeSeriesUtils.ONE_HZ_INTERVAL;
+import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static org.apache.commons.math3.linear.MatrixUtils.createRealVector;
 
 import asl.sensor.input.DataStore;
-import asl.utils.input.DataBlock;
+import asl.utils.timeseries.DataBlock;
 import java.util.Arrays;
 import org.apache.commons.math3.linear.RealVector;
 import org.jfree.data.xy.XYSeries;

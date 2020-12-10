@@ -4,11 +4,12 @@ import static asl.sensor.experiment.RandomizedExperiment.DEFAULT_NYQUIST_PERCENT
 import static asl.sensor.test.TestUtils.RESP_LOCATION;
 import static asl.sensor.test.TestUtils.getSeedFolder;
 import static asl.utils.NumericUtils.atanc;
+import static asl.utils.response.ResponseParser.parseResponse;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.CalProcessingServer;
 import asl.sensor.test.TestUtils;
-import asl.utils.input.InstrumentResponse;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
@@ -20,7 +21,8 @@ public class CalServerTest {
   private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
-  public void testRandomNoOOBException() throws SeedFormatException, CodecException, IOException {
+  public void testRandomNoOOBException()
+      throws SeedFormatException, CodecException, IOException, ResponseStageException {
     String respName = "STS2gen3_Q330HR";
     String dataFolderName = getSeedFolder("IU", "FUNA", "2019", "073");
     String calName = dataFolderName + "_BC0.512.seed";
@@ -37,7 +39,8 @@ public class CalServerTest {
   }
 
   @Test
-  public void testRandomResults() throws SeedFormatException, CodecException, IOException {
+  public void testRandomResults()
+      throws SeedFormatException, CodecException, IOException, ResponseStageException {
     String respName = RESP_LOCATION + "RESP.IU.KIEV.00.BH1";
     String dataFolderName = getSeedFolder("IU", "KIEV", "2018", "044");
     String calName = dataFolderName + "_BC0.512.seed";
@@ -72,7 +75,7 @@ public class CalServerTest {
     }
 
     Complex[] expectedInitPoles =
-        new InstrumentResponse(respName).getPoles().toArray(new Complex[]{});
+        parseResponse(respName).getPoleZeroStage().getPolesAsComplex().toArray(new Complex[0]);
 
     Complex[] expectedFitPoles = {
         new Complex(-0.012450, -0.011612),
@@ -91,7 +94,7 @@ public class CalServerTest {
       // these values may have some variance depending on machine state
       // as a result of how the curve fitting routines work
       assertEquals(expectedFitPoles[i].abs(), fitPoles[i].abs(), 1E-3);
-      assertEquals(atanc(expectedFitPoles[i]), atanc(fitPoles[i]), 1.5E-2);
+      assertEquals(atanc(expectedFitPoles[i]), atanc(fitPoles[i]), 1E-1);
     }
   }
 
