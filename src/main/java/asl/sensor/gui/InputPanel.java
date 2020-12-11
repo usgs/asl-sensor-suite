@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutionException;
 import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -741,13 +742,8 @@ public class InputPanel
 
         respDirectory = file.getParent();
         try {
-          long filePointer = respEpochChoose(file.getAbsolutePath());
-          ChannelMetadata ChannelMetadata = parseResponse(file.getAbsolutePath(), filePointer);
-          dataStore.setResponse(dataIndex, ChannelMetadata);
-          respFileNames[dataIndex].setText(file.getName());
-          clear.setEnabled(true);
-          clearAll.setEnabled(true);
-        } catch (IOException | NullPointerException e) {
+          respEpochChoose(file, dataIndex);
+        } catch (IOException  | ExecutionException | InterruptedException e) {
           metadataErrorPopup(file.getName(), e);
           e.printStackTrace();
           return;
@@ -884,7 +880,13 @@ public class InputPanel
       if (epochs.keySet().size() == 1 && epochs.get(chName).size() == 1) {
         timeInEpoch = epochs.get(chName).get(0).getFirst().toEpochMilli()+1;
       } else {
-        ReponseEpochPanel epochPanel = new ReponseEpochPanel(epochs);
+        ResponseEpochPanel epochPanel = new ResponseEpochPanel(epochs);
+        if (dataStore.blockIsSet(index)) {
+          long start = dataStore.getBlock(index).getStartTime();
+          long end = dataStore.getBlock(index).getEndTime();
+          String name = dataStore.getBlock(index).getName().replace('_', '.');
+          epochPanel.setIndexOfClosestEpoch(start, end, name);
+        }
         int result = JOptionPane.showConfirmDialog(this, epochPanel,
             "Select channel and associated epoch", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
@@ -1150,7 +1152,7 @@ public class InputPanel
         ChannelMetadata respToLoad;
         try {
           respToLoad = responseFromFDSNQuery(scheme, host, port, path,
-                  net, sta, fixedLoc, cha, epoch);
+              net, sta, fixedLoc, cha, epoch);
         } catch (XMLStreamException | IOException e) {
           returnedErrMsg = "The queried data has an integrity issue preventing parsing.";
           caughtException = true;
@@ -1550,26 +1552,77 @@ public class InputPanel
   /**
    * Get a selected epoch from a multi-epoch response
    *
-   * @param respHandle Full path of a given response to read in
+   * @param file File representing a response to read in
+   * @param respIndex index of response to be modified, to set default choice to closest data epoch
    * @return File pointer for the start of the epoch in the given resp file
    * @throws IOException Error reading resp file
    * @throws FileNotFoundException File does not exist
    */
-  private long respEpochChoose(String respHandle) throws IOException {
-    List<EpochIdentifier> epochs = listEpochsForSelection(respHandle);
-    if (epochs.size() > 1) {
-      ReponseEpochPanel epochPanel = new ReponseEpochPanel(epochs);
-      int result = JOptionPane.showConfirmDialog(this, epochPanel,
-          "Select epoch", JOptionPane.OK_CANCEL_OPTION);
-      if (result == JOptionPane.OK_OPTION) {
-        return epochPanel.getSelectedEpoch().filePointer;
-      }
-      return 0;
-    } else if (epochs.size() > 0) {
-      return epochs.get(0).filePointer;
-    } else {
-      throw new IOException("RESP file has no epoch data -- check formatting");
-    }
+  private void respEpochChoose(File file, int respIndex)
+      throws IOException, ExecutionException, InterruptedException {
+    String respHandle = file.getAbsolutePath();
+    InputPanel thisPanel = this; // handle for JOptionPane if no data was found
+    // TODO: this needs refactoring so that results don't keep waiting for it to finish?
+    // TODO: probably needs to return long
+    SwingWorker<Void, Void> worker =
+        new SwingWorker<Void, Void>() {
+          List<EpochIdentifier> epochs;
+          IOException exception;
+          @Override
+          public Void doInBackground() {
+            try {
+              epochs = listEpochsForSelection(respHandle);
+            } catch (IOException e) {
+              exception = e;
+            }
+            return null;
+          }
+
+          @Override
+          public void done() {
+            if (exception != null) {
+              String message = "IO Exception while trying to parse response: " + respHandle +
+                  "\n" + exception.getMessage() + "\nCheck the terminal for more details.";
+              exception.printStackTrace();
+              JOptionPane.showMessageDialog(thisPanel, message,
+                  "FDSN Error", JOptionPane.ERROR_MESSAGE);
+            }
+            long filePointer = 0;
+            if (epochs.size() > 1) {
+              ResponseEpochPanel epochPanel = new ResponseEpochPanel(epochs);
+              if (dataStore.blockIsSet(respIndex)) {
+                long start = dataStore.getBlock(respIndex).getStartTime();
+                long end = dataStore.getBlock(respIndex).getEndTime();
+                String name = dataStore.getBlock(respIndex).getName().replace('_', '.');
+                epochPanel.setIndexOfClosestEpoch(start, end, name);
+              }
+              int result = JOptionPane.showConfirmDialog(thisPanel, epochPanel,
+                  "Select epoch", JOptionPane.OK_CANCEL_OPTION);
+              if (result == JOptionPane.OK_OPTION) {
+                filePointer = epochPanel.getSelectedEpoch().filePointer;
+              } else {
+                filePointer = -1;
+              }
+            } else if (epochs.size() > 0) {
+              filePointer = epochs.get(0).filePointer;
+            }
+            if (filePointer < 0) {
+              return;
+            }
+            try{
+              ChannelMetadata ChannelMetadata = parseResponse(file.getAbsolutePath(), filePointer);
+              dataStore.setResponse(respIndex, ChannelMetadata);
+              respFileNames[respIndex].setText(file.getName());
+              clearButton[respIndex].setEnabled(true);
+              clearAll.setEnabled(true);
+            } catch (IOException | NullPointerException e) {
+              metadataErrorPopup(file.getName(), e);
+              e.printStackTrace();
+            }
+          }
+        };
+
+    worker.execute();
   }
 
   /**
