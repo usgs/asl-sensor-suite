@@ -1562,8 +1562,6 @@ public class InputPanel
       throws IOException, ExecutionException, InterruptedException {
     String respHandle = file.getAbsolutePath();
     InputPanel thisPanel = this; // handle for JOptionPane if no data was found
-    // TODO: this needs refactoring so that results don't keep waiting for it to finish?
-    // TODO: probably needs to return long
     SwingWorker<Void, Void> worker =
         new SwingWorker<Void, Void>() {
           List<EpochIdentifier> epochs;
