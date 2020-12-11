@@ -25,14 +25,13 @@ import asl.sensor.input.DataStoreUtils;
 import asl.sensor.output.CalResult;
 import asl.sensor.test.TestUtils;
 import asl.utils.ReportingUtils;
+import asl.utils.response.ChannelMetadata;
 import asl.utils.response.ChannelMetadata.ResponseStageException;
 import asl.utils.response.PolesZeros.Pole;
 import asl.utils.response.ResponseUnits;
 import asl.utils.response.ResponseUnits.ResolutionType;
 import asl.utils.response.ResponseUnits.SensorType;
-import asl.utils.response.ChannelMetadata;
 import edu.iris.dmc.seedcodec.CodecException;
-import edu.sc.seis.seisFile.fdsnws.stationxml.FloatNoUnitType;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.awt.Font;
 import java.io.File;
@@ -800,7 +799,7 @@ public class RandomizedExperimentTest {
     assertTrue(poles.size() <= 5);
     for (int i = 0; i < poles.size(); ++i) {
       double orderOfMagnitude = Math.floor(Math.log10(poles.get(i).abs()));
-      double delta = Math.pow(10, orderOfMagnitude - 3);
+      double delta = 2 * Math.pow(10, orderOfMagnitude - 3);
       assertEquals(rExp.getInitialPoles().get(i).abs(), poles.get(i).abs(), delta);
     }
 
@@ -808,7 +807,7 @@ public class RandomizedExperimentTest {
     assertTrue(zeros.size() <= 6);
     for (int i = 0; i < zeros.size(); ++i) {
       double orderOfMagnitude = Math.ceil(Math.log10(zeros.get(i).abs()));
-      double delta = Math.pow(10, orderOfMagnitude - 3);
+      double delta = 2 * Math.pow(10, orderOfMagnitude - 3);
       assertEquals(rExp.getInitialZeros().get(i).abs(), zeros.get(i).abs(), delta);
     }
   }
