@@ -2,7 +2,6 @@ package asl.sensor.experiment;
 
 import static asl.utils.NumericUtils.getFFTMean;
 import static asl.utils.NumericUtils.getFFTSDev;
-import static java.util.Arrays.copyOfRange;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
@@ -10,7 +9,6 @@ import asl.utils.response.ChannelMetadata;
 import asl.utils.response.ChannelMetadata.ResponseStageException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -171,9 +169,8 @@ public class GainExperiment extends Experiment {
       gainStage1[i] = gains[1];
       try {
         A0Freqs[i] = ir.getPoleZeroStage().getNormalizationFreq();
-        Complex respAtA0 = ir.applyResponseToInputUnscaled(new double[]{A0Freqs[i]})[0];
         respA0s[i] = ir.getPoleZeroStage().getNormalizationFactor();
-        calcA0s[i] = 1. / respAtA0.abs();
+        calcA0s[i] = ir.getEstimatedA0();
       } catch (ResponseStageException e) {
         // this probably shouldn't happen
         String errMsg = "There is no Pole-Zero response stage for " + ir.getName();
@@ -282,7 +279,7 @@ public class GainExperiment extends Experiment {
    * @return Array of form {mean, standard deviation, ref. gain, calc. gain, ref. A0 freq., calc. A0
    * freq., ref. A0 error, calc. A0 error, ref. sensor's exp. A0, calc. sensor's exp. A0}
    */
-  protected double[] getStatsFromFreqs() {
+  public double[] getStatsFromFreqs() {
     FFTResult plot0 = fftResults[referenceIndex];
     double lowerBound = 1. / highPeriod; // high period = low frequency
     double upperBound = 1. / lowPeriod; // low period = high frequency

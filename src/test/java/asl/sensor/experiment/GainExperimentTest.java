@@ -10,7 +10,6 @@ import asl.sensor.test.TestUtils;
 import asl.utils.response.ChannelMetadata;
 import asl.utils.response.ChannelMetadata.ResponseStageException;
 import asl.utils.response.PolesZeros;
-import asl.utils.response.ResponseBuilders;
 import asl.utils.response.ResponseBuilders.PolesZerosBuilder;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -68,11 +67,11 @@ public class GainExperimentTest {
 
     GainExperiment ge = new GainExperiment();
     ge.runExperimentOnData(ds);
-
-    double[] stats = ge.getStatsFromPeak(0);
+    ge.setRangeForStatistics(GainExperiment.DEFAULT_LOW_BOUND, GainExperiment.DEFAULT_UP_BOUND);
+    double[] stats = ge.getStatsFromFreqs();
     double gain = stats[3];
     // System.out.println( Arrays.toString(stats) );
-    assertEquals(11719., gain, 2.0);
+    assertEquals(11673., gain, 2.0);
   }
 
   @Test
