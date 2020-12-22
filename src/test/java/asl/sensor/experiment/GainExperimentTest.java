@@ -70,7 +70,6 @@ public class GainExperimentTest {
     ge.setRangeForStatistics(GainExperiment.DEFAULT_LOW_BOUND, GainExperiment.DEFAULT_UP_BOUND);
     double[] stats = ge.getStatsFromFreqs();
     double gain = stats[3];
-    // System.out.println( Arrays.toString(stats) );
     assertEquals(11673., gain, 2.0);
   }
 
