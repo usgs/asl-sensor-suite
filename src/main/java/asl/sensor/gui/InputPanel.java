@@ -2,24 +2,24 @@ package asl.sensor.gui;
 
 import static asl.utils.ReportingUtils.chartsToImage;
 import static asl.utils.ReportingUtils.chartsToImageList;
-import static asl.utils.response.ResponseParser.listEpochsForSelection;
 import static asl.utils.response.ResponseParser.getResponseFromXMLFile;
+import static asl.utils.response.ResponseParser.listEpochsForSelection;
 import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
 import static asl.utils.response.ResponseParser.parseResponse;
+import static asl.utils.response.ResponseParser.parseXMLForEpochs;
 import static asl.utils.response.ResponseParser.responseFromFDSNQuery;
 import static asl.utils.response.ResponseUnits.getFilenameFromComponents;
 import static asl.utils.timeseries.TimeSeriesUtils.getDataBlockFromFDSNQuery;
 import static asl.utils.timeseries.TimeSeriesUtils.getMplexNameSet;
-import static asl.utils.response.ResponseParser.parseXMLForEpochs;
 
 import asl.sensor.input.Configuration;
 import asl.sensor.input.DataStore;
 import asl.sensor.input.DataStore.TimeRangeException;
+import asl.utils.response.ChannelMetadata;
 import asl.utils.response.ResponseParser.EpochIdentifier;
 import asl.utils.response.ResponseUnits.ResolutionType;
 import asl.utils.response.ResponseUnits.SensorType;
 import asl.utils.timeseries.DataBlock;
-import asl.utils.response.ChannelMetadata;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.SeisFileException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
@@ -46,7 +46,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
@@ -873,12 +872,12 @@ public class InputPanel
     try {
       String xmlFilePath = xmlFile.getCanonicalPath();
       String xmlFileName = xmlFile.getName();
-      Map<String, List<Pair<Instant, Instant>>> epochs = parseXMLForEpochs(xmlFilePath);
-      String chName = epochs.keySet().iterator().next();
+      List<EpochIdentifier> epochs = parseXMLForEpochs(xmlFilePath);
+      String chName = epochs.get(0).channelIdentifier;
       long timeInEpoch = 0;
       // autopopulate if there's really only one epoch (very unlikely)
-      if (epochs.keySet().size() == 1 && epochs.get(chName).size() == 1) {
-        timeInEpoch = epochs.get(chName).get(0).getFirst().toEpochMilli()+1;
+      if (epochs.size() == 1) {
+        timeInEpoch = epochs.get(0).startInstant.toEpochMilli()+1;
       } else {
         ResponseEpochPanel epochPanel = new ResponseEpochPanel(epochs);
         if (dataStore.blockIsSet(index)) {
@@ -896,7 +895,7 @@ public class InputPanel
         }
       }
 
-      String[] netStaLocCha = chName.split("_"); // split on underscore character
+      String[] netStaLocCha = chName.split("\\."); // split on underscore character
       String net = netStaLocCha[0];
       String sta = netStaLocCha[1];
       String loc = netStaLocCha[2];
@@ -1496,6 +1495,10 @@ public class InputPanel
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
     scrollPane.setHorizontalScrollBarPolicy(
         ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+    Dimension d = new Dimension((int) scrollPane.getSize().getWidth(),
+        (int) scrollPane.getPreferredSize().getHeight());
+    scrollPane.setMaximumSize(d);
+    scrollPane.setPreferredSize(d);
     chartSubpanel.add(scrollPane, constraints);
 
     constraints.weighty = 0.25;
@@ -1510,6 +1513,8 @@ public class InputPanel
         ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
     scrollPane.setHorizontalScrollBarPolicy(
         ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+    scrollPane.setMaximumSize(d);
+    scrollPane.setPreferredSize(d);
     chartSubpanel.add(scrollPane, constraints);
 
     constraints.fill = GridBagConstraints.HORIZONTAL;
@@ -1554,7 +1559,6 @@ public class InputPanel
    *
    * @param file File representing a response to read in
    * @param respIndex index of response to be modified, to set default choice to closest data epoch
-   * @return File pointer for the start of the epoch in the given resp file
    * @throws IOException Error reading resp file
    * @throws FileNotFoundException File does not exist
    */
