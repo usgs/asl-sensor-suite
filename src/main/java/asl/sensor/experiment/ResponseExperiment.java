@@ -5,6 +5,7 @@ import static asl.utils.NumericUtils.unwrap;
 
 import asl.sensor.input.DataStore;
 import asl.utils.response.ChannelMetadata;
+import edu.sc.seis.seisFile.fdsnws.stationxml.ResponseStage;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -42,23 +43,8 @@ public class ResponseExperiment extends Experiment {
 
     responses = new HashSet<>();
 
-    double lowFreq = .0001;
-    double highFreq = 200;
-
-    int pointCount = 100000;
-    double linearChange = (highFreq - lowFreq) / pointCount;
-    // find logarithmic parameters for linear components
-    double b = Math.log10(lowFreq / highFreq) / (lowFreq - highFreq);
-    double a = lowFreq / Math.pow(10, b * lowFreq);
-
-    // hard-code length here because the limits of the calculated range are fixed
-    double[] freqArray = new double[pointCount];
-
-    double currentFreq = lowFreq;
-    for (int i = 0; i < freqArray.length; ++i) {
-      freqArray[i] = currentFreq;
-      currentFreq = a * Math.pow(10, b * (i * linearChange));
-    }
+    final double lowFreq = .0001;
+    final int pointCount = 100000;
 
     // used to prevent issues with duplicate response plotting / XYSeries names
     Set<String> respNames = new HashSet<>();
@@ -80,6 +66,30 @@ public class ResponseExperiment extends Experiment {
       } else {
         respNames.add(name);
         responses.add(instrumentResponse);
+      }
+
+      double highFreq = 200;
+      for (ResponseStage stage : instrumentResponse.getResponse().getResponseStageList()) {
+        if (stage.getDecimation() != null) {
+          highFreq = Math.min(highFreq, stage.getDecimation().getInputSampleRate());
+        }
+      }
+      // the decimation input sample rate is meant to match the sampling rate of the data here
+      // whereas the highFreq data needs to be the nyquist rate -- so half of that
+      highFreq /= 2.;
+
+      double linearChange = (highFreq - lowFreq) / pointCount;
+      // find logarithmic parameters for linear components
+      double b = Math.log10(lowFreq / highFreq) / (lowFreq - highFreq);
+      double a = lowFreq / Math.pow(10, b * lowFreq);
+
+      // hard-code length here because the limits of the calculated range are fixed
+      double[] freqArray = new double[pointCount];
+
+      double currentFreq = lowFreq;
+      for (int i = 0; i < freqArray.length; ++i) {
+        freqArray[i] = currentFreq;
+        currentFreq = a * Math.pow(10, b * (i * linearChange));
       }
 
       Complex[] result = instrumentResponse.applyResponseToInput(freqArray);
@@ -142,7 +152,6 @@ public class ResponseExperiment extends Experiment {
         return true;
       }
     }
-
     return false;
   }
 

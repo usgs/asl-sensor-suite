@@ -707,11 +707,11 @@ public class InputPanel
         Pair<SensorType, ResolutionType> sensorResolutionPair = responses.get(lastRespIndex);
         SensorType sensor = sensorResolutionPair.getFirst();
         ResolutionType resolution = sensorResolutionPair.getSecond();
-        ChannelMetadata ChannelMetadata =
+        ChannelMetadata channelMetadata =
             loadEmbeddedResponse(sensor, resolution);
-        dataStore.setResponse(dataIndex, ChannelMetadata);
+        dataStore.setResponse(dataIndex, channelMetadata);
 
-        respFileNames[dataIndex].setText(ChannelMetadata.getName());
+        respFileNames[dataIndex].setText(channelMetadata.getName());
         clear.setEnabled(true);
         clearAll.setEnabled(true);
 
@@ -1012,7 +1012,7 @@ public class InputPanel
     for (int i = 0; i < indices.length; ++i) {
       int idx = indices[i];
       if (!dataStore.responseIsSet(idx)) {
-        System.out.println("ERROR WITH RESP AT INDEX " + idx);
+        System.err.println("ERROR WITH RESP AT INDEX " + idx);
       }
       outStrings[i] = dataStore.getResponse(idx).toString();
     }
@@ -1617,6 +1617,7 @@ public class InputPanel
               respFileNames[respIndex].setText(file.getName());
               clearButton[respIndex].setEnabled(true);
               clearAll.setEnabled(true);
+              fireStateChanged();
             } catch (IOException | NullPointerException e) {
               metadataErrorPopup(file.getName(), e);
               e.printStackTrace();
