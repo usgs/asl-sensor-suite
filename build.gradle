@@ -41,6 +41,9 @@ configurations {
 dependencies {
     api project(path: ':asl-java-utils')
 
+    implementation group: 'log4j', name: 'log4j', version: '1.2.16'
+    sourceOnly group: 'log4j', name: 'log4j', version: '1.2.16', classifier: 'sources'
+
     implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.0'
     sourceOnly group: 'org.jfree', name: 'jfreechart', version: '1.5.0',  classifier: 'sources'
 
