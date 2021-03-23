@@ -127,13 +127,23 @@ There is also a nine-component self-noise test that takes in [horizontal] north,
 
 #### Relative Gain
 
-Relative gain computes the mean of the PSD of each of two sensors, and estimates the gain from the mean of the ratio of the values over a selected range of the output.
+Relative gain computes the mean of the PSD of each of two sensors, and estimates the gain from the 
+mean of the ratio of the values over a selected range of the output.
 
-The input files, again, do not need to be in any order (the panel allows for choosing which sensor to be used as reference by way of the selection menus below the chart), but they must both have responses specified.
+The input files, again, do not need to be in any order (the panel allows for choosing which sensor 
+to be used as reference by way of the selection menus below the chart), but they must both have 
+responses specified.
 
-The gain is initially calculated using the octave around the peak frequency, but a custom range can be specified using the sliders, functioning similarly to the region selectors for input data.
+The gain is initially calculated using the octave around the peak frequency, but a custom range 
+can be specified using the sliders, functioning similarly to the region selectors for input data.
 
-There is also a six-component relative gain test that takes in horizontal north, east, and vertical sensor data, finds the coherence-maximizing angle, and then takes the statistics over the rotated components. The first set of data is always taken as the reference for horizontal rotation; the selection menu on the left side of this panel allows for setting either input as the gain reference.
+There is also a six-component relative gain test that takes in horizontal north, east, and 
+vertical sensor data, finds the coherence-maximizing angle, and then takes the statistics over the 
+rotated components. The first set of data is always taken as the reference for horizontal rotation; 
+the selection menu on the left side of this panel allows for setting either input as the gain reference.
+
+NOTE: it is not advised to try to do gain calculations on data with different sample rates. The
+decimation will likely cause a power discrepancy and thus produce unreliable results.
 
 #### Step Calibration
 

@@ -52,8 +52,8 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.+'
     sourceOnly group: 'org.apache.commons', name: 'commons-math3', version: '3.+',
             classifier: 'sources'
-    implementation group: 'commons-configuration', name: 'commons-configuration', version: '1.7'
-    sourceOnly group: 'commons-configuration', name: 'commons-configuration', version: '1.7',
+    implementation group: 'commons-configuration', name: 'commons-configuration', version: '1.7+'
+    sourceOnly group: 'commons-configuration', name: 'commons-configuration', version: '1.7+',
             classifier: 'sources'
 
     implementation group: 'net.sf.py4j', name: 'py4j', version: '0.10.7'
