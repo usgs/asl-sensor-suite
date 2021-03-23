@@ -12,6 +12,8 @@ src/test/resources/sprockets/*
 out/
 
 sensor-suite-config.xml
+asl-sensor-suite.ipr
+asl-sensor-suite.iws
 
 gradle.properties
 
