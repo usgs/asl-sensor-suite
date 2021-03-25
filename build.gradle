@@ -141,7 +141,8 @@ task jarServer(type: Jar) {
 
 
 test {
-    maxHeapSize = "4096m"
+    minHeapSize = "1024m"
+    maxHeapSize = "2048m"
     maxParallelForks = 4
     testLogging {
         events "skipped", "failed"
