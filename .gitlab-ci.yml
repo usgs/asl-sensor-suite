@@ -11,7 +11,7 @@ before_script:
 
 .job_template: &test_definition
   stage: test
-  script: gradle check
+  script: gradle check --stacktrace
   cache:
     key: "$CI_COMMIT_REF_NAME"
 
