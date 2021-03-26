@@ -11,6 +11,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import org.jfree.chart.ChartFactory;
@@ -228,6 +229,11 @@ public class GainSixPanel extends GainPanel {
     // obviously, set the chart
     chartPanel.setChart(chart);
 
+    if (gainBackend.skipsFIRStages()) {
+      JOptionPane.showMessageDialog(this, "Note: an embedded response was "
+          + "used in at least one plot set.\nBecause of this, the associated FIR stages for that "
+          + "data has been ignored.");
+    }
   }
 
   @Override

@@ -13,6 +13,7 @@ import java.util.Set;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
@@ -255,6 +256,11 @@ public class GainPanel extends ExperimentPanel
     // lastly, display the calculated statistics in a textbox in the corner
     setTitle();
 
+    if (gain.skipsFIRStages()) {
+      JOptionPane.showMessageDialog(this, "Note: an embedded response was "
+          + "used in the given plot set.\nBecause of this, the associated FIR stages for this "
+          + "data has been ignored.");
+    }
   }
 
   @Override

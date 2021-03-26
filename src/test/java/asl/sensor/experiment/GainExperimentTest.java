@@ -1,7 +1,10 @@
 package asl.sensor.experiment;
 
 import static asl.utils.response.ResponseBuilders.deepCopyWithNewPolesZeros;
+import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
 import static asl.utils.response.ResponseParser.parseResponse;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -11,6 +14,8 @@ import asl.utils.response.ChannelMetadata;
 import asl.utils.response.ChannelMetadata.ResponseStageException;
 import asl.utils.response.PolesZeros;
 import asl.utils.response.ResponseBuilders.PolesZerosBuilder;
+import asl.utils.response.ResponseUnits.ResolutionType;
+import asl.utils.response.ResponseUnits.SensorType;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
@@ -71,6 +76,79 @@ public class GainExperimentTest {
     double[] stats = ge.getStatsFromFreqs();
     double gain = stats[3];
     assertEquals(11720., gain, 2.0);
+  }
+
+  @Test
+  public void testEmbedCheck_trueForOneEmbed() throws IOException {
+
+    DataStore ds = new DataStore();
+
+    String testFolder = folder + "relative-gain-100/";
+    String[] prefixes = new String[2];
+    prefixes[0] = "00_BHZ";
+    prefixes[1] = "10_BHZ";
+    String extension = ".512.seed";
+
+    for (int i = 0; i < prefixes.length; ++i) {
+      String fName = testFolder + prefixes[i] + extension;
+      try {
+        ds.setBlock(i, fName);
+      } catch (IOException | SeedFormatException | CodecException e) {
+        e.printStackTrace();
+        fail();
+      }
+    }
+
+    String fName = testFolder + "RESP.IU.ANMO.00.BHZ_gainx100";
+    ds.setResponse(0, fName);
+    ds.setResponse(1, loadEmbeddedResponse(SensorType.STS1T5, ResolutionType.HIGH));
+
+    OffsetDateTime start =
+        OffsetDateTime.ofInstant(ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);
+    start = start.withHour(10);
+    OffsetDateTime end = start.withHour(14);
+
+    ds.trim(start.toInstant(), end.toInstant());
+
+    GainExperiment ge = new GainExperiment();
+    ge.runExperimentOnData(ds);
+    assertTrue(ge.skipsFIRStages());
+  }
+
+  @Test
+  public void testEmbedCheck_falseForTwoEmbeds() throws IOException {
+
+    DataStore ds = new DataStore();
+
+    String testFolder = folder + "relative-gain-100/";
+    String[] prefixes = new String[2];
+    prefixes[0] = "00_BHZ";
+    prefixes[1] = "10_BHZ";
+    String extension = ".512.seed";
+
+    for (int i = 0; i < prefixes.length; ++i) {
+      String fName = testFolder + prefixes[i] + extension;
+      try {
+        ds.setBlock(i, fName);
+      } catch (IOException | SeedFormatException | CodecException e) {
+        e.printStackTrace();
+        fail();
+      }
+    }
+
+    ds.setResponse(0, loadEmbeddedResponse(SensorType.STS1T5, ResolutionType.HIGH));
+    ds.setResponse(1, loadEmbeddedResponse(SensorType.STS1T5, ResolutionType.HIGH));
+
+    OffsetDateTime start =
+        OffsetDateTime.ofInstant(ds.getBlock(0).getStartInstant(), ZoneOffset.UTC);
+    start = start.withHour(10);
+    OffsetDateTime end = start.withHour(14);
+
+    ds.trim(start.toInstant(), end.toInstant());
+
+    GainExperiment ge = new GainExperiment();
+    ge.runExperimentOnData(ds);
+    assertFalse(ge.skipsFIRStages());
   }
 
   @Test

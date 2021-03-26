@@ -298,4 +298,11 @@ public class GainSixExperiment extends Experiment {
     return outer;
   }
 
+  public boolean skipsFIRStages() {
+    boolean skipsFIRStages = false;
+    for (GainExperiment componentBackend : componentBackends) {
+      skipsFIRStages |= componentBackend.skipsFIRStages();
+    }
+    return skipsFIRStages;
+  }
 }

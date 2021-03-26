@@ -1,15 +1,21 @@
 package asl.sensor.experiment;
 
+import static asl.utils.FFTResult.spectralCalc;
+import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.getFFTMean;
 import static asl.utils.NumericUtils.getFFTSDev;
+import static asl.utils.response.ChannelMetadata.EMBED_STRING;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
 import asl.utils.response.ChannelMetadata;
 import asl.utils.response.ChannelMetadata.ResponseStageException;
+import asl.utils.timeseries.DataBlock;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
+import org.apache.log4j.Logger;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
@@ -20,6 +26,11 @@ import org.jfree.data.xy.XYSeriesCollection;
  * the result of the calculated gain is given as gain2/ratio where gain2 is the gain of the sensor
  * we want to calculate (that is, not the reference sensor).
  *
+ * All response stages are compared over in general use, but embedded responses don't have
+ * stages specified other than pole-zero stages (or, at least, any such stages are trivially
+ * defined, such as a coefficient stage with a single value of 1). In cases where an embedded
+ * response is used, we skip over non PZ stages.
+ *
  * Some additional details in the backend relate to how these calculations are done if the A0
  * value in the RESP file is deemed inaccurate; see {@link #ERROR_LOW_BOUND} and
  * {@link GainExperiment#backend(DataStore)}.
@@ -27,6 +38,8 @@ import org.jfree.data.xy.XYSeriesCollection;
  * @author akearns - KBRWyle
  */
 public class GainExperiment extends Experiment {
+
+  private static final Logger logger = Logger.getLogger(GainExperiment.class);
 
   /**
    * Percentage error lower-bound for A0 values; if the error is above this the resp-specified
@@ -54,6 +67,7 @@ public class GainExperiment extends Experiment {
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
   private int referenceIndex;
   private double lowPeriod, highPeriod; // initialized as DEFAULT_UP/LOW_BOUND as above
+  private boolean usesOnlyOneEmbeddedResp;
 
 
   /**
@@ -65,6 +79,7 @@ public class GainExperiment extends Experiment {
     referenceIndex = 0;
     lowPeriod = DEFAULT_LOW_BOUND;
     highPeriod = DEFAULT_UP_BOUND;
+    usesOnlyOneEmbeddedResp = false;
   }
 
 
@@ -138,6 +153,8 @@ public class GainExperiment extends Experiment {
   @Override
   protected void backend(final DataStore dataStore) {
 
+    usesOnlyOneEmbeddedResp = false;
+
     lowPeriod = DEFAULT_LOW_BOUND;
     highPeriod = DEFAULT_UP_BOUND;
 
@@ -154,6 +171,11 @@ public class GainExperiment extends Experiment {
       dataNames.add(dataStore.getBlock(idx).getName());
       dataNames.add(dataStore.getResponse(idx).getName());
       maxLength = Math.min(maxLength, dataStore.getBlock(idx).size());
+      // XOR equivalent -- if embedded response is found and bool is false, make true
+      // else if embedded response is found and bool is *already* true, make false
+      if (dataStore.getResponse(idx).getFullFilePath().equals(EMBED_STRING)) {
+        usesOnlyOneEmbeddedResp = !usesOnlyOneEmbeddedResp;
+      }
     }
 
     gainStage1 = new double[NUMBER_TO_LOAD];
@@ -182,13 +204,42 @@ public class GainExperiment extends Experiment {
     XYSeriesCollection xysc = new XYSeriesCollection();
     xysc.setAutoWidth(true);
 
+    if (usesOnlyOneEmbeddedResp) {
+      logger.warn("Calculating PSDs using only response stage 1 due to comparison with embed");
+    }
 
     for (int i = 0; i < indices.length; ++i) {
       fireStateChange("Getting PSD " + i + "...");
       int idx = indices[i];
       String name = "PSD " + dataStore.getBlock(idx).getName() + " [" + idx + "]";
       XYSeries xys = new XYSeries(name);
-      fftResults[i] = dataStore.getPSD(idx, maxLength);
+      if (!usesOnlyOneEmbeddedResp) {
+        fftResults[i] = dataStore.getPSD(idx, maxLength);
+      } else {
+        DataBlock block = dataStore.getBlock(idx);
+        double[] timeSeries = Arrays.copyOfRange(dataStore.getBlock(idx).getData(), 0, maxLength);
+        FFTResult uncorrectedPSD = spectralCalc(timeSeries, timeSeries, block.getInterval());
+        double[] freqs = uncorrectedPSD.getFreqs();
+        // note that maxStage here is set to 2 as it is an exclusive upper bound
+        Complex[] responseCurve =
+            dataStore.getResponse(idx).applyResponseToInput(freqs, 1, 2);
+        Complex[] out = new Complex[freqs.length];
+        for (int j = 0; j < freqs.length; ++j) {
+          // response curves in velocity, put them into acceleration
+          Complex scaleFactor =
+              new Complex(0.0, -1.0 / (TAU * freqs[j]));
+          Complex resp1 = responseCurve[j].multiply(scaleFactor);
+          Complex respMagnitude =
+              resp1.multiply(resp1.conjugate());
+
+          if (respMagnitude.abs() == 0) {
+            respMagnitude = new Complex(Double.MIN_VALUE, 0);
+          }
+
+          out[j] = uncorrectedPSD.getFFT(j).divide(respMagnitude);
+        }
+        fftResults[i] = new FFTResult(out, freqs);
+      }
       Complex[] fft = fftResults[i].getFFT();
       double[] freqs = fftResults[i].getFreqs();
       double errorOnA0 = Math.abs(calcA0s[i] - respA0s[i]) / Math.abs(respA0s[i]) * 100.;
@@ -399,4 +450,13 @@ public class GainExperiment extends Experiment {
     this.lowPeriod = Math.min(lowPeriod, highPeriod);
   }
 
+  /**
+   * This is true if a comparison is being made between an embedded response (which has no FIR
+   * stages) and a field response (which does have them). In order to produce a reasonable
+   * comparison, the field response's FIR stages are ignored during processing.
+   * @return true if such condition is met
+   */
+  public boolean skipsFIRStages() {
+    return usesOnlyOneEmbeddedResp;
+  }
 }
