@@ -85,6 +85,8 @@ public class NoiseNineExperiment extends NoiseExperiment {
   }
 
   private double[] convertAnglesToDegrees(double[] angles) {
+    // create a new array to hold the return values because otherwise we rewrite the array
+    double[] degreeAngles = new double[angles.length];
     for (int i = 0; i < angles.length; ++i) {
       double angle = Math.toDegrees(angles[i]);
       while (angle <= -180) {
@@ -93,10 +95,10 @@ public class NoiseNineExperiment extends NoiseExperiment {
       while (angle > 180) {
         angle -= 360;
       }
-      angles[i] = angle;
+      degreeAngles[i] = angle;
     }
 
-    return angles;
+    return degreeAngles;
   }
 
   /**

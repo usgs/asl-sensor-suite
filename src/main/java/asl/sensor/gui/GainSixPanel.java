@@ -140,7 +140,6 @@ public class GainSixPanel extends GainPanel {
     plotSelection.addItem("Vertical component plot");
     plotSelection.addActionListener(this);
     add(plotSelection, constraints);
-
   }
 
   /**
@@ -176,7 +175,6 @@ public class GainSixPanel extends GainPanel {
    */
   @Override
   protected void drawCharts() {
-
     GainSixExperiment gainBackend = (GainSixExperiment) expResult;
     final int referenceIndex = referenceSeries.getSelectedIndex();
     final int index1 = (referenceIndex + 1) % 2;
@@ -277,12 +275,10 @@ public class GainSixPanel extends GainPanel {
       plot.clearAnnotations();
       plot.addAnnotation(title);
     }
-
   }
 
   @Override
   protected void updateData(final DataStore dataStore) {
-
     set = true;
 
     setDataNames();
@@ -298,7 +294,6 @@ public class GainSixPanel extends GainPanel {
 
     // need to have 2 series for relative gain
     referenceSeries.setEnabled(true);
-
   }
 
   @Override

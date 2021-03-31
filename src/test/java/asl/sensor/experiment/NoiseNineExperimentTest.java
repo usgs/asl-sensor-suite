@@ -108,6 +108,43 @@ public class NoiseNineExperimentTest {
   }
 
   @Test
+  public void testAngleReportedCorrect() throws Exception {
+
+    String testFolder = folder + "noisenine/";
+    String[] types = new String[]{"00", "10", "60"};
+    String freqName = "_BH";
+    String[] components = new String[]{"1", "2", "Z"};
+    String ending = ".512.seed";
+    String respName = TestUtils.RESP_LOCATION + "STS-1_Q330HR_BH_20";
+
+    DataStore ds =
+            setUpTest(testFolder, types, freqName, components, ending, respName);
+
+    SimpleDateFormat sdf = ExperimentPanel.DATE_TIME_FORMAT.get();
+
+    Calendar cCal = Calendar.getInstance(sdf.getTimeZone());
+    cCal.setTimeInMillis(ds.getBlock(0).getStartTime());
+    cCal.set(Calendar.HOUR, 7);
+    long start = cCal.getTime().getTime();
+    cCal.set(Calendar.HOUR, 8);
+    cCal.set(Calendar.MINUTE, 0);
+    long end = cCal.getTime().getTime();
+
+    ds.trim(start, end);
+
+    NoiseNineExperiment nne = new NoiseNineExperiment();
+    assertTrue(nne.hasEnoughData(ds));
+    nne.runExperimentOnData(ds);
+
+    assertArrayEquals(new double[]{0., NORTH_ANGLE_1, NORTH_ANGLE_2}, nne.getNorthAnglesDegrees(), 0.1);
+    assertArrayEquals(new double[]{0., EAST_ANGLE_1, EAST_ANGLE_2}, nne.getEastAnglesDegrees(), 0.1);
+
+    // check that we're not accidentally storing the degree values in-place
+    assertArrayEquals(new double[]{0., NORTH_ANGLE_1, NORTH_ANGLE_2}, nne.getNorthAnglesDegrees(), 0.1);
+    assertArrayEquals(new double[]{0., EAST_ANGLE_1, EAST_ANGLE_2}, nne.getEastAnglesDegrees(), 0.1);
+  }
+
+  @Test
   public void test1RotationReferenceLocationSecond() throws Exception {
     String testFolder = folder + "noisenine/";
     String[] types = new String[]{"10", "00", "60"};
@@ -179,6 +216,8 @@ public class NoiseNineExperimentTest {
       }
     }
   }
+
+
 
   @Test
   public void test1RotationReferenceLocationThird() throws Exception {
