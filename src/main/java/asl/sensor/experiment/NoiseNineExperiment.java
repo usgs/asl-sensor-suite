@@ -208,7 +208,7 @@ public class NoiseNineExperiment extends NoiseExperiment {
       stores[1].setBlock(i, eastUnknownRotate);
     });
 
-    // set components into N,E,Z directional subcomponents
+    // set components into N,E,Z directional sub-experiments
 
     // get noise from each axis's data
     NoiseExperiment noiseExp = new NoiseExperiment();

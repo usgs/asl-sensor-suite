@@ -310,8 +310,7 @@ public class AzimuthExperiment extends Experiment {
     LeastSquaresOptimizer.Optimum optimumY = optimizer.optimize(findAngleY);
     RealVector angleVector = optimumY.getPoint();
     double bestGuessAngle = angleVector.getEntry(0);
-    bestGuessAngle = ((bestGuessAngle % TAU) + TAU)
-        % TAU;
+    bestGuessAngle = ((bestGuessAngle % TAU) + TAU) % TAU;
 
     fireStateChange("Found initial guess for angle: " + bestGuessAngle);
 
@@ -682,7 +681,6 @@ public class AzimuthExperiment extends Experiment {
 
     double theta = (point.getEntry(0));
     double thetaDelta = theta + diff;
-
     // angles of rotation are x, x+dx respectively
     double[] testRotated =
         rotate(testNorth, testEast, theta);

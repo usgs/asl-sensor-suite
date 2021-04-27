@@ -34,7 +34,7 @@ public class GainSixPanel extends GainPanel {
   private JFreeChart northChart;
   private JFreeChart eastChart;
   private JFreeChart verticalChart; // gain result per dimensional component
-  private JRadioButton firstRadioButton;
+  private final JRadioButton firstRadioButton;
 
   /**
    * Instantiate the panel, including sliders and stat calc button
