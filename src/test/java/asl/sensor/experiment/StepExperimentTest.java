@@ -92,7 +92,7 @@ public class StepExperimentTest {
     ds.setBlock(0, testFolder + fname1);
     ds.setBlock(1, testFolder + fname2);
     ds.setResponse(1, loadEmbeddedResponse(SensorType.STS1T5, ResolutionType.HIGH));
-    String startString = "2017-248T04:54:00.0";
+    String startString = "2017-248T04:56:00.0";
     String endString = "2017-248T05:32:00.0";
     long st = TestUtils.timeStringToEpochMilli(startString);
     long ed = TestUtils.timeStringToEpochMilli(endString);
