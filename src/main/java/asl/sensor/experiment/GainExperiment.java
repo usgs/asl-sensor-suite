@@ -2,6 +2,7 @@ package asl.sensor.experiment;
 
 import static asl.utils.FFTResult.spectralCalc;
 import static asl.utils.NumericUtils.TAU;
+import static asl.utils.NumericUtils.detrend;
 import static asl.utils.NumericUtils.getFFTMean;
 import static asl.utils.NumericUtils.getFFTSDev;
 import static asl.utils.response.ChannelMetadata.EMBED_STRING;
@@ -218,6 +219,7 @@ public class GainExperiment extends Experiment {
       } else {
         DataBlock block = dataStore.getBlock(idx);
         double[] timeSeries = Arrays.copyOfRange(dataStore.getBlock(idx).getData(), 0, maxLength);
+        timeSeries = detrend(timeSeries);
         FFTResult uncorrectedPSD = spectralCalc(timeSeries, timeSeries, block.getInterval());
         double[] freqs = uncorrectedPSD.getFreqs();
         // note that maxStage here is set to 2 as it is an exclusive upper bound

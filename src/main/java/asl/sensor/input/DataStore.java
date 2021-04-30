@@ -1,5 +1,6 @@
 package asl.sensor.input;
 
+import static asl.utils.NumericUtils.detrend;
 import static asl.utils.NumericUtils.euclidLCM;
 import static asl.utils.response.ResponseParser.parseResponse;
 import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
@@ -232,6 +233,7 @@ public class DataStore {
    */
   public FFTResult getPSD(int idx, int maxLength) {
     double[] data = dataBlockArray[idx].getData();
+    data = detrend(data);
     long interval = dataBlockArray[idx].getInterval();
     ChannelMetadata ir = responses[idx];
     return FFTResult.crossPower(data, data, ir, ir, maxLength, interval);

@@ -4,6 +4,7 @@ import static asl.utils.FilterUtils.lowPassFilter;
 import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.atanc;
 import static asl.utils.NumericUtils.demean;
+import static asl.utils.NumericUtils.detrend;
 import static asl.utils.NumericUtils.detrendEnds;
 import static asl.utils.NumericUtils.normalize;
 import static asl.utils.NumericUtils.unwrap;

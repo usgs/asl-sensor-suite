@@ -4,6 +4,7 @@ import static asl.utils.FFTResult.DEFAULT_TAPER_WIDTH;
 import static asl.utils.NumericUtils.TAU;
 import static asl.utils.NumericUtils.atanc;
 import static asl.utils.NumericUtils.complexRealsFirstSorter;
+import static asl.utils.NumericUtils.detrend;
 import static asl.utils.NumericUtils.getComplexSDev;
 import static asl.utils.NumericUtils.multipointMovingAverage;
 import static asl.utils.NumericUtils.rewrapAngleDegrees;
@@ -611,6 +612,10 @@ public class RandomizedExperiment extends Experiment {
         windowSize = sensorData.length / 3;
         shiftLength = windowSize / 20;
       }
+
+      // need to do manual detrending on the arrays before sending to FFT processing
+      calData = detrend(calData);
+      sensorData = detrend(sensorData);
 
       // now get the PSD data (already declared outside of this scope, so will persist)
       numeratorPSD = FFTResult.spectralCalc(sensorData, sensorData, interval, windowSize,
