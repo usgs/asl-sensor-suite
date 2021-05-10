@@ -107,6 +107,13 @@ public class RandomizedExperiment extends Experiment {
    */
   private static final double HIGH_FREQ_ZERO_TARGET = 1.0;
 
+  /*
+   * We work with data where response stage 1 is the expected index of our PZ stage.
+   * For response generation we have the 2 as an exclusive upper bound
+   */
+  private static final int PZ_INDEX = 1;
+  private static final int BOUND_INDEX = 2;
+
   /**
    * Choice of correction factor to use
    */
@@ -166,7 +173,8 @@ public class RandomizedExperiment extends Experiment {
       return returnValue;
     }
 
-    return resp.applyResponseToInputUnscaled(frequencies);
+    // any time we call this response curve function we want it on the PZ stage only
+    return resp.applyResponseToInputUnscaled(frequencies, PZ_INDEX, BOUND_INDEX);
   }
 
   /**
@@ -201,7 +209,8 @@ public class RandomizedExperiment extends Experiment {
     } else {
       System.out.println("NO VARIABLES TO SET. THIS IS AN ERROR.");
     }
-    Complex[] appliedCurve = fitResponse.applyResponseToInputUnscaled(freqs);
+    // get only the PZ stage (ignore FIR, etc), always expect it at index 1 for valid data
+    Complex[] appliedCurve = fitResponse.applyResponseToInputUnscaled(freqs, PZ_INDEX, BOUND_INDEX);
     double[] curValue = new double[freqs.length * 2];
 
     if (correctionCurve != null) {
@@ -382,8 +391,8 @@ public class RandomizedExperiment extends Experiment {
       fitResponse.getPoleZeroStage().replaceFitZero(currentVar, varIndex, isLowFreq);
     }
 
-
-    Complex[] appliedCurve = fitResponse.applyResponseToInputUnscaled(freqs);
+    // we always only examine the PZ stage for response analysis here
+    Complex[] appliedCurve = fitResponse.applyResponseToInputUnscaled(freqs, PZ_INDEX, BOUND_INDEX);
     double[] curValue = new double[2 * freqs.length];
 
     // note that the correction curve here has already had normalization applied
@@ -394,7 +403,7 @@ public class RandomizedExperiment extends Experiment {
     }
 
     Complex[] normalizationData =
-        fitResponse.applyResponseToInputUnscaled(new double[]{freqToScaleAt});
+        fitResponse.applyResponseToInputUnscaled(new double[]{freqToScaleAt}, PZ_INDEX, BOUND_INDEX);
     assert (normalizationData.length == 1);
     Complex respAtNormalization = normalizationData[0];
 
@@ -895,8 +904,9 @@ public class RandomizedExperiment extends Experiment {
     fireStateChange("Getting extended resp curves for high-freq plots...");
     // we use the apply response method here to get the full range of plotted data, not just fit
     Complex[] correction = getResponseCorrection(plottingFreqs, correctionToApply);
-    Complex[] init = initResponse.applyResponseToInputUnscaled(plottingFreqs);
-    Complex[] fit = fitResponse.applyResponseToInputUnscaled(plottingFreqs);
+    Complex[] init =
+        initResponse.applyResponseToInputUnscaled(plottingFreqs, PZ_INDEX, BOUND_INDEX);
+    Complex[] fit = fitResponse.applyResponseToInputUnscaled(plottingFreqs, PZ_INDEX, BOUND_INDEX);
     double[] initialValues = new double[plottingFreqs.length * 2];
     double[] fitValues = new double[plottingFreqs.length * 2];
     for (int i = 0; i < plottingFreqs.length; ++i) {

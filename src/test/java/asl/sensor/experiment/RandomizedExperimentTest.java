@@ -129,8 +129,8 @@ public class RandomizedExperimentTest {
     Pair<RealVector, RealMatrix> jacobianResult =
         RandomizedExperiment.jacobian(initialGuess, freqs, numZeros, ir, lowFreq, corrections);
 
-    // evaluate the data for reference
-    Complex[] result = ir.applyResponseToInputUnscaled(freqs);
+    // evaluate the data for reference, limiting to the PZ stage
+    Complex[] result = ir.applyResponseToInputUnscaled(freqs, 1, 2);
     double[] testData = new double[2 * result.length];
     for (int i = 0; i < result.length; ++i) {
       int argIdx = i + result.length;
@@ -142,6 +142,7 @@ public class RandomizedExperimentTest {
 
     // test that the Jacobian first result is the actual evaluation
     double[] functionEvaluation = jacobianResult.getFirst().toArray();
+    
     assertArrayEquals(testData, functionEvaluation, 1E-2);
     // now compare the forward difference to the first difference in the array
     RealVector testAgainst = initialGuess.copy();
@@ -150,7 +151,8 @@ public class RandomizedExperimentTest {
     testAgainst.setEntry(0, changingVar + jacobianDiff);
     ChannelMetadata testDiffResponse =
         ir.buildResponseFromFitVector(testAgainst.toArray(), lowFreq, numZeros);
-    Complex[] diffResult = testDiffResponse.applyResponseToInputUnscaled(freqs);
+    // again, we restrict to PZ stage (1)
+    Complex[] diffResult = testDiffResponse.applyResponseToInputUnscaled(freqs, 1, 2);
     double[] testDiffData = new double[2 * diffResult.length];
     for (int i = 0; i < diffResult.length; ++i) {
       int argIdx = i + result.length;
