@@ -34,60 +34,22 @@ repositories {
     mavenCentral()
 }
 
-configurations {
-    sourceOnly
-}
-
 dependencies {
     api project(path: ':asl-java-utils')
 
     implementation group: 'log4j', name: 'log4j', version: '1.2.16'
-    sourceOnly group: 'log4j', name: 'log4j', version: '1.2.16', classifier: 'sources'
 
     implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.0'
-    sourceOnly group: 'org.jfree', name: 'jfreechart', version: '1.5.0',  classifier: 'sources'
 
     implementation group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.+'
-    sourceOnly group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.+',  classifier: 'sources'
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.+'
-    sourceOnly group: 'org.apache.commons', name: 'commons-math3', version: '3.+',
-            classifier: 'sources'
-    implementation group: 'commons-configuration', name: 'commons-configuration', version: '1.7+'
-    sourceOnly group: 'commons-configuration', name: 'commons-configuration', version: '1.7+',
-            classifier: 'sources'
+    implementation group: 'commons-configuration', name: 'commons-configuration', version: '1.7'
 
     implementation group: 'net.sf.py4j', name: 'py4j', version: '0.10.7'
-    sourceOnly group: 'net.sf.py4j', name: 'py4j', version: '0.10.7', classifier: 'sources'
 
     testImplementation group: 'junit', name: 'junit', version: '4.+'
 }
 
-task sourcesJar(type: Jar, dependsOn: configurations.sourceOnly){
-    classifier = 'sources'
-    // archiveBaseName = rootProject.name
-    archiveVersion = version
-    manifest {
-        attributes 'Implementation-Title': progTitle,
-                'Implementation-Version': version,
-                'Main-Class': mainClassName
-    }
-    from sourceSets.main.allSource
-    from project(':asl-java-utils').sourceSets.main.allSource
-    // Adds all dependent libraries
-    dependsOn configurations.sourceOnly
-    from {
-        configurations.sourceOnly.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-    }
-    from {
-        configurations.sourceOnly.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-    }
-
-    with jar
-}
 
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -174,16 +136,11 @@ compileJava {
     options.incremental = true
 }
 
-task copyJar(type: Copy) {
-    from jar
+task copyJars(type: Copy) {
+    from jar, jarServer
     into rootDir
 }
-
-
-task copyServerJar(type: Copy) {
-    from jarServer
-    into rootDir
-}
+copyJars.mustRunAfter(build)
 
 task gitSubmodule(type: Exec) {
     doFirst {
@@ -202,6 +159,7 @@ task stagingBuild(type: Exec, dependsOn: gitSubmodule) {
     }
     finalizedBy {
         build
+        copyJars
     }
 }
 
@@ -213,6 +171,3 @@ task standardBuild(dependsOn: gitSubmodule) {
         build
     }
 }
-
-sourcesJar.dependsOn(build)
-stagingBuild.dependsOn copyJar, copyServerJar
