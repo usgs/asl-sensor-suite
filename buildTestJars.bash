@@ -6,4 +6,4 @@ rm *.jar
 git fetch --all
 git checkout -f origin/staging
 
-gradle build
+gradle stagingBuild
