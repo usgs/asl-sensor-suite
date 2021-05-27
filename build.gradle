@@ -155,7 +155,8 @@ task stagingBuild(type: Exec, dependsOn: gitSubmodule) {
     doFirst {
         println 'Beginning STAGING build'
         println 'Checking out Staging version of submodules'
-        commandLine 'sh', '-c', 'cd asl-java-utils; git checkout origin/staging; cd ..;'
+        commandLine 'sh', '-c', 'cd asl-java-utils; git fetch --all; git checkout origin/staging; cd ..;'
+
     }
     finalizedBy {
         build
