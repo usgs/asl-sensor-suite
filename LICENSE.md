@@ -50,9 +50,11 @@ author or the affirmer.
 -------------------------
 
 
-The Sensor Test Suite was created at the Albuquerque Seismological Laboratory. Authorship is noted in each file.  
+The Sensor Test Suite was created at the Albuquerque Seismological Laboratory. 
+Authorship is noted in each file.  
 
-This project was once licensed under GPL v3 or later, but all code written by USGS employees and contractors has been relicensed to Public Domain and CC0 respectively.  
+This project was once licensed under GPL v3 or later, but all code written by USGS employees and 
+contractors has been relicensed to Public Domain and CC0 respectively.  
 	
 
 ### Libraries

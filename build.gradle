@@ -185,19 +185,34 @@ task copyServerJar(type: Copy) {
     into rootDir
 }
 
-gradle.beforeProject {
-    println("Perform pre-project setup")
-    def sout = new StringBuilder()
-    def serr = new StringBuilder()
-    println("Updating gitsubmodules")
-    def proc = "git submodule update --init --recursive".execute()
-    proc.consumeProcessOutput(sout, serr)
-    proc.waitFor()
-    print sout
-    print serr
+task gitSubmodule(type: Exec) {
+    doFirst {
+        description 'Update git submodules'
+        println 'Downloading the test data submodule may take a long time, potentially hours depending on your connection speed.'
+        println 'Interrupting may corrupt the test data submodule.'
+        commandLine 'git', 'submodule', 'update', '--init', '--recursive'
+    }
+}
 
-    println("Done with pre-project setup")
+task stagingBuild(type: Exec, dependsOn: gitSubmodule) {
+    doFirst {
+        println 'Beginning STAGING build'
+        println 'Checking out Staging version of submodules'
+        commandLine 'sh', '-c', 'cd asl-java-utils; git checkout origin/staging; cd ..;'
+    }
+    finalizedBy {
+        build
+    }
+}
+
+task standardBuild(dependsOn: gitSubmodule) {
+    doFirst {
+        println 'Beginning STANDARD build'
+    }
+    finalizedBy {
+        build
+    }
 }
 
 sourcesJar.dependsOn(build)
-build.dependsOn copyJar, copyServerJar
+stagingBuild.dependsOn copyJar, copyServerJar

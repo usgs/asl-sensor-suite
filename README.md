@@ -68,13 +68,18 @@ dependent on the memory management systems used by the OS of the system it runs 
 
 ### Compilation
 
-Out of interest to remain compliant with some library licensing restrictions, the program can currently
-only be built or run from source. This requires gradle to be installed where the build will happen.
+While it is possible to download compiled jars of releases from this project's repository,
+it may be preferable to compile from source. This requires having gradle available somewhere on
+the computer which will build the program. 
 
-The command `gradle build` run from the project's root folder should produce jar files that are then
-runnable from the root directory. These are also found in the `./build/libs` subfolder. This operation
+The command `gradle standardBuild` run from the project's root folder should produce jar 
+files that are available from the `./build/libs` subfolder. This operation
 will run all test cases to verify performance of the build, which may be a slow operation especially
 on its first completion (as roughly a gigabyte of data to be used for testing must be downloaded).
+
+While it may be possible to use only the command `gradle build` to produce a working jar file, it is
+strongly encouraged to run `gradle standardBuild` as this will ensure that all project submodule
+dependencies will be properly updated. 
 
 Note that there are two jars produced in the build process. Most end users will only need the one 
 called 'asl-sensor-suite-[version]'. The one called 'CalServer-[version]' is an alternate build of 
