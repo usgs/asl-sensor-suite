@@ -29,10 +29,6 @@ import org.jfree.data.xy.XYSeriesCollection;
  */
 public class SpectrumPanel extends SpectralAnalysisPanel {
 
-  // TODO: add buttons for specifying and clearing a station noise model
-  //   and logic to combine the noise model with other plotted data
-  //   (make sure 'model' can be identified and is always at the end of the list of data)
-
   private static final long serialVersionUID = 9018553361096758354L;
 
   private final JCheckBox freqSpaceBox;

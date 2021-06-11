@@ -43,10 +43,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 public class GainPanel extends SpectralAnalysisPanel
     implements ChangeListener {
 
-  // TODO: add buttons for specifying and clearing a station noise model
-  //   and logic to combine the noise model with other plotted data
-  //   (will likely need to add this to 3D version of panel as well)
-
   private static final long serialVersionUID = 6697458429989867529L;
   /**
    * Max value of slider (ranges from 0 to 1000, converted to log10 scale)
