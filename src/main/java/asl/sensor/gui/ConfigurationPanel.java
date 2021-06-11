@@ -18,16 +18,16 @@ import javax.swing.text.DocumentFilter;
 public class ConfigurationPanel extends JPanel {
 
   // text fields for file output locations
-  private JTextField dataFolder, respFolder, outputFolder;
+  private final JTextField dataFolder, respFolder, noiseModelFolder, outputFolder;
 
   // text fields for FDSN data locations
-  private JTextField fdsnDomain, fdsnProtocol, fdsnPort, fdsnService;
+  private final JTextField fdsnDomain, fdsnProtocol, fdsnPort, fdsnService;
   // text fields for FDSN meta locations
-  private JTextField fdsnMetaDomain, fdsnMetaProtocol, fdsnMetaPort, fdsnMetaService;
+  private final JTextField fdsnMetaDomain, fdsnMetaProtocol, fdsnMetaPort, fdsnMetaService;
 
   // fields for controlling plot display parameters
-  private JTextField lineWidthOffset;
-  private JCheckBox colorblindColors;
+  private final JTextField lineWidthOffset;
+  private final JCheckBox colorblindColors;
 
   /**
    * Construct a panel allowing editing of the current configuration parameters.
@@ -42,6 +42,8 @@ public class ConfigurationPanel extends JPanel {
     dataFolder.setText(instance.getDefaultDataFolder());
     respFolder = new JTextField();
     respFolder.setText(instance.getDefaultRespFolder());
+    noiseModelFolder = new JTextField();
+    noiseModelFolder.setText(instance.getDefaultNoiseModelFolder());
     outputFolder = new JTextField();
     outputFolder.setText(instance.getDefaultOutputFolder());
 
@@ -78,12 +80,14 @@ public class ConfigurationPanel extends JPanel {
     colorblindColors.setEnabled(true);
     colorblindColors.setSelected(instance.useColorblindColors());
 
-    this.setLayout(new GridLayout(13, 2));
+    this.setLayout(new GridLayout(14, 2));
 
     this.add(new JLabel("Default SEED location:"));
     this.add(dataFolder);
     this.add(new JLabel("Default RESP location:"));
     this.add(respFolder);
+    this.add(new JLabel("Default noise model location:"));
+    this.add(noiseModelFolder);
     this.add(new JLabel("Default report location:"));
     this.add(outputFolder);
 
@@ -119,6 +123,7 @@ public class ConfigurationPanel extends JPanel {
 
     instance.setDefaultDataFolder(dataFolder.getText());
     instance.setDefaultRespFolder(respFolder.getText());
+    instance.setDefaultNoiseModelFolder(noiseModelFolder.getText());
     instance.setDefaultOutputFolder(outputFolder.getText());
 
     instance.setFDSNDataProtocol(fdsnProtocol.getText());

@@ -2,17 +2,13 @@ package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.NoiseExperiment;
+import asl.sensor.experiment.SpectralAnalysisExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
-import javax.swing.JPanel;
 import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -20,6 +16,7 @@ import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.chart.ui.RectangleAnchor;
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 /**
@@ -30,7 +27,11 @@ import org.jfree.data.xy.XYSeriesCollection;
  *
  * @author akearns - KBRWyle
  */
-public class NoisePanel extends ExperimentPanel {
+public class NoisePanel extends SpectralAnalysisPanel {
+
+  // TODO: add buttons for specifying and clearing a station noise model
+  //   and logic to combine the noise model with other plotted data
+  //   (will likely need to add this to 3D version of panel as well)
 
   private static final long serialVersionUID = 9018553361096758354L;
 
@@ -104,18 +105,23 @@ public class NoisePanel extends ExperimentPanel {
     constraints.gridx += 1;
     constraints.weightx = 0;
     constraints.anchor = GridBagConstraints.EAST;
-    JPanel spacer = new JPanel();
-    spacer.setPreferredSize(freqSpaceBox.getPreferredSize());
-    spacer.setMaximumSize(freqSpaceBox.getMaximumSize());
-    spacer.setMinimumSize(freqSpaceBox.getMinimumSize());
-    spacer.setSize(freqSpaceBox.getSize());
-    this.add(spacer, constraints);
+    this.add(noiseModelButton, constraints);
 
   }
 
   @Override
   protected void drawCharts() {
-    setChart(expResult.getData().get(0));
+    XYSeriesCollection data = expResult.getData().get(0);
+    {
+      SpectralAnalysisExperiment spectExp = (SpectralAnalysisExperiment) expResult;
+      if (spectExp.noiseModelLoaded()) {
+        XYSeries series = spectExp.getPlottableNoiseModelData(freqSpaceBox.isSelected());
+        seriesDashedSet.add((String) series.getKey());
+        seriesColorMap.put((String) series.getKey(), Color.BLACK);
+        data.addSeries(spectExp.getPlottableNoiseModelData(freqSpaceBox.isSelected()));
+      }
+    }
+    setChart(data);
     setTitle(chart.getXYPlot(), expResult.getInsetStrings()[0]);
     chartPanel.setChart(chart);
     chartPanel.setMouseZoomable(true);

@@ -4,6 +4,7 @@ import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -39,9 +40,12 @@ import org.jfree.data.xy.XYSeriesCollection;
  *
  * @author akearns - KBRWyle
  */
-public class GainPanel extends ExperimentPanel
+public class GainPanel extends SpectralAnalysisPanel
     implements ChangeListener {
 
+  // TODO: add buttons for specifying and clearing a station noise model
+  //   and logic to combine the noise model with other plotted data
+  //   (will likely need to add this to 3D version of panel as well)
 
   private static final long serialVersionUID = 6697458429989867529L;
   /**
@@ -144,7 +148,7 @@ public class GainPanel extends ExperimentPanel
     constraints.gridx += 1;
     constraints.weightx = 1;
     constraints.anchor = GridBagConstraints.EAST;
-    this.add(new JPanel(), constraints);
+    this.add(noiseModelButton, constraints);
 
   }
 
@@ -196,6 +200,7 @@ public class GainPanel extends ExperimentPanel
       }
       // if we selected a new series to plot, redraw the chart
       drawCharts();
+      return;
     }
   }
 
@@ -211,6 +216,8 @@ public class GainPanel extends ExperimentPanel
   @Override
   protected void drawCharts() {
 
+    GainExperiment gain = (GainExperiment) expResult;
+
     final int referenceIndex = referenceSeries.getSelectedIndex();
     final int index1 = (referenceIndex + 1) % 2;
 
@@ -223,13 +230,19 @@ public class GainPanel extends ExperimentPanel
     timeSeries.addSeries(timeSeriesIn.getSeries(referenceIndex));
     timeSeries.addSeries(timeSeriesIn.getSeries(index1));
     timeSeries.addSeries(timeSeriesIn.getSeries("NLNM"));
-
+    {
+      if (gain.noiseModelLoaded()) {
+        XYSeries series = gain.getPlottableNoiseModelData(false);
+        seriesDashedSet.add((String) series.getKey());
+        seriesColorMap.put((String) series.getKey(), Color.BLACK);
+        timeSeries.addSeries(gain.getPlottableNoiseModelData(false));
+      }
+    }
     XYSeries xys = timeSeries.getSeries(0);
     if (timeSeries.getSeriesKey(0).equals("NLNM")) {
       xys = timeSeries.getSeries(1);
     }
 
-    GainExperiment gain = (GainExperiment) expResult;
     // since intervals of incoming data match, so too limits of plot
     // this is used in mapping scale of slider to x-axis values
     lowPeriod = Math.log10(xys.getMinX()); // value when slider is 0

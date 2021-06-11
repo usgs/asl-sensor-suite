@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
-import org.apache.commons.math3.analysis.function.Exp;
 import org.apache.commons.math3.exception.ConvergenceException;
 import org.apache.commons.math3.exception.NoDataException;
 

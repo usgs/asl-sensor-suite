@@ -1,6 +1,6 @@
 package asl.sensor.experiment;
 
-import static asl.sensor.experiment.SineExperiment.*;
+import static asl.sensor.experiment.SineExperiment.calculateFrequency;
 import static asl.utils.NumericUtils.demeanInPlace;
 import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static java.lang.Math.sqrt;

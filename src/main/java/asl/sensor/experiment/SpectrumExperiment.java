@@ -13,7 +13,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  * @author akearns - KBRWyle
  * @author jholland - USGS
  */
-public class SpectrumExperiment extends Experiment {
+public class SpectrumExperiment extends SpectralAnalysisExperiment {
 
   /**
    * True if plotting using Hz, False if sampleRate

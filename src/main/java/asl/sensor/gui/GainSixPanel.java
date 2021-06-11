@@ -4,6 +4,7 @@ import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.input.DataStore;
+import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -20,6 +21,7 @@ import org.jfree.chart.annotations.XYTitleAnnotation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.chart.ui.RectangleAnchor;
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 /**
@@ -106,6 +108,10 @@ public class GainSixPanel extends GainPanel {
     constraints.weighty = 0;
     constraints.fill = GridBagConstraints.NONE;
     this.add(angleRefSelection, constraints);
+    constraints.anchor = GridBagConstraints.EAST;
+    constraints.weightx = 0;
+    constraints.gridx += 1;
+    this.add(noiseModelButton, constraints);
 
     JPanel rangeSubpanel = new JPanel();
     rangeSubpanel.setLayout(new BoxLayout(rangeSubpanel, BoxLayout.X_AXIS));
@@ -198,6 +204,14 @@ public class GainSixPanel extends GainPanel {
       timeseries.addSeries(timeseriesIn.getSeries(referenceIndex));
       timeseries.addSeries(timeseriesIn.getSeries(index1));
       timeseries.addSeries(timeseriesIn.getSeries("NLNM"));
+      {
+        if (gainBackend.noiseModelLoaded()) {
+          XYSeries series = gainBackend.getPlottableNoiseModelData(false);
+          seriesDashedSet.add((String) series.getKey());
+          seriesColorMap.put((String) series.getKey(), Color.BLACK);
+          timeseries.addSeries(gainBackend.getPlottableNoiseModelData(false));
+        }
+      }
 
       charts[i] = buildChart(timeseries);
 

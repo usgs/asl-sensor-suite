@@ -38,7 +38,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  *
  * @author akearns - KBRWyle
  */
-public class GainExperiment extends Experiment {
+public class GainExperiment extends SpectralAnalysisExperiment {
 
   private static final Logger logger = Logger.getLogger(GainExperiment.class);
 

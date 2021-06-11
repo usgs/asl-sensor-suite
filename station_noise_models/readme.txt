@@ -1,0 +1,1 @@
+This is the default folder for station noise models.

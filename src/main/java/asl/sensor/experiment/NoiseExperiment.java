@@ -2,8 +2,8 @@ package asl.sensor.experiment;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
-import asl.utils.timeseries.DataBlock;
 import asl.utils.response.ChannelMetadata;
+import asl.utils.timeseries.DataBlock;
 import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
@@ -22,7 +22,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  * @author akearns - KBRWyle
  * @author jholland - USGS
  */
-public class NoiseExperiment extends Experiment {
+public class NoiseExperiment extends SpectralAnalysisExperiment {
 
 
   /**

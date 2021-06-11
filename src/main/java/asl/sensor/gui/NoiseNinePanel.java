@@ -2,6 +2,7 @@ package asl.sensor.gui;
 
 import asl.sensor.ExperimentFactory;
 import asl.sensor.experiment.NoiseNineExperiment;
+import asl.sensor.experiment.SpectralAnalysisExperiment;
 import asl.sensor.input.DataStore;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -16,6 +17,7 @@ import javax.swing.JRadioButton;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 /**
@@ -30,7 +32,7 @@ public class NoiseNinePanel extends NoisePanel {
   private static final long serialVersionUID = -8049021432657749975L;
   private final JComboBox<String> plotSelection;
   private JFreeChart northChart, eastChart, verticalChart;
-  private JRadioButton firstRadioButton, secondRadioButton;
+  private final JRadioButton firstRadioButton, secondRadioButton;
 
   /**
    * Construct panel and lay out its components
@@ -109,6 +111,10 @@ public class NoiseNinePanel extends NoisePanel {
     constraints.weighty = 0;
     constraints.fill = GridBagConstraints.NONE;
     this.add(angleRefSelection, constraints);
+    constraints.anchor = GridBagConstraints.EAST;
+    constraints.weightx = 0;
+    constraints.gridx += 1;
+    this.add(noiseModelButton, constraints);
 
     plotSelection = new JComboBox<>();
     plotSelection.addItem("North component plot");
@@ -124,10 +130,6 @@ public class NoiseNinePanel extends NoisePanel {
     constraints.fill = GridBagConstraints.NONE;
     constraints.gridy += 1;
     constraints.gridx = 0;
-    freqSpaceBox.setPreferredSize(plotSelection.getPreferredSize());
-    freqSpaceBox.setMaximumSize(plotSelection.getMaximumSize());
-    freqSpaceBox.setMinimumSize(plotSelection.getMinimumSize());
-    freqSpaceBox.setSize(plotSelection.getSize());
     add(freqSpaceBox, constraints);
 
     constraints.gridx += 1;
@@ -141,6 +143,10 @@ public class NoiseNinePanel extends NoisePanel {
     constraints.gridx += 1;
     constraints.weightx = 0;
     constraints.anchor = GridBagConstraints.EAST;
+    plotSelection.setPreferredSize(freqSpaceBox.getPreferredSize());
+    plotSelection.setMaximumSize(freqSpaceBox.getMaximumSize());
+    plotSelection.setMinimumSize(freqSpaceBox.getMinimumSize());
+    plotSelection.setSize(freqSpaceBox.getSize());
     add(plotSelection, constraints);
 
     revalidate();
@@ -191,7 +197,7 @@ public class NoiseNinePanel extends NoisePanel {
 
   @Override
   protected void drawCharts() {
-
+    // TODO: need to make sure this includes the station noise model
     int index = plotSelection.getSelectedIndex();
 
     switch (index) {
@@ -244,19 +250,27 @@ public class NoiseNinePanel extends NoisePanel {
     expResult.runExperimentOnData(dataStore);
 
     for (int j = 0; j < 3; ++j) {
-      XYSeriesCollection timeseries = expResult.getData().get(j);
+      XYSeriesCollection data = expResult.getData().get(j);
 
       for (int i = 0; i < NOISE_PLOT_COUNT; ++i) {
-        String name = (String) timeseries.getSeriesKey(i);
+        String name = (String) data.getSeriesKey(i);
         Color plotColor = getColor(i);
         seriesColorMap.put(name, plotColor);
         if (i >= 3) {
           seriesDashedSet.add(name);
         }
+      }
 
+      {
+        SpectralAnalysisExperiment spectExp = (SpectralAnalysisExperiment) expResult;
+        if (spectExp.noiseModelLoaded()) {
+          XYSeries series = spectExp.getPlottableNoiseModelData(freqSpaceBox.isSelected());
+          seriesDashedSet.add((String) series.getKey());
+          seriesColorMap.put((String) series.getKey(), Color.BLACK);
+          data.addSeries(spectExp.getPlottableNoiseModelData(freqSpaceBox.isSelected()));
+        }
       }
     }
-
     set = true;
 
     NoiseNineExperiment nineExperiment = (NoiseNineExperiment) expResult;

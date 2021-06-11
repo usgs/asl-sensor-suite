@@ -27,6 +27,7 @@ public class Configuration {
 
   private String defaultDataFolder = "data";
   private String defaultRespFolder = "responses";
+  private String defaultNoiseModelFolder = "station_noise_models";
   private String defaultOutputFolder = System.getProperty("user.home");
 
   private int lineWidthOffset = 2;
@@ -57,6 +58,10 @@ public class Configuration {
       String defaultRespFolderParam = config.getString("LocalPaths.RespPath");
       if (defaultRespFolderParam != null) {
         defaultRespFolder = defaultRespFolderParam;
+      }
+      String defaultNoiseModelFolderParam = config.getString("LocalPaths.NoiseModelPath");
+      if (defaultDataFolderParam != null) {
+        defaultNoiseModelFolder = defaultNoiseModelFolderParam;
       }
       String defaultOutputFolderParam =
           config.getString("LocalPaths.ReportPath");
@@ -217,6 +222,30 @@ public class Configuration {
     File config = new File(replacement);
     if (config.exists() && config.canRead()) {
       defaultRespFolder = replacement;
+    }
+  }
+
+  /**
+   * Gets the default resp folder. If none was specified in the XML file, the default is the
+   * 'station_noise_models" subdirectory under the current working directory.
+   *
+   * The property is defined from Configuration.LocalPaths.NoiseModelPath
+   * @return The folder to start looking for noise model files from.
+   */
+  public String getDefaultNoiseModelFolder() {
+    return defaultNoiseModelFolder;
+  }
+
+  /**
+   * Set the starting directory for noise model loading.
+   * Used when selecting a new folder to load data from but only written
+   * out to file when the configuration is edited from the main window.
+   * @param replacement Path (relative or absolute) to the folder where resps are kept.
+   */
+  public void setDefaultNoiseModelFolder(String replacement) {
+    File config = new File(replacement);
+    if (config.exists() && config.canRead()) {
+      defaultNoiseModelFolder = replacement;
     }
   }
 
@@ -447,6 +476,7 @@ public class Configuration {
 
       config.setProperty("LocalPaths.DataPath", defaultDataFolder);
       config.setProperty("LocalPaths.RespPath", defaultRespFolder);
+      config.setProperty("LocalPaths.NoiseModelPath", defaultNoiseModelFolder);
       config.setProperty("LocalPaths.ReportPath", defaultOutputFolder);
       config.setProperty("FDSNData.Protocol", fdsnDataProtocol);
       config.setProperty("FDSNData.Domain", fdsnDataDomain);

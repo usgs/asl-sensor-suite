@@ -20,7 +20,7 @@ import org.jfree.data.xy.XYSeries;
  *
  * @author akearns - KBRWyle
  */
-public class GainSixExperiment extends Experiment {
+public class GainSixExperiment extends SpectralAnalysisExperiment {
 
   /**
    * Number of known space dimensions (as in "3-dimensional")
