@@ -99,6 +99,10 @@ public class SpectrumPanel extends SpectralAnalysisPanel {
     constraints.gridx += 1;
     constraints.weightx = 0;
     constraints.anchor = GridBagConstraints.WEST;
+    noiseModelButton.setPreferredSize(freqSpaceBox.getPreferredSize());
+    noiseModelButton.setMaximumSize(freqSpaceBox.getMaximumSize());
+    noiseModelButton.setMinimumSize(freqSpaceBox.getMinimumSize());
+    noiseModelButton.setSize(freqSpaceBox.getSize());
     this.add(noiseModelButton, constraints);
   }
 
