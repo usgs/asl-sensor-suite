@@ -59,7 +59,7 @@ public abstract class SpectralAnalysisExperiment extends Experiment {
     int length = periodAndMean[0].length;
     assert(length == periodAndMean[1].length);
     for (int i = 0; i < length; ++i) {
-      double x = useHzUnits ? 1. / periodAndMean[0][1] : periodAndMean[0][1];
+      double x = useHzUnits ? 1. / periodAndMean[0][i] : periodAndMean[0][i];
       plot.add(x, periodAndMean[1][i]);
     }
 

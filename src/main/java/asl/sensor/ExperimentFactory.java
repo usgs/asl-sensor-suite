@@ -5,6 +5,7 @@ import asl.sensor.experiment.Experiment;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
 import asl.sensor.experiment.NoiseExperiment;
+import asl.sensor.experiment.NoiseModelExperiment;
 import asl.sensor.experiment.NoiseNineExperiment;
 import asl.sensor.experiment.OrientedSineExperiment;
 import asl.sensor.experiment.OrthogonalExperiment;
@@ -18,6 +19,7 @@ import asl.sensor.gui.AzimuthPanel;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.GainPanel;
 import asl.sensor.gui.GainSixPanel;
+import asl.sensor.gui.NoiseModelPanel;
 import asl.sensor.gui.NoiseNinePanel;
 import asl.sensor.gui.NoisePanel;
 import asl.sensor.gui.OrientedSinePanel;
@@ -181,6 +183,17 @@ public enum ExperimentFactory {
     @Override
     public ExperimentPanel createPanel() {
       return new ResponsePanel(this);
+    }
+  },
+  MODELS("Noise models") {
+    @Override
+    public Experiment createExperiment() {
+      return new NoiseModelExperiment();
+    }
+
+    @Override
+    public ExperimentPanel createPanel() {
+      return new NoiseModelPanel(this);
     }
   };
 
