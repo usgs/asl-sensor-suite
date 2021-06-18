@@ -5,6 +5,7 @@ testResultImages/
 data/*
 !data/readme.txt
 responses/*
+station_noise_models/*
 !responses/readme.txt
 src/test/resources/sprockets/*
 .idea/
