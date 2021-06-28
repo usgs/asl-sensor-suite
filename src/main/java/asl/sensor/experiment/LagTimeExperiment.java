@@ -50,15 +50,17 @@ public class LagTimeExperiment extends Experiment {
 
   @Override
   protected void backend(DataStore dataStore) {
-    double[] testData = dataStore.getBlock(0).getData();
-    double[] refData = dataStore.getBlock(1).getData();
+    final int testIndex = 0;
+    final int refIndex = 1;
+    double[] testData = dataStore.getBlock(testIndex).getData();
+    double[] refData = dataStore.getBlock(refIndex).getData();
 
-    String testName = dataStore.getBlock(0).getName();
-    String refName = dataStore.getBlock(1).getName();
+    String testName = dataStore.getBlock(testIndex).getName();
+    String refName = dataStore.getBlock(refIndex).getName();
 
     // note that data is of course always coerced to match sample rates going in
     // (if we need to change this, we need to override the preprocessing routine too)
-    long interval = dataStore.getBlock(0).getInterval();
+    long interval = dataStore.getBlock(testIndex).getInterval();
 
     // absolute first step is to ensure that the two traces are the same length going in
     // since we might have slight timing differences by getting data from time range
@@ -116,22 +118,24 @@ public class LagTimeExperiment extends Experiment {
     assert(testData.length == refData.length);
     int shift = (2 * testData.length - 1) / 2;
     int pad = 2 * shift;
+    double[] originalTestData = testData;
     testData = TimeSeriesUtils.concatAll(new double[pad], testData, new double[pad]);
 
-    double[] correlations = new double[pad + 1];
     XYSeries correlationPlottable = new XYSeries("Correlation: " + testName + " & " + refName);
     double maxValue = Double.NEGATIVE_INFINITY;
     double minValue = Double.POSITIVE_INFINITY;
-    int centeringTerm = (correlations.length / 2); // index of midpoint of data, point of 0ms lag
+    int initialLength = pad + 1;
+    int centeringTerm = (initialLength / 2); // index of midpoint of data, point of 0ms lag
     // get the index of max value, representing lag time in ms relative to midpoint of data
-    lagTime = -centeringTerm;
-    // definition as provided by numpy.correlate docs, with shifted start point for trace1
+    lagTime = 0;
+    // we will only look at 5 seconds of data on either end
     int start = Math.max(0, centeringTerm - 5000);
-    int end = Math.min(correlations.length, centeringTerm + 5000);
+    int end = Math.min(initialLength, centeringTerm + 5000);
+    double[] correlations = new double[end - start];
     for (int k = start; k < end; ++k) {
       for (int n = 0; n < refData.length; ++n) {
         assert(!(isNaN(refData[n])));
-        correlations[k] += testData[n + shift + k] * refData[n];
+        correlations[k - start] += testData[n + shift + k] * refData[n];
       }
       minValue = Math.min(minValue, correlations[k]);
       if (correlations[k] > maxValue) {
@@ -153,6 +157,33 @@ public class LagTimeExperiment extends Experiment {
     xySeriesData.add(new XYSeriesCollection(correlationPlottable));
 
     // TODO: plot trace data with the shift performed
+    int testStartIndex = lagTime; // index to start (shifted) data from
+    int assignStartIndex = 0;
+    if (testStartIndex > 0) {
+      while(testStartIndex > 0) {
+        testStartIndex -= interval;
+        --testStartIndex;
+      }
+    }
+    while (testStartIndex < 0) {
+      testStartIndex += interval;
+      ++assignStartIndex;
+    }
+    XYSeries referencePlot = new XYSeries(dataStore.getBlock(refIndex).getName());
+    XYSeries shiftedTestPlot =
+        new XYSeries(dataStore.getBlock(testIndex).getName() + "-shifted");
+    for (int i = 0; i < refData.length; ++i) {
+      referencePlot.add(i, refData[i]);
+    }
+    for (int i = 0; i < testData.length; i += interval) {
+      referencePlot.add(assignStartIndex + shiftedTestPlot.getItemCount(), testData[i]);
+    }
+    {
+      XYSeriesCollection shiftedPlots = new XYSeriesCollection();
+      shiftedPlots.addSeries(referencePlot);
+      shiftedPlots.addSeries(shiftedTestPlot);
+      xySeriesData.add(shiftedPlots);
+    }
   }
 
   public int getLagTime() {
