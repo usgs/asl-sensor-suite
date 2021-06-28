@@ -24,10 +24,22 @@ public class NoiseModel {
 
   Logger logger = Logger.getLogger(NoiseModel.class);
 
+  /**
+   * Construct a new noise model from a CSV file
+   * @param filename CSV file to read in
+   * @throws IOException If the file cannot be read
+   * @throws NoiseModelFormatException If the file does not have the expected field number
+   */
   public NoiseModel (String filename) throws IOException, NoiseModelFormatException {
     this(new File(filename));
   }
 
+  /**
+   * Construct a new noise model from a CSV file
+   * @param file CSV file to read in
+   * @throws IOException If the file cannot be read
+   * @throws NoiseModelFormatException If the file does not have the expected field number
+   */
   public NoiseModel (File file) throws IOException, NoiseModelFormatException {
     name = file.getName();
     List<Double> periods = new ArrayList<>();
@@ -54,6 +66,7 @@ public class NoiseModel {
       do {
         args = line.trim().split(",\\s+");
         // hard-wired for new format has only 5 columns (period, mean, median, 10th, 90th)
+
         if (args.length == 5) {
           try {
             periods.add(Double.valueOf(args[0].trim()));
@@ -85,15 +98,28 @@ public class NoiseModel {
     }
   }
 
+  /**
+   * Return the filename (this is used to distinguish the noise model in plots)
+   * @return filename of noise model source
+   */
   public String getName() {
     return name;
   }
 
+  /**
+   * Return the period values and means as nested arrays. First dimension index 0 is the period
+   * array and index 1 is the mean values. Second dimension k gives the kth value in the list, so
+   * [0][k] and [1][k] give the kth period and mean value pair.
+   * @return Nested array of period and mean level values.
+   */
   public double[][] getPeriodAndMean() {
     return new double[][]{periods, meanLevels};
   }
 
-  public class NoiseModelFormatException extends Exception {
+  /**
+   * Noise model exception thrown when the lines don't have the data expected.
+   */
+  public static class NoiseModelFormatException extends Exception {
 
     public NoiseModelFormatException(String s) {
       super(s);
