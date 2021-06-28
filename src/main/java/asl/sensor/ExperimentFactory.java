@@ -4,6 +4,7 @@ import asl.sensor.experiment.AzimuthExperiment;
 import asl.sensor.experiment.Experiment;
 import asl.sensor.experiment.GainExperiment;
 import asl.sensor.experiment.GainSixExperiment;
+import asl.sensor.experiment.LagTimeExperiment;
 import asl.sensor.experiment.NoiseExperiment;
 import asl.sensor.experiment.NoiseModelExperiment;
 import asl.sensor.experiment.NoiseNineExperiment;
@@ -19,6 +20,7 @@ import asl.sensor.gui.AzimuthPanel;
 import asl.sensor.gui.ExperimentPanel;
 import asl.sensor.gui.GainPanel;
 import asl.sensor.gui.GainSixPanel;
+import asl.sensor.gui.LagTimePanel;
 import asl.sensor.gui.NoiseModelPanel;
 import asl.sensor.gui.NoiseNinePanel;
 import asl.sensor.gui.NoisePanel;
@@ -139,7 +141,13 @@ public enum ExperimentFactory {
 
     @Override
     public ExperimentPanel createPanel() { return new VoltagePanel(this); }
+  },
+  LAG("Sensorloc Lag comparison") {
+    @Override
+    public Experiment createExperiment() { return new LagTimeExperiment(); }
 
+    @Override
+    public ExperimentPanel createPanel() { return new LagTimePanel(this); }
   },
   AZIMUTH("Azimuth") {
     @Override
