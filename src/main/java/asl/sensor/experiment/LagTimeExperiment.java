@@ -156,7 +156,7 @@ public class LagTimeExperiment extends Experiment {
     xySeriesData = new ArrayList<>();
     xySeriesData.add(new XYSeriesCollection(correlationPlottable));
 
-    // TODO: plot trace data with the shift performed
+    // TODO: this is probably wrong and still needs to be fixed up
     int testStartIndex = lagTime; // index to start (shifted) data from
     int assignStartIndex = 0;
     if (testStartIndex > 0) {
@@ -173,10 +173,12 @@ public class LagTimeExperiment extends Experiment {
     XYSeries shiftedTestPlot =
         new XYSeries(dataStore.getBlock(testIndex).getName() + "-shifted");
     for (int i = 0; i < refData.length; ++i) {
-      referencePlot.add(i, refData[i]);
+      referencePlot.add(getStart() + (i * interval), refData[i]);
     }
+    // plot from the interpolated data -- now each index is 1ms, so shift i by interval
     for (int i = 0; i < testData.length; i += interval) {
-      referencePlot.add(assignStartIndex + shiftedTestPlot.getItemCount(), testData[i]);
+      // i is already a multiple of the interval, so we don't do a scaling step here
+      referencePlot.add(getStart() + i + lagTime, testData[i]);
     }
     {
       XYSeriesCollection shiftedPlots = new XYSeriesCollection();
