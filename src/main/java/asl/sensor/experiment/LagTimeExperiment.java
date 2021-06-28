@@ -9,6 +9,7 @@ import static java.lang.Math.signum;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
+import asl.utils.response.ChannelMetadata;
 import asl.utils.timeseries.TimeSeriesUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,29 +85,8 @@ public class LagTimeExperiment extends Experiment {
     fireStateChange("Removing responses from upsampled traces...");
     // next we get FFTs to remove the responses from each and convert back to the time domain
     {
-      double sampleRate = (double) THOUSAND_SPS_INTERVAL / ONE_HZ_INTERVAL;
-      FFTResult result1 = FFTResult.simpleFFT(testData, sampleRate);
-      Complex[] fft1 =  result1.getFFT();
-      double[] frequencies = result1.getFreqs();
-      Complex[] fft2 = FFTResult.simpleFFT(refData, sampleRate).getFFT();
-      assert(fft1.length == fft2.length);
-      // now get the responses
-      Complex[] resp1 = dataStore.getResponse(0).applyResponseToInput(frequencies);
-      Complex[] resp2 = dataStore.getResponse(1).applyResponseToInput(frequencies);
-      int startIndex = 0;
-      if (frequencies[0] == 0.) {
-        fft1[0] = Complex.ZERO;
-        fft2[0] = Complex.ZERO;
-        startIndex = 1;
-      }
-      for (int i = startIndex; i < fft1.length; ++i) {
-        fft1[i] = fft1[i].divide(resp1[i]);
-        fft2[i] = fft2[i].divide(resp2[i]);
-      }
-      testData = FFTResult.simpleInverseFFT(fft1, testData.length);
-      refData = FFTResult.simpleInverseFFT(fft2, refData.length);
-      assert(!isNaN(testData[0]));
-      assert(!isNaN(refData[0]));
+      testData = deconvolveResponse(testData, dataStore.getResponse(testIndex));
+      refData = deconvolveResponse(refData, dataStore.getResponse(refIndex));
     }
 
     // demean in place ok here because doing FFT-invFFT creates new array of data anyway
@@ -118,7 +98,6 @@ public class LagTimeExperiment extends Experiment {
     assert(testData.length == refData.length);
     int shift = (2 * testData.length - 1) / 2;
     int pad = 2 * shift;
-    double[] originalTestData = testData;
     testData = TimeSeriesUtils.concatAll(new double[pad], testData, new double[pad]);
 
     XYSeries correlationPlottable = new XYSeries("Correlation: " + testName + " & " + refName);
@@ -129,13 +108,11 @@ public class LagTimeExperiment extends Experiment {
     // get the index of max value, representing lag time in ms relative to midpoint of data
     lagTime = 0;
     // we will only look at 5 seconds of data on either end
-    int start = Math.max(0, centeringTerm - 5000);
-    int end = Math.min(initialLength, centeringTerm + 5000);
-    double[] correlations = new double[end - start];
-    for (int k = start; k < end; ++k) {
+    double[] correlations = new double[initialLength];
+    for (int k = 0; k < correlations.length; ++k) {
       for (int n = 0; n < refData.length; ++n) {
         assert(!(isNaN(refData[n])));
-        correlations[k - start] += testData[n + shift + k] * refData[n];
+        correlations[k] += testData[n + shift + k] * refData[n];
       }
       minValue = Math.min(minValue, correlations[k]);
       if (correlations[k] > maxValue) {
@@ -145,7 +122,7 @@ public class LagTimeExperiment extends Experiment {
       }
     }
 
-    for (int k = start; k < end; ++k) {
+    for (int k = 0; k < correlations.length; ++k) {
       if (isFinite(correlations[k])) {
         double scaledValue = (correlations[k] - minValue) / (maxValue - minValue);
         correlationPlottable.add(k - centeringTerm, scaledValue);
@@ -156,19 +133,7 @@ public class LagTimeExperiment extends Experiment {
     xySeriesData = new ArrayList<>();
     xySeriesData.add(new XYSeriesCollection(correlationPlottable));
 
-    // TODO: this is probably wrong and still needs to be fixed up
-    int testStartIndex = lagTime; // index to start (shifted) data from
-    int assignStartIndex = 0;
-    if (testStartIndex > 0) {
-      while(testStartIndex > 0) {
-        testStartIndex -= interval;
-        --testStartIndex;
-      }
-    }
-    while (testStartIndex < 0) {
-      testStartIndex += interval;
-      ++assignStartIndex;
-    }
+    // TODO: make sure this data gets actually plotted in the panel in its own chart
     XYSeries referencePlot = new XYSeries(dataStore.getBlock(refIndex).getName());
     XYSeries shiftedTestPlot =
         new XYSeries(dataStore.getBlock(testIndex).getName() + "-shifted");
@@ -192,6 +157,7 @@ public class LagTimeExperiment extends Experiment {
     return lagTime;
   }
 
+  // TODO: this stuff will eventually be moved as part of java utils
 
   /**
    * Performs interpolation meant to replicate the the obspy method weighted_average_slopes,
@@ -203,7 +169,7 @@ public class LagTimeExperiment extends Experiment {
    */
   public static double[] weightedAverageSlopesInterp(double[] oldArray, long interval,
       long newInterval) {
-    int interpolatedLength = (int) ((oldArray.length - 1) * interval / newInterval);
+    int interpolatedLength = (int) ((oldArray.length - 1) * interval / newInterval) + 1;
     double[] interpolated = new double[interpolatedLength];
     double[] slope = new double[oldArray.length]; // weighted derivative values
     // calculate the weighted slope array
@@ -286,7 +252,7 @@ public class LagTimeExperiment extends Experiment {
     double a_0, a_1, b_minus_1, b_plus_1, b_0, c_0, c_1, d_0;
     // note that because the two traces are expected to have the same start time, we choose our
     // time values to implicitly start at 0 and change based on the sample intervals
-    for (int idx=0; idx < output.length; idx++) {
+    for (int idx = 0; idx < output.length; idx++) {
       // what is the current point in time given the index in the new data?
       double interpPointTime = idx * newInterval;
       // what is the closest index to this in the original data?
@@ -315,6 +281,26 @@ public class LagTimeExperiment extends Experiment {
 
       output[idx] = a_0 + (b_0 + (c_0 + d_0 * timeDifference) * (timeDifference - 1.0)) * timeDifference;
     }
+  }
+
+  private static double[] deconvolveResponse(double[] data, ChannelMetadata metadata) {
+    double sampleRate = (double) THOUSAND_SPS_INTERVAL / ONE_HZ_INTERVAL;
+    FFTResult result1 = FFTResult.simpleFFT(data, sampleRate);
+    Complex[] fft =  result1.getFFT();
+    double[] frequencies = result1.getFreqs();
+    // now get the responses
+    Complex[] resp = metadata.applyResponseToInput(frequencies);
+    int startIndex = 0;
+    if (frequencies[0] == 0.) {
+      fft[0] = Complex.ZERO;
+      startIndex = 1;
+    }
+    for (int i = startIndex; i < fft.length; ++i) {
+      fft[i] = fft[i].divide(resp[i]);
+    }
+    data = FFTResult.simpleInverseFFT(fft, data.length);
+    assert(!isNaN(data[0]));
+    return data;
   }
 
   @Override
