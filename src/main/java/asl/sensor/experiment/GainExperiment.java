@@ -63,7 +63,7 @@ public class GainExperiment extends SpectralAnalysisExperiment {
    */
   public static final double DEFAULT_LOW_BOUND = 3.;
 
-  private double[] gainStage1, A0Freqs, calcA0s, respA0s;
+  private double[] gainProducts, A0Freqs, calcA0s, respA0s;
   private FFTResult[] fftResults;
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
   private int referenceIndex;
@@ -179,7 +179,7 @@ public class GainExperiment extends SpectralAnalysisExperiment {
       }
     }
 
-    gainStage1 = new double[NUMBER_TO_LOAD];
+    gainProducts = new double[NUMBER_TO_LOAD];
     A0Freqs = new double[NUMBER_TO_LOAD];
     calcA0s = new double[NUMBER_TO_LOAD];
     respA0s = new double[NUMBER_TO_LOAD];
@@ -189,7 +189,10 @@ public class GainExperiment extends SpectralAnalysisExperiment {
     for (int i = 0; i < indices.length; ++i) {
       ChannelMetadata ir = dataStore.getResponse(indices[i]);
       double[] gains = ir.getGain();
-      gainStage1[i] = gains[1];
+      gainProducts[i] = 1.;
+      for (int k = 1; k < gains.length; ++k) {
+        gainProducts[i] *= gains[k];
+      }
       try {
         A0Freqs[i] = ir.getPoleZeroStage().getNormalizationFreq();
         respA0s[i] = ir.getPoleZeroStage().getNormalizationFactor();
@@ -229,7 +232,7 @@ public class GainExperiment extends SpectralAnalysisExperiment {
         for (int j = 0; j < freqs.length; ++j) {
           // response curves in velocity, put them into acceleration
           Complex scaleFactor =
-              new Complex(0.0, -1.0 / (TAU * freqs[j]));
+              new Complex(0., -1.0 / (TAU * freqs[j]));
           Complex resp1 = responseCurve[j].multiply(scaleFactor);
           Complex respMagnitude =
               resp1.multiply(resp1.conjugate());
@@ -398,8 +401,8 @@ public class GainExperiment extends SpectralAnalysisExperiment {
 
     double sigma = getFFTSDev(plot0, plot1, ratio, lowerBound, upperBound);
 
-    double refGain = gainStage1[refIndex];
-    double calcGain = gainStage1[refIndexPlusOne] / Math.sqrt(ratio);
+    double refGain = gainProducts[refIndex];
+    double calcGain = gainProducts[refIndexPlusOne] / Math.sqrt(ratio);
 
     double normalFreqRef = A0Freqs[refIndex];
     double normalFreqTest = A0Freqs[refIndexPlusOne];
