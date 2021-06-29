@@ -96,24 +96,15 @@ public class LagTimeExperiment extends Experiment {
     fireStateChange("Performing correlation calculation...");
     // now it is time to actually calculate the correlation, but first we must pad the first trace
     assert(testData.length == refData.length);
-    int shift = (2 * testData.length - 1) / 2;
-    int pad = 2 * shift;
-    testData = TimeSeriesUtils.concatAll(new double[pad], testData, new double[pad]);
 
     XYSeries correlationPlottable = new XYSeries("Correlation: " + testName + " & " + refName);
     double maxValue = Double.NEGATIVE_INFINITY;
     double minValue = Double.POSITIVE_INFINITY;
-    int initialLength = pad + 1;
-    int centeringTerm = (initialLength / 2); // index of midpoint of data, point of 0ms lag
     // get the index of max value, representing lag time in ms relative to midpoint of data
     lagTime = 0;
-    // we will only look at 5 seconds of data on either end
-    double[] correlations = new double[initialLength];
+    double[] correlations = getCorrelation(refData, testData);
+    int centeringTerm = (correlations.length / 2); // index of midpoint of data, point of 0ms lag
     for (int k = 0; k < correlations.length; ++k) {
-      for (int n = 0; n < refData.length; ++n) {
-        assert(!(isNaN(refData[n])));
-        correlations[k] += testData[n + shift + k] * refData[n];
-      }
       minValue = Math.min(minValue, correlations[k]);
       if (correlations[k] > maxValue) {
         // center the index around the middle value (where peak should be if lag is 0)
@@ -155,6 +146,21 @@ public class LagTimeExperiment extends Experiment {
 
   public int getLagTime() {
     return lagTime;
+  }
+
+  static double[] getCorrelation(double[] refData, double[] testData) {
+    int shift = (2 * testData.length - 1) / 2;
+    int pad = 2 * shift;
+    testData = TimeSeriesUtils.concatAll(new double[pad], testData, new double[pad]);
+    int length = pad + 1;
+    double[] correlations = new double[length];
+    for (int k = 0; k < correlations.length; ++k) {
+      for (int n = 0; n < refData.length; ++n) {
+        assert (!(isNaN(refData[n])));
+        correlations[k] += testData[n + shift + k] * refData[n];
+      }
+    }
+    return correlations;
   }
 
   // TODO: this stuff will eventually be moved as part of java utils

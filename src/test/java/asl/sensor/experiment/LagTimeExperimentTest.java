@@ -113,4 +113,12 @@ public class LagTimeExperimentTest {
     assertArrayEquals(expected, diff, 0.);
   }
 
+  @Test
+  public void testCorrelation() {
+    double[] first = {1, 2, 5, 6, 8, 9, 12, 13};
+    double[] second = {8, 7, 6, 9, 8, 7, 2, 1, 2, 1, 2};
+    double[] expected = {0, 0, 0, 104, 187, 234, 316, 370, 398, 341, 270, 224, 168, 136, 87, 54,
+        36, 22, 14, 5, 2};
+    assertArrayEquals(expected, LagTimeExperiment.getCorrelation(first, second), 0.);
+  }
 }
