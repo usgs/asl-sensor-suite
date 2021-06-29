@@ -15,7 +15,7 @@ import org.junit.Test;
 public class GainSixExperimentTest {
 
   private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
-  private final double EXPECTED_GAIN = 1143;
+  private final double EXPECTED_GAIN = 1.9203241276173034E9;
 
   @Test
   public void testGainCalculationFirstReference() {
