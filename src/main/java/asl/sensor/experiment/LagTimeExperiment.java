@@ -29,7 +29,7 @@ import org.jfree.data.xy.XYSeriesCollection;
  * K. Hafner, J. F. Holland, A. Kearns, et al.
  * (2021). A Review of Timing Accuracy
  * across the Global Seismographic Network,
- * Seismol. Res. Lett. XX, 1–12, doi: 10.1785/0220200394
+ * Seismol. Res. Lett. XX, 1-12, doi: 10.1785/0220200394
  */
 public class LagTimeExperiment extends Experiment {
 
