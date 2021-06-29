@@ -74,7 +74,7 @@ public class GainSixExperimentTest {
     double[][] allStats = ge.getStatistics();
     double[] stats = allStats[0];
     double gain = stats[3];
-    assertEquals("ACTUAL GAIN VALUE WAS " + gain, EXPECTED_GAIN, gain, 10.);
+    assertEquals("ACTUAL GAIN VALUE WAS " + gain, EXPECTED_GAIN, gain, 1E4);
   }
 
   @Test
@@ -136,7 +136,7 @@ public class GainSixExperimentTest {
     double[][] allStats = ge.getStatistics();
     double[] stats = allStats[0];
     double gain = stats[3];
-    assertEquals("ACTUAL GAIN VALUE WAS " + gain, EXPECTED_GAIN, gain, 10.);
+    assertEquals("ACTUAL GAIN VALUE WAS " + gain, EXPECTED_GAIN, gain, 1E4);
   }
 
 }
