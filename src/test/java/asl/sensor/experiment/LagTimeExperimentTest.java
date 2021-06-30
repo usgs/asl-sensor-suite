@@ -7,6 +7,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import asl.sensor.input.DataStore;
+import asl.sensor.test.TestUtils;
 import asl.utils.response.ResponseUnits.ResolutionType;
 import asl.utils.response.ResponseUnits.SensorType;
 import asl.utils.timeseries.DataBlock;
@@ -15,10 +16,13 @@ import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import org.jfree.data.xy.XYSeries;
 import org.junit.Test;
 
 public class LagTimeExperimentTest {
+
+  private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
   public void testProducesValidResult() throws SeedFormatException, CodecException, IOException {
@@ -43,6 +47,24 @@ public class LagTimeExperimentTest {
     assertEquals(0, exp.getLagTime());
     int xValue = expectLength/2;
     assertEquals(series.getMaxY(), series.getY(xValue));
+  }
+
+  @Test
+  public void testsCorrectLagIdentification()
+      throws SeedFormatException, CodecException, IOException {
+    String seedFile = folder + "test-lag-10ms/Test_data.seed"; // IU ANMO data
+    List<String> traces = TimeSeriesUtils.getMplexNameList(seedFile);
+    // should be in order 00_BHZ then 10_BHZ
+    assertEquals("IU_ANMO_00_BHZ", traces.get(0));
+    DataStore ds = new DataStore();
+    for (int i = 0; i < traces.size(); ++i) {
+      ds.setBlock(i, TimeSeriesUtils.getTimeSeries(seedFile, traces.get(i)));
+    }
+    ds.setResponse(0, folder + "test-lag-10ms/RESP.IU.ANMO.00.BHZ");
+    ds.setResponse(1, folder + "test-lag-10ms/RESP.IU.ANMO.10.BHZ");
+    LagTimeExperiment exp = new LagTimeExperiment();
+    exp.runExperimentOnData(ds);
+    System.out.println(exp.getLagTime());
   }
 
   @Test

@@ -41,7 +41,7 @@ public class LagTimePanel extends ExperimentPanel {
     XYSeriesCollection timeSeries = expResult.getData().get(0);
     setChart(timeSeries);
     chartPanel.setChart(chart);
-    // setTitle();
+    setTitle();
     chartPanel.setMouseZoomable(true);
   }
 

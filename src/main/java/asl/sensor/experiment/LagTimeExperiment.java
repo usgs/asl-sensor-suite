@@ -11,6 +11,9 @@ import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
 import asl.utils.response.ChannelMetadata;
 import asl.utils.timeseries.TimeSeriesUtils;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
@@ -59,6 +62,11 @@ public class LagTimeExperiment extends Experiment {
     String testName = dataStore.getBlock(testIndex).getName();
     String refName = dataStore.getBlock(refIndex).getName();
 
+    dataNames.add(testName);
+    dataNames.add(dataStore.getResponse(testIndex).getName());
+    dataNames.add(refName);
+    dataNames.add(dataStore.getResponse(refIndex).getName());
+
     // note that data is of course always coerced to match sample rates going in
     // (if we need to change this, we need to override the preprocessing routine too)
     long interval = dataStore.getBlock(testIndex).getInterval();
@@ -82,12 +90,35 @@ public class LagTimeExperiment extends Experiment {
     testData = weightedAverageSlopesInterp(testData, interval, THOUSAND_SPS_INTERVAL);
     refData = weightedAverageSlopesInterp(refData, interval, THOUSAND_SPS_INTERVAL);
 
+    try (PrintWriter out = new PrintWriter(new FileWriter("lagtime-before-response.csv"))) {
+      StringBuilder outString = new StringBuilder(Arrays.toString(testData));
+      out.write(testName + "\n");
+      out.write(outString.substring(1, outString.length()-1));
+      outString = new StringBuilder(Arrays.toString(refData));
+      out.write("\n" + refName + "\n");
+      out.write(outString.substring(1, outString.length()-1));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
     fireStateChange("Removing responses from upsampled traces...");
     // next we get FFTs to remove the responses from each and convert back to the time domain
     {
       testData = deconvolveResponse(testData, dataStore.getResponse(testIndex));
       refData = deconvolveResponse(refData, dataStore.getResponse(refIndex));
     }
+
+    try (PrintWriter out = new PrintWriter(new FileWriter("lagtime-after-response.csv"))) {
+      StringBuilder outString = new StringBuilder(Arrays.toString(testData));
+      out.write(testName + "\n");
+      out.write(outString.substring(1, outString.length()-1));
+      outString = new StringBuilder(Arrays.toString(refData));
+      out.write("\n" + refName + "\n");
+      out.write(outString.substring(1, outString.length()-1));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
 
     // demean in place ok here because doing FFT-invFFT creates new array of data anyway
     demeanInPlace(testData);
