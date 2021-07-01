@@ -38,6 +38,8 @@ public class GainSixPanel extends GainPanel {
   private JFreeChart verticalChart; // gain result per dimensional component
   private final JRadioButton firstRadioButton;
 
+  private static final String[] ORIENTATIONS = {"(NORTH)", "(EAST)", "(VERTICAL)"};
+
   /**
    * Instantiate the panel, including sliders and stat calc button
    */
@@ -77,13 +79,13 @@ public class GainSixPanel extends GainPanel {
 
 
     northChart =
-        ChartFactory.createXYLineChart(expType.getName() + " (North)",
+        ChartFactory.createXYLineChart(expType.getName() + " " + ORIENTATIONS[0],
             "", "", null);
     eastChart =
-        ChartFactory.createXYLineChart(expType.getName() + " (East)",
+        ChartFactory.createXYLineChart(expType.getName() + " " + ORIENTATIONS[1],
             "", "", null);
     verticalChart =
-        ChartFactory.createXYLineChart(expType.getName() + " (Vertical)",
+        ChartFactory.createXYLineChart(expType.getName() + " " + ORIENTATIONS[2],
             "", "", null);
     for (JFreeChart chart : getCharts()) {
       chart.getXYPlot().setDomainAxis(getXAxis());
@@ -164,7 +166,6 @@ public class GainSixPanel extends GainPanel {
 
     if (event.getSource() == plotSelection) {
       int index = plotSelection.getSelectedIndex();
-
       JFreeChart[] charts = getCharts();
       chart = charts[index];
       chartPanel.setChart(chart);
@@ -214,6 +215,7 @@ public class GainSixPanel extends GainPanel {
       }
 
       charts[i] = buildChart(timeseries);
+      charts[i].setTitle(expResult.toString() + " " + ORIENTATIONS[i]);
 
       // set vertical bars and enable sliders
       setSliderValues(leftSliderValue, rightSliderValue);

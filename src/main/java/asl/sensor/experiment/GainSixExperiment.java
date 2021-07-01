@@ -28,7 +28,7 @@ public class GainSixExperiment extends SpectralAnalysisExperiment {
   static final int DIMENSIONS = 3; // number of known space dimensions
   private final int[] indices;
   // used to store the intermediate result data of each of N,S,V components (in that order)
-  private GainExperiment[] componentBackends;
+  private final GainExperiment[] componentBackends;
   private double northAngle, eastAngle;
   private int indexOfAngleRefData;
   // indexOfAngleRefData represents which set of data to use as fixed angle reference
