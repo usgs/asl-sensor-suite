@@ -11,9 +11,6 @@ import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
 import asl.utils.response.ChannelMetadata;
 import asl.utils.timeseries.TimeSeriesUtils;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
@@ -62,6 +59,7 @@ public class LagTimeExperiment extends Experiment {
   protected void backend(DataStore dataStore) {
     final int testIndex = 0;
     final int refIndex = 1;
+
     double[] testData = dataStore.getBlock(testIndex).getData();
     double[] refData = dataStore.getBlock(refIndex).getData();
 
@@ -78,17 +76,6 @@ public class LagTimeExperiment extends Experiment {
     long testInterval = dataStore.getBlock(testIndex).getInterval();
     long refInterval = dataStore.getBlock(refIndex).getInterval();
 
-    try (PrintWriter out = new PrintWriter(new FileWriter("lagtime-before-response.csv"))) {
-      StringBuilder outString = new StringBuilder(Arrays.toString(testData));
-      out.write(testName + "\n");
-      out.write(outString.substring(1, outString.length()-1));
-      outString = new StringBuilder(Arrays.toString(refData));
-      out.write("\n" + refName + "\n");
-      out.write(outString.substring(1, outString.length()-1));
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
     fireStateChange("Removing responses from upsampled traces...");
     // next we get FFTs to remove the responses from each and convert back to the time domain
     {
@@ -96,15 +83,18 @@ public class LagTimeExperiment extends Experiment {
       refData = deconvolveResponse(refData, dataStore.getResponse(refIndex));
     }
 
-    try (PrintWriter out = new PrintWriter(new FileWriter("lagtime-after-response.csv"))) {
-      StringBuilder outString = new StringBuilder(Arrays.toString(testData));
-      out.write(testName + "\n");
-      out.write(outString.substring(1, outString.length()-1));
-      outString = new StringBuilder(Arrays.toString(refData));
-      out.write("\n" + refName + "\n");
-      out.write(outString.substring(1, outString.length()-1));
-    } catch (IOException e) {
-      e.printStackTrace();
+    // use these values to scale the (now-deconvolved) curve values for final plotting
+    double testMin = testData[0];
+    double testMax = testData[0];
+    double refMin = refData[0];
+    double refMax = refData[1];
+    for (double point : testData) {
+      testMin = Math.min(testMin, point);
+      testMax = Math.max(testMax, point);
+    }
+    for (double point : refData) {
+      refMin = Math.min(refMin, point);
+      refMax = Math.max(refMax, point);
     }
 
     fireStateChange("Interpolating data to 1 sample per ms...");
@@ -160,17 +150,15 @@ public class LagTimeExperiment extends Experiment {
     xySeriesData = new ArrayList<>();
     xySeriesData.add(new XYSeriesCollection(correlationPlottable));
 
-    // TODO: make sure this data gets actually plotted in the panel in its own chart
     XYSeries referencePlot = new XYSeries(dataStore.getBlock(refIndex).getName());
     XYSeries shiftedTestPlot =
         new XYSeries(dataStore.getBlock(testIndex).getName() + "-shifted");
-    for (int i = 0; i < refData.length; ++i) {
-      referencePlot.add(getStart() + (i * refInterval), refData[i]);
-    }
     // plot from the interpolated data -- now each index is 1ms, so shift i by interval
+    for (int i = 0; i < refData.length; i += refInterval) {
+      referencePlot.add(getStart() + i, (refData[i] - refMin) / (refMax - refMin));
+    }
     for (int i = 0; i < testData.length; i += testInterval) {
-      // i is already a multiple of the interval, so we don't do a scaling step here
-      shiftedTestPlot.add(getStart() + i + lagTime, testData[i]);
+      shiftedTestPlot.add(getStart() + i - lagTime, (testData[i] - testMin) / (testMax - testMin));
     }
     {
       XYSeriesCollection shiftedPlots = new XYSeriesCollection();
