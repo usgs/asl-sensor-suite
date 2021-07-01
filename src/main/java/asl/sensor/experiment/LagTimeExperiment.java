@@ -53,6 +53,12 @@ public class LagTimeExperiment extends Experiment {
   }
 
   @Override
+  protected boolean doMatchIntervals() {
+    // we DO NOT match intervals in this method because we will upscale later anyway
+    return false;
+  }
+
+  @Override
   protected void backend(DataStore dataStore) {
     final int testIndex = 0;
     final int refIndex = 1;
@@ -69,26 +75,8 @@ public class LagTimeExperiment extends Experiment {
 
     // note that data is of course always coerced to match sample rates going in
     // (if we need to change this, we need to override the preprocessing routine too)
-    long interval = dataStore.getBlock(testIndex).getInterval();
-
-    // absolute first step is to ensure that the two traces are the same length going in
-    // since we might have slight timing differences by getting data from time range
-    // also we kind of ignore what the user's chosen window is and only take like 15 minutes worth
-    // of data or so
-    {
-      int trimLength = Math.min(testData.length, refData.length);
-      trimLength = Math.min(trimLength, MAX_DATA_LIMIT);
-      testData = testData.length == trimLength ?
-          testData : Arrays.copyOfRange(testData, 0, trimLength);
-      demeanInPlace(testData);
-      refData = refData.length == trimLength ?
-          refData : Arrays.copyOfRange(refData, 0, trimLength);
-      demeanInPlace(refData);
-    }
-    fireStateChange("Interpolating data to 1 sample per ms...");
-    // now, let's convert the samples to 1000 samples per second
-    testData = weightedAverageSlopesInterp(testData, interval, THOUSAND_SPS_INTERVAL);
-    refData = weightedAverageSlopesInterp(refData, interval, THOUSAND_SPS_INTERVAL);
+    long testInterval = dataStore.getBlock(testIndex).getInterval();
+    long refInterval = dataStore.getBlock(refIndex).getInterval();
 
     try (PrintWriter out = new PrintWriter(new FileWriter("lagtime-before-response.csv"))) {
       StringBuilder outString = new StringBuilder(Arrays.toString(testData));
@@ -119,6 +107,23 @@ public class LagTimeExperiment extends Experiment {
       e.printStackTrace();
     }
 
+    fireStateChange("Interpolating data to 1 sample per ms...");
+    // now, let's convert the samples to 1000 samples per second
+    testData = weightedAverageSlopesInterp(testData, testInterval, THOUSAND_SPS_INTERVAL);
+    refData = weightedAverageSlopesInterp(refData, refInterval, THOUSAND_SPS_INTERVAL);
+
+    // now that we have upsampled the data we should go ahead and assert that the data is
+    // of a matching length just in case
+    if (false) {
+      int trimLength = Math.min(testData.length, refData.length);
+      // trimLength = Math.min(trimLength, MAX_DATA_LIMIT);
+      testData = testData.length == trimLength ?
+          testData : Arrays.copyOfRange(testData, 0, trimLength);
+      demeanInPlace(testData);
+      refData = refData.length == trimLength ?
+          refData : Arrays.copyOfRange(refData, 0, trimLength);
+      demeanInPlace(refData);
+    }
 
     // demean in place ok here because doing FFT-invFFT creates new array of data anyway
     demeanInPlace(testData);
@@ -160,12 +165,12 @@ public class LagTimeExperiment extends Experiment {
     XYSeries shiftedTestPlot =
         new XYSeries(dataStore.getBlock(testIndex).getName() + "-shifted");
     for (int i = 0; i < refData.length; ++i) {
-      referencePlot.add(getStart() + (i * interval), refData[i]);
+      referencePlot.add(getStart() + (i * refInterval), refData[i]);
     }
     // plot from the interpolated data -- now each index is 1ms, so shift i by interval
-    for (int i = 0; i < testData.length; i += interval) {
+    for (int i = 0; i < testData.length; i += testInterval) {
       // i is already a multiple of the interval, so we don't do a scaling step here
-      referencePlot.add(getStart() + i + lagTime, testData[i]);
+      shiftedTestPlot.add(getStart() + i + lagTime, testData[i]);
     }
     {
       XYSeriesCollection shiftedPlots = new XYSeriesCollection();
@@ -322,7 +327,7 @@ public class LagTimeExperiment extends Experiment {
 
   private static double[] deconvolveResponse(double[] data, ChannelMetadata metadata) {
     double sampleRate = (double) THOUSAND_SPS_INTERVAL / ONE_HZ_INTERVAL;
-    FFTResult result1 = FFTResult.simpleFFT(data, sampleRate);
+    FFTResult result1 = FFTResult.singleSidedFFT(data, sampleRate, false);
     Complex[] fft =  result1.getFFT();
     double[] frequencies = result1.getFreqs();
     // now get the responses
@@ -335,7 +340,7 @@ public class LagTimeExperiment extends Experiment {
     for (int i = startIndex; i < fft.length; ++i) {
       fft[i] = fft[i].divide(resp[i]);
     }
-    data = FFTResult.simpleInverseFFT(fft, data.length);
+    data = FFTResult.singleSidedInverseFFT(fft, data.length);
     assert(!isNaN(data[0]));
     return data;
   }

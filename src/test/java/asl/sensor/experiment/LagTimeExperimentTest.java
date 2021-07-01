@@ -52,7 +52,7 @@ public class LagTimeExperimentTest {
   @Test
   public void testsCorrectLagIdentification()
       throws SeedFormatException, CodecException, IOException {
-    String seedFile = folder + "test-lag-10ms/Test_data.seed"; // IU ANMO data
+    String seedFile = folder + "lag-1s/Test_data.seed"; // IU ANMO data
     List<String> traces = TimeSeriesUtils.getMplexNameList(seedFile);
     // should be in order 00_BHZ then 10_BHZ
     assertEquals("IU_ANMO_00_BHZ", traces.get(0));
@@ -60,11 +60,12 @@ public class LagTimeExperimentTest {
     for (int i = 0; i < traces.size(); ++i) {
       ds.setBlock(i, TimeSeriesUtils.getTimeSeries(seedFile, traces.get(i)));
     }
-    ds.setResponse(0, folder + "test-lag-10ms/RESP.IU.ANMO.00.BHZ");
-    ds.setResponse(1, folder + "test-lag-10ms/RESP.IU.ANMO.10.BHZ");
+    ds.setResponse(0, folder + "lag-1s/RESP.IU.ANMO.00.BHZ");
+    ds.setResponse(1, folder + "lag-1s/RESP.IU.ANMO.10.BHZ");
     LagTimeExperiment exp = new LagTimeExperiment();
     exp.runExperimentOnData(ds);
-    System.out.println(exp.getLagTime());
+    // we'll do the comparison in seconds rather than ms
+    assertEquals(-1., exp.getLagTime()/1000., 0.1);
   }
 
   @Test

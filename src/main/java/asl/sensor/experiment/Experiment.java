@@ -404,7 +404,9 @@ public abstract class Experiment {
     start = db.getStartTime();
     end = db.getEndTime();
 
-    dataStore.matchIntervals(blocksNeeded());
+    if (doMatchIntervals()) {
+      dataStore.matchIntervals(blocksNeeded());
+    }
 
     // populate gapregions data
     for (int i = 0; i < blocksNeeded(); ++i) {
@@ -431,5 +433,9 @@ public abstract class Experiment {
     backend(dataStore);
 
     fireStateChange("Calculations done!");
+  }
+
+  protected boolean doMatchIntervals() {
+    return true;
   }
 }
