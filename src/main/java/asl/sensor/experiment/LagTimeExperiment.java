@@ -114,7 +114,7 @@ public class LagTimeExperiment extends Experiment {
 
     // now that we have upsampled the data we should go ahead and assert that the data is
     // of a matching length just in case
-    if (false) {
+    {
       int trimLength = Math.min(testData.length, refData.length);
       // trimLength = Math.min(trimLength, MAX_DATA_LIMIT);
       testData = testData.length == trimLength ?
