@@ -63,7 +63,7 @@ public class GainExperiment extends SpectralAnalysisExperiment {
    */
   public static final double DEFAULT_LOW_BOUND = 3.;
 
-  private double[] gainProducts, A0Freqs, calcA0s, respA0s;
+  private double[] stage1Gains, A0Freqs, calcA0s, respA0s;
   private FFTResult[] fftResults;
   private int[] indices; // indices of valid data sources (i.e., 0 and 1)
   private int referenceIndex;
@@ -179,7 +179,7 @@ public class GainExperiment extends SpectralAnalysisExperiment {
       }
     }
 
-    gainProducts = new double[NUMBER_TO_LOAD];
+    stage1Gains = new double[NUMBER_TO_LOAD];
     A0Freqs = new double[NUMBER_TO_LOAD];
     calcA0s = new double[NUMBER_TO_LOAD];
     respA0s = new double[NUMBER_TO_LOAD];
@@ -188,10 +188,9 @@ public class GainExperiment extends SpectralAnalysisExperiment {
     // InstrumentResponse[] resps = ds.getResponses();
     for (int i = 0; i < indices.length; ++i) {
       ChannelMetadata ir = dataStore.getResponse(indices[i]);
-      double[] gains = ir.getGain();
-      gainProducts[i] = 1.;
-      for (int k = 1; k < gains.length; ++k) {
-        gainProducts[i] *= gains[k];
+      {
+        double[] gains = ir.getGain();
+        stage1Gains[i] = gains[1];
       }
       try {
         A0Freqs[i] = ir.getPoleZeroStage().getNormalizationFreq();
@@ -401,8 +400,8 @@ public class GainExperiment extends SpectralAnalysisExperiment {
 
     double sigma = getFFTSDev(plot0, plot1, ratio, lowerBound, upperBound);
 
-    double refGain = gainProducts[refIndex];
-    double calcGain = gainProducts[refIndexPlusOne] / Math.sqrt(ratio);
+    double refGain = stage1Gains[refIndex];
+    double calcGain = stage1Gains[refIndexPlusOne] / Math.sqrt(ratio);
 
     double normalFreqRef = A0Freqs[refIndex];
     double normalFreqTest = A0Freqs[refIndexPlusOne];

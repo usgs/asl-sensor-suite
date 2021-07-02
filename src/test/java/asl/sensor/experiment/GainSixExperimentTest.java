@@ -15,7 +15,7 @@ import org.junit.Test;
 public class GainSixExperimentTest {
 
   private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
-  private final double EXPECTED_GAIN = 1.9203241276173034E9;
+  private final double EXPECTED_GAIN = 1143;
 
   @Test
   public void testGainCalculationFirstReference() {
@@ -74,7 +74,7 @@ public class GainSixExperimentTest {
     double[][] allStats = ge.getStatistics();
     double[] stats = allStats[0];
     double gain = stats[3];
-    assertEquals("ACTUAL GAIN VALUE WAS " + gain, EXPECTED_GAIN, gain, 1E4);
+    assertEquals("ACTUAL GAIN VALUE WAS " + gain, EXPECTED_GAIN, gain, 10.);
   }
 
   @Test
@@ -136,7 +136,7 @@ public class GainSixExperimentTest {
     double[][] allStats = ge.getStatistics();
     double[] stats = allStats[0];
     double gain = stats[3];
-    assertEquals("ACTUAL GAIN VALUE WAS " + gain, EXPECTED_GAIN, gain, 1E4);
+    assertEquals("ACTUAL GAIN VALUE WAS " + gain, EXPECTED_GAIN, gain, 10.);
   }
 
 }

@@ -30,7 +30,7 @@ public class GainExperimentTest {
   private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
 
   @Test
-  public void testGainCalculation() throws IOException, SeedFormatException, CodecException {
+  public void testGainCalculation() {
 
     DataStore ds = new DataStore();
 
@@ -42,7 +42,12 @@ public class GainExperimentTest {
 
     for (int i = 0; i < prefixes.length; ++i) {
       String fName = testFolder + prefixes[i] + extension;
-      ds.setBlock(i, fName);
+      try {
+        ds.setBlock(i, fName);
+      } catch (IOException | SeedFormatException | CodecException e) {
+        e.printStackTrace();
+        fail();
+      }
     }
 
     String[] rnames = new String[2];
@@ -51,7 +56,11 @@ public class GainExperimentTest {
 
     for (int i = 0; i < rnames.length; ++i) {
       String fName = testFolder + rnames[i];
-      ds.setResponse(i, fName);
+      try {
+        ds.setResponse(i, fName);
+      } catch (IOException e) {
+        fail(e.getMessage());
+      }
     }
 
     OffsetDateTime start =
@@ -66,7 +75,7 @@ public class GainExperimentTest {
     ge.setRangeForStatistics(GainExperiment.DEFAULT_LOW_BOUND, GainExperiment.DEFAULT_UP_BOUND);
     double[] stats = ge.getStatsFromFreqs();
     double gain = stats[3];
-    assertEquals(1.9678319411E10, gain, 2.0);
+    assertEquals(11729., gain, 2.0);
   }
 
   @Test
@@ -187,8 +196,7 @@ public class GainExperimentTest {
     double[] resultValues = ge.getStatsFromFreqs();
     double referenceGain = resultValues[2];
     double calculatedGain = resultValues[3];
-    int delta = (int) Math.log10(referenceGain) - 6;
-    assertEquals(referenceGain, calculatedGain, Math.pow(10, delta));
+    assertEquals(referenceGain, calculatedGain, 1E-1);
     double testA0 = resultValues[9];
     assertEquals(initialA0, testA0, 1E-1);
   }
