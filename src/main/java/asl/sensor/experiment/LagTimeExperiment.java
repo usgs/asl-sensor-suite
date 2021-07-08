@@ -10,9 +10,9 @@ import static java.lang.Math.signum;
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
 import asl.utils.response.ChannelMetadata;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
 import asl.utils.timeseries.TimeSeriesUtils;
 import java.util.ArrayList;
-import java.util.Arrays;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -78,52 +78,29 @@ public class LagTimeExperiment extends Experiment {
 
     fireStateChange("Removing responses from upsampled traces...");
     // next we get FFTs to remove the responses from each and convert back to the time domain
-    {
-      testData = deconvolveResponse(testData, dataStore.getResponse(testIndex));
-      refData = deconvolveResponse(refData, dataStore.getResponse(refIndex));
+    try{
+      testData = deconvolveResponse(testData, dataStore.getResponse(testIndex),
+          dataStore.getBlock(testIndex).getSampleRate());
+      refData = deconvolveResponse(refData, dataStore.getResponse(refIndex),
+          dataStore.getBlock(refIndex).getSampleRate());
+    } catch(ResponseStageException e) {
+      System.err.println("Response is missing the expected pole-zero stage -- proceeding anyway");
     }
 
-    // use these values to scale the (now-deconvolved) curve values for final plotting
-    double testMin = testData[0];
-    double testMax = testData[0];
-    double refMin = refData[0];
-    double refMax = refData[1];
-    for (double point : testData) {
-      testMin = Math.min(testMin, point);
-      testMax = Math.max(testMax, point);
-    }
-    for (double point : refData) {
-      refMin = Math.min(refMin, point);
-      refMax = Math.max(refMax, point);
-    }
+    // these values are what we will plot later, so we're keeping track of them separately
+    double[] deconvolvedTest = testData;
+    double[] deconvolvedRef = refData;
 
     fireStateChange("Interpolating data to 1 sample per ms...");
     // now, let's convert the samples to 1000 samples per second
     testData = weightedAverageSlopesInterp(testData, testInterval, THOUSAND_SPS_INTERVAL);
     refData = weightedAverageSlopesInterp(refData, refInterval, THOUSAND_SPS_INTERVAL);
 
-    // now that we have upsampled the data we should go ahead and assert that the data is
-    // of a matching length just in case
-    {
-      int trimLength = Math.min(testData.length, refData.length);
-      // trimLength = Math.min(trimLength, MAX_DATA_LIMIT);
-      testData = testData.length == trimLength ?
-          testData : Arrays.copyOfRange(testData, 0, trimLength);
-      demeanInPlace(testData);
-      refData = refData.length == trimLength ?
-          refData : Arrays.copyOfRange(refData, 0, trimLength);
-      demeanInPlace(refData);
-    }
-
-    // demean in place ok here because doing FFT-invFFT creates new array of data anyway
-    demeanInPlace(testData);
-    demeanInPlace(refData);
-
     fireStateChange("Performing correlation calculation...");
-    // now it is time to actually calculate the correlation, but first we must pad the first trace
-    assert(testData.length == refData.length);
+    // assert(testData.length == refData.length);
 
     XYSeries correlationPlottable = new XYSeries("Correlation: " + testName + " & " + refName);
+    // terms used for normalization
     double maxValue = Double.NEGATIVE_INFINITY;
     double minValue = Double.POSITIVE_INFINITY;
     // get the index of max value, representing lag time in ms relative to midpoint of data
@@ -139,6 +116,7 @@ public class LagTimeExperiment extends Experiment {
       }
     }
 
+    // plot correlation curve normalized between 0 and 1
     for (int k = 0; k < correlations.length; ++k) {
       if (isFinite(correlations[k])) {
         double scaledValue = (correlations[k] - minValue) / (maxValue - minValue);
@@ -154,11 +132,11 @@ public class LagTimeExperiment extends Experiment {
     XYSeries shiftedTestPlot =
         new XYSeries(dataStore.getBlock(testIndex).getName() + "-shifted");
     // plot from the interpolated data -- now each index is 1ms, so shift i by interval
-    for (int i = 0; i < refData.length; i += refInterval) {
-      referencePlot.add(getStart() + i, (refData[i] - refMin) / (refMax - refMin));
+    for (int i = 0; i < deconvolvedRef.length; ++i) {
+      referencePlot.add(getStart() + (i * refInterval), deconvolvedRef[i]);
     }
-    for (int i = 0; i < testData.length; i += testInterval) {
-      shiftedTestPlot.add(getStart() + i - lagTime, (testData[i] - testMin) / (testMax - testMin));
+    for (int i = 0; i < deconvolvedTest.length; ++i) {
+      shiftedTestPlot.add(getStart() + (i * testInterval) - lagTime, deconvolvedTest[i]);
     }
     {
       XYSeriesCollection shiftedPlots = new XYSeriesCollection();
@@ -173,10 +151,10 @@ public class LagTimeExperiment extends Experiment {
   }
 
   static double[] getCorrelation(double[] refData, double[] testData) {
-    int shift = (2 * testData.length - 1) / 2;
+    int length = refData.length + testData.length - 1;
+    int shift = (2 * refData.length - 1) / 2;
     int pad = 2 * shift;
     testData = TimeSeriesUtils.concatAll(new double[pad], testData, new double[pad]);
-    int length = pad + 1;
     double[] correlations = new double[length];
     for (int k = 0; k < correlations.length; ++k) {
       for (int n = 0; n < refData.length; ++n) {
@@ -209,8 +187,7 @@ public class LagTimeExperiment extends Experiment {
       final double epsilon = Math.ulp((float) 0.);
       for (int i = 0; i < m.length; ++i) {
         w[i] = Math.abs(m[i]);
-        w[i] = Math.max(w[i], epsilon);
-        w[i] = 1. / w[i];
+        w[i] = 1. / Math.max(w[i], epsilon);
         assert(!isInfinite(w[i]));
       }
 
@@ -239,7 +216,7 @@ public class LagTimeExperiment extends Experiment {
     double newIntervalDouble = (double) newInterval / ONE_HZ_INTERVAL;
     // the obspy hermite interpolation method is stolen here because the apache commons one
     // doesn't work the way we expect it to (throws a lot of NaNs).
-    hermiteInterpolation(oldArray, slope, interpolated, oldInterval, newIntervalDouble);
+    hermiteInterpolation(oldArray, slope, interpolated, interval, newInterval);
     return interpolated;
   }
 
@@ -251,10 +228,10 @@ public class LagTimeExperiment extends Experiment {
    * @return Differentiated data.
    */
   public static double[] differentiate(double[] oldArray, long interval) {
-    double intervalDouble = (double) interval / ONE_HZ_INTERVAL;
+    // double intervalDouble = (double) interval; // makes sure the division is floating-point
     double[] differentiated = new double[oldArray.length - 1];
     for (int i = 0; i < differentiated.length; ++i) {
-      differentiated[i] = (oldArray[i + 1] - oldArray[i]) / intervalDouble;
+      differentiated[i] = (oldArray[i + 1] - oldArray[i]) / interval;
     }
     return differentiated;
   }
@@ -267,8 +244,9 @@ public class LagTimeExperiment extends Experiment {
    *
    * Based on C code used in obspy. Original code is (C) by Lion Krischer, 2014.
    * That original code, as part of obspy, is licensed under LGPL 3.0.
-   * Original source is available here:
-   * https://github.com/obspy/obspy/blob/9dd8ccc493ba6e0d70d26966246e5d7641c5a6d0/obspy/signal/src/hermite_interpolation.c
+   * Original source is available as part of Obspy's git repository.
+   * @see <a href="https://github.com/obspy/obspy/blob/9dd8ccc493ba6e0d70d26966246e5d7641c5a6d0/obsp
+y/signal/src/hermite_interpolation.c">Obspy's hermite_interpolation.c</a>
    *
    * @param initial Initial data for interpolation over
    * @param slopes Calculated slopes of the
@@ -277,58 +255,84 @@ public class LagTimeExperiment extends Experiment {
    * @param newInterval Interval of new data
    */
   private static void hermiteInterpolation(double[] initial, double[] slopes, double[] output,
-      double oldInterval, double newInterval) {
+      long oldInterval, long newInterval) {
 
-    double a_0, a_1, b_minus_1, b_plus_1, b_0, c_0, c_1, d_0;
+    double a0, a1, bm1, b0, b1, c0, c1, d0;
     // note that because the two traces are expected to have the same start time, we choose our
     // time values to implicitly start at 0 and change based on the sample intervals
-    for (int idx = 0; idx < output.length; idx++) {
+
+    for (int i = 0; i < output.length; i++) {
       // what is the current point in time given the index in the new data?
-      double interpPointTime = idx * newInterval;
+      long interpPointTime = i * newInterval;
       // what is the closest index to this in the original data?
       int originalCurrentIndex = (int) (interpPointTime / oldInterval);
       int originalNextIndex = originalCurrentIndex + 1;
       // and what is the time at the expected index?
-      double originalTime = originalCurrentIndex * oldInterval;
+      long originalTime = originalCurrentIndex * oldInterval;
 
       // No need to interpolate if exactly at start of the interval.
       if (interpPointTime == originalTime)  {
-        output[idx] = initial[originalCurrentIndex];
+        output[i] = initial[originalCurrentIndex];
         continue;
       }
 
-      double timeDifference = interpPointTime - originalTime;
+      // timeDifference is fractional relationship between points and old interval
+      // it should always be between 0 and 1 -- otherwise the previous conditional should trigger
+      double timeDifference = (interpPointTime - originalTime) / (double) oldInterval;
+      assert(timeDifference > 0. && timeDifference < 1.);
 
       // matrix manipulation, in effect
-      a_0 = initial[originalCurrentIndex];
-      a_1 = initial[originalNextIndex];
-      b_minus_1 = oldInterval * slopes[originalCurrentIndex];
-      b_plus_1 = oldInterval * slopes[originalNextIndex];
-      b_0 = a_1 - a_0;
-      c_0 = b_0 - b_minus_1;
-      c_1 = b_plus_1 - b_0;
-      d_0 = c_1 - c_0;
+      a0 = initial[originalCurrentIndex];
+      a1 = initial[originalNextIndex];
+      bm1 = oldInterval * slopes[originalCurrentIndex];
+      b1 = oldInterval * slopes[originalNextIndex];
+      b0 = a1 - a0;
+      c0 = b0 - bm1;
+      c1 = b1 - b0;
+      d0 = c1 - c0;
 
-      output[idx] = a_0 + (b_0 + (c_0 + d_0 * timeDifference) * (timeDifference - 1.0)) * timeDifference;
+      double term =
+          a0 + (b0 + (c0 + d0 * timeDifference) * (timeDifference - 1.0)) * timeDifference;
+      // assert(term >= Math.min(a0, a1) && term <= Math.min(a0, a1));
+      output[i] = term;
     }
   }
 
-  private static double[] deconvolveResponse(double[] data, ChannelMetadata metadata) {
-    double sampleRate = (double) THOUSAND_SPS_INTERVAL / ONE_HZ_INTERVAL;
-    FFTResult result1 = FFTResult.singleSidedFFT(data, sampleRate, false);
+  static double[] deconvolveResponse(double[] data, ChannelMetadata metadata,
+      double sampleRate) throws ResponseStageException {
+    demeanInPlace(data);
+    FFTResult result1 = FFTResult.simpleFFT(data, sampleRate);
     Complex[] fft =  result1.getFFT();
     double[] frequencies = result1.getFreqs();
     // now get the responses
-    Complex[] resp = metadata.applyResponseToInput(frequencies);
-    int startIndex = 0;
-    if (frequencies[0] == 0.) {
-      fft[0] = Complex.ZERO;
-      startIndex = 1;
+    Complex[] resp = metadata.applyResponseToInputUnscaled(frequencies, 1, 2);
+    double normalization = metadata.getPoleZeroStage().getNormalizationFactor();
+
+    // water level calculation -- since unscaled resp curve doesn't use A0, factor it in here
+    resp[0] = resp[0].multiply(normalization);
+    double max = resp[0].abs();
+    for (int i = 1; i < fft.length; ++i) {
+      resp[i] = resp[i].multiply(normalization);
+      max = Math.max(resp[i].abs(), max);
     }
-    for (int i = startIndex; i < fft.length; ++i) {
-      fft[i] = fft[i].divide(resp[i]);
+    double minLevel = max * Math.pow(10, (-0.001 / 20.0));
+    for (int i = 0; i < fft.length; ++i) {
+      // calculate water level correction and inversion of response
+      if (resp[i].abs() > 0. && resp[i].abs() < minLevel) {
+        resp[i] = resp[i].multiply(new Complex(minLevel / resp[i].abs()));
+      }
+      if (resp[i].abs() > 0.) {
+        resp[i] = Complex.ONE.divide(resp[i]);
+      }
+      else if (resp[i].abs() == 0.) {
+        resp[i] = Complex.ZERO;
+      }
+      fft[i] = fft[i].multiply(resp[i]);
     }
-    data = FFTResult.singleSidedInverseFFT(fft, data.length);
+    data = FFTResult.simpleInverseFFT(fft, data.length);
+    for (int i = 0; i < data.length; ++i) {
+      data[i] /= metadata.getResponse().getInstrumentSensitivity().getSensitivityValue();
+    }
     assert(!isNaN(data[0]));
     return data;
   }

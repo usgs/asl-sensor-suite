@@ -1,6 +1,8 @@
 package asl.sensor.experiment;
 
+import static asl.sensor.experiment.LagTimeExperiment.deconvolveResponse;
 import static asl.sensor.experiment.LagTimeExperiment.weightedAverageSlopesInterp;
+import static asl.utils.NumericUtils.demeanInPlace;
 import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
 import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static org.junit.Assert.assertArrayEquals;
@@ -8,6 +10,10 @@ import static org.junit.Assert.assertEquals;
 
 import asl.sensor.input.DataStore;
 import asl.sensor.test.TestUtils;
+import asl.utils.response.ChannelMetadata;
+import asl.utils.response.ChannelMetadata.ResponseStageException;
+import asl.utils.response.ResponseParser;
+import asl.utils.response.ResponseParser.EpochIdentifier;
 import asl.utils.response.ResponseUnits.ResolutionType;
 import asl.utils.response.ResponseUnits.SensorType;
 import asl.utils.timeseries.DataBlock;
@@ -23,6 +29,7 @@ import org.junit.Test;
 public class LagTimeExperimentTest {
 
   private static final String folder = TestUtils.TEST_DATA_LOCATION + TestUtils.SUBPAGE;
+  private static final long THOUSAND_SPS_INTERVAL = ONE_HZ_INTERVAL / 1000;
 
   @Test
   public void testProducesValidResult() throws SeedFormatException, CodecException, IOException {
@@ -30,7 +37,7 @@ public class LagTimeExperimentTest {
     ds.setBlock(0,
         "src/test/resources/seismic-test-data/seed_data/IU_ANMO/2018/005/00_BHZ.512.seed");
     ds.setBlock(1,
-        "src/test/resources/seismic-test-data/seed_data/IU_ANMO/2018/005/10_BHZ.512.seed");
+        "src/test/resources/seismic-test-data/seed_data/IU_ANMO/2018/005/00_BHZ.512.seed");
     ds.setResponse(0, loadEmbeddedResponse(SensorType.STS2gen3, ResolutionType.HIGH));
     ds.setResponse(1, loadEmbeddedResponse(SensorType.STS2gen3, ResolutionType.HIGH));
     {
@@ -50,9 +57,9 @@ public class LagTimeExperimentTest {
   }
 
   @Test
-  public void testsCorrectLagIdentification()
+  public void testsCorrectLagIdentification_1Second()
       throws SeedFormatException, CodecException, IOException {
-    String seedFile = folder + "lag-1s/Test_data.seed"; // IU ANMO data
+    String seedFile = folder + "lag-tests/Test_data_1s.seed"; // IU ANMO data
     List<String> traces = TimeSeriesUtils.getMplexNameList(seedFile);
     // should be in order 00_BHZ then 10_BHZ
     assertEquals("IU_ANMO_00_BHZ", traces.get(0));
@@ -60,12 +67,50 @@ public class LagTimeExperimentTest {
     for (int i = 0; i < traces.size(); ++i) {
       ds.setBlock(i, TimeSeriesUtils.getTimeSeries(seedFile, traces.get(i)));
     }
-    ds.setResponse(0, folder + "lag-1s/RESP.IU.ANMO.00.BHZ");
-    ds.setResponse(1, folder + "lag-1s/RESP.IU.ANMO.10.BHZ");
+    ds.setResponse(0, folder + "lag-tests/RESP.IU.ANMO.00.BHZ");
+    ds.setResponse(1, folder + "lag-tests/RESP.IU.ANMO.10.BHZ");
     LagTimeExperiment exp = new LagTimeExperiment();
     exp.runExperimentOnData(ds);
     // we'll do the comparison in seconds rather than ms
-    assertEquals(-1., exp.getLagTime()/1000., 0.1);
+    assertEquals(-1., exp.getLagTime()/1000., 2E-3);
+  }
+
+  @Test
+  public void testsCorrectLagIdentification_5Seconds()
+      throws SeedFormatException, CodecException, IOException {
+    String seedFile = folder + "lag-tests/Test_data_5s.seed"; // IU ANMO data
+    List<String> traces = TimeSeriesUtils.getMplexNameList(seedFile);
+    // should be in order 00_BHZ then 10_BHZ
+    assertEquals("IU_ANMO_00_BHZ", traces.get(0));
+    DataStore ds = new DataStore();
+    for (int i = 0; i < traces.size(); ++i) {
+      ds.setBlock(i, TimeSeriesUtils.getTimeSeries(seedFile, traces.get(i)));
+    }
+    ds.setResponse(0, folder + "lag-tests/RESP.IU.ANMO.00.BHZ");
+    ds.setResponse(1, folder + "lag-tests/RESP.IU.ANMO.10.BHZ");
+    LagTimeExperiment exp = new LagTimeExperiment();
+    exp.runExperimentOnData(ds);
+    // we'll do the comparison in seconds rather than ms
+    assertEquals(-5., exp.getLagTime()/1000., 2E-3);
+  }
+
+  @Test
+  public void testsCorrectLagIdentification_under1Second()
+      throws SeedFormatException, CodecException, IOException {
+    String seedFile = folder + "lag-tests/Test_data_XXs.seed"; // IU ANMO data
+    List<String> traces = TimeSeriesUtils.getMplexNameList(seedFile);
+    // should be in order 00_BHZ then 10_BHZ
+    assertEquals("IU_ANMO_00_BHZ", traces.get(0));
+    DataStore ds = new DataStore();
+    for (int i = 0; i < traces.size(); ++i) {
+      ds.setBlock(i, TimeSeriesUtils.getTimeSeries(seedFile, traces.get(i)));
+    }
+    ds.setResponse(0, folder + "lag-tests/RESP.IU.ANMO.00.BHZ");
+    ds.setResponse(1, folder + "lag-tests/RESP.IU.ANMO.10.BHZ");
+    LagTimeExperiment exp = new LagTimeExperiment();
+    exp.runExperimentOnData(ds);
+    // we'll do the comparison in seconds rather than ms
+    assertEquals(-0.100, exp.getLagTime()/1000., 1E-2);
   }
 
   @Test
@@ -120,12 +165,45 @@ public class LagTimeExperimentTest {
   }
 
   @Test
+  public final void testWeightedAverageSlopesInterp_bhzData()
+      throws SeedFormatException, CodecException, IOException {
+    String seedFile = folder + "lag-tests/Test_data_XXs.seed"; // IU ANMO data
+    DataBlock db = TimeSeriesUtils.getFirstTimeSeries(seedFile);
+    double[] data = db.getData();
+    demeanInPlace(data);
+    double[] interpolated =
+        weightedAverageSlopesInterp(data, db.getInitialInterval(), THOUSAND_SPS_INTERVAL);
+    assertEquals(99951, interpolated.length);
+
+    double[] expectedInterpolated = {246.897, 246.42801863, 245.94162578, 245.43915729,
+        244.92160302, 244.38993841, 243.8455209, 243.28932914, 242.7224669, 242.14589944,
+        241.56100562, 240.96875285, 240.37010154, 239.76644107, 239.1587332, 238.54793582,
+        237.93544412, 237.32221656, 236.70935691, 236.0978234, 235.48901158, 234.8838792,
+        234.28338754, 233.68892687, 233.10145719, 232.52194516, 231.95177106, 231.39189949,
+        230.84330489, 230.30735278, 229.78501474, 229.27739454, 228.78548064, 228.31061156,
+        227.85377185, 227.41596328, 226.99849857, 226.60237477, 226.22860932, 225.8784844,
+        225.55301193, 225.25329569, 224.98037767, 224.73549196, 224.51967401, 224.33398701,
+        224.17962347, 224.05763924, 223.96912106, 223.9152151, 223.897, 223.897, 223.897,
+        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897,
+        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897,
+        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897,
+        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897,
+        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897};
+
+    for (int i = 0; i < expectedInterpolated.length; ++i) {
+      assertEquals("Array mismatch at index " + i,
+          expectedInterpolated[i], interpolated[i], 1E-4);
+    }
+  }
+
+
+  @Test
   public void testDifferentiation() {
     double[] data = new double[100];
     for (int i = 0; i < data.length; ++i) {
       data[i] = Math.pow(i, 3);
     }
-    double[] diff = LagTimeExperiment.differentiate(data, ONE_HZ_INTERVAL);
+    double[] diff = LagTimeExperiment.differentiate(data, 1);
     double[] expected = {1, 7, 19, 37, 61, 91, 127, 169, 217, 271, 331, 397, 469, 547, 631, 721,
         817, 919, 1027, 1141, 1261, 1387, 1519, 1657, 1801, 1951, 2107, 2269, 2437, 2611, 2791,
         2977, 3169, 3367, 3571, 3781, 3997, 4219, 4447, 4681, 4921, 5167, 5419, 5677, 5941, 6211,
@@ -140,8 +218,39 @@ public class LagTimeExperimentTest {
   public void testCorrelation() {
     double[] first = {1, 2, 5, 6, 8, 9, 12, 13};
     double[] second = {8, 7, 6, 9, 8, 7, 2, 1, 2, 1, 2};
-    double[] expected = {0, 0, 0, 104, 187, 234, 316, 370, 398, 341, 270, 224, 168, 136, 87, 54,
+    double[] expected = {104, 187, 234, 316, 370, 398, 341, 270, 224, 168, 136, 87, 54,
         36, 22, 14, 5, 2};
-    assertArrayEquals(expected, LagTimeExperiment.getCorrelation(first, second), 0.);
+    double[] result = LagTimeExperiment.getCorrelation(first, second);
+
+    assertEquals(18, result.length);
+    assertArrayEquals(expected, result, 0.);
+  }
+
+  @Test
+  public void testResponseDeconvolution()
+      throws SeedFormatException, IOException, CodecException, ResponseStageException {
+    String seedFile = folder + "lag-tests/Test_data_1s.seed"; // IU ANMO data
+    List<String> traces = TimeSeriesUtils.getMplexNameList(seedFile);
+    // should be in order 00_BHZ then 10_BHZ
+    assertEquals("IU_ANMO_00_BHZ", traces.get(0));
+    DataBlock db = TimeSeriesUtils.getTimeSeries(seedFile, traces.get(0));
+    String respFile = folder + "lag-tests/RESP.IU.ANMO.00.BHZ";
+    EpochIdentifier epoch =  ResponseParser.getRespFileClosestEpoch(respFile, db.getStartTime(),
+        db.getEndTime());
+    ChannelMetadata resp = ResponseParser.parseResponse(respFile, epoch.filePointer);
+    double[] data = db.getData();
+    double sampleRate = db.getSampleRate();
+    double[] deconvolved = deconvolveResponse(data, resp, sampleRate);
+    // these values match obspy within 4 significant figures
+    double[] referenceData = {5.670340176262498E-8, 6.12698644469828E-8, 5.432928106370917E-8,
+        4.764814385177327E-8, 4.214522525619337E-8, 3.652414727623224E-8, 3.068923397265336E-8,
+        2.7142722266613733E-8, 2.786476614032104E-8, 2.6870732011867994E-8, 1.843696868286195E-8,
+        8.046415930251987E-9, 3.3936456994508232E-9, 1.9865677144096453E-9, -2.0947023160831E-9,
+        -6.772540148534291E-9, -1.1926652308888597E-8, -1.909082587492656E-8,
+        -2.3325641021675717E-8, -2.660409245167799E-8, -2.8987782490221795E-8,
+        -3.311331703941894E-8, -3.935194254986788E-8, -4.48440559485019E-8, -5.491579336671025E-8};
+    for (int i = 0; i < referenceData.length; ++i) {
+      assertEquals(referenceData[i], deconvolved[i], 0.);
+    }
   }
 }
