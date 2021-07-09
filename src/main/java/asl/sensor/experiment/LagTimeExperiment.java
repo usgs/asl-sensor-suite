@@ -13,6 +13,7 @@ import asl.utils.response.ChannelMetadata;
 import asl.utils.response.ChannelMetadata.ResponseStageException;
 import asl.utils.timeseries.TimeSeriesUtils;
 import java.util.ArrayList;
+import org.apache.commons.math3.analysis.interpolation.HermiteInterpolator;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -239,14 +240,10 @@ public class LagTimeExperiment extends Experiment {
 
   /**
    *
-   * Perform Hermite interpolation on a set of data. Assume the same start and end times with
+   * Perform Hermite spline interpolation on a set of data. Assume the same start and end times with
    * different sampling intervals between the two sets of data.
-   *
-   * Based on C code used in obspy. Original code is (C) by Lion Krischer, 2014.
-   * That original code, as part of obspy, is licensed under LGPL 3.0.
-   * Original source is available as part of Obspy's git repository.
-   * @see <a href="https://github.com/obspy/obspy/blob/9dd8ccc493ba6e0d70d26966246e5d7641c5a6d0/obsp
-y/signal/src/hermite_interpolation.c">Obspy's hermite_interpolation.c</a>
+   * This routine is meant to replicate the obspy hermite interpolation routine (more of a
+   * first-order spline), though it does not generate equivalent results.
    *
    * @param initial Initial data for interpolation over
    * @param slopes Calculated slopes of the
@@ -257,43 +254,56 @@ y/signal/src/hermite_interpolation.c">Obspy's hermite_interpolation.c</a>
   private static void hermiteInterpolation(double[] initial, double[] slopes, double[] output,
       long oldInterval, long newInterval) {
 
-    double a0, a1, bm1, b0, b1, c0, c1, d0;
     // note that because the two traces are expected to have the same start time, we choose our
     // time values to implicitly start at 0 and change based on the sample intervals
+    int originalCurrentIndex = 0; // closest index before current time where we have an evaluation
+    HermiteInterpolator interpolator = new HermiteInterpolator();
+    // we will treat each pair of sampled points as defining an interval 0-1 over which we will
+    // do interpolation on the points in between them (fractions between 0 and 1).
+    // each sample point is treated as an array in and of itself, so first array is
+    // the sampled value, followed by the first derivative
 
-    for (int i = 0; i < output.length; i++) {
+    // TODO: this is probably not the best way to structure the iteration
+    output[0] = initial[0];
+    interpolator.addSamplePoint(0, new double[]{initial[originalCurrentIndex]},
+        new double[]{slopes[originalCurrentIndex]});
+    interpolator.addSamplePoint(1, new double[]{initial[originalCurrentIndex + 1]},
+        new double[]{slopes[originalCurrentIndex + 1]});
+
+
+    for (int i = 1; i < output.length; i++) {
       // what is the current point in time given the index in the new data?
       long interpPointTime = i * newInterval;
-      // what is the closest index to this in the original data?
-      int originalCurrentIndex = (int) (interpPointTime / oldInterval);
-      int originalNextIndex = originalCurrentIndex + 1;
-      // and what is the time at the expected index?
-      long originalTime = originalCurrentIndex * oldInterval;
+      // if the closest index is new, then
 
-      // No need to interpolate if exactly at start of the interval.
-      if (interpPointTime == originalTime)  {
+      // what is the closest index to this in the original data?
+      // if we're looking at a different sample, it's time to regenerate the interpolator
+      if (originalCurrentIndex != (int) (interpPointTime / oldInterval)) {
+        // we're at a new 0 point, which doesn't get interpolated as we have its value already
+        originalCurrentIndex = (int) (interpPointTime / oldInterval);
         output[i] = initial[originalCurrentIndex];
+        if (originalCurrentIndex + 1 == initial.length) {
+          // if we hit this, we should have reached the end of the array already;
+          assert(i + 1 == output.length);
+          return;
+        }
+        interpolator = new HermiteInterpolator();
+        interpolator.addSamplePoint(0, new double[]{initial[originalCurrentIndex]},
+            new double[]{slopes[originalCurrentIndex]});
+        interpolator.addSamplePoint(1, new double[]{initial[originalCurrentIndex + 1]},
+            new double[]{slopes[originalCurrentIndex + 1]});
         continue;
       }
+
+      // and what is the time at the expected index?
+      long originalTime = originalCurrentIndex * oldInterval;
 
       // timeDifference is fractional relationship between points and old interval
       // it should always be between 0 and 1 -- otherwise the previous conditional should trigger
       double timeDifference = (interpPointTime - originalTime) / (double) oldInterval;
       assert(timeDifference > 0. && timeDifference < 1.);
 
-      // matrix manipulation, in effect
-      a0 = initial[originalCurrentIndex];
-      a1 = initial[originalNextIndex];
-      bm1 = oldInterval * slopes[originalCurrentIndex];
-      b1 = oldInterval * slopes[originalNextIndex];
-      b0 = a1 - a0;
-      c0 = b0 - bm1;
-      c1 = b1 - b0;
-      d0 = c1 - c0;
-
-      double term =
-          a0 + (b0 + (c0 + d0 * timeDifference) * (timeDifference - 1.0)) * timeDifference;
-      // assert(term >= Math.min(a0, a1) && term <= Math.min(a0, a1));
+      double term = interpolator.value(timeDifference)[0];
       output[i] = term;
     }
   }

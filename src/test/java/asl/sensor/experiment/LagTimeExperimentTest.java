@@ -2,7 +2,6 @@ package asl.sensor.experiment;
 
 import static asl.sensor.experiment.LagTimeExperiment.deconvolveResponse;
 import static asl.sensor.experiment.LagTimeExperiment.weightedAverageSlopesInterp;
-import static asl.utils.NumericUtils.demeanInPlace;
 import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
 import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static org.junit.Assert.assertArrayEquals;
@@ -114,44 +113,6 @@ public class LagTimeExperimentTest {
   }
 
   @Test
-  public final void testWeightedAverageSlopesInterp()
-      throws SeedFormatException, CodecException, IOException {
-    String filename =  "asl-java-utils/src/test/resources/fft-full/00_LHZ.512.seed";
-      // some ANMO LHZ data
-    DataBlock db = TimeSeriesUtils.getFirstTimeSeries(filename);
-    double[] data = Arrays.copyOfRange(db.getData(), 0, 300);
-    long resampleRate = db.getInitialInterval() / 2;
-    double[] interpolated =
-        weightedAverageSlopesInterp(data, db.getInitialInterval(), resampleRate);
-    assertEquals(599, interpolated.length);
-    // these values taken from running obspy data
-    double[] expected = {-514397., -514614.84973226, -514819., -515027.40026774, -515144.,
-        -515124.49315068, -515080., -514980.42351598, -514852., -514733.44270833, -514648.,
-        -514611.640625, -514596., -514732.34602273, -514913., -514996.65397727, -515036.,
-        -514912.71280603, -514725., -514582.78719397, -514505., -514564.93012422, -514691.,
-        -514929.77161491, -515149., -515230.79826087, -515266., -515062.12021858, -514746.,
-        -514492.37978142, -514351., -514450.57450331, -514625., -514803.22314123, -514955.,
-        -515047.70235546, -515092., -515046.49379771, -514949., -514732.50620229, -514568.,
-        -514585.33766234, -514628., -514783.60918346, -514953., -515024.05315421, -515056.,
-        -515002.15412186, -514890., -514706.76412631, -514498., -514309.58175182, -514205.,
-        -514307.51077586, -514520., -514903.56108537, -515249., -515374.42813877, -515428.,
-        -515290.77884615, -515073., -514909.63725362, -514778., -514683.14122507, -514632.,
-        -514625.87510759, -514621., -514609.04673423, -514595., -514581.02083333, -514573.,
-        -514592.20568928, -514640., -514795.90683972, -515030., -515319.387471, -515502.,
-        -515303.2079489, -514935., -514429.2920511, -514093., -514187.67776584, -514382.,
-        -514724.08821881, -515024., -515122.73401535, -515164., -515000.53157895, -514758.,
-        -514588.96842105, -514499., -514756.06276446, -515069., -515166.43723554, -515208.,
-        -514824.41114983, -514336., -514145.58885017, -514060., -514360.47845497, -514817.,
-        -515160.52154503, -515348., -515284.85039894, -515175., -515066.32829234, -514972.,
-        -514926.58164936, -514877., -514739.27936763, -514561., -514371.96029173, -514260.,
-        -514263.59839357, -514274., -514445.25280643, -514758., -515170.48463584, -515524.,
-        -515685.16416416, -515757., -515524.95618051, -515106., -514614.10138681, -514228.};
-    for (int i = 0; i < expected.length; ++i) {
-      assertEquals(expected[i], interpolated[i], 1E-6);
-    }
-  }
-
-  @Test
   public final void testWeightedAverageSlopesInterpQuadruple()
       throws SeedFormatException, CodecException, IOException {
     String filename = "asl-java-utils/src/test/resources/fft-full/00_LHZ.512.seed";
@@ -163,39 +124,6 @@ public class LagTimeExperimentTest {
         weightedAverageSlopesInterp(data, db.getInitialInterval(), resampleRate);
     assertEquals(1197, interpolated.length);
   }
-
-  @Test
-  public final void testWeightedAverageSlopesInterp_bhzData()
-      throws SeedFormatException, CodecException, IOException {
-    String seedFile = folder + "lag-tests/Test_data_XXs.seed"; // IU ANMO data
-    DataBlock db = TimeSeriesUtils.getFirstTimeSeries(seedFile);
-    double[] data = db.getData();
-    demeanInPlace(data);
-    double[] interpolated =
-        weightedAverageSlopesInterp(data, db.getInitialInterval(), THOUSAND_SPS_INTERVAL);
-    assertEquals(99951, interpolated.length);
-
-    double[] expectedInterpolated = {246.897, 246.42801863, 245.94162578, 245.43915729,
-        244.92160302, 244.38993841, 243.8455209, 243.28932914, 242.7224669, 242.14589944,
-        241.56100562, 240.96875285, 240.37010154, 239.76644107, 239.1587332, 238.54793582,
-        237.93544412, 237.32221656, 236.70935691, 236.0978234, 235.48901158, 234.8838792,
-        234.28338754, 233.68892687, 233.10145719, 232.52194516, 231.95177106, 231.39189949,
-        230.84330489, 230.30735278, 229.78501474, 229.27739454, 228.78548064, 228.31061156,
-        227.85377185, 227.41596328, 226.99849857, 226.60237477, 226.22860932, 225.8784844,
-        225.55301193, 225.25329569, 224.98037767, 224.73549196, 224.51967401, 224.33398701,
-        224.17962347, 224.05763924, 223.96912106, 223.9152151, 223.897, 223.897, 223.897,
-        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897,
-        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897,
-        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897,
-        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897,
-        223.897, 223.897, 223.897, 223.897, 223.897, 223.897, 223.897};
-
-    for (int i = 0; i < expectedInterpolated.length; ++i) {
-      assertEquals("Array mismatch at index " + i,
-          expectedInterpolated[i], interpolated[i], 1E-4);
-    }
-  }
-
 
   @Test
   public void testDifferentiation() {
