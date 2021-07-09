@@ -55,7 +55,18 @@ Authorship is noted in each file.
 
 This project was once licensed under GPL v3 or later, but all code written by USGS employees and 
 contractors has been relicensed to Public Domain and CC0 respectively.  
-	
+
+Some code was adapted from obspy, which is licensed under LGPL 3.0. For a relevant citation, see
+	M. Beyreuther, R. Barsh, et al. (2010)
+	ObsPy: A Python Toolbox for Seismology
+	SRL, 81(3), 530-533
+	DOI: 10.1785/gssrl.81.3.530
+
+Additional code was adapted from NumPy, Copyright (c) 2005-2021, NumPy Developers.
+This software is not endorsed or supported by NumPy in any way and is provided
+"AS IS" with no liability claimed. For more details the full NumPy license is
+available here:
+https://numpy.org/doc/stable/license.html
 
 ### Libraries
   Libraries are downloaded from https://mvnrepository.com.  
