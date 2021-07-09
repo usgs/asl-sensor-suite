@@ -274,7 +274,6 @@ public class LagTimeExperiment extends Experiment {
     for (int i = 1; i < output.length; i++) {
       // what is the current point in time given the index in the new data?
       long interpPointTime = i * newInterval;
-      // if the closest index is new, then
 
       // what is the closest index to this in the original data?
       // if we're looking at a different sample, it's time to regenerate the interpolator
