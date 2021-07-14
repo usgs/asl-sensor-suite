@@ -1,7 +1,6 @@
 package asl.sensor.experiment;
 
 import static asl.sensor.experiment.LagTimeExperiment.deconvolveResponse;
-import static asl.sensor.experiment.LagTimeExperiment.weightedAverageSlopesInterp;
 import static asl.utils.response.ResponseParser.loadEmbeddedResponse;
 import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static org.junit.Assert.assertArrayEquals;
@@ -20,7 +19,6 @@ import asl.utils.timeseries.TimeSeriesUtils;
 import edu.iris.dmc.seedcodec.CodecException;
 import edu.sc.seis.seisFile.mseed.SeedFormatException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import org.jfree.data.xy.XYSeries;
 import org.junit.Test;
@@ -110,36 +108,6 @@ public class LagTimeExperimentTest {
     exp.runExperimentOnData(ds);
     // we'll do the comparison in seconds rather than ms
     assertEquals(-0.100, exp.getLagTime()/1000., 1E-2);
-  }
-
-  @Test
-  public final void testWeightedAverageSlopesInterpQuadruple()
-      throws SeedFormatException, CodecException, IOException {
-    String filename = "asl-java-utils/src/test/resources/fft-full/00_LHZ.512.seed";
-    // some ANMO LHZ data
-    DataBlock db = TimeSeriesUtils.getFirstTimeSeries(filename);
-    double[] data = Arrays.copyOfRange(db.getData(), 0, 300);
-    long resampleRate = db.getInitialInterval() / 4;
-    double[] interpolated =
-        weightedAverageSlopesInterp(data, db.getInitialInterval(), resampleRate);
-    assertEquals(1197, interpolated.length);
-  }
-
-  @Test
-  public void testDifferentiation() {
-    double[] data = new double[100];
-    for (int i = 0; i < data.length; ++i) {
-      data[i] = Math.pow(i, 3);
-    }
-    double[] diff = LagTimeExperiment.differentiate(data, 1);
-    double[] expected = {1, 7, 19, 37, 61, 91, 127, 169, 217, 271, 331, 397, 469, 547, 631, 721,
-        817, 919, 1027, 1141, 1261, 1387, 1519, 1657, 1801, 1951, 2107, 2269, 2437, 2611, 2791,
-        2977, 3169, 3367, 3571, 3781, 3997, 4219, 4447, 4681, 4921, 5167, 5419, 5677, 5941, 6211,
-        6487, 6769, 7057, 7351, 7651, 7957, 8269, 8587, 8911, 9241, 9577, 9919, 10267, 10621, 10981,
-        11347, 11719, 12097, 12481, 12871, 13267, 13669, 14077, 14491, 14911, 15337, 15769, 16207,
-        16651, 17101, 17557, 18019, 18487, 18961, 19441, 19927, 20419, 20917, 21421, 21931, 22447,
-        22969, 23497, 24031, 24571, 25117, 25669, 26227, 26791, 27361, 27937, 28519, 29107};
-    assertArrayEquals(expected, diff, 0.);
   }
 
   @Test

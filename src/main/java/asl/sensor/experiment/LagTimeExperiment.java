@@ -1,11 +1,10 @@
 package asl.sensor.experiment;
 
 import static asl.utils.NumericUtils.demeanInPlace;
+import static asl.utils.NumericUtils.weightedAverageSlopesInterp;
 import static asl.utils.timeseries.TimeSeriesUtils.ONE_HZ_INTERVAL;
 import static java.lang.Double.isFinite;
-import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
-import static java.lang.Math.signum;
 
 import asl.sensor.input.DataStore;
 import asl.utils.FFTResult;
@@ -13,7 +12,6 @@ import asl.utils.response.ChannelMetadata;
 import asl.utils.response.ChannelMetadata.ResponseStageException;
 import asl.utils.timeseries.TimeSeriesUtils;
 import java.util.ArrayList;
-import org.apache.commons.math3.analysis.interpolation.HermiteInterpolator;
 import org.apache.commons.math3.complex.Complex;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -164,147 +162,6 @@ public class LagTimeExperiment extends Experiment {
       }
     }
     return correlations;
-  }
-
-  // TODO: this stuff will eventually be moved as part of java utils
-
-  /**
-   * Performs interpolation meant to replicate the the obspy method weighted_average_slopes,
-   * albeit without trimming the data down to a new time.
-   * @param oldArray Array of data to interpolate
-   * @param interval Interval of data (in ms)
-   * @param newInterval Interval of new data (in ms)
-   * @return Interpolated data over the same range of time as the original data
-   */
-  public static double[] weightedAverageSlopesInterp(double[] oldArray, long interval,
-      long newInterval) {
-    int interpolatedLength = (int) ((oldArray.length - 1) * interval / newInterval) + 1;
-    double[] interpolated = new double[interpolatedLength];
-    double[] slope = new double[oldArray.length]; // weighted derivative values
-    // calculate the weighted slope array
-    {
-      double[] m = differentiate(oldArray, interval);
-      double[] w = new double[m.length];
-      final double epsilon = Math.ulp((float) 0.);
-      for (int i = 0; i < m.length; ++i) {
-        w[i] = Math.abs(m[i]);
-        w[i] = 1. / Math.max(w[i], epsilon);
-        assert(!isInfinite(w[i]));
-      }
-
-      slope[0] = m[0];
-      for (int i = 0; i < m.length - 1; ++i) {
-        double currentW = w[i];
-        double nextW = w[i + 1];
-        double currentM = m[i];
-        double nextM = m[i + 1];
-        slope[i + 1] = ((currentW * currentM) + (nextW * nextM)) / (currentW + nextW);
-        assert(!isNaN(slope[i]));
-      }
-      // last value of slope is last value of m
-      slope[slope.length - 1] = m[m.length - 1];
-      // now ensure that any sign changes become 0
-      for (int i = 0; i < m.length - 1; ++i) {
-        if (signum(m[i]) - signum(m[i + 1]) != 0) {
-          slope[i + 1] = 0;
-        }
-      }
-    }
-
-    // now we do hermite interpolation to match obspy -- polynomial piecewise considered too
-    // memory intensive for use in obspy
-    double oldInterval = (double) interval / ONE_HZ_INTERVAL;
-    double newIntervalDouble = (double) newInterval / ONE_HZ_INTERVAL;
-    // the obspy hermite interpolation method is stolen here because the apache commons one
-    // doesn't work the way we expect it to (throws a lot of NaNs).
-    hermiteInterpolation(oldArray, slope, interpolated, interval, newInterval);
-    return interpolated;
-  }
-
-  /**
-   * Differentiate data. Intended to match the numpy.diff method, producing an array of length
-   * n-1 where n is the length of the original array.
-   * @param oldArray Original set of data, assumed spaced on an equal interval
-   * @param interval Spacing between values (i.e., if y=f(x) this value represents dx)
-   * @return Differentiated data.
-   */
-  public static double[] differentiate(double[] oldArray, long interval) {
-    // double intervalDouble = (double) interval; // makes sure the division is floating-point
-    double[] differentiated = new double[oldArray.length - 1];
-    for (int i = 0; i < differentiated.length; ++i) {
-      differentiated[i] = (oldArray[i + 1] - oldArray[i]) / interval;
-    }
-    return differentiated;
-  }
-
-
-  /**
-   *
-   * Perform Hermite spline interpolation on a set of data. Assume the same start and end times with
-   * different sampling intervals between the two sets of data.
-   * This routine is meant to replicate the obspy hermite interpolation routine (more of a
-   * first-order spline), though it does not generate equivalent results.
-   *
-   * @param initial Initial data for interpolation over
-   * @param slopes Calculated slopes of the
-   * @param output Array to be populated with interpolated data
-   * @param oldInterval Interval of original data
-   * @param newInterval Interval of new data
-   */
-  private static void hermiteInterpolation(double[] initial, double[] slopes, double[] output,
-      long oldInterval, long newInterval) {
-
-    // note that because the two traces are expected to have the same start time, we choose our
-    // time values to implicitly start at 0 and change based on the sample intervals
-    int originalCurrentIndex = 0; // closest index before current time where we have an evaluation
-    HermiteInterpolator interpolator = new HermiteInterpolator();
-    // we will treat each pair of sampled points as defining an interval 0-1 over which we will
-    // do interpolation on the points in between them (fractions between 0 and 1).
-    // each sample point is treated as an array in and of itself, so first array is
-    // the sampled value, followed by the first derivative
-
-    // TODO: this is probably not the best way to structure the iteration
-    output[0] = initial[0];
-    interpolator.addSamplePoint(0, new double[]{initial[originalCurrentIndex]},
-        new double[]{slopes[originalCurrentIndex]});
-    interpolator.addSamplePoint(1, new double[]{initial[originalCurrentIndex + 1]},
-        new double[]{slopes[originalCurrentIndex + 1]});
-
-
-    for (int i = 1; i < output.length; i++) {
-      // what is the current point in time given the index in the new data?
-      long interpPointTime = i * newInterval;
-
-      // what is the closest index to this in the original data?
-      // if we're looking at a different sample, it's time to regenerate the interpolator
-      if (originalCurrentIndex != (int) (interpPointTime / oldInterval)) {
-        // we're at a new 0 point, which doesn't get interpolated as we have its value already
-        originalCurrentIndex = (int) (interpPointTime / oldInterval);
-        output[i] = initial[originalCurrentIndex];
-        if (originalCurrentIndex + 1 == initial.length) {
-          // if we hit this, we should have reached the end of the array already;
-          assert(i + 1 == output.length);
-          return;
-        }
-        interpolator = new HermiteInterpolator();
-        interpolator.addSamplePoint(0, new double[]{initial[originalCurrentIndex]},
-            new double[]{slopes[originalCurrentIndex]});
-        interpolator.addSamplePoint(1, new double[]{initial[originalCurrentIndex + 1]},
-            new double[]{slopes[originalCurrentIndex + 1]});
-        continue;
-      }
-
-      // and what is the time at the expected index?
-      long originalTime = originalCurrentIndex * oldInterval;
-
-      // timeDifference is fractional relationship between points and old interval
-      // it should always be between 0 and 1 -- otherwise the previous conditional should trigger
-      double timeDifference = (interpPointTime - originalTime) / (double) oldInterval;
-      assert(timeDifference > 0. && timeDifference < 1.);
-
-      double term = interpolator.value(timeDifference)[0];
-      output[i] = term;
-    }
   }
 
   static double[] deconvolveResponse(double[] data, ChannelMetadata metadata,
