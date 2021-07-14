@@ -3,7 +3,7 @@
     "name": "asl-sensor-suite",
     "organization": "U.S. Geological Survey",
     "description": "A graphical suite for seismic sensor testing",
-    "version": "2.1.0",
+    "version": "2.0.1",
     "status": "Production",
     "permissions": {
       "usageType": "openSource",
