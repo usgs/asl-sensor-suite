@@ -368,20 +368,23 @@ public class RandomizedExperimentTest {
   }
 
   @Test
-  public void runExperiment_BCIP_HFCalibration() throws IOException {
-    String respName = RESP_LOCATION + "RESP.CU.BCIP.00.BHZ_2017_268";
+  public void runExperiment_BCIP_HFCalibration() {
+    // using an embedded resp because the actual resp file used for this test just isn't a very
+    // good fit to begin with. Ideally we switch this to data that a resp fits to well before
+    // solving, and verify that the RMS is low
+    String respName =
+        ResponseUnits.getFilenameFromComponents(SensorType.STS2_5, ResolutionType.HIGH);
     String dataFolderName = getSeedFolder("CU", "BCIP", "2017", "268");
     String calName = dataFolderName + "CB_BC0.512.seed";
     String sensOutName = dataFolderName + "00_EHZ.512.seed";
 
-    DataStore ds = DataStoreUtils.createFromNames(respName, calName, sensOutName);
+    DataStore ds = DataStoreUtils.createFromNamesEmbedResp(respName, calName, sensOutName);
+
     OffsetDateTime cCal = TestUtils.getStartCalendar(ds);
     cCal = cCal.withHour(18).withMinute(49).withSecond(0).withNano(0);
     long start = cCal.toInstant().toEpochMilli();
-
     cCal = cCal.withHour(19).withMinute(4);
     long end = cCal.toInstant().toEpochMilli();
-
     ds.trim(start, end);
 
     RandomizedExperiment rCal = (RandomizedExperiment)
@@ -396,34 +399,32 @@ public class RandomizedExperimentTest {
     double fitResidual = rCal.getFitResidual();
     ChannelMetadata fitResponse = rCal.getFitResponse();
 
-
     double[][] calculatedDataSeries = rCal.getData().get(0).getSeries(1).toArray();
     double[] frequencyTest = calculatedDataSeries[0];
     double[] calculatedResponseCurveAmp = calculatedDataSeries[1];
 
     Complex[] fitResponseCurve = fitResponse.applyResponseToInput(frequencyTest);
     double[] fitAmpAndPhase = new double[2 * fitResponseCurve.length];
-    double[] expectedAmpAndPhase = new double[2 * fitResponseCurve.length];
     for (int i = 0; i < fitResponseCurve.length; ++i) {
       int phaseIndex = i + fitResponseCurve.length;
       fitAmpAndPhase[i] = fitResponseCurve[i].abs();
       fitAmpAndPhase[phaseIndex] = atanc(fitResponseCurve[i]);
     }
     RandomizedExperiment.scaleValues(fitAmpAndPhase, frequencyTest, false);
-    RandomizedExperiment.scaleValues(expectedAmpAndPhase, frequencyTest, false);
+    assertEquals(calculatedResponseCurveAmp.length, fitAmpAndPhase.length / 2);
+    assertEquals(calculatedResponseCurveAmp.length, fitResponseCurve.length);
 
     double[] fitAmp = Arrays.copyOfRange(fitAmpAndPhase, 0, fitResponseCurve.length);
     double ampRMS = 0.;
-    for (int i = 0; i < fitResponseCurve.length; ++i) {
+    for (int i = 0; i < fitAmp.length; ++i) {
       ampRMS += Math.pow(fitAmp[i] - calculatedResponseCurveAmp[i], 2);
     }
 
     ampRMS = Math.sqrt(ampRMS / fitResponseCurve.length);
-    assertTrue(ampRMS < 1.5);
+    assertTrue("ampRMS larger than expected (1.5), is " + ampRMS, ampRMS < 1.5);
 
     assertTrue(fitResidual <= initResidual);
     // assertTrue("Percent error not less than 30: " + pctError, pctError < 30);
-
   }
 
   @Test
