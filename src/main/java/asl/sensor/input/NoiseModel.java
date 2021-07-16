@@ -47,54 +47,84 @@ public class NoiseModel {
     List<Double> medians = new ArrayList<>();
     List<Double> tenths = new ArrayList<>();
     List<Double> ninetieths = new ArrayList<>();
+    int lineLength = 0;
 
     try (BufferedReader br = new BufferedReader(new FileReader(file))) {
       String line = br.readLine();
       String[] args = line.trim().split("\\s+");
-      if (args.length != 5) {
-        throw new NoiseModelFormatException("Incorrect number of parameters per line in file "
-            + file.getName());
-      }
+      lineLength = args.length;
+
+
       // if this first line is a format description header skip it
       try {
         Double.valueOf(args[0].trim());
       } catch (NumberFormatException e) {
         // skip to the next line, this first one has no value
         line = br.readLine();
+        // also get the number of parameters expected
+        lineLength = line.trim().split("\\s+").length;
       }
 
       do {
         args = line.trim().split(",\\s+");
-        // hard-wired for new format has only 5 columns (period, mean, median, 10th, 90th)
-
-        if (args.length == 5) {
-          try {
-            periods.add(Double.valueOf(args[0].trim()));
-            means.add(Double.valueOf(args[1].trim()));
-            medians.add(Double.valueOf(args[2].trim()));
-            tenths.add(Double.valueOf(args[3].trim()));
-            ninetieths.add(Double.valueOf(args[4].trim()));
+        // if a line doesn't match others in the file for length, or doesn't have at least
+        // frequency and a mean value
+        if (args.length != lineLength || args.length < 2) {
+          throw new NoiseModelFormatException("Incorrect number of parameters per line in file "
+              + file.getName());
+        }
+        // expect a common format for all data -- period, mean, median, 10th pct, 90th pct
+        for (int i = 0; i < args.length; ++i) {
+          try{
+            double value = Double.parseDouble(args[i].trim());
+            // they say the for-case is bad, but we're doing some very basic parsing so it's fine
+            // after all what is parsing but an implicit state machine anyway
+            switch(i) {
+              case 0:
+                periods.add(value);
+                break;
+              case 1:
+                means.add(value);
+                break;
+              case 2:
+                medians.add(value);
+                break;
+              case 3:
+                tenths.add(value);
+                break;
+              case 4:
+                ninetieths.add(value);
+                break;
+              default:
+                break;
+            }
           } catch (NumberFormatException e) {
-            logger.error("Values in file " + file.getName() + " could not be parsed correctly");
+            logger.error("Values in file " + file.getName() + " could not be parsed correctly,"
+                + " specifically this value: " + args[i]);
           }
-        } else {
-          throw new NoiseModelFormatException("Got "
-              + args.length + " args on one line in file " + file.getName());
         }
       } while ((line = br.readLine()) != null);
     }
     int length = periods.size(); // this should be equal for all the arrays in question
+    assert(length == means.size());
     this.periods = new double[length];
     this.meanLevels = new double[length];
-    this.medianLevels = new double[length];
-    this.percentile10 = new double[length];
-    this.percentile90 = new double[length];
+    // these values are optional so we do no checks for them here
+    this.medianLevels = new double[medians.size()];
+    this.percentile10 = new double[tenths.size()];
+    this.percentile90 = new double[ninetieths.size()];
     for (int i = 0; i < length; ++i) {
       this.periods[i] = periods.get(i);
       this.meanLevels[i] = means.get(i);
-      this.medianLevels[i] = medians.get(i);
-      this.percentile10[i] = tenths.get(i);
-      this.percentile90[i] = ninetieths.get(i);
+      if (i < medianLevels.length) {
+        medianLevels[i] = medians.get(i);
+      }
+      if (i < percentile10.length) {
+        percentile10[i] = tenths.get(i);
+      }
+      if (i < percentile90.length) {
+        percentile90[i] = ninetieths.get(i);
+      }
     }
   }
 
